@@ -107,18 +107,26 @@ classDiagram
 
 ```mermaid
 flowchart TD
+    UserInput --> Decision
 
-    UserInput[User Input] --> Decide{Determine Query Type}
+    Decision --> SQLQuery
+    Decision --> DocQuery
+    Decision --> ChatQuery
+    Decision --> AgentQuery
 
-    Decide -->|SQL Query| SQLTool[SqlQueryTool / SQLite Database]
-    Decide -->|Document Question| DocTool[DocumentQueryTool / ChromaDB]
-    Decide -->|Conversation| ChatPath[LLM Chat via Fetch]
-    Decide -->|Multi-Tool Reasoning| Agent[LangChain ReAct Agent]
+    SQLQuery --> Answer
+    DocQuery --> Answer
+    ChatQuery --> Answer
+    AgentQuery --> Answer
 
-    SQLTool --> Answer[Final Answer Returned]
-    DocTool --> Answer
-    ChatPath --> Answer
-    Agent --> Answer
+    UserInput[UserInput]
+    Decision[DetermineQueryType]
+    SQLQuery[SqlQueryTool]
+    DocQuery[DocumentQueryTool]
+    ChatQuery[ChatLLM]
+    AgentQuery[ReActAgent]
+    Answer[FinalAnswer]
+
 ```
 
 
