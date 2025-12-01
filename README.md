@@ -291,9 +291,5 @@ MIT License - [found here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LI
 
 
 
-## 📝 **Author**
-
-**Terry D. Eppler**
-**Email:** [terryeppler@gmail.com](mailto:terryeppler@gmail.com)
 
 
