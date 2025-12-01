@@ -1,8 +1,9 @@
-###### foo
+A Multi-Tool Conversational Retrieval, SQL Querying, and Document Intelligence Framework*
+Work-In-Progress Module
+
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
-*A Multi-Tool Conversational Retrieval, SQL Querying, and Document Intelligence Framework*
-**Work-In-Progress Module**
+
 
 
 
