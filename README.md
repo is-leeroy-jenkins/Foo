@@ -3,7 +3,7 @@
 
 A small, multi-tool framework for retrieval augmentation, SQL Querying, and Document Loading 
 
-### 🧠 **Overview**
+## 🧠 **Overview**
 
 Foo is an extensible Python framework designed to unify:
 
@@ -166,7 +166,7 @@ export OPENAI_API_KEY="your-key"
 
 
 
-### 🏗️ **Initialize**
+## 🏗️ **Initialize**
 
 ```python
 from Foo import Fetch
@@ -184,7 +184,7 @@ fetch = Fetch(
 
 
 
-### 🔍 **SQL Query**
+## 🔍 **SQL Query**
 
 ```python
 result = fetch.query_sql("List total obligations by fiscal year.")
@@ -193,7 +193,7 @@ print(result)
 
 
 
-### 📚 **Document Retrieval**
+## 📚 **Document Retrieval**
 
 ```python
 result = fetch.query_docs(
@@ -205,7 +205,7 @@ print(result)
 
 
 
-### 🤖 **Free-Form Chat**
+## 🤖 **Free-Form Chat**
 
 ```python
 reply = fetch.query_chat("Explain the difference between BA and OBL.")
@@ -215,7 +215,7 @@ print(reply)
 
 
 
-### 🏗️ **Install & Import**
+## 🏗️ **Install & Import**
 
 ```python
 !pip install langchain chromadb numpy openai unstructured python-docx pypdf
@@ -224,7 +224,7 @@ from Foo import Fetch
 ```
 
 
-### 🔧 **Initialize Fetch**
+## 🔧 **Initialize Fetch**
 
 ```python
 fetch = Fetch(
@@ -241,7 +241,7 @@ fetch
 
 
 
-### 📜 **Run a SQL Query**
+## 📜 **Run a SQL Query**
 
 ```python
 fetch.query_sql("Select TAS, SUM(amount) from ledger group by TAS;")
@@ -249,7 +249,7 @@ fetch.query_sql("Select TAS, SUM(amount) from ledger group by TAS;")
 
 
 
-### 📁 **Run a Document Retrieval Query**
+## 📁 **Run a Document Retrieval Query**
 
 ```python
 fetch.query_docs(
@@ -259,32 +259,15 @@ fetch.query_docs(
 ```
 
 
-### 🧠 **Conversational Query**
+## 🧠 **Conversational Query**
 
 ```python
 fetch.query_chat("Explain SF-132 apportionments at a high level.")
 ```
 
-___
-
-### **Public API**
-
-| Class                   | Method                        | Description                                   |
-| ----------------------- | ----------------------------- | --------------------------------------------- |
-| **Fetch**               | `query_sql()`                 | SQL-only question answering.                  |
-|                         | `query_docs()`                | Vector-based retrieval QA.                    |
-|                         | `query_chat()`                | Conversational LLM interaction.               |
-|                         | `_init_sql_tool()`            | Configure SQLite tool.                        |
-|                         | `_init_doc_tool()`            | Configure ChromaDB doc tool.                  |
-|                         | `_init_api_tools()`           | Placeholder for future API tools.             |
-| **SqlQueryTool**        | `run(query)`                  | Executes SQL against SQLite safely.           |
-| **DocumentQueryTool**   | `run(question, with_sources)` | Performs RAG retrieval and answer generation. |
-| **ApiTool**             | `run(args)`                   | Stub for future service integrations.         |
-| **Error / ErrorDialog** | `show()`                      | Structured exception rendering.               |
 
 
-
-### **Dependencies**
+## **Dependencies**
 
 | Dependency                    | Purpose                                  | Required       | Notes                                     |
 | ----------------------------- | ---------------------------------------- | -------------- | ----------------------------------------- |
@@ -300,15 +283,15 @@ ___
 | **tiktoken**                  | Token counting for LLMs                  | Optional       | Recommended for OpenAI models             |
 
 
-___
-### ⚖️ **License**
+
+## ⚖️ **License**
 
 MIT License - [found here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
 
 
 
 
-### 📝 **Author**
+## 📝 **Author**
 
 **Terry D. Eppler**
 **Email:** [terryeppler@gmail.com](mailto:terryeppler@gmail.com)
