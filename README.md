@@ -1,12 +1,7 @@
-A small, multi-tool framework for retrieval augmentation, SQL Querying, and Document Loading 
-
-
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
 
-
-
-
+A small, multi-tool framework for retrieval augmentation, SQL Querying, and Document Loading 
 
 ## 🧠 **Overview**
 
