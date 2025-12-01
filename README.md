@@ -39,95 +39,10 @@ Foo includes the following classes:
 
 ##  📚 **UML Class Diagram**
 
-```mermaid
-classDiagram
-
-    class Fetch {
-        - db_uri: str
-        - doc_paths: list
-        - model: str
-        - temperature: float
-        - sql_tool: SqlQueryTool
-        - doc_tool: DocumentQueryTool
-        - api_tool: ApiTool
-        + query_sql(question: str)
-        + query_docs(question: str, with_sources: bool)
-        + query_chat(prompt: str)
-        - _init_sql_tool()
-        - _init_doc_tool()
-        - _init_api_tools()
-        - _init_agent()
-    }
-
-    class SqlQueryTool {
-        + run(query: str)
-        - _execute_sql(sql: str)
-    }
-
-    class DocumentQueryTool {
-        + run(question: str, with_sources: bool)
-        - _load_documents(paths)
-        - _embed_and_store()
-        - _retrieve(question)
-    }
-
-    class ApiTool {
-        + run(args)
-    }
-
-    class Error {
-        + message: str
-        + module: str
-        + cause: str
-        + method: str
-    }
-
-    class ErrorDialog {
-        + show()
-        + setText()
-    }
-
-    class throw_if {
-        <<utility>>
-        + empty(name, value)
-        + null(name, value)
-        + negative(name, value)
-    }
-
-    Fetch --> SqlQueryTool
-    Fetch --> DocumentQueryTool
-    Fetch --> ApiTool
-    Fetch --> Error
-    Fetch --> ErrorDialog
-```
-
 
 
 ## 🧰 **High-Level System Diagram**
 
-```mermaid
-flowchart TD
-    UserInput --> Decision
-
-    Decision --> SQLQuery
-    Decision --> DocQuery
-    Decision --> ChatQuery
-    Decision --> AgentQuery
-
-    SQLQuery --> Answer
-    DocQuery --> Answer
-    ChatQuery --> Answer
-    AgentQuery --> Answer
-
-    UserInput[UserInput]
-    Decision[DetermineQueryType]
-    SQLQuery[SqlQueryTool]
-    DocQuery[DocumentQueryTool]
-    ChatQuery[ChatLLM]
-    AgentQuery[ReActAgent]
-    Answer[FinalAnswer]
-
-```
 
 
 
