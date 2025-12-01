@@ -1,5 +1,5 @@
-A Multi-Tool Conversational Retrieval, SQL Querying, and Document Intelligence Framework*
-Work-In-Progress Module
+A Multi-Tool Framework for Retrieval, SQL Querying, and Document Loading 
+
 
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
