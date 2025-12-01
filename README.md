@@ -110,12 +110,12 @@ flowchart TD
 
     UserInput[User Input] --> Decide{Determine Query Type}
 
-    Decide -->|SQL Query| SQLTool[SqlQueryTool → SQLite DB]
-    Decide -->|Document Question| DocTool[DocumentQueryTool → ChromaDB]
-    Decide -->|Conversation| ChatPath[LLM via Fetch]
+    Decide -->|SQL Query| SQLTool[SqlQueryTool / SQLite Database]
+    Decide -->|Document Question| DocTool[DocumentQueryTool / ChromaDB]
+    Decide -->|Conversation| ChatPath[LLM Chat via Fetch]
     Decide -->|Multi-Tool Reasoning| Agent[LangChain ReAct Agent]
 
-    SQLTool --> Answer
+    SQLTool --> Answer[Final Answer Returned]
     DocTool --> Answer
     ChatPath --> Answer
     Agent --> Answer
