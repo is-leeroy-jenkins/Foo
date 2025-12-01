@@ -3,7 +3,7 @@
 
 A small, multi-tool framework for retrieval augmentation, SQL Querying, and Document Loading 
 
-## 🧠 **Overview**
+### 🧠 **Overview**
 
 Foo is an extensible Python framework designed to unify:
 
@@ -15,9 +15,9 @@ Foo is an extensible Python framework designed to unify:
 
 - Foo’s architecture is modular by design, composed of separate tool classes for SQL, document retrieval, and future API integrations. The `Fetch` controller coordinates these tools to provide a predictable, expandable multi-modal reasoning environment.
 
+___
 
-
-## 🧮 **Classes**
+### 🧮 **Classes**
 
 
 
@@ -30,7 +30,9 @@ Foo is an extensible Python framework designed to unify:
 | **Error / ErrorDialog** | Structured error handling from the `booger` library.                                   |
 | **throw_if**            | Guard clause utility for parameter validation.                                         |
 
-## 🧩 Tool Contracts
+
+
+### 🧩 Tool Contracts
 
 | Layer               | Responsibilities                 | Examples                             |
 | ------------------- | -------------------------------- | ------------------------------------ |
@@ -41,8 +43,8 @@ Foo is an extensible Python framework designed to unify:
 | **Output Layer**    | Synthesizes, cleans, formats     | Final answer                         |
 
 
-
-## ⚙️ **Installation**
+___
+### ⚙️ **Installation**
 
 Install required dependencies:
 
@@ -59,7 +61,7 @@ export OPENAI_API_KEY="your-key"
 
 
 
-## 🏗️ **Initialize**
+### 🏗️ **Initialize**
 
 ```python
 from Foo import Fetch
@@ -77,7 +79,7 @@ fetch = Fetch(
 
 
 
-## 🔍 **SQL Query**
+### 🔍 **SQL Query**
 
 ```python
 result = fetch.query_sql("List total obligations by fiscal year.")
@@ -86,7 +88,7 @@ print(result)
 
 
 
-## 📚 **Document Retrieval**
+### 📚 **Document Retrieval**
 
 ```python
 result = fetch.query_docs(
@@ -98,7 +100,7 @@ print(result)
 
 
 
-## 🤖 **Free-Form Chat**
+### 🤖 **Free-Form Chat**
 
 ```python
 reply = fetch.query_chat("Explain the difference between BA and OBL.")
@@ -108,7 +110,7 @@ print(reply)
 
 
 
-## 🏗️ **Install & Import**
+### 🏗️ **Install & Import**
 
 ```python
 !pip install langchain chromadb numpy openai unstructured python-docx pypdf
@@ -117,7 +119,7 @@ from Foo import Fetch
 ```
 
 
-## 🔧 **Initialize Fetch**
+### 🔧 **Initialize Fetch**
 
 ```python
 fetch = Fetch(
@@ -134,7 +136,7 @@ fetch
 
 
 
-## 📜 **Run a SQL Query**
+### 📜 **Run a SQL Query**
 
 ```python
 fetch.query_sql("Select TAS, SUM(amount) from ledger group by TAS;")
@@ -142,7 +144,7 @@ fetch.query_sql("Select TAS, SUM(amount) from ledger group by TAS;")
 
 
 
-## 📁 **Run a Document Retrieval Query**
+### 📁 **Run a Document Retrieval Query**
 
 ```python
 fetch.query_docs(
@@ -152,15 +154,15 @@ fetch.query_docs(
 ```
 
 
-## 🧠 **Conversational Query**
+### 🧠 **Conversational Query**
 
 ```python
 fetch.query_chat("Explain SF-132 apportionments at a high level.")
 ```
 
+___
 
-
-## **Public API**
+### **Public API**
 
 | Class                   | Method                        | Description                                   |
 | ----------------------- | ----------------------------- | --------------------------------------------- |
@@ -177,7 +179,7 @@ fetch.query_chat("Explain SF-132 apportionments at a high level.")
 
 
 
-## **Dependencies**
+### **Dependencies**
 
 | Dependency                    | Purpose                                  | Required       | Notes                                     |
 | ----------------------------- | ---------------------------------------- | -------------- | ----------------------------------------- |
@@ -193,15 +195,15 @@ fetch.query_chat("Explain SF-132 apportionments at a high level.")
 | **tiktoken**                  | Token counting for LLMs                  | Optional       | Recommended for OpenAI models             |
 
 
-
-## ⚖️ **License**
+___
+### ⚖️ **License**
 
 MIT License - [found here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
 
 
 
 
-## 📝 **Author**
+### 📝 **Author**
 
 **Terry D. Eppler**
 **Email:** [terryeppler@gmail.com](mailto:terryeppler@gmail.com)
