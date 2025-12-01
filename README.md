@@ -38,13 +38,49 @@ Foo includes the following classes:
 
 
 ##  📚 **Class Diagram**
++--------------------+
+|       Fetch        |
+|--------------------|
+| Orchestrator       |
++--------------------+
+      |     |     |
+      v     v     v
++-----------+  +-------------+  +-----------+
+| SqlQuery  |  | Document    |  |   API     |
+|   Tool    |  |  Tool       |  |   Tool    |
++-----------+  +-------------+  +-----------+
 
-[](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/uml_class_diagram.svg)
+        +------------------+
+        |  Error / Dialog  |
+        +------------------+
+
+        +------------------+
+        |     throw_if     |
+        +------------------+
 
 ## 🧰 **System Diagram**
 
-[](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/system_diagram.svg)
-
++----------------+
+|   User Input   |
++----------------+
+        |
+        v
++----------------------------+
+|   Determine Query Type     |
++----------------------------+
+   |           |        |
+   v           v        v
++-----------+ +-----------+ +-----------+
+|   SQL     | |  Docs     | |  Chat     |
+|  Tool     | |  Tool     | |  LLM      |
++-----------+ +-----------+ +-----------+
+        \        |        /
+         \       |       /
+          \      |      /
+           v     v     v
+       +------------------+
+       |   Final Answer   |
+       +------------------+
 
 
 ## ⚙️ **Installation**
