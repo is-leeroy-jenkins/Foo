@@ -17,30 +17,138 @@ Foo is an extensible Python framework designed to unify:
 
 ___
 
-### 🧮 **Classes**
+## 🧮 **Classes**
+
+
+### **🤖 Fetch**
+
+| Category                  | Details                                                                                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Purpose**               | Unified orchestrator providing SQL querying, document retrieval, embeddings, and LLM chat.                                                                                                             |
+| **Core Responsibilities** | Initialize LLM; load documents; build vectors; initialize SQL/doc/API tools; maintain memory; route queries; execute agent workflows.                                                                  |
+| **Key Attributes**        | `model`, `temperature`, `llm`, `db_uri`, `doc_paths`, `memory`, `sql_tool`, `doc_tool`, `api_tools`, `agent`, `__tools`, `documents`, `db_toolkit`, `loader`, `tool`, `extension`, `answer`, `sources` |
+| **Public Methods**        | `query_sql(question)` <br> `query_docs(question, with_sources)` <br> `query_chat(prompt)`                                                                                                              |
+| **Internal Methods**      | `_init_sql_tool()` <br> `_init_doc_tool()` <br> `_init_api_tools()`                                                                                                                                    |
+| **Notes**                 | Core integration engine. Uses LangChain’s `initialize_agent` with `CHAT_ZERO_SHOT_REACT_DESCRIPTION`.                                                                                                  |
 
 
 
-| Class                   | Purpose                                                                                |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| **Fetch**               | Main orchestrator; initializes LLM, SQL, doc tools, embeddings, memory, and the agent. |
-| **SqlQueryTool**        | Deterministic SQLite execution engine for SQL-only question answering.                 |
-| **DocumentQueryTool**   | Retrieval-augmented QA engine using ChromaDB embeddings.                               |
-| **ApiTool** *(stub)*    | Future-ready API integration layer.                                                    |
-| **Error / ErrorDialog** | Structured error handling from the `booger` library.                                   |
-| **throw_if**            | Guard clause utility for parameter validation.                                         |
+### **🗃️ SQLite**
+
+| Category                  | Details                                                                                                                                                                                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Purpose**               | Persistent storage backend for text chunks and embedding vectors using SQLite.                                                                                                                                             |
+| **Core Responsibilities** | Create schema; insert embeddings; batch insert; fetch/update/delete embeddings; count and purge records.                                                                                                                   |
+| **Key Attributes**        | `db_path`, `connection`, `cursor`                                                                                                                                                                                          |
+| **Public Methods**        | `create()` <br> `insert(...)` <br> `insert_many(...)` <br> `fetch_all()` <br> `fetch_by_file(file)` <br> `delete_by_file(file)` <br> `update_embedding_by_id(id, vector)` <br> `count()` <br> `purge_all()` <br> `close()` |
+| **Notes**                 | Stores vectors as JSON; supports multi-document ingestion; integrates with Chroma.                                                                                                                                         |
+
+
+### **🧬 Chroma**
+
+| Category                  | Details                                                                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Purpose**               | Wrapper around ChromaDB for vector storage and similarity search.                                                                         |
+| **Core Responsibilities** | Create/load a collection; add embeddings; perform similarity queries; delete vectors; count, clear, and persist collection.               |
+| **Key Attributes**        | `client`, `collection`                                                                                                                    |
+| **Public Methods**        | `add(ids, texts, embeddings, metadatas)` <br> `query(text, num, where)` <br> `delete(ids)` <br> `count()` <br> `clear()` <br> `persist()` |
+| **Notes**                 | Complements the SQLite backend or can operate standalone.                                                                                 |
 
 
 
-### 🧩 Tool Contracts
+### **📦 Loader (Base Class)**
 
-| Layer               | Responsibilities                 | Examples                             |
-| ------------------- | -------------------------------- | ------------------------------------ |
-| **Input Layer**     | Accept raw prompts               | “What does §1402 say?”               |
-| **Intent Engine**   | Classify intent: SQL, Docs, Chat | Natural-language routing             |
-| **Execution Layer** | Tools that perform work          | SQL Tool, Document Tool, Chat Engine |
-| **Knowledge Layer** | Document embeddings, database    | ChromaDB vector store, SQLite        |
-| **Output Layer**    | Synthesizes, cleans, formats     | Final answer                         |
+| Category                  | Details                                                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Purpose**               | Base loader class providing validation, file resolution, and document splitting utilities.                          |
+| **Core Responsibilities** | Validate paths; expand glob patterns; split documents into overlapping chunks.                                      |
+| **Key Attributes**        | `documents`, `file_path`, `pattern`, `expanded`, `candidates`, `resolved`, `loader`, `chunk_size`, `overlap_amount` |
+| **Public Methods**        | `verify_exists(path)` <br> `_resolve_paths(pattern)` <br> `_split_documents(docs, chunk, overlap)`                  |
+| **Notes**                 | All other loaders subclass `Loader`.                                                                                |
+
+
+
+### **🧾 CsvLoader**
+
+| Category                  | Details                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| **Purpose**               | Wraps LangChain’s `CSVLoader` to ingest CSV files.                           |
+| **Core Responsibilities** | Parse CSV rows; produce Document objects; split into chunks.                 |
+| **Key Attributes**        | `encoding`, `csv_args`, `source_column`                                      |
+| **Public Methods**        | `load(path, encoding, csv_args, source_column)` <br> `split(chunk, overlap)` |
+| **Notes**                 | Most configurable loader; supports custom parsing options.                   |
+
+
+
+### **📄 WordLoader**
+
+| Category                  | Details                                                  |
+| ------------------------- | -------------------------------------------------------- |
+| **Purpose**               | Wraps `Docx2txtLoader` to ingest `.docx` Word documents. |
+| **Core Responsibilities** | Extract text; convert to Documents; split into chunks.   |
+| **Key Attributes**        | `file_path`, `documents`, `loader`                       |
+| **Public Methods**        | `load(path)` <br> `split(chunk, overlap)`                |
+| **Notes**                 | Robust for formal documents and reports.                 |
+
+
+
+### **📚 PdfLoader**
+
+| Category                  | Details                                                         |
+| ------------------------- | --------------------------------------------------------------- |
+| **Purpose**               | Wraps `PyPDFLoader` to ingest PDF files.                        |
+| **Core Responsibilities** | Extract page text; convert pages to Documents; chunk long PDFs. |
+| **Key Attributes**        | `file_path`, `documents`, `loader`                              |
+| **Public Methods**        | `load(path)` <br> `split(chunk, overlap)`                       |
+| **Notes**                 | Ideal for large multi-page documents.                           |
+
+
+
+### **📝 MarkLoader**
+
+| Category                  | Details                                                               |
+| ------------------------- | --------------------------------------------------------------------- |
+| **Purpose**               | Wraps LangChain’s `UnstructuredMarkdownLoader` to ingest `.md` files. |
+| **Core Responsibilities** | Load Markdown files, convert to Documents, split into chunks.         |
+| **Key Attributes**        | `documents`, `file_path`                                              |
+| **Public Methods**        | `load(path)` <br> `split(chunk, overlap)`                             |
+| **Notes**                 | Ideal for GitHub-based documentation ingestion.                       |
+
+
+
+### **🌐 HtmlLoader**
+
+| Category                  | Details                                                                   |
+| ------------------------- | ------------------------------------------------------------------------- |
+| **Purpose**               | Wraps `UnstructuredHTMLLoader` to ingest HTML files from disk.            |
+| **Core Responsibilities** | Extract readable text; strip markup; convert to Documents; chunk content. |
+| **Key Attributes**        | `documents`, `file_path`                                                  |
+| **Public Methods**        | `load(path)` <br> `split(chunk, overlap)`                                 |
+| **Notes**                 | Complements `WebLoader` when HTML is local.                               |
+
+
+
+### **🔗 WebLoader**
+
+| Category                  | Details                                                              |
+| ------------------------- | -------------------------------------------------------------------- |
+| **Purpose**               | Wraps `WebBaseLoader` to load remote webpages.                       |
+| **Core Responsibilities** | Fetch URL content; convert to Documents; split into chunks.          |
+| **Key Attributes**        | `urls`, `documents`                                                  |
+| **Public Methods**        | `load(urls)` <br> `split(chunk, overlap)`                            |
+| **Notes**                 | Supports multiple URLs; ideal for ingesting live online information. |
+
+
+
+### **📊 ExcelLoader**
+
+| Category                  | Details                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| **Purpose**               | Wraps `UnstructuredExcelLoader` to ingest Excel spreadsheets.                   |
+| **Core Responsibilities** | Extract sheet content; convert to Documents; chunk structured spreadsheet data. |
+| **Key Attributes**        | `documents`, `file_path`, `loader`                                              |
+| **Public Methods**        | `load(path, mode, headers)` <br> `split(chunk, overlap)`                        |
+| **Notes**                 | Supports multiple extraction modes (elements, paged).                           |
 
 
 ___
