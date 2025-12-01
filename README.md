@@ -33,49 +33,122 @@ Foo includes the following classes:
 
 
 ##  📚 **Class Diagram**
-+--------------------+
-|       Fetch        |
-|--------------------|
-| Orchestrator       |
-+--------------------+
-      |     |     |
-      v     v     v
-+-----------+  +-------------+  +-----------+
-| SqlQuery  |  | Document    |  |   API     |
-|   Tool    |  |  Tool       |  |   Tool    |
-+-----------+  +-------------+  +-----------+
+<svg width="920" height="700" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .box { fill:#f4f4f4; stroke:#333; stroke-width:1.5; }
+    text { font-family:Arial, sans-serif; font-size:14px; }
+    .title { font-weight:bold; }
+    .section { font-style:italic; }
+  </style>
 
-        +------------------+
-        |  Error / Dialog  |
-        +------------------+
+  <!-- Fetch -->
+  <rect class="box" x="40" y="40" width="360" height="220" rx="6" />
+  <text x="50" y="65" class="title">Fetch</text>
 
-        +------------------+
-        |     throw_if     |
-        +------------------+
+  <text x="50" y="95" class="section">Fields</text>
+  <text x="60" y="115">db_uri</text>
+  <text x="60" y="135">doc_paths</text>
+  <text x="60" y="155">model</text>
+  <text x="60" y="175">sql_tool / doc_tool / api_tool</text>
+
+  <text x="50" y="205" class="section">Methods</text>
+  <text x="60" y="225">query_sql()</text>
+  <text x="60" y="245">query_docs()</text>
+  <text x="60" y="265">query_chat()</text>
+
+  <!-- SqlQueryTool -->
+  <rect class="box" x="40" y="300" width="260" height="140" rx="6" />
+  <text x="50" y="325" class="title">SqlQueryTool</text>
+  <text x="50" y="355" class="section">Methods</text>
+  <text x="60" y="375">run()</text>
+  <text x="60" y="395">_execute_sql()</text>
+
+  <!-- DocumentQueryTool -->
+  <rect class="box" x="340" y="300" width="260" height="160" rx="6" />
+  <text x="350" y="325" class="title">DocumentQueryTool</text>
+  <text x="350" y="355" class="section">Methods</text>
+  <text x="360" y="375">run()</text>
+  <text x="360" y="395">_load_documents()</text>
+  <text x="360" y="415">_embed_and_store()</text>
+  <text x="360" y="435">_retrieve()</text>
+
+  <!-- ApiTool -->
+  <rect class="box" x="640" y="300" width="220" height="100" rx="6" />
+  <text x="650" y="325" class="title">ApiTool</text>
+  <text x="650" y="355" class="section">Methods</text>
+  <text x="660" y="375">run()</text>
+
+  <!-- Error -->
+  <rect class="box" x="640" y="40" width="240" height="120" rx="6" />
+  <text x="650" y="65" class="title">Error</text>
+  <text x="650" y="95" class="section">Fields</text>
+  <text x="660" y="115">message, module, cause, method</text>
+
+  <!-- ErrorDialog -->
+  <rect class="box" x="640" y="180" width="240" height="100" rx="6" />
+  <text x="650" y="205" class="title">ErrorDialog</text>
+  <text x="650" y="235" class="section">Methods</text>
+  <text x="660" y="255">show()</text>
+
+  <!-- throw_if -->
+  <rect class="box" x="360" y="520" width="220" height="120" rx="6" />
+  <text x="370" y="545" class="title">throw_if (utility)</text>
+  <text x="370" y="575" class="section">Methods</text>
+  <text x="380" y="595">empty()</text>
+  <text x="380" y="615">null()</text>
+  <text x="380" y="635">negative()</text>
+</svg>
+
 
 ## 🧰 **System Diagram**
 
-+----------------+
-|   User Input   |
-+----------------+
-        |
-        v
-+----------------------------+
-|   Determine Query Type     |
-+----------------------------+
-   |           |        |
-   v           v        v
-+-----------+ +-----------+ +-----------+
-|   SQL     | |  Docs     | |  Chat     |
-|  Tool     | |  Tool     | |  LLM      |
-+-----------+ +-----------+ +-----------+
-        \        |        /
-         \       |       /
-          \      |      /
-           v     v     v
-       +------------------+
-       |   Final Answer   |
-       +------------------+
+<svg width="760" height="520" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .box { fill:#e8e8e8; stroke:#333; stroke-width:1.5; }
+    .arrow { stroke:#000; stroke-width:1.5; marker-end:url(#arrow); }
+    text { font-family:Arial, sans-serif; font-size:14px; }
+  </style>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="3"
+      orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#000" />
+    </marker>
+  </defs>
+
+  <rect class="box" x="310" y="20" width="140" height="50" rx="6" />
+  <text x="330" y="50">User Input</text>
+
+  <rect class="box" x="300" y="120" width="160" height="60" rx="6" />
+  <text x="305" y="155">DetermineQueryType</text>
+
+  <rect class="box" x="40" y="240" width="160" height="60" rx="6" />
+  <text x="75" y="275">SqlQueryTool</text>
+
+  <rect class="box" x="240" y="240" width="160" height="60" rx="6" />
+  <text x="255" y="275">DocumentQueryTool</text>
+
+  <rect class="box" x="440" y="240" width="160" height="60" rx="6" />
+  <text x="485" y="275">ChatLLM</text>
+
+  <rect class="box" x="640" y="240" width="160" height="60" rx="6" />
+  <text x="665" y="275">ReActAgent</text>
+
+  <rect class="box" x="300" y="400" width="160" height="60" rx="6" />
+  <text x="330" y="435">Final Answer</text>
+
+  <line class="arrow" x1="380" y1="70" x2="380" y2="120" />
+  <line class="arrow" x1="300" y1="150" x2="200" y2="240" />
+  <line class="arrow" x1="380" y1="180" x2="320" y2="240" />
+  <line class="arrow" x1="440" y1="180" x2="520" y2="240" />
+  <line class="arrow" x1="460" y1="150" x2="720" y2="240" />
+
+  <line class="arrow" x1="120" y1="300" x2="380" y2="400" />
+  <line class="arrow" x1="320" y1="300" x2="380" y2="400" />
+  <line class="arrow" x1="520" y1="300" x2="380" y2="400" />
+  <line class="arrow" x1="720" y1="300" x2="460" y2="400" />
+</svg>
+
 
 
 ## ⚙️ **Installation**
