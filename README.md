@@ -37,11 +37,11 @@ Foo includes the following classes:
 
 
 
-##  📚 **UML Class Diagram**
+##  📚 **Class Diagram**
 
 [](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/uml_class_diagram.svg)
 
-## 🧰 **High-Level System Diagram**
+## 🧰 **System Diagram**
 
 [](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/system_diagram.svg)
 
