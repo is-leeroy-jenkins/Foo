@@ -180,6 +180,42 @@ class Loader( ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
+	def load_documents( self, path: str, encoding: Optional[ str ], csv_args: Optional[ Dict[ str, Any ] ],
+			source_column: Optional[ str ] ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load files into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the CSV file.
+			encoding (Optional[str]): File encoding (e.g., 'utf-8') if known.
+			source_column (Optional[str]): Column name used for source attribution.
+
+			Returns:
+			--------
+			List[Document]: List of LangChain Document objects parsed from the CSV.
+
+		'''
+		try:
+			self.file_path = self.verify_exists( path )
+			self.encoding = encoding
+			self.csv_args = csv_args
+			self.source_column = source_column
+			self.loader = BaseLoader( file_path=self.file_path, encoding=self.encoding,
+				csv_args=self.csv_args, source_column=self.source_column )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'CSV'
+			exception.method = 'loader( )'
+			error = ErrorDialog( exception )
+			error.show( )
+	
 	def split_documents( self, docs: List[ Document ], chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
@@ -248,6 +284,7 @@ class CsvLoader( Loader ):
 	'''
 	loader: Optional[ CSVLoader ]
 	documents: Optional[ List[ Document ] ]
+	splitter: Optional[ RecursiveCharacterTextSplitter ]
 	file_path: Optional[ str ]
 	pattern: Optional[ List[ str ] ]
 	expanded: Optional[ List[ str ] ]
@@ -306,7 +343,7 @@ class CsvLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def split( self, size: int = 1000, amount: int = 200 ) -> List[ Document ] | None:
+	def split( self, size: int=1000, amount: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
