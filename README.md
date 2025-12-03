@@ -166,7 +166,7 @@ print("Pipeline completed. Output at:", result)
 
 - These examples show common real-world tasks. Each snippet assumes the default implementations exist in the corresponding modules. Replace components with custom classes if required.
 
-### 1) Process a CSV file from disk → transform → write to SQLite
+#### 1) Process a CSV file from disk → transform → write to SQLite
 
 ```python
 from foo.core import FooPipeline
@@ -184,7 +184,7 @@ pipeline.fetch('/data/incoming/sales.csv', source_type='file') \
 
 - Use-case: scheduled ingestion of vendor CSVs into a local analytics DB.
 
-### 2) Scrape HTML page → parse → field extraction → write JSON
+#### 2) Scrape HTML page → parse → field extraction → write JSON
 
 ```python
 from foo.core import FooPipeline
@@ -201,7 +201,7 @@ pipeline.fetch('https://example.com/products') \
 
 - Use-case: lightweight product catalog harvesting for downstream enrichment.
 
-### 3) Call an internal REST API → normalize fields → post to downstream API
+#### 3) Call an internal REST API → normalize fields → post to downstream API
 
 ```python
 from foo.core import FooPipeline
@@ -222,7 +222,7 @@ pipeline.fetch('/reports/daily') \
 
 - Use-case: internal synchronization between microservices.
 
-### 4) Batch-mode processing with simple CLI pattern
+#### 4) Batch-mode processing with simple CLI pattern
 
 - Create a tiny CLI entrypoint for batch jobs:
 
