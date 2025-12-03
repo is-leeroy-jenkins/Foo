@@ -66,6 +66,83 @@ For development:
 ```bash
 .venv/bin/pip install -r dev-requirements.txt
 ```
+# Virtual Environment 
+
+Use an isolated virtual environment for development and CI. Foo targets **Python 3.9+**. The steps below create a local `.venv` inside the project, activate it, upgrade packaging tools, and install the project requirements.
+
+> Recommended: keep the virtual environment directory named `.venv` (add it to `.gitignore`) so IDEs like VS Code auto-detect it.
+
+## Create & activate (macOS / Linux / WSL / Git Bash)
+
+```bash
+# create venv
+python3 -m venv .venv
+
+# activate
+source .venv/bin/activate
+
+# upgrade packaging tools
+python -m pip install --upgrade pip setuptools wheel
+
+# install runtime requirements
+pip install -r requirements.txt
+
+# (optional) install dev/test tools
+pip install -r dev-requirements.txt
+
+# (optional) install the package in editable mode for local edits
+pip install -e .
+```
+
+## Create & activate (Windows — PowerShell)
+
+```powershell
+# create venv
+python -m venv .venv
+
+# activate (PowerShell)
+.\.venv\Scripts\Activate.ps1
+
+# If execution policy blocks script runs, run as admin once:
+# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# upgrade packaging tools
+python -m pip install --upgrade pip setuptools wheel
+
+# install requirements
+pip install -r requirements.txt
+pip install -r dev-requirements.txt  # optional
+
+# optionally install editable package
+pip install -e .
+```
+
+## Create & activate (Windows — Command Prompt)
+
+```cmd
+python -m venv .venv
+.venv\Scripts\activate.bat
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+```
+
+## Helpful tips
+
+* Add `.venv/` to `.gitignore`:
+
+  ```
+  # virtual env
+  .venv/
+  ```
+* Freeze installed packages after changes to requirements:
+
+  ```bash
+  pip freeze > requirements.txt
+  pip freeze > dev-requirements.txt  # if you added dev packages
+  ```
+* Use `pip install -e .` during development so local changes are immediately available.
+* If you manage multiple Python versions, use `pyenv` (macOS/Linux) or the Windows Python launcher (`py -3.9 -m venv .venv`) to ensure the right interpreter.
+* For CI, prefer a reproducible lockfile (`requirements.txt` with pinned versions) or tools like `pip-tools` / `poetry` depending on your workflow.
 
 # Quick start example
 
