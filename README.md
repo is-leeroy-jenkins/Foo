@@ -2,7 +2,7 @@
 
 
 A small, modular, multi-tool framework to facilitate retrieval augmentation, sql querying, and document loading for agentic workflows that is written in python.
-# Table of contents
+## 📚 Table of contents
 
 * [Features](#features)
 * [Architecture](#architecture)
@@ -15,7 +15,7 @@ A small, modular, multi-tool framework to facilitate retrieval augmentation, sql
 * [License](#license)
 * [Acknowledgments](#acknowledgments)
 
-# Features
+## ✨ Features
 
 * End-to-end pipeline: fetch → scrape → parse → extract → load → write.
 * Pluggable components with small, well-documented base classes.
@@ -23,7 +23,7 @@ A small, modular, multi-tool framework to facilitate retrieval augmentation, sql
 * Designed for unit testing and CI/CD integration.
 * Minimal, production-ready surface area for integration into existing ETL/ELT systems.
 
-# Architecture
+## 🏛️ Architecture
 
 Clear separation of concerns between pipeline stages. `core.py` orchestrates the stages; each stage lives in its own module with a small abstract base class and one or more implementations.
 
@@ -33,7 +33,7 @@ Fetchers -> Scrapers -> Parsers -> Extractors -> Loaders -> Writers
 
 A `FooPipeline` instance chains stages into a fluent API for simple, readable data flows.
 
-# Directory structure
+## 🧬  Structure
 
 ```
 foo/
@@ -48,7 +48,7 @@ foo/
 └── writers.py        # Output writers (files, DB, APIs)
 ```
 
-# Installation
+## 🛡️ Installation
 
 Requires Python 3.9+.
 
@@ -64,13 +64,13 @@ For development:
 ```bash
 .venv/bin/pip install -r dev-requirements.txt
 ```
-# Virtual Environment 
+## Environments 
 
 Use an isolated virtual environment for development and CI. Foo targets **Python 3.9+**. The steps below create a local `.venv` inside the project, activate it, upgrade packaging tools, and install the project requirements.
 
 > Recommended: keep the virtual environment directory named `.venv` (add it to `.gitignore`) so IDEs like VS Code auto-detect it.
 
-## macOS / Linux / WSL / Git Bash
+### macOS / Linux / WSL / Git Bash
 
 ```bash
 # create venv
@@ -92,7 +92,7 @@ pip install -r dev-requirements.txt
 pip install -e .
 ```
 
-## Windows — PowerShell
+### Windows — PowerShell
 
 ```powershell
 # create venv
@@ -115,7 +115,7 @@ pip install -r dev-requirements.txt  # optional
 pip install -e .
 ```
 
-## Windows — Command Prompt
+### Windows — Command Prompt
 
 ```cmd
 python -m venv .venv
@@ -124,7 +124,7 @@ python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
 
-## Helpful tips
+### Helpful tips
 
 * Add `.venv/` to `.gitignore`:
 
@@ -142,7 +142,7 @@ pip install -r requirements.txt
 * If you manage multiple Python versions, use `pyenv` (macOS/Linux) or the Windows Python launcher (`py -3.9 -m venv .venv`) to ensure the right interpreter.
 * For CI, prefer a reproducible lockfile (`requirements.txt` with pinned versions) or tools like `pip-tools` / `poetry` depending on your workflow.
 
-# Quick start 
+## 🎚️ Quick start 
 
 Minimal, end-to-end example showing the pipeline chaining pattern.
 
@@ -162,11 +162,11 @@ result = (
 print("Pipeline completed. Output at:", result)
 ```
 
-# Usage examples
+## 🤖 Usage examples
 
 - These examples show common real-world tasks. Each snippet assumes the default implementations exist in the corresponding modules. Replace components with custom classes if required.
 
-## 1) Process a CSV file from disk → transform → write to SQLite
+### 1) Process a CSV file from disk → transform → write to SQLite
 
 ```python
 from foo.core import FooPipeline
@@ -184,7 +184,7 @@ pipeline.fetch('/data/incoming/sales.csv', source_type='file') \
 
 - Use-case: scheduled ingestion of vendor CSVs into a local analytics DB.
 
-## 2) Scrape HTML page → parse → field extraction → write JSON
+### 2) Scrape HTML page → parse → field extraction → write JSON
 
 ```python
 from foo.core import FooPipeline
@@ -201,7 +201,7 @@ pipeline.fetch('https://example.com/products') \
 
 - Use-case: lightweight product catalog harvesting for downstream enrichment.
 
-## 3) Call an internal REST API → normalize fields → post to downstream API
+### 3) Call an internal REST API → normalize fields → post to downstream API
 
 ```python
 from foo.core import FooPipeline
@@ -222,7 +222,7 @@ pipeline.fetch('/reports/daily') \
 
 - Use-case: internal synchronization between microservices.
 
-## 4) Batch-mode processing with simple CLI pattern
+### 4) Batch-mode processing with simple CLI pattern
 
 - Create a tiny CLI entrypoint for batch jobs:
 
@@ -246,7 +246,7 @@ if __name__ == '__main__':
 
 - Then schedule with cron or a job runner.
 
-## Module overview
+## 📡 Module overview
 
 - A compact reference table for the main modules and their responsibilities.
 
