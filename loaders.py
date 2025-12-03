@@ -41,14 +41,9 @@
   </summary>
   ******************************************************************************************
 '''
-from langchain.agents import initialize_agent, AgentType, AgentExecutor
-from langchain.chat_models import ChatOpenAI
-from langchain.memory import ConversationBufferMemory
-from langchain.tools.base import Tool
-from langchain.chains import RetrievalQAWithSourcesChain
 from langchain_community.document_loaders import UnstructuredHTMLLoader
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
-
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 try:
 	from langchain_core.documents import Document
 except Exception:
@@ -61,7 +56,7 @@ from langchain_community.document_loaders import (
 	UnstructuredExcelLoader,
 	WebBaseLoader,
 )
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from typing import Optional, List, Dict, Any
 
 class Loader( ):
 	'''
@@ -439,6 +434,7 @@ class PdfLoader( Loader ):
 	loader: Optional[ PyPDFLoader ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
+	mode: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
@@ -449,11 +445,12 @@ class PdfLoader( Loader ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
+		self.mode = None
 	
 	def __repr__( self ) -> str:
 		return f'PDF(path={self.path!r}, docs={len( self.docs or [ ] )})'
 	
-	def load( self, path: str ) -> List[ Document ] | None:
+	def load( self, path: str, mode: str='single' ) -> List[ Document ] | None:
 		'''
 
 
@@ -474,9 +471,10 @@ class PdfLoader( Loader ):
 		try:
 			throw_if( 'path', path )
 			self.file_path = self.verify_exists( path )
-			self.loader = PyPDFLoader( file_path=self.file_path )
+			self.mode = mode
+			self.loader = PyPDFLoader( file_path=self.file_path, mode=self.mode )
 			self.documents = self.loader.load( )
-			return self.docs
+			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
