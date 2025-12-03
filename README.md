@@ -4,16 +4,16 @@
 A small, modular, multi-tool framework to facilitate retrieval augmentation, sql querying, and document loading for agentic workflows that is written in python.
 ## 📚 Table of contents
 
-* [Features](#features)
-* [Architecture](#architecture)
-* [Directory structure](#directory-structure)
-* [Installation](#installation)
-* [Quick start example](#quick-start-example)
-* [More usage examples](#more-usage-examples)
-* [Module overview](#module-overview)
-* [Dependencies](#dependencies)
-* [License](#license)
-* [Acknowledgments](#acknowledgments)
+* [Features](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-features)
+* [Architecture](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-architecture)
+* [Directory structure](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#--structure)
+* [Installation](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-installation)
+* [Quick Start](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-quick-start)
+* [Usage Examples](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-usage-examples)
+* [Module overview](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-module-overview)
+* [Dependencies](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#dependencies)
+* [License](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#license)
+* [Acknowledgments](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#acknowledgments)
 
 ## ✨ Features
 
