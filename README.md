@@ -1,9 +1,7 @@
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
-A modern, modular Python framework for data fetching, scraping, parsing, extracting, loading, and writing.
 
-Foo unifies the full data pipeline in a small, well-documented codebase. It emphasizes readable APIs, guard-clause input validation, and a minimal surface area for extension so teams can onboard quickly and iterate safely.
-
+A small, modular, multi-tool framework to facilitate retrieval augmentation, sql querying, and document loading for agentic workflows that is written in python.
 # Table of contents
 
 * [Features](#features)
