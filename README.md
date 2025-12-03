@@ -72,7 +72,7 @@ Use an isolated virtual environment for development and CI. Foo targets **Python
 
 > Recommended: keep the virtual environment directory named `.venv` (add it to `.gitignore`) so IDEs like VS Code auto-detect it.
 
-## Create & activate (macOS / Linux / WSL / Git Bash)
+## macOS / Linux / WSL / Git Bash
 
 ```bash
 # create venv
@@ -94,7 +94,7 @@ pip install -r dev-requirements.txt
 pip install -e .
 ```
 
-## Create & activate (Windows — PowerShell)
+## Windows — PowerShell
 
 ```powershell
 # create venv
@@ -117,7 +117,7 @@ pip install -r dev-requirements.txt  # optional
 pip install -e .
 ```
 
-## Create & activate (Windows — Command Prompt)
+## Windows — Command Prompt
 
 ```cmd
 python -m venv .venv
@@ -144,7 +144,7 @@ pip install -r requirements.txt
 * If you manage multiple Python versions, use `pyenv` (macOS/Linux) or the Windows Python launcher (`py -3.9 -m venv .venv`) to ensure the right interpreter.
 * For CI, prefer a reproducible lockfile (`requirements.txt` with pinned versions) or tools like `pip-tools` / `poetry` depending on your workflow.
 
-# Quick start example
+# Quick start 
 
 Minimal, end-to-end example showing the pipeline chaining pattern.
 
@@ -164,9 +164,9 @@ result = (
 print("Pipeline completed. Output at:", result)
 ```
 
-# More usage examples
+# Usage examples
 
-These examples show common real-world tasks. Each snippet assumes the default implementations exist in the corresponding modules. Replace components with custom classes if required.
+- These examples show common real-world tasks. Each snippet assumes the default implementations exist in the corresponding modules. Replace components with custom classes if required.
 
 ## 1) Process a CSV file from disk → transform → write to SQLite
 
@@ -184,7 +184,7 @@ pipeline.fetch('/data/incoming/sales.csv', source_type='file') \
         .write(table='sales')  # Persists to SQLite table 'sales'
 ```
 
-Use-case: scheduled ingestion of vendor CSVs into a local analytics DB.
+- Use-case: scheduled ingestion of vendor CSVs into a local analytics DB.
 
 ## 2) Scrape HTML page → parse → field extraction → write JSON
 
@@ -201,7 +201,7 @@ pipeline.fetch('https://example.com/products') \
         .write('products.json')
 ```
 
-Use-case: lightweight product catalog harvesting for downstream enrichment.
+- Use-case: lightweight product catalog harvesting for downstream enrichment.
 
 ## 3) Call an internal REST API → normalize fields → post to downstream API
 
@@ -222,11 +222,11 @@ pipeline.fetch('/reports/daily') \
         .write()  # posts normalized records to downstream ingestion endpoint
 ```
 
-Use-case: internal synchronization between microservices.
+- Use-case: internal synchronization between microservices.
 
 ## 4) Batch-mode processing with simple CLI pattern
 
-Create a tiny CLI entrypoint for batch jobs:
+- Create a tiny CLI entrypoint for batch jobs:
 
 ```python
 # bin/run_pipeline.py
@@ -246,11 +246,11 @@ if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2])
 ```
 
-Then schedule with cron or a job runner.
+- Then schedule with cron or a job runner.
 
 ## Module overview
 
-A compact reference table for the main modules and their responsibilities.
+- A compact reference table for the main modules and their responsibilities.
 
 | Module          |                                        Purpose | Typical classes / functions                               |
 | --------------- | ---------------------------------------------: | --------------------------------------------------------- |
@@ -474,6 +474,38 @@ A compact reference table for the main modules and their responsibilities.
 
 
 
+# Dependencies
+
+Core runtime dependencies expected by the repository. Pin exact versions in your `requirements.txt` for reproducible installs.
+
+| Package           | Minimum version | Purpose                                       |
+| ----------------- | --------------: | --------------------------------------------- |
+| `python`          |           `3.9` | Language runtime                              |
+| `requests`        |        `>=2.28` | HTTP fetching (HttpFetcher)                   |
+| `beautifulsoup4`  |        `>=4.12` | HTML scraping/parsing                         |
+| `lxml`            |         `>=4.9` | Fast HTML/XML parsing for BeautifulSoup       |
+| `pandas`          |         `>=1.5` | CSV/DF processing (optional, used by loaders) |
+| `sqlalchemy`      |         `>=1.4` | DB writers/loaders (SqlWriter/SqlLoader)      |
+| `psycopg2-binary` |         `>=2.9` | Postgres driver (if using Postgres)           |
+| `python-dotenv`   |        `>=0.21` | Manage environment variables (optional)       |
+
+**Development / testing (suggested)**
+
+| Package      | Minimum version | Purpose              |
+| ------------ | --------------: | -------------------- |
+| `pytest`     |         `>=7.2` | Unit tests           |
+| `pytest-cov` |         `>=4.0` | Test coverage        |
+| `black`      |        `>=24.3` | Code formatting      |
+| `mypy`       |         `>=1.3` | Static typing checks |
+| `pre-commit` |         `>=3.4` | Pre-commit hooks     |
+
+# License
+
+MIT License. See [LICENSE](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt) for full text.
+
+# Acknowledgments
+
+Foo applies pragmatic, traditional data-engineering patterns to create a compact, maintainable toolkit. The design reflects practices used in production ETL/ELT systems: small interfaces, explicit validation, and a predictable pipeline flow that reduces accidental coupling during maintenance. Contributions welcome via issues and pull requests.
 
 
 
