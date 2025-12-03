@@ -49,6 +49,7 @@ try:
 except Exception:
 	from langchain.schema import Document
 
+from langchain_core.document_loaders.base import BaseLoader
 from langchain_community.document_loaders import (
 	CSVLoader,
 	Docx2txtLoader,
@@ -56,6 +57,7 @@ from langchain_community.document_loaders import (
 	UnstructuredExcelLoader,
 	WebBaseLoader,
 )
+import tiktoken
 from typing import Optional, List, Dict, Any
 
 class Loader( ):
@@ -92,7 +94,8 @@ class Loader( ):
 	expanded: Optional[ List[ str ] ]
 	candidates: Optional[ List[ str ] ]
 	resolved: Optional[ List[ str ] ]
-	loader: Optional[ RecursiveCharacterTextSplitter ]
+	loader: Optional[ BaseLoader ]
+	splitter: Optional[ RecursiveCharacterTextSplitter ]
 	chunk_size: Optional[ int ]
 	overlap_amount: Optional[ int ]
 	
@@ -139,7 +142,7 @@ class Loader( ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def _resolve_paths( self, pattern: str ) -> List[ str ] | None:
+	def resolve_paths( self, pattern: str ) -> List[ str ] | None:
 		'''
 
 			Purpose:
@@ -177,9 +180,7 @@ class Loader( ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def _split_documents( self, documents: List[ Document ], chunk: int=1000, overlap: int=200 ) \
-			-> \
-					List[ Document ] | None:
+	def split_documents( self, docs: List[ Document ], chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -198,13 +199,13 @@ class Loader( ):
 
 		'''
 		try:
-			throw_if( 'docs', documents )
-			self.documents = documents
+			throw_if( 'docs', docs )
+			self.documents = docs
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.loader = RecursiveCharacterTextSplitter( chunk_size=self.chunk_size,
-				chunk_overlap=self.overlap_amount )
-			return self.loader.split_documents( documents )
+			self.splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder( model_name='gpt-4o',
+				chunk_size=self.chunk_size, overlap=self.overlap_amount )
+			return self.splitter.split_documents( documents=self.documents )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -236,13 +237,13 @@ class CsvLoader( Loader ):
 
 		Methods:
 		-------
-		_ensure_existing_file( self, path: str ) -> str,
-		_resolve_paths( self, pattern: str ) -> List[ str ],
-		_split_documents( self, docs: List[ Document ], chunk: int=1000, overlap: int=200 ) ->
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ], chunk: int=1000, overlap: int=200 ) ->
 		List[ Document ],
 		load( self, path: str, encoding: Optional[ str ]=None,
-			csv_args: Optional[ Dict[ str, Any ] ]=None,
-			source_column: Optional[ str ]=None ) -> List[ Document ]
+		csv_args: Optional[ Dict[ str, Any ] ]=None,
+		source_column: Optional[ str ]=None ) -> List[ Document ]
 
 	'''
 	loader: Optional[ CSVLoader ]
@@ -326,7 +327,7 @@ class CsvLoader( Loader ):
 			throw_if( 'docs', self.documents )
 			self.chunk_size = size
 			self.overlap_amount = amount
-			_documents = self._split_documents( documents=self.documents, chunk=self.chunk_size,
+			_documents = self.split_documents( docs=self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
 			return _documents
 		except Exception as e:
@@ -344,6 +345,21 @@ class WebLoader( Loader ):
 		--------
 		Provides LangChain's WebBaseLoader functionality to retrieve
 		and parse HTML content into Document objects.
+		
+		Attributes:
+		----------
+		url - str
+		documnet - List[ str ]
+		file_path - str
+		pattern - str
+		chunk_size - int
+		overlap_amount - int
+		loader - WebBaseLoader
+		
+		Methods:
+		--------
+		load
+		split
 
 	'''
 	loader: Optional[ WebBaseLoader ]
@@ -361,6 +377,14 @@ class WebLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 	
+	def __dir__(self):
+		'''
+		
+			Purpose:
+			---------
+			Returns a list of class members.
+			
+		'''
 	def load( self, urls: List[ str ] ) -> List[ Document ] | None:
 		'''
 
@@ -412,7 +436,7 @@ class WebLoader( Loader ):
 			throw_if( 'docs', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			_documents = self._split_documents( documents=self.documents, chunk=self.chunk_size,
+			_documents = self.split_documents( docs=self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
 			return _documents
 		except Exception as e:
@@ -506,7 +530,7 @@ class PdfLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self._split_documents( self.documents, chunk=self.chunk_size,
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
 			return self.docs
 		except Exception as e:
@@ -598,7 +622,7 @@ class ExcelLoader( Loader ):
 		try:
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self._split_documents( self.documents, chunk=self.chunk_size,
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
 				overlap=overlap )
 			return self.documents
 		except Exception as e:
@@ -688,7 +712,7 @@ class WordLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self._split_documents( self.documents, chunk=self.chunk_size,
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
 			return self.docs
 		except Exception as e:
@@ -776,7 +800,7 @@ class MarkLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self._split_documents( self.documents, chunk=self.chunk_size,
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
 			return self.documents
 		except Exception as e:
@@ -863,7 +887,7 @@ class HtmlLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self._split_documents( self.documents, chunk=self.chunk_size,
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
 			return self.documents
 		except Exception as e:
