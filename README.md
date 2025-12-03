@@ -1,36 +1,195 @@
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
+A modern, modular Python framework for data fetching, scraping, parsing, extracting, loading, and writing.
 
-A small, multi-tool framework for retrieval augmentation, SQL Querying, and Document Loading 
+Foo unifies the full data pipeline in a small, well-documented codebase. It emphasizes readable APIs, guard-clause input validation, and a minimal surface area for extension so teams can onboard quickly and iterate safely.
 
-## 🧠 **Overview**
+# Table of contents
 
-Foo is an extensible Python framework designed to unify:
+* [Features](#features)
+* [Architecture](#architecture)
+* [Directory structure](#directory-structure)
+* [Installation](#installation)
+* [Quick start example](#quick-start-example)
+* [More usage examples](#more-usage-examples)
+* [Module overview](#module-overview)
+* [Dependencies](#dependencies)
+* [License](#license)
+* [Acknowledgments](#acknowledgments)
 
-* Conversational interaction with OpenAI-compatible LLMs
-* Deterministic natural-language SQL querying
-* Document ingestion and vector-based semantic retrieval
-* Tool routing through a LangChain ReAct agent
-* Structured error-handling via guard clauses and dialogs
+# Features
 
-- Foo’s architecture is modular by design, composed of separate tool classes for SQL, document retrieval, and future API integrations. The `Fetch` controller coordinates these tools to provide a predictable, expandable multi-modal reasoning environment.
+* End-to-end pipeline: fetch → scrape → parse → extract → load → write.
+* Pluggable components with small, well-documented base classes.
+* Explicit guard clauses and type hints for safer runtime behaviour.
+* Designed for unit testing and CI/CD integration.
+* Minimal, production-ready surface area for integration into existing ETL/ELT systems.
+
+# Architecture
+
+Clear separation of concerns between pipeline stages. `core.py` orchestrates the stages; each stage lives in its own module with a small abstract base class and one or more implementations.
+
+```
+Fetchers -> Scrapers -> Parsers -> Extractors -> Loaders -> Writers
+```
+
+A `FooPipeline` instance chains stages into a fluent API for simple, readable data flows.
+
+# Directory structure
+
+```
+foo/
+├── __init__.py
+├── core.py           # Pipeline orchestration & public API
+├── data.py           # Domain models, DTOs, schema helpers
+├── extractors.py     # Field/entity extraction logic
+├── fetchers.py       # HTTP / file / API fetchers
+├── loaders.py        # Stage/transform/load utilities
+├── parsers.py        # CSV / JSON / HTML parsers
+├── scrapers.py       # Web scraping / DOM extraction helpers
+└── writers.py        # Output writers (files, DB, APIs)
+```
+
+# Installation
+
+Requires Python 3.9+.
+
+```bash
+git clone https://github.com/your-org/foo.git
+cd foo
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+
+For development:
+
+```bash
+.venv/bin/pip install -r dev-requirements.txt
+```
+
+# Quick start example
+
+Minimal, end-to-end example showing the pipeline chaining pattern.
+
+```python
+from foo.core import FooPipeline
+
+pipeline = FooPipeline()
+
+result = (
+    pipeline.fetch('https://example.com/data.json')   # HttpFetcher
+           .parse('json')                             # JsonParser
+           .extract()                                 # Default extractor pipeline
+           .load()                                    # In-memory staging
+           .write('output.json')                      # JsonWriter to disk
+)
+
+print("Pipeline completed. Output at:", result)
+```
+
+# More usage examples
+
+These examples show common real-world tasks. Each snippet assumes the default implementations exist in the corresponding modules. Replace components with custom classes if required.
+
+## 1) Process a CSV file from disk → transform → write to SQLite
+
+```python
+from foo.core import FooPipeline
+from foo.loaders import CsvLoader
+from foo.writers import SqlWriter
+
+pipeline = FooPipeline(loader=CsvLoader(), writer=SqlWriter('sqlite:///data.db'))
+
+pipeline.fetch('/data/incoming/sales.csv', source_type='file') \
+        .parse('csv') \
+        .extract() \
+        .load() \
+        .write(table='sales')  # Persists to SQLite table 'sales'
+```
+
+Use-case: scheduled ingestion of vendor CSVs into a local analytics DB.
+
+## 2) Scrape HTML page → parse → field extraction → write JSON
+
+```python
+from foo.core import FooPipeline
+from foo.scrapers import BeautifulSoupScraper
+
+pipeline = FooPipeline(scraper=BeautifulSoupScraper())
+
+pipeline.fetch('https://example.com/products') \
+        .scrape(selectors={'items': '.product'}) \
+        .parse('html') \
+        .extract() \
+        .write('products.json')
+```
+
+Use-case: lightweight product catalog harvesting for downstream enrichment.
+
+## 3) Call an internal REST API → normalize fields → post to downstream API
+
+```python
+from foo.core import FooPipeline
+from foo.fetchers import ApiFetcher
+from foo.writers import ApiWriter
+
+api_fetcher = ApiFetcher(base_url='https://api.internal/v1', api_key='SECRET')
+api_writer = ApiWriter(endpoint='https://downstream.example/ingest', auth_token='TOKEN')
+
+pipeline = FooPipeline(fetcher=api_fetcher, writer=api_writer)
+
+pipeline.fetch('/reports/daily') \
+        .parse('json') \
+        .extract() \
+        .load() \
+        .write()  # posts normalized records to downstream ingestion endpoint
+```
+
+Use-case: internal synchronization between microservices.
+
+## 4) Batch-mode processing with simple CLI pattern
+
+Create a tiny CLI entrypoint for batch jobs:
+
+```python
+# bin/run_pipeline.py
+from foo.core import FooPipeline
+from foo.fetchers import FileFetcher
+
+def main(input_path, output_path):
+    pipeline = FooPipeline(fetcher=FileFetcher())
+    pipeline.fetch(input_path, source_type='file') \
+            .parse('csv') \
+            .extract() \
+            .load() \
+            .write(output_path)
+
+if __name__ == '__main__':
+    import sys
+    main(sys.argv[1], sys.argv[2])
+```
+
+Then schedule with cron or a job runner.
+
+## Module overview
+
+A compact reference table for the main modules and their responsibilities.
+
+| Module          |                                        Purpose | Typical classes / functions                               |
+| --------------- | ---------------------------------------------: | --------------------------------------------------------- |
+| `core.py`       |      Pipeline orchestrator and user-facing API | `FooPipeline`, pipeline stage registration, `throw_if`    |
+| `data.py`       | Domain models, DTOs, schema validation helpers | `DataSource`, `DataRecord`, `SchemaValidator`             |
+| `fetchers.py`   |       Retrieve raw payloads (HTTP, file, APIs) | `BaseFetcher`, `HttpFetcher`, `FileFetcher`, `ApiFetcher` |
+| `scrapers.py`   | Extract semi-structured content from HTML/docs | `BaseScraper`, `BeautifulSoupScraper`, `RegexScraper`     |
+| `parsers.py`    |      Turn raw payloads into structured objects | `JsonParser`, `CsvParser`, `HtmlParser`                   |
+| `extractors.py` |          Extract and normalize fields/entities | `BaseExtractor`, `RegexExtractor`, `FieldMapper`          |
+| `loaders.py`    | Transform, validate, and stage structured data | `CsvLoader`, `JsonLoader`, `SqlLoader`                    |
+| `writers.py`    |            Persist outputs to files, DBs, APIs | `JsonWriter`, `CsvWriter`, `SqlWriter`, `ApiWriter`       |
 
 
 
-## **🤖 Fetch**
 
-| Category                  | Details                                                                                                                                                                                                |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Purpose**               | Unified orchestrator providing SQL querying, document retrieval, embeddings, and LLM chat.                                                                                                             |
-| **Core Responsibilities** | Initialize LLM; load documents; build vectors; initialize SQL/doc/API tools; maintain memory; route queries; execute agent workflows.                                                                  |
-| **Key Attributes**        | `model`, `temperature`, `llm`, `db_uri`, `doc_paths`, `memory`, `sql_tool`, `doc_tool`, `api_tools`, `agent`, `__tools`, `documents`, `db_toolkit`, `loader`, `tool`, `extension`, `answer`, `sources` |
-| **Public Methods**        | `query_sql(question)` <br> `query_docs(question, with_sources)` <br> `query_chat(prompt)`                                                                                                              |
-| **Internal Methods**      | `_init_sql_tool()` <br> `_init_doc_tool()` <br> `_init_api_tools()`                                                                                                                                    |
-| **Notes**                 | Core integration engine. Uses LangChain’s `initialize_agent` with `CHAT_ZERO_SHOT_REACT_DESCRIPTION`.                                                                                                  |
-
-
-
-## **🗃️ SQLite**
+## 🗃️ SQLite
 
 | Category                  | Details                                                                                                                                                                                                                    |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,7 +200,7 @@ Foo is an extensible Python framework designed to unify:
 | **Notes**                 | Stores vectors as JSON; supports multi-document ingestion; integrates with Chroma.                                                                                                                                         |
 
 
-## **🧬 Chroma**
+## 🧬 Chroma
 
 | Category                  | Details                                                                                                                                   |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -53,7 +212,7 @@ Foo is an extensible Python framework designed to unify:
 
 
 
-## **📦 Loader (Base Class)**
+## 📦 Loader (Base Class)
 
 | Category                  | Details                                                                                                             |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -65,7 +224,7 @@ Foo is an extensible Python framework designed to unify:
 
 
 
-## **🧾 CsvLoader**
+## 🧾 CsvLoader
 
 | Category                  | Details                                                                      |
 | ------------------------- | ---------------------------------------------------------------------------- |
@@ -77,7 +236,7 @@ Foo is an extensible Python framework designed to unify:
 
 
 
-## **📄 WordLoader**
+## 📄 WordLoader
 
 | Category                  | Details                                                  |
 | ------------------------- | -------------------------------------------------------- |
@@ -89,7 +248,7 @@ Foo is an extensible Python framework designed to unify:
 
 
 
-## **📚 PdfLoader**
+## 📚 PdfLoader
 
 | Category                  | Details                                                         |
 | ------------------------- | --------------------------------------------------------------- |
@@ -101,7 +260,7 @@ Foo is an extensible Python framework designed to unify:
 
 
 
-## **📝 MarkLoader**
+## 📝 MarkLoader
 
 | Category                  | Details                                                               |
 | ------------------------- | --------------------------------------------------------------------- |
@@ -113,7 +272,7 @@ Foo is an extensible Python framework designed to unify:
 
 
 
-## **🌐 HtmlLoader**
+## 🌐 HtmlLoader
 
 | Category                  | Details                                                                   |
 | ------------------------- | ------------------------------------------------------------------------- |
@@ -124,8 +283,7 @@ Foo is an extensible Python framework designed to unify:
 | **Notes**                 | Complements `WebLoader` when HTML is local.                               |
 
 
-
-## **🔗 WebLoader**
+## 🔗 WebLoader
 
 | Category                  | Details                                                              |
 | ------------------------- | -------------------------------------------------------------------- |
@@ -137,7 +295,7 @@ Foo is an extensible Python framework designed to unify:
 
 
 
-## **📊 ExcelLoader**
+## 📊 ExcelLoader
 
 | Category                  | Details                                                                         |
 | ------------------------- | ------------------------------------------------------------------------------- |
@@ -148,145 +306,95 @@ Foo is an extensible Python framework designed to unify:
 | **Notes**                 | Supports multiple extraction modes (elements, paged).                           |
 
 
+## 🚀 Fetch (Fetcher)
 
-## ⚙️ **Installation**
-
-Install required dependencies:
-
-```bash
-pip install langchain chromadb numpy openai unstructured pypdf python-docx
-```
-
-If using OpenAI-compatible models:
-
-```bash
-pip install langchain-openai
-export OPENAI_API_KEY="your-key"
-```
+| Category                  | Details                                                                                                                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Purpose**               | Retrieve raw payloads from diverse sources (HTTP APIs, local files, S3, internal services).                                                                                      |
+| **Core Responsibilities** | Perform network or file I/O; normalize source metadata; implement retries/backoff; return raw bytes / text / streams to the pipeline.                                            |
+| **Key Attributes**        | `session` (requests.Session) <br> `base_url` <br> `headers` <br> `auth` <br> `timeout` <br> `retries` <br> `backoff_strategy` <br> `source_type` <br> `logger`                   |
+| **Public Methods**        | `fetch(source, *, source_type=None, params=None, headers=None)` <br> `stream(source, chunk_size=...)`                                                                            |
+| **Internal Methods**      | `_request(url, params, headers)` <br> `_read_file(path)` <br> `_handle_response(resp)` <br> `_normalize_source(source, source_type)`                                             |
+| **Notes**                 | Implements `BaseFetcher` interface. Designed to be swap-in extensible (S3Fetcher, ApiFetcher, FileFetcher). Supports streaming, idempotent fetches, and pluggable auth handlers. |
 
 
+## 🔬 Scrape (Scraper)
 
-## 🏗️ **Initialize**
-
-```python
-from Foo import Fetch
-
-fetch = Fetch(
-    db_uri="data/budget.sqlite",
-    doc_paths=[
-        "docs/PUBLIC_LAW.pdf",
-        "docs/OMB_A11.md"
-    ],
-    model="gpt-4o-mini",
-    temperature=0.2
-)
-```
+| Category                  | Details                                                                                                                                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Purpose**               | Extract semi-structured information from HTML or document sources (DOM traversal, selector-based extraction, lightweight rendering support).                               |
+| **Core Responsibilities** | Load HTML into a parser (BeautifulSoup / lxml); run selector queries; normalize nodes into serializable records; optionally follow pagination links or embedded resources. |
+| **Key Attributes**        | `parser` (e.g., `'lxml'`) <br> `selectors` (dict) <br> `timeout` <br> `max_pages` <br> `user_agent` <br> `render_js` (bool) <br> `logger`                                  |
+| **Public Methods**        | `scrape(content, selectors=None)` <br> `paginate(start_url, selectors, max_pages=...)`                                                                                     |
+| **Internal Methods**      | `_select_nodes(soup, selector)` <br> `_node_to_record(node)` <br> `_follow_next(link)`                                                                                     |
+| **Notes**                 | Meant for light-to-moderate scraping tasks (not a headless-browsing crawler). Site-specific scrapers inherit `BaseScraper` to encapsulate DOM rules and rate limits.       |
 
 
 
-## 🔍 **SQL Query**
+## 🔍 Parse (Parser)
 
-```python
-result = fetch.query_sql("List total obligations by fiscal year.")
-print(result)
-```
-
-
-
-## 📚 **Document Retrieval**
-
-```python
-result = fetch.query_docs(
-    "What does Section 1402 authorize?",
-    with_sources=True
-)
-print(result)
-```
+| Category                  | Details                                                                                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Purpose**               | Convert raw payloads (bytes / text / streams) into structured representations: JSON objects, tabular rows, DOM trees, or typed records.                                  |
+| **Core Responsibilities** | Detect format when necessary; parse JSON/CSV/HTML/text; optionally coerce types; provide consistent structured output for extraction stage.                              |
+| **Key Attributes**        | `format` (json/csv/html/text) <br> `encoding` <br> `csv_dialect` <br> `schema` (optional) <br> `chunk_size` <br> `logger`                                                |
+| **Public Methods**        | `parse(raw, format=None)` <br> `iter_parse(stream, format=None)`                                                                                                         |
+| **Internal Methods**      | `_parse_json(text)` <br> `_parse_csv(text)` <br> `_parse_html(text)` <br> `_coerce_types(record)`                                                                        |
+| **Notes**                 | Parsers are lightweight and deterministic. Prefer returning iterators for large payloads. Parsers should surface clear parse errors (line/offset) for upstream handling. |
 
 
 
-## 🤖 **Free-Form Chat**
+## 🎛️ Extract (Extractor)
 
-```python
-reply = fetch.query_chat("Explain the difference between BA and OBL.")
-print(reply)
-```
-
-
-
-
-## 🏗️ **Install & Import**
-
-```python
-!pip install langchain chromadb numpy openai unstructured python-docx pypdf
-
-from Foo import Fetch
-```
-
-
-## 🔧 **Initialize Fetch**
-
-```python
-fetch = Fetch(
-    db_uri="data/budget.sqlite",
-    doc_paths=[
-        "docs/APPROPRIATIONS_GUIDE.pdf",
-        "docs/FINANCIAL_MANAGEMENT_POLICY.md"
-    ],
-    model="gpt-4o-mini",
-    temperature=0.3
-)
-fetch
-```
+| Category                  | Details                                                                                                                                                                |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Purpose**               | Normalize and extract fields/entities from parsed structures (apply field mappings, regex/NER, value normalization, enrichment hooks).                                 |
+| **Core Responsibilities** | Apply mapping rules; run regex or rule-based extractors; validate and clean values; produce canonical records ready for loading.                                       |
+| **Key Attributes**        | `rules` (mapping / extraction rules) <br> `stopwords` / `vocab` <br> `normalizers` <br> `validator` <br> `logger`                                                      |
+| **Public Methods**        | `extract(parsed_iterable)` <br> `extract_one(parsed)` <br> `bulk_extract(records)`                                                                                     |
+| **Internal Methods**      | `_apply_rules(record)` <br> `_run_regex(field, pattern)` <br> `_normalize(value)` <br> `_validate(record)`                                                             |
+| **Notes**                 | Designed for domain-specific transformations. A `FieldMapper`/`RegexExtractor` implements the base contract. Keep extractors pure where possible to ease unit testing. |
 
 
 
-## 📜 **Run a SQL Query**
+## 🏗️ Load (Loader)
 
-```python
-fetch.query_sql("Select TAS, SUM(amount) from ledger group by TAS;")
-```
-
-
-
-## 📁 **Run a Document Retrieval Query**
-
-```python
-fetch.query_docs(
-    "Summarize the funding limitations described in the guidance.",
-    with_sources=True
-)
-```
-
-
-## 🧠 **Conversational Query**
-
-```python
-fetch.query_chat("Explain SF-132 apportionments at a high level.")
-```
+| Category                  | Details                                                                                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Purpose**               | Stage and transform canonical records into an in-memory table or an intermediate persistence layer (DataFrame, temp table, batch buffer) preparing for final write.                              |
+| **Core Responsibilities** | Validate against schema; perform light transformations (type casts, dedupe); batch records for efficient writes; provide transactional hooks.                                                    |
+| **Key Attributes**        | `schema` <br> `batch_size` <br> `buffer` <br> `engine` / `connection_string` <br> `transformers` <br> `logger`                                                                                   |
+| **Public Methods**        | `load(records)` <br> `flush()` <br> `upsert(records, table=...)`                                                                                                                                 |
+| **Internal Methods**      | `_validate_record(record)` <br> `_transform_record(record)` <br> `_write_batch(batch)` <br> `_begin_tx()` / `_commit_tx()`                                                                       |
+| **Notes**                 | `Loaders` are the boundary between ephemeral processing and durable persistence. Implementations include `CsvLoader`, `JsonLoader`, and `SqlLoader` — all support batch/transactional semantics. |
 
 
 
-## **Dependencies**
+## 📝 Write (Writer)
 
-| Dependency                    | Purpose                                  | Required       | Notes                                     |
-| ----------------------------- | ---------------------------------------- | -------------- | ----------------------------------------- |
-| **langchain**                 | Agent framework, tools interface, memory | Yes            | Core orchestration library                |
-| **chromadb**                  | Vector store for document embeddings     | Yes            | Stores and retrieves chunks               |
-| **openai / langchain-openai** | Chat model support                       | Yes (LLM mode) | Must set `OPENAI_API_KEY`                 |
-| **numpy**                     | Embedding/vector operations              | Yes            | Required internally by several components |
-| **unstructured**              | Document parsing                         | Recommended    | Supports PDF, HTML, TXT, etc.             |
-| **pypdf**                     | PDF ingestion                            | Recommended    | Used by Unstructured backend              |
-| **python-docx**               | DOCX ingestion                           | Optional       | Included if DOCX used                     |
-| **sqlite3**                   | SQL backend                              | Yes            | Included in Python standard library       |
-| **booger**                    | Error and dialog handling                | Yes            | Needed for `Error` and `ErrorDialog`      |
-| **tiktoken**                  | Token counting for LLMs                  | Optional       | Recommended for OpenAI models             |
+| Category                  | Details                                                                                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Purpose**               | Persist staged data to final sinks: files (JSON/CSV), relational DBs, or remote APIs; manage format-specific serialization and final consistency checks.              |
+| **Core Responsibilities** | Serialize records; open/close resources; ensure atomic writes where possible; expose idempotent write modes; return destination metadata or URLs.                     |
+| **Key Attributes**        | `target` (path / table / endpoint) <br> `mode` (append/replace/upsert) <br> `encoding` <br> `engine` / `connection` <br> `timeout` <br> `logger`                      |
+| **Public Methods**        | `write(records, *, destination=None)` <br> `commit()` <br> `abort()`                                                                                                  |
+| **Internal Methods**      | `_serialize(record)` <br> `_open_sink()` <br> `_close_sink()` <br> `_ensure_atomic(tmp, final)`                                                                       |
+| **Notes**                 | Writers should support safe write patterns (write-to-temp + rename) and idempotency tokens for HTTP sinks. `ApiWriter` must respect backpressure and retry semantics. |
 
 
 
-## ⚖️ **License**
+## 🧠 Core (Pipeline)
 
-MIT License - [found here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
+| Category                  | Details                                                                                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Purpose**               | High-level fluent orchestrator that composes fetchers, scrapers, parsers, extractors, loaders, and writers into a single pipeline.                                                                     |
+| **Core Responsibilities** | Hold component references; provide chaining API (`fetch().parse().extract().load().write()`); validate stage wiring; propagate context/config; handle lifecycle (init/close).                          |
+| **Key Attributes**        | `fetcher`, `scraper`, `parser`, `extractor`, `loader`, `writer` <br> `config` <br> `logger` <br> `metrics` <br> `error_policy`                                                                         |
+| **Public Methods**        | `fetch(source, **kwargs)` <br> `scrape(**kwargs)` <br> `parse(format=None)` <br> `extract()` <br> `load()` <br> `write(destination=None)` <br> `run()`                                                 |
+| **Internal Methods**      | `_resolve_component(name)` <br> `_ensure_stage(stage_name)` <br> `_capture_metrics(stage, duration, status)` <br> `_handle_error(exc, stage)`                                                          |
+| **Notes**                 | `FooPipeline` is intentionally thin — it delegates behavior to components but enforces the fluent contract and common policies (time outs, logging, retry). Ideal place to implement global telemetry. |
+
+
 
 
 
