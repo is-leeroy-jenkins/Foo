@@ -749,9 +749,10 @@ class WordLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+			
+			_documents = self.split_documents( docs=self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
-			return self.docs
+			return _documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -837,9 +838,9 @@ class MarkLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+			_documents = self.split_documents( docs=self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
-			return self.documents
+			return _documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
