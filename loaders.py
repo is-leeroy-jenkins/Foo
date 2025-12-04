@@ -42,8 +42,6 @@
   ******************************************************************************************
 '''
 import config as cfg
-from langchain_community.document_loaders import UnstructuredHTMLLoader, WikipediaLoader
-from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 try:
 	from langchain_core.documents import Document
@@ -55,15 +53,21 @@ from langchain_community.document_loaders import (
 	ArxivLoader,
 	CSVLoader,
 	Docx2txtLoader,
+	OneDriveLoader,
 	OutlookMessageLoader,
 	PyPDFLoader,
 	SharePointLoader,
 	UnstructuredExcelLoader,
+	UnstructuredMarkdownLoader,
+	UnstructuredPowerPointLoader,
+	UnstructuredHTMLLoader,
+	WikipediaLoader,
 	WebBaseLoader,
 	YoutubeLoader
 )
 from langchain_openai import ChatOpenAI
 from langchain.chains.summarize import load_summarize_chain
+import o365
 import pytube
 import tiktoken
 from typing import Optional, List, Dict, Any
@@ -1254,7 +1258,7 @@ class OutlookLoader( Loader ):
 
 			Purpose:
 			--------
-			Load an wikipedia and convert its contents into LangChain Document objects.
+			Load Outlook Messages converting contents into LangChain Document objects.
 
 			Parameters:
 			-----------
@@ -1275,12 +1279,12 @@ class OutlookLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'WikiLoader'
+			exception.cause = 'OutlookLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1307,7 +1311,7 @@ class OutlookLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'WikiLoader'
+			exception.cause = 'OutlookLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -1345,7 +1349,7 @@ class SpfxLoader( Loader ):
 
 			Purpose:
 			--------
-			Load an wikipedia and convert its contents into LangChain Document objects.
+			Load Sharepoint files and convert their contents into LangChain Document objects.
 
 			Parameters:
 			-----------
@@ -1366,7 +1370,7 @@ class SpfxLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'WikiLoader'
+			exception.cause = 'SpfxLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -1376,7 +1380,7 @@ class SpfxLoader( Loader ):
 
 			Purpose:
 			--------
-			Split loaded Wikipedia search documents into manageable text chunks.
+			Split loaded Sharepoint file documents into manageable text chunks.
 
 			Parameters:
 			-----------
@@ -1398,21 +1402,21 @@ class SpfxLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'WikiLoader'
+			exception.cause = 'SpfxLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
 
-class PowePointLoader( Loader ):
+class PowerPointLoader( Loader ):
 	'''
 
 		Purpose:
 		--------
 		Provides PowerPoint loading functionality
-		to parse video research papers into Document objects.
+		to parse ppt files into Document objects.
 
 	'''
-	loader: Optional[ SharePointLoader ]
+	loader: Optional[ UnstructuredPowerPointLoader ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	query: Optional[ str ]
@@ -1436,7 +1440,7 @@ class PowePointLoader( Loader ):
 
 			Purpose:
 			--------
-			Load an wikipedia and convert its contents into LangChain Document objects.
+			Load PowerPoint slides and convert their content into LangChain Document objects.
 
 			Parameters:
 			-----------
@@ -1450,7 +1454,7 @@ class PowePointLoader( Loader ):
 		try:
 			throw_if( 'question', question )
 			self.query = question
-			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+			self.loader = PowerPointLoader( query=self.query, max_documents=self.max_documents,
 				doc_content_chars_max=self.max_characters )
 			self.documents = self.loader.load( )
 			return self.documents
@@ -1462,7 +1466,7 @@ class PowePointLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1499,11 +1503,11 @@ class OneDriveLoader( Loader ):
 
 		Purpose:
 		--------
-		Provides the Sharepoint loading functionality
-		to parse video research papers into Document objects.
+		Provides OneDrvie loading functionality
+		to parse contents into Document objects.
 
 	'''
-	loader: Optional[ SharePointLoader ]
+	loader: Optional[ OneDriveLoader ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	query: Optional[ str ]
@@ -1527,7 +1531,7 @@ class OneDriveLoader( Loader ):
 
 			Purpose:
 			--------
-			Load an wikipedia and convert its contents into LangChain Document objects.
+			Load an onedrive file and convert its contents into LangChain Document objects.
 
 			Parameters:
 			-----------

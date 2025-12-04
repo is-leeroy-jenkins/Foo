@@ -16,6 +16,7 @@ langchain-googledrive
 matplotlib
 nest_asyncio
 oauthlib
+o365
 numpy
 pandas
 pydantic
