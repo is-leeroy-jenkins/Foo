@@ -688,7 +688,7 @@ class ArxivFetcher( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'ArxivLoader'
+			exception.cause = 'ArxivFetcher'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -720,7 +720,7 @@ class ArxivFetcher( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'ArxivLoader'
+			exception.cause = 'ArxivFetcher'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -734,7 +734,7 @@ class GoogleDriveFetcher( Fetcher ):
 		to parse video research papers into Document objects.
 
 	'''
-	fetcher: Optional[ ArxivR ]
+	fetcher: Optional[ GoogleDriveRetriever ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	max_documents: Optional[ int ]
@@ -749,7 +749,7 @@ class GoogleDriveFetcher( Fetcher ):
 		self.query = None
 		self.chunk_size = None
 		self.overlap_amount = None
-		self.loader = None
+		self.fetcher = None
 		self.max_documents = 2
 		self.max_characters = 1000
 		self.include_metadata = False
@@ -773,14 +773,14 @@ class GoogleDriveFetcher( Fetcher ):
 		try:
 			throw_if( 'question', question )
 			self.query = question
-			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+			self.fetcher = ArxivLoader( query=self.query, max_documents=self.max_documents,
 				doc_content_chars_max=self.max_characters )
-			self.documents = self.loader.load( )
+			self.documents = self.fetcher.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'ArxivLoader'
+			exception.cause = 'GoogleDriveFetcher'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -812,12 +812,12 @@ class GoogleDriveFetcher( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'ArxivLoader'
+			exception.cause = 'GoogleDriveFetcher'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
 
-class WikiFetcher( Fetcher ):
+class WikipediaFetcher( Fetcher ):
 	'''
 
 		Purpose:
@@ -826,7 +826,7 @@ class WikiFetcher( Fetcher ):
 		to parse video research papers into Document objects.
 
 	'''
-	fetcher: Optional[ ArxivR ]
+	fetcher: Optional[ WikipediaRetriever ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	max_documents: Optional[ int ]
@@ -865,14 +865,14 @@ class WikiFetcher( Fetcher ):
 		try:
 			throw_if( 'question', question )
 			self.query = question
-			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+			self.loader = WikipediaRetriever( query=self.query, max_documents=self.max_documents,
 				doc_content_chars_max=self.max_characters )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'ArxivLoader'
+			exception.cause = 'WikiFetcher'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )

@@ -53,9 +53,9 @@ from langchain_core.document_loaders.base import BaseLoader
 from langchain_google_community import GoogleDriveLoader
 from langchain_community.document_loaders.onedrive import OneDriveLoader
 from langchain_community.document_loaders.sharepoint import SharePointLoader
+from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.document_loaders import (
 	ArxivLoader,
-	CSVLoader,
 	Docx2txtLoader,
 	OutlookMessageLoader,
 	PyPDFLoader,
@@ -69,6 +69,8 @@ from langchain_community.document_loaders import (
 )
 from langchain_openai import ChatOpenAI
 from langchain.chains.summarize import load_summarize_chain
+import unstructured
+import openpyxl
 import o365
 import pytube
 import tiktoken
@@ -301,28 +303,22 @@ class CsvLoader( Loader ):
 	documents: Optional[ List[ Document ] ]
 	splitter: Optional[ RecursiveCharacterTextSplitter ]
 	file_path: Optional[ str ]
-	pattern: Optional[ List[ str ] ]
-	expanded: Optional[ List[ str ] ]
-	candidates: Optional[ List[ str ] ]
-	resolved: Optional[ List[ str ] ]
-	encoding: Optional[ str ]
 	csv_args: Optional[ Dict[ str, Any ] ]
-	source_column: Optional[ str ]
+	columns: Optional[ List[ str ] ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
 		self.file_path = None
-		self.encoding = None
+		self.columns = None
 		self.csv_args = None
-		self.source_column = None
 		self.documents = None
 		self.pattern = None
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
 	
-	def load( self, path: str, encoding: Optional[ str ], csv_args: Optional[ Dict[ str, Any ] ],
-			source_column: Optional[ str ] ) -> List[ Document ] | None:
+	def load( self, path: str, columns: Optional[ List[ str ] ],
+			csv_args: Optional[ Dict[ str, Any ] ] ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -343,11 +339,10 @@ class CsvLoader( Loader ):
 		'''
 		try:
 			self.file_path = self.verify_exists( path )
-			self.encoding = encoding
 			self.csv_args = csv_args
-			self.source_column = source_column
-			self.loader = CSVLoader( file_path=self.file_path, encoding=self.encoding,
-				csv_args=self.csv_args, source_column=self.source_column )
+			self.columns = columns
+			self.loader = CSVLoader( file_path=self.file_path, csv_args=self.csv_args,
+				content_columns=self.columns )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
@@ -522,10 +517,7 @@ class PdfLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 		self.mode = None
-	
-	def __repr__( self ) -> str:
-		return f'PDF(path={self.path!r}, docs={len( self.docs or [ ] )})'
-	
+
 	def load( self, path: str, mode: str='single' ) -> List[ Document ] | None:
 		'''
 
@@ -981,7 +973,7 @@ class YoutubeLoader( Loader ):
 		self.loader = None
 	
 
-	def load( self, path: str ) -> List[ Document ] | None:
+	def load( self, youtube_url: str ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -998,8 +990,8 @@ class YoutubeLoader( Loader ):
 
 		'''
 		try:
-			throw_if( 'path', path )
-			self.file_path = self.verify_exists( path )
+			throw_if( 'youtube_url', youtube_url )
+			self.file_path = self.verify_exists( youtube_url )
 			self.loader = YoutubeLoader.from_youtube_url( youtube_url=self.file_path,   )
 			self.documents = self.loader.load( )
 			return self.documents
@@ -1032,7 +1024,7 @@ class YoutubeLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+			self.documents = self.split_documents( docs=self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
 			return self.documents
 		except Exception as e:
