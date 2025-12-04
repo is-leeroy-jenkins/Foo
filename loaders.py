@@ -42,6 +42,7 @@
   ******************************************************************************************
 '''
 import config as cfg
+import docx2txt
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 try:
 	from langchain_core.documents import Document
@@ -639,8 +640,7 @@ class ExcelLoader( Loader ):
 		try:
 			throw_if( 'path', path )
 			self.file_path = self.verify_exists( path )
-			self.loader = UnstructuredExcelLoader( file_path=self.file_path, mode=mode,
-				include_headers=headers )
+			self.loader = UnstructuredExcelLoader( file_path=self.file_path  )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
@@ -962,7 +962,7 @@ class YoutubeLoader( Loader ):
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	include_info: Optional[ bool ]
-	llm: Optional[ OpenAI ]
+	llm: Optional[ ChatOpenAI ]
 	language: Optional[ str ]
 	temperature: Optional[ int ]
 	api_key: Optional[ str ]
@@ -1160,8 +1160,8 @@ class WikiLoader( Loader ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
-		self.max_documents = 2
-		self.max_characters = 1000
+		self.max_documents = 25
+		self.max_characters = 4000
 	
 	def load( self, question: str ) -> List[ Document ] | None:
 		'''
@@ -1182,7 +1182,7 @@ class WikiLoader( Loader ):
 		try:
 			throw_if( 'question', question )
 			self.query = question
-			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+			self.loader = WikipediaLoader( query=self.query, max_documents=self.max_documents,
 				doc_content_chars_max=self.max_characters )
 			self.documents = self.loader.load( )
 			return self.documents
@@ -1254,12 +1254,12 @@ class OutlookLoader( Loader ):
 		self.max_documents = 2
 		self.max_characters = 1000
 	
-	def load( self, question: str ) -> List[ Document ] | None:
+	def load( self, path: str ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
 			--------
-			Load Outlook Messages converting contents into LangChain Document objects.
+			Load Outlook Message from a path converting contents into LangChain Document objects.
 
 			Parameters:
 			-----------
@@ -1271,10 +1271,9 @@ class OutlookLoader( Loader ):
 
 		'''
 		try:
-			throw_if( 'question', question )
-			self.query = question
-			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
-				doc_content_chars_max=self.max_characters )
+			throw_if( 'path', path )
+			self.file_path = self.verify_exists( path )
+			self.loader = OutlookMessageLoader( file_path=self.file_path )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
@@ -1460,9 +1459,7 @@ class PowerPointLoader( Loader ):
 	loader: Optional[ UnstructuredPowerPointLoader ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
-	query: Optional[ str ]
-	max_documents: Optional[ int ]
-	max_characters: Optional[ int ]
+	mode: Optional[ str ]
 	query: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -1473,10 +1470,9 @@ class PowerPointLoader( Loader ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
-		self.max_documents = 2
-		self.max_characters = 1000
+		self.mode = None
 	
-	def load( self, question: str ) -> List[ Document ] | None:
+	def load( self, path: str ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1493,20 +1489,51 @@ class PowerPointLoader( Loader ):
 
 		'''
 		try:
-			throw_if( 'question', question )
-			self.query = question
-			self.loader = PowerPointLoader( query=self.query, max_documents=self.max_documents,
-				doc_content_chars_max=self.max_characters )
+			throw_if( 'path', path )
+			self.file_path = self.verify_exists( path )
+			self.mode = 'single'
+			self.loader = UnstructuredPowerPointLoader( file_path=self.file_path, mode=self.mode  )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'WikiLoader'
+			exception.cause = 'PowerPointLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
 	
+	def load_multiple( self, path: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load PowerPoint slides and convert their content into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'path', path )
+			self.file_path = self.verify_exists( path )
+			self.mode = 'multiple'
+			self.loader = UnstructuredPowerPointLoader( file_path=self.file_path, mode=self.mode )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'PowerPointLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+			
 	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
@@ -1534,7 +1561,7 @@ class PowerPointLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'WikiLoader'
+			exception.cause = 'PowerPointLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -1551,10 +1578,9 @@ class OneDriveLoader( Loader ):
 	loader: Optional[ OneDriveLoader ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
-	query: Optional[ str ]
-	max_documents: Optional[ int ]
-	max_characters: Optional[ int ]
-	query: Optional[ str ]
+	client_id: Optional[ str ]
+	drive_id: Optional[ str ]
+	client_secret: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
@@ -1564,10 +1590,11 @@ class OneDriveLoader( Loader ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
-		self.max_documents = 2
-		self.max_characters = 1000
+		self.drive_id = None
+		self.client_id = None
+		self.client_secret = None
 	
-	def load( self, question: str ) -> List[ Document ] | None:
+	def load( self, id: str ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1584,10 +1611,9 @@ class OneDriveLoader( Loader ):
 
 		'''
 		try:
-			throw_if( 'question', question )
-			self.query = question
-			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
-				doc_content_chars_max=self.max_characters )
+			throw_if( 'id', id )
+			self.drive_id = id
+			self.loader = OneDriveLoader( drive_id=self.drive_id )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
@@ -1597,7 +1623,38 @@ class OneDriveLoader( Loader ):
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
-	
+
+	def load_folder( self, id: str, path: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an onedrive file and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'id', id )
+			self.drive_id = id
+			self.file_path = path
+			self.loader = OneDriveLoader( drive_id=self.drive_id, folder_path=self.file_path )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+			
 	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
 		'''
 

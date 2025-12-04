@@ -4,6 +4,8 @@ bs4~=0.0.2
 beautifulsoup4~=4.13.4
 Crawl4AI~=0.7.4
 chromadb
+docx2txt
+extract_msg
 fitz
 FreeSimpleGUI
 google-api-python-client
@@ -26,6 +28,9 @@ pathlib~=1.0.1
 playwright~=1.54.0
 pymupdf
 pytube
+python-magic
+python-pptx
 requests
 typing~=3.7.4.3
+unstructured
 youtube-transcript-api
