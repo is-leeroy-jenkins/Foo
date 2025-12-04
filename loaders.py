@@ -49,14 +49,15 @@ except Exception:
 	from langchain.schema import Document
 
 from langchain_core.document_loaders.base import BaseLoader
+from langchain_google_community import GoogleDriveLoader
+from langchain_community.document_loaders.onedrive import OneDriveLoader
+from langchain_community.document_loaders.sharepoint import SharePointLoader
 from langchain_community.document_loaders import (
 	ArxivLoader,
 	CSVLoader,
 	Docx2txtLoader,
-	OneDriveLoader,
 	OutlookMessageLoader,
 	PyPDFLoader,
-	SharePointLoader,
 	UnstructuredExcelLoader,
 	UnstructuredMarkdownLoader,
 	UnstructuredPowerPointLoader,
@@ -1328,23 +1329,29 @@ class SpfxLoader( Loader ):
 	loader: Optional[ SharePointLoader ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
+	library_id: Optional[ str ]
+	subsite_id: Optional[ str ]
+	folder_id: Optional[ str ]
+	object_ids: Optional[ List[ str ] ]
 	query: Optional[ str ]
-	max_documents: Optional[ int ]
-	max_characters: Optional[ int ]
-	query: Optional[ str ]
+	with_token: Optional[ bool ]
+	is_recursive: Optional[ bool ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
 		self.file_path = None
 		self.documents = None
-		self.query = None
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
-		self.max_documents = 2
-		self.max_characters = 1000
+		self.folder_id = None
+		self.library_id = None
+		self.subsite_id = None
+		self.object_ids = [ ]
+		self.with_token = None
+		self.is_recursive = None
 	
-	def load( self, question: str ) -> List[ Document ] | None:
+	def load( self, library_id: str ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1361,10 +1368,12 @@ class SpfxLoader( Loader ):
 
 		'''
 		try:
-			throw_if( 'question', question )
-			self.query = question
-			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
-				doc_content_chars_max=self.max_characters )
+			throw_if( 'library_id', library_id )
+			self.library_id = library_id
+			self.is_recursive = True
+			self.with_token = True
+			self.loader = SharePointLoader( document_library_id=self.library_id,
+				recursive=self.is_recursive, auth_with_token=self.with_token )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
@@ -1375,7 +1384,39 @@ class SpfxLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def load_folder( self, library_id: str, folder_id: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load Sharepoint files and convert their contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'library_id', library_id )
+			throw_if( 'folder_id', folder_id)
+			self.library_id = library_id
+			self.folder_id = folder_id
+			self.loader = SharePointLoader( document_library_id=self.library_id, folder_id=self.folder_id )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'SpfxLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1585,6 +1626,133 @@ class OneDriveLoader( Loader ):
 			exception = Error( e )
 			exception.module = 'Foo'
 			exception.cause = 'WikiLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class GoogleDriveLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides Google Drive loading functionality
+		to parse contents into Document objects.
+
+	'''
+	loader: Optional[ GoogleDriveLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	query: Optional[ str ]
+	document_id: Optional[ str ]
+	folder_id: Optional[ str ]
+	query: Optional[ str ]
+	is_recursive: Optional[ bool ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.document_id = None
+		self.folder_id = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.is_recursive = None
+		
+	
+	def load( self, id: str, recursive: bool=False ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an google drive file by id and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'id', id )
+			throw_if( 'recursive', recursive )
+			self.document_id = id
+			self.is_recursive = recursive
+			self.loader = GoogleDriveLoader( document_ids=[ self.document_id ],
+				recursive=self.is_recursive )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleDriveLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+	def load_folder( self, id: str, recursive: bool=True ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an google drive file and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'id', id )
+			self.folder_id = id
+			self.is_recursive = recursive
+			self.loader = GoogleDriveLoader( folder_id=self.folder_id, recursive=self.is_recursive )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleDriveLoader'
+			exception.method = 'load_folder( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+			
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded google drive documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleDriveLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )

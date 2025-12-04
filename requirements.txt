@@ -13,6 +13,7 @@ html2text
 langchain
 langchain-community
 langchain-googledrive
+langchain-google-community
 matplotlib
 nest_asyncio
 oauthlib
