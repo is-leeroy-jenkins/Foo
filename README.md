@@ -475,11 +475,11 @@ if __name__ == '__main__':
 
 # Dependencies
 
-Core runtime dependencies expected by the repository. Pin exact versions in your `requirements.txt` for reproducible installs.
+- Core runtime dependencies expected by the repository. Pin exact versions in your `requirements.txt` for reproducible installs.
 
 | Package           | Minimum version | Purpose                                       |
-| ----------------- | --------------: | --------------------------------------------- |
-| `python`          |           `3.9` | Language runtime                              |
+|-------------------|----------------:| --------------------------------------------- |
+|                   |                 |                     |
 | `requests`        |        `>=2.28` | HTTP fetching (HttpFetcher)                   |
 | `beautifulsoup4`  |        `>=4.12` | HTML scraping/parsing                         |
 | `lxml`            |         `>=4.9` | Fast HTML/XML parsing for BeautifulSoup       |
@@ -500,11 +500,8 @@ Core runtime dependencies expected by the repository. Pin exact versions in your
 
 # License
 
-MIT License. See [LICENSE](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt) for full text.
+- MIT License. See [LICENSE](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt) for full text.
 
-# Acknowledgments
-
-Foo applies pragmatic, traditional data-engineering patterns to create a compact, maintainable toolkit. The design reflects practices used in production ETL/ELT systems: small interfaces, explicit validation, and a predictable pipeline flow that reduces accidental coupling during maintenance. Contributions welcome via issues and pull requests.
 
 
 
