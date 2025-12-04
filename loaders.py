@@ -41,7 +41,8 @@
   </summary>
   ******************************************************************************************
 '''
-from langchain_community.document_loaders import UnstructuredHTMLLoader
+import config as cfg
+from langchain_community.document_loaders import UnstructuredHTMLLoader, WikipediaLoader
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 try:
@@ -51,14 +52,22 @@ except Exception:
 
 from langchain_core.document_loaders.base import BaseLoader
 from langchain_community.document_loaders import (
+	ArxivLoader,
 	CSVLoader,
 	Docx2txtLoader,
+	OutlookMessageLoader,
 	PyPDFLoader,
+	SharePointLoader,
 	UnstructuredExcelLoader,
 	WebBaseLoader,
+	YoutubeLoader
 )
+from langchain_openai import ChatOpenAI
+from langchain.chains.summarize import load_summarize_chain
+import pytube
 import tiktoken
 from typing import Optional, List, Dict, Any
+
 
 class Loader( ):
 	'''
@@ -760,7 +769,7 @@ class WordLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class MarkLoader( Loader ):
+class MarkdownLoader( Loader ):
 	'''
 
 
@@ -935,4 +944,643 @@ class HtmlLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 
+class YoutubeLoader( Loader ):
+	'''
 
+		Purpose:
+		--------
+		Provides the YoutubeLoader's functionality
+		to parse video transcripts into Document objects.
+
+	'''
+	loader: Optional[ YoutubeLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	include_info: Optional[ bool ]
+	llm: Optional[ OpenAI ]
+	language: Optional[ str ]
+	temperature: Optional[ int ]
+	api_key: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.include_info = True
+		self.temperature = 0
+		self.api_key = cfg.OPENAI_API_KEY
+		self.llm = ChatOpenAI( temperature=self.temperature, api_key=self.api_key )
+		self.file_path = None
+		self.documents = None
+		self.pattern = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+	
+
+	def load( self, path: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an video file and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'path', path )
+			self.file_path = self.verify_exists( path )
+			self.loader = YoutubeLoader.from_youtube_url( youtube_url=self.file_path,   )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'YoutubeLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Youtube Transcript documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'YoutubeLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class ArxivLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides the Arxiv loading functionality
+		to parse video research papers into Document objects.
+
+	'''
+	loader: Optional[ ArxivLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	include_metadata: Optional[ bool ]
+	query: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = 2
+		self.max_characters = 1000
+		self.include_metadata = False
+	
+	def load( self, question: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an video file and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'question', question )
+			self.query = question
+			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+				doc_content_chars_max=self.max_characters )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'ArxivLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Youtube Transcript documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'ArxivLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class WikiLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides the Arxiv loading functionality
+		to parse video research papers into Document objects.
+
+	'''
+	loader: Optional[ WikipediaLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	query: Optional[ str ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	query: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = 2
+		self.max_characters = 1000
+	
+	def load( self, question: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an wikipedia and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'question', question )
+			self.query = question
+			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+				doc_content_chars_max=self.max_characters )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Wikipedia search documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class OutlookLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides the Arxiv loading functionality
+		to parse video research papers into Document objects.
+
+	'''
+	loader: Optional[ OutlookMessageLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	query: Optional[ str ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	query: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = 2
+		self.max_characters = 1000
+	
+	def load( self, question: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an wikipedia and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'question', question )
+			self.query = question
+			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+				doc_content_chars_max=self.max_characters )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Wikipedia search documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class SpfxLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides the Sharepoint loading functionality
+		to parse video research papers into Document objects.
+
+	'''
+	loader: Optional[ SharePointLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	query: Optional[ str ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	query: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = 2
+		self.max_characters = 1000
+	
+	def load( self, question: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an wikipedia and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'question', question )
+			self.query = question
+			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+				doc_content_chars_max=self.max_characters )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Wikipedia search documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class PowePointLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides PowerPoint loading functionality
+		to parse video research papers into Document objects.
+
+	'''
+	loader: Optional[ SharePointLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	query: Optional[ str ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	query: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = 2
+		self.max_characters = 1000
+	
+	def load( self, question: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an wikipedia and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'question', question )
+			self.query = question
+			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+				doc_content_chars_max=self.max_characters )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Wikipedia search documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class OneDriveLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides the Sharepoint loading functionality
+		to parse video research papers into Document objects.
+
+	'''
+	loader: Optional[ SharePointLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	query: Optional[ str ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	query: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = 2
+		self.max_characters = 1000
+	
+	def load( self, question: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an wikipedia and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'question', question )
+			self.query = question
+			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+				doc_content_chars_max=self.max_characters )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Wikipedia search documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'WikiLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )

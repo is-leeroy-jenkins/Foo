@@ -41,15 +41,17 @@
   </summary>
   ******************************************************************************************
   '''
+from boogr import Error, ErrorDialog
 from __future__ import annotations
-from typing import Any, Dict, Optional, Pattern, List
+import crawl4ai as crl
+import config as cfg
+from core import Result
+from langchain_googledrive.retrievers import GoogleDriveRetriever
+from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
 import re
 import requests
 from requests import Response
-from core import Result
-from boogr import Error, ErrorDialog
-import crawl4ai as crl
-import config as cfg
+from typing import Any, Dict, Optional, Pattern, List
 
 def throw_if( name: str, value: Any ) -> None:
 	'''
@@ -630,3 +632,280 @@ class WebCrawler( WebFetcher ):
 			exception.method = 'render_with_playwright'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
+
+class ArxivFetcher( Fetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides the Arxiv loading functionality
+		to parse video research papers into Document objects.
+
+	'''
+	fetcher: Optional[ ArxivR ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	include_metadata: Optional[ bool ]
+	query: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = 2
+		self.max_characters = 1000
+		self.include_metadata = False
+	
+	def load( self, question: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an video file and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'question', question )
+			self.query = question
+			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+				doc_content_chars_max=self.max_characters )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'ArxivLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Youtube Transcript documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'ArxivLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class GoogleDriveFetcher( Fetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides the Arxiv loading functionality
+		to parse video research papers into Document objects.
+
+	'''
+	fetcher: Optional[ ArxivR ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	include_metadata: Optional[ bool ]
+	query: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = 2
+		self.max_characters = 1000
+		self.include_metadata = False
+	
+	def load( self, question: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an video file and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'question', question )
+			self.query = question
+			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+				doc_content_chars_max=self.max_characters )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'ArxivLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Youtube Transcript documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'ArxivLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class WikiFetcher( Fetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides the Arxiv loading functionality
+		to parse video research papers into Document objects.
+
+	'''
+	fetcher: Optional[ ArxivR ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	include_metadata: Optional[ bool ]
+	query: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = 2
+		self.max_characters = 1000
+		self.include_metadata = False
+	
+	def load( self, question: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an video file and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'question', question )
+			self.query = question
+			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+				doc_content_chars_max=self.max_characters )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'ArxivLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Youtube Transcript documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'ArxivLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
