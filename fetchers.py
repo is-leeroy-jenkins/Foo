@@ -1003,7 +1003,7 @@ class GoogleMaps( WebFetcher ):
 		self.address = None
 		self.directions = None
 	
-	def forward_geocode( self, address: str ) -> Tuple[ float, float ] | None:
+	def geocode_location( self, address: str ) -> Tuple[ float, float ] | None:
 		'''
 
 			Purpose:
@@ -1041,7 +1041,7 @@ class GoogleMaps( WebFetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-	def reverse_geocode( self, latitiude: float, longitude: float ) -> str | None:
+	def geocode_coordinates( self, latitiude: float, longitude: float ) -> str | None:
 		'''
 
 			Purpose:
@@ -1117,14 +1117,14 @@ class GoogleSearch( Fetcher ):
 		super( ).__init__( )
 		self.api_key = cfg.GOOGLE_API_KEY
 		self.cse_id = cfg.GOOGLE_CSE_ID
-		self.timeout = None
 		self.re_tag = re.compile( r'<[^>]+>' )
 		self.re_ws = re.compile( r'\s+' )
-		self.keywords = None
 		self.url = r'https://cse.google.com/cse?cx=' + self.cse_id
+		self.headers = { }
+		self.timeout = None
+		self.keywords = None
 		self.params = None
 		self.response = None
-		self.headers = { }
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -1147,7 +1147,11 @@ class GoogleSearch( Fetcher ):
 		         'timeout',
 		         'headers',
 		         'fetch',
-		         'html_to_text' ]
+		         'api_key',
+		         'response',
+		         'cse_id',
+		         'params',
+		         'fetch' ]
 	
 	def fetch( self, keywords: str, time: int=10 ) -> List[ str ] | None:
 		'''
