@@ -777,8 +777,9 @@ class GoogleDriveFetcher( Fetcher ):
 			self.template = template
 			self.num_results = results
 			self.folder_id = folder_id
-			self.fetcher = GoogleDriveRetriever( num_results=self.num_results, template=self.template )
-			self.documents = self.fetcher.invoke( input=self.query, folder_id=self.folder_id )
+			self.fetcher = GoogleDriveRetriever( num_results=self.num_results, template=self.template,
+				folder_id=self.folder_id )
+			self.documents = self.fetcher.invoke( input=self.query  )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
@@ -789,7 +790,7 @@ class GoogleDriveFetcher( Fetcher ):
 			error.show( )
 	
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -834,7 +835,7 @@ class WikipediaFetcher( Fetcher ):
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	max_documents: Optional[ int ]
-	max_characters: Optional[ int ]
+	language: Optional[ str ]
 	include_metadata: Optional[ bool ]
 	query: Optional[ str ]
 	
@@ -845,12 +846,12 @@ class WikipediaFetcher( Fetcher ):
 		self.query = None
 		self.chunk_size = None
 		self.overlap_amount = None
-		self.loader = None
-		self.max_documents = 2
-		self.max_characters = 1000
+		self.fetcher = None
+		self.max_documents = 100
+		self.language = 'english'
 		self.include_metadata = False
 	
-	def load( self, question: str ) -> List[ Document ] | None:
+	def fetch( self, question: str ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -869,15 +870,14 @@ class WikipediaFetcher( Fetcher ):
 		try:
 			throw_if( 'question', question )
 			self.query = question
-			self.loader = WikipediaRetriever( query=self.query, max_documents=self.max_documents,
-				doc_content_chars_max=self.max_characters )
-			self.documents = self.loader.load( )
+			self.fetcher = WikipediaRetriever( lang=self.language, load_all_available_meta=self.include_metadata )
+			self.documents = self.fetcher.invoke( input=self.query,  )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'WikiFetcher'
-			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			exception.cause = 'WikipediaFetcher'
+			exception.method = 'fetch( self, question: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
 	
