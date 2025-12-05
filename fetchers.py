@@ -1184,7 +1184,7 @@ class GoogleSearch( Fetcher ):
 			}
 			self.response = requests.get( url=self.url, params=self.params )
 			self.response.raise_for_status( )
-			_response = self.response.json( )
+			_response = self.response.links
 			_results = [
 				{
 					'title': item[ 'title' ],
