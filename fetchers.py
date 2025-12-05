@@ -456,7 +456,7 @@ class WebFetcher( Fetcher ):
 			return self.result
 		except Exception as exc:  
 			exception = Error( exc )
-			exception.module = 'scrapers'
+			exception.module = 'fetchers'
 			exception.cause = 'WebFetcher'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
 			dialog = ErrorDialog( exception )
@@ -491,7 +491,7 @@ class WebFetcher( Fetcher ):
 		except Exception as exc:  
 			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = 'scrapers'
+			exception.cause = 'fetchers'
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -596,7 +596,7 @@ class WebCrawler( WebFetcher ):
 				return self.result
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'scrapers'
+			exception.module = 'fetchers'
 			exception.cause = 'WebCrawler'
 			exception.method = 'fetch( self, url: str, time: int=15 ) -> Result'
 			dialog = ErrorDialog( exception )
@@ -631,7 +631,7 @@ class WebCrawler( WebFetcher ):
 				return html
 		except Exception as exc: 
 			exception = Error( exc )
-			exception.module = 'scrapers'
+			exception.module = 'fetchers'
 			exception.cause = 'WebCrawler'
 			exception.method = 'render_with_playwright'
 			dialog = ErrorDialog( exception )
@@ -967,7 +967,7 @@ class NewsFetcher( WebFetcher ):
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = 'scrapers'
+			exception.cause = 'fetchers'
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -1073,4 +1073,125 @@ class GoogleMaps( WebFetcher ):
 			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
 			error = ErrorDialog( exception )
 			error.show( )
+
+class GoogleSearch( Fetcher ):
+	'''
+
+		Purpose:
+		---------
+		Class providing the functionality of the google custom search api.
+
+		Parameters:
+		-----------
+		headers (Optional[Dict[str, str]]): Optional HTTP headers; User-Agent
+		auto-filled if missing.
+
+		Returns:
+		-----------
+		None
+
+	'''
+	keywords: Optional[ str ]
+	url: Optional[ str ]
+	re_tag: Optional[ Pattern ]
+	re_ws: Optional[ Pattern ]
+	response: Optional[ Response ]
+	api_key: Optional[ str ]
+	cse_id: Optional[ str ]
+	params: Optional[ Dict[ str, str ] ]
 	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize GoogleSearch with optional headers and sane defaults.
+
+			Parameters:
+			-----------
+			headers (Optional[Dict[str, str]]): Optional headers for requests.
+
+			Returns:
+			-----------
+			None
+		'''
+		super( ).__init__( )
+		self.api_key = cfg.GOOGLE_API_KEY
+		self.cse_id = cfg.GOOGLE_CSE_ID
+		self.timeout = None
+		self.re_tag = re.compile( r'<[^>]+>' )
+		self.re_ws = re.compile( r'\s+' )
+		self.keywords = None
+		self.url = r'https://cse.google.com/cse?cx=' + self.cse_id
+		self.params = None
+		self.response = None
+		self.headers = { }
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+
+			Purpose:
+			-----------
+			Control visible ordering for WebFetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			list[str]: Ordered attribute/method names.
+
+		'''
+		return [ 'keywords',
+		         'url',
+		         'timeout',
+		         'headers',
+		         'fetch',
+		         'html_to_text' ]
+	
+	def fetch( self, keywords: str, time: int=10 ) -> List[ str ] | None:
+		'''
+
+			Purpose:
+			-------
+			Perform an HTTP GET to fetch a page and return canonicalized Result.
+
+			Parameters:
+			-----------
+			url (str): Absolute URL to fetch.
+			time (int): Timeout seconds to use for the request.
+			show_dialog (bool): If True, show an ErrorDialog on exception.
+
+			Returns:
+			---------
+			Optional[Result]: Result with url, status, text, html, headers on success.
+
+		'''
+		try:
+			throw_if( 'keywords', keywords )
+			self.keywords = keywords
+			self.timeout = time
+			self.params = \
+			{
+				'q': self.keywords,
+				'key': self.api_key,
+				'cx': self.cse_id,
+				'num': self.timeout
+			}
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_response = self.response.json( )
+			_results = [
+				{
+					'title': item[ 'title' ],
+					'link': item[ 'link' ],
+					'snippet': item[ 'snippet' ]
+				} for item in _response.get( 'items', [ ] ) ]
+			return _results
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleSearch'
+			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
