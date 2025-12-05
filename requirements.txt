@@ -33,4 +33,5 @@ python-pptx
 requests
 typing~=3.7.4.3
 unstructured
+wikipedia
 youtube-transcript-api

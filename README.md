@@ -150,17 +150,17 @@ Minimal, end-to-end example showing the pipeline chaining pattern.
 ```python
 from foo.core import FooPipeline
 
-pipeline = FooPipeline()
+pipeline = FooPipeline( )
 
 result = (
-    pipeline.fetch('https://example.com/data.json')   # HttpFetcher
-           .parse('json')                             # JsonParser
-           .extract()                                 # Default extractor pipeline
-           .load()                                    # In-memory staging
-           .write('output.json')                      # JsonWriter to disk
+		pipeline.fetch( 'https://example.com/data.json' )  # HttpFetcher
+		.parse( 'json' )  # JsonParser
+		.extract( )  # Default extractor pipeline
+		.fetch( )  # In-memory staging
+		.write( 'output.json' )  # JsonWriter to disk
 )
 
-print("Pipeline completed. Output at:", result)
+print( "Pipeline completed. Output at:", result )
 ```
 
 ## 🤖 Usage examples
@@ -174,13 +174,13 @@ from foo.core import FooPipeline
 from foo.loaders import CsvLoader
 from foo.writers import SqlWriter
 
-pipeline = FooPipeline(loader=CsvLoader(), writer=SqlWriter('sqlite:///data.db'))
+pipeline = FooPipeline( loader=CsvLoader( ), writer=SqlWriter( 'sqlite:///data.db' ) )
 
-pipeline.fetch('/data/incoming/sales.csv', source_type='file') \
-        .parse('csv') \
-        .extract() \
-        .load() \
-        .write(table='sales')  # Persists to SQLite table 'sales'
+pipeline.fetch( '/data/incoming/sales.csv', source_type='file' )
+	.parse( 'csv' )
+	.extract( )
+	.fetch( )
+	.write( table='sales' )  # Persists to SQLite table 'sales'
 ```
 
 - Use-case: scheduled ingestion of vendor CSVs into a local analytics DB.
@@ -209,16 +209,16 @@ from foo.core import FooPipeline
 from foo.fetchers import ApiFetcher
 from foo.writers import ApiWriter
 
-api_fetcher = ApiFetcher(base_url='https://api.internal/v1', api_key='SECRET')
-api_writer = ApiWriter(endpoint='https://downstream.example/ingest', auth_token='TOKEN')
+api_fetcher = ApiFetcher( base_url='https://api.internal/v1', api_key='SECRET' )
+api_writer = ApiWriter( endpoint='https://downstream.example/ingest', auth_token='TOKEN' )
 
-pipeline = FooPipeline(fetcher=api_fetcher, writer=api_writer)
+pipeline = FooPipeline( fetcher=api_fetcher, writer=api_writer )
 
-pipeline.fetch('/reports/daily') \
-        .parse('json') \
-        .extract() \
-        .load() \
-        .write()  # posts normalized records to downstream ingestion endpoint
+pipeline.fetch( '/reports/daily' )
+	.parse( 'json' )
+	.extract( )
+	.fetch( )
+	.write( )  # posts normalized records to downstream ingestion endpoint
 ```
 
 - Use-case: internal synchronization between microservices.
@@ -232,17 +232,18 @@ pipeline.fetch('/reports/daily') \
 from foo.core import FooPipeline
 from foo.fetchers import FileFetcher
 
-def main(input_path, output_path):
-    pipeline = FooPipeline(fetcher=FileFetcher())
-    pipeline.fetch(input_path, source_type='file') \
-            .parse('csv') \
-            .extract() \
-            .load() \
-            .write(output_path)
+def main( input_path, output_path ):
+	pipeline = FooPipeline( fetcher=FileFetcher( ) )
+	pipeline.fetch( input_path, source_type='file' )
+		.parse( 'csv' )
+		.extract( )
+		.fetch( )
+		.write( output_path )
 
 if __name__ == '__main__':
-    import sys
-    main(sys.argv[1], sys.argv[2])
+	import sys
+	
+	main( sys.argv[ 1 ], sys.argv[ 2 ] )
 ```
 
 - Then schedule with cron or a job runner.

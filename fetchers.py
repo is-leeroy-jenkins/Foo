@@ -683,7 +683,7 @@ class ArXivFetcher( Fetcher ):
 			self.query = question
 			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
 				doc_content_chars_max=self.max_characters )
-			self.documents = self.loader.load( )
+			self.documents = self.loader.fetch( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
@@ -754,7 +754,7 @@ class GoogleDriveFetcher( Fetcher ):
 		self.folder_id = None
 		self.num_results = None
 	
-	def load( self, question: str, folder_id: str='root',
+	def fetch( self, question: str, folder_id: str= 'root',
 			results: int=2, template: str='gdrive-query' ) -> List[ Document ] | None:
 		'''
 
