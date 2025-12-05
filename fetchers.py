@@ -633,7 +633,7 @@ class WebCrawler( WebFetcher ):
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 
-class ArxivFetcher( Fetcher ):
+class ArXivFetcher( Fetcher ):
 	'''
 
 		Purpose:
@@ -642,7 +642,7 @@ class ArxivFetcher( Fetcher ):
 		to parse video research papers into Document objects.
 
 	'''
-	fetcher: Optional[ ArxivR ]
+	fetcher: Optional[ ArxivRetriever ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	max_documents: Optional[ int ]
@@ -667,7 +667,7 @@ class ArxivFetcher( Fetcher ):
 
 			Purpose:
 			--------
-			Load an video file and convert its contents into LangChain Document objects.
+			Load an arxiv document and convert its contents into LangChain Document objects.
 
 			Parameters:
 			-----------
@@ -698,7 +698,7 @@ class ArxivFetcher( Fetcher ):
 
 			Purpose:
 			--------
-			Split loaded Youtube Transcript documents into manageable text chunks.
+			Split loaded arxiv documents into manageable text chunks.
 
 			Parameters:
 			-----------
@@ -730,16 +730,16 @@ class GoogleDriveFetcher( Fetcher ):
 
 		Purpose:
 		--------
-		Provides the Arxiv loading functionality
-		to parse video research papers into Document objects.
+		Provides the google drive loading functionality
+		to parse items on googke drive into Document objects.
 
 	'''
 	fetcher: Optional[ GoogleDriveRetriever ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
-	max_documents: Optional[ int ]
-	max_characters: Optional[ int ]
-	include_metadata: Optional[ bool ]
+	num_results: Optional[ int ]
+	folder_id: Optional[ str ]
+	template: Optional[ str ]
 	query: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -750,16 +750,17 @@ class GoogleDriveFetcher( Fetcher ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.fetcher = None
-		self.max_documents = 2
-		self.max_characters = 1000
-		self.include_metadata = False
+		self.template = None
+		self.folder_id = None
+		self.num_results = None
 	
-	def load( self, question: str ) -> List[ Document ] | None:
+	def load( self, question: str, folder_id: str='root',
+			results: int=2, template: str='gdrive-query' ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
 			--------
-			Load an video file and convert its contents into LangChain Document objects.
+			Load an google drive items and convert its contents into LangChain Document objects.
 
 			Parameters:
 			-----------
@@ -773,9 +774,11 @@ class GoogleDriveFetcher( Fetcher ):
 		try:
 			throw_if( 'question', question )
 			self.query = question
-			self.fetcher = ArxivLoader( query=self.query, max_documents=self.max_documents,
-				doc_content_chars_max=self.max_characters )
-			self.documents = self.fetcher.load( )
+			self.template = template
+			self.num_results = results
+			self.folder_id = folder_id
+			self.fetcher = GoogleDriveRetriever( num_results=self.num_results, template=self.template )
+			self.documents = self.fetcher.invoke( input=self.query, folder_id=self.folder_id )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
@@ -784,6 +787,7 @@ class GoogleDriveFetcher( Fetcher ):
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
+	
 	
 	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
 		'''
