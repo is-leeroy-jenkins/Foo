@@ -41,17 +41,21 @@
   </summary>
   ******************************************************************************************
   '''
-from boogr import Error, ErrorDialog
 from __future__ import annotations
+from boogr import Error, ErrorDialog
 import crawl4ai as crl
 import config as cfg
 from core import Result
+from datetime import datetime
+import googlemaps
+import http.client
 from langchain_googledrive.retrievers import GoogleDriveRetriever
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
 import re
 import requests
 from requests import Response
 from typing import Any, Dict, Optional, Pattern, List
+import urllib.parse
 
 def throw_if( name: str, value: Any ) -> None:
 	'''
@@ -86,7 +90,7 @@ class Fetcher:
 	response: Optional[ Response ]
 	url: Optional[ str ]
 	result: Optional[ Result ]
-	text: Optional[ str ]
+	query: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
@@ -101,6 +105,7 @@ class Fetcher:
 		self.response = None
 		self.url = None
 		self.result = None
+		self.query = None
 	
 	def __dir__( self ) -> list[ str ]:
 		'''
@@ -123,10 +128,10 @@ class Fetcher:
 		         'response',
 		         'url',
 		         'result',
-		         'fetch',
-		         'html_to_text' ]
+		         'query',
+		         'fetch' ]
 	
-	def fetch( self, url: str, time: int=10 ) -> Result | None:
+	def fetch( self, query: str, url:str, time: int=10 ) -> Result | None:
 		'''
 
 			Purpose:
@@ -396,7 +401,6 @@ class WebFetcher( Fetcher ):
 		self.response = None
 		self.headers = { }
 		self.agents = cfg.AGENTS
-
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 
@@ -646,7 +650,7 @@ class ArXivFetcher( Fetcher ):
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	max_documents: Optional[ int ]
-	max_characters: Optional[ int ]
+	full_documents: Optional[ bool ]
 	include_metadata: Optional[ bool ]
 	query: Optional[ str ]
 	
@@ -658,11 +662,11 @@ class ArXivFetcher( Fetcher ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
-		self.max_documents = 2
-		self.max_characters = 1000
+		self.max_documents = 100
+		self.full_documents = True
 		self.include_metadata = False
 	
-	def load( self, question: str ) -> List[ Document ] | None:
+	def fetch( self, question: str ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -681,49 +685,18 @@ class ArXivFetcher( Fetcher ):
 		try:
 			throw_if( 'question', question )
 			self.query = question
-			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
-				doc_content_chars_max=self.max_characters )
-			self.documents = self.loader.fetch( )
+			self.loader = ArxivRetriever( load_max_docs=self.max_documents,
+				 get_full_documents=self.full_documents, load_all_available_meta=self.include_metadata )
+			self.documents = self.loader.invoke( input=self.query )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
 			exception.cause = 'ArxivFetcher'
-			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			exception.method = 'fetch( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
-	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
-		'''
 
-			Purpose:
-			--------
-			Split loaded arxiv documents into manageable text chunks.
-
-			Parameters:
-			-----------
-			chunk_size (int): Max characters per chunk.
-			chunk_overlap (int): Overlapping characters between chunks.
-
-			Returns:
-			--------
-			List[Document]: Chunked list of LangChain Document objects.
-
-		'''
-		try:
-			throw_if( 'documents', self.documents )
-			self.chunk_size = chunk
-			self.overlap_amount = overlap
-			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
-				overlap=self.overlap_amount )
-			return self.documents
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'ArxivFetcher'
-			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
-			error = ErrorDialog( exception )
-			error.show( )
 
 class GoogleDriveFetcher( Fetcher ):
 	'''
@@ -789,39 +762,6 @@ class GoogleDriveFetcher( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	
-	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
-		'''
-
-			Purpose:
-			--------
-			Split loaded Youtube Transcript documents into manageable text chunks.
-
-			Parameters:
-			-----------
-			chunk_size (int): Max characters per chunk.
-			chunk_overlap (int): Overlapping characters between chunks.
-
-			Returns:
-			--------
-			List[Document]: Chunked list of LangChain Document objects.
-
-		'''
-		try:
-			throw_if( 'documents', self.documents )
-			self.chunk_size = chunk
-			self.overlap_amount = overlap
-			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
-				overlap=self.overlap_amount )
-			return self.documents
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'GoogleDriveFetcher'
-			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
-			error = ErrorDialog( exception )
-			error.show( )
-
 class WikipediaFetcher( Fetcher ):
 	'''
 
@@ -856,11 +796,11 @@ class WikipediaFetcher( Fetcher ):
 
 			Purpose:
 			--------
-			Load an video file and convert its contents into LangChain Document objects.
+			Searches wikipedia and provides its contents as LangChain Document objects.
 
 			Parameters:
 			-----------
-			path (str): Path to the HTML (.html or .htm) file.
+			question (str): query passed to wiki search
 
 			Returns:
 			--------
@@ -880,36 +820,257 @@ class WikipediaFetcher( Fetcher ):
 			exception.method = 'fetch( self, question: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
+
+class NewsFetcher( WebFetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides the News API functionality.
+
+	'''
+	agents: Optional[ str ]
+	url: Optional[ str ]
+	html: Optional[ str ]
+	re_tag: Optional[ Pattern ]
+	re_ws: Optional[ Pattern ]
+	response: Optional[ Response ]
+	result: Optional[ Result ]
+	api_key: Optional[ str ]
+	categories: Optional[ str ]
+	limit: Optional[ int ]
+	params: Optional[ Dict[ str, str ] ]
+
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize WebFetcher with optional headers and sane defaults.
+			
+			Parameters:
+			-----------
+			headers (Optional[Dict[str, str]]): Optional headers for requests.
+			
+			Returns:
+			-----------
+			None
+		'''
+		super( ).__init__( )
+		self.timeout = None
+		self.re_tag = re.compile( r'<[^>]+>' )
+		self.re_ws = re.compile( r'\s+' )
+		self.url = 'api.thenewsapi.com'
+		self.html = None
+		self.response = None
+		self.result = None
+		self.headers = { }
+		self.params = { }
+		self.max_documents = 50
+		self.api_key = 'OgP3S1uQpZ73EvUlGlT7NzxS8LqSZijom4LrTKpA'
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+
+	def __dir__( self ) -> List[ str ]:
+		'''
+			
+			Purpose:
+			-----------
+			Control visible ordering for WebFetcher.
+			
+			Parameters:
+			-----------
+			None
+			
+			Returns:
+			-----------
+			list[str]: Ordered attribute/method names.
+			
+		'''
+		return [ 'agents',
+		         'url',
+		         'html',
+		         'timeout',
+		         'headers',
+		         'fetch',
+		         'html_to_text' ]
+
+	def fetch( self, query: str,  time: int=10  ) -> Result | None:
+		'''
+			
+			Purpose:
+			-------
+			Perform an HTTP GET to fetch a page and return canonicalized Result.
+			
+			Parameters:
+			-----------
+			url (str): Absolute URL to fetch.
+			time (int): Timeout seconds to use for the request.
+			show_dialog (bool): If True, show an ErrorDialog on exception.
+			
+			Returns:
+			---------
+			Optional[Result]: Result with url, status, text, html, headers on success.
+			
+		'''
+		try:
+			throw_if( 'query', query )
+			self.query = query
+			self.timeout = time
+			conn = http.client.HTTPSConnection( self.url )
+			params = urllib.parse.urlencode( {
+					'api_token': self.api_key,
+					'search': self.query,
+					'language': 'en',
+					'limit': self.max_documents,
+			} )
+			
+			conn.request( 'GET', '/v1/news/all?{}'.format( params ) )
+			
+			res = conn.getresponse( )
+			data = res.read( )
+			return data.decode( 'utf-8' )
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'NewsFetcher'
+			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+
+	def html_to_text( self, html: str ) -> str:
+		'''
+			
+			Purpose:
+			--------
+			Convert HTML to compact plain text with minimal heuristics (scripts and
+			styles removed, tags replaced with whitespace, whitespace normalized).
+			
+			Parameters:
+			---------
+			html (str): Raw HTML string.
+			show_dialog (bool): If True, show an ErrorDialog on exception.
+			
+			Returns:
+			--------
+			str: Plain text extracted from HTML.
+			
+		'''
+		try:
+			throw_if( 'html', html )
+			html = re.sub( r'<script[\s\S]*?</script>', ' ', html, flags = re.IGNORECASE )
+			html = re.sub( r'<style[\s\S]*?</style>', ' ', html, flags = re.IGNORECASE )
+			html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', html, flags = re.IGNORECASE )
+			text = re.sub( self.re_tag, ' ', html )
+			text = re.sub( self.re_ws, ' ', text ).strip( )
+			return text
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'scrapers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+
+class GoogleMaps( WebFetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides the google drive loading functionality
+		to parse items on googke drive into Document objects.
+
+	'''
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	num_results: Optional[ int ]
+	query: Optional[ str ]
+	api_key: Optional[ str ]
+	coordinates: Optional[ Tuple[ float, float ] ]
+	address: Optional[ str ]
+	directions: Optional[ str ]
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.api_key = cfg.GEOCODING_API_KEY
+		self.url = None
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.coordinates = None
+		self.fetcher = None
+		self.address = None
+		self.directions = None
+	
+	def forward_geocode( self, address: str ) -> Tuple[ float, float ] | None:
 		'''
 
 			Purpose:
 			--------
-			Split loaded Youtube Transcript documents into manageable text chunks.
+			Uses gmaps to get coordinates from address.
 
 			Parameters:
 			-----------
-			chunk_size (int): Max characters per chunk.
-			chunk_overlap (int): Overlapping characters between chunks.
+			address (str): address
 
 			Returns:
 			--------
-			List[Document]: Chunked list of LangChain Document objects.
+			List[Document]: List of Document objects parsed from HTML content.
 
 		'''
 		try:
-			throw_if( 'documents', self.documents )
-			self.chunk_size = chunk
-			self.overlap_amount = overlap
-			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
-				overlap=self.overlap_amount )
-			return self.documents
+			throw_if( 'address', address )
+			self.address = address
+			self.url = r'https://maps.googleapis.com/maps/api/geocode/json?address='
+			self.url += f'{self.address}&key={self.api_key}'
+			self.response = requests.get( self.url )
+			self.response.raise_for_status()
+			_response = self.response.json()
+			_result = _response[ 'results' ][ 0 ]
+			_geo = _result[ 'geometry' ]
+			_loc = _geo[ 'location' ]
+			_lat = _loc[ 'lat' ]
+			_lng = _loc[ 'lng' ]
+			return ( _lat, _lng )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'ArxivLoader'
-			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
 			error = ErrorDialog( exception )
 			error.show( )
 
+	def reverse_geocode( self, latitiude: float, longitude: float ) -> str | None:
+		'''
+
+			Purpose:
+			--------
+			Uses gmaps to get coordinates from address.
+
+			Parameters:
+			-----------
+			address (str): address
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'latitiude', latitiude )
+			throw_if( 'longitude', longitude )
+			self.coordinates =  latitiude, longitude
+			self.url = r'https://maps.googleapis.com/maps/api/geocode/json?latlng='
+			self.url += f'{latitiude},' + f'{longitude}' + f'&key={self.api_key}'
+			_response = requests.get( self.url ).json( )
+			_address = _response[ 'results' ][0][ 'formatted_address' ]
+			return _address
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	

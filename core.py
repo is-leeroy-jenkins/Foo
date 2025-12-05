@@ -145,7 +145,7 @@ class Result( ):
 			'url': self.url,
 			'status_code': self.status_code,
 			'text': self.text,
-			'encoding': self.html,
+			'encoding': self.encoding,
 			'headers': dict( self.headers ),
 		}
 
