@@ -393,7 +393,7 @@ class WebFetcher( Fetcher ):
 			None
 		'''
 		super( ).__init__( )
-		self.timeout = 15
+		self.timeout = 10
 		self.re_tag = re.compile( r'<[^>]+>' )
 		self.re_ws = re.compile( r'\s+' )
 		self.url = None
