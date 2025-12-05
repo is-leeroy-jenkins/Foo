@@ -60,6 +60,7 @@ from langchain_community.document_loaders import (
 	OutlookMessageLoader,
 	PyPDFLoader,
 	UnstructuredExcelLoader,
+	UnstructuredEmailLoader,
 	UnstructuredMarkdownLoader,
 	UnstructuredPowerPointLoader,
 	UnstructuredHTMLLoader,
@@ -278,25 +279,24 @@ class CsvLoader( Loader ):
 
 		Attributes:
 		----------
-		documents: List[ Document ],
-		file_path: str,
-		pattern: str,
-		expanded: List[ str ],
-		candidates: List[ str ],
-		resolved: List[ str ],
-		splitter: RecursiveCharacterTextSplitter,
-		chunk_size: int,
-		overlap_amount: int,
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		csv_args: Dict[ str, Any ]
+		columns - List[ str ]
 
 		Methods:
 		-------
 		verify_exists( self, path: str ) -> str,
 		resolve_paths( self, pattern: str ) -> List[ str ],
-		split_documents( self, docs: List[ Document ], chunk: int=1000, overlap: int=200 ) ->
-		List[ Document ],
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
 		load( self, path: str, encoding: Optional[ str ]=None,
-		csv_args: Optional[ Dict[ str, Any ] ]=None,
-		source_column: Optional[ str ]=None ) -> List[ Document ]
 
 	'''
 	loader: Optional[ CSVLoader ]
@@ -395,18 +395,25 @@ class WebLoader( Loader ):
 		
 		Attributes:
 		----------
-		url - str
-		documnet - List[ str ]
-		file_path - str
-		pattern - str
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
 		chunk_size - int
 		overlap_amount - int
+		url - str
 		loader - WebBaseLoader
 		
 		Methods:
 		--------
-		load
-		split
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
+		load( urls: List[ str ] ) -> List[ Documents ]
+		split( ) -> List[ Document ]
 
 	'''
 	loader: Optional[ WebBaseLoader ]
@@ -500,6 +507,27 @@ class PdfLoader( Loader ):
 		Purpose:
 		--------
 		Wrap LangChain's PyPDFLoader to extract and chunk PDF documents.
+		
+		Attributes:
+		----------
+		loader - SharePointLoader
+		file_path - str
+		documents - List[ Documents }
+		library_id - str
+		mode - str
+		folder_id - str
+		object_ids - List[ str ]
+		query - str
+		with_token - bool
+		is_recursive - bool
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
+		load( path: str, mode: str ) -> List[ Document ]
+		split( ) -> List[ Document ]
 
 	'''
 	loader: Optional[ PyPDFLoader ]
@@ -509,7 +537,7 @@ class PdfLoader( Loader ):
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
-		self.file_pathpath = None
+		self.file_path = None
 		self.documents = [ ]
 		self.file_path = None
 		self.pattern = None
@@ -593,6 +621,26 @@ class ExcelLoader( Loader ):
 		--------
 		Provides LangChain's UnstructuredExcelLoader functionality 
 		to parse Excel spreadsheets into documents.
+		
+		Attibutes:
+		----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
+		load( path: str, mode: str ) -> List[ Document ]
+		split( ) -> List[ Document ]
 
 
 	'''
@@ -684,6 +732,26 @@ class WordLoader( Loader ):
 		--------
 		Provides LangChain's Docx2txtLoader functionality to 
 		convert docx files into Document objects.
+		
+		Attributes:
+		----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
+		load( path: str, mode: str ) -> List[ Document ]
+		split( ) -> List[ Document ]
 
 
 	'''
@@ -773,6 +841,26 @@ class MarkdownLoader( Loader ):
 		Purpose:
 		--------
 		Wrap LangChain's UnstructuredMarkdownLoader to parse Markdown files into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
+		load( path: str, mode: str ) -> List[ Document ]
+		split( ) -> List[ Document ]
 
 
 	'''
@@ -861,6 +949,26 @@ class HtmlLoader( Loader ):
 		--------
 		Provides the UnstructuredHTMLLoader's functionality
 		to parse HTML files into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
+		load( path: str, mode: str ) -> List[ Document ]
+		split( ) -> List[ Document ]
 
 	'''
 	loader: Optional[ UnstructuredHTMLLoader ]
@@ -948,6 +1056,26 @@ class YoutubeLoader( Loader ):
 		--------
 		Provides the YoutubeLoader's functionality
 		to parse video transcripts into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ];
+		file_path -  str;
+		pattern -  str;
+		expanded - List[ str ];
+		candidates - List[ str ];
+		resolved - List[ str ];
+		splitter - RecursiveCharacterTextSplitter;
+		chunk_size - int;
+		overlap_amount - int;
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str;
+		resolve_paths( self, pattern: str ) -> List[ str ];
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ];
+		load( path: str, mode: str ) -> List[ Document ];
+		split( ) -> List[ Document ];
 
 	'''
 	loader: Optional[ YoutubeLoader ]
@@ -1035,13 +1163,33 @@ class YoutubeLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class ArxivLoader( Loader ):
+class ArXivLoader( Loader ):
 	'''
 
 		Purpose:
 		--------
 		Provides the Arxiv loading functionality
 		to parse video research papers into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str;
+		resolve_paths( self, pattern: str ) -> List[ str ];
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ];
+		load( path: str, mode: str ) -> List[ Document ];
+		split( ) -> List[ Document ];
 
 	'''
 	loader: Optional[ ArxivLoader ]
@@ -1083,7 +1231,7 @@ class ArxivLoader( Loader ):
 		try:
 			throw_if( 'question', question )
 			self.query = question
-			self.loader = ArxivLoader( query=self.query, max_documents=self.max_documents,
+			self.loader = ArxivLoader( query=self.query,
 				doc_content_chars_max=self.max_characters )
 			self.documents = self.loader.load( )
 			return self.documents
@@ -1134,6 +1282,26 @@ class WikiLoader( Loader ):
 		--------
 		Provides the Arxiv loading functionality
 		to parse video research papers into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str;
+		resolve_paths( self, pattern: str ) -> List[ str ];
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ];
+		load( path: str, mode: str ) -> List[ Document ];
+		split( ) -> List[ Document ];
 
 	'''
 	loader: Optional[ WikipediaLoader ]
@@ -1142,6 +1310,7 @@ class WikiLoader( Loader ):
 	query: Optional[ str ]
 	max_documents: Optional[ int ]
 	max_characters: Optional[ int ]
+	include_all: Optional[ bool ]
 	query: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -1154,6 +1323,7 @@ class WikiLoader( Loader ):
 		self.loader = None
 		self.max_documents = 25
 		self.max_characters = 4000
+		self.include_all
 	
 	def load( self, question: str ) -> List[ Document ] | None:
 		'''
@@ -1175,7 +1345,7 @@ class WikiLoader( Loader ):
 			throw_if( 'question', question )
 			self.query = question
 			self.loader = WikipediaLoader( query=self.query, max_documents=self.max_documents,
-				doc_content_chars_max=self.max_characters )
+				load_all_available_meta=self.include_all, doc_content_chars_max=self.max_characters )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
@@ -1225,6 +1395,26 @@ class OutlookLoader( Loader ):
 		--------
 		Provides the Arxiv loading functionality
 		to parse video research papers into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str;
+		resolve_paths( self, pattern: str ) -> List[ str ];
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ];
+		load( path: str, mode: str ) -> List[ Document ];
+		split( ) -> List[ Document ];
 
 	'''
 	loader: Optional[ OutlookMessageLoader ]
@@ -1315,6 +1505,34 @@ class SpfxLoader( Loader ):
 		--------
 		Provides the Sharepoint loading functionality
 		to parse video research papers into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		loader - SharePointLoader
+		library_id - str
+		subsite_id - str
+		folder_id - str
+		object_ids - List[ str ]
+		query - str
+		with_token - bool
+		is_recursive - bool
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str;
+		resolve_paths( self, pattern: str ) -> List[ str ];
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ];
+		load( path: str, mode: str ) -> List[ Document ];
+		split( ) -> List[ Document ];
 
 	'''
 	loader: Optional[ SharePointLoader ]
@@ -1446,6 +1664,26 @@ class PowerPointLoader( Loader ):
 		--------
 		Provides PowerPoint loading functionality
 		to parse ppt files into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str;
+		resolve_paths( self, pattern: str ) -> List[ str ];
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ];
+		load( path: str, mode: str ) -> List[ Document ];
+		split( ) -> List[ Document ];
 
 	'''
 	loader: Optional[ UnstructuredPowerPointLoader ]
@@ -1565,6 +1803,26 @@ class OneDriveLoader( Loader ):
 		--------
 		Provides OneDrvie loading functionality
 		to parse contents into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str;
+		resolve_paths( self, pattern: str ) -> List[ str ];
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ];
+		load( path: str, mode: str ) -> List[ Document ];
+		split( ) -> List[ Document ];
 
 	'''
 	loader: Optional[ OneDriveLoader ]
@@ -1686,6 +1944,26 @@ class GoogleDriveLoader( Loader ):
 		--------
 		Provides Google Drive loading functionality
 		to parse contents into Document objects.
+		
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str;
+		resolve_paths( self, pattern: str ) -> List[ str ];
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ];
+		load( path: str, mode: str ) -> List[ Document ];
+		split( ) -> List[ Document ];
 
 	'''
 	loader: Optional[ GoogleDriveLoader ]
@@ -1802,6 +2080,124 @@ class GoogleDriveLoader( Loader ):
 			exception = Error( e )
 			exception.module = 'Foo'
 			exception.cause = 'GoogleDriveLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class EmailLoader( Loader ):
+	'''
+
+
+		Purpose:
+		--------
+		Provides LangChain's UnstructuredEmailLoader functionality
+		to parse email documents (*.eml) into documents.
+
+		Attibutes:
+		----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
+		load( path: str, mode: str ) -> List[ Document ]
+		split( ) -> List[ Document ]
+
+
+	'''
+	loader: Optional[ UnstructuredEmailLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	has_attachments: Optional[ bool ]
+	mode: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = [ ]
+		self.pattern = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.mode = None
+	
+	def load( self, path: str, mode: str='single', attachments: bool=True ) -> List[
+		                                                                             Document ] | None:
+		'''
+
+
+			Purpose:
+			--------
+			Load and convert Email data (*.eml) into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): File path to the Excel spreadsheet.
+			mode (str): Extraction mode, either 'elements' or 'paged'.
+			include_headers (bool): Whether to include column headers in parsing.
+
+			Returns:
+			--------
+			List[Document]: List of parsed Document objects from Excel content.
+
+
+		'''
+		try:
+			throw_if( 'path', path )
+			self.file_path = self.verify_exists( path )
+			self.mode = mode
+			self.has_attachments = attachments
+			self.loader = UnstructuredEmailLoader( file_path=self.file_path, mode=self.mode,
+				process_attachments=self.has_attachments )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'EmailLoader'
+			exception.method = 'load( self, path: str, mode: str=elements, include_headers: bool=True ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
+		'''
+
+
+			Purpose:
+			--------
+			Split loaded Email documents into manageable chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Maximum characters per chunk.
+			chunk_overlap (int): Characters overlapping between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked and cleaned list of Document objects.
+
+
+		'''
+		try:
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'EmailLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
