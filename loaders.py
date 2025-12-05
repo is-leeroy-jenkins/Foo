@@ -317,6 +317,33 @@ class CsvLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 	
+	def __dir__(self):
+		'''
+		
+			Returns:
+			--------
+			A list of all available members.
+			
+		
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split',
+		         'csv_args',
+		         'columns' ]
+	
 	def load( self, path: str, columns: Optional[ List[ str ] ],
 			csv_args: Optional[ Dict[ str, Any ] ] ) -> List[ Document ] | None:
 		'''
@@ -348,7 +375,7 @@ class CsvLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'CSV'
+			exception.cause = 'CsvLoader'
 			exception.method = 'loader( )'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -380,7 +407,7 @@ class CsvLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'CSV'
+			exception.cause = 'CsvLoader'
 			exception.method = 'split( self, size: int=1000, amount: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -431,14 +458,32 @@ class WebLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 	
-	def __dir__(self):
+	def __dir__( self ):
 		'''
-		
-			Purpose:
-			---------
-			Returns a list of class members.
-			
+
+			Returns:
+			--------
+			A list of all available members.
+
+
 		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split',
+		         'urls',]
+	
 	def load( self, urls: List[ str ] ) -> List[ Document ] | None:
 		'''
 
@@ -464,7 +509,7 @@ class WebLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'Web'
+			exception.cause = 'WebLoader'
 			exception.method = 'load( self, urls: List[ str ] ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -496,7 +541,7 @@ class WebLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'Web'
+			exception.cause = 'WebLoader'
 			exception.method = 'split( self, chunk: int=1000 , overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -545,7 +590,33 @@ class PdfLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 		self.mode = None
+	
+	def __dir__( self ):
+		'''
 
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'mode',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
+	
 	def load( self, path: str, mode: str='single' ) -> List[ Document ] | None:
 		'''
 
@@ -574,7 +645,7 @@ class PdfLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'PDF'
+			exception.cause = 'PdfLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -608,7 +679,7 @@ class PdfLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'PDF'
+			exception.cause = 'PdfLoader'
 			exception.method = 'split( self, chunk: int=1000 , overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -656,7 +727,32 @@ class ExcelLoader( Loader ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
+	
+	def __dir__( self ):
+		'''
 
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
+	
 	def load( self, path: str, mode: str='elements', headers: bool=True ) -> List[ Document ] | None:
 		'''
 
@@ -686,7 +782,7 @@ class ExcelLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'Excel'
+			exception.cause = 'ExcelLoader'
 			exception.method = 'load( self, path: str, mode: str=elements, include_headers: bool=True ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -719,7 +815,7 @@ class ExcelLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'Excel'
+			exception.cause = 'ExcelLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -767,7 +863,32 @@ class WordLoader( Loader ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
+	
+	def __dir__( self ):
+		'''
 
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
+	
 	def load( self, path: str ) -> List[ Document ] | None:
 		'''
 
@@ -795,7 +916,7 @@ class WordLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'Word'
+			exception.cause = 'WordLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -829,7 +950,7 @@ class WordLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'Word'
+			exception.cause = 'WordLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -877,8 +998,30 @@ class MarkdownLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 	
-	def __repr__( self ) -> str:
-		return f'Markdown(path={self.path!r}, docs={len( self.docs or [ ] )})'
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
 	
 	def load( self, path: str ) -> List[ Document ] | None:
 		'''
@@ -905,7 +1048,7 @@ class MarkdownLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'Markdown'
+			exception.cause = 'MarkdownLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ] '
 			error = ErrorDialog( exception )
 			error.show( )
@@ -937,7 +1080,7 @@ class MarkdownLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'Markdown'
+			exception.cause = 'MarkdownLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -984,8 +1127,30 @@ class HtmlLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 	
-	def __repr__( self ) -> str:
-		return f'HTML(path={self.path!r}, docs={len( self.documents or [ ] )})'
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
 	
 	def load( self, path: str ) -> List[ Document ] | None:
 		'''
@@ -1044,7 +1209,7 @@ class HtmlLoader( Loader ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'HTML'
+			exception.cause = 'HtmlLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -1100,6 +1265,35 @@ class YoutubeLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'include_info',
+		         'llm',
+		         'language',
+		         'temperature',
+		         'api_key',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
 
 	def load( self, youtube_url: str ) -> List[ Document ] | None:
 		'''
@@ -1211,6 +1405,34 @@ class ArXivLoader( Loader ):
 		self.max_documents = 2
 		self.max_characters = 1000
 		self.include_metadata = False
+	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'max_documents',
+		         'max_characters',
+		         'include_metadata',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
 	
 	def load( self, question: str ) -> List[ Document ] | None:
 		'''
@@ -1325,6 +1547,34 @@ class WikiLoader( Loader ):
 		self.max_characters = 4000
 		self.include_all
 	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'max_documents',
+		         'max_characters',
+		         'include_all',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
+	
 	def load( self, question: str ) -> List[ Document ] | None:
 		'''
 
@@ -1435,6 +1685,33 @@ class OutlookLoader( Loader ):
 		self.loader = None
 		self.max_documents = 2
 		self.max_characters = 1000
+	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'max_charactes',
+		         'max_documents',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
 	
 	def load( self, path: str ) -> List[ Document ] | None:
 		'''
@@ -1559,6 +1836,37 @@ class SpfxLoader( Loader ):
 		self.object_ids = [ ]
 		self.with_token = None
 		self.is_recursive = None
+	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'folder_id',
+		         'library_id',
+		         'subsite_id',
+		         'object_id',
+		         'with_token',
+		         'is_recursive',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
 	
 	def load( self, library_id: str ) -> List[ Document ] | None:
 		'''
@@ -1702,6 +2010,34 @@ class PowerPointLoader( Loader ):
 		self.loader = None
 		self.mode = None
 	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'query',
+		         'mode',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
+	
+	
 	def load( self, path: str ) -> List[ Document ] | None:
 		'''
 
@@ -1843,6 +2179,36 @@ class OneDriveLoader( Loader ):
 		self.drive_id = None
 		self.client_id = None
 		self.client_secret = None
+	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'query',
+		         'drive_id',
+		         'client_id',
+		         'client_secret',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'load_folder',
+		         'split', ]
 	
 	def load( self, id: str ) -> List[ Document ] | None:
 		'''
@@ -1986,7 +2352,36 @@ class GoogleDriveLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 		self.is_recursive = None
-		
+	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'query',
+		         'folder_id',
+		         'document_Id',
+		         'is_recursive',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'load_folder',
+		         'split', ]
 	
 	def load( self, id: str, recursive: bool=False ) -> List[ Document ] | None:
 		'''
@@ -2130,6 +2525,33 @@ class EmailLoader( Loader ):
 		self.overlap_amount = None
 		self.loader = None
 		self.mode = None
+	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'has_attachments',
+		         'mode',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
 	
 	def load( self, path: str, mode: str='single', attachments: bool=True ) -> List[
 		                                                                             Document ] | None:
