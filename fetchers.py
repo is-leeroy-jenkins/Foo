@@ -49,6 +49,7 @@ from core import Result
 from datetime import datetime
 import googlemaps
 import http.client
+import json
 from langchain_googledrive.retrievers import GoogleDriveRetriever
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
 import re
@@ -967,7 +968,7 @@ class NewsFetcher( WebFetcher ):
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = 'fetchers'
+			exception.cause = 'NewsFetcher'
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -982,26 +983,26 @@ class GoogleMaps( WebFetcher ):
 
 	'''
 	file_path: Optional[ str ]
-	documents: Optional[ List[ Document ] ]
 	num_results: Optional[ int ]
-	query: Optional[ str ]
 	api_key: Optional[ str ]
+	mode: Optional[ str ]
 	coordinates: Optional[ Tuple[ float, float ] ]
 	address: Optional[ str ]
 	directions: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
 		self.api_key = cfg.GEOCODING_API_KEY
 		self.url = None
 		self.file_path = None
-		self.documents = None
-		self.query = None
-		self.chunk_size = None
 		self.coordinates = None
 		self.fetcher = None
 		self.address = None
 		self.directions = None
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
 	
 	def geocode_location( self, address: str ) -> Tuple[ float, float ] | None:
 		'''
@@ -1073,7 +1074,134 @@ class GoogleMaps( WebFetcher ):
 			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
 			error = ErrorDialog( exception )
 			error.show( )
-
+	
+	def validate_address( self, address: List[ str ]  ) -> Dict[ Any, Any ] | None:
+		"""
+			
+			Purpose:
+			--------
+			Validate an address using Google's Address Validation API.
+	
+			Parameters:
+			-----------
+			api_key (str): Your Google Maps API key.
+			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
+			region_code (str): Country code (default "US").
+	
+			Returns:
+			--------
+			dict: Parsed JSON response from Google.
+			
+		"""
+		try:
+			throw_if( 'address', address )
+			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
+			payload = \
+			{
+				'address':
+				{
+					'addressLines': address,
+				}
+			}
+			self.params = {'key': self.api_key }
+			response = requests.post( url, params=self.params, json=payload )
+			if response.status_code != 200:
+				msg = f'Request failed: {response.status_code} – {response.text}'
+				raise RuntimeError( msg )
+			return response.json( )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'validate_address( self, address: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def request_directions( self, address: List[ str ]  ) -> Dict[ Any, Any ] | None:
+		"""
+			
+			Purpose:
+			--------
+			Validate an address using Google's Address Validation API.
+	
+			Parameters:
+			-----------
+			api_key (str): Your Google Maps API key.
+			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
+			region_code (str): Country code (default "US").
+	
+			Returns:
+			--------
+			dict: Parsed JSON response from Google.
+			
+		"""
+		try:
+			throw_if( 'address', address )
+			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
+			payload = \
+			{
+				'address':
+				{
+					'addressLines': address,
+				}
+			}
+			params = {'key': self.api_key }
+			response = requests.post( url, params=params, json=payload )
+			if response.status_code != 200:
+				msg = f'Request failed: {response.status_code} – {response.text}'
+				raise RuntimeError( msg )
+			return response.json( )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'validate_address( self, address: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def request_directions( self, origin: str, destination: str, mode: str='driving' ) -> Dict[ Any, Any ]:
+		"""
+		
+			Purpose:
+			----------
+			Request route directions from Google Maps Directions API.
+		
+			Parameters:
+			-----------
+			api_key     (str): Google Maps Platform API key.
+			origin      (str): Starting location (address or lat,lng).
+			destination (str): Ending location (address or lat,lng).
+			mode        (str): travel mode: 'driving', 'walking', bicycling', or 'transit'.
+		
+			Returns:
+			---------
+			dict: Parsed JSON response from Google Directions API.
+			
+		"""
+		try:
+			throw_if( 'origin', origin )
+			throw_if( 'destination', destination )
+			self.url = "https://maps.googleapis.com/maps/api/directions/json"
+			self.params = \
+			{
+				'origin': origin,
+				'destination': destination,
+				'mode': mode,
+				'key': self.api_key
+			}
+			
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_results = response.json( )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'request_directions( self, origin: str, destination: str ) -> dict'
+			error = ErrorDialog( exception )
+			error.show( )
+			
 class GoogleSearch( WebFetcher ):
 	'''
 
