@@ -1119,7 +1119,7 @@ class GoogleSearch( Fetcher ):
 		self.cse_id = cfg.GOOGLE_CSE_ID
 		self.re_tag = re.compile( r'<[^>]+>' )
 		self.re_ws = re.compile( r'\s+' )
-		self.url = r'https://cse.google.com/cse?cx=' + self.cse_id
+		self.url = None
 		self.headers = { }
 		self.timeout = None
 		self.keywords = None
@@ -1153,7 +1153,7 @@ class GoogleSearch( Fetcher ):
 		         'params',
 		         'fetch' ]
 	
-	def fetch( self, keywords: str, time: int=10 ) -> List[ str ] | None:
+	def fetch( self, keywords: str, time: int=10 ) -> Response | None:
 		'''
 
 			Purpose:
@@ -1173,29 +1173,56 @@ class GoogleSearch( Fetcher ):
 		'''
 		try:
 			throw_if( 'keywords', keywords )
+			self.url = r'https://www.googleapis.com/customsearch/v1?'
 			self.keywords = keywords
 			self.timeout = time
 			self.params = \
 			{
 				'q': self.keywords,
 				'key': self.api_key,
-				'cx': self.cse_id,
+				'cx': '376fd5d0d8ae948b2',
 				'num': self.timeout
 			}
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_response = self.response.links
-			_results = [
-				{
-					'title': item[ 'title' ],
-					'link': item[ 'link' ],
-					'snippet': item[ 'snippet' ]
-				} for item in _response.get( 'items', [ ] ) ]
-			return _results
+			_response = requests.get( url=self.url, params=self.params )
+			return _response
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleSearch'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def html_to_text( self, html: str ) -> str:
+		'''
+
+			Purpose:
+			--------
+			Convert HTML to compact plain text with minimal heuristics (scripts and
+			styles removed, tags replaced with whitespace, whitespace normalized).
+
+			Parameters:
+			---------
+			html (str): Raw HTML string.
+			show_dialog (bool): If True, show an ErrorDialog on exception.
+
+			Returns:
+			--------
+			str: Plain text extracted from HTML.
+
+		'''
+		try:
+			throw_if( 'html', html )
+			html = re.sub( r'<script[\s\S]*?</script>', ' ', html, flags=re.IGNORECASE )
+			html = re.sub( r'<style[\s\S]*?</style>', ' ', html, flags=re.IGNORECASE )
+			html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', html, flags=re.IGNORECASE )
+			text = re.sub( self.re_tag, ' ', html )
+			text = re.sub( self.re_ws, ' ', text ).strip( )
+			return text
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'fetchers'
+			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
