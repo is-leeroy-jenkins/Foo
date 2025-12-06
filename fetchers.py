@@ -927,7 +927,6 @@ class NewsFetcher( WebFetcher ):
 			} )
 			
 			conn.request( 'GET', '/v1/news/all?{}'.format( params ) )
-			
 			res = conn.getresponse( )
 			data = res.read( )
 			return data.decode( 'utf-8' )
@@ -972,238 +971,6 @@ class NewsFetcher( WebFetcher ):
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
-
-class GoogleMaps( WebFetcher ):
-	'''
-
-		Purpose:
-		--------
-		Provides the google drive loading functionality
-		to parse items on googke drive into Document objects.
-
-	'''
-	file_path: Optional[ str ]
-	num_results: Optional[ int ]
-	api_key: Optional[ str ]
-	mode: Optional[ str ]
-	coordinates: Optional[ Tuple[ float, float ] ]
-	address: Optional[ str ]
-	directions: Optional[ str ]
-	params: Optional[ Dict[ str, Any ] ]
-	
-	def __init__( self ) -> None:
-		super( ).__init__( )
-		self.api_key = cfg.GEOCODING_API_KEY
-		self.mode = None
-		self.url = None
-		self.file_path = None
-		self.coordinates = None
-		self.fetcher = None
-		self.address = None
-		self.directions = None
-		self.agents = cfg.AGENTS
-		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ] = self.agents
-	
-	def geocode_location( self, address: str ) -> Tuple[ float, float ] | None:
-		'''
-
-			Purpose:
-			--------
-			Uses gmaps to get coordinates from address.
-
-			Parameters:
-			-----------
-			address (str): address
-
-			Returns:
-			--------
-			List[Document]: List of Document objects parsed from HTML content.
-
-		'''
-		try:
-			throw_if( 'address', address )
-			self.address = address
-			self.url = r'https://maps.googleapis.com/maps/api/geocode/json?address='
-			self.url += f'{self.address}&key={self.api_key}'
-			self.response = requests.get( self.url )
-			self.response.raise_for_status()
-			_response = self.response.json()
-			_result = _response[ 'results' ][ 0 ]
-			_geo = _result[ 'geometry' ]
-			_loc = _geo[ 'location' ]
-			_lat = _loc[ 'lat' ]
-			_lng = _loc[ 'lng' ]
-			return ( _lat, _lng )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'GoogleMaps'
-			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
-			error = ErrorDialog( exception )
-			error.show( )
-
-	def geocode_coordinates( self, latitiude: float, longitude: float ) -> str | None:
-		'''
-
-			Purpose:
-			--------
-			Uses gmaps to get coordinates from address.
-
-			Parameters:
-			-----------
-			address (str): address
-
-			Returns:
-			--------
-			List[Document]: List of Document objects parsed from HTML content.
-
-		'''
-		try:
-			throw_if( 'latitiude', latitiude )
-			throw_if( 'longitude', longitude )
-			self.coordinates =  latitiude, longitude
-			self.url = r'https://maps.googleapis.com/maps/api/geocode/json?latlng='
-			self.url += f'{latitiude},' + f'{longitude}' + f'&key={self.api_key}'
-			_response = requests.get( self.url ).json( )
-			_address = _response[ 'results' ][0][ 'formatted_address' ]
-			return _address
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'GoogleMaps'
-			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def validate_address( self, address: List[ str ]  ) -> Dict[ Any, Any ] | None:
-		"""
-			
-			Purpose:
-			--------
-			Validate an address using Google's Address Validation API.
-	
-			Parameters:
-			-----------
-			api_key (str): Your Google Maps API key.
-			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
-			region_code (str): Country code (default "US").
-	
-			Returns:
-			--------
-			dict: Parsed JSON response from Google.
-			
-		"""
-		try:
-			throw_if( 'address', address )
-			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
-			payload = \
-			{
-				'address':
-				{
-					'addressLines': address,
-				}
-			}
-			self.params = {'key': self.api_key }
-			response = requests.post( url, params=self.params, json=payload )
-			if response.status_code != 200:
-				msg = f'Request failed: {response.status_code} – {response.text}'
-				raise RuntimeError( msg )
-			return response.json( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'GoogleMaps'
-			exception.method = 'validate_address( self, address: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def request_directions( self, address: List[ str ]  ) -> Dict[ Any, Any ] | None:
-		"""
-			
-			Purpose:
-			--------
-			Validate an address using Google's Address Validation API.
-	
-			Parameters:
-			-----------
-			api_key (str): Your Google Maps API key.
-			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
-			region_code (str): Country code (default "US").
-	
-			Returns:
-			--------
-			dict: Parsed JSON response from Google.
-			
-		"""
-		try:
-			throw_if( 'address', address )
-			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
-			payload = \
-			{
-				'address':
-				{
-					'addressLines': address,
-				}
-			}
-			params = {'key': self.api_key }
-			response = requests.post( url, params=params, json=payload )
-			if response.status_code != 200:
-				msg = f'Request failed: {response.status_code} – {response.text}'
-				raise RuntimeError( msg )
-			return response.json( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'GoogleMaps'
-			exception.method = 'validate_address( self, address: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def request_directions( self, origin: str, destination: str, mode: str='driving' ) -> str | None:
-		"""
-		
-			Purpose:
-			----------
-			Request route directions from Google Maps Directions API.
-		
-			Parameters:
-			-----------
-			api_key     (str): Google Maps Platform API key.
-			origin      (str): Starting location (address or lat,lng).
-			destination (str): Ending location (address or lat,lng).
-			mode        (str): travel mode: 'driving', 'walking', bicycling', or 'transit'.
-		
-			Returns:
-			---------
-			dict: Parsed JSON response from Google Directions API.
-			
-		"""
-		try:
-			throw_if( 'origin', origin )
-			throw_if( 'destination', destination )
-			self.mode = mode
-			self.url = "https://maps.googleapis.com/maps/api/directions/json"
-			self.params = \
-			{
-				'origin': origin,
-				'destination': destination,
-				'mode': self.mode,
-				'key': self.api_key
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			_route = _results.get( 'routes', [ { } ] )[ 0 ]
-			return _route
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'GoogleMaps'
-			exception.method = 'request_directions( self, origin: str, destination: str ) -> dict'
-			error = ErrorDialog( exception )
-			error.show( )
 			
 class GoogleSearch( WebFetcher ):
 	'''
@@ -1357,7 +1124,313 @@ class GoogleSearch( WebFetcher ):
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = 'fetchers'
+			exception.cause = 'GoogleSearch'
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
+
+class GoogleMaps( WebFetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides the google drive loading functionality
+		to parse items on googke drive into Document objects.
+
+	'''
+	file_path: Optional[ str ]
+	num_results: Optional[ int ]
+	api_key: Optional[ str ]
+	mode: Optional[ str ]
+	coordinates: Optional[ Tuple[ float, float ] ]
+	address: Optional[ str ]
+	directions: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.api_key = cfg.GEOCODING_API_KEY
+		self.mode = None
+		self.url = None
+		self.file_path = None
+		self.coordinates = None
+		self.fetcher = None
+		self.address = None
+		self.directions = None
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+	
+	def geocode_location( self, address: str ) -> Tuple[ float, float ] | None:
+		'''
+
+			Purpose:
+			--------
+			Uses gmaps to get coordinates from address.
+
+			Parameters:
+			-----------
+			address (str): address
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'address', address )
+			self.address = address
+			self.url = r'https://maps.googleapis.com/maps/api/geocode/json?address='
+			self.url += f'{self.address}&key={self.api_key}'
+			self.response = requests.get( self.url )
+			self.response.raise_for_status()
+			_response = self.response.json()
+			_result = _response[ 'results' ][ 0 ]
+			_geo = _result[ 'geometry' ]
+			_loc = _geo[ 'location' ]
+			_lat = _loc[ 'lat' ]
+			_lng = _loc[ 'lng' ]
+			return ( _lat, _lng )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
+			error = ErrorDialog( exception )
+			error.show( )
+
+	def geocode_coordinates( self, latitiude: float, longitude: float ) -> str | None:
+		'''
+
+			Purpose:
+			--------
+			Uses gmaps to get coordinates from address.
+
+			Parameters:
+			-----------
+			address (str): address
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'latitiude', latitiude )
+			throw_if( 'longitude', longitude )
+			self.coordinates =  latitiude, longitude
+			self.url = r'https://maps.googleapis.com/maps/api/geocode/json?latlng='
+			self.url += f'{latitiude},' + f'{longitude}' + f'&key={self.api_key}'
+			_response = requests.get( self.url ).json( )
+			_address = _response[ 'results' ][0][ 'formatted_address' ]
+			return _address
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def validate_address( self, address: List[ str ]  ) -> Dict[ Any, Any ] | None:
+		"""
+			
+			Purpose:
+			--------
+			Validate an address using Google's Address Validation API.
+	
+			Parameters:
+			-----------
+			api_key (str): Your Google Maps API key.
+			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
+			region_code (str): Country code (default "US").
+	
+			Returns:
+			--------
+			dict: Parsed JSON response from Google.
+			
+		"""
+		try:
+			throw_if( 'address', address )
+			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
+			payload = \
+			{
+				'address':
+				{
+					'addressLines': address,
+				}
+			}
+			self.params = {'key': self.api_key }
+			response = requests.post( url, params=self.params, json=payload )
+			if response.status_code != 200:
+				msg = f'Request failed: {response.status_code} – {response.text}'
+				raise RuntimeError( msg )
+			return response.json( )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'validate_address( self, address: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def request_directions( self, origin: str, destination: str, mode: str='driving' ) -> str | None:
+		"""
+		
+			Purpose:
+			----------
+			Request route directions from Google Maps Directions API.
+		
+			Parameters:
+			-----------
+			api_key     (str): Google Maps Platform API key.
+			origin      (str): Starting location (address or lat,lng).
+			destination (str): Ending location (address or lat,lng).
+			mode        (str): travel mode: 'driving', 'walking', bicycling', or 'transit'.
+		
+			Returns:
+			---------
+			dict: Parsed JSON response from Google Directions API.
+			
+		"""
+		try:
+			throw_if( 'origin', origin )
+			throw_if( 'destination', destination )
+			self.mode = mode
+			self.url = "https://maps.googleapis.com/maps/api/directions/json"
+			self.params = \
+			{
+				'origin': origin,
+				'destination': destination,
+				'mode': self.mode,
+				'key': self.api_key
+			}
+			
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_results = self.response.json( )
+			_route = _results.get( 'routes', [ { } ] )[ 0 ]
+			return _route
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'request_directions( self, origin: str, destination: str ) -> dict'
+			error = ErrorDialog( exception )
+			error.show( )
+
+class GoogleWeather( WebFetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides the google drive loading functionality
+		to parse items on googke drive into Document objects.
+	
+	'''
+	file_path: Optional[ str ]
+	num_results: Optional[ int ]
+	api_key: Optional[ str ]
+	mode: Optional[ str ]
+	coordinates: Optional[ Tuple[ float, float ] ]
+	address: Optional[ str ]
+	directions: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.api_key = cfg.GEOCODING_API_KEY
+		self.mode = None
+		self.url = None
+		self.file_path = None
+		self.coordinates = None
+		self.fetcher = None
+		self.address = None
+		self.directions = None
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+	
+	def current_conditions( self, address: str  ) -> Dict[ Any, Any ] | None:
+		"""
+			
+			Purpose:
+			--------
+			Validate an address using Google's Address Validation API.
+	
+			Parameters:
+			-----------
+			api_key (str): Your Google Maps API key.
+			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
+			region_code (str): Country code (default "US").
+	
+			Returns:
+			--------
+			dict: Parsed JSON response from Google.
+			
+		"""
+		try:
+			throw_if( 'address', address )
+			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
+			payload = \
+			{
+				'address':
+				{
+					'addressLines': address,
+				}
+			}
+			params = {'key': self.api_key }
+			response = requests.post( url, params=params, json=payload )
+			if response.status_code != 200:
+				msg = f'Request failed: {response.status_code} – {response.text}'
+				raise RuntimeError( msg )
+			return response.json( )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'validate_address( self, address: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def future_forecast( self, address: str  ) -> Dict[ Any, Any ] | None:
+		"""
+			
+			Purpose:
+			--------
+			Validate an address using Google's Address Validation API.
+	
+			Parameters:
+			-----------
+			api_key (str): Your Google Maps API key.
+			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
+			region_code (str): Country code (default "US").
+	
+			Returns:
+			--------
+			dict: Parsed JSON response from Google.
+			
+		"""
+		try:
+			throw_if( 'address', address )
+			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
+			payload = \
+			{
+				'address':
+				{
+					'addressLines': address,
+				}
+			}
+			params = {'key': self.api_key }
+			response = requests.post( url, params=params, json=payload )
+			if response.status_code != 200:
+				msg = f'Request failed: {response.status_code} – {response.text}'
+				raise RuntimeError( msg )
+			return response.json( )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'GoogleMaps'
+			exception.method = 'validate_address( self, address: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
