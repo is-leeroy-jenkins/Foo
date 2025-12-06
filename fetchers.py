@@ -1159,7 +1159,7 @@ class GoogleMaps( WebFetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def request_directions( self, origin: str, destination: str, mode: str='driving' ) -> Dict[ Any, Any ]:
+	def request_directions( self, origin: str, destination: str, mode: str='driving' ) -> str | None:
 		"""
 		
 			Purpose:
@@ -1181,19 +1181,21 @@ class GoogleMaps( WebFetcher ):
 		try:
 			throw_if( 'origin', origin )
 			throw_if( 'destination', destination )
+			self.mode = mode
 			self.url = "https://maps.googleapis.com/maps/api/directions/json"
 			self.params = \
 			{
 				'origin': origin,
 				'destination': destination,
-				'mode': mode,
+				'mode': self.mode,
 				'key': self.api_key
 			}
 			
 			self.response = requests.get( url=self.url, params=self.params )
 			self.response.raise_for_status( )
-			_results = response.json( )
-			return _results
+			_results = self.response.json( )
+			_route = _results.get( 'routes', [ { } ] )[ 0 ]
+			return _route
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
