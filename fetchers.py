@@ -994,6 +994,7 @@ class GoogleMaps( WebFetcher ):
 	def __init__( self ) -> None:
 		super( ).__init__( )
 		self.api_key = cfg.GEOCODING_API_KEY
+		self.mode = None
 		self.url = None
 		self.file_path = None
 		self.coordinates = None
