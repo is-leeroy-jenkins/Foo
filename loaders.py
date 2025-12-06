@@ -1212,7 +1212,7 @@ class HtmlLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class YoutubeLoader( Loader ):
+class YouTubeLoader( Loader ):
 	'''
 
 		Purpose:
@@ -2301,7 +2301,7 @@ class OneDriveLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class GoogleDriveLoader( Loader ):
+class GoogleStorageLoader( Loader ):
 	'''
 
 		Purpose:
@@ -2445,7 +2445,7 @@ class GoogleDriveLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 			
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -2551,8 +2551,7 @@ class EmailLoader( Loader ):
 		         'load',
 		         'split', ]
 	
-	def load( self, path: str, mode: str='single', attachments: bool=True ) -> List[
-		                                                                             Document ] | None:
+	def load( self, path: str, mode: str='single', attachments: bool=True ) -> List[ Document ] | None:
 		'''
 
 
@@ -2568,7 +2567,7 @@ class EmailLoader( Loader ):
 
 			Returns:
 			--------
-			List[Document]: List of parsed Document objects from Excel content.
+			List[Document]: List of parsed Document objects from Email content.
 
 
 		'''

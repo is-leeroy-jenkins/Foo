@@ -768,7 +768,7 @@ class WikipediaFetcher( Fetcher ):
 
 		Purpose:
 		--------
-		Provides the Arxiv loading functionality
+		Provides the wikipedia loading functionality
 		to parse video research papers into Document objects.
 
 	'''
@@ -1142,6 +1142,8 @@ class GoogleMaps( WebFetcher ):
 	num_results: Optional[ int ]
 	api_key: Optional[ str ]
 	mode: Optional[ str ]
+	latitude: Optional[ float ]
+	longitude: Optional[ float ]
 	coordinates: Optional[ Tuple[ float, float ] ]
 	address: Optional[ str ]
 	directions: Optional[ str ]
@@ -1150,6 +1152,8 @@ class GoogleMaps( WebFetcher ):
 	def __init__( self ) -> None:
 		super( ).__init__( )
 		self.api_key = cfg.GEOCODING_API_KEY
+		self.longitude = None
+		self.latitude = None
 		self.mode = None
 		self.url = None
 		self.file_path = None
@@ -1166,7 +1170,7 @@ class GoogleMaps( WebFetcher ):
 
 			Purpose:
 			--------
-			Uses gmaps to get coordinates from address.
+			Uses gmaps to get coordinates from a given address.
 
 			Parameters:
 			-----------
@@ -1174,7 +1178,7 @@ class GoogleMaps( WebFetcher ):
 
 			Returns:
 			--------
-			List[Document]: List of Document objects parsed from HTML content.
+			Tuple[ float, float ] - a tuple of floats representing latitude and longitude (lat, lng)
 
 		'''
 		try:
@@ -1199,7 +1203,7 @@ class GoogleMaps( WebFetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-	def geocode_coordinates( self, latitiude: float, longitude: float ) -> str | None:
+	def geocode_coordinates( self, lat: float, long: float ) -> str | None:
 		'''
 
 			Purpose:
@@ -1216,11 +1220,13 @@ class GoogleMaps( WebFetcher ):
 
 		'''
 		try:
-			throw_if( 'latitiude', latitiude )
-			throw_if( 'longitude', longitude )
-			self.coordinates =  latitiude, longitude
+			throw_if( 'latitiude', lat )
+			throw_if( 'longitude', long )
+			self.latitude = lat
+			self.longitude = long
+			self.coordinates =  ( lat, long )
 			self.url = r'https://maps.googleapis.com/maps/api/geocode/json?latlng='
-			self.url += f'{latitiude},' + f'{longitude}' + f'&key={self.api_key}'
+			self.url += f'{lat},' + f'{long}' + f'&key={self.api_key}'
 			_response = requests.get( self.url ).json( )
 			_address = _response[ 'results' ][0][ 'formatted_address' ]
 			return _address
@@ -1328,10 +1334,13 @@ class GoogleWeather( WebFetcher ):
 		to parse items on googke drive into Document objects.
 	
 	'''
+	gmaps: Optional[ GoogleMaps ]
 	file_path: Optional[ str ]
 	num_results: Optional[ int ]
 	api_key: Optional[ str ]
 	mode: Optional[ str ]
+	latitude: Optional[ float ]
+	longitude: Optional[ float ]
 	coordinates: Optional[ Tuple[ float, float ] ]
 	address: Optional[ str ]
 	directions: Optional[ str ]
@@ -1340,9 +1349,12 @@ class GoogleWeather( WebFetcher ):
 	def __init__( self ) -> None:
 		super( ).__init__( )
 		self.api_key = cfg.GEOCODING_API_KEY
+		self.gmaps = GoogleMaps( )
 		self.mode = None
 		self.url = None
 		self.file_path = None
+		self.longitude = None
+		self.latitude = None
 		self.coordinates = None
 		self.fetcher = None
 		self.address = None
@@ -1361,17 +1373,22 @@ class GoogleWeather( WebFetcher ):
 			
 		"""
 		try:
-			lat, lng = geocode_address( self.api_key, address )
-			url = "https://maps.googleapis.com/maps/api/weather/v1/lookup"
+			throw_if( 'address', address )
+			self.address = address
+			lat, lng = self.gmaps.geocode_location( address )
+			self.latitude = lat
+			self.longitude = lng
+			self.url = "https://maps.googleapis.com/maps/api/weather/v1/lookup"
 			self.params = \
-				{
-						'location': f'{lat},{lng}',
-						'key': self.api_key
-				}
+			{
+				'location': f'{self.latitude},{self.longitude}',
+				'key': self.api_key
+			}
 			
-			self.response = requests.get( url, params=self.params )
+			self.response = requests.get( url=self.url, params=self.params )
 			self.response.raise_for_status( )
-			return self.response.json( )
+			_results = self.response.json( )
+			return _results
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -1390,17 +1407,22 @@ class GoogleWeather( WebFetcher ):
 			
 		"""
 		try:
-			lat, lng = geocode_address( self.api_key, address )
+			throw_if( 'address', address )
+			self.address = address
+			lat, lng = geocode_address( self.api_key, self.address )
+			self.latitude = lat
+			self.longitude = lng
 			self.url = "https://maps.googleapis.com/maps/api/weather/v1/forecast"
 			self.params = \
-				{
-						'location': f'{lat},{lng}',
-						'key': self.api_key
-				}
+			{
+				'location': f'{self.latitude},{self.longitude}',
+				'key': self.api_key
+			}
 			
-			self.response = requests.get( url, params=self.params )
+			self.response = requests.get( url=self.url, params=self.params )
 			self.response.raise_for_status( )
-			return self.response.json( )
+			_results = self.response.json( )
+			return _results
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
