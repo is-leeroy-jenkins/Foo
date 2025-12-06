@@ -1351,86 +1351,60 @@ class GoogleWeather( WebFetcher ):
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
-	def current_conditions( self, address: str  ) -> Dict[ Any, Any ] | None:
+	def current_conditions( self, address: str ) -> Dict[ Any, Any ] | None:
 		"""
-			
+		
 			Purpose:
 			--------
-			Validate an address using Google's Address Validation API.
-	
-			Parameters:
-			-----------
-			api_key (str): Your Google Maps API key.
-			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
-			region_code (str): Country code (default "US").
-	
-			Returns:
-			--------
-			dict: Parsed JSON response from Google.
+			Retrieve current weather conditions for an address using the
+			Google Maps Weather API.
 			
 		"""
 		try:
-			throw_if( 'address', address )
-			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
-			payload = \
-			{
-				'address':
+			lat, lng = geocode_address( self.api_key, address )
+			url = "https://maps.googleapis.com/maps/api/weather/v1/lookup"
+			self.params = \
 				{
-					'addressLines': address,
+						'location': f'{lat},{lng}',
+						'key': self.api_key
 				}
-			}
-			params = {'key': self.api_key }
-			response = requests.post( url, params=params, json=payload )
-			if response.status_code != 200:
-				msg = f'Request failed: {response.status_code} – {response.text}'
-				raise RuntimeError( msg )
-			return response.json( )
+			
+			self.response = requests.get( url, params=self.params )
+			self.response.raise_for_status( )
+			return self.response.json( )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'GoogleMaps'
+			exception.cause = 'GoogleWeather'
 			exception.method = 'validate_address( self, address: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def future_forecast( self, address: str  ) -> Dict[ Any, Any ] | None:
+	def future_forecast( self, address: str ) -> Dict[ Any, Any ] | None:
 		"""
 			
 			Purpose:
 			--------
-			Validate an address using Google's Address Validation API.
-	
-			Parameters:
-			-----------
-			api_key (str): Your Google Maps API key.
-			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
-			region_code (str): Country code (default "US").
-	
-			Returns:
-			--------
-			dict: Parsed JSON response from Google.
+			Retrieve weather forecast (hourly + daily) for an address using
+			the Google Maps Weather API.
 			
 		"""
 		try:
-			throw_if( 'address', address )
-			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
-			payload = \
-			{
-				'address':
+			lat, lng = geocode_address( self.api_key, address )
+			self.url = "https://maps.googleapis.com/maps/api/weather/v1/forecast"
+			self.params = \
 				{
-					'addressLines': address,
+						'location': f'{lat},{lng}',
+						'key': self.api_key
 				}
-			}
-			params = {'key': self.api_key }
-			response = requests.post( url, params=params, json=payload )
-			if response.status_code != 200:
-				msg = f'Request failed: {response.status_code} – {response.text}'
-				raise RuntimeError( msg )
-			return response.json( )
+			
+			self.response = requests.get( url, params=self.params )
+			self.response.raise_for_status( )
+			return self.response.json( )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'GoogleMaps'
+			exception.cause = 'GoogleWeather'
 			exception.method = 'validate_address( self, address: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
