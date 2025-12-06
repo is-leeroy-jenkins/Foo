@@ -1074,7 +1074,7 @@ class GoogleMaps( WebFetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class GoogleSearch( Fetcher ):
+class GoogleSearch( WebFetcher ):
 	'''
 
 		Purpose:
@@ -1125,6 +1125,9 @@ class GoogleSearch( Fetcher ):
 		self.keywords = None
 		self.params = None
 		self.response = None
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -1151,6 +1154,7 @@ class GoogleSearch( Fetcher ):
 		         'response',
 		         'cse_id',
 		         'params',
+		         'agents,',
 		         'fetch' ]
 	
 	def fetch( self, keywords: str, time: int=10 ) -> Response | None:
