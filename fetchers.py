@@ -3530,7 +3530,7 @@ class AstroCatalog( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'OpenAstronomyCatalog'
+			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -3561,7 +3561,7 @@ class AstroCatalog( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'OpenAstronomyCatalog'
+			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -3588,7 +3588,7 @@ class AstroCatalog( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'OpenAstronomyCatalog'
+			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -3623,7 +3623,7 @@ class AstroCatalog( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'DONKI'
+			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -3693,16 +3693,16 @@ class AstroCatalog( Fetcher ):
 		if required is None:
 			required = list( parameters.keys( ) )
 		return \
+		{
+			'name': func_name,
+			'description': f'{desc} This function uses the {tool_name} service.',
+			'parameters':
 			{
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
-					'parameters':
-						{
-								'type': 'object',
-								'properties': parameters,
-								'required': required
-						}
+					'type': 'object',
+					'properties': parameters,
+					'required': required
 			}
+		}
 
 class AstroQuery( Fetcher ):
 	'''
@@ -3778,11 +3778,11 @@ class AstroQuery( Fetcher ):
 			simbad = Simbad( )
 			simbad.ROW_LIMIT = 100
 			_result = simbad.query_region( 'm81', radius='0.5d' )
-			return _results
+			return _result
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'OpenAstronomyCatalog'
+			exception.cause = 'AstroQuery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -3876,16 +3876,16 @@ class AstroQuery( Fetcher ):
 		if required is None:
 			required = list( parameters.keys( ) )
 		return \
+		{
+			'name': func_name,
+			'description': f'{desc} This function uses the {tool_name} service.',
+			'parameters':
 			{
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
-					'parameters':
-						{
-								'type': 'object',
-								'properties': parameters,
-								'required': required
-						}
+					'type': 'object',
+					'properties': parameters,
+					'required': required
 			}
+		}
 
 class StarMap( Fetcher ):
 	'''
@@ -3913,10 +3913,10 @@ class StarMap( Fetcher ):
 	def __init__( self ):
 		'''
 		
-		Purpose:
-		-------
-		StarMap Class constructor
-		
+			Purpose:
+			-------
+			StarMap Class constructor
+			
 		'''
 		super( ).__init__( )
 		self.api_key = cfg.GOVINFO_API_KEY
