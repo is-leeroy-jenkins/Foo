@@ -2,6 +2,7 @@ asyncio
 arxiv
 bs4~=0.0.2
 beautifulsoup4~=4.13.4
+cartopy
 Crawl4AI~=0.7.4
 chromadb
 docx2txt
@@ -22,6 +23,7 @@ matplotlib
 nest_asyncio
 oauthlib
 o365
+owslib
 numpy
 pandas
 pydantic
@@ -33,6 +35,7 @@ pytube
 python-magic
 python-pptx
 requests
+sscws
 typing~=3.7.4.3
 unstructured
 wikipedia

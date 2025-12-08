@@ -41,7 +41,7 @@
 	******************************************************************************************
 '''
 from __future__ import annotations
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 import requests
 from requests import Response
 from boogr import Error, ErrorDialog
@@ -99,10 +99,10 @@ class Result( ):
 	def __init__( self, response: Response ) -> None:
 			self.response = response
 			self.url = response.url
-			self.status_code = self.response.status_code
-			self.text = self.response.text
-			self.encoding = self.response.encoding
-			self.headers = self.response.headers
+			self.status_code = response.status_code
+			self.text = response.text
+			self.encoding = response.encoding
+			self.headers = response.headers
 
 	def __dir__( self ) -> list[ str ]:
 		"""
@@ -121,7 +121,9 @@ class Result( ):
 		         'text',
 		         'encoding',
 		         'headers',
-		         'has_html' ]
+		         'has_html',
+		         'to_dict',
+		         'from_response']
 
 	def to_dict( self ) -> Dict[ str, Any ]:
 		"""
@@ -167,39 +169,4 @@ class Result( ):
 
 		"""
 		return isinstance( self.text, str )
-	
-	def result_from_response( self, url: str, response: Response ) -> Result:
-		"""
-	
-			Purpose:
-			--------
-			Helper factory that builds a Result from a requests-like response object.
-			The function expects the response to have attributes .status_code, .text,
-			.headers and .content (optional). It is forgiving for missing attributes
-			to make testing easier.
-		
-			Parameters:
-			----------
-			url (str): Canonical URL that was fetched.
-			response: Response-like object with attributes used above.
-		
-			Returns:
-			-------
-			Result: constructed Result instance.
-	
-		"""
-		try:
-			throw_if( 'url', url )
-			throw_if( 'response', response )
-			status = int( getattr( response, 'status_code', 0 ) )
-			text = getattr( response, 'text', '' ) or ''
-			headers = getattr( response, 'headers', None ) or { }
-			html = getattr( response, 'text', None )
-			return Result( url= url, status_code=status, text=text, html=html, headers=headers )
-		except Exception as exc:
-			err = Error( exc )
-			err.module = 'Foo'
-			err.cause = 'Result'
-			err.method = 'result_from_response(url,response)'
-			dlg = ErrorDialog( err )
-			dlg.show( )
+
