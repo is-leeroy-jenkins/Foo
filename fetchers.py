@@ -926,8 +926,7 @@ class WikipediaFetcher( Fetcher ):
 
 		Purpose:
 		--------
-		Provides the wikipedia loading functionality
-		to parse video research papers into Document objects.
+		Provides the wikipedia searchig functionality.
 
 	'''
 	fetcher: Optional[ WikipediaRetriever ]
@@ -1153,7 +1152,8 @@ class NewsFetcher( Fetcher ):
 			self.query = query
 			self.timeout = time
 			conn = http.client.HTTPSConnection( self.url )
-			params = urllib.parse.urlencode( {
+			params = urllib.parse.urlencode(
+			{
 					'api_token': self.api_key,
 					'search': self.query,
 					'language': 'en',
