@@ -2192,7 +2192,7 @@ class SatelliteCenter( Fetcher ):
 
 		Purpose:
 		--------
-		Provides access to APIs from NASA's The Satellite Situation Center Web (SSCWeb) service
+		Provides access to APIs from NASA's Satellite Situation Center Web (SSCWeb) service
 		that is operated jointly by the NASA/GSFC Space Physics Data Facility (SPDF) and the
 		National Space Science Data Center (NSSDC) to support a range of NASA science programs
 		and to fulfill key international NASA responsibilities including those of NSSDC and the
@@ -3504,8 +3504,8 @@ class AstroCatalog( Fetcher ):
 
 			Parameters:
 			----------
-			ra - str, eg. HH:MM:SS.AC
-			dec - str, eg. HH:MM:SS.AC
+			ra - str, eg. HH:MM:SS.AS
+			dec - str, eg. HH:MM:SS.AS
 			radius - int
 
 		"""
@@ -3531,7 +3531,7 @@ class AstroCatalog( Fetcher ):
 			exception = Error( e )
 			exception.module = 'Foo'
 			exception.cause = 'AstroCatalog'
-			exception.method = 'fetch_julian( self, address: str ) -> float'
+			exception.method = 'cone_search( self, ra: str, dec: str, radius: int=2 ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -4372,7 +4372,7 @@ class StarChart( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class CongressionalResearch( Fetcher ):
+class Congress( Fetcher ):
 	'''
 
 		Purpose:
@@ -4412,7 +4412,7 @@ class CongressionalResearch( Fetcher ):
 		self.query = None
 		self.params = None
 	
-	def fetch_congressioal_bills( self, congress: num ) -> Dict[ str, Any ] | None:
+	def fetch_bills( self, congress: num ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
@@ -4425,10 +4425,10 @@ class CongressionalResearch( Fetcher ):
 			self.query = criteria
 			self.url = f'https://api.congress.gov/v3/bill/?'
 			self.params = \
-				{
-						'api_key': self.api_key,
-						'congress': self.congress_number,
-				}
+			{
+				'api_key': self.api_key,
+				'congress': self.congress_number,
+			}
 			
 			self.response = requests.get( url=self.url, params=self.params )
 			self.response.raise_for_status( )
@@ -4437,12 +4437,12 @@ class CongressionalResearch( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'GovInfo'
+			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def fetch_public_laws( self, congress: num ) -> Dict[ str, Any ] | None:
+	def fetch_laws( self, congress: num ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
@@ -4467,12 +4467,12 @@ class CongressionalResearch( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'CongressionalResearch'
+			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def fetch_committee_reports( self, congress: num ) -> Dict[ str, Any ] | None:
+	def fetch_reports( self, congress: int ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
@@ -4497,7 +4497,7 @@ class CongressionalResearch( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'CongressionalResearch'
+			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
