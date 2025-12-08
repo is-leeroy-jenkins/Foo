@@ -846,7 +846,7 @@ class GoogleDriveFetcher( Fetcher ):
 			error.show( )
 	
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: List[ str ] ) -> dict:
 		"""
 		
 			Purpose:
@@ -1769,7 +1769,6 @@ class GoogleMaps( Fetcher ):
 		throw_if( 'parameters', parameters )
 		if not isinstance( parameters, dict ):
 			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-
 		func_name = function.strip( )
 		tool_name = tool.strip( )
 		desc = description.strip( )
@@ -3434,17 +3433,17 @@ class SpaceWeather( Fetcher ):
 			required = list( parameters.keys( ) )
 		return \
 		{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-					{
-							'type': 'object',
-							'properties': parameters,
-							'required': required
-					}
+			'name': func_name,
+			'description': f'{desc} This function uses the {tool_name} service.',
+			'parameters':
+			{
+				'type': 'object',
+				'properties': parameters,
+				'required': required
+			}
 		}
 
-class AstronomyCatalog( Fetcher ):
+class AstroCatalog( Fetcher ):
 	'''
 
 		Purpose:
@@ -3461,11 +3460,11 @@ class AstronomyCatalog( Fetcher ):
 		quantity to retrieve (e.g. redshift), ATTRIBUTE is a property of that quantity,
 		and the ARGUMENT variables allow to user to filter data based upon various
 		attribute values. The ARGUMENT variables can either be used to guarantee that
-		a certain attribute appears in the returned results
-		(e.g. adding &time&e_magnitude to the query will guarantee that each returned
-		item has a time and e_magnitude attribute), or used to filter via a simple equality
-		such as telescope=HST (which would only return QUANTITY objects where the telescope
-		attribute equals "HST"), or they can be more powerful for certain filter attributes
+		a certain attribute appears in the returned results (e.g. adding &time&e_magnitude to
+		the query will guarantee that each returned item has a time and e_magnitude attribute),
+		or used to filter via a simple equality such as telescope=HST
+		(which would only return QUANTITY objects where the telescope attribute equals "HST"),
+		or they can be more powerful for certain filter attributes
 		(examples being ra and dec for performing cone searches).
 		
 	'''
@@ -4037,7 +4036,7 @@ class StarMap( Fetcher ):
 			error.show( )
 
 
-class GovInfo( Fetcher ):
+class GovData( Fetcher ):
 	'''
 		
 		Purpose:
@@ -4109,7 +4108,7 @@ class GovInfo( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def fetch_federal_regulations( self, title: int, part: int ) -> Dict[ str, Any ] | None:
+	def fetch_regulations( self, title: int, part: int ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
@@ -4143,7 +4142,7 @@ class GovInfo( Fetcher ):
 			error.show( )
 
 			
-	def fetch_congressional_bills( self, congress: int, billtype: str, billnum: int  ) -> Dict[ str, Any ] | None:
+	def fetch_bills( self, congress: int, billtype: str, billnum: int ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
@@ -4179,7 +4178,7 @@ class GovInfo( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 			
-	def fetch_statues( self, congress: int, lawtype: str, lawnum: int ) -> Dict[ str, Any ] | None:
+	def fetch_statutes( self, congress: int, lawtype: str, lawnum: int ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
@@ -4214,7 +4213,7 @@ class GovInfo( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 			
-	def fetch_congressional_records( self, congress: str, billtype: str,  billnum: int ) -> Dict[ str, Any ] | None:
+	def fetch_records( self, congress: str, billtype: str,  billnum: int ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
@@ -4247,7 +4246,7 @@ class GovInfo( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 			
-	def fetch_public_laws( self, congress: str, lawtype: str,  lawnum: int ) -> Dict[ str, Any ] | None:
+	def fetch_laws( self, congress: str, lawtype: str,  lawnum: int ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
