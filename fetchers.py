@@ -4958,7 +4958,7 @@ class InternetArchive( Fetcher ):
 		self.timeout = None
 		self.keywords = None
 		self.params = None
-		self.fields = ['identifier', 'name', 'subject', 'title', 'source', 'type', 'publicdate']
+		self.fields = [ 'identifier', 'name', 'subject', 'title', 'source', 'type', 'publicdate' ]
 		self.response = None
 		self.agents = cfg.AGENTS
 		if 'User-Agent' not in self.headers:
