@@ -4443,28 +4443,28 @@ class StarChart( Fetcher ):
 			self.headers[ 'Authorizeion' ] = 'Basic ' + authString
 			self.params = \
 			{
-                    'style': self.style,
-					'observer':
+                'style': self.style,
+				'observer':
+				{
+						'latitude': self.latitude,
+						'longitude': self.longitude,
+						'date': f'{ self.date }'
+				},
+				'view':
+				{
+					'type': 'area',
+					'parameters':
 					{
-							'latitude': self.latitude,
-							'longitude': self.longitude,
-							'date': f'{ self.date }'
-					},
-					'view':
-					{
-							'type': 'area',
-							'parameters':
+						'position':
+						{
+							'equatorial':
 							{
-									'position':
-									{
-											'equatorial':
-											{
-													'rightAscension':  14.83,
-													'declination': 33.3
-											}
-									}
+								'rightAscension':  14.83,
+								'declination': 33.3
 							}
+						}
 					}
+				}
 			}
 			
 			self.response = requests.post( url=self.url, params=self.params, headers=self.headers )
@@ -4524,12 +4524,12 @@ class Congress( Fetcher ):
 
 			Returns:
 			-------
-			Starmap
+			All congressional bills given a Congress (eg, 117)
 
 		'''
 		try:
-			throw_if( 'criteria', criteria )
-			self.query = criteria
+			throw_if( 'congress', congress)
+			self.congress_number = congress
 			self.url = f'https://api.congress.gov/v3/bill/?'
 			self.params = \
 			{
@@ -4554,7 +4554,7 @@ class Congress( Fetcher ):
 
 			Returns:
 			-------
-			Starmap
+			All laws passed given a Congress (eg, 117)
 
 		'''
 		try:
@@ -4584,7 +4584,7 @@ class Congress( Fetcher ):
 
 			Returns:
 			-------
-			Starmap
+			All congressional reports given a Congress (eg, 117)
 
 		'''
 		try:
@@ -4608,3 +4608,235 @@ class Congress( Fetcher ):
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
+
+class InternetArchive( Fetcher ):
+	'''
+
+		Purpose:
+		---------
+		Class providing the functionality of the Internet Archive Search api.
+
+		Parameters:
+		-----------
+		headers (Optional[Dict[str, str]]): Optional HTTP headers; User-Agent
+		auto-filled if missing.
+
+		Returns:
+		-----------
+		None
+
+	'''
+	keywords: Optional[ str ]
+	url: Optional[ str ]
+	re_tag: Optional[ Pattern ]
+	re_ws: Optional[ Pattern ]
+	response: Optional[ Response ]
+	api_key: Optional[ str ]
+	fields: Optional[ List[ str ] ]
+	count: Optional[ int ]
+	params: Optional[ Dict[ str, str ] ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize GoogleSearch with optional headers and sane defaults.
+
+			Parameters:
+			-----------
+			headers (Optional[Dict[str, str]]): Optional headers for requests.
+
+			Returns:
+			-----------
+			None
+		'''
+		super( ).__init__( )
+		self.re_tag = re.compile( r'<[^>]+>' )
+		self.re_ws = re.compile( r'\s+' )
+		self.url = None
+		self.headers = { }
+		self.timeout = None
+		self.keywords = None
+		self.params = None
+		self.fields = ['identifier', 'name', 'subject', 'title', 'source', 'type', 'publicdate']
+		self.response = None
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+
+			Purpose:
+			-----------
+			Internet Archive list of members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			list[str]: Ordered attribute/method names.
+
+		'''
+		return [ 'keywords',
+		         'url',
+		         'timeout',
+		         'headers',
+		         'fetch',
+		         'api_key',
+		         'response',
+		         'cse_id',
+		         'params',
+		         'agents,',
+		         'fetch' ]
+	
+	def fetch( self, keywords: str, time: int = 10 ) -> Response | None:
+		'''
+
+			Purpose:
+			-------
+			Perform an HTTP GET to fetch a page and return canonicalized Result.
+
+			Parameters:
+			-----------
+			url (str): Absolute URL to fetch.
+			time (int): Timeout seconds to use for the request.
+			show_dialog (bool): If True, show an ErrorDialog on exception.
+
+			Returns:
+			---------
+			Optional[Result]: Result with url, status, text, html, headers on success.
+
+		'''
+		try:
+			throw_if( 'keywords', keywords )
+			self.url = r'https://archive.org/advancedsearch.php?'
+			self.keywords = keywords
+			self.timeout = time
+			self.params = \
+			{
+					'q': self.keywords,
+					'fields': self.fields,
+					'num': self.timeout
+			}
+			_response = requests.get( url=self.url, params=self.params )
+			return _response
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'InternetArchive'
+			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def html_to_text( self, html: str ) -> str:
+		'''
+
+			Purpose:
+			--------
+			Convert HTML to compact plain text with minimal heuristics (scripts and
+			styles removed, tags replaced with whitespace, whitespace normalized).
+
+			Parameters:
+			---------
+			html (str): Raw HTML string.
+			show_dialog (bool): If True, show an ErrorDialog on exception.
+
+			Returns:
+			--------
+			str: Plain text extracted from HTML.
+
+		'''
+		try:
+			throw_if( 'html', html )
+			html = re.sub( r'<script[\s\S]*?</script>', ' ', html, flags=re.IGNORECASE )
+			html = re.sub( r'<style[\s\S]*?</style>', ' ', html, flags=re.IGNORECASE )
+			html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', html, flags=re.IGNORECASE )
+			text = re.sub( self.re_tag, ' ', html )
+			text = re.sub( self.re_ws, ' ', text ).strip( )
+			return text
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleSearch'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> dict:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		throw_if( 'function', function )
+		throw_if( 'tool', tool )
+		throw_if( 'description', description )
+		throw_if( 'parameters', parameters )
+		if not isinstance( parameters, dict ):
+			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
+		
+		func_name = function.strip( )
+		tool_name = tool.strip( )
+		desc = description.strip( )
+		if required is None:
+			required = list( parameters.keys( ) )
+		return \
+			{
+					'name': func_name,
+					'description': f'{desc} This function uses the {tool_name} service.',
+					'parameters':
+						{
+								'type': 'object',
+								'properties': parameters,
+								'required': required
+						}
+			}
