@@ -91,9 +91,23 @@ class Fetcher:
 		--------
 		Base class for fetchers. Implement `fetch(...)` in concrete subclasses.
 
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+
+
 	'''
 	timeout: Optional[ int ]
-	headers: Optional[ Dict[ str, str ] ]
+	headers: Optional[ Dict[ str, Any ] ]
 	response: Optional[ Response ]
 	url: Optional[ str ]
 	result: Optional[ Result ]
@@ -367,15 +381,21 @@ class WebFetcher( Fetcher ):
 		---------
 		Concrete synchronous fetcher using `requests` and minimal HTML→text
 		extraction.
-		
-		Parameters:
+
+		Attribues:
 		-----------
-		headers (Optional[Dict[str, str]]): Optional HTTP headers; User-Agent
-		auto-filled if missing.
-		
-		Returns:
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
 		-----------
-		None
+		fetch( ) -> Dict[ str, Any ]
+		
+
 		
 	'''
 	agents: Optional[ str ]
@@ -511,14 +531,21 @@ class WebCrawler( WebFetcher ):
 		A crawler that attempts `crawl4ai` first (if installed) and falls back to
 		Playwright headful rendering only when required. Designed to be used when
 		pages require JS to render content.
-			
-		Parameters:
-		----------
-		headers (Optional[Dict[str, str]]): Optional headers for requests/playwright.
-			
-		Returns:
-		-------
-		None
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
 		
 	'''
 	use_playwright: Optional[ bool ]
@@ -651,6 +678,21 @@ class ArXivFetcher( Fetcher ):
 		--------
 		Provides the Arxiv loading functionality
 		to parse video research papers into Document objects.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
 
 	'''
 	fetcher: Optional[ ArxivRetriever ]
@@ -788,6 +830,21 @@ class GoogleDriveFetcher( Fetcher ):
 		--------
 		Provides the google drive loading functionality
 		to parse items on googke drive into Document objects.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
 
 	'''
 	fetcher: Optional[ GoogleDriveRetriever ]
@@ -928,6 +985,21 @@ class WikipediaFetcher( Fetcher ):
 		--------
 		Provides the wikipedia searchig functionality.
 
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
+
 	'''
 	fetcher: Optional[ WikipediaRetriever ]
 	file_path: Optional[ str ]
@@ -1061,6 +1133,21 @@ class NewsFetcher( Fetcher ):
 		Purpose:
 		--------
 		Provides the News API functionality.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
 
 	'''
 	agents: Optional[ str ]
@@ -1289,14 +1376,20 @@ class GoogleSearch( Fetcher ):
 		---------
 		Class providing the functionality of the google custom search api.
 
-		Parameters:
+		Attribues:
 		-----------
-		headers (Optional[Dict[str, str]]): Optional HTTP headers; User-Agent
-		auto-filled if missing.
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
 
-		Returns:
+		Methods:
 		-----------
-		None
+		fetch( ) -> Dict[ str, Any ]
+		
+
 
 	'''
 	keywords: Optional[ str ]
@@ -1522,6 +1615,21 @@ class GoogleMaps( Fetcher ):
 		--------
 		Provides the google drive loading functionality
 		to parse items on googke drive into Document objects.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
 
 	'''
 	file_path: Optional[ str ]
@@ -1793,6 +1901,21 @@ class GoogleWeather( Fetcher ):
 		--------
 		Provides the google drive loading functionality
 		to parse items on googke drive into Document objects.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
 	
 	'''
 	gmaps: Optional[ GoogleMaps ]
@@ -1992,6 +2115,21 @@ class NavalObservatory( Fetcher ):
 		location (e.g., your DR position); there is no need to round the coordinate values,
 		since all data is computed specifically for the exact position you provide without
 		any table lookup.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
 
 	'''
 	file_path: Optional[ str ]
@@ -2224,6 +2362,21 @@ class SatelliteCenter( Fetcher ):
 		coordinated observations of multiple spacecraft with ground-based investigations) and to
 		subsequent multi-mission data analysis.
 
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
+
 	'''
 	ssc: Optional[ SscWs ]
 	file_path: Optional[ str ]
@@ -2431,6 +2584,21 @@ class EarthObservatory( Fetcher ):
 		providing a service that links those natural events to thematically-related
 		web service-enabled image sources (e.g., via WMS, WMTS, etc.).
 
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
+
 	'''
 	file_path: Optional[ str ]
 	api_key: Optional[ str ]
@@ -2616,6 +2784,21 @@ class GlobalImagery( Fetcher ):
 		of the world. Most imagery is updated daily - available within a few hours after satellite
 		observation, and some products span almost 30 years
 
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
+
 	'''
 	file_path: Optional[ str ]
 	api_key: Optional[ str ]
@@ -2795,6 +2978,19 @@ class NearbyObjects( Fetcher ):
 		(Center for Near-Earth Object Studies) API (Application Program Interface) service.
 		This service provides an interface to machine-readable data (JSON-format) related to SSD
 		and CNEOS.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
 
 	'''
 	file_path: Optional[ str ]
@@ -3021,6 +3217,19 @@ class OpenScience( Fetcher ):
 		the Argonne National Laboratory's (ANL);
 		Metagenomics Rapid Annotations using Subsystems Technology (MG-RAST).
 
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+
 	'''
 	file_path: Optional[ str ]
 	api_key: Optional[ str ]
@@ -3212,6 +3421,19 @@ class SpaceWeather( Fetcher ):
 		comprehensive knowledge-base search functionality to support anomaly resolution and space
 		science research, intelligent linkages, relationships, cause-and-effects between  space
 		weather activities and comprehensive webservice API access to information stored in DONKI.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
 
 	'''
 	api_key: Optional[ str ]
@@ -3487,6 +3709,21 @@ class AstroCatalog( Fetcher ):
 		(which would only return QUANTITY objects where the telescope attribute equals "HST"),
 		or they can be more powerful for certain filter attributes
 		(examples being ra and dec for performing cone searches).
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+
 		
 	'''
 	api_key: Optional[ str ]
@@ -3735,6 +3972,19 @@ class AstroQuery( Fetcher ):
 		which aims to enable the community to develop a robust ecosystem of affiliated packages
 		covering a broad range of needs for astronomical research, data processing, and data analysis.
 
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+
 	'''
 	api_key: Optional[ str ]
 	url: Optional[ str ]
@@ -3917,7 +4167,19 @@ class StarMap( Fetcher ):
 		Purpose:
 		-------
 		Class providing access to StarMap.org celestial map generation functionality.
-		
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
 	'''
 	url: Optional[ str ]
 	image_source: Optional[ str ]
@@ -4155,7 +4417,19 @@ class GovData( Fetcher ):
 		complex queries that will return only matching documents.
 		
 		bill_type - [ hr, s, hjres, sjres, hconres, sconres, hres, sres ]
-		
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
 	
 	'''
 	api_key: Optional[ str ]
@@ -4396,6 +4670,18 @@ class StarChart( Fetcher ):
 		
 		style options [ default, inverted, navy, red ]
 
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
 
 	'''
 	app_id: Optional[ str ]
@@ -4490,7 +4776,18 @@ class Congress( Fetcher ):
 		You can use field operators, such as congress, publishdate, branch, and others to construct
 		complex queries that will return only matching documents.
 
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
 
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
 	'''
 	api_key: Optional[ str ]
 	congress_number: Optional[ int ]
@@ -4616,15 +4913,18 @@ class InternetArchive( Fetcher ):
 		---------
 		Class providing the functionality of the Internet Archive Search api.
 
-		Parameters:
+		Attribues:
 		-----------
-		headers (Optional[Dict[str, str]]): Optional HTTP headers; User-Agent
-		auto-filled if missing.
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
 
-		Returns:
+		Methods:
 		-----------
-		None
-
+		fetch( ) -> Dict[ str, Any ]
 	'''
 	keywords: Optional[ str ]
 	url: Optional[ str ]
@@ -4640,7 +4940,7 @@ class InternetArchive( Fetcher ):
 		'''
 			Purpose:
 			-----------
-			Initialize GoogleSearch with optional headers and sane defaults.
+			Initialize InternetArchive with optional headers and sane defaults.
 
 			Parameters:
 			-----------
