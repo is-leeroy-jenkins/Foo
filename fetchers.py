@@ -51,7 +51,10 @@ import crawl4ai as crl
 import config as cfg
 from core import Result, Schema
 import datetime as dt
+import google
+from google.genai.types import HttpOptions
 import googlemaps
+from groq import Groq
 import http.client
 import json
 from langchain_googledrive.retrievers import GoogleDriveRetriever
@@ -5140,3 +5143,134 @@ class InternetArchive( Fetcher ):
 								'required': required
 						}
 			}
+
+class GroqQuery( Fetcher ):
+	'''
+
+		Purpose:
+		---------
+		Class providing the functionality of the Internet Archive Search api.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+	'''
+	keywords: Optional[ str ]
+	url: Optional[ str ]
+	re_tag: Optional[ Pattern ]
+	re_ws: Optional[ Pattern ]
+	response: Optional[ Response ]
+	api_key: Optional[ str ]
+	query: Optional[  str  ]
+	params: Optional[ Dict[ str, str ] ]
+	temperature: Optional[ float ]
+	max_tokens: Optional[ int ]
+	top_p: Optioanl[ float ]
+	reasonging_effort: Optional[ float ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize IGrq API.
+
+			Parameters:
+			-----------
+			headers (Optional[Dict[str, str]]): Optional headers for requests.
+
+			Returns:
+			-----------
+			None
+		'''
+		super( ).__init__( )
+		self.api_key = cfg.GROQ_API_KEY
+		self.re_tag = re.compile( r'<[^>]+>' )
+		self.re_ws = re.compile( r'\s+' )
+		self.url = r'https://api.groq.com/openai/v1?'
+		self.headers = { }
+		self.timeout = None
+		self.query = None
+		self.params = None
+		self.response = None
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+
+			Purpose:
+			-----------
+			Groq list of members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			list[str]: Ordered attribute/method names.
+
+		'''
+		return [ 'query',
+		         'url',
+		         'timeout',
+		         'headers',
+		         'fetch',
+		         'api_key',
+		         'response',
+		         'cse_id',
+		         'params',
+		         'agents,',
+		         'fetch' ]
+	
+	def fetch( self, keywords: str, time: int = 10 ) -> Response | None:
+		'''
+
+			Purpose:
+			-------
+			Perform an HTTP GET to fetch a page and return canonicalized Result.
+
+			Parameters:
+			-----------
+			url (str): Absolute URL to fetch.
+			time (int): Timeout seconds to use for the request.
+			show_dialog (bool): If True, show an ErrorDialog on exception.
+
+			Returns:
+			---------
+			Optional[Result]: Result with url, status, text, html, headers on success.
+
+		'''
+		try:
+			throw_if( 'keywords', keywords )
+			self.url = r'https://archive.org/advancedsearch.php?'
+			self.keywords = keywords
+			self.timeout = time
+			self.params = \
+				{
+						'q': self.keywords,
+						'fields': self.fields,
+						'num': self.timeout
+				}
+			_response = requests.get( url=self.url, params=self.params )
+			return _response
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'InternetArchive'
+			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	

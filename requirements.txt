@@ -9,10 +9,13 @@ docx2txt
 extract_msg
 fitz
 FreeSimpleGUI
+google
+google-genai
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 googlemaps
+groq
 html2text
 http.client
 langchain
