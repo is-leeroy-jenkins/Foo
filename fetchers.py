@@ -1973,7 +1973,25 @@ class NavalObservatory( Fetcher ):
 
 		Purpose:
 		--------
-		Provides access to APIs from the US Naval Observatory.
+		Provides access to APIs from the US Naval Observatory's Celestial Navigation Data for
+		Assumed Position and Time:  this data service provides all the astronomical information
+		necessary to plot navigational lines of position from observations of the altitudes of
+		celestial bodies. Simply fill in the form below and click on the "Get Data" button at
+		the end of the form.
+
+		The output table gives both almanac data and altitude corrections for each celestial body
+		that is above the horizon at the place and time that you specify. Sea-level observations
+		are assumed. The almanac data consist of Greenwich hour angle (GHA), declination (Dec),
+		computed altitude (Hc), and computed azimuth (Zn). The altitude corrections consist of
+		atmospheric refraction (Refr), semidiameter (SD), parallax in altitude (PA), and the sum of
+		the altitude corrections (Sum = Refr + SD + PA). The SD and PA values are zero for stars.
+		The SD values are non-zero only for the Sun and Moon; for all other objects, it is assumed
+		that the center of light is observed.
+
+		The assumed position that you enter below can be your best estimate of your actual
+		location (e.g., your DR position); there is no need to round the coordinate values,
+		since all data is computed specifically for the exact position you provide without
+		any table lookup.
 
 	'''
 	file_path: Optional[ str ]
@@ -2773,7 +2791,10 @@ class NearbyObjects( Fetcher ):
 
 		Purpose:
 		--------
-		Provides access to APIs from NASA's Global Imagery Browse Services
+		Provides access to APIs from JPL’s SSD (Solar System Dynamics) and CNEOS
+		(Center for Near-Earth Object Studies) API (Application Program Interface) service.
+		This service provides an interface to machine-readable data (JSON-format) related to SSD
+		and CNEOS.
 
 	'''
 	file_path: Optional[ str ]
@@ -3235,9 +3256,9 @@ class SpaceWeather( Fetcher ):
 			self.url = f'https://api.nasa.gov/DONKI/CME?'
 			self.params = \
 			{
-					'startDate': f'{ self.start_date }',
-					'endDate': f'{ self.end_date }',
-					'api_key': f'{ self.api_key }',
+				'startDate': f'{ self.start_date }',
+				'endDate': f'{ self.end_date }',
+				'api_key': f'{ self.api_key }',
 			}
 			
 			self.response = requests.get( url=self.url, params=self.params )
@@ -3257,7 +3278,7 @@ class SpaceWeather( Fetcher ):
 
 			Purpose:
 			--------
-			Retrieves CME analysis given a start and end date
+			Retrieves CME analysis data given a start and end date
 
 			Parameters:
 			----------
@@ -3709,7 +3730,10 @@ class AstroQuery( Fetcher ):
 
 		Purpose:
 		--------
-		Access to NASA's Space Weather Database Of Notifications, Knowledge, Information (DONKI)
+		Access to the astropy package that contains key functionality and common tools needed for
+		performing astronomy and astrophysics with Python. It is at the core of the Astropy Project,
+		which aims to enable the community to develop a robust ecosystem of affiliated packages
+		covering a broad range of needs for astronomical research, data processing, and data analysis.
 
 	'''
 	api_key: Optional[ str ]
@@ -3892,7 +3916,7 @@ class StarMap( Fetcher ):
 		
 		Purpose:
 		-------
-		Class providing access to starmap generation functionality.
+		Class providing access to StarMap.org celestial map generation functionality.
 		
 	'''
 	url: Optional[ str ]
@@ -3964,9 +3988,12 @@ class StarMap( Fetcher ):
 			
 			Purpose:
 			-------
+			Generates a skymap from given coordinats
 			
 			Returns:
 			--------
+			ra - a float representing right ascension
+			dec - a float representing declination
 			
 		'''
 		try:
@@ -3997,18 +4024,21 @@ class StarMap( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def fetch_by_object( self, name: str ) -> Dict[ str, Any ] | None:
+	def ssds_by_coordinates( self, ra: float, dec: float ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
 			-------
+			Generates a skymap using the Sloan Digital Sky Survey (SDSS) given coordinates
 
 			Returns:
 			--------
+			ra - a float representing right ascension
+			dec - a float representing declination
 
 		'''
 		try:
-			throw_if( 'name', ra )
+			throw_if( 'ra', ra )
 			throw_if( 'dec', dec )
 			self.right_ascension = ra
 			self.declination = dec
@@ -4020,7 +4050,84 @@ class StarMap( Fetcher ):
 					'Show_box': f'{self.show_box}',
 					'box_color': f'{self.box_color}',
 					'show_constellation_lines': f'{self.show_lines}',
+					'show_constellation_boundaries': f'{self.show_boundaries}',
+					'image_source': 'SDSS'
+			}
+			
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_results = self.response.json( )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'StarMap'
+			exception.method = 'sdss_by_coordinates( self, name: str ) -> float'
+			error = ErrorDialog( exception )
+			error.show( )
+			
+	def fetch_by_object( self, name: str ) -> Dict[ str, Any ] | None:
+		'''
+			
+			Purpose:
+			-------
+			Generates a skymap from given an dso name
+			
+			Returns:
+			--------
+			name - str
+			
+
+		'''
+		try:
+			throw_if( 'name', name )
+			self.object = name
+			self.url = f'http://www.sky-map.org/?'
+			self.params = \
+			{
+					'object': self.object,
+					'Show_box': f'{self.show_box}',
+					'box_color': f'{self.box_color}',
+					'show_constellation_lines': f'{self.show_lines}',
 					'show_constellation_boundaries': f'{self.show_boundaries}'
+			}
+			
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_results = self.response.json( )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'StarMap'
+			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def ssds_by_object( self, name: str ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			-------
+			Generates a skymap using the Sloan Digital Sky Survey (SDSS) given a dso name
+
+			Returns:
+			--------
+			name: str
+
+		'''
+		try:
+			throw_if( 'name', name )
+			self.object = name
+			self.url = f'http://www.sky-map.org/?'
+			self.params = \
+			{
+					'object': self.object,
+					'Show_box': f'{self.show_box}',
+					'box_color': f'{self.box_color}',
+					'show_constellation_lines': f'{self.show_lines}',
+					'show_constellation_boundaries': f'{self.show_boundaries}',
+					'image_source': 'SSDS'
 			}
 			
 			self.response = requests.get( url=self.url, params=self.params )
@@ -4305,7 +4412,7 @@ class StarChart( Fetcher ):
 	def __init__( self ):
 		super( ).__init__( )
 		self.app_id = r'565d535c-be49-42ab-b960-73b8aaafb0e5'
-		self.app_token = r'06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d7b5edd56e8d57766aa37cb6d16dff82d6ccae1625233b27b05483fd534173bcae659e7edf7b083bb18b7786d03e874d921374dec9287626047f7e49637b701bf9420faee5cadffa46b1501c47366d9693e'
+		self.app_token = cfg.SKYMAP_TOKEN
 		self.userpass = f'{self.app_id}:{self.app_token}'
 		self.authString = None
 		self.latitude = None
