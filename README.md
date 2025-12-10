@@ -5,7 +5,6 @@
 *A Modular Python Framework for Retrieval-Augmented Pipelines and Agentic Workflows*
 
 <p align="left">
-  <a href="https://github.com/is-leeroy-jenkins/Foo/actions"><img src="https://img.shields.io/github/actions/workflow/status/is-leeroy-jenkins/Foo/ci.yml?branch=main&logo=github&label=CI%20build" alt="CI build"></a>
   <a href="https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE"><img src="https://img.shields.io/github/license/is-leeroy-jenkins/Foo?logo=opensourceinitiative&label=License" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.9+-blue.svg?logo=python" alt="Python 3.9+"></a>
 </p>
