@@ -129,6 +129,30 @@ print(csv_data)
 ```
 
 
+## 📄 Loaders
+
+| **Class Name**        | **Description**                                                             |
+| --------------------- | --------------------------------------------------------------------------- |
+| **Loader**            | Abstract base for all loaders; handles file path, validation, and chunking. |
+| **CsvLoader**         | Loads and splits CSV files for tabular data ingestion.                      |
+| **WordLoader**        | Loads and extracts DOCX (Word) document content.                            |
+| **PdfLoader**         | Loads PDF files, providing text extraction and chunking.                    |
+| **MarkLoader**        | Loads Markdown files and splits content for processing.                     |
+| **HtmlLoader**        | Loads and parses local HTML files.                                          |
+| **ExcelLoader**       | Loads and processes Excel spreadsheets (`.xls`, `.xlsx`).                   |
+| **EmailLoader**       | Extracts message content from email files (`.eml`, `.msg`).                 |
+| **PowerPointLoader**  | Loads and extracts text from PowerPoint presentations.                      |
+| **OutlookLoader**     | Handles Microsoft Outlook message files.                                    |
+| **ArxivLoader**       | Loads articles and metadata from arXiv.                                     |
+| **WikipediaLoader**   | Loads Wikipedia content from dumps or API.                                  |
+| **WebBaseLoader**     | Loads and chunks documents fetched from the web.                            |
+| **YouTubeLoader**     | Loads YouTube transcripts and metadata.                                     |
+| **GoogleDriveLoader** | Loads files directly from Google Drive.                                     |
+| **OneDriveLoader**    | Loads files from Microsoft OneDrive.                                        |
+| **SharePointLoader**  | Loads documents from Microsoft SharePoint.                                  |
+
+
+
 ## 🛰️ Fetchers
 
 | **Class Name**             | **Description**                                                                |
@@ -159,30 +183,6 @@ print(csv_data)
 | **JsonFetcher**            | Fetches and parses JSON data from APIs.                                        |
 | **HttpFetcher**            | Generic HTTP(S) data fetcher.                                                  |
 | **CrawlFetcher**           | Simple web crawler for multi-page/site content retrieval.                      |
-
-
-
-## 📄 Loaders
-
-| **Class Name**        | **Description**                                                             |
-| --------------------- | --------------------------------------------------------------------------- |
-| **Loader**            | Abstract base for all loaders; handles file path, validation, and chunking. |
-| **CsvLoader**         | Loads and splits CSV files for tabular data ingestion.                      |
-| **WordLoader**        | Loads and extracts DOCX (Word) document content.                            |
-| **PdfLoader**         | Loads PDF files, providing text extraction and chunking.                    |
-| **MarkLoader**        | Loads Markdown files and splits content for processing.                     |
-| **HtmlLoader**        | Loads and parses local HTML files.                                          |
-| **ExcelLoader**       | Loads and processes Excel spreadsheets (`.xls`, `.xlsx`).                   |
-| **EmailLoader**       | Extracts message content from email files (`.eml`, `.msg`).                 |
-| **PowerPointLoader**  | Loads and extracts text from PowerPoint presentations.                      |
-| **OutlookLoader**     | Handles Microsoft Outlook message files.                                    |
-| **ArxivLoader**       | Loads articles and metadata from arXiv.                                     |
-| **WikipediaLoader**   | Loads Wikipedia content from dumps or API.                                  |
-| **WebBaseLoader**     | Loads and chunks documents fetched from the web.                            |
-| **YouTubeLoader**     | Loads YouTube transcripts and metadata.                                     |
-| **GoogleDriveLoader** | Loads files directly from Google Drive.                                     |
-| **OneDriveLoader**    | Loads files from Microsoft OneDrive.                                        |
-| **SharePointLoader**  | Loads documents from Microsoft SharePoint.                                  |
 
 
 
