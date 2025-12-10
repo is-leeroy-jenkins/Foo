@@ -7,21 +7,6 @@
     <list default="true" id="0cfb9799-4661-4ad2-9985-c7f58980cb6f" name="Changes" comment="update">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/boogr/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/boogr/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/boogr/minion.py" beforeDir="false" afterPath="$PROJECT_DIR$/boogr/minion.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/boogr/static.py" beforeDir="false" afterPath="$PROJECT_DIR$/boogr/enums.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/example_docs.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/example_minimal.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/example_mixed.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/example_sql.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extractors.py" beforeDir="false" afterPath="$PROJECT_DIR$/extractors.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/fetchers.py" beforeDir="false" afterPath="$PROJECT_DIR$/fetchers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ipynb/soup.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/ipynb/soup.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/loaders.py" beforeDir="false" afterPath="$PROJECT_DIR$/loaders.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/parsers.py" beforeDir="false" afterPath="$PROJECT_DIR$/converters.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrapers.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -141,15 +126,7 @@
       <workItem from="1764963103988" duration="1805000" />
       <workItem from="1764964945193" duration="8362000" />
       <workItem from="1765023686953" duration="81860000" />
-      <workItem from="1765283417962" duration="22296000" />
-    </task>
-    <task id="LOCAL-00002" summary="update">
-      <option name="closed" value="true" />
-      <created>1764768137457</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1764768137457</updated>
+      <workItem from="1765283417962" duration="23055000" />
     </task>
     <task id="LOCAL-00003" summary="update">
       <option name="closed" value="true" />
@@ -535,7 +512,15 @@
       <option name="project" value="LOCAL" />
       <updated>1765293542792</updated>
     </task>
-    <option name="localTasksCounter" value="51" />
+    <task id="LOCAL-00051" summary="update">
+      <option name="closed" value="true" />
+      <created>1765377848646</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1765377848646</updated>
+    </task>
+    <option name="localTasksCounter" value="52" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
