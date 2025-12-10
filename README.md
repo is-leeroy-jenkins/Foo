@@ -14,7 +14,7 @@
 
 ## 📚 Table of Contents
 
-* [Features](#features)
+* [Features](#34)
 * [Architecture](#architecture)
 * [Directory Structure](#directory-structure)
 * [Installation](#installation)
