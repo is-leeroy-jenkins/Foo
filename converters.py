@@ -131,7 +131,12 @@ class FallbackConverter( MarkdownConverter ):
 			List[str]: attribute names followed by public methods.
 			
 		"""
-		return [ 'soup', 'blocks', 'raw_html', 'parsed_text', 'strip_noise', 'convert' ]
+		return [ 'soup',
+		         'blocks',
+		         'raw_html',
+		         'parsed_text',
+		         'strip_noise',
+		         'convert' ]
 
 	def strip_noise( self, soup: BeautifulSoup ) -> None:
 		try:

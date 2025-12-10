@@ -53,7 +53,7 @@ from sys import exc_info
 from typing import List, Tuple, Optional
 import matplotlib.figure
 from .minion import App
-from .static import EXT, Client
+from .enums import EXT, Client
 
 matplotlib.use( 'TkAgg' )
 

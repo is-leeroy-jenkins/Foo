@@ -46,25 +46,34 @@ from bs4 import BeautifulSoup
 from boogr import Error, ErrorDialog
 
 def throw_if( name: str, value: object ):
-	if not value:
+	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
 
 class Extractor( ):
 	"""
 
 		Purpose:
+		--------
 		Abstract base for HTML → plain-text extraction.
 
 	"""
 	raw_html: Optional[ str ]
 	extracted_text: Optional[ str ]
+	soup: Optional[ BeautifulSoup ]
 	
 	def __init__( self ):
 		self.raw_html = None
 		self.extracted_text = None
+		self.soup = None
 
 	def __dir__( self ) -> List[ str ]:
-		"""Provide a stable ordering for tooling and REPL use."""
+		"""
+		
+			Purpose:
+			----------
+			Provide a stable ordering for tooling and REPL use.
+			
+		"""
 		return [ 'raw_html', 'extract' ]
 
 	def extract( self, html: str ) -> str:
@@ -73,7 +82,8 @@ class Extractor( ):
 class ParagraphExtractor( Extractor ):
 	"""
 
-		Strategy:
+		Purpose:
+		________
 		Pulls all <p> tags and joins their text.
 
 	"""
@@ -100,7 +110,8 @@ class ParagraphExtractor( Extractor ):
 class ArticleExtractor( Extractor ):
 	"""
 
-		Strategy:
+		Purpose:
+		________
 		Tries to grab the <article> element text; falls back to full document text.
 
 	"""
@@ -113,7 +124,9 @@ class ArticleExtractor( Extractor ):
 
 	def extract( self, html: str ) -> str | None:
 		"""
-		
+
+			Purpose:
+			________
 			Extracts text from the input html
 			
 		"""

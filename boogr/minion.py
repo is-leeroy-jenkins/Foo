@@ -43,7 +43,7 @@
   ******************************************************************************************
   '''
 import subprocess as sp
-from .static import Client
+from .enums import Client
 
 class App( ):
     '''

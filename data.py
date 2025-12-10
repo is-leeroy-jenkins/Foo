@@ -43,10 +43,159 @@
 '''
 import sqlite3
 from boogr import Error, ErrorDialog
+from boogr.enums import Source, SQL, ParamStyle, Provider
 import chromadb
 from chromadb.config import Settings
+import config as cfg
 
-class SQLite:
+def throw_if( name: str, value: Any ) -> None:
+	'''
+
+		Purpose:
+		-----------
+		Simple guard which raises ValueError when `value` is falsy (None, empty).
+
+		Parameters:
+		-----------
+		name (str): Variable name used in the raised message.
+		value (Any): Value to validate.
+
+		Returns:
+		-----------
+		None: Raises ValueError when `value` is falsy.
+
+	'''
+	if value is None:
+		raise ValueError( f"Argument '{name}' cannot be empty!" )
+
+class DB( ):
+	'''
+	
+		Constructor:
+		------------
+		DbConfig( source: Source, provider: Provider=Provider.SQLite )
+	
+		Purpose:
+		---------
+		Class provides list of Budget Execution tables across two databases
+
+	'''
+	provider: Optional[ Provider ]
+	source: Optional[ Source ]
+	table_name: Optional[ str ]
+	path: Optional[ str ]
+	driver: Optional[ str ]
+
+	def __init__( self  ):
+		self.provider = None
+		self.source = None
+		self.table_name = None
+		self.path = None
+		self.driver = None
+
+	def __dir__( self ) -> list[ str ]:
+		'''
+		Retunes a list[ str ] of member names.
+		'''
+		return [ 'source',
+		         'provider',
+		         'table_name',
+		         'get_driver_info',
+		         'path',
+		         'adriver',
+		         'access_path',
+		         'get_data_path',
+		         'get_connection_string' ]
+
+	@property
+	def driver_info( self ) -> str:
+		'''
+
+		'''
+		try:
+			if self.provider.name == 'Access':
+				self.driver = cfg.ACCESS_DRIVER
+				return self.driver
+			elif self.provider.name == 'SqlServer':
+				self.driver = cfg.SQLSERVER_DRIVER
+				return self.driver
+			elif self.provider.name == 'SqlServer':
+				return self.sqlserver_driver
+			else:
+				return cfg.BASEDIR
+		except Exception as e:
+			_exc = Error( e )
+			_exc.cause = 'DB'
+			_exc.method = 'getdriver_info( self )'
+			_error = ErrorDialog( _exc )
+			_error.show( )
+
+	@property
+	def data_path( self ) -> str:
+		'''
+	
+			Purpose:
+			--------
+	
+			Parameters:
+			--------
+	
+			Returns:
+			--------
+
+		'''
+		try:
+			if self.provider.name == 'SQLite':
+				self.path = cfg.BASEDIR + r'\stores\sqlite'
+				return self.path
+			elif self.provider.name == 'Access':
+				self.path = cfg.BASEDIR + r'\stores\access'
+				return self.path
+			elif self.provider.name == 'SqlServer':
+				self.path = cfg.BASEDIR + r'\stores\sqlserver'
+				return self.path
+			else:
+				self.path = cfg.BASEDIR + r'\stores\sqlite'
+				return self.path
+		except Exception as e:
+			_exc = Error( e )
+			_exc.cause = 'DB'
+			_exc.method = 'get_data_path( self )'
+			_error = ErrorDialog( _exc )
+			_error.show( )
+
+	@property
+	def connection_string( self ) -> str:
+		'''
+
+			Purpose:
+			--------
+	
+			Parameters:
+			--------
+	
+			Returns:
+			--------
+
+		'''
+		try:
+			_path = self.data_path
+			if self.provider.name == Provider.Access.name:
+				return self.driver_info + _path
+			elif self.provider.name == Provider.SqlServer.name:
+				return r'DRIVER={ ODBC Driver 17 for SQL Server };Server=.\SQLExpress;' \
+					+ f'AttachDBFileName={_path}' \
+					+ f'DATABASE={_path}Trusted_Connection=yes;'
+			else:
+				return f'{_path} '
+		except Exception as e:
+			_exc = Error( e )
+			_exc.cause = 'DB'
+			_exc.method = 'get_connection_string( self )'
+			_error = ErrorDialog( _exc )
+			_error.show( )
+			
+class SQLite( DB ):
 	"""
 
 		Purpose:
@@ -66,11 +215,14 @@ class SQLite:
 		cursor (sqlite3.Cursor): Cursor used for SQL execution.
 
 	"""
-	db_path: str
+	provider: Optional[ Provider ]
+	path: Optional[ str ]
 	connection: sqlite3.Connection
 	cursor: sqlite3.Cursor
+	column_names: List[ str ]
+	data_types: List[ str ]
 	
-	def __init__( self, db_path: str = "./embeddings.db" ) -> None:
+	def __init__( self ) -> None:
 		"""
 
 			Purpose:
@@ -86,12 +238,13 @@ class SQLite:
 			None
 
 		"""
-		self.db_path = db_path
+		super( ).__init__( self )
+		self.provider = Provider.SQLite
+		self.path = os.getcwd( ) + r'\stores\sqlite\datamodels\Data.db'
 		self.connection = sqlite3.connect( self.db_path )
 		self.cursor = self.connection.cursor( )
-		self.create( )
 	
-	def create( self ) -> None:
+	def create_table( self, name: str, cols: List[ str ], types: List[ str ] ) -> None:
 		"""
 
 			Purpose:
@@ -105,6 +258,9 @@ class SQLite:
 
 		"""
 		try:
+			throw_if( 'name', name )
+			throw_if( 'cols', cols )
+			throw_if( 'types', types )
 			sql = """CREATE TABLE IF NOT EXISTS embeddings
                      (
                          id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,7 +275,7 @@ class SQLite:
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'SQLie'
+			exception.cause = 'SQLite'
 			exception.method = 'create( self ) -> None'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -129,16 +285,19 @@ class SQLite:
 		"""
 
 			Purpose:
-				Inserts a single embedding record with metadata into the database.
+			----------
+			Inserts a single embedding record with metadata into the database.
 
 			Parameters:
-				source_file (str): Name or path of the source document.
-				index (int): Ordinal position of the chunk.
-				text (str): Cleaned text of the chunk.
-				embedding (np.ndarray): Vector representation of the chunk.
+			------------
+			source_file (str): Name or path of the source document.
+			index (int): Ordinal position of the chunk.
+			text (str): Cleaned text of the chunk.
+			embedding (np.ndarray): Vector representation of the chunk.
 
 			Returns:
-				None
+			--------
+			None
 
 		"""
 		try:
@@ -147,9 +306,9 @@ class SQLite:
 			throw_if( 'text', text )
 			throw_if( 'embedding', embedding )
 			vector_str = json.dumps( embedding.tolist( ) )
-			sql = """INSERT INTO embeddings (source_file, chunk_index, chunk_text, embedding)
-                     VALUES (?, ?, ?, ?)"""
-			self.cursor.execute( sql, (source_file, index, text, vector_str) )
+			sql = """INSERT INTO embeddings ( source_file, chunk_index, chunk_text, embedding )
+                     VALUES ( ?, ?, ?, ? )"""
+			self.cursor.execute( sql, ( source_file, index, text, vector_str ) )
 			self.connection.commit( )
 		except Exception as e:
 			exception = Error( e )
@@ -163,21 +322,24 @@ class SQLite:
 		"""
 
 			Purpose:
-				Batch inserts multiple chunks and their embeddings into the database.
+			-------
+			Batch inserts multiple chunks and their embeddings into the database.
 
 			Parameters:
-				source_file (str): Name or path of the source document.
-				chunks (List[str]): List of cleaned text chunks.
-				vectors (np.ndarray): Matrix of embedding vectors.
+			-----------
+			source_file (str): Name or path of the source document.
+			chunks (List[str]): List of cleaned text chunks.
+			vectors (np.ndarray): Matrix of embedding vectors.
 
 			Returns:
-				None
+			--------
+			None
 
 		"""
 		try:
-			records = [ (source_file, i, chunks[ i ], json.dumps( vectors[ i ].tolist( ) ))
+			records = [ ( source_file, i, chunks[ i ], json.dumps( vectors[ i ].tolist( ) ) )
 			            for i in range( len( chunks ) ) ]
-			sql_insert = """INSERT INTO embeddings (source_file, chunk_index, chunk_text, embedding)
+			sql_insert = """INSERT INTO embeddings ( source_file, chunk_index, chunk_text, embedding )
                             VALUES (?, ?, ?, ?)"""
 			self.cursor.executemany( sql_insert, records )
 			self.connection.commit( )
@@ -222,12 +384,15 @@ class SQLite:
 		'''
 
 			Purpose:
+			--------
 			Retrieves all records associated with a specific file.
 
 			Parameters:
+			--------
 			file (str): Identifier of the source file.
 
 			Returns:
+			--------
 			Tuple[List[str], np.ndarray]:
 			Filtered texts and embeddings.
 
@@ -256,12 +421,15 @@ class SQLite:
 		'''
 
 			Purpose:
+			--------
 			Deletes all embeddings associated with a given source file.
 
 			Parameters:
+			--------
 			file (str): Source file whose records are to be deleted.
 
 			Returns:
+			--------
 			None
 
 		'''
@@ -280,13 +448,16 @@ class SQLite:
 		'''
 
 			Purpose:
+			--------
 			Updates an embedding vector in the database by record ID.
 
 			Parameters:
+			--------
 			row_id (int): ID of the record to update.
 			new_embedding (np.ndarray): New embedding vector.
 
 			Returns:
+			--------
 			None
 
 		'''
@@ -310,12 +481,15 @@ class SQLite:
 		'''
 
 			Purpose:
+			--------
 			Returns the total number of records stored in the embeddings table.
 
 			Parameters:
+			--------
 			None
 
 			Returns:
+			--------
 			int: Number of rows in the table.
 
 		'''
@@ -334,12 +508,15 @@ class SQLite:
 		'''
 
 			Purpose:
+			--------
 			Deletes all data from the embeddings table without altering the schema.
 
 			Parameters:
+			--------
 			None
 
 			Returns:
+			--------
 			None
 
 		'''
@@ -371,7 +548,8 @@ class SQLite:
 
 		'''
 		try:
-			self.connection.close( )
+			if self.connection is not None:
+				self.connection.close( )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -453,8 +631,7 @@ class Chroma:
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def query( self, text: List[ str ], num: int = 5, where: Optional[ dict ] = None ) -> List[
-		                                                                                      str ] | None:
+	def query( self, text: List[ str ], num: int = 5, where: Optional[ dict ] = None ) -> List[ str ] | None:
 		'''
 
 			Purpose:
@@ -487,12 +664,15 @@ class Chroma:
 		'''
 
 			Purpose:
+			--------
 			Deletes one or more records from the collection by document ID.
 
 			Parameters:
+			--------
 			ids (List[str]): List of unique document IDs to delete.
 
 			Returns:
+			--------
 			None
 
 		'''
@@ -510,9 +690,11 @@ class Chroma:
 		'''
 
 			Purpose:
+			--------
 			Returns the total number of records in the collection.
 
 			Returns:
+			--------
 			int: Row count of stored vectors.
 
 		'''
@@ -530,12 +712,15 @@ class Chroma:
 		'''
 
 			Purpose:
+			--------
 			Deletes all documents from the collection.
 
 			Parameters:
+			--------
 			None
 
 			Returns:
+			--------
 			None
 
 		'''
@@ -553,9 +738,11 @@ class Chroma:
 		'''
 
 			Purpose:
+			--------
 			Saves the current state of the collection to disk.
 
 			Returns:
+			--------
 			None
 
 		'''

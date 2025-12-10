@@ -2584,7 +2584,8 @@ class EmailLoader( Loader ):
 			exception = Error( e )
 			exception.module = 'Foo'
 			exception.cause = 'EmailLoader'
-			exception.method = 'load( self, path: str, mode: str=elements, include_headers: bool=True ) -> List[ Document ]'
+			exception.method = ('load( self, path: str, mode: str=elements, '
+			                    'include_headers: bool=True ) -> List[ Document ]')
 			error = ErrorDialog( exception )
 			error.show( )
 	

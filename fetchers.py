@@ -5144,7 +5144,7 @@ class InternetArchive( Fetcher ):
 						}
 			}
 
-class Groq( Fetcher ):
+class GroqSearch( Fetcher ):
 	'''
 
 		Purpose:
@@ -5165,10 +5165,10 @@ class Groq( Fetcher ):
 		fetch( ) -> Dict[ str, Any ]
 		
 	'''
+	client: Optional[ GroqSearch ]
+	model: Optional[ str ]
 	keywords: Optional[ str ]
 	url: Optional[ str ]
-	re_tag: Optional[ Pattern ]
-	re_ws: Optional[ Pattern ]
 	response: Optional[ Response ]
 	api_key: Optional[ str ]
 	query: Optional[  str  ]
@@ -5180,9 +5180,10 @@ class Groq( Fetcher ):
 	
 	def __init__( self ) -> None:
 		'''
+		
 			Purpose:
 			-----------
-			Initialize IGrq API.
+			Initialize Groq API.
 
 			Parameters:
 			-----------
@@ -5191,15 +5192,14 @@ class Groq( Fetcher ):
 			Returns:
 			-----------
 			None
+			
 		'''
 		super( ).__init__( )
-		self.api_key = cfg.GROQ_API_KEY
-		self.re_tag = re.compile( r'<[^>]+>' )
-		self.re_ws = re.compile( r'\s+' )
+		self.api_key = cfg.GROQ_API_KE
 		self.url = r'https://api.groq.com/openai/v1?'
 		self.headers = { }
 		self.timeout = None
-		self.query = None
+		self.content = None
 		self.params = None
 		self.response = None
 		self.agents = cfg.AGENTS
@@ -5222,8 +5222,9 @@ class Groq( Fetcher ):
 			list[str]: Ordered attribute/method names.
 
 		'''
-		return [ 'query',
+		return [ 'content',
 		         'url',
+		         'client',
 		         'timeout',
 		         'headers',
 		         'fetch',
@@ -5234,12 +5235,12 @@ class Groq( Fetcher ):
 		         'agents,',
 		         'fetch' ]
 	
-	def fetch( self, keywords: str, time: int = 10 ) -> Response | None:
+	def fetch( self, query: str, time: int=10 ) -> str | None:
 		'''
 
 			Purpose:
 			-------
-			Perform an HTTP GET to fetch a page and return canonicalized Result.
+			Sends an API request to Groq given a query as input
 
 			Parameters:
 			-----------
@@ -5253,27 +5254,33 @@ class Groq( Fetcher ):
 
 		'''
 		try:
-			throw_if( 'keywords', keywords )
-			self.url = r'https://archive.org/advancedsearch.php?'
-			self.keywords = keywords
-			self.timeout = time
-			self.params = \
-			{
-					'q': self.keywords,
-					'fields': self.fields,
-					'num': self.timeout
-			}
-			_response = requests.get( url=self.url, params=self.params )
-			return _response
+			throw_if( 'query', query )
+			client = GroqSearch( )
+			completion = client.chat.completions.create(
+				model='openai/gpt-oss-120b',
+				messages=[
+				{
+					'role': 'user',
+					"content": ""
+				} ],
+				temperature=1,
+				max_completion_tokens=8192,
+				top_p=1,
+				reasoning_effort="medium",
+				stream=True,
+				stop=None
+			)
+			_results = completion.choices[0].message
+			return _results
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = 'InternetArchive'
-			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
+			exception.cause = 'Groq'
+			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 
-class Gemini( Fetcher ):
+class GeminiSearch( Fetcher ):
 	'''
 
 		Purpose:
@@ -5294,43 +5301,43 @@ class Gemini( Fetcher ):
 		fetch( ) -> Dict[ str, Any ]
 
 	'''
-	keywords: Optional[ str ]
+	client: Optional[ genai.Client ]
+	prompt: Optional[ str ]
 	url: Optional[ str ]
-	re_tag: Optional[ Pattern ]
-	re_ws: Optional[ Pattern ]
+	file_path: Optional[ str ]
 	response: Optional[ Response ]
+	mime_type: Optional[ str ]
 	api_key: Optional[ str ]
-	query: Optional[  str  ]
+	id: Optional[ str ]
+	location: Optional[ str ]
+	use_vertex: Optional[ bool ]
+	contents: Optional[  str  ]
 	model: Optional[ str ]
 	params: Optional[ Dict[ str, str ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
 	top_p: Optioanl[ float ]
 	reasonging_effort: Optional[ float ]
+	http_options: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
+		
 			Purpose:
 			-----------
-			Initialize IGrq API.
-
-			Parameters:
-			-----------
-			headers (Optional[Dict[str, str]]): Optional headers for requests.
-
-			Returns:
-			-----------
-			None
+			Initialize the Gmemini Class
+			
 		'''
 		super( ).__init__( )
-		self.api_key = cfg.GROQ_API_KEY
+		self.api_key = cfg.GEMINI_API_KEY
+		self.id = cfg.GOOGLE_PROJECT_ID
+		self.location = cfg.GOOGLE_CLOUD_LOCATION
+		self.use_vertex = cfg.GOOGLE_GENAI_USE_VERTEXAI
 		self.model = 'gemini-2.5-flash'
-		self.re_tag = re.compile( r'<[^>]+>' )
-		self.re_ws = re.compile( r'\s+' )
-		self.url = r'ttps://aiplatform.googleapis.com?'
+		self.url = r'https://aiplatform.googleapis.com?'
 		self.headers = { }
 		self.timeout = None
-		self.query = None
+		self.contents = None
 		self.params = None
 		self.response = None
 		self.agents = cfg.AGENTS
@@ -5355,6 +5362,164 @@ class Gemini( Fetcher ):
 		'''
 		return [ 'query',
 		         'url',
+		         'client',
+		         'id',
+		         'location',
+		         'use_vertex',
+		         'headers',
+		         'fetch',
+		         'api_key',
+		         'response',
+		         'cse_id',
+		         'params',
+		         'agents,',
+		         'fetch' ]
+	
+	def fetch( self, query: str ) -> str | None:
+		'''
+
+			Purpose:
+			-------
+			Sends query/content to the Gemini API
+
+			Parameters:
+			-----------
+			query (str): Absolute URL to fetch.
+			
+
+			Returns:
+			---------
+			str
+
+		'''
+		try:
+			throw_if( 'query', query )
+			self.contents = query
+			self.client = genai.Client( http_options=HttpOptions( api_version='v1' ) )
+			_response = self.client.models.generate_content( model=self.model, contents=self.contents, )
+			return _response.text
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = 'fetch( self, query: str ) -> str '
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def analyze( self, query: str, path: str ) -> str | None:
+		'''
+
+			Purpose:
+			-------
+			Sends image request to the Gemini API given a query and path
+
+			Parameters:
+			-----------
+			query (str): content/query passed to the Gemini API
+			path (str): path to image file
+
+			Returns:
+			---------
+			str.
+
+		'''
+		try:
+			throw_if( 'query', query )
+			throw_if( 'path', path )
+			self.contents = query
+			self.file_path = path
+			_client = genai.Client( http_options=HttpOptions( api_version='v1' ) )
+			_response = client.models.generate_content( model=self.model, contents=self.contents, )
+			return _response.text
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = 'analyze( self, query: str, path: str ) -> str'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+
+class MistralSearch( Fetcher ):
+	'''
+
+		Purpose:
+		---------
+		Class providing to the Groq API
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+		
+	'''
+	client: Optional[ GroqSearch ]
+	model: Optional[ str ]
+	keywords: Optional[ str ]
+	url: Optional[ str ]
+	response: Optional[ Response ]
+	api_key: Optional[ str ]
+	query: Optional[  str  ]
+	params: Optional[ Dict[ str, str ] ]
+	temperature: Optional[ float ]
+	max_tokens: Optional[ int ]
+	top_p: Optioanl[ float ]
+	reasonging_effort: Optional[ float ]
+	
+	def __init__( self ) -> None:
+		'''
+		
+			Purpose:
+			-----------
+			Initialize Groq API.
+
+			Parameters:
+			-----------
+			headers (Optional[Dict[str, str]]): Optional headers for requests.
+
+			Returns:
+			-----------
+			None
+			
+		'''
+		super( ).__init__( )
+		self.api_key = cfg.GROQ_API_KE
+		self.url = r'https://api.groq.com/openai/v1?'
+		self.headers = { }
+		self.timeout = None
+		self.content = None
+		self.params = None
+		self.response = None
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+
+			Purpose:
+			-----------
+			Groq list of members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			list[str]: Ordered attribute/method names.
+
+		'''
+		return [ 'content',
+		         'url',
+		         'client',
 		         'timeout',
 		         'headers',
 		         'fetch',
@@ -5365,12 +5530,12 @@ class Gemini( Fetcher ):
 		         'agents,',
 		         'fetch' ]
 	
-	def fetch( self, keywords: str, time: int=10 ) -> Response | None:
+	def fetch( self, query: str, time: int=10 ) -> str | None:
 		'''
 
 			Purpose:
 			-------
-			Perform an HTTP GET to fetch a page and return canonicalized Result.
+			Sends an API request to Groq given a query as input
 
 			Parameters:
 			-----------
@@ -5384,22 +5549,28 @@ class Gemini( Fetcher ):
 
 		'''
 		try:
-			throw_if( 'keywords', keywords )
-			self.url = r'https://archive.org/advancedsearch.php?'
-			self.keywords = keywords
-			self.timeout = time
-			self.params = \
-			{
-					'q': self.keywords,
-					'fields': self.fields,
-					'num': self.timeout
-			}
-			_response = requests.get( url=self.url, params=self.params )
-			return _response
+			throw_if( 'query', query )
+			client = GroqSearch( )
+			completion = client.chat.completions.create(
+				model='openai/gpt-oss-120b',
+				messages=[
+				{
+					'role': 'user',
+					"content": ""
+				} ],
+				temperature=1,
+				max_completion_tokens=8192,
+				top_p=1,
+				reasoning_effort="medium",
+				stream=True,
+				stop=None
+			)
+			_results = completion.choices[0].message
+			return _results
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = 'InternetArchive'
-			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
+			exception.cause = 'Groq'
+			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
