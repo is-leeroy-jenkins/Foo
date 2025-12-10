@@ -14,20 +14,19 @@
 
 ## 📚 Table of Contents
 
-* [Features](#34)
-* [Architecture](#architecture)
-* [Directory Structure](#directory-structure)
-* [Installation](#installation)
-* [Quick Start](#quick-start)
-* [Usage Examples](#usage-examples)
-* [Fetchers](#fetchers)
-* [Loaders](#loaders)
-* [Dependencies](#dependencies)
-* [UML Class Diagrams](#uml-class-diagrams)
-* [Module/Class Summary](#moduleclass-summary)
-* [Technical Notes](#technical-notes)
-* [License](#license)
-* [Acknowledgments](#acknowledgments)
+* [Features](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-features)
+* [Architecture](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-architecture)
+* [Directory Structure](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-directory-structure)
+* [Installation](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-installation)
+* [Quick Start](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-quick-start)
+* [Usage Examples](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-usage-examples)
+* [Fetchers](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-fetchers)
+* [Loaders](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-loaders)
+* [Dependencies](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-dependencies)
+* [Module/Class Summary](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-moduleclass-summary)
+* [Technical Notes](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-technical-notes)
+* [License](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-license)
+* [Acknowledgments](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-acknowledgments)
 
 
 
