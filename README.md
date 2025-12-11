@@ -1,41 +1,6 @@
-Absolutely.
-Below is a **method-by-method summary** for each class in your `scrapers.py` (Extractor and WebExtractor), followed by the **full, copy-pasteable README** with all required sections, precisely reflecting the true contents of your current codebase.
+###### foo
+![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
----
-
-## 📦 Scrapers
-
-### 🛰️ Extractor
-
-Abstract base for HTML → plain-text extraction.
-
-* `__init__(self, raw_html: str = '')` — Initialize with optional raw HTML to extract.
-* `extract(self)` — Abstract method for extracting readable text from HTML. Must be implemented by subclasses.
-
----
-
-### 🛰️ WebExtractor
-
-Concrete, synchronous extractor using `requests` and BeautifulSoup for HTML → text extraction.
-
-* `__init__(self, raw_html: str = '')` — Initialize the extractor, optionally with raw HTML.
-* `fetch(self, url: str, time: int = 10)` — Performs an HTTP GET, returns a canonicalized Result.
-* `html_to_text(self, html: str)` — Converts HTML to plain, readable text, removing scripts/styles.
-* `scrape_paragraphs(self, uri: str)` — Extracts all `<p>` blocks from the page at the given URI.
-* `scrape_lists(self, uri: str)` — Extracts all `<li>` items from lists.
-* `scrape_tables(self, uri: str)` — Extracts and flattens all table cell contents.
-* `scrape_articles(self, uri: str)` — Extracts text from `<article>` elements.
-* `scrape_headings(self, uri: str)` — Extracts all headings (`<h1>`–`<h6>`).
-* `scrape_divisions(self, uri: str)` — Extracts text from `<div>` elements.
-* `scrape_sections(self, uri: str)` — Extracts text from `<section>` elements.
-* `scrape_blockquotes(self, uri: str)` — Extracts text from `<blockquote>` elements.
-* `scrape_hyperlinks(self, uri: str)` — Extracts all hyperlinks (from `<a href>`).
-* `scrape_images(self, uri: str)` — Extracts image sources (from `<img src>`).
-* `create_schema(self, function, tool, description, parameters, required)` — Builds an OpenAI Tool API schema dynamically for a function.
-
----
-
-# Foo
 
 *A Modular Python Framework for Retrieval-Augmented Pipelines and Agentic Workflows*
 
@@ -78,7 +43,7 @@ Concrete, synchronous extractor using `requests` and BeautifulSoup for HTML → 
 ## 🏛️ Architecture
 
 ```
-Fetcher → Scraper → Loader → Converter → Writer
+🤖 Fetcher → 🕸️ Scraper → 📄 Loader → 🔄 Converter → 📤 Writer
 ```
 
 Each stage is a pluggable, testable class. The core orchestrator is the `Fetch` pipeline.
@@ -148,145 +113,145 @@ print(chunks)
 
 ## 📄 Loaders
 
-### 🛰️ Loader
+### 🗂️ Loader
 
-Abstract base class for all loaders; provides document loading and splitting interface.
+*Abstract base class for all loaders; provides document loading and splitting interface.*
 
 * `load(path)` – Loads the document from the specified path.
 * `split(doc, chunk=1000, overlap=100)` – Splits a loaded document into overlapping text chunks.
 
 ---
 
-### 🛰️ CsvLoader
+### 🧾 CsvLoader
 
-Loads and splits CSV files for tabular data ingestion.
+*Loads and splits CSV files for tabular data ingestion.*
 
 * `load(path)` – Loads and parses a CSV file.
 * `split(doc, chunk=1000, overlap=100)` – Splits CSV content for batch processing.
 
 ---
 
-### 🛰️ PdfLoader
+### 📄 PdfLoader
 
-Loads PDF files, supporting robust text extraction and chunking.
+*Loads PDF files, supporting robust text extraction and chunking.*
 
 * `load(path)` – Loads and extracts text from a PDF document.
 * `split(doc, chunk=1000, overlap=100)` – Splits PDF text into manageable chunks.
 
 ---
 
-### 🛰️ DocxLoader
+### 📝 DocxLoader
 
-Loads and extracts content from DOCX (Word) documents.
+*Loads and extracts content from DOCX (Word) documents.*
 
 * `load(path)` – Loads and parses a DOCX file.
 * `split(doc, chunk=1000, overlap=100)` – Splits DOCX text for analysis.
 
 ---
 
-### 🛰️ HtmlLoader
+### 🌐 HtmlLoader
 
-Loads and parses local HTML documents.
+*Loads and parses local HTML documents.*
 
 * `load(path)` – Loads HTML content from a file.
 * `split(doc, chunk=1000, overlap=100)` – Splits HTML body text into chunks.
 
 ---
 
-### 🛰️ PptxLoader
+### 📊 PptxLoader
 
-Loads and extracts text from PowerPoint (`.pptx`) files.
+*Loads and extracts text from PowerPoint (`.pptx`) files.*
 
 * `load(path)` – Loads slide contents from a PowerPoint file.
 * `split(doc, chunk=1000, overlap=100)` – Splits slide text for downstream use.
 
 ---
 
-### 🛰️ ExcelLoader
+### 📈 ExcelLoader
 
-Loads and processes Excel spreadsheets (XLS/XLSX).
+*Loads and processes Excel spreadsheets (XLS/XLSX).*
 
 * `load(path)` – Loads and reads an Excel file.
 * `split(doc, chunk=1000, overlap=100)` – Splits spreadsheet content for batch processing.
 
 ---
 
-### 🛰️ TextLoader
+### 📜 TextLoader
 
-Loads plain text files, supporting chunked analysis.
+*Loads plain text files, supporting chunked analysis.*
 
 * `load(path)` – Loads the content of a text file.
 * `split(doc, chunk=1000, overlap=100)` – Splits text file content into chunks.
 
 ---
 
-### 🛰️ JsonLoader
+### 🗃️ JsonLoader
 
-Loads structured data from JSON files.
+*Loads structured data from JSON files.*
 
 * `load(path)` – Loads and parses JSON data.
 * `split(doc, chunk=1000, overlap=100)` – Splits JSON-encoded text as appropriate.
 
 ---
 
-### 🛰️ MarkdownLoader
+### 📝 MarkdownLoader
 
-Loads and splits Markdown (`.md`) documents.
+*Loads and splits Markdown (`.md`) documents.*
 
 * `load(path)` – Loads a Markdown file’s content.
 * `split(doc, chunk=1000, overlap=100)` – Splits Markdown into logical text chunks.
 
 ---
 
-### 🛰️ XmlLoader
+### 🗂️ XmlLoader
 
-Loads and parses XML documents.
+*Loads and parses XML documents.*
 
 * `load(path)` – Loads and parses XML content.
 * `split(doc, chunk=1000, overlap=100)` – Splits XML text nodes for further use.
 
 ---
 
-### 🛰️ ImageLoader
+### 🖼️ ImageLoader
 
-Loads and processes image files for downstream tasks (e.g., OCR, embeddings).
+*Loads and processes image files for downstream tasks (e.g., OCR, embeddings).*
 
 * `load(path)` – Loads an image file.
 * `split(doc, chunk=1000, overlap=100)` – Optionally splits or processes image regions.
 
 ---
 
-### 🛰️ YouTubeLoader
+### 📺 YouTubeLoader
 
-Loads YouTube video transcripts and metadata.
+*Loads YouTube video transcripts and metadata.*
 
 * `load(path)` – Retrieves transcript/caption text for a given video ID or URL.
 * `split(doc, chunk=1000, overlap=100)` – Splits transcript into chunks.
 
 ---
 
-### 🛰️ UnstructuredLoader
+### 💾 UnstructuredLoader
 
-Flexible loader for mixed-format or “messy” documents.
+*Flexible loader for mixed-format or “messy” documents.*
 
 * `load(path)` – Loads and attempts to parse various unstructured document formats.
 * `split(doc, chunk=1000, overlap=100)` – Splits extracted text for processing.
 
 ---
 
-## 🛰️ Fetchers
+## 🤖 Fetchers
 
-### 🛰️ Fetcher
+### 🤖 Fetcher
 
-Abstract base class for all fetchers, defining the core fetch interface.
+*Abstract base class for all fetchers, defining the core fetch interface.*
 
 * `fetch(url, **kwargs)` – Performs a data retrieval request to a specified endpoint.
 
 ---
 
-### 🛰️ WebFetcher
+### 🌍 WebFetcher
 
-Fetches HTML content using `requests` and provides rich methods for extracting text and elements from web pages.
+*Fetches HTML content using `requests` and provides rich methods for extracting text and elements from web pages.*
 
 * `fetch(url, time=10)` – Performs an HTTP GET and returns a structured Result.
 * `html_to_text(html)` – Converts raw HTML to compact plain text.
@@ -304,65 +269,65 @@ Fetches HTML content using `requests` and provides rich methods for extracting t
 
 ---
 
-### 🛰️ WebCrawler
+### 🕸️ WebCrawler
 
-JavaScript-capable crawler using `crawl4ai` or Playwright, for dynamic content.
+*JavaScript-capable crawler using `crawl4ai` or Playwright, for dynamic content.*
 
 * `fetch(url, depth=1, **kwargs)` – Recursively crawls and fetches HTML from linked pages.
 
 ---
 
-### 🛰️ StarMap
+### 🌌 StarMap
 
-Fetches celestial map images using coordinates from StarMap.org.
+*Fetches celestial map images using coordinates from StarMap.org.*
 
 * `fetch_by_coordinates(ra, dec)` – Generates a star map based on right ascension and declination.
 
 ---
 
-### 🛰️ ArxivFetcher
+### 📚 ArxivFetcher
 
-Loads arXiv papers via the `ArxivRetriever`, returning results as document objects.
+*Loads arXiv papers via the `ArxivRetriever`, returning results as document objects.*
 
 * `fetch(query, **kwargs)` – Retrieves papers matching the specified query.
 
 ---
 
-### 🛰️ GoogleDriveFetcher
+### 🗂️ GoogleDriveFetcher
 
-Loads files from Google Drive using LangChain retrievers.
+*Loads files from Google Drive using LangChain retrievers.*
 
 * `fetch(query, **kwargs)` – Retrieves documents or file metadata from Google Drive.
 
 ---
 
-### 🛰️ WikipediaFetcher
+### 📖 WikipediaFetcher
 
-Retrieves Wikipedia articles with full metadata support.
+*Retrieves Wikipedia articles with full metadata support.*
 
 * `fetch(query, **kwargs)` – Retrieves article text and metadata for a search term.
 
 ---
 
-### 🛰️ NewsFetcher
+### 📰 NewsFetcher
 
-Fetches news articles using Thenewsapi.com.
+*Fetches news articles using Thenewsapi.com.*
 
 * `fetch(query, **kwargs)` – Retrieves news articles based on keyword and category.
 
 ---
 
-### 🛰️ GoogleSearch
+### 🔎 GoogleSearch
 
-Uses Google Custom Search API for web search.
+*Uses Google Custom Search API for web search.*
 
 * `fetch(query, **kwargs)` – Executes a web search and returns the top results.
 
 ---
 
-### 🛰️ GoogleMaps
+### 🗺️ GoogleMaps
 
-Integrates with Google Maps for geocoding, address validation, and directions.
+*Integrates with Google Maps for geocoding, address validation, and directions.*
 
 * `geocode(address)` – Returns geocoordinates for a given address.
 * `directions(origin, destination)` – Retrieves navigation routes.
@@ -370,18 +335,18 @@ Integrates with Google Maps for geocoding, address validation, and directions.
 
 ---
 
-### 🛰️ GoogleWeather
+### ☁️ GoogleWeather
 
-Retrieves weather data using Google Weather API.
+*Retrieves weather data using Google Weather API.*
 
 * `fetch(location)` – Returns weather info for a location.
 * `resolve_location(query)` – Performs geocoding to determine a location from a query.
 
 ---
 
-### 🛰️ NavalObservatory
+### 🕰️ NavalObservatory
 
-Fetches astronomical and time data from the U.S. Naval Observatory.
+*Fetches astronomical and time data from the U.S. Naval Observatory.*
 
 * `fetch_julian_date()` – Returns current Julian date.
 * `fetch_sidereal_time()` – Returns local sidereal time.
@@ -390,53 +355,53 @@ Fetches astronomical and time data from the U.S. Naval Observatory.
 
 ### 🛰️ SatelliteCenter
 
-Interfaces with NASA SSCWeb for satellite and ground station data.
+*Interfaces with NASA SSCWeb for satellite and ground station data.*
 
 * `fetch_orbits(satellite, start, end)` – Retrieves orbital tracks for a satellite.
 * `fetch_ground_stations()` – Lists ground station metadata.
 
 ---
 
-### 🛰️ EarthObservatory
+### 🌋 EarthObservatory
 
-Connects to NASA EONET for global natural event data.
+*Connects to NASA EONET for global natural event data.*
 
 * `fetch_events(count)` – Returns recent global events (fires, storms, volcanoes, etc).
 * `fetch_categories()` – Returns the event categories.
 
 ---
 
-### 🛰️ GlobalImagery
+### 🗾 GlobalImagery
 
-Pulls satellite imagery from NASA GIBS WMS.
+*Pulls satellite imagery from NASA GIBS WMS.*
 
 * `fetch_imagery(bbox, date)` – Returns satellite map tiles or images.
 
 ---
 
-### 🛰️ NearbyObjects
+### ☄️ NearbyObjects
 
-Retrieves near-Earth object (NEO) and fireball data from JPL’s CNEOS/SSD APIs.
+*Retrieves near-Earth object (NEO) and fireball data from JPL’s CNEOS/SSD APIs.*
 
 * `fetch_neos(start, end)` – Returns near-Earth object data for date range.
 * `fetch_fireballs(start, end)` – Returns fireball events for date range.
 
 ---
 
-## 📦 Scrapers
+## 🕸️ Scrapers
 
-### 🛰️ Extractor
+### 🧩 Extractor
 
-Abstract base for HTML → plain-text extraction.
+*Abstract base for HTML → plain-text extraction.*
 
 * `__init__(self, raw_html: str = '')` — Initialize with optional raw HTML to extract.
 * `extract(self)` — Abstract method for extracting readable text from HTML. Must be implemented by subclasses.
 
 ---
 
-### 🛰️ WebExtractor
+### 🕷️ WebExtractor
 
-Concrete, synchronous extractor using `requests` and BeautifulSoup for HTML → text extraction.
+*Concrete, synchronous extractor using `requests` and BeautifulSoup for HTML → text extraction.*
 
 * `__init__(self, raw_html: str = '')` — Initialize the extractor, optionally with raw HTML.
 * `fetch(self, url: str, time: int = 10)` — Performs an HTTP GET, returns a canonicalized Result.
@@ -501,4 +466,5 @@ Copyright © 2022–2025 Terry D. Eppler
 
 ## 🙏 Acknowledgments
 
-* Project lead: Terry D. Eppler ([terryeppler
+* Project lead: Terry D. Eppler ([terryeppler@gmail.com](mailto:terryeppler@gmail.com))
+* Inspired by open-source Python, ML, and LLM communities.
