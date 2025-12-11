@@ -407,7 +407,7 @@ class WebFetcher( Fetcher ):
 	re_tag: Optional[ Pattern ]
 	re_ws: Optional[ Pattern ]
 	response: Optional[ Response ]
-
+	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
@@ -433,7 +433,7 @@ class WebFetcher( Fetcher ):
 		self.agents = cfg.AGENTS
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
-
+	
 	def __dir__( self ) -> List[ str ]:
 		'''
 			
@@ -457,8 +457,8 @@ class WebFetcher( Fetcher ):
 		         'headers',
 		         'fetch',
 		         'html_to_text' ]
-
-	def fetch( self, url: str, time: int=10  ) -> Result | None:
+	
+	def fetch( self, url: str, time: int = 10 ) -> Result | None:
 		'''
 			
 			Purpose:
@@ -480,18 +480,19 @@ class WebFetcher( Fetcher ):
 			throw_if( 'url', url )
 			self.url = url
 			self.timeout = time
-			self.response = requests.get( url=self.url, headers=self.headers, timeout=self.timeout )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.result = Result( self.response )
 			return self.result
-		except Exception as exc:  
+		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetcher'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
-
+	
 	def html_to_text( self, html: str ) -> str:
 		'''
 			
@@ -512,19 +513,367 @@ class WebFetcher( Fetcher ):
 		'''
 		try:
 			throw_if( 'html', html )
-			html = re.sub( r'<script[\s\S]*?</script>', ' ', html, flags = re.IGNORECASE )
-			html = re.sub( r'<style[\s\S]*?</style>', ' ', html, flags = re.IGNORECASE )
-			html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', html, flags = re.IGNORECASE )
+			html = re.sub( r'<script[\s\S]*?</script>', ' ', html, flags=re.IGNORECASE )
+			html = re.sub( r'<style[\s\S]*?</style>', ' ', html, flags=re.IGNORECASE )
+			html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', html, flags=re.IGNORECASE )
 			text = re.sub( self.re_tag, ' ', html )
 			text = re.sub( self.re_ws, ' ', text ).strip( )
 			return text
-		except Exception as exc:  
+		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
+	
+	def extract_paragraphs( self, uri: str ) -> List[ str ]:
+		"""
+		
+	
+			Purpose:
+			--------
+			Extract readable text from all <p> elements on a page.
+	
+			Parameters:
+			-----------
+			uri (str):
+			Fully-qualified URI of the target HTML document.
+	
+			Returns:
+			--------
+			List[str]:
+			Cleaned paragraph text entries.
+			
+		"""
+		try:
+			throw_if( 'uri', uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, 'html.parser' )
+			blocks = [ p.get_text( ' ', strip=True ) for p in soup.find_all( 'p' ) ]
+			return [ b for b in blocks if b ]
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+
+	def extract_list_items( self, uri: str ) -> List[ str ]:
+		"""
+			
+			Purpose:
+			--------
+			Extract text from <li> elements found in ordered and unordered lists.
+	
+			Parameters:
+			-----------
+			uri (str):
+			Fully-qualified URI of the HTML page.
+	
+			Returns:
+			--------
+			List[str]:
+			Clean list item text segments.
+			
+		"""
+		try:
+			throw_if( 'uri', uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, 'html.parser' )
+			items = [ li.get_text( " ", strip=True ) for li in soup.find_all( 'li' ) ]
+			return [ i for i in items if i ]
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def extract_table_text( self, uri: str ) -> List[ str ]:
+		"""
+			
+			Purpose:
+			--------
+			Extract flattened table cell contents from all <table> structures on the
+			page.
+		
+			Parameters:
+			-----------
+			uri (str):
+			URI of the HTML document.
+		
+			Returns:
+			--------
+			List[str]:
+			Table cell values (one entry per <td> or <th>).
+			
+		"""
+		try:
+			throw_if( "uri", uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, "html.parser" )
+			results: List[ str ] = [ ]
+			for table in soup.find_all( "table" ):
+				for row in table.find_all( "tr" ):
+					for cell in row.find_all( [ "td",  "th" ] ):
+						text = cell.get_text( " ", strip=True )
+						if text:
+							results.append( text )
+			
+			return results
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def extract_articles( self, uri: str ) -> List[ str ]:
+		"""
+			
+			Purpose:
+			--------
+			Extract consolidated text from <article> elements. Each article is
+			returned as a single cleaned string.
+		
+			Parameters:
+			-----------
+			uri (str):
+			URI of the HTML page.
+		
+			Returns:
+			--------
+			List[str]:
+			Article-level text blocks.
+			
+		"""
+		try:
+			throw_if( "uri", uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, "html.parser" )
+			blocks = [ art.get_text( " ", strip=True ) for art in soup.find_all( "article" ) ]
+			return [ b for b in blocks if b ]
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def extract_headings( self, uri: str ) -> List[ str ]:
+		"""
+			
+			Purpose:
+			--------
+			Extract text from heading tags (h1–h6).
+		
+			Parameters:
+			-----------
+			uri (str):
+			Fully-qualified document URI.
+		
+			Returns:
+			--------
+			List[str]:
+			Clean heading strings.
+			
+		"""
+		try:
+			throw_if( "uri", uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, "html.parser" )
+			heading_tags = [ 'h1',
+			                 'h2',
+			                 'h3',
+			                 'h4',
+			                 'h5',
+			                 'h6' ]
+			blocks = [ h.get_text( ' ', strip=True ) for h in soup.find_all( heading_tags ) ]
+			return [ b for b in blocks if b ]
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def extract_divisions( self, uri: str ) -> List[ str ]:
+		"""
+			
+			Purpose:
+			--------
+			Extract cleaned text from <div> elements on the page.
+		
+			Parameters:
+			-----------
+			uri (str):
+			URI of the HTML document.
+		
+			Returns:
+			--------
+			List[str]:
+			Clean division text blocks.
+			
+		"""
+		try:
+			throw_if( "uri", uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, "html.parser" )
+			blocks = [ div.get_text( " ", strip=True ) for div in soup.find_all( "div" ) ]
+			return [ b for b in blocks if b ]
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def extract_sections( self, uri: str ) -> List[ str ]:
+		"""
+			
+			Purpose:
+			--------
+			Extract readable text from <section> elements.
+		
+			Parameters:
+			-----------
+			uri (str):
+			Fully-qualified document URI.
+		
+			Returns:
+			--------
+			List[str]:
+			Clean section text blocks.
+			
+		"""
+		try:
+			throw_if( "uri", uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, "html.parser" )
+			blocks = [ sec.get_text( " ", strip=True ) for sec in soup.find_all( "section" ) ]
+			return [ b for b in blocks if b ]
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def extract_blockquotes( self, uri: str ) -> List[ str ]:
+		"""
+			
+			Purpose:
+			--------
+			Extract text from <blockquote> elements.
+	
+			Parameters:
+			-----------
+			uri (str):
+			Document URI.
+	
+			Returns:
+			--------
+			List[str]:
+			Cleaned blockquote text entries.
+			
+			
+		"""
+		try:
+			throw_if( "uri", uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, "html.parser" )
+			blocks = [ bq.get_text( " ", strip=True ) for bq in soup.find_all( "blockquote" ) ]
+			return [ b for b in blocks if b ]
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def extract_links( self, uri: str ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			--------
+			Extract hyperlink values (href attributes) from <a> tags.
+		
+			Parameters:
+			-----------
+			uri (str):
+			URI of the web page.
+		
+			Returns:
+			--------
+			List[str]:
+			List of hyperlink paths.
+		
+		"""
+		try:
+			throw_if( "uri", uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, "html.parser" )
+			links = [ a.get( "href" ) for a in soup.find_all( "a" ) if a.get( "href" ) ]
+			return links
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def extract_images( self, uri: str ) -> List[ str ]:
+		"""
+			
+			Purpose:
+			--------
+			Extract image references (<img src="...">) from the target document.
+		
+			Parameters:
+			-----------
+			uri (str):
+			Fully-qualified HTML page URI.
+		
+			Returns:
+			--------
+			List[str]:
+			Image source values extracted from <img> elements.
+		
+		"""
+		try:
+			throw_if( "uri", uri )
+			response = requests.get( uri, timeout=10 )
+			response.raise_for_status( )
+			soup = BeautifulSoup( response.text, "html.parser" )
+			images = [ img.get( "src" ) for img in soup.find_all( "img" ) if img.get( "src" ) ]
+			return images
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'WebFetchers'
+			exception.method = 'html2text( )'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+			
 
 class WebCrawler( WebFetcher ):
 	'''
