@@ -4,10 +4,8 @@
 
 *A Modular Python Framework for Retrieval-Augmented Pipelines and Agentic Workflows*
 
-<p align="left">
-  <a href="https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE"><img src="https://img.shields.io/github/license/is-leeroy-jenkins/Foo?logo=opensourceinitiative&label=License" alt="License"></a>
-  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.9+-blue.svg?logo=python" alt="Python 3.9+"></a>
-</p>
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/is-leeroy-jenkins/Foo/blob/main/ipynb/soup.ipynb)
 
 
 ## 📚 Table of Contents
@@ -26,8 +24,6 @@
 * [License](#license)
 * [Acknowledgments](#acknowledgments)
 
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/is-leeroy-jenkins/Foo/blob/main/ipynb/soup.ipynb)
 
 
 ## ✨ Features
