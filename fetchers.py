@@ -457,7 +457,18 @@ class WebFetcher( Fetcher ):
 		         'timeout',
 		         'headers',
 		         'fetch',
-		         'html_to_text' ]
+		         'html_to_text',
+		         'scrape_images',
+		         'scrape_hyperlinks',
+		         'scrape_images',
+		         'scrape_hyperlinks',
+		         'scrape_blockquotes',
+		         'scrape_sections',
+		         'scrape_divisions',
+		         'sracpe_headings',
+		         'scrape_tables',
+		         'scrape_lists',
+		         'scrape_paragraphse', ]
 	
 	def fetch( self, url: str, time: int=10 ) -> Result | None:
 		'''
@@ -874,6 +885,91 @@ class WebFetcher( Fetcher ):
 			exception.method = 'scrape_images( self, uri: str ) -> List[ str ] '
 			dialog = ErrorDialog( exception )
 			dialog.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 			
 
 class WebCrawler( WebFetcher ):
@@ -1098,11 +1194,11 @@ class ArXivFetcher( Fetcher ):
 			exception.method = 'fetch( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
-		"""
 		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
 			Purpose:
 			________
 			Construct and return a fully dynamic OpenAI Tool API schema definition.
@@ -1149,22 +1245,23 @@ class ArXivFetcher( Fetcher ):
 			________
 			dict:
 			A JSON-compatible dictionary defining the tool schema.
-			
-		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
 
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
 				'parameters':
@@ -1173,7 +1270,15 @@ class ArXivFetcher( Fetcher ):
 					'properties': parameters,
 					'required': required
 				}
-		}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 
 class GoogleDriveFetcher( Fetcher ):
@@ -1254,11 +1359,11 @@ class GoogleDriveFetcher( Fetcher ):
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: List[ str ] ) -> dict:
-		"""
 		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
 			Purpose:
 			________
 			Construct and return a fully dynamic OpenAI Tool API schema definition.
@@ -1305,22 +1410,23 @@ class GoogleDriveFetcher( Fetcher ):
 			________
 			dict:
 			A JSON-compatible dictionary defining the tool schema.
-			
-		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
 
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
 				'parameters':
@@ -1329,7 +1435,15 @@ class GoogleDriveFetcher( Fetcher ):
 					'properties': parameters,
 					'required': required
 				}
-		}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 	
 class WikipediaFetcher( Fetcher ):
 	'''
@@ -1403,11 +1517,11 @@ class WikipediaFetcher( Fetcher ):
 			exception.method = 'fetch( self, question: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
-		"""
 		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
 			Purpose:
 			________
 			Construct and return a fully dynamic OpenAI Tool API schema definition.
@@ -1454,22 +1568,23 @@ class WikipediaFetcher( Fetcher ):
 			________
 			dict:
 			A JSON-compatible dictionary defining the tool schema.
-			
-		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
 
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
 				'parameters':
@@ -1478,7 +1593,15 @@ class WikipediaFetcher( Fetcher ):
 					'properties': parameters,
 					'required': required
 				}
-		}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class NewsFetcher( Fetcher ):
 	'''
@@ -1645,11 +1768,11 @@ class NewsFetcher( Fetcher ):
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
-		"""
 		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
 			Purpose:
 			________
 			Construct and return a fully dynamic OpenAI Tool API schema definition.
@@ -1696,22 +1819,23 @@ class NewsFetcher( Fetcher ):
 			________
 			dict:
 			A JSON-compatible dictionary defining the tool schema.
-			
-		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
 
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
 				'parameters':
@@ -1720,7 +1844,15 @@ class NewsFetcher( Fetcher ):
 					'properties': parameters,
 					'required': required
 				}
-		}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 			
 class GoogleSearch( Fetcher ):
 	'''
@@ -1884,11 +2016,11 @@ class GoogleSearch( Fetcher ):
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
-		"""
 		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
 			Purpose:
 			________
 			Construct and return a fully dynamic OpenAI Tool API schema definition.
@@ -1935,22 +2067,23 @@ class GoogleSearch( Fetcher ):
 			________
 			dict:
 			A JSON-compatible dictionary defining the tool schema.
-			
-		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
 
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
 				'parameters':
@@ -1959,7 +2092,15 @@ class GoogleSearch( Fetcher ):
 					'properties': parameters,
 					'required': required
 				}
-		}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class GoogleMaps( Fetcher ):
 	'''
@@ -2171,11 +2312,11 @@ class GoogleMaps( Fetcher ):
 			exception.method = 'request_directions( self, origin: str, destination: str ) -> dict'
 			error = ErrorDialog( exception )
 			error.show( )
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
-		"""
 		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
 			Purpose:
 			________
 			Construct and return a fully dynamic OpenAI Tool API schema definition.
@@ -2222,21 +2363,23 @@ class GoogleMaps( Fetcher ):
 			________
 			dict:
 			A JSON-compatible dictionary defining the tool schema.
-			
+
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
 				'parameters':
@@ -2245,7 +2388,15 @@ class GoogleMaps( Fetcher ):
 					'properties': parameters,
 					'required': required
 				}
-		}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class GoogleWeather( Fetcher ):
 	'''
@@ -2367,11 +2518,11 @@ class GoogleWeather( Fetcher ):
 			exception.method = 'validate_address( self, address: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
-		"""
 		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
 			Purpose:
 			________
 			Construct and return a fully dynamic OpenAI Tool API schema definition.
@@ -2418,22 +2569,23 @@ class GoogleWeather( Fetcher ):
 			________
 			dict:
 			A JSON-compatible dictionary defining the tool schema.
-			
-		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
 
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
 				'parameters':
@@ -2442,7 +2594,15 @@ class GoogleWeather( Fetcher ):
 					'properties': parameters,
 					'required': required
 				}
-		}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class NavalObservatory( Fetcher ):
 	'''
@@ -2506,7 +2666,6 @@ class NavalObservatory( Fetcher ):
 	def __init__( self ) -> None:
 		super( ).__init__( )
 		self.api_key = cfg.GOVINFO_API_KEY
-		self.gmaps = GoogleMaps( )
 		self.mode = None
 		self.url = None
 		self.file_path = None
@@ -2621,7 +2780,7 @@ class NavalObservatory( Fetcher ):
 			error.show( )
 	
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -2672,29 +2831,38 @@ class NavalObservatory( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
-			'name': func_name,
-			'description': f'{desc} This function uses the {tool_name} service.',
-			'parameters':
-			{
-				'type': 'object',
-				'properties': parameters,
-				'required': required
-			}
-		}
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+				{
+						'name': func_name,
+						'description': f'{desc} This function uses the {tool_name} service.',
+						'parameters':
+						{
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+						}
+				}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
+			error = ErrorDialog( exception )
+			error.show( )
 	
 class SatelliteCenter( Fetcher ):
 	'''
@@ -2851,7 +3019,7 @@ class SatelliteCenter( Fetcher ):
 			error.show( )
 		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -2902,29 +3070,38 @@ class SatelliteCenter( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
 			{
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
-					'parameters':
-						{
-								'type': 'object',
-								'properties': parameters,
-								'required': required
-						}
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
 			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class EarthObservatory( Fetcher ):
 	'''
@@ -3045,9 +3222,9 @@ class EarthObservatory( Fetcher ):
 			exception.method = 'fetch_julian( self, address: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
-			
+		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -3098,20 +3275,21 @@ class EarthObservatory( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
 				'parameters':
@@ -3120,7 +3298,15 @@ class EarthObservatory( Fetcher ):
 					'properties': parameters,
 					'required': required
 				}
-		}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class GlobalImagery( Fetcher ):
 	'''
@@ -3192,7 +3378,6 @@ class GlobalImagery( Fetcher ):
 	
 	def fetch_map_services( self ):
 		try:
-			# Connect to GIBS WMS Service
 			wms = WebMapService( 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?',
 				version='1.1.1' )
 			img = wms.getmap( layers=[ 'MODIS_Terra_CorrectedReflectance_TrueColor' ],  # Layers
@@ -3209,7 +3394,7 @@ class GlobalImagery( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'GlobalImageryServices'
+			exception.cause = 'GlobalImagery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -3241,13 +3426,13 @@ class GlobalImagery( Fetcher ):
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'GoogleWeather'
+			exception.cause = 'GlobalImagery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
 		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -3298,29 +3483,38 @@ class GlobalImagery( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
 			{
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
-					'parameters':
-						{
-								'type': 'object',
-								'properties': parameters,
-								'required': required
-						}
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
 			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class NearbyObjects( Fetcher ):
 	'''
@@ -3440,8 +3634,8 @@ class NearbyObjects( Fetcher ):
 			self.url = f'https://aa.usno.navy.mil/api/siderealtime?'
 			self.params = \
 			{
-					'date-min': f'{ self.start_date }',
-					'date-max': f'{ self.end_date }',
+				'date-min': f'{ self.start_date }',
+				'date-max': f'{ self.end_date }',
 			}
 			
 			self.response = requests.get( url=self.url, params=self.params )
@@ -3471,9 +3665,8 @@ class NearbyObjects( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 		
-		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -3524,29 +3717,38 @@ class NearbyObjects( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
 			{
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
-					'parameters':
-						{
-								'type': 'object',
-								'properties': parameters,
-								'required': required
-						}
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
 			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class OpenScience( Fetcher ):
 	'''
@@ -3683,9 +3885,9 @@ class OpenScience( Fetcher ):
 			exception.method = 'fetch_studies( self, keywords: str ) -> Dict[ str, Any ]'
 			error = ErrorDialog( exception )
 			error.show( )
-	
+		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -3736,29 +3938,38 @@ class OpenScience( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
 			{
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
-					'parameters':
-						{
-								'type': 'object',
-								'properties': parameters,
-								'required': required
-						}
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
 			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class SpaceWeather( Fetcher ):
 	'''
@@ -3962,9 +4173,9 @@ class SpaceWeather( Fetcher ):
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
-	
+		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -4015,29 +4226,38 @@ class SpaceWeather( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
-			'name': func_name,
-			'description': f'{desc} This function uses the {tool_name} service.',
-			'parameters':
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
 			{
-				'type': 'object',
-				'properties': parameters,
-				'required': required
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
 			}
-		}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class AstroCatalog( Fetcher ):
 	'''
@@ -4238,9 +4458,9 @@ class AstroCatalog( Fetcher ):
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
-	
+		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -4291,29 +4511,38 @@ class AstroCatalog( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
-			'name': func_name,
-			'description': f'{desc} This function uses the {tool_name} service.',
-			'parameters':
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
 			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
 					'type': 'object',
 					'properties': parameters,
 					'required': required
+				}
 			}
-		}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class AstroQuery( Fetcher ):
 	'''
@@ -4437,9 +4666,9 @@ class AstroQuery( Fetcher ):
 			exception.method = 'catalog_search( self, name: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
-	
+		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -4490,29 +4719,38 @@ class AstroQuery( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
-		{
-			'name': func_name,
-			'description': f'{desc} This function uses the {tool_name} service.',
-			'parameters':
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
 			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
 					'type': 'object',
 					'properties': parameters,
 					'required': required
+				}
 			}
-		}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
 class StarMap( Fetcher ):
 	'''
@@ -4754,6 +4992,91 @@ class StarMap( Fetcher ):
 			exception.module = 'Foo'
 			exception.cause = 'StarMap'
 			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
+			error = ErrorDialog( exception )
+			error.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
 			error.show( )
 
@@ -5012,6 +5335,91 @@ class GovData( Fetcher ):
 			exception.method = 'fetch_public_laws( self, name: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 			
 class StarChart( Fetcher ):
 	'''
@@ -5115,6 +5523,91 @@ class StarChart( Fetcher ):
 			exception.module = 'Foo'
 			exception.cause = 'StarChart'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
+			error = ErrorDialog( exception )
+			error.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
 			error.show( )
 
@@ -5256,6 +5749,91 @@ class Congress( Fetcher ):
 			exception.module = 'Foo'
 			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
+			error = ErrorDialog( exception )
+			error.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
 			error.show( )
 
@@ -5417,9 +5995,9 @@ class InternetArchive( Fetcher ):
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
-	
+		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> dict:
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""
 
 			Purpose:
@@ -5470,31 +6048,40 @@ class InternetArchive( Fetcher ):
 			A JSON-compatible dictionary defining the tool schema.
 
 		"""
-		throw_if( 'function', function )
-		throw_if( 'tool', tool )
-		throw_if( 'description', description )
-		throw_if( 'parameters', parameters )
-		if not isinstance( parameters, dict ):
-			raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
-		
-		func_name = function.strip( )
-		tool_name = tool.strip( )
-		desc = description.strip( )
-		if required is None:
-			required = list( parameters.keys( ) )
-		return \
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
 			{
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
-					'parameters':
-						{
-								'type': 'object',
-								'properties': parameters,
-								'required': required
-						}
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
 			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
 
-class GroqSearch( Fetcher ):
+class Groq( Fetcher ):
 	'''
 
 		Purpose:
@@ -5515,7 +6102,7 @@ class GroqSearch( Fetcher ):
 		fetch( ) -> Dict[ str, Any ]
 		
 	'''
-	client: Optional[ GroqSearch ]
+	client: Optional[ Groq ]
 	model: Optional[ str ]
 	keywords: Optional[ str ]
 	url: Optional[ str ]
@@ -5605,7 +6192,7 @@ class GroqSearch( Fetcher ):
 		'''
 		try:
 			throw_if( 'query', query )
-			client = GroqSearch( )
+			client = Groq( )
 			completion = client.chat.completions.create(
 				model='openai/gpt-oss-120b',
 				messages=[
@@ -5629,8 +6216,93 @@ class GroqSearch( Fetcher ):
 			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
 
-class GeminiSearch( Fetcher ):
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
+
+class Gemini( Fetcher ):
 	'''
 
 		Purpose:
@@ -5788,8 +6460,93 @@ class GeminiSearch( Fetcher ):
 			exception.method = 'analyze( self, query: str, path: str ) -> str'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
 
-class MistralSearch( Fetcher ):
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
+
+class Mistral( Fetcher ):
 	'''
 
 		Purpose:
@@ -5810,7 +6567,7 @@ class MistralSearch( Fetcher ):
 		fetch( ) -> Dict[ str, Any ]
 		
 	'''
-	client: Optional[ GroqSearch ]
+	client: Optional[ Groq ]
 	model: Optional[ str ]
 	keywords: Optional[ str ]
 	url: Optional[ str ]
@@ -5900,7 +6657,7 @@ class MistralSearch( Fetcher ):
 		'''
 		try:
 			throw_if( 'query', query )
-			client = GroqSearch( )
+			client = Groq( )
 			completion = client.chat.completions.create(
 				model='openai/gpt-oss-120b',
 				messages=[
@@ -5924,3 +6681,88 @@ class MistralSearch( Fetcher ):
 			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			return \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = ''
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
