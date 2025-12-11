@@ -227,10 +227,9 @@ class SQLite( ):
 		"""
 
 			Pupose:
+			-------
 			Initializes the connection to the SQLite database.
 
-			Args:
-				db_name (str): The name of the database file.
 
 		"""
 		self.db_path = r'stores\sqlite\datamodels\Data.db'
@@ -284,15 +283,15 @@ class SQLite( ):
 		"""
 		try:
 			self.cursor.execute( """
-                                 CREATE TABLE IF NOT EXISTS embeddings
-                                 (
-                                     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                                     source_file TEXT    NOT NULL,
-                                     chunk_index INTEGER NOT NULL,
-                                     chunk_text  TEXT    NOT NULL,
-                                     embedding   TEXT    NOT NULL,
-                                     created_at  TEXT DEFAULT CURRENT_TIMESTAMP
-                                 )""" )
+             CREATE TABLE IF NOT EXISTS embeddings
+             (
+                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                 source_file TEXT    NOT NULL,
+                 chunk_index INTEGER NOT NULL,
+                 chunk_text  TEXT    NOT NULL,
+                 embedding   TEXT    NOT NULL,
+                 created_at  TEXT DEFAULT CURRENT_TIMESTAMP
+             )""" )
 			
 			self.connection.commit( )
 		except Exception as e:
