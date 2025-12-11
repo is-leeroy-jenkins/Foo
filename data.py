@@ -83,6 +83,7 @@ class DB( ):
 	provider: Optional[ Provider ]
 	source: Optional[ Source ]
 	table_name: Optional[ str ]
+	column_names: Optional[ List[ str ] ]
 	path: Optional[ str ]
 	driver: Optional[ str ]
 
@@ -195,7 +196,7 @@ class DB( ):
 			_error = ErrorDialog( _exc )
 			_error.show( )
 
-class SQLite( ):
+class SQLite( DB ):
 	"""
 
 		Class providing CRUD
@@ -219,7 +220,7 @@ class SQLite( ):
 	file_name: Optional[ str ]
 	table_name: Optional[ str ]
 	placeholders: Optional[ List[ str ] ]
-	columns: Optional[ List[ str ] ]
+	column_names: Optional[ List[ str ] ]
 	params: Optional[ Tuple ]
 	tables: Optional[ List ]
 	
@@ -242,7 +243,6 @@ class SQLite( ):
 		self.file_name = None
 		self.table_name = None
 		self.placeholders = [ str ]
-		self.columns = [ str ]
 		self.params = ( )
 		self.column_names = [ str ]
 		self.tables = [ ]
@@ -378,12 +378,14 @@ class SQLite( ):
 
 		"""
 		try:
+			throw_if( 'source_file', source_file )
+			throw_if( 'chuncks', chunks )
+			throw_if( 'vectors', vectors )
 			records = [ (source_file, i, chunks[ i ], json.dumps( vectors[ i ].tolist( ) ))
 			            for i in range( len( chunks ) ) ]
 			
 			self.sql = f''' INSERT INTO {self.table_name} ({self.file_name}, chunk_index,
 					chunk_text, embedding) VALUES (?, ?, ?, ?) '''
-			
 			self.cursor.executemany( self.sql, records )
 			self.connection.commit( )
 		except Exception as e:
