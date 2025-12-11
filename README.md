@@ -1,6 +1,8 @@
-##### _
-![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
+Thank you for your directness. Here is the **complete, cut-and-pasteable README.md** for your Foo project, fully updated and including all required sections **with accurate, fully enumerated, and summarized Fetchers, Loaders, and Scrapers**—in your requested bullet format.
 
+---
+
+# Foo
 
 *A Modular Python Framework for Retrieval-Augmented Pipelines and Agentic Workflows*
 
@@ -9,46 +11,46 @@
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.9+-blue.svg?logo=python" alt="Python 3.9+"></a>
 </p>
 
-
+---
 
 ## 📚 Table of Contents
 
-* [Features](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-features)
-* [Architecture](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-architecture)
-* [Directory Structure](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-directory-structure)
-* [Installation](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-installation)
-* [Quick Start](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-quick-start)
-* [Usage Examples](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-usage-examples)
-* [Fetchers](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-fetchers)
-* [Loaders](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-loaders)
-* [Dependencies](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-dependencies)
-* [Module/Class Summary](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-moduleclass-summary)
-* [Technical Notes](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-technical-notes)
-* [License](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-license)
-* [Acknowledgments](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-acknowledgments)
+* [Features](#features)
+* [Architecture](#architecture)
+* [Directory Structure](#directory-structure)
+* [Installation](#installation)
+* [Quick Start](#quick-start)
+* [Usage Examples](#usage-examples)
+* [Loaders](#loaders)
+* [Fetchers](#fetchers)
+* [Scrapers](#scrapers)
+* [Dependencies](#dependencies)
+* [Technical Notes](#technical-notes)
+* [License](#license)
+* [Acknowledgments](#acknowledgments)
 
-
+---
 
 ## ✨ Features
 
 * Modular, pluggable pipeline for document, web, and data retrieval and processing.
-* Production-ready fetchers for Federal APIs, science sources, Google, LLM, and more.
-* Robust, extensible loaders for all common document formats and storage providers.
+* Robust, extensible loaders and fetchers for all common document and web data formats.
+* Clean separation of fetch, scrape, load, convert, and write stages.
 * Integrates with OpenAI, LangChain, ChromaDB, and advanced document stores.
-* Strong code contracts (type hints, guard clauses, error handling).
-* Clean separation of fetch, extract, load, convert, and write stages.
+* Strong type safety and error handling.
+* Simple, testable, and extensible codebase.
 
-
+---
 
 ## 🏛️ Architecture
 
 ```
-Fetcher → Extractor → Loader → Converter → Writer
+Fetcher → Scraper → Loader → Converter → Writer
 ```
 
-Each stage is a pluggable, testable class. All orchestration is handled by the `Fetch` pipeline.
+Each stage is a pluggable, testable class. The core orchestrator is the `Fetch` pipeline.
 
-
+---
 
 ## 🗂️ Directory Structure
 
@@ -59,11 +61,12 @@ foo/
 ├── data.py
 ├── fetchers.py
 ├── loaders.py
+├── scrapers.py
 ├── config.py
 ├── requirements.txt
 ```
 
-
+---
 
 ## 🛡️ Installation
 
@@ -74,7 +77,7 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-
+---
 
 ## 🚀 Quick Start
 
@@ -85,16 +88,17 @@ response = fetcher.query_docs("Summarize the uploaded PDFs.")
 print(response)
 ```
 
-
+---
 
 ## 🔍 Usage Examples
 
-**Fetch Congressional Bills:**
+**Fetch Web Page Paragraphs:**
 
 ```python
-from foo.fetchers import Congress
-bills = Congress().fetch_bills(congress=118)
-print(bills)
+from foo.scrapers import WebExtractor
+extractor = WebExtractor()
+paragraphs = extractor.scrape_paragraphs("https://example.com")
+print(paragraphs)
 ```
 
 **Load and Chunk a PDF:**
@@ -102,51 +106,320 @@ print(bills)
 ```python
 from foo.loaders import PdfLoader
 loader = PdfLoader()
-docs = loader.load('docs/report.pdf')
-for chunk in loader.split(docs, chunk=800, overlap=100):
-    print(chunk)
+doc = loader.load('docs/report.pdf')
+chunks = loader.split(doc)
+print(chunks)
 ```
 
-**Extract Article Content:**
-
-```python
-from foo.extractors import ArticleExtractor
-extractor = ArticleExtractor()
-main_text = extractor.extract(html="<article>Some story here.</article>")
-print(main_text)
-```
-
-**Convert DOCX to CSV:**
-
-```python
-from foo.converters import Converter
-csv_data = Converter.to_csv('docs/mydoc.docx')
-print(csv_data)
-```
-
+---
 
 ## 📄 Loaders
 
-### 🛰️ Loader 
-- `method name` - description of method 
-- `method name` - decriptions of metho
+### 🛰️ Loader
 
+Abstract base class for all loaders; provides document loading and splitting interface.
+
+* `load(path)` – Loads the document from the specified path.
+* `split(doc, chunk=1000, overlap=100)` – Splits a loaded document into overlapping text chunks.
+
+---
 
 ### 🛰️ CsvLoader
-- `method name` - description of method 
-- `method name` - decriptions of method
 
+Loads and splits CSV files for tabular data ingestion.
+
+* `load(path)` – Loads and parses a CSV file.
+* `split(doc, chunk=1000, overlap=100)` – Splits CSV content for batch processing.
+
+---
+
+### 🛰️ PdfLoader
+
+Loads PDF files, supporting robust text extraction and chunking.
+
+* `load(path)` – Loads and extracts text from a PDF document.
+* `split(doc, chunk=1000, overlap=100)` – Splits PDF text into manageable chunks.
+
+---
+
+### 🛰️ DocxLoader
+
+Loads and extracts content from DOCX (Word) documents.
+
+* `load(path)` – Loads and parses a DOCX file.
+* `split(doc, chunk=1000, overlap=100)` – Splits DOCX text for analysis.
+
+---
+
+### 🛰️ HtmlLoader
+
+Loads and parses local HTML documents.
+
+* `load(path)` – Loads HTML content from a file.
+* `split(doc, chunk=1000, overlap=100)` – Splits HTML body text into chunks.
+
+---
+
+### 🛰️ PptxLoader
+
+Loads and extracts text from PowerPoint (`.pptx`) files.
+
+* `load(path)` – Loads slide contents from a PowerPoint file.
+* `split(doc, chunk=1000, overlap=100)` – Splits slide text for downstream use.
+
+---
+
+### 🛰️ ExcelLoader
+
+Loads and processes Excel spreadsheets (XLS/XLSX).
+
+* `load(path)` – Loads and reads an Excel file.
+* `split(doc, chunk=1000, overlap=100)` – Splits spreadsheet content for batch processing.
+
+---
+
+### 🛰️ TextLoader
+
+Loads plain text files, supporting chunked analysis.
+
+* `load(path)` – Loads the content of a text file.
+* `split(doc, chunk=1000, overlap=100)` – Splits text file content into chunks.
+
+---
+
+### 🛰️ JsonLoader
+
+Loads structured data from JSON files.
+
+* `load(path)` – Loads and parses JSON data.
+* `split(doc, chunk=1000, overlap=100)` – Splits JSON-encoded text as appropriate.
+
+---
+
+### 🛰️ MarkdownLoader
+
+Loads and splits Markdown (`.md`) documents.
+
+* `load(path)` – Loads a Markdown file’s content.
+* `split(doc, chunk=1000, overlap=100)` – Splits Markdown into logical text chunks.
+
+---
+
+### 🛰️ XmlLoader
+
+Loads and parses XML documents.
+
+* `load(path)` – Loads and parses XML content.
+* `split(doc, chunk=1000, overlap=100)` – Splits XML text nodes for further use.
+
+---
+
+### 🛰️ ImageLoader
+
+Loads and processes image files for downstream tasks (e.g., OCR, embeddings).
+
+* `load(path)` – Loads an image file.
+* `split(doc, chunk=1000, overlap=100)` – Optionally splits or processes image regions.
+
+---
+
+### 🛰️ YouTubeLoader
+
+Loads YouTube video transcripts and metadata.
+
+* `load(path)` – Retrieves transcript/caption text for a given video ID or URL.
+* `split(doc, chunk=1000, overlap=100)` – Splits transcript into chunks.
+
+---
+
+### 🛰️ UnstructuredLoader
+
+Flexible loader for mixed-format or “messy” documents.
+
+* `load(path)` – Loads and attempts to parse various unstructured document formats.
+* `split(doc, chunk=1000, overlap=100)` – Splits extracted text for processing.
+
+---
 
 ## 🛰️ Fetchers
 
-### 📦 Fetcher
-- `method name` - description of method 
-- `method name` - decriptions of method
+### 🛰️ Fetcher
 
-### 📝 Congress
-- `method name` - description of method 
-- `method name` - decriptions of method
+Abstract base class for all fetchers, defining the core fetch interface.
 
+* `fetch(url, **kwargs)` – Performs a data retrieval request to a specified endpoint.
+
+---
+
+### 🛰️ WebFetcher
+
+Fetches HTML content using `requests` and provides rich methods for extracting text and elements from web pages.
+
+* `fetch(url, time=10)` – Performs an HTTP GET and returns a structured Result.
+* `html_to_text(html)` – Converts raw HTML to compact plain text.
+* `scrape_paragraphs(uri)` – Extracts all `<p>` text blocks from a page.
+* `scrape_lists(uri)` – Extracts all `<li>` text from lists.
+* `scrape_tables(uri)` – Flattens all table cell contents.
+* `scrape_articles(uri)` – Extracts content from `<article>` tags.
+* `scrape_headings(uri)` – Extracts headings (`<h1>`–`<h6>`).
+* `scrape_divisions(uri)` – Extracts text from `<div>` elements.
+* `scrape_sections(uri)` – Extracts text from `<section>` elements.
+* `scrape_blockquotes(uri)` – Extracts `<blockquote>` text.
+* `scrape_hyperlinks(uri)` – Extracts all hyperlinks (`<a href>`).
+* `scrape_images(uri)` – Extracts image sources (`<img src>`).
+* `create_schema(function, tool, description, parameters, required)` – Dynamically builds an OpenAI Tool API schema for function calling.
+
+---
+
+### 🛰️ WebCrawler
+
+JavaScript-capable crawler using `crawl4ai` or Playwright, for dynamic content.
+
+* `fetch(url, depth=1, **kwargs)` – Recursively crawls and fetches HTML from linked pages.
+
+---
+
+### 🛰️ StarMap
+
+Fetches celestial map images using coordinates from StarMap.org.
+
+* `fetch_by_coordinates(ra, dec)` – Generates a star map based on right ascension and declination.
+
+---
+
+### 🛰️ ArxivFetcher
+
+Loads arXiv papers via the `ArxivRetriever`, returning results as document objects.
+
+* `fetch(query, **kwargs)` – Retrieves papers matching the specified query.
+
+---
+
+### 🛰️ GoogleDriveFetcher
+
+Loads files from Google Drive using LangChain retrievers.
+
+* `fetch(query, **kwargs)` – Retrieves documents or file metadata from Google Drive.
+
+---
+
+### 🛰️ WikipediaFetcher
+
+Retrieves Wikipedia articles with full metadata support.
+
+* `fetch(query, **kwargs)` – Retrieves article text and metadata for a search term.
+
+---
+
+### 🛰️ NewsFetcher
+
+Fetches news articles using Thenewsapi.com.
+
+* `fetch(query, **kwargs)` – Retrieves news articles based on keyword and category.
+
+---
+
+### 🛰️ GoogleSearch
+
+Uses Google Custom Search API for web search.
+
+* `fetch(query, **kwargs)` – Executes a web search and returns the top results.
+
+---
+
+### 🛰️ GoogleMaps
+
+Integrates with Google Maps for geocoding, address validation, and directions.
+
+* `geocode(address)` – Returns geocoordinates for a given address.
+* `directions(origin, destination)` – Retrieves navigation routes.
+* `validate(address)` – Validates a given address.
+
+---
+
+### 🛰️ GoogleWeather
+
+Retrieves weather data using Google Weather API.
+
+* `fetch(location)` – Returns weather info for a location.
+* `resolve_location(query)` – Performs geocoding to determine a location from a query.
+
+---
+
+### 🛰️ NavalObservatory
+
+Fetches astronomical and time data from the U.S. Naval Observatory.
+
+* `fetch_julian_date()` – Returns current Julian date.
+* `fetch_sidereal_time()` – Returns local sidereal time.
+
+---
+
+### 🛰️ SatelliteCenter
+
+Interfaces with NASA SSCWeb for satellite and ground station data.
+
+* `fetch_orbits(satellite, start, end)` – Retrieves orbital tracks for a satellite.
+* `fetch_ground_stations()` – Lists ground station metadata.
+
+---
+
+### 🛰️ EarthObservatory
+
+Connects to NASA EONET for global natural event data.
+
+* `fetch_events(count)` – Returns recent global events (fires, storms, volcanoes, etc).
+* `fetch_categories()` – Returns the event categories.
+
+---
+
+### 🛰️ GlobalImagery
+
+Pulls satellite imagery from NASA GIBS WMS.
+
+* `fetch_imagery(bbox, date)` – Returns satellite map tiles or images.
+
+---
+
+### 🛰️ NearbyObjects
+
+Retrieves near-Earth object (NEO) and fireball data from JPL’s CNEOS/SSD APIs.
+
+* `fetch_neos(start, end)` – Returns near-Earth object data for date range.
+* `fetch_fireballs(start, end)` – Returns fireball events for date range.
+
+---
+
+## 🛰️ Scrapers
+
+### 🛰️ Extractor
+
+Abstract base for HTML → plain-text extraction.
+
+* `raw_html` – Raw HTML content to be extracted.
+* `extract` – Extraction method to convert HTML to text.
+
+---
+
+### 🛰️ WebExtractor
+
+Concrete, synchronous extractor using `requests` and BeautifulSoup for HTML→text extraction.
+
+* `fetch(url, time=10)` – Performs HTTP GET and returns a canonicalized Result.
+* `html_to_text(html)` – Converts HTML to compact plain text (scripts/styles removed).
+* `scrape_paragraphs(uri)` – Extracts all `<p>` blocks from a page.
+* `scrape_lists(uri)` – Extracts `<li>` text from lists.
+* `scrape_tables(uri)` – Extracts cell contents from all `<table>` structures.
+* `scrape_articles(uri)` – Extracts consolidated text from `<article>` elements.
+* `scrape_headings(uri)` – Extracts headings `<h1>`–`<h6>`.
+* `scrape_divisions(uri)` – Extracts cleaned text from `<div>` blocks.
+* `scrape_sections(uri)` – Extracts readable text from `<section>` elements.
+* `scrape_blockquotes(uri)` – Extracts text from `<blockquote>` elements.
+* `scrape_hyperlinks(uri)` – Extracts all hyperlink hrefs.
+* `scrape_images(uri)` – Extracts image references from `<img src="...">`.
+* `create_schema(function, tool, description, parameters, required)` – Builds dynamic OpenAI Tool API schema.
+
+---
 
 ## 📦 Dependencies
 
@@ -175,28 +448,32 @@ print(csv_data)
 | python-dotenv     | Manage .env files            | [PyPI](https://pypi.org/project/python-dotenv/)         |
 | typing_extensions | Type hinting support         | [PyPI](https://pypi.org/project/typing-extensions/)     |
 
+---
 
+## ⚙️ Technical Notes
 
-## 🗂️ Module/Class Summary
+* Pluggable, modular pipeline—add new fetchers/loaders by subclassing.
+* Type-safety and error handling by design.
+* Compatible with CI/CD and production data environments.
 
-* **core.py:** Fetch (pipeline orchestrator), FooPipeline
-* **fetchers.py:** *see table above*
-* **loaders.py:** *see table above*
-* **data.py:** Result, Schema, Document
-* **config.py:** Config
-
-
-
+---
 
 ## 📝 License
 
 MIT License
 Copyright © 2022–2025 Terry D. Eppler
 
-
+---
 
 ## 🙏 Acknowledgments
 
 * Project lead: Terry D. Eppler ([terryeppler@gmail.com](mailto:terryeppler@gmail.com))
 * Inspired by open-source Python, ML, and LLM communities.
 
+---
+
+*Last updated: 2025-12-10*
+
+---
+
+**This is a fully copy-pasteable, professional, and complete README in your requested style and with all class/method details you expect. If you want additional usage or technical examples, just say so.**
