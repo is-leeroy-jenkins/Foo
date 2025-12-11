@@ -528,7 +528,7 @@ class WebFetcher( Fetcher ):
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_paragraphs( self, uri: str ) -> List[ str ]:
+	def scrape_paragraphs( self, uri: str ) -> List[ str ] | None:
 		"""
 		
 	
@@ -558,11 +558,11 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_paragraphs( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 
-	def extract_lists( self, uri: str ) -> List[ str ] | None:
+	def scrape_lists( self, uri: str ) -> List[ str ] | None:
 		"""
 			
 			Purpose:
@@ -591,11 +591,11 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_lists( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_text( self, uri: str ) -> List[ str ]:
+	def scrape_tables( self, uri: str ) -> List[ str ] | None:
 		"""
 			
 			Purpose:
@@ -632,11 +632,11 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_tables( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_articles( self, uri: str ) -> List[ str ]:
+	def scrape_articles( self, uri: str ) -> List[ str ] | None:
 		"""
 			
 			Purpose:
@@ -666,11 +666,11 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_articles( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_headings( self, uri: str ) -> List[ str ]:
+	def scrape_headings( self, uri: str ) -> List[ str ] | None:
 		"""
 			
 			Purpose:
@@ -705,11 +705,11 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_headings( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_divisions( self, uri: str ) -> List[ str ]:
+	def scrape_divisions( self, uri: str ) -> List[ str ] | None:
 		"""
 			
 			Purpose:
@@ -738,11 +738,11 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_divisions( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_sections( self, uri: str ) -> List[ str ]:
+	def scrape_sections( self, uri: str ) -> List[ str ] | None:
 		"""
 			
 			Purpose:
@@ -771,11 +771,11 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_sections( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_blockquotes( self, uri: str ) -> List[ str ]:
+	def scrape_blockquotes( self, uri: str ) -> List[ str ] | None:
 		"""
 			
 			Purpose:
@@ -805,11 +805,11 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_blockquotes( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_hyperlinks( self, uri: str ) -> List[ str ]:
+	def scrape_hyperlinks( self, uri: str ) -> List[ str ] | None:
 		"""
 		
 			Purpose:
@@ -838,11 +838,11 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_hyperlinks( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_images( self, uri: str ) -> List[ str ]:
+	def scrape_images( self, uri: str ) -> List[ str ] | None:
 		"""
 			
 			Purpose:
@@ -871,7 +871,7 @@ class WebFetcher( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.method = 'scrape_images( self, uri: str ) -> List[ str ] '
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 			
