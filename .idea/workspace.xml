@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="0cfb9799-4661-4ad2-9985-c7f58980cb6f" name="Changes" comment="update">
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/images/foo_project.png" beforeDir="false" afterPath="$PROJECT_DIR$/resources/images/foo_project.png" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -128,15 +127,7 @@
       <workItem from="1764964945193" duration="8362000" />
       <workItem from="1765023686953" duration="81860000" />
       <workItem from="1765283417962" duration="26712000" />
-      <workItem from="1765457544368" duration="14623000" />
-    </task>
-    <task id="LOCAL-00018" summary="update">
-      <option name="closed" value="true" />
-      <created>1764866276395</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1764866276395</updated>
+      <workItem from="1765457544368" duration="14732000" />
     </task>
     <task id="LOCAL-00019" summary="update">
       <option name="closed" value="true" />
@@ -522,7 +513,15 @@
       <option name="project" value="LOCAL" />
       <updated>1765473584900</updated>
     </task>
-    <option name="localTasksCounter" value="67" />
+    <task id="LOCAL-00067" summary="update">
+      <option name="closed" value="true" />
+      <created>1765474162858</created>
+      <option name="number" value="00067" />
+      <option name="presentableId" value="LOCAL-00067" />
+      <option name="project" value="LOCAL" />
+      <updated>1765474162858</updated>
+    </task>
+    <option name="localTasksCounter" value="68" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

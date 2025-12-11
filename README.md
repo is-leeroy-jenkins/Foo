@@ -1,5 +1,5 @@
 ###### foo
-[]()
+[](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
 *A Modular Python Framework for Retrieval-Augmented Pipelines and Agentic Workflows*
 
