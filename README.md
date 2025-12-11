@@ -57,10 +57,8 @@ foo/
 ├── __init__.py
 ├── core.py
 ├── data.py
-├── extractors.py
 ├── fetchers.py
 ├── loaders.py
-├── converters.py
 ├── config.py
 ├── requirements.txt
 ```
@@ -129,59 +127,25 @@ print(csv_data)
 
 ## 📄 Loaders
 
-| **Class Name**        | **Description**                                                             |
-| --------------------- | --------------------------------------------------------------------------- |
-| **Loader**            | Abstract base for all loaders; handles file path, validation, and chunking. |
-| **CsvLoader**         | Loads and splits CSV files for tabular data ingestion.                      |
-| **WordLoader**        | Loads and extracts DOCX (Word) document content.                            |
-| **PdfLoader**         | Loads PDF files, providing text extraction and chunking.                    |
-| **MarkLoader**        | Loads Markdown files and splits content for processing.                     |
-| **HtmlLoader**        | Loads and parses local HTML files.                                          |
-| **ExcelLoader**       | Loads and processes Excel spreadsheets (`.xls`, `.xlsx`).                   |
-| **EmailLoader**       | Extracts message content from email files (`.eml`, `.msg`).                 |
-| **PowerPointLoader**  | Loads and extracts text from PowerPoint presentations.                      |
-| **OutlookLoader**     | Handles Microsoft Outlook message files.                                    |
-| **ArxivLoader**       | Loads articles and metadata from arXiv.                                     |
-| **WikipediaLoader**   | Loads Wikipedia content from dumps or API.                                  |
-| **WebBaseLoader**     | Loads and chunks documents fetched from the web.                            |
-| **YouTubeLoader**     | Loads YouTube transcripts and metadata.                                     |
-| **GoogleDriveLoader** | Loads files directly from Google Drive.                                     |
-| **OneDriveLoader**    | Loads files from Microsoft OneDrive.                                        |
-| **SharePointLoader**  | Loads documents from Microsoft SharePoint.                                  |
+### 🛰️ Loader 
+- `method name` - description of method 
+- `method name` - decriptions of metho
 
+
+### 🛰️ CsvLoader
+- `method name` - description of method 
+- `method name` - decriptions of method
 
 
 ## 🛰️ Fetchers
 
-| **Class Name**             | **Description**                                                                |
-| -------------------------- | ------------------------------------------------------------------------------ |
-| **Fetcher**                | Abstract base for all fetchers, providing common retrieval interfaces.         |
-| **Congress**               | Fetches U.S. Congressional bills, laws, and reports from Congress.gov.         |
-| **GovInfo**                | Retrieves legislative/regulatory documents from GovInfo.gov APIs.              |
-| **GroqSearch**             | Integrates with Groq's LLM/AI API for advanced search and inference.           |
-| **StarChartFetcher**       | Obtains star charts from AstronomyAPI based on coordinates and date.           |
-| **StarMap**                | Retrieves astronomical sky maps or star field images.                          |
-| **GeminiSearch**           | Interfaces with the Gemini Observatory or data services for astronomical data. |
-| **GoogleCustomSearch**     | Uses Google Custom Search Engine API for targeted web search.                  |
-| **GoogleSearch**           | Standard Google web search queries.                                            |
-| **GoogleTrends**           | Fetches search trend data from Google Trends.                                  |
-| **GoogleScholarSearch**    | Searches scholarly articles using Google Scholar.                              |
-| **GoogleBooksSearch**      | Retrieves metadata and book previews from Google Books API.                    |
-| **GoogleNewsSearch**       | Searches global news using Google News API.                                    |
-| **GoogleFinanceSearch**    | Fetches market/financial data from Google Finance.                             |
-| **GoogleMapsSearch**       | Maps/geolocation queries via Google Maps API.                                  |
-| **GoogleDirectionsSearch** | Navigation/direction data from Google Maps Directions API.                     |
-| **GooglePlacesSearch**     | Business/place data from Google Places API.                                    |
-| **GoogleDriveSearch**      | Searches and retrieves files from Google Drive.                                |
-| **YouTubeSearch**          | Finds and fetches YouTube video metadata or captions.                          |
-| **WikipediaSearch**        | Searches and retrieves Wikipedia articles.                                     |
-| **ArxivSearch**            | Queries scientific papers on arXiv.org.                                        |
-| **SimbadSearch**           | Retrieves astronomical object data from the SIMBAD database.                   |
-| **SscWsSearch**            | Connects to Solar System web services for space science data.                  |
-| **JsonFetcher**            | Fetches and parses JSON data from APIs.                                        |
-| **HttpFetcher**            | Generic HTTP(S) data fetcher.                                                  |
-| **CrawlFetcher**           | Simple web crawler for multi-page/site content retrieval.                      |
+### 📦 Fetcher
+- `method name` - description of method 
+- `method name` - decriptions of method
 
+### 📝 Congress
+- `method name` - description of method 
+- `method name` - decriptions of method
 
 
 ## 📦 Dependencies
@@ -218,18 +182,9 @@ print(csv_data)
 * **core.py:** Fetch (pipeline orchestrator), FooPipeline
 * **fetchers.py:** *see table above*
 * **loaders.py:** *see table above*
-* **extractors.py:** Extractor, ArticleExtractor, ParagraphExtractor, FieldExtractor
-* **converters.py:** Converter (format utilities)
 * **data.py:** Result, Schema, Document
 * **config.py:** Config
 
-
-
-## ⚙️ Technical Notes
-
-* Pluggable, modular pipeline—add new fetchers/loaders by subclassing.
-* Type-safety and error handling by design.
-* Compatible with CI/CD and production data environments.
 
 
 

@@ -28,6 +28,7 @@ nest_asyncio
 oauthlib
 o365
 owslib
+openai
 numpy
 pandas
 pydantic

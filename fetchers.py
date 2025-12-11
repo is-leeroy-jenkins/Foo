@@ -61,6 +61,7 @@ import http.client
 import json
 from langchain_googledrive.retrievers import GoogleDriveRetriever
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
+from openai import OpenAI
 import re
 import requests
 from requests import Response
@@ -6130,6 +6131,7 @@ class Groq( Fetcher ):
 	model: Optional[ str ]
 	keywords: Optional[ str ]
 	url: Optional[ str ]
+	file_path: Optional[ str ]
 	response: Optional[ Response ]
 	api_key: Optional[ str ]
 	query: Optional[  str  ]
@@ -6138,6 +6140,8 @@ class Groq( Fetcher ):
 	max_tokens: Optional[ int ]
 	top_p: Optioanl[ float ]
 	reasonging_effort: Optional[ float ]
+	stream: Optional[ bool ]
+	store: Optional[ bool ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	
 	def __init__( self ) -> None:
@@ -6160,8 +6164,14 @@ class Groq( Fetcher ):
 		self.api_key = cfg.GROQ_API_KE
 		self.model = 'openai/gpt-oss-120b'
 		self.url = r'https://api.groq.com/openai/v1?'
+		self.messages = None
+		self.temperature = 0.8
+		self.top_p =  0.9
+		self.max_tokens = 8192
+		self.reasonging_effort = 'medium'
 		self.headers = { }
 		self.timeout = None
+		self.file_path = None
 		self.content = None
 		self.params = None
 		self.response = None
@@ -6191,12 +6201,17 @@ class Groq( Fetcher ):
 		         'timeout',
 		         'headers',
 		         'fetch',
+		         'file_path',
+		         'messages',
+		         'content',
+		         'temperature',
+		         'top_p',
+		         'reasoning_effort',
+		         'max_tokens',
 		         'api_key',
 		         'response',
-		         'cse_id',
 		         'params',
-		         'agents,',
-		         'fetch' ]
+		         'agents' ]
 	
 	def fetch( self, query: str, time: int=10 ) -> str | None:
 		'''
@@ -6220,12 +6235,13 @@ class Groq( Fetcher ):
 			throw_if( 'query', query )
 			self.query = query
 			self.client = Groq( )
+			self.messages = [
+			{
+				'role': 'user',
+				'content': self.query
+			} ]
 			completion = self.client.chat.completions.create( model=self.model,
-				messages=[
-				{
-					'role': 'user',
-					"content": self.query
-				} ],
+				messages=self.messages,
 				temperature=1,
 				max_completion_tokens=8192,
 				top_p=1,
@@ -6235,6 +6251,59 @@ class Groq( Fetcher ):
 			)
 			_results = completion.choices[0].message
 			return _results
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Groq'
+			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+	
+	def analyze_image( self, path: str, prompt: str, is_url=False ):
+		'''
+		
+			Purpose:
+			--------
+			Uses the Groq API to analyze an image given a prompt and path
+			
+		'''
+		throw_if( 'prompt', prompt )
+		throw_if( 'path', path )
+		self.query = prompt
+	
+		self.client = Groq( api_key=self.api_key )
+		if is_url:
+			image_content = \
+			{
+					'type': 'image_url',
+					'image_url':
+					{
+						'url': path
+					}
+			}
+		else:
+			base64_image = encode_image( path )
+			image_content = {
+					"type": "image_url",
+					"image_url": {
+							"url": f"data:image/jpeg;base64,{base64_image}" } }
+		
+		try:
+			chat_completion = client.chat.completions.create(
+				messages=[
+						{
+								"role": "user",
+								"content": [
+										{
+												"type": "text",
+												"text": prompt },
+										image_content,
+								],
+						}
+				],
+				model="llava-v1.5-7b-4096-preview",
+			)
+			return chat_completion.choices[ 0 ].message.content
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -6623,6 +6692,7 @@ class Claude( Fetcher ):
 		'''
 		super( ).__init__( )
 		self.api_key = cfg.CLAUDE_API_KEY
+		self.url = r'https://api.anthropic.com'
 		self.client = None
 		self.messages = None
 		self.model = 'claude-sonnet-4-5'
@@ -7001,3 +7071,392 @@ class Mistral( Fetcher ):
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
 			error.show( )
+
+class Chat( Fetcher ):
+	"""
+	
+	    Purpose
+	    ___________
+	    Class used for interacting with a Data Science & Programming assistant
+	
+	
+	    Parameters
+	    ------------
+	    num: int=1
+	    temp: float=0.8
+	    top: float=0.9
+	    freq: float=0.0
+	    pres: float=0.0
+	    iters: int=10000
+	    store: bool=True
+	    stream: bool=True
+	
+	
+	    Methods
+	    ------------
+	    get_model_options( self ) -> str
+	    generate_text( self, prompt: str ) -> str:
+	    analyze_image( self, prompt: str, url: str ) -> str:
+	    summarize_document( self, prompt: str, path: str ) -> str
+	    search_web( self, prompt: str ) -> str
+	    search_files( self, prompt: str ) -> str
+	    dump( self ) -> str
+	    get_data( self ) -> { }
+
+
+
+    """
+	
+	def __init__( self, num: int=1, temp: float=0.8, top: float=0.9,
+			freq: float=0.0, pres: float=0.0, iters: int=10000, store: bool=True, stream: bool=True, ):
+		super( ).__init__( )
+		self.api_key = cfg.OPENAI_API_KEY
+		self.system_instructions = None
+		self.client = OpenAI( api_key=self.api_key )
+		self.client.api_key = GptHeader( ).api_key
+		self.model = ''
+		self.number = num
+		self.temperature = temp
+		self.top_percent = top
+		self.frequency_penalty = freq
+		self.presence_penalty = pres
+		self.max_completion_tokens = iters
+		self.store = store
+		self.stream = stream
+		self.modalities = [ 'text', 'audio' ]
+		self.stops = [ '#', ';' ]
+		self.response_format = 'auto'
+		self.reasoning_effort = None
+		self.input_text = None
+		self.name = 'Bro'
+		self.description = 'A Computer Programming and Data Science Assistant'
+		self.id = 'asst_2Yu2yfINGD5en4e0aUXAKxyu'
+		self.vector_store_ids = [ 'vs_67e83bdf8abc81918bda0d6b39a19372', ]
+		self.metadata = { }
+		self.tools = [ ]
+		self.vector_stores = { 'Code': 'vs_67e83bdf8abc81918bda0d6b39a19372', }
+	
+	def generate_text( self, prompt: str ) -> str:
+		"""
+	
+	        Purpose
+	        _______
+	        Generates a chat completion given a prompt
+	
+	
+	        Parameters
+	        ----------
+	        prompt: str
+	
+	
+	        Returns
+	        -------
+	        str
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			self.input_text = prompt
+			self.response = self.client.responses.create( model=self.model, input=self.input_text )
+			generated_text = self.response.output_text
+			return generated_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'boo'
+			exception.cause = 'Chat'
+			exception.method = 'generate_text( self, prompt: str )'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def generate_image( self, prompt: str ) -> str:
+		"""
+	
+	        Purpose
+	        _______
+	        Generates a chat completion given a prompt
+	
+	
+	        Parameters
+	        ----------
+	        prompt: str
+	
+	
+	        Returns
+	        -------
+	        str
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			self.input_text = prompt
+			self.response = self.client.images.generate( model='dall-e-3', prompt=self.input_text,
+				size='1024x1024', quality='standard', n=1, )
+			generated_image = self.response.data[ 0 ].url
+			return generated_image
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'boo'
+			exception.cause = 'Chat'
+			exception.method = 'generate_image( self, prompt: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def analyze_image( self, prompt: str, url: str ) -> str:
+		"""
+
+	        Purpose
+	        _______
+	        Method that analyzeses an image given a prompt,
+	
+	        Parameters
+	        ----------
+	        prompt (str) - user input text
+	        url: str - file path to image
+	
+	        Returns
+	        -------
+	        str
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'url', url )
+			self.input_text = prompt
+			self.image_url = url
+			self.input = [
+			{
+				'role': 'user',
+				'content': [
+				{
+					'type': 'input_text',
+					'text': self.input_text
+				},
+				{
+					'type': 'input_image',
+					'image_url': self.image_url
+				},],
+			} ]
+			self.response = self.client.responses.create( model=self.model, input=self.input )
+			image_analysis = self.response.output_text
+			return image_analysis
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = 'analyze_image( self, prompt: str, url: str )'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def summarize_document( self, prompt: str, path: str ) -> str:
+		"""
+
+	        Purpose
+	        _______
+	        Method that summarizes a document given a
+	        path prompt, and a path
+	
+	        Parameters
+	        ----------
+	        prompt: str
+	        path: str
+	
+	        Returns
+	        -------
+	        str
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'path', path )
+			self.input_text = prompt
+			self.file_path = path
+			self.file = self.client.files.create( file=open( self.file_path, 'rb' ), purpose='user_data' )
+			self.messages = [
+			{
+				'role': 'user',
+				'content': [
+				{
+					'type': 'file',
+					'file':
+					{
+						'file_id': self.file.id,
+					},
+				},
+				{
+					'type': 'text',
+					'text': self.input_text,
+				}, ],
+			}, ]
+			self.response = self.client.responses.create( model=self.model, inputs=self.messages )
+			document_summary = self.reponse.output_text
+			return document_summary
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = 'summarize_document( self, prompt: str, path: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def search_web( self, prompt: str ) -> str:
+		"""
+
+                Purpose
+                _______
+                Use web_search_options to retrieve and synthesize
+                recent web results for `prompt`.
+
+
+                Parameters
+                ----------
+                prompt: str
+                url: str
+
+                Returns
+                -------
+                str
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			self.web_options = { 'search_recency_days': 30, 'max_search_results': 8 }
+			self.messages = [ {'role': 'user', 'content': prompt,} ]
+			self.response = self.client.responses.create( model=self.model,
+				web_search_options=self.web_options, input=self.messages )
+			web_results = self.response.output_text
+			return web_results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'boo'
+			exception.cause = 'Bro'
+			exception.method = 'search_web( self, prompt: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def search_files( self, prompt: str ) -> str:
+		"""
+
+            Purpose
+	        -------
+	        Run a file-search tool call against configured vector stores using
+	        the Responses API, and return the textual result.
+
+
+            Parameters
+            ----------
+            prompt: str
+
+            Returns
+            -------
+            str
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			self.query = prompt
+			self.tools = [
+			{
+				'type': 'file_search',
+				'vector_store_ids': self.vector_store_ids,
+				'max_num_results': 20,
+			} ]
+			self.response = self.client.responses.create( model=self.model, tools=self.tools,
+				input=prompt )
+			file_search = self.response.output_text
+			return file_search
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = 'search_files( self, prompt: str ) -> str'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def translate( self, text: str ) -> str:
+		pass
+	
+	def transcribe( self, text: str ) -> str:
+		pass
+	
+	def get_format_options( self ) -> List[ str ]:
+		'''
+	
+	        Purpose:
+	        ---------
+	        Method that returns a list of formatting options
+
+        '''
+		return [ 'auto', 'text', 'json' ]
+	
+	def get_model_options( self ) -> List[ str ]:
+		'''
+	
+	        Purpose:
+	        ---------
+	        Method that returns a list of available models
+
+        '''
+		return [ 'gpt-4-0613',
+		         'gpt-4-0314',
+				 'gpt-4-turbo-2024-04-09',
+				 'gpt-4o-2024-08-06',
+				 'gpt-4o-2024-11-20',
+				 'gpt-4o-2024-05-13',
+				 'gpt-4o-mini-2024-07-18',
+				 'o1-2024-12-17',
+				 'o1-mini-2024-09-12',
+				 'o3-mini-2025-01-31',
+				 'ft:gpt-4.1-2025-04-14:leeroy-jenkins:bro-gpt-4-1-df-analysis-2025-21-05:BZetxEQa',
+				 'ft:gpt-4o-2024-08-06:leeroy-jenkins:bro-fine-tuned-05052025:BTryvkMx',
+				 'ft:gpt-4o-2024-08-06:leeroy-jenkins:bro-analytics:BTX4TYqY',
+				 'ft:gpt-4o-2024-08-06:leeroy-jenkins:bro-fine-tuned-05052025:BTryvkMx', ]
+	
+	def get_effort_options( self ) -> List[ str ]:
+		'''
+	
+	        Purpose:
+	        ---------
+	        Method that returns a list of available models
+
+        '''
+		return [ 'auto',
+		         'low',
+		         'high' ]
+	
+	def get_data( self ) -> Dict[ str, Any ]:
+		'''
+	
+	        Purpose:
+	        ---------
+	        Returns: dict[ str ] of members
+
+        '''
+		return \
+		{
+			'num': self.number,
+			'temperature': self.temperature,
+			'top_percent': self.top_percent,
+			'frequency_penalty': self.frequency_penalty,
+			'presence_penalty': self.presence_penalty,
+			'store': self.store,
+			'stream': self.stream,
+			'size': self.size,
+		}
+	
+	def dump( self ) -> str:
+		'''
+
+	        Purpose:
+	        ---------
+	        Returns: dict of members
+
+        '''
+		new = '\r\n'
+		return ( 'num' + f' = {self.number}' + new
+				+ 'temperature' + f' = {self.temperature}' + new
+				+ 'top_percent' + f' = {self.top_percent}' + new
+				+ 'frequency_penalty' + f' = {self.frequency_penalty}' + new
+				+ 'presence_penalty' + f' = {self.presence_penalty}' + new
+				+ 'max_completion_tokens' + f' = {self.max_completion_tokens}' + new
+				+ 'store' + f' = {self.store}' + new
+				+ 'stream' + f' = {self.stream}' + new )
