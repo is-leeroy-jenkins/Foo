@@ -1,5 +1,41 @@
-###### foo
-![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
+Absolutely.
+Below is a **method-by-method summary** for each class in your `scrapers.py` (Extractor and WebExtractor), followed by the **full, copy-pasteable README** with all required sections, precisely reflecting the true contents of your current codebase.
+
+---
+
+## 📦 Scrapers
+
+### 🛰️ Extractor
+
+Abstract base for HTML → plain-text extraction.
+
+* `__init__(self, raw_html: str = '')` — Initialize with optional raw HTML to extract.
+* `extract(self)` — Abstract method for extracting readable text from HTML. Must be implemented by subclasses.
+
+---
+
+### 🛰️ WebExtractor
+
+Concrete, synchronous extractor using `requests` and BeautifulSoup for HTML → text extraction.
+
+* `__init__(self, raw_html: str = '')` — Initialize the extractor, optionally with raw HTML.
+* `fetch(self, url: str, time: int = 10)` — Performs an HTTP GET, returns a canonicalized Result.
+* `html_to_text(self, html: str)` — Converts HTML to plain, readable text, removing scripts/styles.
+* `scrape_paragraphs(self, uri: str)` — Extracts all `<p>` blocks from the page at the given URI.
+* `scrape_lists(self, uri: str)` — Extracts all `<li>` items from lists.
+* `scrape_tables(self, uri: str)` — Extracts and flattens all table cell contents.
+* `scrape_articles(self, uri: str)` — Extracts text from `<article>` elements.
+* `scrape_headings(self, uri: str)` — Extracts all headings (`<h1>`–`<h6>`).
+* `scrape_divisions(self, uri: str)` — Extracts text from `<div>` elements.
+* `scrape_sections(self, uri: str)` — Extracts text from `<section>` elements.
+* `scrape_blockquotes(self, uri: str)` — Extracts text from `<blockquote>` elements.
+* `scrape_hyperlinks(self, uri: str)` — Extracts all hyperlinks (from `<a href>`).
+* `scrape_images(self, uri: str)` — Extracts image sources (from `<img src>`).
+* `create_schema(self, function, tool, description, parameters, required)` — Builds an OpenAI Tool API schema dynamically for a function.
+
+---
+
+# Foo
 
 *A Modular Python Framework for Retrieval-Augmented Pipelines and Agentic Workflows*
 
@@ -32,7 +68,7 @@
 
 * Modular, pluggable pipeline for document, web, and data retrieval and processing.
 * Robust, extensible loaders and fetchers for all common document and web data formats.
-* Clean separation of fetch, scrape, load, convert, and write stages.
+* Powerful HTML/text scraping and cleaning.
 * Integrates with OpenAI, LangChain, ChromaDB, and advanced document stores.
 * Strong type safety and error handling.
 * Simple, testable, and extensible codebase.
@@ -89,7 +125,7 @@ print(response)
 
 ## 🔍 Usage Examples
 
-**Fetch Web Page Paragraphs:**
+**Scrape Web Page Paragraphs:**
 
 ```python
 from foo.scrapers import WebExtractor
@@ -387,34 +423,35 @@ Retrieves near-Earth object (NEO) and fireball data from JPL’s CNEOS/SSD APIs.
 
 ---
 
-## 🛰️ Scrapers
+## 📦 Scrapers
 
 ### 🛰️ Extractor
 
 Abstract base for HTML → plain-text extraction.
 
-* `raw_html` – Raw HTML content to be extracted.
-* `extract` – Extraction method to convert HTML to text.
+* `__init__(self, raw_html: str = '')` — Initialize with optional raw HTML to extract.
+* `extract(self)` — Abstract method for extracting readable text from HTML. Must be implemented by subclasses.
 
 ---
 
 ### 🛰️ WebExtractor
 
-Concrete, synchronous extractor using `requests` and BeautifulSoup for HTML→text extraction.
+Concrete, synchronous extractor using `requests` and BeautifulSoup for HTML → text extraction.
 
-* `fetch(url, time=10)` – Performs HTTP GET and returns a canonicalized Result.
-* `html_to_text(html)` – Converts HTML to compact plain text (scripts/styles removed).
-* `scrape_paragraphs(uri)` – Extracts all `<p>` blocks from a page.
-* `scrape_lists(uri)` – Extracts `<li>` text from lists.
-* `scrape_tables(uri)` – Extracts cell contents from all `<table>` structures.
-* `scrape_articles(uri)` – Extracts consolidated text from `<article>` elements.
-* `scrape_headings(uri)` – Extracts headings `<h1>`–`<h6>`.
-* `scrape_divisions(uri)` – Extracts cleaned text from `<div>` blocks.
-* `scrape_sections(uri)` – Extracts readable text from `<section>` elements.
-* `scrape_blockquotes(uri)` – Extracts text from `<blockquote>` elements.
-* `scrape_hyperlinks(uri)` – Extracts all hyperlink hrefs.
-* `scrape_images(uri)` – Extracts image references from `<img src="...">`.
-* `create_schema(function, tool, description, parameters, required)` – Builds dynamic OpenAI Tool API schema.
+* `__init__(self, raw_html: str = '')` — Initialize the extractor, optionally with raw HTML.
+* `fetch(self, url: str, time: int = 10)` — Performs an HTTP GET, returns a canonicalized Result.
+* `html_to_text(self, html: str)` — Converts HTML to plain, readable text, removing scripts/styles.
+* `scrape_paragraphs(self, uri: str)` — Extracts all `<p>` blocks from the page at the given URI.
+* `scrape_lists(self, uri: str)` — Extracts all `<li>` items from lists.
+* `scrape_tables(self, uri: str)` — Extracts and flattens all table cell contents.
+* `scrape_articles(self, uri: str)` — Extracts text from `<article>` elements.
+* `scrape_headings(self, uri: str)` — Extracts all headings (`<h1>`–`<h6>`).
+* `scrape_divisions(self, uri: str)` — Extracts text from `<div>` elements.
+* `scrape_sections(self, uri: str)` — Extracts text from `<section>` elements.
+* `scrape_blockquotes(self, uri: str)` — Extracts text from `<blockquote>` elements.
+* `scrape_hyperlinks(self, uri: str)` — Extracts all hyperlinks (from `<a href>`).
+* `scrape_images(self, uri: str)` — Extracts image sources (from `<img src>`).
+* `create_schema(self, function, tool, description, parameters, required)` — Builds an OpenAI Tool API schema dynamically for a function.
 
 ---
 
@@ -464,6 +501,4 @@ Copyright © 2022–2025 Terry D. Eppler
 
 ## 🙏 Acknowledgments
 
-* Project lead: Terry D. Eppler ([terryeppler@gmail.com](mailto:terryeppler@gmail.com))
-* Inspired by open-source Python, ML, and LLM communities.
-
+* Project lead: Terry D. Eppler ([terryeppler
