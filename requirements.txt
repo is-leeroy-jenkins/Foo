@@ -1,3 +1,4 @@
+anthropic
 asyncio
 arxiv
 bs4~=0.0.2

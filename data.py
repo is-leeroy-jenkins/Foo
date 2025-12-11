@@ -194,127 +194,169 @@ class DB( ):
 			_exc.method = 'get_connection_string( self )'
 			_error = ErrorDialog( _exc )
 			_error.show( )
-			
-class SQLite( DB ):
+
+class SQLite( ):
 	"""
 
-		Purpose:
-		-----------
-		Manages persistent storage and retrieval of text chunks and their embedding vectors
-		using a local SQLite database.
+		Class providing CRUD
+		operations for a SQLite database.
 
-		Parameters:
-		-----------
-		db_path (str):
-		Path to the SQLite database file.
-
-		Attributes:
-		-----------
-		db_path (str): File path for the SQLite connection.
-		conn (sqlite3.Connection): SQLite database connection.
-		cursor (sqlite3.Cursor): Cursor used for SQL execution.
+		Methods:
+			- create_table: Creates a df with specified schema.
+			- insert: Inserts a record into a df.
+			- fetch_all: Fetches all rows from a df.
+			- fetch_one: Fetches a single record matching the query.
+			- update: Updates rows that match a given condition.
+			- delete: Deletes rows that match a given condition.
+			- close: Closes the database connection.
 
 	"""
-	provider: Optional[ Provider ]
-	path: Optional[ str ]
-	connection: sqlite3.Connection
-	cursor: sqlite3.Cursor
-	column_names: List[ str ]
-	data_types: List[ str ]
+	db_path: Optional[ str ]
+	connection: Optional[ Connection ]
+	cursor: Optional[ Cursor ]
+	file_path: Optional[ str ]
+	where: Optional[ str ]
+	file_name: Optional[ str ]
+	table_name: Optional[ str ]
+	placeholders: Optional[ List[ str ] ]
+	columns: Optional[ List[ str ] ]
+	params: Optional[ Tuple ]
+	tables: Optional[ List ]
 	
-	def __init__( self ) -> None:
+	def __init__( self ):
 		"""
 
-			Purpose:
-			--------
-			Establishes a SQLite connection and initializes the embeddings table schema.
+			Pupose:
+			Initializes the connection to the SQLite database.
 
-			Parameters:
-			--------
-			db_path (str): Path to the SQLite file used for storage.
-
-			Returns:
-			--------
-			None
+			Args:
+				db_name (str): The name of the database file.
 
 		"""
-		super( ).__init__( self )
-		self.provider = Provider.SQLite
-		self.path = os.getcwd( ) + r'\stores\sqlite\datamodels\Data.db'
+		self.db_path = r'stores\sqlite\datamodels\Data.db'
 		self.connection = sqlite3.connect( self.db_path )
 		self.cursor = self.connection.cursor( )
+		self.file_path = None
+		self.where = None
+		self.pairs = None
+		self.sql = None
+		self.file_name = None
+		self.table_name = None
+		self.placeholders = [ str ]
+		self.columns = [ str ]
+		self.params = ( )
+		self.column_names = [ str ]
+		self.tables = [ ]
 	
-	def create_table( self, name: str, cols: List[ str ], types: List[ str ] ) -> None:
+	def __dir__( self ):
+		return [ 'db_path',
+		         'connection',
+		         'cursor',
+		         'path',
+		         'where',
+		         'pairs',
+		         'sql',
+		         'file_name',
+		         'table_name',
+		         'placeholders',
+		         'columns',
+		         'params',
+		         'column_names',
+		         'tables',
+		         'close',
+		         'import_excel',
+		         'delete',
+		         'update',
+		         'insert',
+		         'create_table',
+		         'fetch_one',
+		         'fetch_all' ]
+	
+	def create( self ) -> None:
 		"""
 
 			Purpose:
-			-------
-
 			Creates the 'embeddings' table with appropriate schema if it does not already exist.
 
 			Returns:
-			--------
 			None
 
 		"""
 		try:
-			throw_if( 'name', name )
-			throw_if( 'cols', cols )
-			throw_if( 'types', types )
-			sql = """CREATE TABLE IF NOT EXISTS embeddings
-                     (
-                         id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                         source_file TEXT    NOT NULL,
-                         chunk_index INTEGER NOT NULL,
-                         chunk_text  TEXT    NOT NULL,
-                         embedding   TEXT    NOT NULL,
-                         created_at  TEXT DEFAULT CURRENT_TIMESTAMP
-                     )"""
-			self.cursor.execute( sql )
+			self.cursor.execute( """
+                                 CREATE TABLE IF NOT EXISTS embeddings
+                                 (
+                                     id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                                     source_file TEXT    NOT NULL,
+                                     chunk_index INTEGER NOT NULL,
+                                     chunk_text  TEXT    NOT NULL,
+                                     embedding   TEXT    NOT NULL,
+                                     created_at  TEXT DEFAULT CURRENT_TIMESTAMP
+                                 )""" )
+			
 			self.connection.commit( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'data'
 			exception.cause = 'SQLite'
 			exception.method = 'create( self ) -> None'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def insert( self, source_file: str, index: int,
-			text: str, embedding: np.ndarray ) -> None:
+	def create_table( self, sql: str ) -> None:
 		"""
 
 			Purpose:
-			----------
-			Inserts a single embedding record with metadata into the database.
+			--------
+			Creates a df using a provided SQL statement.
 
 			Parameters:
-			------------
-			source_file (str): Name or path of the source document.
-			index (int): Ordinal position of the chunk.
-			text (str): Cleaned text of the chunk.
-			embedding (np.ndarray): Vector representation of the chunk.
-
-			Returns:
-			--------
-			None
+			-----------
+			sql (str): The CREATE TABLE SQL statement.
 
 		"""
 		try:
-			throw_if( 'source_file', source_file )
-			throw_if( 'index', index )
-			throw_if( 'text', text )
-			throw_if( 'embedding', embedding )
-			vector_str = json.dumps( embedding.tolist( ) )
-			sql = """INSERT INTO embeddings ( source_file, chunk_index, chunk_text, embedding )
-                     VALUES ( ?, ?, ?, ? )"""
-			self.cursor.execute( sql, ( source_file, index, text, vector_str ) )
+			throw_if( 'sql', sql )
+			self.sql = sql
+			self.cursor.execute( self.sql )
 			self.connection.commit( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = 'insert( )'
+			exception.method = 'create_table( self, sql: str ) -> None'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def insert( self, table: str, columns: List[ str ], values: Tuple[ Any, ... ] ) -> None:
+		"""
+
+			Purpose:
+			--------
+			Inserts a new record into a df.
+
+			Parameter:
+			--------
+			table (str): The name of the df.
+			columns (List[str]): Column names.
+			values (Tuple): Corresponding target_values.
+
+		"""
+		try:
+			throw_if( 'table', table )
+			throw_if( 'columns', columns )
+			throw_if( 'values', values )
+			self.placeholders = ', '.join( '?' for _ in values )
+			col_names = ', '.join( columns )
+			self.sql = f'INSERT INTO {table} ({col_names}) VALUES ({self.placeholders})'
+			self.cursor.execute( self.sql, values )
+			self.connection.commit( )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'data'
+			exception.cause = 'SQLite'
+			exception.method = ('insert( self, df: str, columns: List[ str ], '
+			                    'target_values: Tuple[ Any, ... ] ) -> None')
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -322,242 +364,219 @@ class SQLite( DB ):
 		"""
 
 			Purpose:
-			-------
+			--------
 			Batch inserts multiple chunks and their embeddings into the database.
 
 			Parameters:
-			-----------
+			--------
 			source_file (str): Name or path of the source document.
 			chunks (List[str]): List of cleaned text chunks.
 			vectors (np.ndarray): Matrix of embedding vectors.
 
 			Returns:
 			--------
-			None
+				None
 
 		"""
 		try:
-			records = [ ( source_file, i, chunks[ i ], json.dumps( vectors[ i ].tolist( ) ) )
+			records = [ (source_file, i, chunks[ i ], json.dumps( vectors[ i ].tolist( ) ))
 			            for i in range( len( chunks ) ) ]
-			sql_insert = """INSERT INTO embeddings ( source_file, chunk_index, chunk_text, embedding )
-                            VALUES (?, ?, ?, ?)"""
-			self.cursor.executemany( sql_insert, records )
+			
+			self.sql = f''' INSERT INTO {self.table_name} ({self.file_name}, chunk_index,
+					chunk_text, embedding) VALUES (?, ?, ?, ?) '''
+			
+			self.cursor.executemany( self.sql, records )
 			self.connection.commit( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = 'insert_many( )'
+			exception.method = 'insert_many'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def fetch_all( self ) -> Tuple[ List[ str ], np.ndarray ] | None:
-		'''
+	def fetch_all( self, table: str ) -> List[ Tuple ] | None:
+		"""
 
 			Purpose:
 			--------
-			Retrieves all text chunks and their embeddings from the database.
-
-			Returns:
-			--------
-			Tuple[List[str], np.ndarray]:
-			List of texts and matrix of embeddings.
-
-		'''
-		try:
-			self.cursor.execute( 'SELECT chunk_text, embedding FROM embeddings' )
-			rows = self.cursor.fetchall( )
-			texts, vectors = [ ], [ ]
-			for text, emb in rows:
-				texts.append( text )
-				vectors.append( np.array( json.loads( emb ) ) )
-			return texts, np.array( vectors )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'SQLite'
-			exception.method = 'fetch_all( self ) -> Tuple[ List[ str ], np.ndarray ]'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def fetch_by_file( self, file: str ) -> Tuple[ List[ str ], np.ndarray ] | None:
-		'''
-
-			Purpose:
-			--------
-			Retrieves all records associated with a specific file.
+			Retrieves all rows from a df.
 
 			Parameters:
 			--------
-			file (str): Identifier of the source file.
+			table (str): The name of the df.
 
 			Returns:
 			--------
-			Tuple[List[str], np.ndarray]:
-			Filtered texts and embeddings.
+			List[Tuple]: List of rows.
 
-		'''
+		"""
 		try:
-			self.cursor.execute( '''
-                                 SELECT chunk_text, embedding
-                                 FROM embeddings
-                                 WHERE source_file = ?
-			                     ''', (file,) )
-			rows = self.cursor.fetchall( )
-			texts, vectors = [ ], [ ]
-			for text, emb in rows:
-				texts.append( text )
-				vectors.append( np.array( json.loads( emb ) ) )
-			return texts, np.array( vectors )
+			throw_if( 'table', table )
+			self.sql = f'SELECT * FROM {table}'
+			self.cursor.execute( self.sql )
+			return self.cursor.fetchall( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = 'fetch_by_file( self, file: str ) -> Tuple[ List[ str ], np.ndarray ]'
+			exception.method = 'fetch_all( self, df: str ) -> List[ Tuple ]'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def delete_by_file( self, file: str ) -> None:
-		'''
+	def fetch_one( self, table: str, where: str, params: Tuple[ Any, ... ] ) -> Tuple | None:
+		"""
 
 			Purpose:
 			--------
-			Deletes all embeddings associated with a given source file.
+			Retrieves a single row matching a WHERE clause.
 
 			Parameters:
 			--------
-			file (str): Source file whose records are to be deleted.
+			table (str): Table name.
+			where (str): WHERE clause (excluding 'WHERE').
+			params (Tuple): Parameters for the clause.
 
 			Returns:
 			--------
-			None
+			Optional[Tuple]: The fetched row or None.
 
-		'''
+		"""
 		try:
-			self.cursor.execute( 'DELETE FROM embeddings WHERE source_file = ?', (file,) )
+			throw_if( 'params', params )
+			throw_if( 'where', where )
+			throw_if( 'table', table )
+			self.table_name = table
+			self.where = where
+			self.sql = f'SELECT * FROM {self.table_name} WHERE {self.where} LIMIT 1'
+			self.cursor.execute( self.sql, self.params )
+			return self.cursor.fetchone( )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'data'
+			exception.cause = 'SQLite'
+			exception.method = (
+					'fetch_one( self, df: str, where: str, params: Tuple[ Any, ... ] ) -> '
+					'Optional[ Tuple ]')
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def update( self, table: str, pairs: str, where: str, params: Tuple[ Any, ... ] ) -> None:
+		"""
+
+			Purpose:
+			--------
+			Updates rows in a df.
+
+			Parameters:
+			--------
+			table (str): Table name.
+			pairs (str): SET clause with placeholders.
+			where (str): WHERE clause with placeholders.
+			params (Tuple): Parameters for both clauses.
+
+		"""
+		try:
+			throw_if( 'pairs', pairs )
+			throw_if( 'params', params )
+			throw_if( 'where', where )
+			throw_if( 'table', table )
+			self.table_name = table
+			self.where = where
+			self.params = params
+			self.sql = f'UPDATE {self.table_name} SET {pairs} WHERE {self.where}'
+			self.cursor.execute( self.sql, params )
 			self.connection.commit( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = 'delete_by_file( self, file: str ) -> None'
+			exception.method = (
+					'update( self, df: str, pairs: str, where: str, params: Tuple[ Any, '
+					'... ] ) -> None')
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def update_embedding_by_id( self, row_id: int, new_embedding: np.ndarray ) -> None:
-		'''
+	def delete( self, table: str, where: str, params: Tuple[ Any, ... ] ) -> None:
+		"""
 
 			Purpose:
 			--------
-			Updates an embedding vector in the database by record ID.
+			Deletes row matching the given WHERE clause.
 
 			Parameters:
 			--------
-			row_id (int): ID of the record to update.
-			new_embedding (np.ndarray): New embedding vector.
+			table (str): Table name.
+			where (str): WHERE clause (excluding 'WHERE').
+			params (Tuple): Parameters for clause.
 
-			Returns:
-			--------
-			None
-
-		'''
+		"""
 		try:
-			vector_str = json.dumps( new_embedding.tolist( ) )
-			self.cursor.execute( '''
-                                 UPDATE embeddings
-                                 SET embedding = ?
-                                 WHERE id = ?
-			                     ''', (vector_str, row_id) )
+			throw_if( 'where', where )
+			throw_if( 'table', table )
+			throw_if( 'params', params )
+			self.table_name = table
+			self.where = where
+			self.params = params
+			self.sql = f"DELETE FROM {self.table_name} WHERE {self.where}"
+			self.cursor.execute( self.sql, self.params )
 			self.connection.commit( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = 'update_embedding_by_id( )'
+			exception.method = 'delete( self, df: str, where: str, params: Tuple[ Any] )->None'
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def count( self ) -> int | None:
-		'''
+	def import_excel( self, path: str ) -> None:
+		"""
 
 			Purpose:
 			--------
-			Returns the total number of records stored in the embeddings table.
+			Reads all worksheets from an Excel file into pandas DataFrames and
+			stores each as a df in the SQLite database.
 
 			Parameters:
 			--------
-			None
+			path (str): Path to the Excel workbook.
 
-			Returns:
-			--------
-			int: Number of rows in the table.
-
-		'''
+		"""
 		try:
-			self.cursor.execute( 'SELECT COUNT(*) FROM embeddings' )
-			return self.cursor.fetchone( )[ 0 ]
+			throw_if( 'path', path )
+			self.file_path = path
+			self.file_name = os.path.basename( self.file_path )
+			_excel = pd.ExcelFile( self.file_path )
+			for _sheet in _excel.sheet_names:
+				_df = _excel.parse( _sheet )
+				_df.to_sql( _sheet, self.connection, if_exists='replace', index=False )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = 'count( ) -> int'
-			error = ErrorDialog( exception )
-			error.show( )
-	
-	def purge_all( self ) -> None:
-		'''
-
-			Purpose:
-			--------
-			Deletes all data from the embeddings table without altering the schema.
-
-			Parameters:
-			--------
-			None
-
-			Returns:
-			--------
-			None
-
-		'''
-		try:
-			self.cursor.execute( 'DELETE FROM embeddings' )
-			self.connection.commit( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'SQLite'
-			exception.method = 'purge_all( )'
+			exception.method = 'import_excel( self, path: str ) -> None'
 			error = ErrorDialog( exception )
 			error.show( )
 	
 	def close( self ) -> None:
-		'''
+		"""
 
 			Purpose:
-			---------
+			--------
 			Closes the database connection.
 
-			Parameters:
-			----------
-			None
-
-			Returns:
-			------
-			None
-
-		'''
+		"""
 		try:
 			if self.connection is not None:
 				self.connection.close( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = 'close( )'
+			exception.method = 'close( self ) -> None'
 			error = ErrorDialog( exception )
 			error.show( )
-
+			
 class Chroma:
 	'''
 

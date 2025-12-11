@@ -42,6 +42,8 @@
   ******************************************************************************************
   '''
 from __future__ import annotations
+
+from anthropic import Anthropic
 from astroquery.simbad import Simbad
 import datetime
 import matplotlib.pyplot as plt
@@ -951,7 +953,7 @@ class WebFetcher( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -962,6 +964,7 @@ class WebFetcher( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -1260,7 +1263,7 @@ class ArXivFetcher( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -1271,6 +1274,7 @@ class ArXivFetcher( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -1425,7 +1429,7 @@ class GoogleDriveFetcher( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -1436,6 +1440,7 @@ class GoogleDriveFetcher( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -1583,7 +1588,7 @@ class WikipediaFetcher( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -1594,6 +1599,7 @@ class WikipediaFetcher( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -1834,7 +1840,7 @@ class NewsFetcher( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -1845,6 +1851,7 @@ class NewsFetcher( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -2082,7 +2089,7 @@ class GoogleSearch( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -2093,6 +2100,7 @@ class GoogleSearch( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -2378,7 +2386,7 @@ class GoogleMaps( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -2389,6 +2397,7 @@ class GoogleMaps( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -2584,7 +2593,7 @@ class GoogleWeather( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -2595,6 +2604,7 @@ class GoogleWeather( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -2844,17 +2854,18 @@ class NavalObservatory( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
 				{
-						'name': func_name,
-						'description': f'{desc} This function uses the {tool_name} service.',
-						'parameters':
-						{
-							'type': 'object',
-							'properties': parameters,
-							'required': required
-						}
+					'type': 'object',
+					'properties': parameters,
+					'required': required
 				}
+			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -3083,7 +3094,7 @@ class SatelliteCenter( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -3094,6 +3105,7 @@ class SatelliteCenter( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -3288,7 +3300,7 @@ class EarthObservatory( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -3299,6 +3311,7 @@ class EarthObservatory( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -3496,7 +3509,7 @@ class GlobalImagery( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -3507,6 +3520,7 @@ class GlobalImagery( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -3730,7 +3744,7 @@ class NearbyObjects( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -3741,6 +3755,7 @@ class NearbyObjects( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -3951,7 +3966,7 @@ class OpenScience( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -3962,6 +3977,7 @@ class OpenScience( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -4239,7 +4255,7 @@ class SpaceWeather( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -4250,6 +4266,7 @@ class SpaceWeather( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -4524,7 +4541,7 @@ class AstroCatalog( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -4535,6 +4552,7 @@ class AstroCatalog( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -4732,7 +4750,7 @@ class AstroQuery( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -4743,6 +4761,7 @@ class AstroQuery( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -5060,7 +5079,7 @@ class StarMap( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -5071,6 +5090,7 @@ class StarMap( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -5401,7 +5421,7 @@ class GovData( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -5412,6 +5432,7 @@ class GovData( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -5591,7 +5612,7 @@ class StarChart( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -5602,6 +5623,7 @@ class StarChart( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -5817,7 +5839,7 @@ class Congress( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -5828,6 +5850,7 @@ class Congress( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -6061,7 +6084,7 @@ class InternetArchive( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -6072,6 +6095,7 @@ class InternetArchive( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
@@ -6114,6 +6138,7 @@ class Groq( Fetcher ):
 	max_tokens: Optional[ int ]
 	top_p: Optioanl[ float ]
 	reasonging_effort: Optional[ float ]
+	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	
 	def __init__( self ) -> None:
 		'''
@@ -6133,6 +6158,7 @@ class Groq( Fetcher ):
 		'''
 		super( ).__init__( )
 		self.api_key = cfg.GROQ_API_KE
+		self.model = 'openai/gpt-oss-120b'
 		self.url = r'https://api.groq.com/openai/v1?'
 		self.headers = { }
 		self.timeout = None
@@ -6192,18 +6218,18 @@ class Groq( Fetcher ):
 		'''
 		try:
 			throw_if( 'query', query )
-			client = Groq( )
-			completion = client.chat.completions.create(
-				model='openai/gpt-oss-120b',
+			self.query = query
+			self.client = Groq( )
+			completion = self.client.chat.completions.create( model=self.model,
 				messages=[
 				{
 					'role': 'user',
-					"content": ""
+					"content": self.query
 				} ],
 				temperature=1,
 				max_completion_tokens=8192,
 				top_p=1,
-				reasoning_effort="medium",
+				reasoning_effort='medium',
 				stream=True,
 				stop=None
 			)
@@ -6295,8 +6321,8 @@ class Groq( Fetcher ):
 			}
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'Groq'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
@@ -6325,7 +6351,6 @@ class Gemini( Fetcher ):
 	'''
 	client: Optional[ genai.Client ]
 	prompt: Optional[ str ]
-	url: Optional[ str ]
 	file_path: Optional[ str ]
 	response: Optional[ Response ]
 	mime_type: Optional[ str ]
@@ -6341,6 +6366,7 @@ class Gemini( Fetcher ):
 	top_p: Optioanl[ float ]
 	reasonging_effort: Optional[ float ]
 	http_options: Optional[ str ]
+	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	
 	def __init__( self ) -> None:
 		'''
@@ -6356,7 +6382,6 @@ class Gemini( Fetcher ):
 		self.location = cfg.GOOGLE_CLOUD_LOCATION
 		self.use_vertex = cfg.GOOGLE_GENAI_USE_VERTEXAI
 		self.model = 'gemini-2.5-flash'
-		self.url = r'https://aiplatform.googleapis.com?'
 		self.headers = { }
 		self.timeout = None
 		self.contents = None
@@ -6526,7 +6551,7 @@ class Gemini( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -6537,16 +6562,17 @@ class Gemini( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = ''
+			exception.cause = 'Gemini'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
 			error.show( )
 
-class Mistral( Fetcher ):
+class Claude( Fetcher ):
 	'''
 
 		Purpose:
@@ -6567,13 +6593,12 @@ class Mistral( Fetcher ):
 		fetch( ) -> Dict[ str, Any ]
 		
 	'''
-	client: Optional[ Groq ]
+	client: Optional[ Anthropic ]
 	model: Optional[ str ]
 	keywords: Optional[ str ]
-	url: Optional[ str ]
 	response: Optional[ Response ]
 	api_key: Optional[ str ]
-	query: Optional[  str  ]
+	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	params: Optional[ Dict[ str, str ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
@@ -6597,8 +6622,11 @@ class Mistral( Fetcher ):
 			
 		'''
 		super( ).__init__( )
-		self.api_key = cfg.GROQ_API_KE
-		self.url = r'https://api.groq.com/openai/v1?'
+		self.api_key = cfg.CLAUDE_API_KEY
+		self.client = None
+		self.messages = None
+		self.model = 'claude-sonnet-4-5'
+		self.max_tokens = 1000
 		self.headers = { }
 		self.timeout = None
 		self.content = None
@@ -6637,7 +6665,7 @@ class Mistral( Fetcher ):
 		         'agents,',
 		         'fetch' ]
 	
-	def fetch( self, query: str, time: int=10 ) -> str | None:
+	def fetch( self, query: str ) -> str | None:
 		'''
 
 			Purpose:
@@ -6657,27 +6685,18 @@ class Mistral( Fetcher ):
 		'''
 		try:
 			throw_if( 'query', query )
-			client = Groq( )
-			completion = client.chat.completions.create(
-				model='openai/gpt-oss-120b',
-				messages=[
-				{
-					'role': 'user',
-					"content": ""
-				} ],
-				temperature=1,
-				max_completion_tokens=8192,
-				top_p=1,
-				reasoning_effort="medium",
-				stream=True,
-				stop=None
-			)
-			_results = completion.choices[0].message
-			return _results
+			self.keywords = query
+			self.client = Anthropic( )
+			message = self.client.messages.create( model=self.model, max_tokens=self.max_tokens,
+		    messages=[
+	        {
+	            'role': 'user',
+	            'content': self.query
+	        }])
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = 'Groq'
+			exception.cause = 'Claude'
 			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -6747,7 +6766,7 @@ class Mistral( Fetcher ):
 			desc = description.strip( )
 			if required is None:
 				required = list( parameters.keys( ) )
-			return \
+			_schema  = \
 			{
 				'name': func_name,
 				'description': f'{desc} This function uses the {tool_name} service.',
@@ -6758,10 +6777,226 @@ class Mistral( Fetcher ):
 					'required': required
 				}
 			}
+			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'Claude'
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
+
+class Mistral( Fetcher ):
+	'''
+
+		Purpose:
+		---------
+		Class providing to the Mistral API
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+
+	'''
+	client: Optional[ Mistral ]
+	model: Optional[ str ]
+	response: Optional[ Response ]
+	api_key: Optional[ str ]
+	query: Optional[  str  ]
+	params: Optional[ Dict[ str, str ] ]
+	temperature: Optional[ float ]
+	max_tokens: Optional[ int ]
+	top_p: Optioanl[ float ]
+	reasonging_effort: Optional[ float ]
+	messages: Optional[ List[ Dict[ str, Any ] ] ]
+	
+	def __init__( self ) -> None:
+		'''
+		
+			Purpose:
+			-----------
+			Initialize Groq API.
+
+			Parameters:
+			-----------
+			headers (Optional[Dict[str, str]]): Optional headers for requests.
+
+			Returns:
+			-----------
+			None
+			
+		'''
+		super( ).__init__( )
+		self.api_key = cfg.MISTRAL_API_KEY
+		self.model = 'mistral-medium-lates'
+		self.headers = { }
+		self.timeout = None
+		self.content = None
+		self.params = None
+		self.response = None
+		self.query = None
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+
+			Purpose:
+			-----------
+			Groq list of members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			list[str]: Ordered attribute/method names.
+
+		'''
+		return [ 'content',
+		         'url',
+		         'client',
+		         'timeout',
+		         'headers',
+		         'fetch',
+		         'api_key',
+		         'response',
+		         'cse_id',
+		         'params',
+		         'agents,',
+		         'fetch' ]
+	
+	def fetch( self, query: str ) -> List[ str ] | None:
+		'''
+
+			Purpose:
+			-------
+			Sends an API request to Groq given a query as input
+
+			Parameters:
+			-----------
+			url (str): Absolute URL to fetch.
+			time (int): Timeout seconds to use for the request.
+			show_dialog (bool): If True, show an ErrorDialog on exception.
+
+			Returns:
+			---------
+			Optional[Result]: Result with url, status, text, html, headers on success.
+
+		'''
+		try:
+			throw_if( 'query', query )
+			self.query = query
+			self.client = Mistral( api_key=self.api_key )
+			self.messages = [
+	        {
+	            'role': 'user',
+	            'content': self.query,
+	        } ]
+			
+			_response = self.client.chat.complete(  model=self.model, messages=self.messages)
+			return _response
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Mistral'
+			exception.method = 'fetch( self, query: str ) -> List[ str ]'
+			dialog = ErrorDialog( exception )
+			dialog.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			_schema  = \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Mistral'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )

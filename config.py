@@ -45,6 +45,7 @@ import os
 from typing import Optional, List, Dict
 
 ACCESS_DRIVER = r'DRIVER={ Microsoft Access Driver (*.mdb, *.accdb) };DBQ='
+CLAUDE_API_KEY = os.getenv( 'CLAUDE_API_KEY' )
 CONGRESS_API_KEY = os.getenv( 'CONGRESS_API_KEY' )
 GEOAPIFY_API_KEY = os.getenv( 'GEOAPIFY_API_KEY' )
 GEOCODING_API_KEY = os.getenv( 'GEOCODING_API_KEY' )
