@@ -87,7 +87,7 @@ print(response)
 
 
 
-## 🔍 Usage Examples
+## 🔍 Example Usage 
 
 **Scrape Web Page Paragraphs:**
 
@@ -220,7 +220,7 @@ print(chunks)
 
 * `split(doc, chunk=1000, overlap=100)` – Splits XML text nodes for further use.
 
----
+
 
 ## 🖼️ ImageLoader
 
