@@ -401,6 +401,7 @@ class WebFetcher( Fetcher ):
 
 		
 	'''
+	soup: Optional[ BeautifulSoup ]
 	agents: Optional[ str ]
 	url: Optional[ str ]
 	html: Optional[ str ]
@@ -458,7 +459,7 @@ class WebFetcher( Fetcher ):
 		         'fetch',
 		         'html_to_text' ]
 	
-	def fetch( self, url: str, time: int = 10 ) -> Result | None:
+	def fetch( self, url: str, time: int=10 ) -> Result | None:
 		'''
 			
 			Purpose:
@@ -548,10 +549,10 @@ class WebFetcher( Fetcher ):
 		"""
 		try:
 			throw_if( 'uri', uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, 'html.parser' )
-			blocks = [ p.get_text( ' ', strip=True ) for p in soup.find_all( 'p' ) ]
+			self.response = requests.get( uri, timeout=10 )
+			self.response.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			blocks = [ p.get_text( ' ', strip=True ) for p in self.soup.find_all( 'p' ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -561,7 +562,7 @@ class WebFetcher( Fetcher ):
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 
-	def extract_list_items( self, uri: str ) -> List[ str ]:
+	def extract_lists( self, uri: str ) -> List[ str ] | None:
 		"""
 			
 			Purpose:
@@ -581,10 +582,10 @@ class WebFetcher( Fetcher ):
 		"""
 		try:
 			throw_if( 'uri', uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, 'html.parser' )
-			items = [ li.get_text( " ", strip=True ) for li in soup.find_all( 'li' ) ]
+			self.response = requests.get( uri, timeout=10 )
+			self.response.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			items = [ li.get_text( ' ', strip=True ) for li in self.soup.find_all( 'li' ) ]
 			return [ i for i in items if i ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -594,7 +595,7 @@ class WebFetcher( Fetcher ):
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_table_text( self, uri: str ) -> List[ str ]:
+	def extract_text( self, uri: str ) -> List[ str ]:
 		"""
 			
 			Purpose:
@@ -614,19 +615,19 @@ class WebFetcher( Fetcher ):
 			
 		"""
 		try:
-			throw_if( "uri", uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, "html.parser" )
-			results: List[ str ] = [ ]
-			for table in soup.find_all( "table" ):
-				for row in table.find_all( "tr" ):
-					for cell in row.find_all( [ "td",  "th" ] ):
-						text = cell.get_text( " ", strip=True )
+			throw_if( 'uri', uri )
+			self.response = requests.get( uri, timeout=10 )
+			self.response.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			_results: List[ str ] = [ ]
+			for table in self.soup.find_all( 'table' ):
+				for row in table.find_all( 'tr' ):
+					for cell in row.find_all( [ 'td',  'th' ] ):
+						text = cell.get_text( ' ', strip=True )
 						if text:
-							results.append( text )
+							_results.append( text )
 			
-			return results
+			return _results
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -655,11 +656,11 @@ class WebFetcher( Fetcher ):
 			
 		"""
 		try:
-			throw_if( "uri", uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, "html.parser" )
-			blocks = [ art.get_text( " ", strip=True ) for art in soup.find_all( "article" ) ]
+			throw_if( 'uri', uri )
+			self.response = requests.get( uri, timeout=10 )
+			self.response.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			blocks = [ art.get_text( " ", strip=True ) for art in soup.find_all( 'article' ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -689,16 +690,16 @@ class WebFetcher( Fetcher ):
 		"""
 		try:
 			throw_if( "uri", uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, "html.parser" )
+			self.response = requests.get( uri, timeout=10 )
+			self.response.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, "html.parser" )
 			heading_tags = [ 'h1',
 			                 'h2',
 			                 'h3',
 			                 'h4',
 			                 'h5',
 			                 'h6' ]
-			blocks = [ h.get_text( ' ', strip=True ) for h in soup.find_all( heading_tags ) ]
+			blocks = [ h.get_text( ' ', strip=True ) for h in self.soup.find_all( heading_tags ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -727,11 +728,11 @@ class WebFetcher( Fetcher ):
 			
 		"""
 		try:
-			throw_if( "uri", uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, "html.parser" )
-			blocks = [ div.get_text( " ", strip=True ) for div in soup.find_all( "div" ) ]
+			throw_if( 'uri', uri )
+			self.response = requests.get( uri, timeout=10 )
+			self.response.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			blocks = [ div.get_text( " ", strip=True ) for div in self.soup.find_all( 'div' ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -760,11 +761,11 @@ class WebFetcher( Fetcher ):
 			
 		"""
 		try:
-			throw_if( "uri", uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, "html.parser" )
-			blocks = [ sec.get_text( " ", strip=True ) for sec in soup.find_all( "section" ) ]
+			throw_if( 'uri', uri )
+			self.response = requests.get( uri, timeout=10 )
+			rself.esponse.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			blocks = [ sec.get_text( " ", strip=True ) for sec in self.soup.find_all( 'section' ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -794,11 +795,11 @@ class WebFetcher( Fetcher ):
 			
 		"""
 		try:
-			throw_if( "uri", uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, "html.parser" )
-			blocks = [ bq.get_text( " ", strip=True ) for bq in soup.find_all( "blockquote" ) ]
+			throw_if( 'uri', uri )
+			self.response = requests.get( uri, timeout=10 )
+			self.response.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			blocks = [ bq.get_text( ' ', strip=True ) for bq in self.soup.find_all( 'blockquote' ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -808,7 +809,7 @@ class WebFetcher( Fetcher ):
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 	
-	def extract_links( self, uri: str ) -> List[ str ]:
+	def extract_hyperlinks( self, uri: str ) -> List[ str ]:
 		"""
 		
 			Purpose:
@@ -827,11 +828,11 @@ class WebFetcher( Fetcher ):
 		
 		"""
 		try:
-			throw_if( "uri", uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, "html.parser" )
-			links = [ a.get( "href" ) for a in soup.find_all( "a" ) if a.get( "href" ) ]
+			throw_if( 'uri', uri )
+			self.response = requests.get( uri, timeout=10 )
+			self.response.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			links = [ a.get( 'href' ) for a in self.soup.find_all( 'a' ) if a.get( 'href' ) ]
 			return links
 		except Exception as exc:
 			exception = Error( exc )
@@ -860,11 +861,11 @@ class WebFetcher( Fetcher ):
 		
 		"""
 		try:
-			throw_if( "uri", uri )
-			response = requests.get( uri, timeout=10 )
-			response.raise_for_status( )
-			soup = BeautifulSoup( response.text, "html.parser" )
-			images = [ img.get( "src" ) for img in soup.find_all( "img" ) if img.get( "src" ) ]
+			throw_if( 'uri', uri )
+			self.response = requests.get( uri, timeout=10 )
+			self.response.raise_for_status( )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			images = [ img.get( 'src' ) for img in self.soup.find_all( 'img' ) if img.get( 'src' ) ]
 			return images
 		except Exception as exc:
 			exception = Error( exc )
