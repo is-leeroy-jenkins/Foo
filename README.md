@@ -9,7 +9,6 @@
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.9+-blue.svg?logo=python" alt="Python 3.9+"></a>
 </p>
 
----
 
 ## 📚 Table of Contents
 
@@ -27,7 +26,7 @@
 * [License](#license)
 * [Acknowledgments](#acknowledgments)
 
----
+
 
 ## ✨ Features
 
@@ -38,7 +37,7 @@
 * Strong type safety and error handling.
 * Simple, testable, and extensible codebase.
 
----
+
 
 ## 🏛️ Architecture
 
@@ -48,7 +47,7 @@
 
 Each stage is a pluggable, testable class. The core orchestrator is the `Fetch` pipeline.
 
----
+
 
 ## 🗂️ Directory Structure
 
@@ -64,7 +63,7 @@ foo/
 ├── requirements.txt
 ```
 
----
+
 
 ## 🛡️ Installation
 
@@ -75,7 +74,7 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
----
+
 
 ## 🚀 Quick Start
 
@@ -86,7 +85,7 @@ response = fetcher.query_docs("Summarize the uploaded PDFs.")
 print(response)
 ```
 
----
+
 
 ## 🔍 Usage Examples
 
@@ -109,7 +108,7 @@ chunks = loader.split(doc)
 print(chunks)
 ```
 
----
+
 
 ## 📄 Loaders
 
@@ -120,7 +119,7 @@ print(chunks)
 * `load(path)` – Loads the document from the specified path.
 * `split(doc, chunk=1000, overlap=100)` – Splits a loaded document into overlapping text chunks.
 
----
+
 
 ### 🧾 CsvLoader
 
@@ -129,7 +128,7 @@ print(chunks)
 * `load(path)` – Loads and parses a CSV file.
 * `split(doc, chunk=1000, overlap=100)` – Splits CSV content for batch processing.
 
----
+
 
 ### 📄 PdfLoader
 
@@ -138,7 +137,7 @@ print(chunks)
 * `load(path)` – Loads and extracts text from a PDF document.
 * `split(doc, chunk=1000, overlap=100)` – Splits PDF text into manageable chunks.
 
----
+
 
 ### 📝 DocxLoader
 
@@ -147,7 +146,7 @@ print(chunks)
 * `load(path)` – Loads and parses a DOCX file.
 * `split(doc, chunk=1000, overlap=100)` – Splits DOCX text for analysis.
 
----
+
 
 ### 🌐 HtmlLoader
 
@@ -156,7 +155,7 @@ print(chunks)
 * `load(path)` – Loads HTML content from a file.
 * `split(doc, chunk=1000, overlap=100)` – Splits HTML body text into chunks.
 
----
+
 
 ### 📊 PptxLoader
 
@@ -165,7 +164,7 @@ print(chunks)
 * `load(path)` – Loads slide contents from a PowerPoint file.
 * `split(doc, chunk=1000, overlap=100)` – Splits slide text for downstream use.
 
----
+
 
 ### 📈 ExcelLoader
 
@@ -174,7 +173,7 @@ print(chunks)
 * `load(path)` – Loads and reads an Excel file.
 * `split(doc, chunk=1000, overlap=100)` – Splits spreadsheet content for batch processing.
 
----
+
 
 ### 📜 TextLoader
 
@@ -183,7 +182,7 @@ print(chunks)
 * `load(path)` – Loads the content of a text file.
 * `split(doc, chunk=1000, overlap=100)` – Splits text file content into chunks.
 
----
+
 
 ### 🗃️ JsonLoader
 
@@ -192,7 +191,7 @@ print(chunks)
 * `load(path)` – Loads and parses JSON data.
 * `split(doc, chunk=1000, overlap=100)` – Splits JSON-encoded text as appropriate.
 
----
+
 
 ### 📝 MarkdownLoader
 
@@ -201,7 +200,7 @@ print(chunks)
 * `load(path)` – Loads a Markdown file’s content.
 * `split(doc, chunk=1000, overlap=100)` – Splits Markdown into logical text chunks.
 
----
+
 
 ### 🗂️ XmlLoader
 
@@ -219,7 +218,7 @@ print(chunks)
 * `load(path)` – Loads an image file.
 * `split(doc, chunk=1000, overlap=100)` – Optionally splits or processes image regions.
 
----
+
 
 ### 📺 YouTubeLoader
 
@@ -228,7 +227,7 @@ print(chunks)
 * `load(path)` – Retrieves transcript/caption text for a given video ID or URL.
 * `split(doc, chunk=1000, overlap=100)` – Splits transcript into chunks.
 
----
+
 
 ### 💾 UnstructuredLoader
 
@@ -237,7 +236,7 @@ print(chunks)
 * `load(path)` – Loads and attempts to parse various unstructured document formats.
 * `split(doc, chunk=1000, overlap=100)` – Splits extracted text for processing.
 
----
+
 
 ## 🤖 Fetchers
 
@@ -247,7 +246,7 @@ print(chunks)
 
 * `fetch(url, **kwargs)` – Performs a data retrieval request to a specified endpoint.
 
----
+
 
 ### 🌍 WebFetcher
 
@@ -255,19 +254,7 @@ print(chunks)
 
 * `fetch(url, time=10)` – Performs an HTTP GET and returns a structured Result.
 * `html_to_text(html)` – Converts raw HTML to compact plain text.
-* `scrape_paragraphs(uri)` – Extracts all `<p>` text blocks from a page.
-* `scrape_lists(uri)` – Extracts all `<li>` text from lists.
-* `scrape_tables(uri)` – Flattens all table cell contents.
-* `scrape_articles(uri)` – Extracts content from `<article>` tags.
-* `scrape_headings(uri)` – Extracts headings (`<h1>`–`<h6>`).
-* `scrape_divisions(uri)` – Extracts text from `<div>` elements.
-* `scrape_sections(uri)` – Extracts text from `<section>` elements.
-* `scrape_blockquotes(uri)` – Extracts `<blockquote>` text.
-* `scrape_hyperlinks(uri)` – Extracts all hyperlinks (`<a href>`).
-* `scrape_images(uri)` – Extracts image sources (`<img src>`).
-* `create_schema(function, tool, description, parameters, required)` – Dynamically builds an OpenAI Tool API schema for function calling.
 
----
 
 ### 🕸️ WebCrawler
 
@@ -275,7 +262,7 @@ print(chunks)
 
 * `fetch(url, depth=1, **kwargs)` – Recursively crawls and fetches HTML from linked pages.
 
----
+
 
 ### 🌌 StarMap
 
@@ -283,7 +270,7 @@ print(chunks)
 
 * `fetch_by_coordinates(ra, dec)` – Generates a star map based on right ascension and declination.
 
----
+
 
 ### 📚 ArxivFetcher
 
@@ -291,7 +278,7 @@ print(chunks)
 
 * `fetch(query, **kwargs)` – Retrieves papers matching the specified query.
 
----
+
 
 ### 🗂️ GoogleDriveFetcher
 
@@ -299,7 +286,7 @@ print(chunks)
 
 * `fetch(query, **kwargs)` – Retrieves documents or file metadata from Google Drive.
 
----
+
 
 ### 📖 WikipediaFetcher
 
@@ -307,7 +294,7 @@ print(chunks)
 
 * `fetch(query, **kwargs)` – Retrieves article text and metadata for a search term.
 
----
+
 
 ### 📰 NewsFetcher
 
@@ -315,7 +302,7 @@ print(chunks)
 
 * `fetch(query, **kwargs)` – Retrieves news articles based on keyword and category.
 
----
+
 
 ### 🔎 GoogleSearch
 
@@ -323,7 +310,7 @@ print(chunks)
 
 * `fetch(query, **kwargs)` – Executes a web search and returns the top results.
 
----
+
 
 ### 🗺️ GoogleMaps
 
@@ -333,7 +320,7 @@ print(chunks)
 * `directions(origin, destination)` – Retrieves navigation routes.
 * `validate(address)` – Validates a given address.
 
----
+
 
 ### ☁️ GoogleWeather
 
@@ -342,7 +329,7 @@ print(chunks)
 * `fetch(location)` – Returns weather info for a location.
 * `resolve_location(query)` – Performs geocoding to determine a location from a query.
 
----
+
 
 ### 🕰️ NavalObservatory
 
@@ -351,7 +338,6 @@ print(chunks)
 * `fetch_julian_date()` – Returns current Julian date.
 * `fetch_sidereal_time()` – Returns local sidereal time.
 
----
 
 ### 🛰️ SatelliteCenter
 
@@ -360,7 +346,7 @@ print(chunks)
 * `fetch_orbits(satellite, start, end)` – Retrieves orbital tracks for a satellite.
 * `fetch_ground_stations()` – Lists ground station metadata.
 
----
+
 
 ### 🌋 EarthObservatory
 
@@ -369,7 +355,7 @@ print(chunks)
 * `fetch_events(count)` – Returns recent global events (fires, storms, volcanoes, etc).
 * `fetch_categories()` – Returns the event categories.
 
----
+
 
 ### 🗾 GlobalImagery
 
@@ -377,7 +363,7 @@ print(chunks)
 
 * `fetch_imagery(bbox, date)` – Returns satellite map tiles or images.
 
----
+
 
 ### ☄️ NearbyObjects
 
@@ -386,7 +372,7 @@ print(chunks)
 * `fetch_neos(start, end)` – Returns near-Earth object data for date range.
 * `fetch_fireballs(start, end)` – Returns fireball events for date range.
 
----
+
 
 ## 🕸️ Scrapers
 
@@ -397,7 +383,7 @@ print(chunks)
 * `__init__(self, raw_html: str = '')` — Initialize with optional raw HTML to extract.
 * `extract(self)` — Abstract method for extracting readable text from HTML. Must be implemented by subclasses.
 
----
+
 
 ### 🕷️ WebExtractor
 
@@ -447,7 +433,7 @@ print(chunks)
 | python-dotenv     | Manage .env files            | [PyPI](https://pypi.org/project/python-dotenv/)         |
 | typing_extensions | Type hinting support         | [PyPI](https://pypi.org/project/typing-extensions/)     |
 
----
+
 
 ## ⚙️ Technical Notes
 
@@ -455,14 +441,14 @@ print(chunks)
 * Type-safety and error handling by design.
 * Compatible with CI/CD and production data environments.
 
----
+
 
 ## 📝 License
 
-MIT License
+MIT License [here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
 Copyright © 2022–2025 Terry D. Eppler
 
----
+
 
 ## 🙏 Acknowledgments
 
