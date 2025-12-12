@@ -62,9 +62,12 @@ import json
 from langchain_googledrive.retrievers import GoogleDriveRetriever
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
 from openai import OpenAI
+import openmeteo_requests
 import re
 import requests
 from requests import Response
+import requests_cache
+from retry_requests import retry
 from sscws.sscws import SscWs
 from typing import Any, Dict, Optional, Pattern, List
 from owslib.wms import WebMapService
@@ -6103,6 +6106,428 @@ class InternetArchive( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
+
+class OpenWeather( Fetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides access to weather data via the OpenMeteo API.
+
+		Attribues:
+		-----------
+		timeout - int
+		headers - Dict[ str, Any ]
+		response - requests.Response
+		url - str
+		result - core.Result
+		query - string
+
+		Methods:
+		-----------
+		fetch( ) -> Dict[ str, Any ]
+
+
+
+	'''
+	url: Optional[ str ]
+	client: Optional[ openmeteo_requests.Client ]
+	latitude: Optional[ float ]
+	longitude: Optional[ float ]
+	timezone: Optional[ str ]
+	daily_metrics: Optional[ List[ str ] ]
+	hourly_metrics: Optional[ List[ str ] ]
+	current_metrics: Optional[ List[ str ] ]
+	windspeed_unit: Optional[ str ]
+	temperature_unit: Optional[ str ]
+	precipitation_unit: Optional[ str ]
+	current_forecast: Optional[ DataFrame ]
+	hourly_forecast: Optional[ DataFrame ]
+	daily_forecast: Optional[ DataFrame ]
+	cache_session: Optional[ requests_cache.CachedSession ]
+	retry_session: Optional[ retry ]
+	params: Optional[ Dict[ str, Any ] ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.client = None
+		self.url = None
+		self.longitude = None
+		self.latitude = None
+		self.timezone = None
+		self.windspeed_unit = 'kn'
+		self.temperature_unit = 'fahrenheit'
+		self.precipitation_unit = 'inches'
+		self.cache_session = None
+		self.retry_session = None
+		self.agents = cfg.AGENTS
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+		self.current_metrics = [ 'temperature_2m',
+		                         'relative_humidity_2m',
+		                         'apparent_temperature',
+		                         'is_day',
+		                         'snowfall',
+		                         'showers',
+		                         'rain',
+		                         'precipitation',
+		                         'weather_code',
+		                         'cloud_cover',
+		                         'pressure_msl',
+		                         'surface_pressure',
+		                         'wind_gusts_10m',
+		                         'wind_direction_10m',
+		                         'wind_speed_10m' ]
+		self.hourly_metrics = [ 'temperature_2m',
+		                        'uv_index',
+		                        'uv_index_clear_sky',
+		                        'is_day',
+		                        'sunshine_duration',
+		                        'relative_humidity_2m',
+		                        'dew_point_2m',
+		                        'apparent_temperature',
+		                        'precipitation_probability',
+		                        'precipitation',
+		                        'rain',
+		                        'showers',
+		                        'snowfall',
+		                        'snow_depth',
+		                        'cloud_cover_high',
+		                        'visibility',
+		                        'cloud_cover_mid',
+		                        'cloud_cover_low',
+		                        'cloud_cover',
+		                        'surface_pressure',
+		                        'pressure_msl',
+		                        'weather_code',
+		                        'evapotranspiration',
+		                        'et0_fao_evapotranspiration',
+		                        'vapour_pressure_deficit',
+		                        'wind_speed_10m',
+		                        'wind_direction_10m',
+		                        'wind_gusts_10m' ]
+		self.daily_metrics = [ 'weather_code',
+		                       'temperature_2m_max',
+		                       'temperature_2m_min',
+		                       'apparent_temperature_max',
+		                       'apparent_temperature_min',
+		                       'uv_index_clear_sky_max',
+		                       'uv_index_max',
+		                       'sunshine_duration',
+		                       'daylight_duration',
+		                       'sunset',
+		                       'sunrise',
+		                       'rain_sum',
+		                       'showers_sum',
+		                       'snowfall_sum',
+		                       'precipitation_sum',
+		                       'precipitation_hours',
+		                       'precipitation_probability_max',
+		                       'et0_fao_evapotranspiration',
+		                       'shortwave_radiation_sum',
+		                       'wind_direction_10m_dominant',
+		                       'wind_gusts_10m_max',
+		                       'wind_speed_10m_max',
+		                       'temperature_2m_mean',
+		                       'apparent_temperature_mean',
+		                       'dew_point_2m_mean',
+		                       'precipitation_probability_mean',
+		                       'relative_humidity_2m_mean',
+		                       'pressure_msl_mean',
+		                       'visibility_mean',
+		                       'surface_pressure_mean',
+		                       'wind_gusts_10m_mean',
+		                       'wind_speed_10m_mean' ]
+	
+	def fetch_current( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Retrieves current weather data given a location in coordinates and a timezone.
+
+			Parameters:
+			----------
+			lat - float representing a location's latitude
+			long - float representing a location's longitude
+			zone - str representing a location's timezone
+
+		"""
+		try:
+			throw_if( 'lat', lat )
+			throw_if( 'long', long )
+			throw_if( 'zone', zone )
+			self.latitude = lat
+			self.longitude = long
+			self.timezone = zone
+			self.cache_session = requests_cache.CachedSession( '.cache', expire_after=-1 )
+			self.retry_session = retry( self.cache_session, retries=5, backoff_factor=0.2 )
+			self.client = openmeteo_requests.Client( session=self.retry_session )
+			self.url = r'https://api.open-meteo.com/v1/forecast'
+			self.params = \
+			{
+				'longitude': self.longitude,
+				'latitude': self.latitude,
+				'daily': self.daily_metrics,
+				'hourly': self.hourly_metrics,
+				'current': self.current_metrics,
+				'timezone': self.timezone,
+				'windspeed_unit': self.windspeed_unit,
+				'temperature_unit': self.temperature_unit,
+				'precipitation_unit': self.precipitation_unit,
+			}
+			
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_results = self.response.json( )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'OpenWeather'
+			exception.method = 'fetch_current( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def fetch_hourly( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Retrieves hourly forecast data given a location in coordinates and a timezone.
+
+			Parameters:
+			----------
+			lat - float representing a location's latitude
+			long - float representing a location's longitude
+			zone - str representing a location's timezone
+
+		"""
+		try:
+			throw_if( 'lat', lat )
+			throw_if( 'long', long )
+			throw_if( 'zone', zone )
+			self.latitude = lat
+			self.longitude = long
+			self.timezone = zone
+			self.cache_session = requests_cache.CachedSession( '.cache', expire_after=-1 )
+			self.retry_session = retry( self.cache_session, retries=5, backoff_factor=0.2 )
+			self.client = openmeteo_requests.Client( session=self.retry_session )
+			self.url = r'https://api.open-meteo.com/v1/forecast'
+			self.params = \
+			{
+				'longitude': self.longitude,
+				'latitude': self.latitude,
+				'daily': self.daily_metrics,
+				'hourly': self.hourly_metrics,
+				'current': self.current_metrics,
+				'timezone': self.timezone,
+				'windspeed_unit': self.windspeed_unit,
+				'temperature_unit': self.temperature_unit,
+				'precipitation_unit': self.precipitation_unit,
+			}
+			
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_results = self.response.json( )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'OpenWeather'
+			exception.method = 'fetch_hourly( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Retrieves daily forecast data given a location in coordinates and a timezone.
+
+			Parameters:
+			----------
+			lat - float representing a location's latitude
+			long - float representing a location's longitude
+			zone - str representing a location's timezone
+
+		"""
+		try:
+			throw_if( 'lat', lat )
+			throw_if( 'long', long )
+			throw_if( 'zone', zone )
+			self.latitude = lat
+			self.longitude = long
+			self.timezone = zone
+			self.cache_session = requests_cache.CachedSession( '.cache', expire_after=-1 )
+			self.retry_session = retry( self.cache_session, retries=5, backoff_factor=0.2 )
+			self.client = openmeteo_requests.Client( session=self.retry_session )
+			self.url = r'https://api.open-meteo.com/v1/forecast'
+			self.params = \
+			{
+				'longitude': self.longitude,
+				'latitude': self.latitude,
+				'daily': self.daily_metrics,
+				'hourly': self.hourly_metrics,
+				'current': self.current_metrics,
+				'timezone': self.timezone,
+				'windspeed_unit': self.windspeed_unit,
+				'temperature_unit': self.temperature_unit,
+				'precipitation_unit': self.precipitation_unit,
+			}
+			
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_results = self.response.json( )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'OpenWeather'
+			exception.method = 'fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def fetch_historical( self, lat: float, long: float, zone: str, start: dt.date, end: dt.date ) -> \
+	Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Retrieves historical weather data given a location in coordinates, a timezone, a start
+			and end date
+
+			Parameters:
+			----------
+			lat - float representing a location's latitude
+			long - float representing a location's longitude
+			zone - str representing a location's timezone
+			start - datetime representing the beginning of a historical timeframe
+			end - datetime representing the ending of a historical timeframe
+
+		"""
+		try:
+			throw_if( 'lat', lat )
+			throw_if( 'long', long )
+			throw_if( 'zone', zone )
+			self.latitude = lat
+			self.longitude = long
+			self.timezone = zone
+			self.cache_session = requests_cache.CachedSession( '.cache', expire_after=-1 )
+			self.retry_session = retry( self.cache_session, retries=5, backoff_factor=0.2 )
+			self.client = openmeteo_requests.Client( session=self.retry_session )
+			self.url = 'https://archive-api.open-meteo.com/v1/archive'
+			self.params = \
+			{
+				'longitude': self.longitude,
+				'latitude': self.latitude,
+				'daily': self.daily_metrics,
+				'hourly': self.hourly_metrics,
+				'current': self.current_metrics,
+				'timezone': self.timezone,
+				'windspeed_unit': self.windspeed_unit,
+				'temperature_unit': self.temperature_unit,
+				'precipitation_unit': self.precipitation_unit,
+			}
+			
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_results = self.response.json( )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'OpenWeather'
+			exception.method = 'fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			_schema = \
+				{
+						'name': func_name,
+						'description': f'{desc} This function uses the {tool_name} service.',
+						'parameters':
+							{
+									'type': 'object',
+									'properties': parameters,
+									'required': required
+							}
+				}
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'OpenWeather'
+			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
 			error = ErrorDialog( exception )
 			error.show( )
 

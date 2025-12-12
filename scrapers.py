@@ -378,7 +378,7 @@ class WebExtractor( Extractor):
 			self.response = requests.get( uri, timeout=10 )
 			self.response.raise_for_status( )
 			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			blocks = [ art.get_text( " ", strip=True ) for art in soup.find_all( 'article' ) ]
+			blocks = [ art.get_text( " ", strip=True ) for art in self.soup.find_all( 'article' ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -407,10 +407,10 @@ class WebExtractor( Extractor):
 
 		"""
 		try:
-			throw_if( "uri", uri )
+			throw_if( 'uri', uri )
 			self.response = requests.get( uri, timeout=10 )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, "html.parser" )
+			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
 			heading_tags = [ 'h1',
 			                 'h2',
 			                 'h3',

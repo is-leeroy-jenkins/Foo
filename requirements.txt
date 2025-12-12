@@ -29,6 +29,7 @@ oauthlib
 o365
 owslib
 openai
+openmeteo-requests
 numpy
 pandas
 pydantic
@@ -40,6 +41,8 @@ pytube
 python-magic
 python-pptx
 requests
+requests-cache
+retry-requests
 sscws
 typing~=3.7.4.3
 unstructured
