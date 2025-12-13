@@ -176,7 +176,7 @@ class WebExtractor( Extractor):
 		         'scrape_lists',
 		         'scrape_paragraphse', ]
 	
-	def fetch( self, url: str, time: int = 10 ) -> Result | None:
+	def scrape( self, url: str, time: int = 10 ) -> Result | None:
 		'''
 
 			Purpose:
@@ -205,7 +205,7 @@ class WebExtractor( Extractor):
 			return self.result
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'scrapers'
 			exception.cause = 'WebFetcher'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
 			dialog = ErrorDialog( exception )
@@ -239,7 +239,7 @@ class WebExtractor( Extractor):
 			return text
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'scrapers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
@@ -273,8 +273,8 @@ class WebExtractor( Extractor):
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_paragraphs( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -306,8 +306,8 @@ class WebExtractor( Extractor):
 			return [ i for i in items if i ]
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_lists( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -348,8 +348,8 @@ class WebExtractor( Extractor):
 			return _results
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_tables( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -382,8 +382,8 @@ class WebExtractor( Extractor):
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_articles( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -421,8 +421,8 @@ class WebExtractor( Extractor):
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_headings( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -454,8 +454,8 @@ class WebExtractor( Extractor):
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_divisions( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -487,8 +487,8 @@ class WebExtractor( Extractor):
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_sections( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -521,8 +521,8 @@ class WebExtractor( Extractor):
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_blockquotes( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -554,8 +554,8 @@ class WebExtractor( Extractor):
 			return links
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_hyperlinks( self, uri: str ) -> List[ str ]'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -587,8 +587,8 @@ class WebExtractor( Extractor):
 			return images
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'WebFetchers'
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_images( self, uri: str ) -> List[ str ] '
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -663,11 +663,11 @@ class WebExtractor( Extractor):
 						'name': func_name,
 						'description': f'{desc} This function uses the {tool_name} service.',
 						'parameters':
-							{
-									'type': 'object',
-									'properties': parameters,
-									'required': required
-							}
+						{
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+						}
 				}
 			return _schema
 		except Exception as e:
