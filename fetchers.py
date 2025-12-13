@@ -4877,7 +4877,7 @@ class StarMap( Fetcher ):
 			throw_if( 'dec', dec )
 			self.right_ascension = ra
 			self.declination = dec
-			self.url = f'http://www.sky-map.org/?'
+			self.url = f'http://www.sky-map.org/'
 			self.params = \
 			{
 				'ra': f'{ self.right_ascension }',
@@ -4918,7 +4918,7 @@ class StarMap( Fetcher ):
 			throw_if( 'dec', dec )
 			self.right_ascension = ra
 			self.declination = dec
-			self.url = f'http://www.sky-map.org/?'
+			self.url = f'http://www.sky-map.org/'
 			self.params = \
 			{
 					'ra': f'{self.right_ascension}',
@@ -4958,7 +4958,7 @@ class StarMap( Fetcher ):
 		try:
 			throw_if( 'name', name )
 			self.object = name
-			self.url = f'http://www.sky-map.org/?'
+			self.url = f'http://www.sky-map.org/'
 			self.params = \
 			{
 					'object': self.object,
@@ -4995,7 +4995,7 @@ class StarMap( Fetcher ):
 		try:
 			throw_if( 'name', name )
 			self.object = name
-			self.url = f'http://www.sky-map.org/?'
+			self.url = f'http://www.sky-map.org/'
 			self.params = \
 			{
 					'object': self.object,
@@ -5202,7 +5202,7 @@ class GovData( Fetcher ):
 			throw_if( 'part', part )
 			self.title_number = title
 			self.part_number = part
-			self.url = f'https://www.govinfo.gov/link/cfr/?'
+			self.url = f'https://www.govinfo.gov/link/cfr/'
 			self.params = \
 			{
 					'api_key': self.api_key,
@@ -5238,7 +5238,7 @@ class GovData( Fetcher ):
 			self.congress_number = congress
 			self.bill_type = billtype
 			self.bill_number = billnum
-			self.url = f'https://www.govinfo.gov/link/bills/?'
+			self.url = f'https://www.govinfo.gov/link/bills/'
 			self.params = \
 			{
 					'api_key': self.api_key,
@@ -5274,7 +5274,7 @@ class GovData( Fetcher ):
 			self.congress_number = congress
 			self.law_type = lawtype
 			self.law_number = lawnum
-			self.url = f'https://www.govinfo.gov/link/statute/?'
+			self.url = f'https://www.govinfo.gov/link/statute/'
 			self.params = \
 			{
 					'congress': self.congress_number,
@@ -5307,7 +5307,7 @@ class GovData( Fetcher ):
 			self.congress_number = congress
 			self.bill_type = lawtype
 			self.bill_number = lawnum
-			self.url = f'https://www.govinfo.gov/link/crec/cas/?'
+			self.url = f'https://www.govinfo.gov/link/crec/cas/'
 			self.params = \
 			{
 					'congress': self.congress_number,
@@ -5340,7 +5340,7 @@ class GovData( Fetcher ):
 			self.congress_number = congress
 			self.law_type = lawtype
 			self.law_number = lawnum
-			self.url = f'https://www.govinfo.gov/link/plaw/?'
+			self.url = f'https://www.govinfo.gov/link/plaw/'
 			self.params = \
 			{
 					'congress': self.congress_number,
@@ -5699,7 +5699,7 @@ class Congress( Fetcher ):
 		try:
 			throw_if( 'congress', congress)
 			self.congress_number = congress
-			self.url = f'https://api.congress.gov/v3/bill/?'
+			self.url = f'https://api.congress.gov/v3/bill/'
 			self.params = \
 			{
 				'api_key': self.api_key,
@@ -5729,7 +5729,7 @@ class Congress( Fetcher ):
 		try:
 			throw_if( 'congress', congress )
 			self.congress_number = congress
-			self.url = f'https://api.congress.gov/v3/law/?'
+			self.url = f'https://api.congress.gov/v3/law/'
 			self.params = \
 			{
 				'api_key': self.api_key,
@@ -5759,7 +5759,7 @@ class Congress( Fetcher ):
 		try:
 			throw_if( 'congress', congress )
 			self.congress_number = congress
-			self.url = f'https://api.congress.gov/v3/law/?'
+			self.url = f'https://api.congress.gov/v3/law/'
 			self.params = \
 			{
 				'api_key': self.api_key,
@@ -7885,3 +7885,6 @@ class Chat( Fetcher ):
 				+ 'max_completion_tokens' + f' = {self.max_completion_tokens}' + new
 				+ 'store' + f' = {self.store}' + new
 				+ 'stream' + f' = {self.stream}' + new )
+
+class Groqipedia( Fetcher ):
+	pass
