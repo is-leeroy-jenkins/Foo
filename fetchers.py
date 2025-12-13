@@ -57,6 +57,7 @@ import google
 from google.genai.types import HttpOptions
 import googlemaps
 from groq import Groq
+from grokipedia_api import GrokipediaClient
 import http.client
 import json
 from langchain_googledrive.retrievers import GoogleDriveRetriever
@@ -302,7 +303,7 @@ class Fetch( ):
 			return self.sql_tool.func( question )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'Fetch'
 			exception.method = 'query_sql(self, question)'
 			error = ErrorDialog( exception )
@@ -349,7 +350,7 @@ class Fetch( ):
 		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'Fetch'
 			exception.method = 'query_docs(self, question, with_sources)'
 			error = ErrorDialog( exception )
@@ -377,7 +378,7 @@ class Fetch( ):
 			return self.llm.invoke( prompt ).content
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'Fetch'
 			exception.method = 'query_chat(self, prompt)'
 			error = ErrorDialog( exception )
@@ -971,7 +972,7 @@ class WebFetcher( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -1127,7 +1128,7 @@ class WebCrawler( WebFetcher ):
 			dialog = ErrorDialog( exception )
 			dialog.show( )
 
-class ArXivFetcher( Fetcher ):
+class ArXiv( Fetcher ):
 	'''
 
 		Purpose:
@@ -1196,8 +1197,8 @@ class ArXivFetcher( Fetcher ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'ArxivFetcher'
+			exception.module = 'fetchers'
+			exception.cause = 'ArXiv'
 			exception.method = 'fetch( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -1281,15 +1282,15 @@ class ArXivFetcher( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'ArXiv'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
 			error.show( )
 
 
-class GoogleDriveFetcher( Fetcher ):
+class GoogleDrive( Fetcher ):
 	'''
 
 		Purpose:
@@ -1362,8 +1363,8 @@ class GoogleDriveFetcher( Fetcher ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'GoogleDriveFetcher'
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleDrive'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -1447,14 +1448,14 @@ class GoogleDriveFetcher( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleDrive'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
 			error.show( )
 	
-class WikipediaFetcher( Fetcher ):
+class Wikipedia( Fetcher ):
 	'''
 
 		Purpose:
@@ -1521,8 +1522,8 @@ class WikipediaFetcher( Fetcher ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'WikipediaFetcher'
+			exception.module = 'fetchers'
+			exception.cause = 'Wikipedia'
 			exception.method = 'fetch( self, question: str ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -1606,14 +1607,14 @@ class WikipediaFetcher( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'Wikipedia'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
 			error.show( )
 
-class NewsFetcher( Fetcher ):
+class TheNews( Fetcher ):
 	'''
 
 		Purpose:
@@ -1727,10 +1728,10 @@ class NewsFetcher( Fetcher ):
 			conn = http.client.HTTPSConnection( self.url )
 			params = urllib.parse.urlencode(
 			{
-					'api_token': self.api_key,
-					'search': self.query,
-					'language': 'en',
-					'limit': self.max_documents,
+				'api_token': self.api_key,
+				'search': self.query,
+				'language': 'en',
+				'limit': self.max_documents,
 			} )
 			
 			conn.request( 'GET', '/v1/news/all?{}'.format( params ) )
@@ -1740,7 +1741,7 @@ class NewsFetcher( Fetcher ):
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = 'NewsFetcher'
+			exception.cause = 'TheNews'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -1774,7 +1775,7 @@ class NewsFetcher( Fetcher ):
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = 'NewsFetcher'
+			exception.cause = 'TheNews'
 			exception.method = 'html2text( )'
 			dialog = ErrorDialog( exception )
 			dialog.show( )
@@ -1858,8 +1859,8 @@ class NewsFetcher( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'TheNews'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
@@ -1895,7 +1896,7 @@ class GoogleSearch( Fetcher ):
 	response: Optional[ Response ]
 	api_key: Optional[ str ]
 	cse_id: Optional[ str ]
-	params: Optional[ Dict[ str, str ] ]
+	params: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self ) -> None:
 		'''
@@ -2107,7 +2108,7 @@ class GoogleSearch( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -2197,7 +2198,7 @@ class GoogleMaps( Fetcher ):
 			return ( _lat, _lng )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
 			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
 			error = ErrorDialog( exception )
@@ -2232,7 +2233,7 @@ class GoogleMaps( Fetcher ):
 			return _address
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
 			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
 			error = ErrorDialog( exception )
@@ -2274,7 +2275,7 @@ class GoogleMaps( Fetcher ):
 			return response.json( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
 			exception.method = 'validate_address( self, address: str ) -> str'
 			error = ErrorDialog( exception )
@@ -2319,7 +2320,7 @@ class GoogleMaps( Fetcher ):
 			return _route
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
 			exception.method = 'request_directions( self, origin: str, destination: str ) -> dict'
 			error = ErrorDialog( exception )
@@ -2404,8 +2405,8 @@ class GoogleMaps( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleMaps'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
@@ -2492,7 +2493,7 @@ class GoogleWeather( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = 'validate_address( self, address: str ) -> str'
 			error = ErrorDialog( exception )
@@ -2526,7 +2527,7 @@ class GoogleWeather( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = 'validate_address( self, address: str ) -> str'
 			error = ErrorDialog( exception )
@@ -2611,8 +2612,8 @@ class GoogleWeather( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleWeather'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
@@ -2730,7 +2731,7 @@ class NavalObservatory( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
 			error = ErrorDialog( exception )
@@ -2787,7 +2788,7 @@ class NavalObservatory( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -2872,8 +2873,8 @@ class NavalObservatory( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'NavalObservatory'
 			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
 			error = ErrorDialog( exception )
@@ -2958,7 +2959,7 @@ class SatelliteCenter( Fetcher ):
 			observatories = result[ 'Observatory' ]
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'SatelliteCenter'
 			exception.method = 'fetch_observatories( self ) -> List[ str ]'
 			error = ErrorDialog( exception )
@@ -2997,7 +2998,7 @@ class SatelliteCenter( Fetcher ):
 			plt.show( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'SatelliteCenter'
 			exception.method = 'fetch_locations( self )'
 			error = ErrorDialog( exception )
@@ -3013,8 +3014,8 @@ class SatelliteCenter( Fetcher ):
 			return None
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'NavalObservatory'
+			exception.module = 'fetchers'
+			exception.cause = 'SatelliteCenter'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -3027,8 +3028,8 @@ class SatelliteCenter( Fetcher ):
 				location = ground_station[ 'Location' ]
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'NavalObservatory'
+			exception.module = 'fetchers'
+			exception.cause = 'SatelliteCenter'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -3112,8 +3113,8 @@ class SatelliteCenter( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
+			exception.module = 'fetchers'
+			exception.cause = 'SatelliteCenter'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			error = ErrorDialog( exception )
@@ -3200,7 +3201,7 @@ class EarthObservatory( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'EarthObservatory'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
 			error = ErrorDialog( exception )
@@ -3233,7 +3234,7 @@ class EarthObservatory( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'EarthObservatory'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
 			error = ErrorDialog( exception )
@@ -3318,7 +3319,7 @@ class EarthObservatory( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -3410,7 +3411,7 @@ class GlobalImagery( Fetcher ):
 			Image( 'python-examples/MODIS_Terra_CorrectedReflectance_TrueColor.png' )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GlobalImagery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -3442,7 +3443,7 @@ class GlobalImagery( Fetcher ):
 			plt.show( )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GlobalImagery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -3527,7 +3528,7 @@ class GlobalImagery( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -3625,7 +3626,7 @@ class NearbyObjects( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'NearByObjects'
 			exception.method = ('fetch_nearby( self, start: dt.date, end: dt.date, '
 			                    'min_dist: int=10 ) -> Dict[ str, Any ]')
@@ -3662,7 +3663,7 @@ class NearbyObjects( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'SolarSystemDynamics'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -3677,7 +3678,7 @@ class NearbyObjects( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'NearByObjects'
 			exception.method = 'fetch_fireballs( self,  start: dt.date, end: dt.date ) -> Dict[ str, Any ] '
 			error = ErrorDialog( exception )
@@ -3762,7 +3763,7 @@ class NearbyObjects( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -3860,7 +3861,7 @@ class OpenScience( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
 			exception.method = 'fetch_dataset( self, keyword: str, results: int=100 ) -> Dict[ str, Any ]'
 			error = ErrorDialog( exception )
@@ -3899,7 +3900,7 @@ class OpenScience( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
 			exception.method = 'fetch_studies( self, keywords: str ) -> Dict[ str, Any ]'
 			error = ErrorDialog( exception )
@@ -3984,7 +3985,7 @@ class OpenScience( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -4073,7 +4074,7 @@ class SpaceWeather( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4119,7 +4120,7 @@ class SpaceWeather( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'SpaceWeather'
 			exception.method = ('fetch_ejection_analysis( self, start: dt.date, end: dt.date )'
 			                    ' -> Dict[ str, Any ]')
@@ -4153,7 +4154,7 @@ class SpaceWeather( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'SpaceWeather'
 			exception.method = 'fetch_geomagnetic_storms( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4188,7 +4189,7 @@ class SpaceWeather( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'DONKI'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4273,7 +4274,7 @@ class SpaceWeather( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -4381,7 +4382,7 @@ class AstroCatalog( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
 			exception.method = 'cone_search( self, ra: str, dec: str, radius: int=2 ) -> float'
 			error = ErrorDialog( exception )
@@ -4412,7 +4413,7 @@ class AstroCatalog( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4439,7 +4440,7 @@ class AstroCatalog( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4474,7 +4475,7 @@ class AstroCatalog( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4559,7 +4560,7 @@ class AstroCatalog( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -4636,7 +4637,7 @@ class AstroQuery( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'AstroQuery'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4659,7 +4660,7 @@ class AstroQuery( Fetcher ):
 			return _result
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'AstroQuery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4683,7 +4684,7 @@ class AstroQuery( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'OpenAstronomyCatalog'
 			exception.method = 'catalog_search( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4768,7 +4769,7 @@ class AstroQuery( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -4894,7 +4895,7 @@ class StarMap( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'StarMap'
 			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4936,7 +4937,7 @@ class StarMap( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'StarMap'
 			exception.method = 'sdss_by_coordinates( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -4974,7 +4975,7 @@ class StarMap( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'StarMap'
 			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5012,7 +5013,7 @@ class StarMap( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'StarMap'
 			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5097,7 +5098,7 @@ class StarMap( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -5183,7 +5184,7 @@ class GovData( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5216,7 +5217,7 @@ class GovData( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5253,7 +5254,7 @@ class GovData( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5288,7 +5289,7 @@ class GovData( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_statutes( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5321,7 +5322,7 @@ class GovData( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_public_laws( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5354,7 +5355,7 @@ class GovData( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_public_laws( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5439,7 +5440,7 @@ class GovData( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -5545,7 +5546,7 @@ class StarChart( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'StarChart'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5630,7 +5631,7 @@ class StarChart( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -5712,7 +5713,7 @@ class Congress( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5742,7 +5743,7 @@ class Congress( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5772,7 +5773,7 @@ class Congress( Fetcher ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
 			error = ErrorDialog( exception )
@@ -5857,7 +5858,7 @@ class Congress( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -6102,7 +6103,7 @@ class InternetArchive( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -6279,13 +6280,13 @@ class OpenWeather( Fetcher ):
 				'precipitation_unit': self.precipitation_unit,
 			}
 			
-			self.response = requests.get( url=self.url, params=self.params )
+			self.response = self.client.weather_api( url=self.url, params=self.params )
 			self.response.raise_for_status( )
 			_results = self.response.json( )
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
 			exception.method = 'fetch_current( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
 			error = ErrorDialog( exception )
@@ -6329,13 +6330,13 @@ class OpenWeather( Fetcher ):
 				'precipitation_unit': self.precipitation_unit,
 			}
 			
-			self.response = requests.get( url=self.url, params=self.params )
+			self.response = self.client.weather_api( url=self.url, params=self.params )
 			self.response.raise_for_status( )
 			_results = self.response.json( )
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
 			exception.method = 'fetch_hourly( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
 			error = ErrorDialog( exception )
@@ -6379,13 +6380,13 @@ class OpenWeather( Fetcher ):
 				'precipitation_unit': self.precipitation_unit,
 			}
 			
-			self.response = requests.get( url=self.url, params=self.params )
+			self.response = self.client.weather_api( url=self.url, params=self.params )
 			self.response.raise_for_status( )
 			_results = self.response.json( )
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
 			exception.method = 'fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
 			error = ErrorDialog( exception )
@@ -6433,13 +6434,13 @@ class OpenWeather( Fetcher ):
 				'precipitation_unit': self.precipitation_unit,
 			}
 			
-			self.response = requests.get( url=self.url, params=self.params )
+			self.response = self.client.weather_api( url=self.url, params=self.params )
 			self.response.raise_for_status( )
 			_results = self.response.json( )
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
 			exception.method = 'fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
 			error = ErrorDialog( exception )
@@ -6524,7 +6525,7 @@ class OpenWeather( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
 			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
@@ -7059,7 +7060,7 @@ class Gemini( Fetcher ):
 			return _schema
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'fetchers'
 			exception.cause = 'Gemini'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
@@ -7538,7 +7539,7 @@ class Chat( Fetcher ):
 		self.api_key = cfg.OPENAI_API_KEY
 		self.system_instructions = None
 		self.client = OpenAI( api_key=self.api_key )
-		self.client.api_key = GptHeader( ).api_key
+		self.client.api_key = cfg.OPENAI_API_KEY
 		self.model = ''
 		self.number = num
 		self.temperature = temp
@@ -7587,7 +7588,7 @@ class Chat( Fetcher ):
 			return generated_text
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'boo'
+			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'generate_text( self, prompt: str )'
 			error = ErrorDialog( exception )
@@ -7620,7 +7621,7 @@ class Chat( Fetcher ):
 			return generated_image
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'boo'
+			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'generate_image( self, prompt: str ) -> str'
 			error = ErrorDialog( exception )
@@ -7752,8 +7753,8 @@ class Chat( Fetcher ):
 			return web_results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'boo'
-			exception.cause = 'Bro'
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
 			exception.method = 'search_web( self, prompt: str ) -> str'
 			error = ErrorDialog( exception )
 			error.show( )
@@ -7885,6 +7886,324 @@ class Chat( Fetcher ):
 				+ 'max_completion_tokens' + f' = {self.max_completion_tokens}' + new
 				+ 'store' + f' = {self.store}' + new
 				+ 'stream' + f' = {self.stream}' + new )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
 
-class Groqipedia( Fetcher ):
-	pass
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			_schema  = \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
+			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			error = ErrorDialog( exception )
+			error.show( )
+
+class Grokipedia( Fetcher ):
+	'''
+		
+			Purpose:
+			-------
+			Class providing access to the Grokipedia API
+			
+			Attributes:
+			----------
+			client - GrokipediaClient
+			query - str
+			response - Response
+			page - str
+			api_key - str
+			params - Dict[ str, Any ]
+			
+			
+			Methods:
+			--------
+			fetch( )
+			fetch_page( )
+			fetch_pages( )
+			create_schema( )
+		
+	
+	'''
+	api_key: Optional[ str ]
+	client: Optional[ GrokipediaClient ]
+	query: Optional[ str ]
+	page: Optional[ str ]
+	limit: Optional[ int ]
+	include_content: Optional[ bool ]
+	response: Optional[ Response ]
+	params: Optional[ Dict[ str, Any ] ]
+	
+	def __init__( self ):
+		'''
+		
+		Purpose:
+		-------
+		Class constructor: initializes fields
+		
+		'''
+		super( ).__init__( )
+		self.api_key = cfg.GROQ_API_KEY
+		self.url = None
+		self.client = None
+		self.query = None
+		self.page = None
+		self.response = None
+		self.params = None
+		self.limit = 12
+		self.include_content = True
+		
+	def fetch( self, query: str ) -> Dict[ str, Any ] | None:
+		'''
+			
+			Purpose:
+			-------
+			Method for submitting request to the Grokipedia API
+			
+			Paramters:
+			---------
+			query - str
+			
+			Returns:
+			-------
+			Dict[ str, Any ]
+			
+			
+		'''
+		try:
+			throw_if( 'query', query )
+			self.query = query
+			self.client = GrokipediaClient( )
+			_results = self.client.search( query=self.query )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = 'fetch( self, query: str ) -> Dict[ str, Any ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def fetch_page( self, query: str ) -> Dict[ str, Any ] | None:
+		'''
+			
+			Purpose:
+			-------
+			Method for submitting request to the Grokipedia API for a specific page
+			
+			Paramters:
+			---------
+			query - str
+			
+			Returns:
+			-------
+			Dict[ str, Any ]
+			
+			
+		'''
+		try:
+			throw_if( 'query', query )
+			self.query = query
+			self.client = GrokipediaClient( )
+			_results = self.client.get_page( query=self.query, include_content=True )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = 'fetch_page( self, query: str ) -> Dict[ str, Any ]'
+			error = ErrorDialog( exception )
+			error.show( )
+	
+	def fetch_pages( self, query: str ) -> Dict[ str, Any ] | None:
+		'''
+			
+			Purpose:
+			-------
+			Method for submitting request to the Grokipedia API for a specific page
+			
+			Paramters:
+			---------
+			query - str
+			
+			Returns:
+			-------
+			Dict[ str, Any ]
+			
+			
+		'''
+		try:
+			throw_if( 'query', query )
+			self.query = query
+			self.client = GrokipediaClient( )
+			_results = self.client.get_page( query=self.query, include_content=True )
+			return _results
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = 'fetch_pages( self, query: str ) -> Dict[ str, Any ]'
+			error = ErrorDialog( exception )
+			error.show( )
+		
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict, required: list[ str ] ) -> Dict[
+				                                                               str, str ] | None:
+		"""
+
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Supports arbitrary parameters, types, nested objects, and required fields.
+
+			Parameters:
+			___________
+			function (str):
+			The function name exposed to the LLM.
+
+			tool (str):
+			The underlying system or service the function wraps
+			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+
+			description (str):
+			Precise explanation of what the function does.
+
+			parameters (dict):
+			A dictionary defining parameter names and JSON schema descriptors.
+			Each value must itself be a valid JSON-schema fragment.
+
+				Example:
+					{
+						"origin": {
+							"type": "string",
+							"description": "Starting location."
+						},
+						"destination": {
+							"type": "string",
+							"description": "Ending location."
+						},
+						"mode": {
+							"type": "string",
+							"enum": ["driving", "walking", "bicycling", "transit"],
+							"description": "Travel mode."
+						}
+					}
+
+			required (list[str] | None):
+			List of required parameter names.
+			If None, required = list(parameters.keys()).
+
+			Returns:
+			________
+			dict:
+			A JSON-compatible dictionary defining the tool schema.
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			if not isinstance( parameters, dict ):
+				msg = 'parameters must be a dict of param_name → schema definitions.'
+				raise ValueError( msg )
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			if required is None:
+				required = list( parameters.keys( ) )
+			_schema = \
+			{
+				'name': func_name,
+				'description': f'{desc} This function uses the {tool_name} service.',
+				'parameters':
+				{
+					'type': 'object',
+					'properties': parameters,
+					'required': required
+				}
+			}
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = (
+				'create_schema( self, function: str, tool: str, description: str, '
+				'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
+			error = ErrorDialog( exception )
+			error.show( )

@@ -17,6 +17,7 @@ google-auth-httplib2
 google-auth-oauthlib
 googlemaps
 groq
+grokipedia-api
 html2text
 http.client
 langchain
