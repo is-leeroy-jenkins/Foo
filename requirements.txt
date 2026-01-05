@@ -35,8 +35,8 @@ numpy
 pandas
 pydantic
 pillow
-pathlib~=1.0.1
-playwright~=1.54.0
+pathlib
+playwright
 pymupdf
 pytube
 python-magic

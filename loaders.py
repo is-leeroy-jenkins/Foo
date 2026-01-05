@@ -68,7 +68,7 @@ from langchain_community.document_loaders import (
 	WebBaseLoader,
 	YoutubeLoader
 )
-from langchain_openai import ChatOpenAI
+
 import unstructured
 import openpyxl
 import pytube
