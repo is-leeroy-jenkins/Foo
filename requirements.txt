@@ -45,7 +45,7 @@ requests
 requests-cache
 retry-requests
 sscws
-typing~=3.7.4.3
+typing
 unstructured
 wikipedia
 youtube-transcript-api

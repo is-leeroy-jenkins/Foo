@@ -110,7 +110,7 @@ def provider_status() -> Dict[str, bool]:
         "OpenAI": bool(config.OPENAI_API_KEY),
         "Gemini": bool(config.GEMINI_API_KEY),
         "Groq": bool(config.GROQ_API_KEY),
-        "Google CSE": bool(config.GOOGLE_CSE_API_KEY),
+        "Google CSE": bool(config.GOOGLE_CSE_ID),
         "News API": bool(config.NEWS_API_KEY),
         "ArXiv": True,   # No key required
     }

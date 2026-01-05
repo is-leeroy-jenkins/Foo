@@ -41,14 +41,16 @@
   </summary>
   ******************************************************************************************
 '''
+import glob
+import os
+
+from langchain_community.chat_models import ChatOpenAI
+
 import config as cfg
+from boogr import Error, ErrorDialog
 import docx2txt
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-try:
-	from langchain_core.documents import Document
-except Exception:
-	from langchain.schema import Document
-
+from langchain_core.documents import Document
 from langchain_core.document_loaders.base import BaseLoader
 from langchain_google_community import GoogleDriveLoader
 from langchain_community.document_loaders.onedrive import OneDriveLoader
@@ -75,6 +77,25 @@ import pytube
 import tiktoken
 from typing import Optional, List, Dict, Any
 
+def throw_if( name: str, value: Any ) -> None:
+	'''
+
+		Purpose:
+		-----------
+		Simple guard which raises ValueError when `value` is falsy (None, empty).
+
+		Parameters:
+		-----------
+		name (str): Variable name used in the raised message.
+		value (Any): Value to validate.
+
+		Returns:
+		-----------
+		None: Raises ValueError when `value` is falsy.
+
+	'''
+	if value is None:
+		raise ValueError( f"Argument '{name}' cannot be empty!" )
 
 class Loader( ):
 	'''
@@ -544,7 +565,7 @@ class WebLoader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class PdfLoader( Loader ):
+class PdfReader( Loader ):
 	'''
 
 		Purpose:
@@ -681,6 +702,56 @@ class PdfLoader( Loader ):
 			exception.method = 'split( self, chunk: int=1000 , overlap: int=200 ) -> List[ Document ]'
 			error = ErrorDialog( exception )
 			error.show( )
+
+class PdfLoader(PdfReader):
+    """
+	    Purpose:
+	        Ingestion-grade PDF loader that loads a PDF file and returns
+	        chunked Document objects using the standard Loader pipeline.
+    """
+    def __init__(self) -> None:
+        """
+	        Purpose:
+	            Initialize the PDF loader.
+        """
+        super().__init__()
+
+    def load( self, path: str, chunk: int=1000, overlap: int=200, mode: str="single"):
+        """
+	        Purpose:
+	            Load a PDF file and return chunked documents suitable for
+	            downstream retrieval and LLM workflows.
+	
+	        Parameters:
+	            path (str):
+	                Filesystem path to the PDF file.
+	
+	            chunk (int):
+	                Chunk size for document splitting.
+	
+	            overlap (int):
+	                Overlap size for document splitting.
+	
+	            mode (str):
+	                Loader mode passed through to PdfReader.
+	
+	        Returns:
+	            list[Document]:
+	                Chunked documents.
+        """
+
+        # Step 1: Load raw PDF documents using PdfReader
+        documents = super().load(path=path, mode=mode)
+
+        if not documents:
+            return []
+
+        # Step 2: Split using the shared Loader logic
+        return self.split_documents(
+            documents=documents,
+            chunk=chunk,
+            overlap=overlap,
+        )
 
 class ExcelLoader( Loader ):
 	'''

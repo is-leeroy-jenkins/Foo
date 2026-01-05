@@ -5,15 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2bac0f84-0312-4cb4-99f9-5dc4ff74968e" name="Changes" comment="updates;">
-      <change afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workspaces/document_ingestion.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workspaces/search_retrieval.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/workspaces/web_extraction.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Foo.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Foo.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/workspaces/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fetchers.py" beforeDir="false" afterPath="$PROJECT_DIR$/fetchers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/loaders.py" beforeDir="false" afterPath="$PROJECT_DIR$/loaders.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspaces/document_ingestion.py" beforeDir="false" afterPath="$PROJECT_DIR$/workspaces/document_ingestion.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspaces/search_retrieval.py" beforeDir="false" afterPath="$PROJECT_DIR$/workspaces/search_retrieval.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/workspaces/web_extraction.py" beforeDir="false" afterPath="$PROJECT_DIR$/workspaces/web_extraction.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -104,7 +105,7 @@
       <option name="presentableId" value="Default" />
       <updated>1767627334518</updated>
       <workItem from="1767627335051" duration="1829000" />
-      <workItem from="1767629410161" duration="2115000" />
+      <workItem from="1767629410161" duration="7729000" />
     </task>
     <task id="LOCAL-00001" summary="updates;">
       <option name="closed" value="true" />
@@ -122,7 +123,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767628461323</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="updates;">
+      <option name="closed" value="true" />
+      <created>1767632683491</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1767632683492</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

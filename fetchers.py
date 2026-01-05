@@ -51,7 +51,7 @@ import base64
 from boogr import Error, ErrorDialog
 import crawl4ai as crl
 import config as cfg
-from core import Result, Schema
+from core import Result
 import datetime as dt
 import google
 from google.genai.types import HttpOptions

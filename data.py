@@ -41,7 +41,13 @@
   </summary>
   ******************************************************************************************
 '''
+import json
+import numpy as np
+import pandas as pd
+import os
 import sqlite3
+from sqlite3 import Connection, Cursor
+from typing import Optional, Any, List, Tuple
 from boogr import Error, ErrorDialog
 from boogr.enums import Source, SQL, ParamStyle, Provider
 import chromadb
@@ -600,7 +606,7 @@ class Chroma:
 	client: chromadb.Client
 	collection: chromadb.Collection
 	
-	def __init__( self, path: st = './chroma', collection: str = 'embeddings' ) -> None:
+	def __init__( self, path: str='./chroma', collection: str='embeddings' ) -> None:
 		'''
 
 			Purpose:
