@@ -1,10 +1,10 @@
 anthropic
 asyncio
 arxiv
-bs4~=0.0.2
-beautifulsoup4~=4.13.4
+bs4
+beautifulsoup4
 cartopy
-Crawl4AI~=0.7.4
+Crawl4AI
 chromadb
 docx2txt
 extract_msg
