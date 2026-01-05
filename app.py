@@ -43,6 +43,7 @@
 '''
 from __future__ import annotations
 
+import astroquery
 import uuid
 import streamlit as st
 
