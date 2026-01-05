@@ -719,25 +719,26 @@ class PdfLoader(PdfReader):
     def load( self, path: str, chunk: int=1000, overlap: int=200, mode: str="single"):
         """
 	        Purpose:
-	            Load a PDF file and return chunked documents suitable for
-	            downstream retrieval and LLM workflows.
+            Load a PDF file and return chunked documents suitable for
+            downstream retrieval and LLM workflows.
 	
 	        Parameters:
-	            path (str):
-	                Filesystem path to the PDF file.
+            path (str):
+            Filesystem path to the PDF file.
 	
-	            chunk (int):
-	                Chunk size for document splitting.
-	
-	            overlap (int):
-	                Overlap size for document splitting.
-	
-	            mode (str):
-	                Loader mode passed through to PdfReader.
+            chunk (int):
+            Chunk size for document splitting.
+
+            overlap (int):
+            Overlap size for document splitting.
+
+            mode (str):
+            Loader mode passed through to PdfReader.
 	
 	        Returns:
-	            list[Document]:
-	                Chunked documents.
+            list[Document]:
+            Chunked documents.
+            
         """
 
         # Step 1: Load raw PDF documents using PdfReader
