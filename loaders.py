@@ -71,10 +71,20 @@ from langchain_community.document_loaders import (
 	YoutubeLoader
 )
 
-import unstructured
-import openpyxl
-import pytube
-import tiktoken
+try:
+    import pdfplumber
+except ImportError:
+    pdfplumber = None
+
+try:
+    from pdf2image import convert_from_path
+    import pytesseract
+except ImportError:
+    convert_from_path = None
+    pytesseract = None
+
+from pathlib import Path
+import re
 from typing import Optional, List, Dict, Any
 
 def throw_if( name: str, value: Any ) -> None:
@@ -703,56 +713,252 @@ class PdfReader( Loader ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-class PdfLoader(PdfReader):
-    """
-	    Purpose:
-	        Ingestion-grade PDF loader that loads a PDF file and returns
-	        chunked Document objects using the standard Loader pipeline.
-    """
-    def __init__(self) -> None:
-        """
-	        Purpose:
-	            Initialize the PDF loader.
-        """
-        super().__init__()
-
-    def load( self, path: str, chunk: int=1000, overlap: int=200, mode: str="single"):
-        """
-	        Purpose:
-            Load a PDF file and return chunked documents suitable for
-            downstream retrieval and LLM workflows.
+class PdfLoader( PdfReader ):
+	"""
 	
-	        Parameters:
-            path (str):
-            Filesystem path to the PDF file.
+		PdfLoader
 	
-            chunk (int):
-            Chunk size for document splitting.
-
-            overlap (int):
-            Overlap size for document splitting.
-
-            mode (str):
-            Loader mode passed through to PdfReader.
+		Public, SDK-oriented PDF loader with:
+			- Page-aware metadata
+			- Two-stage chunking
+			- Configurable chunk profiles
+			- Table isolation
+			- Optional OCR fallback
+			
+	"""
+	def __init__( self, path: str, size: int=1000, overlap: int=150,
+			has_tables: bool=True, use_ocr: bool=False ) -> None:
+		"""
+		
+			Purpose:
+			---------
+			Initialize the PdfLoader.
 	
-	        Returns:
-            list[Document]:
-            Chunked documents.
-            
-        """
+			Parameters:
+				path:
+					Path to the PDF file.
+				size:
+					Target chunk size (characters).
+				overlap:
+					Overlap between chunks.
+				has_tables:
+					Enable table detection and isolation.
+				use_ocr:
+					Enable OCR fallback for image-only PDFs.
+		"""
+		super( ).__init__( path )
+		self.chunk_size = size
+		self.chunk_overlap = overlap
+		self.enable_tables = has_tables
+		self.enable_ocr = use_ocr
 
-        # Step 1: Load raw PDF documents using PdfReader
-        documents = super().load(path=path, mode=mode)
+	def load( self ) -> List[ Document ]:
+		"""
+		
+			Purpose:
+			---------
+			Load and chunk the PDF document.
+		
+			Returns:
+				List[Document]
+		"""
+		if pdfplumber is None:
+			raise RuntimeError( "pdfplumber is required for PdfLoader" )
+		
+		documents: List[ Document ] = [ ]
+		
+		with pdfplumber.open( self.path ) as pdf:
+			for page_number, page in enumerate( pdf.pages, start=1 ):
+				text = page.extract_text( ) or ""
+				
+				if not text.strip( ) and self.enable_ocr:
+					text = self.ocr_page( page_number )
+				
+				if not text.strip( ):
+					continue
+				
+				documents.extend(
+					self.process_page(
+						text=text,
+						page_number=page_number,
+					)
+				)
+		
+		return documents
 
-        if not documents:
-            return []
-
-        # Step 2: Split using the shared Loader logic
-        return self.split_documents(
-            documents=documents,
-            chunk=chunk,
-            overlap=overlap,
-        )
+	def process_page( self, text: str, page_number: int ) -> List[ Document ]:
+		"""
+		
+			Purpose:
+			---------
+			Process a single page of text into Document chunks.
+		
+			Parameters:
+			---------
+				text:
+					Extracted page text.
+				page_number:
+					1-based page index.
+		
+			Returns:
+			---------
+				List[Document]
+		"""
+		blocks = self.split_structural_blocks( text )
+		documents: List[ Document ] = [ ]
+		
+		for block in blocks:
+			chunks = self.chunk_text( block )
+			
+			for chunk in chunks:
+				documents.append(
+					Document(
+						page_content=chunk,
+						metadata={
+								"source": str( self.path ),
+								"page": page_number,
+								"type": self.classify_block( block ),
+						},
+					)
+				)
+		
+		return documents
+	
+	def chunk_text( self, text: str ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			---------
+			Chunk text using a sliding window strategy.
+		
+			Parameters:
+			---------
+			text - Input text.
+		
+			Returns:
+			---------
+			List[str]
+			
+		"""
+		chunks: List[ str ] = [ ]
+		start = 0
+		length = len( text )
+		
+		while start < length:
+			end = start + self.chunk_size
+			chunk = text[ start:end ].strip( )
+			
+			if chunk:
+				chunks.append( chunk )
+			
+			start = end - self.chunk_overlap
+		
+		return chunks
+	
+	def split_structural_blocks( self, text: str ) -> List[ str ]:
+		"""
+		
+			Purpose:
+			---------
+			Split text into structural blocks (tables vs prose).
+		
+			Parameters:
+			---------
+			text:
+			Page text.
+		
+			Returns:
+			---------
+			List[str]
+			
+		"""
+		if not self.enable_tables:
+			return [ text ]
+		
+		lines = text.splitlines( )
+		blocks: List[ str ] = [ ]
+		buffer: List[ str ] = [ ]
+		
+		for line in lines:
+			if self.looks_like_table_row( line ):
+				buffer.append( line )
+			else:
+				if buffer:
+					blocks.append( "\n".join( buffer ) )
+					buffer = [ ]
+				blocks.append( line )
+		
+		if buffer:
+			blocks.append( "\n".join( buffer ) )
+		
+		return blocks
+	
+	def classify_block( self, text: str ) -> str:
+		"""
+		
+			Purpose:
+			---------
+			Classify a structural block.
+		
+			Parameters:
+			----------
+			text:
+			Block content.
+		
+			Returns:
+			--------
+			str
+		"""
+		if self.enable_tables and self.looks_like_table_row( text ):
+			return "table"
+		
+		return "text"
+	
+	def looks_like_table_row( self, line: str ) -> bool:
+		"""
+		
+				Purpose:
+				--------
+				Heuristic to detect table-like rows.
+			
+				Parameters:
+				__________
+					line:
+						Single line of text.
+			
+				Returns:
+				________
+				bool
+			
+		"""
+		return bool( re.search( r"\s{2,}", line ) )
+	
+	def ocr_page( self, page_number: int ) -> str:
+		"""
+		
+			Purpose:
+			---------
+			Perform OCR on a single page if text extraction fails.
+		
+			Parameters:
+			---------
+				page_number:
+					1-based page index.
+		
+			Returns:
+			-------
+				str
+				
+		"""
+		if convert_from_path is None or pytesseract is None:
+			return ""
+		
+		images = convert_from_path( self.path, first_page=page_number, last_page=page_number, )
+		
+		if not images:
+			return ""
+		
+		return pytesseract.image_to_string( images[ 0 ] )
 
 class ExcelLoader( Loader ):
 	'''

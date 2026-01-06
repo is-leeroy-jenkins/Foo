@@ -43,7 +43,7 @@
 '''
 from pathlib import Path
 from typing import Optional
-from .core import Result
+from core import Result
 from boogr import Error, ErrorDialog
 
 def throw_if( name: str, value: object ):
