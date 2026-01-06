@@ -1,68 +1,91 @@
+"""
+Workspace: Document Ingestion
+
+Purpose:
+    Streamlit UI for uploading documents and ingesting them into the Foo
+    pipeline. Document loading and splitting are handled entirely by the
+    corresponding Loader implementations.
+"""
+
 from __future__ import annotations
 
-import streamlit as st
-import pandas as pd
 import tempfile
-import os
-from typing import Dict, Any, List
+from pathlib import Path
+from typing import List
 
-from loaders import CsvLoader, WordLoader, MarkdownLoader
+import streamlit as st
+
+from langchain_core.documents import Document
+from loaders import (
+    PdfLoader,
+    MarkdownLoader,
+    CsvLoader,
+    WordLoader,
+)
 
 
-def _save(upload) -> str:
-    suffix = os.path.splitext(upload.name)[1]
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(upload.read())
-        return tmp.name
+def render(state) -> None:
+    """
+    Render the Document Ingestion workspace.
+    """
 
+    st.header("📄 Document Ingestion")
 
-def render(session: Dict[str, Any]) -> None:
-    st.header("Document Ingestion")
-
-    source = st.selectbox("Source Type", ["CSV", "DOCX", "Markdown"])
-    upload = st.file_uploader("Upload File")
-
-    run = st.button("Load Document", type="primary")
-    st.divider()
-
-    if run:
-        if not upload:
-            st.warning("File required.")
-            return
-
-        path = _save(upload)
-
-        try:
-            if source == "CSV":
-                docs = CsvLoader(path).load()
-            elif source == "DOCX":
-                docs = WordLoader(path).load()
-            elif source == "Markdown":
-                docs = MarkdownLoader(path).load()
-            else:
-                raise ValueError(source)
-
-            session.setdefault("documents", {})
-            session["documents"]["loaded"] = docs
-            st.success(f"{len(docs)} document entries loaded.")
-        except Exception as exc:
-            st.error("Loading failed.")
-            st.exception(exc)
-            return
-
-    docs = session.get("documents", {}).get("loaded")
-    if not docs:
-        return
-
-    df = pd.DataFrame(
-        {
-            "Index": range(len(docs)),
-            "Length": [len(str(d)) for d in docs],
-            "Preview": [str(d)[:200] for d in docs],
-        }
+    st.markdown(
+        """
+        Upload documents to ingest them into the system.
+        Each document is processed by its corresponding Loader,
+        which is responsible for loading and splitting content.
+        """
     )
 
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    uploaded_files = st.file_uploader(
+        "Upload documents",
+        type=["pdf", "txt", "md", "csv", "docx"],
+        accept_multiple_files=True,
+    )
 
-    idx = st.number_input("Inspect document", 0, len(docs) - 1, 0)
-    st.text_area("", str(docs[int(idx)]), height=300)
+    if not uploaded_files:
+        return
+
+    documents: List[Document] = []
+
+    for uploaded_file in uploaded_files:
+        suffix = Path(uploaded_file.name).suffix.lower()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(uploaded_file.read())
+            tmp_path = tmp.name
+
+        if suffix == ".pdf":
+            loader = PdfLoader(tmp_path)
+            docs = loader.load()
+
+        elif suffix in {".txt", ".md"}:
+            loader = MarkdownLoader(tmp_path)
+            docs = loader.load()
+
+        elif suffix == ".csv":
+            loader = CsvLoader(tmp_path)
+            docs = loader.load()
+
+        elif suffix == ".docx":
+            loader = WordLoader(tmp_path)
+            docs = loader.load()
+
+        else:
+            continue
+
+        documents.extend(docs)
+
+    if not documents:
+        st.warning("No documents were ingested.")
+        return
+
+    st.success(f"Ingested {len(documents)} document chunks.")
+
+    with st.expander("Preview chunks"):
+        for i, doc in enumerate(documents[:5], start=1):
+            st.markdown(f"**Chunk {i}**")
+            st.text(doc.page_content[:1000])
+            st.divider()

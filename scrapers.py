@@ -41,7 +41,7 @@
   </summary>
   ******************************************************************************************
 '''
-from typing import Optional, List, Pattern
+from typing import Optional, List, Pattern, Dict
 from bs4 import BeautifulSoup
 from requests import Response
 from boogr import Error, ErrorDialog

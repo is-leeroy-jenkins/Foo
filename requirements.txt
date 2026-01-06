@@ -32,6 +32,7 @@ o365
 owslib
 openai
 openmeteo-requests
+openpyxl
 numpy
 pandas
 pydantic
