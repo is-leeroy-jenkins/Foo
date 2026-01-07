@@ -668,7 +668,7 @@ with tab_fetchers:
 				google_clear = st.button( "Clear", key="googlesearch_clear" )
 		
 		with col_right:
-			google_output = st.empty( )
+			google_output = st.empty()
 		
 		if google_clear:
 			st.session_state[ "googlesearch_query" ] = ""
@@ -685,15 +685,14 @@ with tab_fetchers:
 					results=int( google_num_results )
 				)
 
-				results_text = format_google_results_as_text( result )
+				results_text = render_google_results( result )
 				st.session_state[ "google_results_text" ] = results_text
 				if not result:
 					google_output.info( "No results returned." )
 				else:
-					google_output.text_area(
-						label="Results",
-						value=results_text,
-						height=300
+					google_output.markdown(
+						render_google_results_markdown( result ),
+						unsafe_allow_html=False
 					)
 			
 			except Exception as exc:
