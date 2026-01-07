@@ -31,6 +31,104 @@ if not DB_PATH.exists( ):
 	conn.commit( )
 	conn.close( )
 
+
+# ======================================================================================
+# Chat Helpers
+# ======================================================================================
+
+
+def _filter_kwargs_for_callable(fn: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
+    try:
+        sig = inspect.signature(fn)
+        accepted = set(sig.parameters.keys())
+        return {k: v for k, v in kwargs.items() if k in accepted}
+    except Exception:
+        return kwargs
+
+
+def _invoke_provider(fetcher: Any, prompt: str, params: dict[str, Any]) -> Any:
+    # Prefer fetch(); fallback to chat()/invoke() if that is what the provider exposes.
+    if hasattr(fetcher, "fetch") and callable(getattr(fetcher, "fetch")):
+        fn = getattr(fetcher, "fetch")
+        safe = _filter_kwargs_for_callable(fn, params)
+        try:
+            return fn(prompt, **safe)
+        except TypeError:
+            # Some implementations may expect `query=` instead of positional prompt.
+            safe2 = _filter_kwargs_for_callable(fn, {**safe, "query": prompt})
+            return fn(**safe2)
+
+    if hasattr(fetcher, "chat") and callable(getattr(fetcher, "chat")):
+        fn = getattr(fetcher, "chat")
+        safe = _filter_kwargs_for_callable(fn, params)
+        try:
+            return fn(prompt, **safe)
+        except TypeError:
+            safe2 = _filter_kwargs_for_callable(fn, {**safe, "prompt": prompt})
+            return fn(**safe2)
+
+    if hasattr(fetcher, "invoke") and callable(getattr(fetcher, "invoke")):
+        fn = getattr(fetcher, "invoke")
+        safe = _filter_kwargs_for_callable(fn, params)
+        try:
+            return fn(prompt, **safe)
+        except TypeError:
+            safe2 = _filter_kwargs_for_callable(fn, {**safe, "input": prompt})
+            return fn(**safe2)
+
+    raise RuntimeError(f"Provider '{type(fetcher).__name__}' does not expose fetch/chat/invoke.")
+
+
+def _render_output(container: Any, result: Any) -> None:
+    if result is None:
+        container.info("No response returned.")
+        return
+
+    # Documents (LangChain)
+    if isinstance(result, list) and result and isinstance(result[0], Document):
+        with container.container():
+            for idx, doc in enumerate(result, start=1):
+                with st.expander(f"Document {idx}", expanded=False):
+                    st.text_area(label="", value=(doc.page_content or ""), height=300)
+                    if doc.metadata:
+                        st.json(doc.metadata)
+        return
+
+    # Any other object -> string
+    container.text_area(label="Response", value=str(result), height=320)
+
+
+def _model_selector(
+    key_prefix: str,
+    label: str,
+    options: list[str],
+    default_model: str
+) -> str:
+    # Always provide a selectbox; allow custom model entry if not in list.
+    base_options = options[:]
+    if "Custom..." not in base_options:
+        base_options.append("Custom...")
+
+    idx_default = 0
+    if default_model in base_options:
+        idx_default = base_options.index(default_model)
+
+    selected = st.selectbox(
+        label=label,
+        options=base_options,
+        index=idx_default,
+        key=f"{key_prefix}_model_select",
+    )
+
+    if selected == "Custom...":
+        return st.text_input(
+            label="Custom Model",
+            value=default_model,
+            key=f"{key_prefix}_model_custom",
+        )
+
+    return selected
+
 # ======================================================================================
 # Introspection helpers
 # ======================================================================================
@@ -1010,7 +1108,7 @@ with tab_fetchers:
 	            error.module = "app"
 	            error.cause = "SpaceWeather"
 	            error.method = "fetch"
-	            ErrorDialog(error).show(
+	            ErrorDialog(error).show()
 		           
 	# -------------------------------
 	# AstroCatalog Fetcher
@@ -1450,40 +1548,584 @@ with tab_data:
 	
 	st.write( tables )
 
-# ======================================================================================
-# CHAT TAB
-# ======================================================================================
 
-with tab_chat:
-	st.subheader( "Chat" )
+
+
+
+# --------------------------------------------------------------------------------------
+# Chat Tab
+# --------------------------------------------------------------------------------------
+with st.tab("Chat"):
+
+	with st.expander("Chat", expanded=False):
+	    col_left, col_right = st.columns(2)
 	
-	col1, col2 = st.columns( 2 )
-	with col1:
-		provider = st.selectbox( "Provider", [ "OpenAI",
-		                                       "Groq",
-		                                       "Gemini" ] )
-	with col2:
-		model = st.text_input( "Model" )
+	    with col_left:
+	        chat_prompt = st.text_area("Prompt", value="", height=180, key="chat_prompt")
 	
-	col3, col4 = st.columns( 2 )
-	with col3:
-		temperature = st.slider( "Temperature", 0.0, 2.0, 0.7, 0.05 )
-	with col4:
-		max_tokens = st.number_input( "Max Tokens", 1, 32768, 1024 )
+	        p_row1 = st.columns(2)
+	        p_row2 = st.columns(2)
+	        p_row3 = st.columns(2)
 	
-	history_key = f"chat_{provider}"
-	st.session_state.setdefault( history_key, [ ] )
+	        with p_row1[0]:
+	            chat_model = _model_selector(
+	                key_prefix="chat",
+	                label="Model",
+	                options=["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1", "o3-mini", "Custom..."],
+	                default_model="gpt-4o-mini",
+	            )
 	
-	for msg in st.session_state[ history_key ]:
-		with st.chat_message( msg[ "role" ] ):
-			st.markdown( msg[ "content" ] )
+	        with p_row1[1]:
+	            chat_temperature = st.slider(
+	                "Temperature",
+	                min_value=0.0,
+	                max_value=2.0,
+	                value=0.7,
+	                step=0.05,
+	                key="chat_temperature",
+	            )
 	
-	user_input = st.chat_input( "Send" )
-	if user_input:
-		st.session_state[ history_key ].append(
-			{
-					"role": "user",
-					"content": user_input }
-		)
-		with st.chat_message( "assistant" ):
-			st.markdown( "…" )
+	        with p_row2[0]:
+	            chat_max_tokens = st.number_input(
+	                "Max Tokens",
+	                min_value=1,
+	                max_value=32768,
+	                value=1024,
+	                step=1,
+	                key="chat_max_tokens",
+	            )
+	
+	        with p_row2[1]:
+	            chat_top_p = st.slider(
+	                "Top-p",
+	                min_value=0.0,
+	                max_value=1.0,
+	                value=1.0,
+	                step=0.01,
+	                key="chat_top_p",
+	            )
+	
+	        with p_row3[0]:
+	            chat_seed = st.number_input(
+	                "Seed",
+	                min_value=0,
+	                max_value=2_147_483_647,
+	                value=0,
+	                step=1,
+	                key="chat_seed",
+	            )
+	
+	        with p_row3[1]:
+	            chat_json_mode = st.checkbox("JSON Mode", value=False, key="chat_json_mode")
+	
+	        chat_system = st.text_area(
+	            "System",
+	            value="",
+	            height=100,
+	            key="chat_system",
+	        )
+	
+	        btn_row = st.columns(2)
+	        with btn_row[0]:
+	            chat_submit = st.button("Submit", key="chat_submit")
+	        with btn_row[1]:
+	            chat_clear = st.button("Clear", key="chat_clear")
+	
+	    with col_right:
+	        chat_output = st.empty()
+	
+	    if chat_clear:
+	        st.session_state["chat_prompt"] = ""
+	        st.session_state["chat_system"] = ""
+	        chat_output.empty()
+	
+	    if chat_submit:
+	        try:
+	            fetcher = Chat()
+	            params = {
+	                "model": chat_model,
+	                "temperature": float(chat_temperature),
+	                "max_tokens": int(chat_max_tokens),
+	                "top_p": float(chat_top_p),
+	                "seed": int(chat_seed) if int(chat_seed) > 0 else None,
+	                "system": chat_system if chat_system.strip() else None,
+	                "response_format": ("json" if chat_json_mode else None),
+	            }
+	            # Remove None to avoid surprising providers
+	            params = {k: v for k, v in params.items() if v is not None}
+	
+	            result = _invoke_provider(fetcher, chat_prompt, params)
+	            _render_output(chat_output, result)
+	
+	        except Exception as exc:
+	            error = Error(exc)
+	            error.module = "app"
+	            error.cause = "Chat"
+	            error.method = "invoke"
+	            ErrorDialog(error).show()
+	
+	
+	# --------------------------------------------------------------------------------------
+	# Groq
+	# --------------------------------------------------------------------------------------
+	with st.expander("Groq", expanded=False):
+	    col_left, col_right = st.columns(2)
+	
+	    with col_left:
+	        groq_prompt = st.text_area("Prompt", value="", height=180, key="groq_prompt_chat")
+	
+	        p_row1 = st.columns(2)
+	        p_row2 = st.columns(2)
+	        p_row3 = st.columns(2)
+	
+	        with p_row1[0]:
+	            groq_model = _model_selector(
+	                key_prefix="groq",
+	                label="Model",
+	                options=[
+	                    "llama3-70b-8192",
+	                    "llama3-8b-8192",
+	                    "mixtral-8x7b-32768",
+	                    "Custom...",
+	                ],
+	                default_model="llama3-70b-8192",
+	            )
+	
+	        with p_row1[1]:
+	            groq_temperature = st.slider(
+	                "Temperature",
+	                min_value=0.0,
+	                max_value=2.0,
+	                value=0.7,
+	                step=0.05,
+	                key="groq_temperature_chat",
+	            )
+	
+	        with p_row2[0]:
+	            groq_max_tokens = st.number_input(
+	                "Max Tokens",
+	                min_value=1,
+	                max_value=32768,
+	                value=1024,
+	                step=1,
+	                key="groq_max_tokens_chat",
+	            )
+	
+	        with p_row2[1]:
+	            groq_top_p = st.slider(
+	                "Top-p",
+	                min_value=0.0,
+	                max_value=1.0,
+	                value=1.0,
+	                step=0.01,
+	                key="groq_top_p_chat",
+	            )
+	
+	        with p_row3[0]:
+	            groq_stop = st.text_area(
+	                "Stop Sequences (one per line)",
+	                value="",
+	                height=80,
+	                key="groq_stop_chat",
+	            )
+	
+	        with p_row3[1]:
+	            groq_stream = st.checkbox("Stream", value=False, key="groq_stream_chat")
+	
+	        btn_row = st.columns(2)
+	        with btn_row[0]:
+	            groq_submit = st.button("Submit", key="groq_submit_chat")
+	        with btn_row[1]:
+	            groq_clear = st.button("Clear", key="groq_clear_chat")
+	
+	    with col_right:
+	        groq_output = st.empty()
+	
+	    if groq_clear:
+	        st.session_state["groq_prompt_chat"] = ""
+	        st.session_state["groq_stop_chat"] = ""
+	        groq_output.empty()
+	
+	    if groq_submit:
+	        try:
+	            fetcher = Groq()
+	            stop_lines = [s.strip() for s in (groq_stop or "").splitlines() if s.strip()]
+	            params = {
+	                "model": groq_model,
+	                "temperature": float(groq_temperature),
+	                "max_tokens": int(groq_max_tokens),
+	                "top_p": float(groq_top_p),
+	                "stop": stop_lines if stop_lines else None,
+	                "stream": bool(groq_stream),
+	            }
+	            params = {k: v for k, v in params.items() if v is not None}
+	
+	            result = _invoke_provider(fetcher, groq_prompt, params)
+	            _render_output(groq_output, result)
+	
+	        except Exception as exc:
+	            error = Error(exc)
+	            error.module = "app"
+	            error.cause = "Groq"
+	            error.method = "invoke"
+	            ErrorDialog(error).show()
+	
+	
+	# --------------------------------------------------------------------------------------
+	# Claude (Anthropic)
+	# --------------------------------------------------------------------------------------
+	with st.expander("Claude", expanded=False):
+	    col_left, col_right = st.columns(2)
+	
+	    with col_left:
+	        claude_prompt = st.text_area("Prompt", value="", height=180, key="claude_prompt_chat")
+	
+	        p_row1 = st.columns(2)
+	        p_row2 = st.columns(2)
+	        p_row3 = st.columns(2)
+	
+	        with p_row1[0]:
+	            claude_model = _model_selector(
+	                key_prefix="claude",
+	                label="Model",
+	                options=[
+	                    "claude-3-5-sonnet-latest",
+	                    "claude-3-5-haiku-latest",
+	                    "claude-3-opus-latest",
+	                    "Custom...",
+	                ],
+	                default_model="claude-3-5-sonnet-latest",
+	            )
+	
+	        with p_row1[1]:
+	            claude_temperature = st.slider(
+	                "Temperature",
+	                min_value=0.0,
+	                max_value=1.0,
+	                value=0.7,
+	                step=0.05,
+	                key="claude_temperature_chat",
+	            )
+	
+	        with p_row2[0]:
+	            claude_max_tokens = st.number_input(
+	                "Max Tokens",
+	                min_value=1,
+	                max_value=8192,
+	                value=1024,
+	                step=1,
+	                key="claude_max_tokens_chat",
+	            )
+	
+	        with p_row2[1]:
+	            claude_top_p = st.slider(
+	                "Top-p",
+	                min_value=0.0,
+	                max_value=1.0,
+	                value=1.0,
+	                step=0.01,
+	                key="claude_top_p_chat",
+	            )
+	
+	        with p_row3[0]:
+	            claude_top_k = st.number_input(
+	                "Top-k",
+	                min_value=0,
+	                max_value=500,
+	                value=0,
+	                step=1,
+	                key="claude_top_k_chat",
+	            )
+	
+	        with p_row3[1]:
+	            claude_stop = st.text_area(
+	                "Stop Sequences (one per line)",
+	                value="",
+	                height=80,
+	                key="claude_stop_chat",
+	            )
+	
+	        claude_system = st.text_area(
+	            "System",
+	            value="",
+	            height=100,
+	            key="claude_system_chat",
+	        )
+	
+	        btn_row = st.columns(2)
+	        with btn_row[0]:
+	            claude_submit = st.button("Submit", key="claude_submit_chat")
+	        with btn_row[1]:
+	            claude_clear = st.button("Clear", key="claude_clear_chat")
+	
+	    with col_right:
+	        claude_output = st.empty()
+	
+	    if claude_clear:
+	        st.session_state["claude_prompt_chat"] = ""
+	        st.session_state["claude_stop_chat"] = ""
+	        st.session_state["claude_system_chat"] = ""
+	        claude_output.empty()
+	
+	    if claude_submit:
+	        try:
+	            fetcher = Claude()
+	            stop_lines = [s.strip() for s in (claude_stop or "").splitlines() if s.strip()]
+	            params = {
+	                "model": claude_model,
+	                "temperature": float(claude_temperature),
+	                "max_tokens": int(claude_max_tokens),
+	                "top_p": float(claude_top_p),
+	                "top_k": int(claude_top_k) if int(claude_top_k) > 0 else None,
+	                "stop_sequences": stop_lines if stop_lines else None,
+	                "system": claude_system if claude_system.strip() else None,
+	            }
+	            params = {k: v for k, v in params.items() if v is not None}
+	
+	            result = _invoke_provider(fetcher, claude_prompt, params)
+	            _render_output(claude_output, result)
+	
+	        except Exception as exc:
+	            error = Error(exc)
+	            error.module = "app"
+	            error.cause = "Claude"
+	            error.method = "invoke"
+	            ErrorDialog(error).show()
+	
+	
+	# --------------------------------------------------------------------------------------
+	# Gemini
+	# --------------------------------------------------------------------------------------
+	with st.expander("Gemini", expanded=False):
+	    col_left, col_right = st.columns(2)
+	
+	    with col_left:
+	        gemini_prompt = st.text_area("Prompt", value="", height=180, key="gemini_prompt_chat")
+	
+	        p_row1 = st.columns(2)
+	        p_row2 = st.columns(2)
+	        p_row3 = st.columns(2)
+	
+	        with p_row1[0]:
+	            gemini_model = _model_selector(
+	                key_prefix="gemini",
+	                label="Model",
+	                options=[
+	                    "gemini-1.5-pro",
+	                    "gemini-1.5-flash",
+	                    "gemini-2.0-flash",
+	                    "Custom...",
+	                ],
+	                default_model="gemini-1.5-pro",
+	            )
+	
+	        with p_row1[1]:
+	            gemini_temperature = st.slider(
+	                "Temperature",
+	                min_value=0.0,
+	                max_value=2.0,
+	                value=0.7,
+	                step=0.05,
+	                key="gemini_temperature_chat",
+	            )
+	
+	        with p_row2[0]:
+	            gemini_max_tokens = st.number_input(
+	                "Max Tokens",
+	                min_value=1,
+	                max_value=32768,
+	                value=1024,
+	                step=1,
+	                key="gemini_max_tokens_chat",
+	            )
+	
+	        with p_row2[1]:
+	            gemini_top_p = st.slider(
+	                "Top-p",
+	                min_value=0.0,
+	                max_value=1.0,
+	                value=1.0,
+	                step=0.01,
+	                key="gemini_top_p_chat",
+	            )
+	
+	        with p_row3[0]:
+	            gemini_top_k = st.number_input(
+	                "Top-k",
+	                min_value=0,
+	                max_value=500,
+	                value=0,
+	                step=1,
+	                key="gemini_top_k_chat",
+	            )
+	
+	        with p_row3[1]:
+	            gemini_candidate_count = st.number_input(
+	                "Candidates",
+	                min_value=1,
+	                max_value=8,
+	                value=1,
+	                step=1,
+	                key="gemini_candidate_count_chat",
+	            )
+	
+	        gemini_system = st.text_area(
+	            "System",
+	            value="",
+	            height=100,
+	            key="gemini_system_chat",
+	        )
+	
+	        btn_row = st.columns(2)
+	        with btn_row[0]:
+	            gemini_submit = st.button("Submit", key="gemini_submit_chat")
+	        with btn_row[1]:
+	            gemini_clear = st.button("Clear", key="gemini_clear_chat")
+	
+	    with col_right:
+	        gemini_output = st.empty()
+	
+	    if gemini_clear:
+	        st.session_state["gemini_prompt_chat"] = ""
+	        st.session_state["gemini_system_chat"] = ""
+	        gemini_output.empty()
+	
+	    if gemini_submit:
+	        try:
+	            fetcher = Gemini()
+	            params = {
+	                "model": gemini_model,
+	                "temperature": float(gemini_temperature),
+	                "max_tokens": int(gemini_max_tokens),
+	                "top_p": float(gemini_top_p),
+	                "top_k": int(gemini_top_k) if int(gemini_top_k) > 0 else None,
+	                "candidate_count": int(gemini_candidate_count),
+	                "system": gemini_system if gemini_system.strip() else None,
+	            }
+	            params = {k: v for k, v in params.items() if v is not None}
+	
+	            result = _invoke_provider(fetcher, gemini_prompt, params)
+	            _render_output(gemini_output, result)
+	
+	        except Exception as exc:
+	            error = Error(exc)
+	            error.module = "app"
+	            error.cause = "Gemini"
+	            error.method = "invoke"
+	            ErrorDialog(error).show()
+	
+	
+	# --------------------------------------------------------------------------------------
+	# Mistral
+	# --------------------------------------------------------------------------------------
+	with st.expander("Mistral", expanded=False):
+	    col_left, col_right = st.columns(2)
+	
+	    with col_left:
+	        mistral_prompt = st.text_area("Prompt", value="", height=180, key="mistral_prompt_chat")
+	
+	        p_row1 = st.columns(2)
+	        p_row2 = st.columns(2)
+	        p_row3 = st.columns(2)
+	
+	        with p_row1[0]:
+	            mistral_model = _model_selector(
+	                key_prefix="mistral",
+	                label="Model",
+	                options=[
+	                    "mistral-large-latest",
+	                    "mistral-medium-latest",
+	                    "mistral-small-latest",
+	                    "open-mistral-7b",
+	                    "Custom...",
+	                ],
+	                default_model="mistral-large-latest",
+	            )
+	
+	        with p_row1[1]:
+	            mistral_temperature = st.slider(
+	                "Temperature",
+	                min_value=0.0,
+	                max_value=2.0,
+	                value=0.7,
+	                step=0.05,
+	                key="mistral_temperature_chat",
+	            )
+	
+	        with p_row2[0]:
+	            mistral_max_tokens = st.number_input(
+	                "Max Tokens",
+	                min_value=1,
+	                max_value=32768,
+	                value=1024,
+	                step=1,
+	                key="mistral_max_tokens_chat",
+	            )
+	
+	        with p_row2[1]:
+	            mistral_top_p = st.slider(
+	                "Top-p",
+	                min_value=0.0,
+	                max_value=1.0,
+	                value=1.0,
+	                step=0.01,
+	                key="mistral_top_p_chat",
+	            )
+	
+	        with p_row3[0]:
+	            mistral_seed = st.number_input(
+	                "Seed",
+	                min_value=0,
+	                max_value=2_147_483_647,
+	                value=0,
+	                step=1,
+	                key="mistral_seed_chat",
+	            )
+	
+	        with p_row3[1]:
+	            mistral_safe_mode = st.checkbox("Safe Mode", value=False, key="mistral_safe_mode_chat")
+	
+	        mistral_system = st.text_area(
+	            "System",
+	            value="",
+	            height=100,
+	            key="mistral_system_chat",
+	        )
+	
+	        btn_row = st.columns(2)
+	        with btn_row[0]:
+	            mistral_submit = st.button("Submit", key="mistral_submit_chat")
+	        with btn_row[1]:
+	            mistral_clear = st.button("Clear", key="mistral_clear_chat")
+	
+	    with col_right:
+	        mistral_output = st.empty()
+	
+	    if mistral_clear:
+	        st.session_state["mistral_prompt_chat"] = ""
+	        st.session_state["mistral_system_chat"] = ""
+	        mistral_output.empty()
+	
+	    if mistral_submit:
+	        try:
+	            fetcher = Mistral()
+	            params = {
+	                "model": mistral_model,
+	                "temperature": float(mistral_temperature),
+	                "max_tokens": int(mistral_max_tokens),
+	                "top_p": float(mistral_top_p),
+	                "seed": int(mistral_seed) if int(mistral_seed) > 0 else None,
+	                "safe_mode": bool(mistral_safe_mode),
+	                "system": mistral_system if mistral_system.strip() else None,
+	            }
+	            params = {k: v for k, v in params.items() if v is not None}
+	
+	            result = _invoke_provider(fetcher, mistral_prompt, params)
+	            _render_output(mistral_output, result)
+	
+	        except Exception as exc:
+	            error = Error(exc)
+	            error.module = "app"
+	            error.cause = "Mistral"
+	            error.method = "invoke"
+	            ErrorDialog(error).show()
