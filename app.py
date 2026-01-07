@@ -79,11 +79,11 @@ with st.sidebar:
 # Tabs
 # ======================================================================================
 
-tab_scrapers, tab_fetchers, tab_data, tab_chat = st.tabs(
-	[ "Scrapers",
-	  "Fetchers",
-	  "Data",
-	  "Chat" ]
+tab_fetchers, tab_scrapers, tab_chat, tab_data = st.tabs(
+	[ "Fetchers",
+	  "Scrapers",
+	  "Chat",
+	  "Data" ]
 )
 
 # ======================================================================================
@@ -1010,7 +1010,8 @@ with tab_fetchers:
 	            error.module = "app"
 	            error.cause = "SpaceWeather"
 	            error.method = "fetch"
-	            ErrorDialog(error).show()
+	            ErrorDialog(error).show(
+		           
 	# -------------------------------
 	# AstroCatalog Fetcher
 	# -------------------------------
@@ -1168,8 +1169,6 @@ with tab_fetchers:
 	            error.method = "fetch"
 	            ErrorDialog(error).show()
 	
-	
-	
 	# -------------------------------
 	# GovData Fetcher
 	# -------------------------------
@@ -1274,7 +1273,60 @@ with tab_fetchers:
 	            error.cause = "StarChart"
 	            error.method = "fetch"
 	            ErrorDialog(error).show()
+				
+	# -------------------------------
+	# Congress Fetcher
+	# -------------------------------
+	with st.expander("Congress", expanded=False):
+	    col_left, col_right = st.columns(2)
 	
+	    with col_left:
+	        congress_query = st.text_area(
+	            label="Query",
+	            value="",
+	            height=150,
+	            key="congress_query"
+	        )
+	
+	        btn_col1, btn_col2 = st.columns(2)
+	
+	        with btn_col1:
+	            congress_submit = st.button("Submit", key="congress_submit")
+	
+	        with btn_col2:
+	            congress_clear = st.button("Clear", key="congress_clear")
+	
+	    with col_right:
+	        congress_output = st.empty()
+	
+	    if congress_clear:
+	        st.session_state["congress_query"] = ""
+	        congress_output.empty()
+	
+	    if congress_submit:
+	        try:
+	            # API key (if required) is expected via sidebar / environment
+	            fetcher = Congress()
+	
+	            result = fetcher.fetch(congress_query)
+	
+	            if not result:
+	                congress_output.info("No results returned.")
+	            else:
+	                congress_output.text_area(
+	                    label="Results",
+	                    value=str(result),
+	                    height=300
+	                )
+	
+	        except Exception as exc:
+	            error = Error(exc)
+	            error.module = "app"
+	            error.cause = "Congress"
+	            error.method = "fetch"
+	            ErrorDialog(error).show()
+	
+		
 			    
 	# -------------------------------
 	# InternetArchive Fetcher
