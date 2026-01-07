@@ -1122,6 +1122,331 @@ with st.expander("AstroQuery", expanded=False):
             ErrorDialog(error).show()
 
 
+# -------------------------------
+# StarMap Fetcher
+# -------------------------------
+
+with st.expander("StarMap", expanded=False):
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        starmap_query = st.text_area(
+            label="Query",
+            value="",
+            height=150,
+            key="starmap_query"
+        )
+
+        btn_col1, btn_col2 = st.columns(2)
+
+        with btn_col1:
+            starmap_submit = st.button("Submit", key="starmap_submit")
+
+        with btn_col2:
+            starmap_clear = st.button("Clear", key="starmap_clear")
+
+    with col_right:
+        starmap_output = st.empty()
+
+    if starmap_clear:
+        st.session_state["starmap_query"] = ""
+        starmap_output.empty()
+
+    if starmap_submit:
+        try:
+            # API key (if required) is expected via sidebar / environment
+            fetcher = StarMap()
+
+            result = fetcher.fetch(starmap_query)
+
+            if not result:
+                starmap_output.info("No results returned.")
+            else:
+                starmap_output.text_area(
+                    label="Results",
+                    value=str(result),
+                    height=300
+                )
+
+        except Exception as exc:
+            error = Error(exc)
+            error.module = "app"
+            error.cause = "StarMap"
+            error.method = "fetch"
+            ErrorDialog(error).show()
+
+
+
+# -------------------------------
+# GovData Fetcher
+# -------------------------------
+
+with st.expander("GovData", expanded=False):
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        govdata_query = st.text_area(
+            label="Query",
+            value="",
+            height=150,
+            key="govdata_query"
+        )
+
+        btn_col1, btn_col2 = st.columns(2)
+
+        with btn_col1:
+            govdata_submit = st.button("Submit", key="govdata_submit")
+
+        with btn_col2:
+            govdata_clear = st.button("Clear", key="govdata_clear")
+
+    with col_right:
+        govdata_output = st.empty()
+
+    if govdata_clear:
+        st.session_state["govdata_query"] = ""
+        govdata_output.empty()
+
+    if govdata_submit:
+        try:
+            # API key (if required) is expected via sidebar / environment
+            fetcher = GovData()
+
+            result = fetcher.fetch(govdata_query)
+
+            if not result:
+                govdata_output.info("No results returned.")
+            else:
+                govdata_output.text_area(
+                    label="Results",
+                    value=str(result),
+                    height=300
+                )
+
+        except Exception as exc:
+            error = Error(exc)
+            error.module = "app"
+            error.cause = "GovData"
+            error.method = "fetch"
+            ErrorDialog(error).show()
+
+
+# -------------------------------
+# StarChart Fetcher
+# -------------------------------
+
+with st.expander("StarChart", expanded=False):
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        starchart_query = st.text_area(
+            label="Query",
+            value="",
+            height=150,
+            key="starchart_query"
+        )
+
+        btn_col1, btn_col2 = st.columns(2)
+
+        with btn_col1:
+            starchart_submit = st.button("Submit", key="starchart_submit")
+
+        with btn_col2:
+            starchart_clear = st.button("Clear", key="starchart_clear")
+
+    with col_right:
+        starchart_output = st.empty()
+
+    if starchart_clear:
+        st.session_state["starchart_query"] = ""
+        starchart_output.empty()
+
+    if starchart_submit:
+        try:
+            # API key (if required) is expected via sidebar / environment
+            fetcher = StarChart()
+
+            result = fetcher.fetch(starchart_query)
+
+            if not result:
+                starchart_output.info("No results returned.")
+            else:
+                starchart_output.text_area(
+                    label="Results",
+                    value=str(result),
+                    height=300
+                )
+
+        except Exception as exc:
+            error = Error(exc)
+            error.module = "app"
+            error.cause = "StarChart"
+            error.method = "fetch"
+            ErrorDialog(error).show()
+
+
+# -------------------------------
+# StarChart Fetcher
+# -------------------------------
+
+with st.expander("StarChart", expanded=False):
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        starchart_query = st.text_area(
+            label="Query",
+            value="",
+            height=150,
+            key="starchart_query"
+        )
+
+        btn_col1, btn_col2 = st.columns(2)
+
+        with btn_col1:
+            starchart_submit = st.button("Submit", key="starchart_submit")
+
+        with btn_col2:
+            starchart_clear = st.button("Clear", key="starchart_clear")
+
+    with col_right:
+        starchart_output = st.empty()
+
+    if starchart_clear:
+        st.session_state["starchart_query"] = ""
+        starchart_output.empty()
+
+    if starchart_submit:
+        try:
+            # API key (if required) is expected via sidebar / environment
+            fetcher = StarChart()
+
+            result = fetcher.fetch(starchart_query)
+
+            if not result:
+                starchart_output.info("No results returned.")
+            else:
+                starchart_output.text_area(
+                    label="Results",
+                    value=str(result),
+                    height=300
+                )
+
+        except Exception as exc:
+            error = Error(exc)
+            error.module = "app"
+            error.cause = "StarChart"
+            error.method = "fetch"
+            ErrorDialog(error).show()
+		    
+# -------------------------------
+# InternetArchive Fetcher
+# -------------------------------
+
+with st.expander("InternetArchive", expanded=False):
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        ia_query = st.text_area(
+            label="Query",
+            value="",
+            height=150,
+            key="internetarchive_query"
+        )
+
+        btn_col1, btn_col2 = st.columns(2)
+
+        with btn_col1:
+            ia_submit = st.button("Submit", key="internetarchive_submit")
+
+        with btn_col2:
+            ia_clear = st.button("Clear", key="internetarchive_clear")
+
+    with col_right:
+        ia_output = st.empty()
+
+    if ia_clear:
+        st.session_state["internetarchive_query"] = ""
+        ia_output.empty()
+
+    if ia_submit:
+        try:
+            # API key (if required) is expected via sidebar / environment
+            fetcher = InternetArchive()
+
+            result = fetcher.fetch(ia_query)
+
+            if not result:
+                ia_output.info("No results returned.")
+            else:
+                ia_output.text_area(
+                    label="Results",
+                    value=str(result),
+                    height=300
+                )
+
+        except Exception as exc:
+            error = Error(exc)
+            error.module = "app"
+            error.cause = "InternetArchive"
+            error.method = "fetch"
+            ErrorDialog(error).show()
+
+# -------------------------------
+# OpenWeather Fetcher
+# -------------------------------
+
+with st.expander("OpenWeather", expanded=False):
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        openweather_query = st.text_area(
+            label="Location",
+            value="",
+            height=150,
+            key="openweather_query"
+        )
+
+        btn_col1, btn_col2 = st.columns(2)
+
+        with btn_col1:
+            openweather_submit = st.button("Submit", key="openweather_submit")
+
+        with btn_col2:
+            openweather_clear = st.button("Clear", key="openweather_clear")
+
+    with col_right:
+        openweather_output = st.empty()
+
+    if openweather_clear:
+        st.session_state["openweather_query"] = ""
+        openweather_output.empty()
+
+    if openweather_submit:
+        try:
+            # API key (if required) is expected via sidebar / environment
+            fetcher = OpenWeather()
+
+            result = fetcher.fetch(openweather_query)
+
+            if not result:
+                openweather_output.info("No results returned.")
+            else:
+                openweather_output.text_area(
+                    label="Results",
+                    value=str(result),
+                    height=300
+                )
+
+        except Exception as exc:
+            error = Error(exc)
+            error.module = "app"
+            error.cause = "OpenWeather"
+            error.method = "fetch"
+            ErrorDialog(error).show()
+
+
+
+
 # ======================================================================================
 # DATA TAB — SQLite inspection
 # ======================================================================================
