@@ -691,7 +691,7 @@ with tab_fetchers:
 					google_output.info( "No results returned." )
 				else:
 					google_output.markdown(
-						render_google_results_markdown( result ),
+						render_google_results( result ),
 						unsafe_allow_html=False
 					)
 			
