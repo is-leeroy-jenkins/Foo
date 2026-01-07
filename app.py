@@ -136,7 +136,7 @@ def _model_selector(
 # Google Helper
 # ======================================================================================
 
-def render_google_results(response: requests.Response) -> str:
+def render_google_results(response) -> str:
     try:
         data = response.json()
     except Exception:
@@ -150,16 +150,15 @@ def render_google_results(response: requests.Response) -> str:
 
     for idx, item in enumerate(items, start=1):
         title = item.get("title", "Untitled")
-        link = item.get("link", "")
         snippet = item.get("snippet", "")
+        link = item.get("link", "")
 
         lines.append(f"{idx}. {title}")
         if snippet:
             lines.append(snippet)
         if link:
             lines.append(link)
-
-        lines.append("")  # blank line between results
+        lines.append("")
 
     return "\n".join(lines)
 	    
@@ -690,9 +689,10 @@ with tab_fetchers:
 				if not result:
 					google_output.info( "No results returned." )
 				else:
-					google_output.markdown(
-						render_google_results( result ),
-						unsafe_allow_html=False
+					google_output.text_area(
+						label="Results",
+						value=render_google_results( result ),
+						height=300
 					)
 			
 			except Exception as exc:
