@@ -133,6 +133,37 @@ def _model_selector(
 	return selected
 
 # ======================================================================================
+# Google Helper
+# ======================================================================================
+
+def render_google_results(response: requests.Response) -> str:
+    try:
+        data = response.json()
+    except Exception:
+        return "Failed to decode response."
+
+    items = data.get("items", [])
+    if not items:
+        return "No results returned."
+
+    lines = []
+
+    for idx, item in enumerate(items, start=1):
+        title = item.get("title", "Untitled")
+        link = item.get("link", "")
+        snippet = item.get("snippet", "")
+
+        lines.append(f"{idx}. {title}")
+        if snippet:
+            lines.append(snippet)
+        if link:
+            lines.append(link)
+
+        lines.append("")  # blank line between results
+
+    return "\n".join(lines)
+	    
+# ======================================================================================
 # Introspection helpers
 # ======================================================================================
 
@@ -653,13 +684,15 @@ with tab_fetchers:
 					keywords=google_query,
 					results=int( google_num_results )
 				)
-				
+
+				results_text = format_google_results_as_text( result )
+				st.session_state[ "google_results_text" ] = results_text
 				if not result:
 					google_output.info( "No results returned." )
 				else:
 					google_output.text_area(
 						label="Results",
-						value=str( result.text ),
+						value=results_text,
 						height=300
 					)
 			
