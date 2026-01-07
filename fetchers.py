@@ -5159,14 +5159,13 @@ class GovData( Fetcher ):
 		try:
 			throw_if( 'criteria', criteria )
 			self.query = criteria
-			self.url = f'https://api.govinfo.gov/search?'
+			self.url = f'https://api.govinfo.gov/search'
 			self.params = \
 			{
-				'api_key': self.api_key,
-				'q': self.query,
+				'query': self.query +'&api_key=' + self.api_key,
 			}
 			
-			self.response = requests.get( url=self.url, params=self.params )
+			self.response = requests.post( url=self.url, data=self.params )
 			self.response.raise_for_status( )
 			_results = self.response.json( )
 			return _results
@@ -5191,7 +5190,7 @@ class GovData( Fetcher ):
 			throw_if( 'part', part )
 			self.title_number = title
 			self.part_number = part
-			self.url = f'https://www.govinfo.gov/link/cfr/'
+			self.url = r'https://www.govinfo.gov/link/cfr/'
 			self.params = \
 			{
 					'api_key': self.api_key,
