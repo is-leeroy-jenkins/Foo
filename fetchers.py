@@ -43,36 +43,34 @@
   '''
 from __future__ import annotations
 
+import base64
+import datetime as dt
+import http.client
+import re
+import urllib.parse
+from typing import Any, Dict, Optional, Pattern, List
+
+import matplotlib.pyplot as plt
+import openmeteo_requests
+import requests
+import requests_cache
 from anthropic import Anthropic
 from astroquery.simbad import Simbad
-import datetime
-import matplotlib.pyplot as plt
-import base64
-from boogr import Error, ErrorDialog
-import crawl4ai as crl
-import config as cfg
-from core import Result
-import datetime as dt
-import google
 from google.genai.types import HttpOptions
-import googlemaps
-from groq import Groq
 from grokipedia_api import GrokipediaClient
-import http.client
-import json
-from langchain_googledrive.retrievers import GoogleDriveRetriever
+from groq import Groq
+from langchain_core.documents import Document
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
+from langchain_googledrive.retrievers import GoogleDriveRetriever
 from openai import OpenAI
-import openmeteo_requests
-import re
-import requests
+from owslib.wms import WebMapService
 from requests import Response
-import requests_cache
 from retry_requests import retry
 from sscws.sscws import SscWs
-from typing import Any, Dict, Optional, Pattern, List
-from owslib.wms import WebMapService
-import urllib.parse
+
+import config as cfg
+from boogr import Error, ErrorDialog
+from core import Result
 
 def throw_if( name: str, value: Any ) -> None:
 	'''
@@ -1181,7 +1179,7 @@ class ArXiv( Fetcher ):
 
 			Parameters:
 			-----------
-			path (str): Path to the HTML (.html or .htm) file.
+			question: query
 
 			Returns:
 			--------
@@ -1334,8 +1332,8 @@ class GoogleDrive( Fetcher ):
 		self.folder_id = None
 		self.num_results = None
 	
-	def fetch( self, question: str, folder_id: str= 'root',
-			results: int=2, template: str='gdrive-query' ) -> List[ Document ] | None:
+	def fetch( self, question: str, folder_id: str='root',
+			results: int=10, template: str='gdrive-query' ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1362,12 +1360,7 @@ class GoogleDrive( Fetcher ):
 			self.documents = self.fetcher.invoke( input=self.query  )
 			return self.documents
 		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GoogleDrive'
-			exception.method = 'load( self, path: str ) -> List[ Document ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			st.error( str( e ) )
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -1520,14 +1513,9 @@ class Wikipedia( Fetcher ):
 			self.fetcher = WikipediaRetriever( lang=self.language, load_all_available_meta=self.include_metadata )
 			self.documents = self.fetcher.invoke( input=self.query,  )
 			return self.documents
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Wikipedia'
-			exception.method = 'fetch( self, question: str ) -> List[ Document ]'
-			error = ErrorDialog( exception )
-			error.show( )
-		
+		except Exception as exc:
+			st.error( str( exc ) )
+	
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""

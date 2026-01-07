@@ -9,7 +9,7 @@ Crawl4AI
 chromadb
 docx2txt
 extract_msg
-fitz
+PyMuPDF==1.23.26
 FreeSimpleGUI
 google
 google-genai

@@ -7,12 +7,9 @@
     <list default="true" id="2bac0f84-0312-4cb4-99f9-5dc4ff74968e" name="Changes" comment="updates;">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/loaders.py" beforeDir="false" afterPath="$PROJECT_DIR$/loaders.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspaces/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspaces/document_ingestion.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspaces/search_retrieval.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/workspaces/web_extraction.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/writers.py" beforeDir="false" afterPath="$PROJECT_DIR$/writers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fetchers.py" beforeDir="false" afterPath="$PROJECT_DIR$/fetchers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,6 +51,7 @@
 }</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/app.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/fetchers.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
@@ -122,7 +120,7 @@
       <workItem from="1767651789539" duration="8950000" />
       <workItem from="1767662334724" duration="269000" />
       <workItem from="1767662612818" duration="46000" />
-      <workItem from="1767662680574" duration="11293000" />
+      <workItem from="1767662680574" duration="34623000" />
     </task>
     <task id="LOCAL-00001" summary="updates;">
       <option name="closed" value="true" />
@@ -188,7 +186,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767662642327</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="updates;">
+      <option name="closed" value="true" />
+      <created>1767721741732</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1767721741732</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
