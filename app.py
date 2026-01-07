@@ -1555,7 +1555,7 @@ with tab_data:
 # --------------------------------------------------------------------------------------
 # Chat Tab
 # --------------------------------------------------------------------------------------
-with st.tab("Chat"):
+with tab_chat:
 
 	with st.expander("Chat", expanded=False):
 	    col_left, col_right = st.columns(2)
