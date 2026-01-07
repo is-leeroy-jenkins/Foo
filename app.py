@@ -650,7 +650,7 @@ with tab_fetchers:
 				fetcher = GoogleSearch( )
 				
 				result = fetcher.fetch(
-					query=google_query,
+					keywords=google_query,
 					num_results=int( google_num_results )
 				)
 				

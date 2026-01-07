@@ -1943,7 +1943,7 @@ class GoogleSearch( Fetcher ):
 		         'agents,',
 		         'fetch' ]
 	
-	def fetch( self, keywords: str, time: int=10 ) -> Response | None:
+	def fetch( self, keywords: str, results: int=10 ) -> Response | None:
 		'''
 
 			Purpose:
@@ -1963,15 +1963,15 @@ class GoogleSearch( Fetcher ):
 		'''
 		try:
 			throw_if( 'keywords', keywords )
-			self.url = r'https://www.googleapis.com/customsearch/v1?'
+			self.url = r'https://www.googleapis.com/customsearch/v1'
 			self.keywords = keywords
-			self.timeout = time
+			self.results = results
 			self.params = \
 			{
 				'q': self.keywords,
 				'key': self.api_key,
 				'cx': '376fd5d0d8ae948b2',
-				'num': self.timeout
+				'results': self.results
 			}
 			_response = requests.get( url=self.url, params=self.params )
 			return _response
