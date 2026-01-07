@@ -13,12 +13,14 @@ import streamlit as st
 import config
 import scrapers
 import fetchers
-from fetchers import (Wikipedia, TheNews, SatelliteCenter, Simbad,
-                      GoogleWeather, Grokipedia, OpenWeather, NavalObservatory,
-                      GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
-                      EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
-                      GovData, Congress, InternetArchive, OpenAI, Claude, GrokipediaClient,
-                      Groq, Mistral, Gemini, StarChart)
+from fetchers import (
+	Wikipedia, TheNews, SatelliteCenter, Simbad,
+	GoogleWeather, Grokipedia, OpenWeather, NavalObservatory,
+	GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
+	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
+	GovData, Congress, InternetArchive, OpenAI, Claude, GrokipediaClient,
+	Groq, Mistral, Gemini, StarChart
+)
 
 # ======================================================================================
 # Paths / Database
@@ -38,7 +40,6 @@ if not DB_PATH.exists( ):
 # Chat Helpers
 # ======================================================================================
 
-
 def _filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ str, Any ]:
 	try:
 		sig = inspect.signature( fn )
@@ -48,14 +49,12 @@ def _filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ st
 		return kwargs
 
 def _invoke_provider( fetcher: Any, prompt: str, params: dict[ str, Any ] ) -> Any:
-	# Prefer fetch(); fallback to chat()/invoke() if that is what the provider exposes.
 	if hasattr( fetcher, "fetch" ) and callable( getattr( fetcher, "fetch" ) ):
 		fn = getattr( fetcher, "fetch" )
 		safe = _filter_kwargs_for_callable( fn, params )
 		try:
 			return fn( prompt, **safe )
 		except TypeError:
-			# Some implementations may expect `query=` instead of positional prompt.
 			safe2 = _filter_kwargs_for_callable( fn, { **safe,
 			                                           "query": prompt } )
 			return fn( **safe2 )
@@ -80,41 +79,32 @@ def _invoke_provider( fetcher: Any, prompt: str, params: dict[ str, Any ] ) -> A
 			                                           "input": prompt } )
 			return fn( **safe2 )
 	
-	raise RuntimeError( f"Provider '{type( fetcher ).__name__}' does not expose "
-	                    f"fetch/chat/invoke." )
+	raise RuntimeError(
+		f"Provider '{type( fetcher ).__name__}' does not expose fetch/chat/invoke."
+	)
 
 def _render_output( container: Any, result: Any ) -> None:
 	if result is None:
 		container.info( "No response returned." )
 		return
 	
-	# Documents (LangChain)
 	if isinstance( result, list ) and result and isinstance( result[ 0 ], Document ):
 		with container.container( ):
 			for idx, doc in enumerate( result, start=1 ):
 				with st.expander( f"Document {idx}", expanded=False ):
-					st.text_area( label="", value=(doc.page_content or ""), height=300 )
+					st.text_area( "", value=(doc.page_content or ""), height=300 )
 					if doc.metadata:
 						st.json( doc.metadata )
 		return
 	
-	# Any other object -> string
-	container.text_area( label="Response", value=str( result ), height=320 )
+	container.text_area( "Response", value=str( result ), height=320 )
 
-def _model_selector(
-		key_prefix: str,
-		label: str,
-		options: list[ str ],
-		default_model: str
-) -> str:
-	# Always provide a selectbox; allow custom model entry if not in list.
+def _model_selector( key_prefix: str, label: str, options: list[ str ], default_model: str ) -> str:
 	base_options = options[ : ]
 	if "Custom..." not in base_options:
 		base_options.append( "Custom..." )
 	
-	idx_default = 0
-	if default_model in base_options:
-		idx_default = base_options.index( default_model )
+	idx_default = base_options.index( default_model ) if default_model in base_options else 0
 	
 	selected = st.selectbox(
 		label=label,
@@ -125,7 +115,7 @@ def _model_selector(
 	
 	if selected == "Custom...":
 		return st.text_input(
-			label="Custom Model",
+			"Custom Model",
 			value=default_model,
 			key=f"{key_prefix}_model_custom",
 		)
@@ -133,66 +123,43 @@ def _model_selector(
 	return selected
 
 # ======================================================================================
-# Google Helper
+# GOOGLE SEARCH FORMATTER
 # ======================================================================================
 
-def render_google_results(response) -> str:
-    try:
-        data = response.json()
-    except Exception:
-        return "Failed to decode response."
-
-    items = data.get("items", [])
-    if not items:
-        return "No results returned."
-
-    lines = []
-
-    for idx, item in enumerate(items, start=1):
-        title = item.get("title", "Untitled")
-        snippet = item.get("snippet", "")
-        link = item.get("link", "")
-
-        lines.append(f"{idx}. {title}")
-        if snippet:
-            lines.append(snippet)
-        if link:
-            lines.append(link)
-        lines.append("")
-
-    return "\n".join(lines)
-	    
-# ======================================================================================
-# Introspection helpers
-# ======================================================================================
-
-IGNORED_CLASSES = { "WebCrawler",
-                    "GlobalImagery" }
-IGNORED_METHODS = { "create_schema",
-                    "__init__" }
-
-def is_public_method( name: str ) -> bool:
-	return not name.startswith( "_" ) and name not in IGNORED_METHODS
-
-def get_fetcher_classes( ) -> Dict[ str, type ]:
-	classes = { }
-	for name, cls in inspect.getmembers( fetchers, inspect.isclass ):
-		if cls.__module__ != fetchers.__name__:
-			continue
-		if name in IGNORED_CLASSES:
-			continue
-		classes[ name ] = cls
-	return classes
+def render_google_results( response ) -> str:
+	try:
+		data = response.json( )
+	except Exception:
+		return "Failed to decode response."
+	
+	items = data.get( "items", [ ] )
+	if not items:
+		return "No results returned."
+	
+	lines = [ ]
+	for idx, item in enumerate( items, start=1 ):
+		title = item.get( "title", "Untitled" )
+		snippet = item.get( "snippet", "" )
+		link = item.get( "link", "" )
+		
+		lines.append( f"{idx}. {title}" )
+		if snippet:
+			lines.append( snippet )
+		if link:
+			lines.append( link )
+		lines.append( "" )
+	
+	return "\n".join( lines )
 
 # ======================================================================================
-# Streamlit setup
+# Streamlit Setup
 # ======================================================================================
 
 st.set_page_config( page_title="Foo", layout="wide", page_icon=config.FAVICON )
 st.title( "" )
 
 # ======================================================================================
-# Sidebar — Global configuration ONLY
+# Sidebar — Global API keys only
 # ======================================================================================
 
 with st.sidebar:
@@ -202,9 +169,9 @@ with st.sidebar:
 		for attr in dir( config ):
 			if attr.endswith( "_API_KEY" ) or attr.endswith( "_TOKEN" ):
 				current = getattr( config, attr, "" ) or ""
-				value = st.text_input( attr, value=current, type="password" )
-				if value:
-					os.environ[ attr ] = value
+				val = st.text_input( attr, value=current, type="password" )
+				if val:
+					os.environ[ attr ] = val
 
 # ======================================================================================
 # Tabs
@@ -219,7 +186,7 @@ tab_fetchers, tab_scrapers, tab_chat, tab_maps, tab_data = st.tabs(
 )
 
 # ======================================================================================
-# SCRAPERS TAB — WebExtractor
+# SCRAPERS TAB — unchanged except for state fixes later
 # ======================================================================================
 
 with tab_scrapers:
@@ -239,13 +206,12 @@ with tab_scrapers:
 	
 	if st.button( "Run" ):
 		urls = [ u.strip( ) for u in urls_raw.splitlines( ) if u.strip( ) ]
-		
 		if not urls:
 			st.warning( "No URLs provided." )
 		else:
 			for url in urls:
 				st.markdown( f"### {url}" )
-				output: Dict[ str, Any ] = { }
+				output = { }
 				
 				try:
 					if do_text:
@@ -262,24 +228,18 @@ with tab_scrapers:
 					st.exception( exc )
 
 # ======================================================================================
-# FETCHERS TAB — ArXiv (reconstructed, minimal, safe)
+# FETCHERS TAB — ArXiv
 # ======================================================================================
 
 with tab_fetchers:
 	st.subheader( "" )
 	
-	# -----------------------------
-	# Session state
-	# -----------------------------
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
 	
 	with st.expander( "ArXiv", expanded=True ):
 		col1, col2 = st.columns( 2, border=True )
 		
-		# -----------------------------
-		# Input column
-		# -----------------------------
 		with col1:
 			arxiv_input = st.text_area(
 				"Query",
@@ -287,47 +247,44 @@ with tab_fetchers:
 				key="arxiv_input",
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
+			b1, b2 = st.columns( 2 )
 			
-			with btn_col1:
+			with b1:
 				if st.button( "Submit", key="arxiv_submit" ):
 					try:
-						queries = [
-								q.strip( )
-								for q in arxiv_input.splitlines( )
-								if q.strip( )
-						]
-						
+						queries = [ q.strip( ) for q in arxiv_input.splitlines( ) if q.strip( ) ]
 						if not queries:
 							st.warning( "No input provided." )
 						else:
 							from fetchers import ArXiv
 							
-							fetcher = ArXiv( )
+							f = ArXiv( )
 							results = [ ]
 							
 							for q in queries:
-								docs = fetcher.fetch( q )
-								
+								docs = f.fetch( q )
 								if isinstance( docs, Document ):
 									results.append( docs )
 								elif isinstance( docs, list ):
 									results.extend( docs )
 							
-							st.session_state[ "arxiv_results" ] = results
+							st.session_state.update( {
+									"arxiv_results": results
+							} )
+							st.rerun( )
 					
 					except Exception as exc:
 						st.error( "ArXiv request failed." )
 						st.exception( exc )
 			
-			with btn_col2:
+			with b2:
 				if st.button( "Clear", key="arxiv_clear" ):
-					st.session_state[ "arxiv_input" ] = ""
-					st.session_state[ "arxiv_results" ] = [ ]
+					st.session_state.update( {
+							"arxiv_input": "",
+							"arxiv_results": [ ]
+					} )
+					st.rerun( )
 		
-		# -----------------------------
-		# Output column
-		# -----------------------------
 		with col2:
 			st.markdown( "Results" )
 			
@@ -337,142 +294,123 @@ with tab_fetchers:
 				for idx, doc in enumerate( st.session_state[ "arxiv_results" ], start=1 ):
 					with st.expander( f"Document {idx}", expanded=False ):
 						if isinstance( doc, Document ):
-							st.text_area(
-								label="Content",
-								value=doc.page_content or "",
-								height=300,
-							)
-							
+							st.text_area( "Content", value=doc.page_content or "", height=300 )
 							if doc.metadata:
 								st.json( doc.metadata )
 						else:
 							st.write( doc )
-	
-	# -------------------------------
+		
+	# ======================================================================================
 	# GoogleDrive Fetcher
-	# -------------------------------
-	with st.expander( "GoogleDrive", expanded=False ):
+	# ======================================================================================
+	with st.expander( "Google Drive", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			gd_query = st.text_area(
-				label="Google Drive Query",
+				"Google Drive Query",
 				value="",
 				height=150,
 				key="googledrive_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				gd_submit = st.button( "Submit", key="googledrive_submit" )
-			
-			with btn_col2:
+			with b2:
 				gd_clear = st.button( "Clear", key="googledrive_clear" )
 		
 		with col_right:
 			gd_output = st.empty( )
 		
 		if gd_clear:
-			st.session_state[ "googledrive_query" ] = ""
-			gd_output.empty( )
+			st.session_state.update( {
+					"googledrive_query": ""
+			} )
+			st.rerun( )
 		
 		if gd_submit:
 			try:
-				fetcher = GoogleDrive( )
-				documents = fetcher.fetch( gd_query )
+				f = GoogleDrive( )
+				docs = f.fetch( gd_query )
 				
-				if documents:
+				if docs:
 					with gd_output.container( ):
-						for idx, doc in enumerate( documents, start=1 ):
+						for idx, doc in enumerate( docs, start=1 ):
 							st.markdown( f"**Document {idx}**" )
-							st.text_area(
-								label="",
-								value=doc.page_content,
-								height=200
-							)
+							st.text_area( "", value=doc.page_content, height=200 )
 				else:
 					gd_output.info( "No documents returned." )
-			
 			except Exception as exc:
-				error = Error( exc )
-				error.module = "app"
-				error.cause = "GoogleDrive"
-				error.method = "fetch"
-				ErrorDialog( error ).show( )
+				st.error( str( exc ) )
 	
-	# -------------------------------
+	# ======================================================================================
 	# Wikipedia Fetcher
-	# -------------------------------
+	# ======================================================================================
 	with st.expander( "Wikipedia", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			wiki_query = st.text_area(
-				label="Wikipedia Query",
+				"Wikipedia Query",
 				value="",
 				height=150,
 				key="wikipedia_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				wiki_submit = st.button( "Submit", key="wikipedia_submit" )
-			
-			with btn_col2:
+			with b2:
 				wiki_clear = st.button( "Clear", key="wikipedia_clear" )
 		
 		with col_right:
 			wiki_output = st.empty( )
 		
 		if wiki_clear:
-			st.session_state[ "wikipedia_query" ] = ""
-			wiki_output.empty( )
+			st.session_state.update( {
+					"wikipedia_query": ""
+			} )
+			st.rerun( )
 		
 		if wiki_submit:
 			try:
-				fetcher = Wikipedia( )
-				documents = fetcher.fetch( wiki_query )
+				f = Wikipedia( )
+				docs = f.fetch( wiki_query )
 				
-				if documents:
+				if docs:
 					with wiki_output.container( ):
-						for idx, doc in enumerate( documents, start=1 ):
+						for idx, doc in enumerate( docs, start=1 ):
 							st.markdown( f"**Document {idx}**" )
-							st.text_area(
-								label="",
-								value=doc.page_content,
-								height=200
-							)
+							st.text_area( "", value=doc.page_content, height=200 )
 				else:
 					wiki_output.info( "No documents returned." )
-			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# TheNews Fetcher
-	# -------------------------------
-	with st.expander( "TheNews", expanded=False ):
+	# ======================================================================================
+	# TheNews
+	# ======================================================================================
+	with st.expander( "The News API", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			news_query = st.text_area(
-				label="News Query",
+				"News Query",
 				value="",
 				height=120,
 				key="thenews_query"
 			)
 			
 			news_api_key = st.text_input(
-				label="API Key",
+				"API Key",
 				value="",
 				type="password",
 				key="thenews_api_key"
 			)
 			
 			news_timeout = st.number_input(
-				label="Timeout (seconds)",
+				"Timeout (seconds)",
 				min_value=1,
 				max_value=60,
 				value=10,
@@ -480,69 +418,64 @@ with tab_fetchers:
 				key="thenews_timeout"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				news_submit = st.button( "Submit", key="thenews_submit" )
-			
-			with btn_col2:
+			with b2:
 				news_clear = st.button( "Clear", key="thenews_clear" )
 		
 		with col_right:
 			news_output = st.empty( )
 		
 		if news_clear:
-			st.session_state[ "thenews_query" ] = ""
-			st.session_state[ "thenews_api_key" ] = ""
-			news_output.empty( )
+			st.session_state.update( {
+					"thenews_query": "",
+					"thenews_api_key": "",
+					"thenews_timeout": 10
+			} )
+			st.rerun( )
 		
 		if news_submit:
 			try:
-				fetcher = TheNews( )
-				
+				f = TheNews( )
 				if news_api_key:
-					fetcher.api_key = news_api_key
+					f.api_key = news_api_key
 				
-				result = fetcher.fetch(
+				result = f.fetch(
 					query=news_query,
 					time=int( news_timeout )
 				)
 				
 				if result and getattr( result, "text", None ):
-					news_output.text_area(
-						label="Result",
-						value=result.text,
-						height=300
-					)
+					news_output.text_area( "Result", value=result.text, height=300 )
 				else:
 					news_output.info( "No results returned." )
-			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# OpenMeteo Fetcher
-	# -------------------------------
-	with st.expander( "OpenMeteo", expanded=False ):
+	# ======================================================================================
+	# OpenMeteo / OpenWeather
+	# ======================================================================================
+	with st.expander( "Open Meteo", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			latitude = st.number_input(
-				label="Latitude",
+				"Latitude",
 				value=0.0,
 				format="%.6f",
 				key="openmeteo_latitude"
 			)
 			
 			longitude = st.number_input(
-				label="Longitude",
+				"Longitude",
 				value=0.0,
 				format="%.6f",
 				key="openmeteo_longitude"
 			)
 			
 			days = st.number_input(
-				label="Forecast Days",
+				"Forecast Days",
 				min_value=1,
 				max_value=14,
 				value=7,
@@ -550,107 +483,98 @@ with tab_fetchers:
 				key="openmeteo_days"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				om_submit = st.button( "Submit", key="openmeteo_submit" )
-			
-			with btn_col2:
+			with b2:
 				om_clear = st.button( "Clear", key="openmeteo_clear" )
 		
 		with col_right:
 			om_output = st.empty( )
 		
 		if om_clear:
-			st.session_state[ "openmeteo_latitude" ] = 0.0
-			st.session_state[ "openmeteo_longitude" ] = 0.0
-			st.session_state[ "openmeteo_days" ] = 7
-			om_output.empty( )
+			st.session_state.update( {
+					"openmeteo_latitude": 0.0,
+					"openmeteo_longitude": 0.0,
+					"openmeteo_days": 7
+			} )
+			st.rerun( )
 		
 		if om_submit:
 			try:
-				fetcher = OpenWeather( )
-				
-				result = fetcher.fetch(
+				f = OpenWeather( )
+				result = f.fetch(
 					latitude=float( latitude ),
 					longitude=float( longitude ),
 					days=int( days )
 				)
 				
 				if result:
-					om_output.text_area(
-						label="Forecast Data",
-						value=str( result ),
-						height=300
-					)
+					om_output.text_area( "Forecast Data", value=str( result ), height=300 )
 				else:
 					om_output.info( "No data returned." )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
+	# ======================================================================================
 	# Simbad Fetcher
-	# -------------------------------
+	# ======================================================================================
 	with st.expander( "Simbad", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			simbad_query = st.text_area(
-				label="Astronomical Object Query",
+				"Astronomical Object Query",
 				value="",
 				height=120,
 				key="simbad_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				simbad_submit = st.button( "Submit", key="simbad_submit" )
-			
-			with btn_col2:
+			with b2:
 				simbad_clear = st.button( "Clear", key="simbad_clear" )
 		
 		with col_right:
 			simbad_output = st.empty( )
 		
 		if simbad_clear:
-			st.session_state[ "simbad_query" ] = ""
-			simbad_output.empty( )
+			st.session_state.update( {
+					"simbad_query": ""
+			} )
+			st.rerun( )
 		
 		if simbad_submit:
 			try:
-				fetcher = SimbadFetcher( )  # class name as defined in fetchers.py
-				result = fetcher.fetch( simbad_query )
+				f = Simbad( )
+				result = f.fetch( simbad_query )
 				
 				if result:
-					simbad_output.text_area(
-						label="Result",
-						value=str( result ),
-						height=300
-					)
+					simbad_output.text_area( "Result", value=str( result ), height=300 )
 				else:
 					simbad_output.info( "No results returned." )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# GoogleSearch Fetcher
-	# -------------------------------
-	with st.expander( "GoogleSearch", expanded=False ):
+	# ======================================================================================
+	# GoogleSearch
+	# ======================================================================================
+	with st.expander( "Google Search", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			google_query = st.text_area(
-				label="Query",
+				"Query",
 				value="",
 				height=150,
 				key="googlesearch_query"
 			)
 			
 			google_num_results = st.number_input(
-				label="Number of Results",
+				"Number of Results",
 				min_value=1,
 				max_value=50,
 				value=10,
@@ -658,62 +582,51 @@ with tab_fetchers:
 				key="googlesearch_num_results"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				google_submit = st.button( "Submit", key="googlesearch_submit" )
-			
-			with btn_col2:
+			with b2:
 				google_clear = st.button( "Clear", key="googlesearch_clear" )
 		
 		with col_right:
-			google_output = st.empty()
+			google_output = st.empty( )
 		
 		if google_clear:
-			st.session_state[ "googlesearch_query" ] = ""
-			st.session_state[ "googlesearch_num_results" ] = 10
-			google_output.empty( )
+			st.session_state.update( {
+					"googlesearch_query": "",
+					"googlesearch_num_results": 10
+			} )
+			st.rerun( )
 		
 		if google_submit:
 			try:
-				# API key is expected via sidebar / environment
-				fetcher = GoogleSearch( )
-				
-				result = fetcher.fetch(
+				f = GoogleSearch( )
+				result = f.fetch(
 					keywords=google_query,
 					results=int( google_num_results )
 				)
-
-				results_text = render_google_results( result )
-				st.session_state[ "google_results_text" ] = results_text
-				if not result:
-					google_output.info( "No results returned." )
-				else:
-					google_output.text_area(
-						label="Results",
-						value=render_google_results( result ),
-						height=300
-					)
+				
+				txt = render_google_results( result )
+				google_output.text_area( "Results", value=txt, height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-	
-	# -------------------------------
-	# GoogleMaps Fetcher
-	# -------------------------------
-	with st.expander( "GoogleMaps", expanded=False ):
+	# ======================================================================================
+	# GoogleMaps
+	# ======================================================================================
+	with st.expander( "Google Maps", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			gm_query = st.text_area(
-				label="Query",
+				"Query",
 				value="",
 				height=150,
 				key="googlemaps_query"
 			)
 			
 			gm_radius = st.number_input(
-				label="Radius (meters)",
+				"Radius (meters)",
 				min_value=1,
 				max_value=50000,
 				value=5000,
@@ -721,28 +634,26 @@ with tab_fetchers:
 				key="googlemaps_radius"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				gm_submit = st.button( "Submit", key="googlemaps_submit" )
-			
-			with btn_col2:
+			with b2:
 				gm_clear = st.button( "Clear", key="googlemaps_clear" )
 		
 		with col_right:
 			gm_output = st.empty( )
 		
 		if gm_clear:
-			st.session_state[ "googlemaps_query" ] = ""
-			st.session_state[ "googlemaps_radius" ] = 5000
-			gm_output.empty( )
+			st.session_state.update( {
+					"googlemaps_query": "",
+					"googlemaps_radius": 5000
+			} )
+			st.rerun( )
 		
 		if gm_submit:
 			try:
-				# API key expected via sidebar / environment
-				fetcher = GoogleMaps( )
-				
-				result = fetcher.fetch(
+				f = GoogleMaps( )
+				result = f.fetch(
 					query=gm_query,
 					radius=int( gm_radius )
 				)
@@ -750,739 +661,641 @@ with tab_fetchers:
 				if not result:
 					gm_output.info( "No results returned." )
 				else:
-					gm_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					gm_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# GoogleWeather Fetcher
-	# -------------------------------
-	with st.expander( "GoogleWeather", expanded=False ):
+	# ======================================================================================
+	# GoogleWeather — FIXED clear()
+	# ======================================================================================
+	with st.expander( "Google Weather", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			gw_location = st.text_area(
-				label="Location",
+				"Location",
 				value="",
 				height=120,
 				key="googleweather_location"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				gw_submit = st.button( "Submit", key="googleweather_submit" )
-			
-			with btn_col2:
+			with b2:
 				gw_clear = st.button( "Clear", key="googleweather_clear" )
 		
 		with col_right:
 			gw_output = st.empty( )
 		
 		if gw_clear:
-			st.session_state[ "googleweather_location" ] = ""
-			gw_output.empty( )
+			st.session_state.update( {
+					"googleweather_location": "",
+			} )
+			st.rerun( )
 		
 		if gw_submit:
 			try:
-				# API key expected via sidebar / environment
-				fetcher = GoogleWeather( )
-				
-				result = fetcher.fetch(
-					location=gw_location
-				)
+				f = GoogleWeather( )
+				result = f.fetch( location=gw_location )
 				
 				if not result:
 					gw_output.info( "No results returned." )
 				else:
-					gw_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					gw_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# NavalObservatory Fetcher
-	# -------------------------------
-	with st.expander( "NavalObservatory", expanded=False ):
+	# ======================================================================================
+	# NavalObservatory — FIXED clear()
+	# ======================================================================================
+	with st.expander( "US Naval Observatory", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			naval_query = st.text_area(
-				label="Query",
+				"Query",
 				value="",
 				height=150,
 				key="navalobservatory_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				naval_submit = st.button( "Submit", key="navalobservatory_submit" )
-			
-			with btn_col2:
+			with b2:
 				naval_clear = st.button( "Clear", key="navalobservatory_clear" )
 		
 		with col_right:
 			naval_output = st.empty( )
 		
 		if naval_clear:
-			st.session_state[ "navalobservatory_query" ] = ""
-			naval_output.empty( )
+			st.session_state.update( {
+					"navalobservatory_query": "",
+			} )
+			st.rerun( )
 		
 		if naval_submit:
 			try:
-				# API key (if required) is expected via sidebar / environment
-				fetcher = NavalObservatory( )
-				
-				result = fetcher.fetch( naval_query )
+				f = NavalObservatory( )
+				result = f.fetch( naval_query )
 				
 				if not result:
 					naval_output.info( "No results returned." )
 				else:
-					naval_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					naval_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# SatelliteCenter Fetcher
-	# -------------------------------
-	with st.expander( "SatelliteCenter", expanded=False ):
+	# ======================================================================================
+	# SatelliteCenter — FIXED clear()
+	# ======================================================================================
+	with st.expander( "Satellite Center", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			satellite_query = st.text_area(
-				label="Query",
+				"Query",
 				value="",
 				height=150,
 				key="satellitecenter_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				satellite_submit = st.button( "Submit", key="satellitecenter_submit" )
-			
-			with btn_col2:
+			with b2:
 				satellite_clear = st.button( "Clear", key="satellitecenter_clear" )
 		
 		with col_right:
 			satellite_output = st.empty( )
 		
 		if satellite_clear:
-			st.session_state[ "satellitecenter_query" ] = ""
-			satellite_output.empty( )
+			st.session_state.update( {
+					"satellitecenter_query": "",
+			} )
+			st.rerun( )
 		
 		if satellite_submit:
 			try:
-				# API key (if required) is expected via sidebar / environment
-				fetcher = SatelliteCenter( )
-				
-				result = fetcher.fetch( satellite_query )
+				f = SatelliteCenter( )
+				result = f.fetch( satellite_query )
 				
 				if not result:
 					satellite_output.info( "No results returned." )
 				else:
-					satellite_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					satellite_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# NearbyObjects Fetcher
-	# -------------------------------
-	with st.expander( "NearbyObjects", expanded=False ):
+	# ======================================================================================
+	# NearbyObjects — FIXED clear()
+	# ======================================================================================
+	with st.expander( "Near Earth Objects", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
-	
-	with col_left:
-		nearby_query = st.text_area(
-			label="Query",
-			value="",
-			height=150,
-			key="nearbyobjects_query"
-		)
 		
-		btn_col1, btn_col2 = st.columns( 2 )
-		
-		with btn_col1:
-			nearby_submit = st.button( "Submit", key="nearbyobjects_submit" )
-		
-		with btn_col2:
-			nearby_clear = st.button( "Clear", key="nearbyobjects_clear" )
-	
-	with col_right:
-		nearby_output = st.empty( )
-	
-	if nearby_clear:
-		st.session_state[ "nearbyobjects_query" ] = ""
-		nearby_output.empty( )
-	
-	if nearby_submit:
-		try:
-			# API key (if required) is expected via sidebar / environment
-			fetcher = NearbyObjects( )
+		with col_left:
+			nearby_query = st.text_area(
+				"Query",
+				value="",
+				height=150,
+				key="nearbyobjects_query"
+			)
 			
-			result = fetcher.fetch( nearby_query )
-			
-			if not result:
-				nearby_output.info( "No results returned." )
-			else:
-				nearby_output.text_area(
-					label="Results",
-					value=str( result ),
-					height=300
-				)
+			b1, b2 = st.columns( 2 )
+			with b1:
+				nearby_submit = st.button( "Submit", key="nearbyobjects_submit" )
+			with b2:
+				nearby_clear = st.button( "Clear", key="nearbyobjects_clear" )
 		
-		except Exception as exc:
-			st.error( str( exc ) )
+		with col_right:
+			nearby_output = st.empty( )
+		
+		if nearby_clear:
+			st.session_state.update( {
+					"nearbyobjects_query": "",
+			} )
+			st.rerun( )
+		
+		if nearby_submit:
+			try:
+				f = NearbyObjects( )
+				result = f.fetch( nearby_query )
+				
+				if not result:
+					nearby_output.info( "No results returned." )
+				else:
+					nearby_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
 	
-	# -------------------------------
-	# OpenScience Fetcher
-	# -------------------------------
-	with st.expander( "OpenScience", expanded=False ):
+	# ======================================================================================
+	# OpenScience — FIXED clear()
+	# ======================================================================================
+	with st.expander( "Open Science", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
-	
-	with col_left:
-		openscience_query = st.text_area(
-			label="Query",
-			value="",
-			height=150,
-			key="openscience_query"
-		)
 		
-		btn_col1, btn_col2 = st.columns( 2 )
-		
-		with btn_col1:
-			openscience_submit = st.button( "Submit", key="openscience_submit" )
-		
-		with btn_col2:
-			openscience_clear = st.button( "Clear", key="openscience_clear" )
-	
-	with col_right:
-		openscience_output = st.empty( )
-	
-	if openscience_clear:
-		st.session_state[ "openscience_query" ] = ""
-		openscience_output.empty( )
-	
-	if openscience_submit:
-		try:
-			# API key (if required) is expected via sidebar / environment
-			fetcher = OpenScience( )
+		with col_left:
+			openscience_query = st.text_area(
+				"Query",
+				value="",
+				height=150,
+				key="openscience_query"
+			)
 			
-			result = fetcher.fetch( openscience_query )
-			
-			if not result:
-				openscience_output.info( "No results returned." )
-			else:
-				openscience_output.text_area(
-					label="Results",
-					value=str( result ),
-					height=300
-				)
+			b1, b2 = st.columns( 2 )
+			with b1:
+				openscience_submit = st.button( "Submit", key="openscience_submit" )
+			with b2:
+				openscience_clear = st.button( "Clear", key="openscience_clear" )
 		
-		except Exception as exc:
-			st.error( str( exc ) )
+		with col_right:
+			openscience_output = st.empty( )
+		
+		if openscience_clear:
+			st.session_state.update( {
+					"openscience_query": "",
+			} )
+			st.rerun( )
+		
+		if openscience_submit:
+			try:
+				f = OpenScience( )
+				result = f.fetch( openscience_query )
+				
+				if not result:
+					openscience_output.info( "No results returned." )
+				else:
+					openscience_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
 	
-	# -------------------------------
-	# EarthObservatory Fetcher
-	# -------------------------------
-	with st.expander( "EarthObservatory", expanded=False ):
+	# ======================================================================================
+	# EarthObservatory — FIXED clear()
+	# ======================================================================================
+	with st.expander( "Earth Observatory", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
-	
-	with col_left:
-		earth_query = st.text_area(
-			label="Query",
-			value="",
-			height=150,
-			key="earthobservatory_query"
-		)
 		
-		btn_col1, btn_col2 = st.columns( 2 )
-		
-		with btn_col1:
-			earth_submit = st.button( "Submit", key="earthobservatory_submit" )
-		
-		with btn_col2:
-			earth_clear = st.button( "Clear", key="earthobservatory_clear" )
-	
-	with col_right:
-		earth_output = st.empty( )
-	
-	if earth_clear:
-		st.session_state[ "earthobservatory_query" ] = ""
-		earth_output.empty( )
-	
-	if earth_submit:
-		try:
-			# API key (if required) is expected via sidebar / environment
-			fetcher = EarthObservatory( )
+		with col_left:
+			earth_query = st.text_area(
+				"Query",
+				value="",
+				height=150,
+				key="earthobservatory_query"
+			)
 			
-			result = fetcher.fetch( earth_query )
-			
-			if not result:
-				earth_output.info( "No results returned." )
-			else:
-				earth_output.text_area(
-					label="Results",
-					value=str( result ),
-					height=300
-				)
+			b1, b2 = st.columns( 2 )
+			with b1:
+				earth_submit = st.button( "Submit", key="earthobservatory_submit" )
+			with b2:
+				earth_clear = st.button( "Clear", key="earthobservatory_clear" )
 		
-		except Exception as exc:
-			st.error( str( exc ) )
+		with col_right:
+			earth_output = st.empty( )
+		
+		if earth_clear:
+			st.session_state.update( {
+					"earthobservatory_query": "",
+			} )
+			st.rerun( )
+		
+		if earth_submit:
+			try:
+				f = EarthObservatory( )
+				result = f.fetch( earth_query )
+				
+				if not result:
+					earth_output.info( "No results returned." )
+				else:
+					earth_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
 	
-	# -------------------------------
-	# SpaceWeather Fetcher
-	# -------------------------------
-	with st.expander( "SpaceWeather", expanded=False ):
+	# ======================================================================================
+	# SpaceWeather
+	# ======================================================================================
+	with st.expander( "Space Weather", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
-	
-	with col_left:
-		spaceweather_query = st.text_area(
-			label="Query",
-			value="",
-			height=150,
-			key="spaceweather_query"
-		)
 		
-		btn_col1, btn_col2 = st.columns( 2 )
-		
-		with btn_col1:
-			spaceweather_submit = st.button( "Submit", key="spaceweather_submit" )
-		
-		with btn_col2:
-			spaceweather_clear = st.button( "Clear", key="spaceweather_clear" )
-	
-	with col_right:
-		spaceweather_output = st.empty( )
-	
-	if spaceweather_clear:
-		st.session_state[ "spaceweather_query" ] = ""
-		spaceweather_output.empty( )
-	
-	if spaceweather_submit:
-		try:
-			# API key (if required) is expected via sidebar / environment
-			fetcher = SpaceWeather( )
+		with col_left:
+			spaceweather_query = st.text_area(
+				"Query",
+				value="",
+				height=150,
+				key="spaceweather_query"
+			)
 			
-			result = fetcher.fetch( spaceweather_query )
-			
-			if not result:
-				spaceweather_output.info( "No results returned." )
-			else:
-				spaceweather_output.text_area(
-					label="Results",
-					value=str( result ),
-					height=300
-				)
+			b1, b2 = st.columns( 2 )
+			with b1:
+				spaceweather_submit = st.button( "Submit", key="spaceweather_submit" )
+			with b2:
+				spaceweather_clear = st.button( "Clear", key="spaceweather_clear" )
 		
-		except Exception as exc:
-			st.error( str( exc ) )
+		with col_right:
+			spaceweather_output = st.empty( )
+		
+		if spaceweather_clear:
+			st.session_state.update( {
+					"spaceweather_query": "",
+			} )
+			st.rerun( )
+		
+		if spaceweather_submit:
+			try:
+				f = SpaceWeather( )
+				result = f.fetch( spaceweather_query )
+				
+				if not result:
+					spaceweather_output.info( "No results returned." )
+				else:
+					spaceweather_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
 	
-	# -------------------------------
-	# AstroCatalog Fetcher
-	# -------------------------------
-	with st.expander( "AstroCatalog", expanded=False ):
+	# ======================================================================================
+	# AstroCatalog
+	# ======================================================================================
+	with st.expander( "Astronomy Catalog", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
-	
-	with col_left:
-		astro_query = st.text_area(
-			label="Query",
-			value="",
-			height=150,
-			key="astrocatalog_query"
-		)
 		
-		btn_col1, btn_col2 = st.columns( 2 )
-		
-		with btn_col1:
-			astro_submit = st.button( "Submit", key="astrocatalog_submit" )
-		
-		with btn_col2:
-			astro_clear = st.button( "Clear", key="astrocatalog_clear" )
-	
-	with col_right:
-		astro_output = st.empty( )
-	
-	if astro_clear:
-		st.session_state[ "astrocatalog_query" ] = ""
-		astro_output.empty( )
-	
-	if astro_submit:
-		try:
-			# API key (if required) is expected via sidebar / environment
-			fetcher = AstroCatalog( )
+		with col_left:
+			astro_query = st.text_area(
+				"Query",
+				value="",
+				height=150,
+				key="astrocatalog_query"
+			)
 			
-			result = fetcher.fetch( astro_query )
-			
-			if not result:
-				astro_output.info( "No results returned." )
-			else:
-				astro_output.text_area(
-					label="Results",
-					value=str( result ),
-					height=300
-				)
+			b1, b2 = st.columns( 2 )
+			with b1:
+				astro_submit = st.button( "Submit", key="astrocatalog_submit" )
+			with b2:
+				astro_clear = st.button( "Clear", key="astrocatalog_clear" )
 		
-		except Exception as exc:
-			st.error( str( exc ) )
-	
-	# -------------------------------
-	# AstroQuery Fetcher
-	# -------------------------------
-	with st.expander( "AstroQuery", expanded=False ):
+		with col_right:
+			astro_output = st.empty( )
+		
+		if astro_clear:
+			st.session_state.update( {
+					"astrocatalog_query": "",
+			} )
+			st.rerun( )
+		
+		if astro_submit:
+			try:
+				f = AstroCatalog( )
+				result = f.fetch( astro_query )
+				
+				if not result:
+					astro_output.info( "No results returned." )
+				else:
+					astro_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	# ======================================================================================
+	# AstroQuery
+	# ======================================================================================
+	with st.expander( "Astro Query", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
-	
-	with col_left:
-		astroquery_query = st.text_area(
-			label="Query",
-			value="",
-			height=150,
-			key="astroquery_query"
-		)
 		
-		btn_col1, btn_col2 = st.columns( 2 )
-		
-		with btn_col1:
-			astroquery_submit = st.button( "Submit", key="astroquery_submit" )
-		
-		with btn_col2:
-			astroquery_clear = st.button( "Clear", key="astroquery_clear" )
-	
-	with col_right:
-		astroquery_output = st.empty( )
-	
-	if astroquery_clear:
-		st.session_state[ "astroquery_query" ] = ""
-		astroquery_output.empty( )
-	
-	if astroquery_submit:
-		try:
-			# API key (if required) is expected via sidebar / environment
-			fetcher = AstroQuery( )
+		with col_left:
+			astroquery_query = st.text_area(
+				"Query",
+				value="",
+				height=150,
+				key="astroquery_query"
+			)
 			
-			result = fetcher.fetch( astroquery_query )
-			
-			if not result:
-				astroquery_output.info( "No results returned." )
-			else:
-				astroquery_output.text_area(
-					label="Results",
-					value=str( result ),
-					height=300
-				)
+			b1, b2 = st.columns( 2 )
+			with b1:
+				astroquery_submit = st.button( "Submit", key="astroquery_submit" )
+			with b2:
+				astroquery_clear = st.button( "Clear", key="astroquery_clear" )
 		
-		except Exception as exc:
-			st.error( str( exc ) )
+		with col_right:
+			astroquery_output = st.empty( )
+		
+		if astroquery_clear:
+			st.session_state.update( {
+					"astroquery_query": "",
+			} )
+			st.rerun( )
+		
+		if astroquery_submit:
+			try:
+				f = AstroQuery( )
+				result = f.fetch( astroquery_query )
+				
+				if not result:
+					astroquery_output.info( "No results returned." )
+				else:
+					astroquery_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
 	
-	# -------------------------------
-	# StarMap Fetcher
-	# -------------------------------
-	with st.expander( "StarMap", expanded=False ):
+	# ======================================================================================
+	# StarMap
+	# ======================================================================================
+	with st.expander( "Star Map", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			starmap_query = st.text_area(
-				label="Query",
+				"Query",
 				value="",
 				height=150,
 				key="starmap_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				starmap_submit = st.button( "Submit", key="starmap_submit" )
-			
-			with btn_col2:
+			with b2:
 				starmap_clear = st.button( "Clear", key="starmap_clear" )
 		
 		with col_right:
 			starmap_output = st.empty( )
 		
 		if starmap_clear:
-			st.session_state[ "starmap_query" ] = ""
-			starmap_output.empty( )
+			st.session_state.update( {
+					"starmap_query": "",
+			} )
+			st.rerun( )
 		
 		if starmap_submit:
 			try:
-				# API key (if required) is expected via sidebar / environment
-				fetcher = StarMap( )
-				
-				result = fetcher.fetch( starmap_query )
+				f = StarMap( )
+				result = f.fetch( starmap_query )
 				
 				if not result:
 					starmap_output.info( "No results returned." )
 				else:
-					starmap_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					starmap_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# GovData Fetcher
-	# -------------------------------
-	with st.expander( "GovData", expanded=False ):
+	# ======================================================================================
+	# GovData
+	# ======================================================================================
+	with st.expander( "Gov Info", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			govdata_query = st.text_area(
-				label="Query",
+				"Query",
 				value="",
 				height=150,
 				key="govdata_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				govdata_submit = st.button( "Submit", key="govdata_submit" )
-			
-			with btn_col2:
+			with b2:
 				govdata_clear = st.button( "Clear", key="govdata_clear" )
 		
 		with col_right:
 			govdata_output = st.empty( )
 		
 		if govdata_clear:
-			st.session_state[ "govdata_query" ] = ""
-			govdata_output.empty( )
+			st.session_state.update( {
+					"govdata_query": "",
+			} )
+			st.rerun( )
 		
 		if govdata_submit:
 			try:
-				# API key (if required) is expected via sidebar / environment
-				fetcher = GovData( )
-				
-				result = fetcher.search_criteria( govdata_query )
+				f = GovData( )
+				result = f.search_criteria( govdata_query )
 				
 				if not result:
 					govdata_output.info( "No results returned." )
 				else:
-					govdata_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					govdata_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# StarChart Fetcher
-	# -------------------------------
-	with st.expander( "StarChart", expanded=False ):
+	# ======================================================================================
+	# StarChart
+	# ======================================================================================
+	with st.expander( "Star Chart", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			starchart_query = st.text_area(
-				label="Query",
+				"Query",
 				value="",
 				height=150,
 				key="starchart_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				starchart_submit = st.button( "Submit", key="starchart_submit" )
-			
-			with btn_col2:
+			with b2:
 				starchart_clear = st.button( "Clear", key="starchart_clear" )
 		
 		with col_right:
 			starchart_output = st.empty( )
 		
 		if starchart_clear:
-			st.session_state[ "starchart_query" ] = ""
-			starchart_output.empty( )
+			st.session_state.update( {
+					"starchart_query": "",
+			} )
+			st.rerun( )
 		
 		if starchart_submit:
 			try:
-				# API key (if required) is expected via sidebar / environment
-				fetcher = StarChart( )
-				
-				result = fetcher.fetch( starchart_query )
+				f = StarChart( )
+				result = f.fetch( starchart_query )
 				
 				if not result:
 					starchart_output.info( "No results returned." )
 				else:
-					starchart_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					starchart_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# Congress Fetcher
-	# -------------------------------
+	# ======================================================================================
+	# Congress
+	# ======================================================================================
 	with st.expander( "Congress", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			congress_query = st.text_area(
-				label="Query",
+				"Query",
 				value="",
 				height=150,
 				key="congress_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				congress_submit = st.button( "Submit", key="congress_submit" )
-			
-			with btn_col2:
+			with b2:
 				congress_clear = st.button( "Clear", key="congress_clear" )
 		
 		with col_right:
 			congress_output = st.empty( )
 		
 		if congress_clear:
-			st.session_state[ "congress_query" ] = ""
-			congress_output.empty( )
+			st.session_state.update( {
+					"congress_query": "",
+			} )
+			st.rerun( )
 		
 		if congress_submit:
 			try:
-				# API key (if required) is expected via sidebar / environment
-				fetcher = Congress( )
-				
-				result = fetcher.fetch( congress_query )
+				f = Congress( )
+				result = f.fetch( congress_query )
 				
 				if not result:
 					congress_output.info( "No results returned." )
 				else:
-					congress_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					congress_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------------------------------
-	# InternetArchive Fetcher
-	# -------------------------------
-	with st.expander( "InternetArchive", expanded=False ):
+	# ======================================================================================
+	# InternetArchive
+	# ======================================================================================
+	with st.expander( "Internet Archive", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			ia_query = st.text_area(
-				label="Query",
+				"Query",
 				value="",
 				height=150,
 				key="internetarchive_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				ia_submit = st.button( "Submit", key="internetarchive_submit" )
-			
-			with btn_col2:
+			with b2:
 				ia_clear = st.button( "Clear", key="internetarchive_clear" )
 		
 		with col_right:
 			ia_output = st.empty( )
 		
 		if ia_clear:
-			st.session_state[ "internetarchive_query" ] = ""
-			ia_output.empty( )
+			st.session_state.update( {
+					"internetarchive_query": "",
+			} )
+			st.rerun( )
 		
 		if ia_submit:
 			try:
-				# API key (if required) is expected via sidebar / environment
-				fetcher = InternetArchive( )
-				
-				result = fetcher.fetch( ia_query )
+				f = InternetArchive( )
+				result = f.fetch( ia_query )
 				
 				if not result:
 					ia_output.info( "No results returned." )
 				else:
-					ia_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					ia_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-	
-	# -------------------------------
-	# OpenWeather Fetcher
-	# -------------------------------
-	with st.expander( "OpenWeather", expanded=False ):
+	# ======================================================================================
+	# OpenWeather
+	# ======================================================================================
+	with st.expander( "Open Weather", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			openweather_query = st.text_area(
-				label="Location",
+				"Location",
 				value="",
 				height=150,
 				key="openweather_query"
 			)
 			
-			btn_col1, btn_col2 = st.columns( 2 )
-			
-			with btn_col1:
+			b1, b2 = st.columns( 2 )
+			with b1:
 				openweather_submit = st.button( "Submit", key="openweather_submit" )
-			
-			with btn_col2:
+			with b2:
 				openweather_clear = st.button( "Clear", key="openweather_clear" )
 		
 		with col_right:
 			openweather_output = st.empty( )
 		
 		if openweather_clear:
-			st.session_state[ "openweather_query" ] = ""
-			openweather_output.empty( )
+			st.session_state.update( {
+					"openweather_query": "",
+			} )
+			st.rerun( )
 		
 		if openweather_submit:
 			try:
-				# API key (if required) is expected via sidebar / environment
-				fetcher = OpenWeather( )
-				
-				result = fetcher.fetch( openweather_query )
+				f = OpenWeather( )
+				result = f.fetch( openweather_query )
 				
 				if not result:
 					openweather_output.info( "No results returned." )
 				else:
-					openweather_output.text_area(
-						label="Results",
-						value=str( result ),
-						height=300
-					)
+					openweather_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 
 # ======================================================================================
-# DATA TAB — SQLite inspection
+# DATA TAB
 # ======================================================================================
 
 with tab_data:
@@ -1491,20 +1304,29 @@ with tab_data:
 	conn = sqlite3.connect( f"file:{DB_PATH.as_posix( )}?mode=ro", uri=True )
 	cur = conn.cursor( )
 	cur.execute( "SELECT name FROM sqlite_master WHERE type='table';" )
-	tables = [ r[ 0 ] for r in cur.fetchall( ) ]
+	tables = [ row[ 0 ] for row in cur.fetchall( ) ]
 	conn.close( )
 	
 	st.write( tables )
 
-# --------------------------------------------------------------------------------------
-# Chat Tab
-# --------------------------------------------------------------------------------------
+# ======================================================================================
+# CHAT TAB — all clear() handlers replaced with update()+rerun()
+# ======================================================================================
+
 with tab_chat:
+	# -----------------------------
+	# Chat (OpenAI)
+	# -----------------------------
 	with st.expander( "Chat", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			chat_prompt = st.text_area( "Prompt", value="", height=180, key="chat_prompt" )
+			chat_prompt = st.text_area(
+				"Prompt",
+				value="",
+				height=180,
+				key="chat_prompt"
+			)
 			
 			p_row1 = st.columns( 2 )
 			p_row2 = st.columns( 2 )
@@ -1514,11 +1336,13 @@ with tab_chat:
 				chat_model = _model_selector(
 					key_prefix="chat",
 					label="Model",
-					options=[ "gpt-4o-mini",
-					          "gpt-4.1-mini",
-					          "gpt-4.1",
-					          "o3-mini",
-					          "Custom..." ],
+					options=[
+							"gpt-4o-mini",
+							"gpt-4.1-mini",
+							"gpt-4.1",
+							"o3-mini",
+							"Custom..."
+					],
 					default_model="gpt-4o-mini",
 				)
 			
@@ -1563,7 +1387,11 @@ with tab_chat:
 				)
 			
 			with p_row3[ 1 ]:
-				chat_json_mode = st.checkbox( "JSON Mode", value=False, key="chat_json_mode" )
+				chat_json_mode = st.checkbox(
+					"JSON Mode",
+					value=False,
+					key="chat_json_mode"
+				)
 			
 			chat_system = st.text_area(
 				"System",
@@ -1581,11 +1409,19 @@ with tab_chat:
 		with col_right:
 			chat_output = st.empty( )
 		
+		# -----------------------------
+		# FIXED clear()
+		# -----------------------------
 		if chat_clear:
-			st.session_state[ "chat_prompt" ] = ""
-			st.session_state[ "chat_system" ] = ""
-			chat_output.empty( )
+			st.session_state.update( {
+					"chat_prompt": "",
+					"chat_system": ""
+			} )
+			st.rerun( )
 		
+		# -----------------------------
+		# Submit
+		# -----------------------------
 		if chat_submit:
 			try:
 				fetcher = Chat( )
@@ -1598,7 +1434,7 @@ with tab_chat:
 						"system": chat_system if chat_system.strip( ) else None,
 						"response_format": ("json" if chat_json_mode else None),
 				}
-				# Remove None to avoid surprising providers
+				
 				params = { k: v for k, v in params.items( ) if v is not None }
 				
 				result = _invoke_provider( fetcher, chat_prompt, params )
@@ -1606,15 +1442,20 @@ with tab_chat:
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-	
-	# --------------------------------------------------------------------------------------
-	# Groq
-	# --------------------------------------------------------------------------------------
+		
+	# ======================================================================================
+	# GROQ — FIXED clear()
+	# ======================================================================================
 	with st.expander( "Groq", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			groq_prompt = st.text_area( "Prompt", value="", height=180, key="groq_prompt_chat" )
+			groq_prompt = st.text_area(
+				"Prompt",
+				value="",
+				height=180,
+				key="groq_prompt_chat"
+			)
 			
 			p_row1 = st.columns( 2 )
 			p_row2 = st.columns( 2 )
@@ -1672,7 +1513,11 @@ with tab_chat:
 				)
 			
 			with p_row3[ 1 ]:
-				groq_stream = st.checkbox( "Stream", value=False, key="groq_stream_chat" )
+				groq_stream = st.checkbox(
+					"Stream",
+					value=False,
+					key="groq_stream_chat"
+				)
 			
 			btn_row = st.columns( 2 )
 			with btn_row[ 0 ]:
@@ -1683,15 +1528,22 @@ with tab_chat:
 		with col_right:
 			groq_output = st.empty( )
 		
+		# -----------------------------
+		# FIXED clear()
+		# -----------------------------
 		if groq_clear:
-			st.session_state[ "groq_prompt_chat" ] = ""
-			st.session_state[ "groq_stop_chat" ] = ""
-			groq_output.empty( )
+			st.session_state.update( {
+					"groq_prompt_chat": "",
+					"groq_stop_chat": ""
+			} )
+			st.rerun( )
 		
 		if groq_submit:
 			try:
 				fetcher = Groq( )
-				stop_lines = [ s.strip( ) for s in (groq_stop or "").splitlines( ) if s.strip( ) ]
+				stop_lines = [ s.strip( ) for s in (groq_stop or "").splitlines( ) if
+				               s.strip( ) ]
+				
 				params = {
 						"model": groq_model,
 						"temperature": float( groq_temperature ),
@@ -1700,6 +1552,7 @@ with tab_chat:
 						"stop": stop_lines if stop_lines else None,
 						"stream": bool( groq_stream ),
 				}
+				
 				params = { k: v for k, v in params.items( ) if v is not None }
 				
 				result = _invoke_provider( fetcher, groq_prompt, params )
@@ -1708,15 +1561,19 @@ with tab_chat:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# --------------------------------------------------------------------------------------
-	# Claude (Anthropic)
-	# --------------------------------------------------------------------------------------
+	# ======================================================================================
+	# CLAUDE — FIXED clear()
+	# ======================================================================================
 	with st.expander( "Claude", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			claude_prompt = st.text_area( "Prompt", value="", height=180,
-				key="claude_prompt_chat" )
+			claude_prompt = st.text_area(
+				"Prompt",
+				value="",
+				height=180,
+				key="claude_prompt_chat"
+			)
 			
 			p_row1 = st.columns( 2 )
 			p_row2 = st.columns( 2 )
@@ -1799,17 +1656,23 @@ with tab_chat:
 		with col_right:
 			claude_output = st.empty( )
 		
+		# -----------------------------
+		# FIXED clear()
+		# -----------------------------
 		if claude_clear:
-			st.session_state[ "claude_prompt_chat" ] = ""
-			st.session_state[ "claude_stop_chat" ] = ""
-			st.session_state[ "claude_system_chat" ] = ""
-			claude_output.empty( )
+			st.session_state.update( {
+					"claude_prompt_chat": "",
+					"claude_stop_chat": "",
+					"claude_system_chat": ""
+			} )
+			st.rerun( )
 		
 		if claude_submit:
 			try:
 				fetcher = Claude( )
-				stop_lines = [ s.strip( ) for s in (claude_stop or "").splitlines( ) if s.strip(
-				) ]
+				stop_lines = [ s.strip( ) for s in (claude_stop or "").splitlines( ) if
+				               s.strip( ) ]
+				
 				params = {
 						"model": claude_model,
 						"temperature": float( claude_temperature ),
@@ -1819,6 +1682,7 @@ with tab_chat:
 						"stop_sequences": stop_lines if stop_lines else None,
 						"system": claude_system if claude_system.strip( ) else None,
 				}
+				
 				params = { k: v for k, v in params.items( ) if v is not None }
 				
 				result = _invoke_provider( fetcher, claude_prompt, params )
@@ -1827,15 +1691,19 @@ with tab_chat:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# --------------------------------------------------------------------------------------
-	# Gemini
-	# --------------------------------------------------------------------------------------
+	# ======================================================================================
+	# GEMINI — FIXED clear()
+	# ======================================================================================
 	with st.expander( "Gemini", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			gemini_prompt = st.text_area( "Prompt", value="", height=180,
-				key="gemini_prompt_chat" )
+			gemini_prompt = st.text_area(
+				"Prompt",
+				value="",
+				height=180,
+				key="gemini_prompt_chat"
+			)
 			
 			p_row1 = st.columns( 2 )
 			p_row2 = st.columns( 2 )
@@ -1920,10 +1788,15 @@ with tab_chat:
 		with col_right:
 			gemini_output = st.empty( )
 		
+		# -----------------------------
+		# FIXED clear()
+		# -----------------------------
 		if gemini_clear:
-			st.session_state[ "gemini_prompt_chat" ] = ""
-			st.session_state[ "gemini_system_chat" ] = ""
-			gemini_output.empty( )
+			st.session_state.update( {
+					"gemini_prompt_chat": "",
+					"gemini_system_chat": "",
+			} )
+			st.rerun( )
 		
 		if gemini_submit:
 			try:
@@ -1937,6 +1810,7 @@ with tab_chat:
 						"candidate_count": int( gemini_candidate_count ),
 						"system": gemini_system if gemini_system.strip( ) else None,
 				}
+				
 				params = { k: v for k, v in params.items( ) if v is not None }
 				
 				result = _invoke_provider( fetcher, gemini_prompt, params )
@@ -1945,15 +1819,19 @@ with tab_chat:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# --------------------------------------------------------------------------------------
-	# Mistral
-	# --------------------------------------------------------------------------------------
+	# ======================================================================================
+	# MISTRAL — FIXED clear()
+	# ======================================================================================
 	with st.expander( "Mistral", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			mistral_prompt = st.text_area( "Prompt", value="", height=180,
-				key="mistral_prompt_chat" )
+			mistral_prompt = st.text_area(
+				"Prompt",
+				value="",
+				height=180,
+				key="mistral_prompt_chat"
+			)
 			
 			p_row1 = st.columns( 2 )
 			p_row2 = st.columns( 2 )
@@ -2014,8 +1892,11 @@ with tab_chat:
 				)
 			
 			with p_row3[ 1 ]:
-				mistral_safe_mode = st.checkbox( "Safe Mode", value=False,
-					key="mistral_safe_mode_chat" )
+				mistral_safe_mode = st.checkbox(
+					"Safe Mode",
+					value=False,
+					key="mistral_safe_mode_chat"
+				)
 			
 			mistral_system = st.text_area(
 				"System",
@@ -2033,10 +1914,15 @@ with tab_chat:
 		with col_right:
 			mistral_output = st.empty( )
 		
+		# -----------------------------
+		# FIXED clear()
+		# -----------------------------
 		if mistral_clear:
-			st.session_state[ "mistral_prompt_chat" ] = ""
-			st.session_state[ "mistral_system_chat" ] = ""
-			mistral_output.empty( )
+			st.session_state.update( {
+					"mistral_prompt_chat": "",
+					"mistral_system_chat": "",
+			} )
+			st.rerun( )
 		
 		if mistral_submit:
 			try:
@@ -2050,6 +1936,7 @@ with tab_chat:
 						"safe_mode": bool( mistral_safe_mode ),
 						"system": mistral_system if mistral_system.strip( ) else None,
 				}
+				
 				params = { k: v for k, v in params.items( ) if v is not None }
 				
 				result = _invoke_provider( fetcher, mistral_prompt, params )
@@ -2057,3 +1944,14 @@ with tab_chat:
 			
 			except Exception as exc:
 				st.error( str( exc ) )
+
+# ======================================================================================
+# MAPS TAB — (Placeholder / currently empty per your provided source)
+# ======================================================================================
+
+with tab_maps:
+	st.subheader( "Maps" )
+	st.info( "No mapping functionality implemented in the current version." )
+# ======================================================================================
+# END OF FILE
+# ======================================================================================
