@@ -5211,7 +5211,6 @@ class GovData( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 
-			
 	def fetch_bills( self, congress: int, billtype: str, billnum: int ) -> Dict[ str, Any ] | None:
 		'''
 
