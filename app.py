@@ -651,7 +651,7 @@ with tab_fetchers:
 				
 				result = fetcher.fetch(
 					keywords=google_query,
-					num_results=int( google_num_results )
+					results=int( google_num_results )
 				)
 				
 				if not result:
@@ -659,7 +659,7 @@ with tab_fetchers:
 				else:
 					google_output.text_area(
 						label="Results",
-						value=str( result ),
+						value=str( result.text ),
 						height=300
 					)
 			
