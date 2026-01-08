@@ -196,7 +196,7 @@ with tab_loaders:
 	
 	urls_raw = st.text_area( "URLs", height=40 )
 	
-	col1, col2, col3, col4, col5, c6 = st.columns( 6 )
+	col1, col2, col3, col4, col5, col6 = st.columns( 6 )
 	with col1:
 		do_pdf = st.checkbox( "PDF", value=True )
 	with col2:
