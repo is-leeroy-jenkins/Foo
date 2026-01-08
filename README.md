@@ -14,7 +14,7 @@ A small, multi-tool framework to facilitate retrieval augmentation, sql querying
 ## 📚 Table of Contents
 
 * [Features](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-features)
-* [Architecture](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-architecture)
+* [Architecture](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-installation)
 * [Directory Structure](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-directory-structure)
 * [Installation](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-installation)
 * [Quick Start](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-quick-start)
