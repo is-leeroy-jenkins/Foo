@@ -216,7 +216,7 @@ with tab_loaders:
 	with col_text:
 		loader_text = st.text_area(
 			"Enter one URL or file path",
-			height=140,
+			height=40,
 			key="loader_text_area",
 		)
 
