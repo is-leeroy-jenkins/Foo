@@ -2,11 +2,14 @@
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/is-leeroy-jenkins/Foo/blob/main/ipynb/soup.ipynb)
+
 *A Modular Python Framework for Retrieval-Augmented Pipelines and Agentic Workflows*
 
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/is-leeroy-jenkins/Foo/blob/main/ipynb/soup.ipynb)
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://boo-py.streamlit.app/)
 
+![](https://github.com/is-leeroy-jenkins/Boo/blob/main/resources/images/Foo-streamlit.gif)
 
 ## 📚 Table of Contents
 
@@ -22,7 +25,6 @@
 * [Dependencies](#dependencies)
 * [Technical Notes](#technical-notes)
 * [License](#license)
-* [Acknowledgments](#acknowledgments)
 
 
 
@@ -33,17 +35,15 @@
 * Powerful HTML/text scraping and cleaning.
 * Integrates with OpenAI, LangChain, ChromaDB, and advanced document stores.
 * Strong type safety and error handling.
-* Simple, testable, and extensible codebase.
+* Simple, extensible codebase.
 
 
 
 ## 🏛️ Architecture
 
 ```
-🤖 Fetcher → 🕸️ Scraper → 📄 Loader → 🔄 Converter → 📤 Writer
+📄 Fetcher → 🕸️ Scraper → 📤 Loader  
 ```
-
-Each stage is a pluggable, testable class. The core orchestrator is the `Fetch` pipeline.
 
 
 
@@ -66,6 +66,7 @@ foo/
 ## 🛡️ Installation
 
 ```bash
+
 git clone https://github.com/is-leeroy-jenkins/Foo.git
 cd Foo
 python -m venv .venv
@@ -73,6 +74,18 @@ python -m venv .venv
 ```
 
 
+---
+
+## ▶️ Running the Streamlit App
+
+```bash
+
+streamlit run app.py
+```
+
+The application runs locally and does not require a database or background services.
+
+---
 
 ## 🚀 Quick Start
 
