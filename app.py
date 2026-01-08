@@ -181,46 +181,105 @@ with st.sidebar:
 # Tabs
 # ======================================================================================
 
-tab_loaders, tab_scrapers, tab_fetchers, tab_chat, tab_maps, tab_lockers, tab_data = st.tabs(
+tab_loaders, tab_scrapers, tab_fetchers, tab_chat, tab_maps, tab_data = st.tabs(
 	[ "Loaders",
 	  "Scrapers",
 	  "Fetchers",
 	  "Yappers",
 	  "Mappers",
-	  "Lockers",
 	  "Data" ] )
 
 # ======================================================================================
-# SCRAPERS TAB — unchanged except for state fixes later
+# Loaders
 # ======================================================================================
 
 with tab_loaders:
-	loader = scrapers.WebExtractor( )
-	urls_raw = st.text_area( "URLs", height=40 )
-	
+	# ---------------------------
+	# Persistent state
+	# ---------------------------
+	st.session_state.setdefault( "loader_results", { } )
+	st.session_state.setdefault( "loader_documents", [ ] )
+
+	# ---------------------------
+	# Top row: Browse (left) + Text/URLs (right)
+	# ---------------------------
+	col_browse, col_text = st.columns( [ 1, 1 ], border=True )
+
+	with col_browse:
+		uploaded_files = st.file_uploader(
+			"Choose file(s)",
+			type=[ "pdf", "docx", "xlsx", "xls" ],
+			accept_multiple_files=True,
+			key="loader_uploaded_files",
+		)
+
+	with col_text:
+		loader_text = st.text_area(
+			"Enter one URL or file path",
+			height=140,
+			key="loader_text_area",
+		)
+
+	# ---------------------------
+	# Checkbox row (unchanged: its own row)
+	# ---------------------------
 	col1, col2, col3, col4, col5, col6 = st.columns( 6 )
+
 	with col1:
-		do_pdf = st.checkbox( label='PDF', key='pdf_cb' )
+		do_pdf = st.checkbox( label="PDF", key="pdf_cb" )
 	with col2:
-		do_word = st.checkbox( label="Word", key='word_cb'  )
+		do_word = st.checkbox( label="Word", key="word_cb" )
 	with col3:
-		do_excel = st.checkbox( label="Excel", key='excel_cb' )
+		do_excel = st.checkbox( label="Excel", key="excel_cb" )
 	with col4:
-		do_markdown = st.checkbox( label="Markdown", key='markdown_cb'  )
+		do_markdown = st.checkbox( label="Markdown", key="markdown_cb" )
 	with col5:
-		do_powerpoint = st.checkbox( label="Powerpoint", key='powerpoint_cb'  )
+		do_powerpoint = st.checkbox( label="Powerpoint", key="powerpoint_cb" )
 	with col6:
-		do_youtube = st.checkbox( label="Youtube", key='youtube_cb'  )
-	
-	if st.button( "Load" ):
-		urls = [ u.strip( ) for u in urls_raw.splitlines( ) if u.strip( ) ]
-		if not urls:
-			st.warning( "No URLs provided." )
-		else:
+		do_youtube = st.checkbox( label="Youtube", key="youtube_cb" )
+
+	# ---------------------------
+	# Action buttons (below the checkbox row)
+	# ---------------------------
+	b1, b2 = st.columns( 2 )
+
+	with b1:
+		do_load = st.button( "Load", key="loader_load_btn" )
+
+	with b2:
+		do_clear = st.button( "Clear", key="loader_clear_btn" )
+
+	if do_clear:
+		st.session_state.update(
+			{
+				"loader_results": { },
+				"loader_documents": [ ],
+				"loader_text_area": "",
+				"loader_uploaded_files": None,
+			}
+		)
+		st.rerun( )
+
+	# ---------------------------
+	# Execute loads
+	# ---------------------------
+	if do_load:
+		results: Dict[ str, Any ] = { }
+		documents: list[ Document ] = [ ]
+
+		# Always use the correct object name.
+		extractor = scrapers.WebExtractor( )
+
+		# -----
+		# 1) URL scraping (from right text area)
+		# -----
+		urls = [ u.strip( ) for u in ( loader_text or "" ).splitlines( ) if u.strip( ) ]
+		if urls:
+			url_outputs: list[ dict[ str, Any ] ] = [ ]
+
 			for url in urls:
-				st.markdown( f"### {url}" )
-				output = { }
-				
+				output: dict[ str, Any ] = { "url": url }
+
 				try:
 					if do_pdf:
 						output[ "pdf" ] = extractor.scrape_links( url )
@@ -228,18 +287,102 @@ with tab_loaders:
 						output[ "word" ] = extractor.scrape_links( url )
 					if do_excel:
 						output[ "excel" ] = extractor.scrape_tables( url )
-					if do_markdown:
+
+					# These are placeholders in your current codebase (scrape_).
+					# Preserve behavior: call the same method name if it exists.
+					if do_markdown and hasattr( extractor, "scrape_" ):
 						output[ "markdown" ] = extractor.scrape_( url )
-					if do_powerpoint:
+					if do_powerpoint and hasattr( extractor, "scrape_" ):
 						output[ "powerpoint" ] = extractor.scrape_( url )
-					if do_youtube:
+					if do_youtube and hasattr( extractor, "scrape_" ):
 						output[ "youtube" ] = extractor.scrape_( url )
-					
-					st.json( output )
-				
+
 				except Exception as exc:
-					st.error( "Error" )
-					st.exception( exc )
+					output[ "error" ] = str( exc )
+
+				url_outputs.append( output )
+
+			results[ "urls" ] = url_outputs
+
+		# -----
+		# 2) Local file loading (from left uploader)
+		# -----
+		if uploaded_files:
+			file_outputs: list[ dict[ str, Any ] ] = [ ]
+
+			for f in uploaded_files:
+				name = getattr( f, "name", "uploaded" )
+				suffix = Path( name ).suffix.lower( ).lstrip( "." )
+
+				out: dict[ str, Any ] = { "file": name, "type": suffix }
+
+				try:
+					# Persist the uploaded file to a temp path so existing loaders can use file paths.
+					tmp_dir = ( BASE_DIR / "stores" / "tmp_uploads" )
+					tmp_dir.mkdir( parents=True, exist_ok=True )
+					tmp_path = tmp_dir / name
+
+					with open( tmp_path, "wb" ) as fp:
+						fp.write( f.getbuffer( ) )
+
+					# Route to existing loaders already imported at top of app.py.
+					if suffix == "pdf" and do_pdf:
+						ld = PdfLoader( )
+						docs = ld.load( str( tmp_path ) )
+						if isinstance( docs, list ):
+							documents.extend( docs )
+
+					elif suffix == "docx" and do_word:
+						ld = WordLoader( )
+						docs = ld.load( str( tmp_path ) )
+						if isinstance( docs, list ):
+							documents.extend( docs )
+
+					elif suffix in ( "xlsx", "xls" ) and do_excel:
+						ld = ExcelLoader( )
+						docs = ld.load( str( tmp_path ) )
+						if isinstance( docs, list ):
+							documents.extend( docs )
+
+					else:
+						out[ "skipped" ] = "Checkbox for this file type is not selected."
+
+				except Exception as exc:
+					out[ "error" ] = str( exc )
+
+				file_outputs.append( out )
+
+			results[ "files" ] = file_outputs
+
+		# Commit to state (render below checkboxes)
+		st.session_state.update(
+			{
+				"loader_results": results,
+				"loader_documents": documents,
+			}
+		)
+		st.rerun( )
+
+	# ---------------------------
+	# Render results (below checkboxes)
+	# ---------------------------
+	st.markdown( "----" )
+
+	# 1) Documents (from local loaders)
+	if st.session_state[ "loader_documents" ]:
+		st.markdown( "### Loaded Documents" )
+		for idx, doc in enumerate( st.session_state[ "loader_documents" ], start=1 ):
+			with st.expander( f"Document {idx}", expanded=False ):
+				st.text_area( "", value=( doc.page_content or "" ), height=260 )
+				if getattr( doc, "metadata", None ):
+					st.json( doc.metadata )
+
+	# 2) Raw results (from URL scraping and file processing metadata)
+	if st.session_state[ "loader_results" ]:
+		st.markdown( "### Load Results" )
+		st.json( st.session_state[ "loader_results" ] )
+
+
 					
 # ======================================================================================
 # Scrapers
@@ -336,11 +479,8 @@ with tab_scrapers:
 # FETCHERS TAB — ArXiv
 # ======================================================================================
 with tab_fetchers:
-	st.markdown( "#### Fetcher" )
-	
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
-	
 	with st.expander( "ArXiv", expanded=True ):
 		col1, col2 = st.columns( 2, border=True )
 		
