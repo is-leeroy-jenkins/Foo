@@ -611,6 +611,7 @@ with tab_fetchers:
 			
 			except Exception as exc:
 				st.error( str( exc ) )
+	
 	# ======================================================================================
 	# GoogleMaps
 	# ======================================================================================
@@ -619,7 +620,7 @@ with tab_fetchers:
 		
 		with col_left:
 			gm_query = st.text_area(
-				"Query",
+				"Address",
 				value="",
 				height=150,
 				key="googlemaps_query"
@@ -634,37 +635,29 @@ with tab_fetchers:
 				key="googlemaps_radius"
 			)
 			
-			b1, b2 = st.columns( 2 )
-			with b1:
+			m1, m2 = st.columns( 2 )
+			with m1:
 				gm_submit = st.button( "Submit", key="googlemaps_submit" )
-			with b2:
+			with m2:
 				gm_clear = st.button( "Clear", key="googlemaps_clear" )
 		
 		with col_right:
 			gm_output = st.empty( )
 		
-		if gm_clear:
-			st.session_state.update( {
-					"googlemaps_query": "",
-					"googlemaps_radius": 5000
-			} )
-			st.rerun( )
-		
-		if gm_submit:
-			try:
-				f = GoogleMaps( )
-				result = f.fetch(
-					query=gm_query,
-					radius=int( gm_radius )
-				)
-				
-				if not result:
-					gm_output.info( "No results returned." )
-				else:
-					gm_output.text_area( "Results", value=str( result ), height=300 )
+			if gm_clear:
+				st.session_state.update( {
+						"googlemaps_query": "",
+						"googlemaps_radius": 5000
+				} )
+				st.rerun( )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			if gm_submit:
+				try:
+					gm = GoogleMaps( )
+					loc= gm.geocode_location( gm_query )
+					gm_output.text_area( "Coords", value=loc, height=300 )
+				except Exception as exc:
+					st.error( exc )
 	
 	# ======================================================================================
 	# GoogleWeather — FIXED clear()
@@ -689,24 +682,23 @@ with tab_fetchers:
 		with col_right:
 			gw_output = st.empty( )
 		
-		if gw_clear:
-			st.session_state.update( {
-					"googleweather_location": "",
-			} )
-			st.rerun( )
-		
-		if gw_submit:
-			try:
-				f = GoogleWeather( )
-				result = f.fetch( location=gw_location )
-				
-				if not result:
-					gw_output.info( "No results returned." )
-				else:
-					gw_output.text_area( "Results", value=str( result ), height=300 )
+			if gw_clear:
+				st.session_state.update( {
+						"googleweather_location": "",
+				} )
+				st.rerun( )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			if gw_submit:
+				try:
+					f = GoogleWeather( )
+					result = f.current_observation( address=gw_location )
+					if not result:
+						gw_output.info( "No results returned." )
+					else:
+						gw_output.text_area( "Results", value=result.text, height=300 )
+				
+				except Exception as exc:
+					st.error( str( exc ) )
 	
 	# ======================================================================================
 	# NavalObservatory — FIXED clear()

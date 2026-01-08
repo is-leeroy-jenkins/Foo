@@ -51,7 +51,6 @@ import urllib.parse
 from typing import Any, Dict, Optional, Pattern, List
 
 import matplotlib.pyplot as plt
-import openmeteo_requests
 import requests
 import requests_cache
 from anthropic import Anthropic
@@ -59,10 +58,13 @@ from astroquery.simbad import Simbad
 from google.genai.types import HttpOptions
 from grokipedia_api import GrokipediaClient
 from groq import Groq
+import googlemaps as gmaps
 from langchain_core.documents import Document
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
 from langchain_googledrive.retrievers import GoogleDriveRetriever
+import os
 from openai import OpenAI
+import openmeteo_requests
 from owslib.wms import WebMapService
 from requests import Response
 from retry_requests import retry
@@ -1909,7 +1911,7 @@ class GoogleSearch( Fetcher ):
 		self.headers = { }
 		self.timeout = None
 		self.keywords = None
-		self.params = None
+		self.params = { }
 		self.response = None
 		self.agents = cfg.AGENTS
 		if 'User-Agent' not in self.headers:
@@ -2128,6 +2130,7 @@ class GoogleMaps( Fetcher ):
 
 	'''
 	file_path: Optional[ str ]
+	headers: Optional[ Dict[ str, Any ] ]
 	num_results: Optional[ int ]
 	api_key: Optional[ str ]
 	mode: Optional[ str ]
@@ -2140,7 +2143,9 @@ class GoogleMaps( Fetcher ):
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
-		self.api_key = cfg.GEOCODING_API_KEY
+		self.api_key = cfg.GOOGLE_API_KEY
+		self.headers = { }
+		self.params = { }
 		self.longitude = None
 		self.latitude = None
 		self.mode = None
@@ -2154,7 +2159,7 @@ class GoogleMaps( Fetcher ):
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
-	def geocode_location( self, address: str ) -> Tuple[ float, float ] | None:
+	def geocode_location( self, address: str ) -> Tuple[ float, float ]:
 		'''
 
 			Purpose:
@@ -2173,16 +2178,20 @@ class GoogleMaps( Fetcher ):
 		try:
 			throw_if( 'address', address )
 			self.address = address
-			self.url = r'https://maps.googleapis.com/maps/api/geocode/json?address='
-			self.url += f'{self.address}&key={self.api_key}'
-			self.response = requests.get( self.url )
-			self.response.raise_for_status()
-			_response = self.response.json()
-			_result = _response[ 'results' ][ 0 ]
-			_geo = _result[ 'geometry' ]
-			_loc = _geo[ 'location' ]
-			_lat = _loc[ 'lat' ]
-			_lng = _loc[ 'lng' ]
+			self.api_key = cfg.GOOGLE_API_KEY
+			self.url = "https://maps.googleapis.com/maps/api/geocode/json"
+			self.params = {
+				"address": self.address,
+				"key": self.api_key,
+				"headers": self.headers
+			}
+	
+			self.response = requests.get( url=self.url, params=self.params )
+			self.response.raise_for_status( )
+			_data = self.response.json( )
+			_location = _data[ 'results' ][ 0 ][ 'geometry' ][ 'location' ]
+			_lat = _location[ 'lat' ]
+			_lng = _location[ 'lng' ]
 			return ( _lat, _lng )
 		except Exception as e:
 			exception = Error( e )
@@ -2438,7 +2447,7 @@ class GoogleWeather( Fetcher ):
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
-		self.api_key = cfg.GEOCODING_API_KEY
+		self.api_key = cfg.GOOGLE_WEATHER_API_KEY
 		self.gmaps = GoogleMaps( )
 		self.mode = None
 		self.url = None
@@ -2453,7 +2462,7 @@ class GoogleWeather( Fetcher ):
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
-	def current_observation( self, address: str ) -> Dict[ Any, Any ] | None:
+	def current_observation( self, address: str ) -> Response | None:
 		"""
 		
 			Purpose:
@@ -2465,25 +2474,20 @@ class GoogleWeather( Fetcher ):
 		try:
 			throw_if( 'address', address )
 			self.address = address
-			lat, lng = self.gmaps.geocode_location( address )
+			lat, lng = self.gmaps.geocode_location( address=self.address )
 			self.latitude = lat
 			self.longitude = lng
-			self.url = "https://maps.googleapis.com/maps/api/weather/v1/lookup"
-			self.params = \
-			{
-				'location': f'{self.latitude},{self.longitude}',
-				'key': self.api_key
-			}
-			
+			self.url = f'https://weather.googleapis.com/v1/currentConditions:lookup?key='
+			self.url += f'{self.api_key}&location.latitude={lat}&location.longitude={lng}'
 			self.response = requests.get( url=self.url, params=self.params )
 			self.response.raise_for_status( )
-			_results = self.response.json( )
+			_results = self.response
 			return _results
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = 'validate_address( self, address: str ) -> str'
+			exception.method = 'current_observation( self, address: str ) -> Dict[ Any, Any ]'
 			error = ErrorDialog( exception )
 			error.show( )
 	
@@ -2517,7 +2521,7 @@ class GoogleWeather( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = 'validate_address( self, address: str ) -> str'
+			exception.method = 'future_forecast( self, address: str ) -> Dict[ Any, Any ]'
 			error = ErrorDialog( exception )
 			error.show( )
 		
