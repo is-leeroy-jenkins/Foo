@@ -12,9 +12,10 @@ import streamlit as st
 
 import config
 import scrapers
+from loaders import PdfLoader, WordLoader, ExcelLoader
 import fetchers
 from fetchers import (
-	Wikipedia, TheNews, SatelliteCenter, Simbad,
+	Wikipedia, TheNews, SatelliteCenter, Simbad, WebFetcher,
 	GoogleWeather, Grokipedia, OpenWeather, NavalObservatory,
 	GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
 	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
@@ -55,8 +56,7 @@ def _invoke_provider( fetcher: Any, prompt: str, params: dict[ str, Any ] ) -> A
 		try:
 			return fn( prompt, **safe )
 		except TypeError:
-			safe2 = _filter_kwargs_for_callable( fn, { **safe,
-			                                           "query": prompt } )
+			safe2 = _filter_kwargs_for_callable( fn, { **safe, "query": prompt } )
 			return fn( **safe2 )
 	
 	if hasattr( fetcher, "chat" ) and callable( getattr( fetcher, "chat" ) ):
@@ -177,34 +177,40 @@ with st.sidebar:
 # Tabs
 # ======================================================================================
 
-tab_fetchers, tab_scrapers, tab_chat, tab_maps, tab_data = st.tabs(
-	[ "Fetchers",
+tab_loaders, tab_scrapers, tab_fetchers, tab_chat, tab_maps, tab_data = st.tabs(
+	[ "Loaders",
 	  "Scrapers",
-	  "Chat",
-	  "Maps",
+	  "Fetchers",
+	  "Yappers",
+	  "Mappers",
 	  "Data" ]
 )
-
 # ======================================================================================
 # SCRAPERS TAB — unchanged except for state fixes later
 # ======================================================================================
 
-with tab_scrapers:
-	st.subheader( "" )
+with tab_loaders:
+	st.markdown( "" )
 	
-	extractor = scrapers.WebExtractor( )
+	loader = scrapers.WebExtractor( )
 	
-	urls_raw = st.text_area( "URLs", height=150 )
+	urls_raw = st.text_area( "URLs", height=40 )
 	
-	col1, col2, col3 = st.columns( 3 )
+	col1, col2, col3, col4, col5, c6 = st.columns( 6 )
 	with col1:
-		do_text = st.checkbox( "Text", value=True )
+		do_pdf = st.checkbox( "PDF", value=True )
 	with col2:
-		do_links = st.checkbox( "Links", value=False )
+		do_word = st.checkbox( "Word", value=False )
 	with col3:
-		do_tables = st.checkbox( "Tables", value=False )
+		do_excel = st.checkbox( "Excel", value=False )
+	with col4:
+		do_markdown = st.checkbox( "Markdown", value=False )
+	with col5:
+		do_powerpoint = st.checkbox( "Powerpoint", value=False )
+	with col6:
+		do_youtube = st.checkbox( "Youtube", value=False )
 	
-	if st.button( "Run" ):
+	if st.button( "Load" ):
 		urls = [ u.strip( ) for u in urls_raw.splitlines( ) if u.strip( ) ]
 		if not urls:
 			st.warning( "No URLs provided." )
@@ -214,24 +220,128 @@ with tab_scrapers:
 				output = { }
 				
 				try:
-					if do_text:
-						output[ "text" ] = extractor.scrape( url )
-					if do_links:
-						output[ "links" ] = extractor.scrape_links( url )
-					if do_tables:
-						output[ "tables" ] = extractor.scrape_tables( url )
+					if do_pdf:
+						output[ "pdf" ] = extractor.scrape_links( url )
+					if do_word:
+						output[ "word" ] = extractor.scrape_links( url )
+					if do_excel:
+						output[ "excel" ] = extractor.scrape_tables( url )
+					if do_markdown:
+						output[ "markdown" ] = extractor.scrape_( url )
+					if do_powerpoint:
+						output[ "powerpoint" ] = extractor.scrape_( url )
+					if do_youtube:
+						output[ "youtube" ] = extractor.scrape_( url )
 					
 					st.json( output )
 				
 				except Exception as exc:
 					st.error( "Error" )
 					st.exception( exc )
+					
+# ======================================================================================
+# Scrapers
+# ======================================================================================
+with tab_scrapers:
+
+	st.markdown("")
+	st.caption(
+		"Select one or more scraping operations to apply to the provided URL. "
+		"Each option corresponds to a WebFetcher scrape* method."
+	)
+	col_left, col_right = st.columns([1, 2], border=True)
+
+	with col_left:
+		target_url = st.text_input(
+			"Target URL",
+			placeholder="https://example.com",
+			key="webfetcher_url"
+		)
+
+		st.markdown("#### Extraction Options")
+
+		fetcher = WebFetcher()
+
+		# ------------------------------------------------------------------
+		# Discover scrape* methods from WebFetcher.__dir__()
+		# ------------------------------------------------------------------
+		raw_names = [
+			name for name in fetcher.__dir__()
+			if name.startswith("scrape")
+		]
+
+		# Deduplicate + filter out invalid / misspelled names
+		VALID_SCRAPERS: dict[str, str] = {
+			"scrape_images": "Images",
+			"scrape_hyperlinks": "Hyperlinks",
+			"scrape_blockquotes": "Blockquotes",
+			"scrape_sections": "Sections",
+			"scrape_divisions": "Divisions",
+			"scrape_tables": "Tables",
+			"scrape_lists": "Lists",
+			"scrape_paragraphs": "Paragraphs",
+		}
+
+		available_methods: dict[str, callable] = {}
+
+		for name in raw_names:
+			if name in VALID_SCRAPERS and hasattr(fetcher, name):
+				available_methods[name] = getattr(fetcher, name)
+
+		selected_methods: list[str] = []
+
+		for method_name, label in VALID_SCRAPERS.items():
+			if method_name in available_methods:
+				if st.checkbox(label, key=f"wf_{method_name}"):
+					selected_methods.append(method_name)
+
+		run_scraper = st.button("Run Scraper", key="webfetcher_run")
+
+	with col_right:
+		output = st.empty()
+
+		if run_scraper:
+			try:
+				if not target_url:
+					raise ValueError("A target URL is required.")
+
+				if not selected_methods:
+					raise ValueError("At least one scraper must be selected.")
+
+				results: dict[str, list[str]] = {}
+
+				for method_name in selected_methods:
+					method = available_methods[method_name]
+					data = method(target_url)
+
+					if data is None:
+						results[method_name] = []
+					elif isinstance(data, list):
+						results[method_name] = data
+					else:
+						results[method_name] = [str(data)]
+
+				with output.container():
+					for method_name, items in results.items():
+						st.markdown(f"#### {VALID_SCRAPERS[method_name]}")
+
+						if not items:
+							st.info("No results returned.")
+							continue
+
+						for idx, item in enumerate(items, start=1):
+							st.write(f"{idx}. {item}")
+
+			except Exception as exc:
+				st.error(str(exc))
+
+
 
 # ======================================================================================
 # FETCHERS TAB — ArXiv
 # ======================================================================================
 with tab_fetchers:
-	st.subheader( "" )
+	st.markdown( "#### 🔍 Fetcher" )
 	
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
@@ -611,94 +721,7 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# GoogleMaps
-	# ======================================================================================
-	with st.expander( "Google Maps", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			gm_query = st.text_area(
-				"Address",
-				value="",
-				height=150,
-				key="googlemaps_query"
-			)
-			
-			gm_radius = st.number_input(
-				"Radius (meters)",
-				min_value=1,
-				max_value=50000,
-				value=5000,
-				step=100,
-				key="googlemaps_radius"
-			)
-			
-			m1, m2 = st.columns( 2 )
-			with m1:
-				gm_submit = st.button( "Submit", key="googlemaps_submit" )
-			with m2:
-				gm_clear = st.button( "Clear", key="googlemaps_clear" )
-		
-		with col_right:
-			gm_output = st.empty( )
-		
-			if gm_clear:
-				st.session_state.update( {
-						"googlemaps_query": "",
-						"googlemaps_radius": 5000
-				} )
-				st.rerun( )
-			
-			if gm_submit:
-				try:
-					gm = GoogleMaps( )
-					loc= gm.geocode_location( gm_query )
-					coords = f'{loc[0]}, {loc[1]}'
-					gm_output.text_area( "Coords", value=coords, height=300 )
-				except Exception as exc:
-					st.error( exc )
 	
-	# ======================================================================================
-	# GoogleWeather — FIXED clear()
-	# ======================================================================================
-	with st.expander( "Google Weather", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			gw_location = st.text_area(
-				"Location",
-				value="",
-				height=120,
-				key="googleweather_location"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				gw_submit = st.button( "Submit", key="googleweather_submit" )
-			with b2:
-				gw_clear = st.button( "Clear", key="googleweather_clear" )
-		
-		with col_right:
-			gw_output = st.empty( )
-		
-			if gw_clear:
-				st.session_state.update( {
-						"googleweather_location": "",
-				} )
-				st.rerun( )
-			
-			if gw_submit:
-				try:
-					f = GoogleWeather( )
-					result = f.fetch_current( address=gw_location )
-					if not result:
-						gw_output.info( "No results returned." )
-					else:
-						gw_output.text_area( "Results", value=result.text, height=300 )
-				
-				except Exception as exc:
-					st.error( str( exc ) )
 	
 	# ======================================================================================
 	# NavalObservatory — FIXED clear()
@@ -742,47 +765,7 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# SatelliteCenter — FIXED clear()
-	# ======================================================================================
-	with st.expander( "Satellite Center", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			satellite_query = st.text_area(
-				"Query",
-				value="",
-				height=150,
-				key="satellitecenter_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				satellite_submit = st.button( "Submit", key="satellitecenter_submit" )
-			with b2:
-				satellite_clear = st.button( "Clear", key="satellitecenter_clear" )
-		
-		with col_right:
-			satellite_output = st.empty( )
-		
-		if satellite_clear:
-			st.session_state.update( {
-					"satellitecenter_query": "",
-			} )
-			st.rerun( )
-		
-		if satellite_submit:
-			try:
-				f = SatelliteCenter( )
-				result = f.fetch( satellite_query )
-				
-				if not result:
-					satellite_output.info( "No results returned." )
-				else:
-					satellite_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
+	
 	
 	# ======================================================================================
 	# NearbyObjects — FIXED clear()
@@ -948,131 +931,6 @@ with tab_fetchers:
 					spaceweather_output.info( "No results returned." )
 				else:
 					spaceweather_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# ======================================================================================
-	# AstroCatalog
-	# ======================================================================================
-	with st.expander( "Astronomy Catalog", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			astro_query = st.text_area(
-				"Query",
-				value="",
-				height=150,
-				key="astrocatalog_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				astro_submit = st.button( "Submit", key="astrocatalog_submit" )
-			with b2:
-				astro_clear = st.button( "Clear", key="astrocatalog_clear" )
-		
-		with col_right:
-			astro_output = st.empty( )
-		
-		if astro_clear:
-			st.session_state.update( {
-					"astrocatalog_query": "",
-			} )
-			st.rerun( )
-		
-		if astro_submit:
-			try:
-				f = AstroCatalog( )
-				result = f.fetch( astro_query )
-				
-				if not result:
-					astro_output.info( "No results returned." )
-				else:
-					astro_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	# ======================================================================================
-	# AstroQuery
-	# ======================================================================================
-	with st.expander( "Astro Query", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			astroquery_query = st.text_area(
-				"Query",
-				value="",
-				height=150,
-				key="astroquery_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				astroquery_submit = st.button( "Submit", key="astroquery_submit" )
-			with b2:
-				astroquery_clear = st.button( "Clear", key="astroquery_clear" )
-		
-		with col_right:
-			astroquery_output = st.empty( )
-		
-		if astroquery_clear:
-			st.session_state.update( {
-					"astroquery_query": "",
-			} )
-			st.rerun( )
-		
-		if astroquery_submit:
-			try:
-				f = AstroQuery( )
-				result = f.fetch( astroquery_query )
-				
-				if not result:
-					astroquery_output.info( "No results returned." )
-				else:
-					astroquery_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# ======================================================================================
-	# StarMap
-	# ======================================================================================
-	with st.expander( "Star Map", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			starmap_query = st.text_area(
-				"Query",
-				value="",
-				height=150,
-				key="starmap_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				starmap_submit = st.button( "Submit", key="starmap_submit" )
-			with b2:
-				starmap_clear = st.button( "Clear", key="starmap_clear" )
-		
-		with col_right:
-			starmap_output = st.empty( )
-		
-		if starmap_clear:
-			st.session_state.update( {
-					"starmap_query": "",
-			} )
-			st.rerun( )
-		
-		if starmap_submit:
-			try:
-				f = StarMap( )
-				result = f.fetch( starmap_query )
-				
-				if not result:
-					starmap_output.info( "No results returned." )
-				else:
-					starmap_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
@@ -1244,6 +1102,7 @@ with tab_fetchers:
 			
 			except Exception as exc:
 				st.error( str( exc ) )
+				
 	# ======================================================================================
 	# OpenWeather
 	# ======================================================================================
@@ -1291,7 +1150,7 @@ with tab_fetchers:
 # ======================================================================================
 
 with tab_data:
-	st.subheader( "Data" )
+	st.subheader( "" )
 	
 	conn = sqlite3.connect( f"file:{DB_PATH.as_posix( )}?mode=ro", uri=True )
 	cur = conn.cursor( )
@@ -1942,8 +1801,265 @@ with tab_chat:
 # ======================================================================================
 
 with tab_maps:
-	st.subheader( "Maps" )
+	st.markdown( "" )
 	st.info( "No mapping functionality implemented in the current version." )
+	
+	# ======================================================================================
+	# GoogleMaps
+	# ======================================================================================
+	with st.expander( "Google Maps", expanded=True ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			gm_query = st.text_area(
+				"Address",
+				value="",
+				height=150,
+				key="googlemaps_query"
+			)
+			
+			gm_radius = st.number_input(
+				"Radius (meters)",
+				min_value=1,
+				max_value=50000,
+				value=5000,
+				step=100,
+				key="googlemaps_radius"
+			)
+			
+			m1, m2 = st.columns( 2 )
+			with m1:
+				gm_submit = st.button( "Submit", key="googlemaps_submit" )
+			with m2:
+				gm_clear = st.button( "Clear", key="googlemaps_clear" )
+		
+		with col_right:
+			gm_output = st.empty( )
+			
+			if gm_clear:
+				st.session_state.update( {
+						"googlemaps_query": "",
+						"googlemaps_radius": 5000
+				} )
+				st.rerun( )
+			
+			if gm_submit:
+				try:
+					gm = GoogleMaps( )
+					loc = gm.geocode_location( gm_query )
+					coords = f'{loc[ 0 ]}, {loc[ 1 ]}'
+					gm_output.text_area( "Coords", value=coords, height=300 )
+				except Exception as exc:
+					st.error( exc )
+	
+	# ======================================================================================
+	# GoogleWeather — FIXED clear()
+	# ======================================================================================
+	with st.expander( "Google Weather", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			gw_location = st.text_area(
+				"Location",
+				value="",
+				height=120,
+				key="googleweather_location"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				gw_submit = st.button( "Submit", key="googleweather_submit" )
+			with b2:
+				gw_clear = st.button( "Clear", key="googleweather_clear" )
+		
+		with col_right:
+			gw_output = st.empty( )
+			
+			if gw_clear:
+				st.session_state.update( {
+						"googleweather_location": "",
+				} )
+				st.rerun( )
+			
+			if gw_submit:
+				try:
+					f = GoogleWeather( )
+					result = f.fetch_current( address=gw_location )
+					if not result:
+						gw_output.info( "No results returned." )
+					else:
+						gw_output.text_area( "Results", value=result.text, height=300 )
+				
+				except Exception as exc:
+					st.error( str( exc ) )
+					
+	# ======================================================================================
+	# SatelliteCenter — FIXED clear()
+	# ======================================================================================
+	with st.expander( "Satellite Center", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			satellite_query = st.text_area(
+				"Query",
+				value="",
+				height=150,
+				key="satellitecenter_query"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				satellite_submit = st.button( "Submit", key="satellitecenter_submit" )
+			with b2:
+				satellite_clear = st.button( "Clear", key="satellitecenter_clear" )
+		
+		with col_right:
+			satellite_output = st.empty( )
+		
+		if satellite_clear:
+			st.session_state.update( {
+					"satellitecenter_query": "",
+			} )
+			st.rerun( )
+		
+		if satellite_submit:
+			try:
+				f = SatelliteCenter( )
+				result = f.fetch( satellite_query )
+				
+				if not result:
+					satellite_output.info( "No results returned." )
+				else:
+					satellite_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+		
+		# ======================================================================================
+		# AstroCatalog
+		# ======================================================================================
+		with st.expander( "Astronomy Catalog", expanded=False ):
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				astro_query = st.text_area(
+					"Query",
+					value="",
+					height=150,
+					key="astrocatalog_query"
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					astro_submit = st.button( "Submit", key="astrocatalog_submit" )
+				with b2:
+					astro_clear = st.button( "Clear", key="astrocatalog_clear" )
+			
+			with col_right:
+				astro_output = st.empty( )
+			
+			if astro_clear:
+				st.session_state.update( {
+						"astrocatalog_query": "",
+				} )
+				st.rerun( )
+			
+			if astro_submit:
+				try:
+					f = AstroCatalog( )
+					result = f.fetch( astro_query )
+					
+					if not result:
+						astro_output.info( "No results returned." )
+					else:
+						astro_output.text_area( "Results", value=str( result ), height=300 )
+				
+				except Exception as exc:
+					st.error( str( exc ) )
+		# ======================================================================================
+		# AstroQuery
+		# ======================================================================================
+		with st.expander( "Astro Query", expanded=False ):
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				astroquery_query = st.text_area(
+					"Query",
+					value="",
+					height=150,
+					key="astroquery_query"
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					astroquery_submit = st.button( "Submit", key="astroquery_submit" )
+				with b2:
+					astroquery_clear = st.button( "Clear", key="astroquery_clear" )
+			
+			with col_right:
+				astroquery_output = st.empty( )
+			
+			if astroquery_clear:
+				st.session_state.update( {
+						"astroquery_query": "",
+				} )
+				st.rerun( )
+			
+			if astroquery_submit:
+				try:
+					f = AstroQuery( )
+					result = f.fetch( astroquery_query )
+					
+					if not result:
+						astroquery_output.info( "No results returned." )
+					else:
+						astroquery_output.text_area( "Results", value=str( result ), height=300 )
+				
+				except Exception as exc:
+					st.error( str( exc ) )
+		
+	# ======================================================================================
+	# StarMap
+	# ======================================================================================
+	with st.expander( "Star Map", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			starmap_query = st.text_area(
+				"Query",
+				value="",
+				height=150,
+				key="starmap_query"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				starmap_submit = st.button( "Submit", key="starmap_submit" )
+			with b2:
+				starmap_clear = st.button( "Clear", key="starmap_clear" )
+		
+		with col_right:
+			starmap_output = st.empty( )
+		
+		if starmap_clear:
+			st.session_state.update( {
+					"starmap_query": "",
+			} )
+			st.rerun( )
+		
+		if starmap_submit:
+			try:
+				f = StarMap( )
+				result = f.fetch( starmap_query )
+				
+				if not result:
+					starmap_output.info( "No results returned." )
+				else:
+					starmap_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+				
 # ======================================================================================
 # END OF FILE
 # ======================================================================================
