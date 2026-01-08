@@ -177,38 +177,36 @@ with st.sidebar:
 # Tabs
 # ======================================================================================
 
-tab_loaders, tab_scrapers, tab_fetchers, tab_chat, tab_maps, tab_data = st.tabs(
+tab_loaders, tab_scrapers, tab_fetchers, tab_chat, tab_maps, tab_lockers, tab_data = st.tabs(
 	[ "Loaders",
 	  "Scrapers",
 	  "Fetchers",
 	  "Yappers",
 	  "Mappers",
-	  "Data" ]
-)
+	  "Lockers",
+	  "Data" ] )
+
 # ======================================================================================
 # SCRAPERS TAB — unchanged except for state fixes later
 # ======================================================================================
 
 with tab_loaders:
-	st.markdown( "" )
-	
 	loader = scrapers.WebExtractor( )
-	
 	urls_raw = st.text_area( "URLs", height=40 )
 	
 	col1, col2, col3, col4, col5, col6 = st.columns( 6 )
 	with col1:
-		do_pdf = st.checkbox( "PDF", value=True )
+		do_pdf = st.checkbox( label='PDF', key='pdf_cb' )
 	with col2:
-		do_word = st.checkbox( "Word", value=False )
+		do_word = st.checkbox( label="Word", key='word_cb'  )
 	with col3:
-		do_excel = st.checkbox( "Excel", value=False )
+		do_excel = st.checkbox( label="Excel", key='excel_cb' )
 	with col4:
-		do_markdown = st.checkbox( "Markdown", value=False )
+		do_markdown = st.checkbox( label="Markdown", key='markdown_cb'  )
 	with col5:
-		do_powerpoint = st.checkbox( "Powerpoint", value=False )
+		do_powerpoint = st.checkbox( label="Powerpoint", key='powerpoint_cb'  )
 	with col6:
-		do_youtube = st.checkbox( "Youtube", value=False )
+		do_youtube = st.checkbox( label="Youtube", key='youtube_cb'  )
 	
 	if st.button( "Load" ):
 		urls = [ u.strip( ) for u in urls_raw.splitlines( ) if u.strip( ) ]
@@ -244,11 +242,6 @@ with tab_loaders:
 # ======================================================================================
 with tab_scrapers:
 
-	st.markdown("")
-	st.caption(
-		"Select one or more scraping operations to apply to the provided URL. "
-		"Each option corresponds to a WebFetcher scrape* method."
-	)
 	col_left, col_right = st.columns([1, 2], border=True)
 
 	with col_left:
@@ -333,7 +326,7 @@ with tab_scrapers:
 							st.write(f"{idx}. {item}")
 
 			except Exception as exc:
-				st.error(str(exc))
+				st.error( str( exc ) )
 
 
 
@@ -341,7 +334,7 @@ with tab_scrapers:
 # FETCHERS TAB — ArXiv
 # ======================================================================================
 with tab_fetchers:
-	st.markdown( "#### 🔍 Fetcher" )
+	st.markdown( "#### Fetcher" )
 	
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
@@ -352,7 +345,7 @@ with tab_fetchers:
 		with col1:
 			arxiv_input = st.text_area(
 				"Query",
-				height=200,
+				height=40,
 				key="arxiv_input",
 			)
 			
@@ -419,7 +412,7 @@ with tab_fetchers:
 			gd_query = st.text_area(
 				"Google Drive Query",
 				value="",
-				height=150,
+				height=40,
 				key="googledrive_query"
 			)
 			
@@ -463,7 +456,7 @@ with tab_fetchers:
 			wiki_query = st.text_area(
 				"Wikipedia Query",
 				value="",
-				height=150,
+				height=40,
 				key="wikipedia_query"
 			)
 			
@@ -507,7 +500,7 @@ with tab_fetchers:
 			news_query = st.text_area(
 				"News Query",
 				value="",
-				height=120,
+				height=40,
 				key="thenews_query"
 			)
 			
@@ -563,112 +556,6 @@ with tab_fetchers:
 				st.error( str( exc ) )
 	
 	# ======================================================================================
-	# OpenMeteo / OpenWeather
-	# ======================================================================================
-	with st.expander( "Open Meteo", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			latitude = st.number_input(
-				"Latitude",
-				value=0.0,
-				format="%.6f",
-				key="openmeteo_latitude"
-			)
-			
-			longitude = st.number_input(
-				"Longitude",
-				value=0.0,
-				format="%.6f",
-				key="openmeteo_longitude"
-			)
-			
-			days = st.number_input(
-				"Forecast Days",
-				min_value=1,
-				max_value=14,
-				value=7,
-				step=1,
-				key="openmeteo_days"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				om_submit = st.button( "Submit", key="openmeteo_submit" )
-			with b2:
-				om_clear = st.button( "Clear", key="openmeteo_clear" )
-		
-		with col_right:
-			om_output = st.empty( )
-		
-		if om_clear:
-			st.session_state.update( {
-					"openmeteo_latitude": 0.0,
-					"openmeteo_longitude": 0.0,
-					"openmeteo_days": 7
-			} )
-			st.rerun( )
-		
-		if om_submit:
-			try:
-				f = OpenWeather( )
-				result = f.fetch(
-					latitude=float( latitude ),
-					longitude=float( longitude ),
-					days=int( days )
-				)
-				
-				if result:
-					om_output.text_area( "Forecast Data", value=str( result ), height=300 )
-				else:
-					om_output.info( "No data returned." )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# ======================================================================================
-	# Simbad Fetcher
-	# ======================================================================================
-	with st.expander( "Simbad", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			simbad_query = st.text_area(
-				"Astronomical Object Query",
-				value="",
-				height=120,
-				key="simbad_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				simbad_submit = st.button( "Submit", key="simbad_submit" )
-			with b2:
-				simbad_clear = st.button( "Clear", key="simbad_clear" )
-		
-		with col_right:
-			simbad_output = st.empty( )
-		
-		if simbad_clear:
-			st.session_state.update( {
-					"simbad_query": ""
-			} )
-			st.rerun( )
-		
-		if simbad_submit:
-			try:
-				f = Simbad( )
-				result = f.fetch( simbad_query )
-				
-				if result:
-					simbad_output.text_area( "Result", value=str( result ), height=300 )
-				else:
-					simbad_output.info( "No results returned." )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# ======================================================================================
 	# GoogleSearch
 	# ======================================================================================
 	with st.expander( "Google Search", expanded=False ):
@@ -678,7 +565,7 @@ with tab_fetchers:
 			google_query = st.text_area(
 				"Query",
 				value="",
-				height=150,
+				height=40,
 				key="googlesearch_query"
 			)
 			
@@ -724,7 +611,7 @@ with tab_fetchers:
 	
 	
 	# ======================================================================================
-	# NavalObservatory — FIXED clear()
+	# NavalObservatory
 	# ======================================================================================
 	with st.expander( "US Naval Observatory", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
@@ -733,7 +620,7 @@ with tab_fetchers:
 			naval_query = st.text_area(
 				"Query",
 				value="",
-				height=150,
+				height=40,
 				key="navalobservatory_query"
 			)
 			
@@ -765,52 +652,8 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	
-	
 	# ======================================================================================
-	# NearbyObjects — FIXED clear()
-	# ======================================================================================
-	with st.expander( "Near Earth Objects", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			nearby_query = st.text_area(
-				"Query",
-				value="",
-				height=150,
-				key="nearbyobjects_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				nearby_submit = st.button( "Submit", key="nearbyobjects_submit" )
-			with b2:
-				nearby_clear = st.button( "Clear", key="nearbyobjects_clear" )
-		
-		with col_right:
-			nearby_output = st.empty( )
-		
-		if nearby_clear:
-			st.session_state.update( {
-					"nearbyobjects_query": "",
-			} )
-			st.rerun( )
-		
-		if nearby_submit:
-			try:
-				f = NearbyObjects( )
-				result = f.fetch( nearby_query )
-				
-				if not result:
-					nearby_output.info( "No results returned." )
-				else:
-					nearby_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# ======================================================================================
-	# OpenScience — FIXED clear()
+	# OpenScience
 	# ======================================================================================
 	with st.expander( "Open Science", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
@@ -819,7 +662,7 @@ with tab_fetchers:
 			openscience_query = st.text_area(
 				"Query",
 				value="",
-				height=150,
+				height=40,
 				key="openscience_query"
 			)
 			
@@ -852,90 +695,6 @@ with tab_fetchers:
 				st.error( str( exc ) )
 	
 	# ======================================================================================
-	# EarthObservatory — FIXED clear()
-	# ======================================================================================
-	with st.expander( "Earth Observatory", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			earth_query = st.text_area(
-				"Query",
-				value="",
-				height=150,
-				key="earthobservatory_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				earth_submit = st.button( "Submit", key="earthobservatory_submit" )
-			with b2:
-				earth_clear = st.button( "Clear", key="earthobservatory_clear" )
-		
-		with col_right:
-			earth_output = st.empty( )
-		
-		if earth_clear:
-			st.session_state.update( {
-					"earthobservatory_query": "",
-			} )
-			st.rerun( )
-		
-		if earth_submit:
-			try:
-				f = EarthObservatory( )
-				result = f.fetch( earth_query )
-				
-				if not result:
-					earth_output.info( "No results returned." )
-				else:
-					earth_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# ======================================================================================
-	# SpaceWeather
-	# ======================================================================================
-	with st.expander( "Space Weather", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			spaceweather_query = st.text_area(
-				"Query",
-				value="",
-				height=150,
-				key="spaceweather_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				spaceweather_submit = st.button( "Submit", key="spaceweather_submit" )
-			with b2:
-				spaceweather_clear = st.button( "Clear", key="spaceweather_clear" )
-		
-		with col_right:
-			spaceweather_output = st.empty( )
-		
-		if spaceweather_clear:
-			st.session_state.update( {
-					"spaceweather_query": "",
-			} )
-			st.rerun( )
-		
-		if spaceweather_submit:
-			try:
-				f = SpaceWeather( )
-				result = f.fetch( spaceweather_query )
-				
-				if not result:
-					spaceweather_output.info( "No results returned." )
-				else:
-					spaceweather_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# ======================================================================================
 	# GovData
 	# ======================================================================================
 	with st.expander( "Gov Info", expanded=False ):
@@ -945,7 +704,7 @@ with tab_fetchers:
 			govdata_query = st.text_area(
 				"Query",
 				value="",
-				height=150,
+				height=40,
 				key="govdata_query"
 			)
 			
@@ -978,48 +737,6 @@ with tab_fetchers:
 				st.error( str( exc ) )
 	
 	# ======================================================================================
-	# StarChart
-	# ======================================================================================
-	with st.expander( "Star Chart", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			starchart_query = st.text_area(
-				"Query",
-				value="",
-				height=150,
-				key="starchart_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				starchart_submit = st.button( "Submit", key="starchart_submit" )
-			with b2:
-				starchart_clear = st.button( "Clear", key="starchart_clear" )
-		
-		with col_right:
-			starchart_output = st.empty( )
-		
-		if starchart_clear:
-			st.session_state.update( {
-					"starchart_query": "",
-			} )
-			st.rerun( )
-		
-		if starchart_submit:
-			try:
-				f = StarChart( )
-				result = f.fetch( starchart_query )
-				
-				if not result:
-					starchart_output.info( "No results returned." )
-				else:
-					starchart_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# ======================================================================================
 	# Congress
 	# ======================================================================================
 	with st.expander( "Congress", expanded=False ):
@@ -1029,7 +746,7 @@ with tab_fetchers:
 			congress_query = st.text_area(
 				"Query",
 				value="",
-				height=150,
+				height=40,
 				key="congress_query"
 			)
 			
@@ -1071,7 +788,7 @@ with tab_fetchers:
 			ia_query = st.text_area(
 				"Query",
 				value="",
-				height=150,
+				height=40,
 				key="internetarchive_query"
 			)
 			
@@ -1102,48 +819,6 @@ with tab_fetchers:
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-				
-	# ======================================================================================
-	# OpenWeather
-	# ======================================================================================
-	with st.expander( "Open Weather", expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			openweather_query = st.text_area(
-				"Location",
-				value="",
-				height=150,
-				key="openweather_query"
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				openweather_submit = st.button( "Submit", key="openweather_submit" )
-			with b2:
-				openweather_clear = st.button( "Clear", key="openweather_clear" )
-		
-		with col_right:
-			openweather_output = st.empty( )
-		
-		if openweather_clear:
-			st.session_state.update( {
-					"openweather_query": "",
-			} )
-			st.rerun( )
-		
-		if openweather_submit:
-			try:
-				f = OpenWeather( )
-				result = f.fetch( openweather_query )
-				
-				if not result:
-					openweather_output.info( "No results returned." )
-				else:
-					openweather_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
 
 # ======================================================================================
 # DATA TAB
@@ -1168,14 +843,14 @@ with tab_chat:
 	# -----------------------------
 	# Chat (OpenAI)
 	# -----------------------------
-	with st.expander( "Chat", expanded=False ):
+	with st.expander( "Chat", expanded=True ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			chat_prompt = st.text_area(
 				"Prompt",
 				value="",
-				height=180,
+				height=40,
 				key="chat_prompt"
 			)
 			
@@ -1295,7 +970,7 @@ with tab_chat:
 				st.error( str( exc ) )
 		
 	# ======================================================================================
-	# GROQ — FIXED clear()
+	# GROQ
 	# ======================================================================================
 	with st.expander( "Groq", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
@@ -1304,7 +979,7 @@ with tab_chat:
 			groq_prompt = st.text_area(
 				"Prompt",
 				value="",
-				height=180,
+				height=40,
 				key="groq_prompt_chat"
 			)
 			
@@ -1379,9 +1054,7 @@ with tab_chat:
 		with col_right:
 			groq_output = st.empty( )
 		
-		# -----------------------------
-		# FIXED clear()
-		# -----------------------------
+		
 		if groq_clear:
 			st.session_state.update( {
 					"groq_prompt_chat": "",
@@ -1413,7 +1086,7 @@ with tab_chat:
 				st.error( str( exc ) )
 	
 	# ======================================================================================
-	# CLAUDE — FIXED clear()
+	# CLAUDE
 	# ======================================================================================
 	with st.expander( "Claude", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
@@ -1422,7 +1095,7 @@ with tab_chat:
 			claude_prompt = st.text_area(
 				"Prompt",
 				value="",
-				height=180,
+				height=40,
 				key="claude_prompt_chat"
 			)
 			
@@ -1506,10 +1179,7 @@ with tab_chat:
 		
 		with col_right:
 			claude_output = st.empty( )
-		
-		# -----------------------------
-		# FIXED clear()
-		# -----------------------------
+			
 		if claude_clear:
 			st.session_state.update( {
 					"claude_prompt_chat": "",
@@ -1543,7 +1213,7 @@ with tab_chat:
 				st.error( str( exc ) )
 	
 	# ======================================================================================
-	# GEMINI — FIXED clear()
+	# GEMINI
 	# ======================================================================================
 	with st.expander( "Gemini", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
@@ -1638,10 +1308,7 @@ with tab_chat:
 		
 		with col_right:
 			gemini_output = st.empty( )
-		
-		# -----------------------------
-		# FIXED clear()
-		# -----------------------------
+			
 		if gemini_clear:
 			st.session_state.update( {
 					"gemini_prompt_chat": "",
@@ -1671,7 +1338,7 @@ with tab_chat:
 				st.error( str( exc ) )
 	
 	# ======================================================================================
-	# MISTRAL — FIXED clear()
+	# MISTRAL
 	# ======================================================================================
 	with st.expander( "Mistral", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
@@ -1680,7 +1347,7 @@ with tab_chat:
 			mistral_prompt = st.text_area(
 				"Prompt",
 				value="",
-				height=180,
+				height=40,
 				key="mistral_prompt_chat"
 			)
 			
@@ -1764,10 +1431,7 @@ with tab_chat:
 		
 		with col_right:
 			mistral_output = st.empty( )
-		
-		# -----------------------------
-		# FIXED clear()
-		# -----------------------------
+			
 		if mistral_clear:
 			st.session_state.update( {
 					"mistral_prompt_chat": "",
@@ -1797,16 +1461,10 @@ with tab_chat:
 				st.error( str( exc ) )
 
 # ======================================================================================
-# MAPS TAB — (Placeholder / currently empty per your provided source)
+# MAPS TAB
 # ======================================================================================
-
 with tab_maps:
-	st.markdown( "" )
-	st.info( "No mapping functionality implemented in the current version." )
 	
-	# ======================================================================================
-	# GoogleMaps
-	# ======================================================================================
 	with st.expander( "Google Maps", expanded=True ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1814,7 +1472,7 @@ with tab_maps:
 			gm_query = st.text_area(
 				"Address",
 				value="",
-				height=150,
+				height=40,
 				key="googlemaps_query"
 			)
 			
@@ -1853,7 +1511,7 @@ with tab_maps:
 					st.error( exc )
 	
 	# ======================================================================================
-	# GoogleWeather — FIXED clear()
+	# GoogleWeather
 	# ======================================================================================
 	with st.expander( "Google Weather", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
@@ -1862,7 +1520,7 @@ with tab_maps:
 			gw_location = st.text_area(
 				"Location",
 				value="",
-				height=120,
+				height=40,
 				key="googleweather_location"
 			)
 			
@@ -1894,7 +1552,7 @@ with tab_maps:
 					st.error( str( exc ) )
 					
 	# ======================================================================================
-	# SatelliteCenter — FIXED clear()
+	# SatelliteCenter
 	# ======================================================================================
 	with st.expander( "Satellite Center", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
@@ -1903,7 +1561,7 @@ with tab_maps:
 			satellite_query = st.text_area(
 				"Query",
 				value="",
-				height=150,
+				height=40,
 				key="satellitecenter_query"
 			)
 			
@@ -1935,88 +1593,89 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 		
-		# ======================================================================================
-		# AstroCatalog
-		# ======================================================================================
-		with st.expander( "Astronomy Catalog", expanded=False ):
-			col_left, col_right = st.columns( 2, border=True )
+	# ======================================================================================
+	# AstroCatalog
+	# ======================================================================================
+	with st.expander( "Astronomy Catalog", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			astro_query = st.text_area(
+				"Query",
+				value="",
+				height=40,
+				key="astrocatalog_query"
+			)
 			
-			with col_left:
-				astro_query = st.text_area(
-					"Query",
-					value="",
-					height=150,
-					key="astrocatalog_query"
-				)
+			b1, b2 = st.columns( 2 )
+			with b1:
+				astro_submit = st.button( "Submit", key="astrocatalog_submit" )
+			with b2:
+				astro_clear = st.button( "Clear", key="astrocatalog_clear" )
+		
+		with col_right:
+			astro_output = st.empty( )
+		
+		if astro_clear:
+			st.session_state.update( {
+					"astrocatalog_query": "",
+			} )
+			st.rerun( )
+		
+		if astro_submit:
+			try:
+				f = AstroCatalog( )
+				result = f.fetch( astro_query )
 				
-				b1, b2 = st.columns( 2 )
-				with b1:
-					astro_submit = st.button( "Submit", key="astrocatalog_submit" )
-				with b2:
-					astro_clear = st.button( "Clear", key="astrocatalog_clear" )
+				if not result:
+					astro_output.info( "No results returned." )
+				else:
+					astro_output.text_area( "Results", value=str( result ), height=300 )
 			
-			with col_right:
-				astro_output = st.empty( )
-			
-			if astro_clear:
-				st.session_state.update( {
-						"astrocatalog_query": "",
-				} )
-				st.rerun( )
-			
-			if astro_submit:
-				try:
-					f = AstroCatalog( )
-					result = f.fetch( astro_query )
-					
-					if not result:
-						astro_output.info( "No results returned." )
-					else:
-						astro_output.text_area( "Results", value=str( result ), height=300 )
+			except Exception as exc:
+				st.error( str( exc ) )
 				
-				except Exception as exc:
-					st.error( str( exc ) )
-		# ======================================================================================
-		# AstroQuery
-		# ======================================================================================
-		with st.expander( "Astro Query", expanded=False ):
-			col_left, col_right = st.columns( 2, border=True )
+	# ======================================================================================
+	# AstroQuery
+	# ======================================================================================
+	with st.expander( "Astro Query", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			astroquery_query = st.text_area(
+				"Query",
+				value="",
+				height=40,
+				key="astroquery_query"
+			)
 			
-			with col_left:
-				astroquery_query = st.text_area(
-					"Query",
-					value="",
-					height=150,
-					key="astroquery_query"
-				)
+			b1, b2 = st.columns( 2 )
+			with b1:
+				astroquery_submit = st.button( "Submit", key="astroquery_submit" )
+			with b2:
+				astroquery_clear = st.button( "Clear", key="astroquery_clear" )
+		
+		with col_right:
+			astroquery_output = st.empty( )
+		
+		if astroquery_clear:
+			st.session_state.update( {
+					"astroquery_query": "",
+			} )
+			st.rerun( )
+		
+		if astroquery_submit:
+			try:
+				f = AstroQuery( )
+				result = f.fetch( astroquery_query )
 				
-				b1, b2 = st.columns( 2 )
-				with b1:
-					astroquery_submit = st.button( "Submit", key="astroquery_submit" )
-				with b2:
-					astroquery_clear = st.button( "Clear", key="astroquery_clear" )
+				if not result:
+					astroquery_output.info( "No results returned." )
+				else:
+					astroquery_output.text_area( "Results", value=str( result ), height=300 )
 			
-			with col_right:
-				astroquery_output = st.empty( )
-			
-			if astroquery_clear:
-				st.session_state.update( {
-						"astroquery_query": "",
-				} )
-				st.rerun( )
-			
-			if astroquery_submit:
-				try:
-					f = AstroQuery( )
-					result = f.fetch( astroquery_query )
-					
-					if not result:
-						astroquery_output.info( "No results returned." )
-					else:
-						astroquery_output.text_area( "Results", value=str( result ), height=300 )
-				
-				except Exception as exc:
-					st.error( str( exc ) )
+			except Exception as exc:
+				st.error( str( exc ) )
 		
 	# ======================================================================================
 	# StarMap
@@ -2028,7 +1687,7 @@ with tab_maps:
 			starmap_query = st.text_area(
 				"Query",
 				value="",
-				height=150,
+				height=40,
 				key="starmap_query"
 			)
 			
@@ -2056,6 +1715,322 @@ with tab_maps:
 					starmap_output.info( "No results returned." )
 				else:
 					starmap_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+				
+	# ======================================================================================
+	# OpenWeather
+	# ======================================================================================
+	with st.expander( "Open Weather", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			openweather_query = st.text_area(
+				"Location",
+				value="",
+				height=40,
+				key="openweather_query"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				openweather_submit = st.button( "Submit", key="openweather_submit" )
+			with b2:
+				openweather_clear = st.button( "Clear", key="openweather_clear" )
+		
+		with col_right:
+			openweather_output = st.empty( )
+		
+		if openweather_clear:
+			st.session_state.update( {
+					"openweather_query": "",
+			} )
+			st.rerun( )
+		
+		if openweather_submit:
+			try:
+				f = OpenWeather( )
+				result = f.fetch( openweather_query )
+				
+				if not result:
+					openweather_output.info( "No results returned." )
+				else:
+					openweather_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	
+	# ======================================================================================
+	# Open Meteo / OpenWeather
+	# ======================================================================================
+	with st.expander( "Open Meteorology", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			latitude = st.number_input(
+				"Latitude",
+				value=0.0,
+				format="%.6f",
+				key="openmeteo_latitude"
+			)
+			
+			longitude = st.number_input(
+				"Longitude",
+				value=0.0,
+				format="%.6f",
+				key="openmeteo_longitude"
+			)
+			
+			days = st.number_input(
+				"Forecast Days",
+				min_value=1,
+				max_value=14,
+				value=7,
+				step=1,
+				key="openmeteo_days"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				om_submit = st.button( "Submit", key="openmeteo_submit" )
+			with b2:
+				om_clear = st.button( "Clear", key="openmeteo_clear" )
+		
+		with col_right:
+			om_output = st.empty( )
+		
+		if om_clear:
+			st.session_state.update( {
+					"openmeteo_latitude": 0.0,
+					"openmeteo_longitude": 0.0,
+					"openmeteo_days": 7
+			} )
+			st.rerun( )
+		
+		if om_submit:
+			try:
+				f = OpenWeather( )
+				result = f.fetch(
+					latitude=float( latitude ),
+					longitude=float( longitude ),
+					days=int( days )
+				)
+				
+				if result:
+					om_output.text_area( "Forecast Data", value=str( result ), height=300 )
+				else:
+					om_output.info( "No data returned." )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	
+	# ======================================================================================
+	# Simbad Fetcher
+	# ======================================================================================
+	with st.expander( "Simbad", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			simbad_query = st.text_area(
+				"Astronomical Object Query",
+				value="",
+				height=120,
+				key="simbad_query"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				simbad_submit = st.button( "Submit", key="simbad_submit" )
+			with b2:
+				simbad_clear = st.button( "Clear", key="simbad_clear" )
+		
+		with col_right:
+			simbad_output = st.empty( )
+		
+		if simbad_clear:
+			st.session_state.update( {
+					"simbad_query": ""
+			} )
+			st.rerun( )
+		
+		if simbad_submit:
+			try:
+				f = Simbad( )
+				result = f.fetch( simbad_query )
+				
+				if result:
+					simbad_output.text_area( "Result", value=str( result ), height=300 )
+				else:
+					simbad_output.info( "No results returned." )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	
+	# ======================================================================================
+	# EarthObservatory
+	# ======================================================================================
+	with st.expander( "Earth Observatory", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			earth_query = st.text_area(
+				"Query",
+				value="",
+				height=40,
+				key="earthobservatory_query"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				earth_submit = st.button( "Submit", key="earthobservatory_submit" )
+			with b2:
+				earth_clear = st.button( "Clear", key="earthobservatory_clear" )
+		
+		with col_right:
+			earth_output = st.empty( )
+		
+		if earth_clear:
+			st.session_state.update( {
+					"earthobservatory_query": "",
+			} )
+			st.rerun( )
+		
+		if earth_submit:
+			try:
+				f = EarthObservatory( )
+				result = f.fetch( earth_query )
+				
+				if not result:
+					earth_output.info( "No results returned." )
+				else:
+					earth_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	
+	# ======================================================================================
+	# SpaceWeather
+	# ======================================================================================
+	with st.expander( "Space Weather", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			spaceweather_query = st.text_area(
+				"Query",
+				value="",
+				height=40,
+				key="spaceweather_query"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				spaceweather_submit = st.button( "Submit", key="spaceweather_submit" )
+			with b2:
+				spaceweather_clear = st.button( "Clear", key="spaceweather_clear" )
+		
+		with col_right:
+			spaceweather_output = st.empty( )
+		
+		if spaceweather_clear:
+			st.session_state.update( {
+					"spaceweather_query": "",
+			} )
+			st.rerun( )
+		
+		if spaceweather_submit:
+			try:
+				f = SpaceWeather( )
+				result = f.fetch( spaceweather_query )
+				
+				if not result:
+					spaceweather_output.info( "No results returned." )
+				else:
+					spaceweather_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	
+	# ======================================================================================
+	# StarChart
+	# ======================================================================================
+	with st.expander( "Star Chart", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			starchart_query = st.text_area(
+				"Query",
+				value="",
+				height=40,
+				key="starchart_query"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				starchart_submit = st.button( "Submit", key="starchart_submit" )
+			with b2:
+				starchart_clear = st.button( "Clear", key="starchart_clear" )
+		
+		with col_right:
+			starchart_output = st.empty( )
+		
+		if starchart_clear:
+			st.session_state.update( {
+					"starchart_query": "",
+			} )
+			st.rerun( )
+		
+		if starchart_submit:
+			try:
+				f = StarChart( )
+				result = f.fetch( starchart_query )
+				
+				if not result:
+					starchart_output.info( "No results returned." )
+				else:
+					starchart_output.text_area( "Results", value=str( result ), height=300 )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+		
+	# ======================================================================================
+	# NearbyObjects
+	# ======================================================================================
+	with st.expander( "Near Earth Objects", expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			nearby_query = st.text_area(
+				"Query",
+				value="",
+				height=40,
+				key="nearbyobjects_query"
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				nearby_submit = st.button( "Submit", key="nearbyobjects_submit" )
+			with b2:
+				nearby_clear = st.button( "Clear", key="nearbyobjects_clear" )
+		
+		with col_right:
+			nearby_output = st.empty( )
+		
+		if nearby_clear:
+			st.session_state.update( {
+					"nearbyobjects_query": "",
+			} )
+			st.rerun( )
+		
+		if nearby_submit:
+			try:
+				f = NearbyObjects( )
+				result = f.fetch( nearby_query )
+				
+				if not result:
+					nearby_output.info( "No results returned." )
+				else:
+					nearby_output.text_area( "Results", value=str( result ), height=300 )
 			
 			except Exception as exc:
 				st.error( str( exc ) )

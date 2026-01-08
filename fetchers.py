@@ -1334,6 +1334,50 @@ class GoogleDrive( Fetcher ):
 		self.folder_id = None
 		self.num_results = None
 	
+	@property
+	def mime_options( self ):
+		'''
+			
+			Returns:
+			--------
+			List[ str ] of mime types
+			
+		'''
+		return [ 'text/text',
+		         'text/plain',
+		         'text/html',
+		         'text/cvs',
+		         'text/markdown',
+		         'image/png',
+		         'image/jpg',
+		         'application/epub+zip',
+		         'application/pdf',
+		         'application/rtf',
+		         'application/vnd.google-apps.document',
+		         'application/vnd.google-apps.presentation',
+		         'application/vnd.google-apps.spreadsheet',
+		         'application/vnd.google.colaboratory',
+		         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+		         'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ]
+	
+	@property
+	def template_options( self ):
+		'''
+
+			Returns:
+			--------
+			List[ str ] of mime types
+
+		'''
+		return [ 'gdrive-all-in-folder',
+		         'gdrive-query',
+		         'gdrive-by-name',
+		         'gdrive-query-in-folder',
+		         'gdrive-mime-type',
+		         'gdrive-mime-type-in-folder',
+		         'gdrive-query-with-mime-type',
+		         'gdrive-query-with-mime-type-and-folder' ]
+	
 	def fetch( self, question: str, folder_id: str='root',
 			results: int=10, template: str='gdrive-query' ) -> List[ Document ] | None:
 		'''
@@ -1489,11 +1533,11 @@ class Wikipedia( Fetcher ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.fetcher = None
-		self.max_documents = 100
-		self.language = 'english'
+		self.max_documents = None
+		self.language = 'en'
 		self.include_metadata = False
 	
-	def fetch( self, question: str ) -> List[ Document ] | None:
+	def fetch( self, question: str, max_docs: int=100  ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1512,6 +1556,7 @@ class Wikipedia( Fetcher ):
 		try:
 			throw_if( 'question', question )
 			self.query = question
+			self.max_documents = max_docs
 			self.fetcher = WikipediaRetriever( lang=self.language, load_all_available_meta=self.include_metadata )
 			self.documents = self.fetcher.invoke( input=self.query,  )
 			return self.documents

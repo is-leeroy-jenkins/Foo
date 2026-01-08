@@ -71,17 +71,8 @@ from langchain_community.document_loaders import (
 	YoutubeLoader
 )
 
-try:
-    import pdfplumber
-except ImportError:
-    pdfplumber = None
-
-try:
-    from pdf2image import convert_from_path
-    import pytesseract
-except ImportError:
-    convert_from_path = None
-    pytesseract = None
+from langchain_community.document_loaders.parsers import PyPDFParser
+from langchain_community.document_loaders.parsers import RapidOCRBlobParser
 
 from pathlib import Path
 import re
@@ -613,7 +604,6 @@ class PdfReader( Loader ):
 		super( ).__init__( )
 		self.file_path = None
 		self.documents = [ ]
-		self.file_path = None
 		self.pattern = None
 		self.chunk_size = None
 		self.overlap_amount = None
@@ -726,8 +716,19 @@ class PdfLoader( PdfReader ):
 			- Optional OCR fallback
 			
 	"""
-	def __init__( self, path: str, size: int=1000, overlap: int=150,
-			has_tables: bool=True, use_ocr: bool=False ) -> None:
+	loader: Optional[ PyPDFLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	mode: Optional[ str ]
+	extraction: Optional[ str ]
+	include_images: Optional[ bool ]
+	image_format: Optional[ str ]
+	custom_delimiter: Optional[ str ]
+	image_parser: Optional[ RapidOCRBlobParser ]
+	
+	
+	def __init__( self, size: int=1000, overlap: int=150,
+			has_tables: bool=True, include: bool=True ) -> None:
 		"""
 		
 			Purpose:
@@ -746,219 +747,90 @@ class PdfLoader( PdfReader ):
 				use_ocr:
 					Enable OCR fallback for image-only PDFs.
 		"""
-		super( ).__init__( path )
-		self.chunk_size = size
-		self.chunk_overlap = overlap
+		super( ).__init__( )
 		self.enable_tables = has_tables
-		self.enable_ocr = use_ocr
+		self.include_images = include
+		self.file_path = None
+		self.documents = [ ]
+		self.pattern = None
+		self.chunk_size = size
+		self.overlap_amount = overlap
+		self.loader = None
+		self.mode = None
+		self.image_format = None
+		self.custom_delimiter = None
 
-	def load( self ) -> List[ Document ]:
-		"""
-		
-			Purpose:
-			---------
-			Load and chunk the PDF document.
-		
-			Returns:
-				List[Document]
-		"""
-		if pdfplumber is None:
-			raise RuntimeError( "pdfplumber is required for PdfLoader" )
-		
-		documents: List[ Document ] = [ ]
-		
-		with pdfplumber.open( self.path ) as pdf:
-			for page_number, page in enumerate( pdf.pages, start=1 ):
-				text = page.extract_text( ) or ""
-				
-				if not text.strip( ) and self.enable_ocr:
-					text = self.ocr_page( page_number )
-				
-				if not text.strip( ):
-					continue
-				
-				documents.extend(
-					self.process_page(
-						text=text,
-						page_number=page_number,
-					)
-				)
-		
-		return documents
-
-	def process_page( self, text: str, page_number: int ) -> List[ Document ]:
-		"""
-		
-			Purpose:
-			---------
-			Process a single page of text into Document chunks.
-		
-			Parameters:
-			---------
-				text:
-					Extracted page text.
-				page_number:
-					1-based page index.
-		
-			Returns:
-			---------
-				List[Document]
-		"""
-		blocks = self.split_structural_blocks( text )
-		documents: List[ Document ] = [ ]
-		
-		for block in blocks:
-			chunks = self.chunk_text( block )
+	@property
+	def mode_options( self ):
+		'''
 			
-			for chunk in chunks:
-				documents.append(
-					Document(
-						page_content=chunk,
-						metadata={
-								"source": str( self.path ),
-								"page": page_number,
-								"type": self.classify_block( block ),
-						},
-					)
-				)
-		
-		return documents
-	
-	def chunk_text( self, text: str ) -> List[ str ]:
-		"""
-		
-			Purpose:
-			---------
-			Chunk text using a sliding window strategy.
-		
-			Parameters:
-			---------
-			text - Input text.
-		
-			Returns:
-			---------
-			List[str]
-			
-		"""
-		chunks: List[ str ] = [ ]
-		start = 0
-		length = len( text )
-		
-		while start < length:
-			end = start + self.chunk_size
-			chunk = text[ start:end ].strip( )
-			
-			if chunk:
-				chunks.append( chunk )
-			
-			start = end - self.chunk_overlap
-		
-		return chunks
-	
-	def split_structural_blocks( self, text: str ) -> List[ str ]:
-		"""
-		
-			Purpose:
-			---------
-			Split text into structural blocks (tables vs prose).
-		
-			Parameters:
-			---------
-			text:
-			Page text.
-		
-			Returns:
-			---------
-			List[str]
-			
-		"""
-		if not self.enable_tables:
-			return [ text ]
-		
-		lines = text.splitlines( )
-		blocks: List[ str ] = [ ]
-		buffer: List[ str ] = [ ]
-		
-		for line in lines:
-			if self.looks_like_table_row( line ):
-				buffer.append( line )
-			else:
-				if buffer:
-					blocks.append( "\n".join( buffer ) )
-					buffer = [ ]
-				blocks.append( line )
-		
-		if buffer:
-			blocks.append( "\n".join( buffer ) )
-		
-		return blocks
-	
-	def classify_block( self, text: str ) -> str:
-		"""
-		
-			Purpose:
-			---------
-			Classify a structural block.
-		
-			Parameters:
-			----------
-			text:
-			Block content.
-		
 			Returns:
 			--------
-			str
-		"""
-		if self.enable_tables and self.looks_like_table_row( text ):
-			return "table"
+			A List[ str ] of mode options
 		
-		return "text"
-	
-	def looks_like_table_row( self, line: str ) -> bool:
-		"""
+		'''
+		return [ 'page', 'single' ]
+
+	@property
+	def extraction_options( self ):
+		'''
+			
+			Returns:
+			--------
+			A List[ str ] of mode options
 		
-				Purpose:
-				--------
-				Heuristic to detect table-like rows.
+		'''
+		return [ 'plain', 'layout' ]
+
+	@property
+	def image_options( self ):
+		'''
 			
-				Parameters:
-				__________
-					line:
-						Single line of text.
-			
-				Returns:
-				________
-				bool
-			
-		"""
-		return bool( re.search( r"\s{2,}", line ) )
+			Returns:
+			--------
+			A List[ str ] of mode options
+		
+		'''
+		return [ 'html-img', 'markdown-img', 'text-img' ]
 	
-	def ocr_page( self, page_number: int ) -> str:
+	
+	def load( self, path: str, mode: str='single', extract: str='plain',
+			include: bool=True, format: str='markdown-img' ) -> List[ Document ]:
 		"""
 		
 			Purpose:
 			---------
-			Perform OCR on a single page if text extraction fails.
-		
-			Parameters:
-			---------
-				page_number:
-					1-based page index.
+			Loads PDF document into Langchain documnet
 		
 			Returns:
-			-------
-				str
-				
+				List[Document]
 		"""
-		if convert_from_path is None or pytesseract is None:
-			return ""
-		
-		images = convert_from_path( self.path, first_page=page_number, last_page=page_number, )
-		
-		if not images:
-			return ""
-		
-		return pytesseract.image_to_string( images[ 0 ] )
+		try:
+			throw_if( 'path', path )
+			self.file_path = self.verify_exists( path )
+			self.mode = mode
+			self.extraction = extract
+			self.include_images = include
+			self.image_format = format
+			if self.include_images:
+				self.image_parser = RapidOCRBlobParser( )
+				self.loader = PyPDFLoader( file_path=self.file_path, mode=self.mode,
+				extraction_mode=self.extraction, extract_images=self.inlude_images,
+					images_inner_format=self.image_format, images_parser=self.image_parser )
+				self.documents = self.loader.load( )
+				return self.documents
+			else:
+				self.loader = PyPDFLoader( file_path=self.file_path, mode=self.mode,
+				extraction_mode=self.extraction   )
+				self.documents = self.loader.load( )
+				return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'PdfLoader'
+			exception.method = 'load( self, path: str, mode: str=single, extract: str=plain ) -> List[ Document ]'
+			error = ErrorDialog( exception )
+			error.show( )
 
 class ExcelLoader( Loader ):
 	'''
@@ -994,6 +866,8 @@ class ExcelLoader( Loader ):
 	loader: Optional[ UnstructuredExcelLoader ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
+	mode: Optional[ str ]
+	has_headers: Optional[ bool ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
@@ -1003,6 +877,7 @@ class ExcelLoader( Loader ):
 		self.chunk_size = None
 		self.overlap_amount = None
 		self.loader = None
+		self.mode = None
 	
 	def __dir__( self ):
 		'''
@@ -1041,7 +916,7 @@ class ExcelLoader( Loader ):
 			-----------
 			path (str): File path to the Excel spreadsheet.
 			mode (str): Extraction mode, either 'elements' or 'paged'.
-			include_headers (bool): Whether to include column headers in parsing.
+			headers (bool): Whether to include column headers in parsing.
 
 			Returns:
 			--------
@@ -1051,8 +926,9 @@ class ExcelLoader( Loader ):
 		'''
 		try:
 			throw_if( 'path', path )
+			self.mode = mode
 			self.file_path = self.verify_exists( path )
-			self.loader = UnstructuredExcelLoader( file_path=self.file_path  )
+			self.loader = UnstructuredExcelLoader( file_path=self.file_path, mode=self.mode  )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
@@ -1366,8 +1242,7 @@ class HtmlLoader( Loader ):
 
 		Purpose:
 		--------
-		Provides the UnstructuredHTMLLoader's functionality
-		to parse HTML files into Document objects.
+		Provides the UnstructuredHTMLLoader's functionality to parse HTML files into Document objects.
 		
 		Attributes:
 		-----------
@@ -2314,7 +2189,7 @@ class PowerPointLoader( Loader ):
 		         'split', ]
 	
 	
-	def load( self, path: str ) -> List[ Document ] | None:
+	def load( self, path: str, mode: str='single' ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -2333,7 +2208,7 @@ class PowerPointLoader( Loader ):
 		try:
 			throw_if( 'path', path )
 			self.file_path = self.verify_exists( path )
-			self.mode = 'single'
+			self.mode = mode
 			self.loader = UnstructuredPowerPointLoader( file_path=self.file_path, mode=self.mode  )
 			self.documents = self.loader.load( )
 			return self.documents
