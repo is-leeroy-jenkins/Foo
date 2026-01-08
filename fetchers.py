@@ -2187,10 +2187,12 @@ class GoogleMaps( Fetcher ):
 	
 			self.response = requests.get( url=self.url, params=self.params )
 			self.response.raise_for_status( )
-			_data = self.response.json( )
-			_location = _data[ 'results' ][ 0 ][ 'geometry' ][ 'location' ]
-			_lat = _location[ 'lat' ]
-			_lng = _location[ 'lng' ]
+			_response = self.response.json()
+			_result = _response[ 'results' ][ 0 ]
+			_geo = _result[ 'geometry' ]
+			_loc = _geo[ 'location' ]
+			_lat = _loc[ 'lat' ]
+			_lng = _loc[ 'lng' ]
 			return ( _lat, _lng )
 		except Exception as e:
 			exception = Error( e )
