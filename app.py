@@ -654,7 +654,8 @@ with tab_fetchers:
 				try:
 					gm = GoogleMaps( )
 					loc= gm.geocode_location( gm_query )
-					gm_output.text_area( "Coords", value=loc, height=300 )
+					coords = f'{loc[0]}, {loc[1]}'
+					gm_output.text_area( "Coords", value=coords, height=300 )
 				except Exception as exc:
 					st.error( exc )
 	
