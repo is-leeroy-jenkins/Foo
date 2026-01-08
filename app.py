@@ -160,7 +160,7 @@ st.set_page_config( page_title='Foo', layout='wide', page_icon=config.FAVICON )
 col_left, col_center, col_right = st.columns( [ 1, 2, 1 ], vertical_alignment='top' )
 
 with col_left:
-    st.image( 'resources/images/foo_logo.png', width=100 )
+    st.image( 'resources/images/foo_logo.png', width=80 )
 
 # ======================================================================================
 # Sidebar — Global API keys only
@@ -245,9 +245,7 @@ with tab_loaders:
 # Scrapers
 # ======================================================================================
 with tab_scrapers:
-
 	col_left, col_right = st.columns([1, 2], border=True)
-
 	with col_left:
 		target_url = st.text_input(
 			"Target URL",
