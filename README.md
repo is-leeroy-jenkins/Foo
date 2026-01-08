@@ -24,7 +24,7 @@ A small, multi-tool framework to facilitate retrieval augmentation, sql querying
 * [Scrapers](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-scrapers)
 * [Dependencies](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-dependencies)
 * [Technical Notes](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-technical-notes)
-* [License](#license)
+* [License](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
 
 
 
