@@ -13,17 +13,17 @@ A small, multi-tool framework to facilitate retrieval augmentation, sql querying
 
 ## 📚 Table of Contents
 
-* [Features](#features)
-* [Architecture](#architecture)
-* [Directory Structure](#directory-structure)
-* [Installation](#installation)
-* [Quick Start](#quick-start)
-* [Usage Examples](#usage-examples)
-* [Loaders](#loaders)
-* [Fetchers](#fetchers)
-* [Scrapers](#scrapers)
-* [Dependencies](#dependencies)
-* [Technical Notes](#technical-notes)
+* [Features](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-features)
+* [Architecture](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-architecture)
+* [Directory Structure](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-directory-structure)
+* [Installation](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-installation)
+* [Quick Start](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-quick-start)
+* [Usage Examples](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-example-usage)
+* [Loaders](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-loader)
+* [Fetchers](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-fetcher)
+* [Scrapers](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-scrapers)
+* [Dependencies](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-dependencies)
+* [Technical Notes](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-technical-notes)
 * [License](#license)
 
 
