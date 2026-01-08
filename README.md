@@ -4,9 +4,9 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/is-leeroy-jenkins/Foo/blob/main/ipynb/soup.ipynb)
 
-Foo is a local, interactive Streamlit application designed to give users explicit, hands-on control over how data is loaded, extracted, queried, and explored from a variety of sources. Through a tab-based interface, users can load content from URLs, raw text, and local files; selectively scrape structured elements from web pages; fetch information from external services; interact with conversational analysis tools; and perform location-based workflows such as geocoding and weather lookups. 
+Foo is a small application designed to give users explicit, hands-on control over how data is loaded, extracted, queried, and explored from a variety of sources. Through a tab-based interface, users can load content from URLs, raw text, and local files; selectively scrape structured elements from web pages; fetch information from external services; interact with conversational analysis tools; and perform location-based workflows such as geocoding and weather lookups. 
 
-Foo emphasizes transparency and user intent over automation: every operation is opt-in, visibly executed, and immediately rendered in the interface, with clear error reporting and no hidden background processing. The application is modular by design, allowing individual capabilities—loaders, scrapers, fetchers, mappers, and data views—to operate independently while remaining composable within a single, cohesive workspace.
+Foo emphasizes transparency and user intent over automation: every operation is opt-in, visibly executed, and immediately rendered in the interface, with clear error reporting and no hidden background processing. The application is modular by design, allowing individual capabilities—loaders, scrapers, fetchers, mappers, and databases to operate independently while remaining composable within a single, cohesive workspace.
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://boo-py.streamlit.app/)
 
