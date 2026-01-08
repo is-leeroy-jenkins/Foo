@@ -230,7 +230,6 @@ with tab_scrapers:
 # ======================================================================================
 # FETCHERS TAB — ArXiv
 # ======================================================================================
-
 with tab_fetchers:
 	st.subheader( "" )
 	
@@ -691,7 +690,7 @@ with tab_fetchers:
 			if gw_submit:
 				try:
 					f = GoogleWeather( )
-					result = f.current_observation( address=gw_location )
+					result = f.fetch_current( address=gw_location )
 					if not result:
 						gw_output.info( "No results returned." )
 					else:
@@ -1109,7 +1108,7 @@ with tab_fetchers:
 		if govdata_submit:
 			try:
 				f = GovData( )
-				result = f.search_criteria( govdata_query )
+				result = f.fetch( govdata_query )
 				
 				if not result:
 					govdata_output.info( "No results returned." )

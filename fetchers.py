@@ -2178,7 +2178,6 @@ class GoogleMaps( Fetcher ):
 		try:
 			throw_if( 'address', address )
 			self.address = address
-			self.api_key = cfg.GOOGLE_API_KEY
 			self.url = "https://maps.googleapis.com/maps/api/geocode/json"
 			self.params = {
 				"address": self.address,
@@ -2264,7 +2263,12 @@ class GoogleMaps( Fetcher ):
 					'addressLines': address,
 				}
 			}
-			self.params = {'key': self.api_key }
+			
+			self.params = \
+			{
+				'key': self.api_key
+			}
+			
 			response = requests.post( url, params=self.params, json=payload )
 			if response.status_code != 200:
 				msg = f'Request failed: {response.status_code} – {response.text}'
@@ -2434,6 +2438,7 @@ class GoogleWeather( Fetcher ):
 	
 	'''
 	gmaps: Optional[ GoogleMaps ]
+	header: Optional[ Dict[ str, Any ]]
 	file_path: Optional[ str ]
 	num_results: Optional[ int ]
 	api_key: Optional[ str ]
@@ -2448,6 +2453,7 @@ class GoogleWeather( Fetcher ):
 	def __init__( self ) -> None:
 		super( ).__init__( )
 		self.api_key = cfg.GOOGLE_WEATHER_API_KEY
+		self.headers = { }
 		self.gmaps = GoogleMaps( )
 		self.mode = None
 		self.url = None
@@ -2462,7 +2468,7 @@ class GoogleWeather( Fetcher ):
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
-	def current_observation( self, address: str ) -> Response | None:
+	def fetch_current( self, address: str ) -> Response | None:
 		"""
 		
 			Purpose:
@@ -2491,7 +2497,7 @@ class GoogleWeather( Fetcher ):
 			error = ErrorDialog( exception )
 			error.show( )
 	
-	def future_forecast( self, address: str ) -> Dict[ Any, Any ] | None:
+	def future_forecast( self, address: str ) -> Response | None:
 		"""
 			
 			Purpose:
@@ -2503,7 +2509,7 @@ class GoogleWeather( Fetcher ):
 		try:
 			throw_if( 'address', address )
 			self.address = address
-			lat, lng = geocode_address( self.api_key, self.address )
+			lat, lng = self.gmaps.geocode_location( address=self.address )
 			self.latitude = lat
 			self.longitude = lng
 			self.url = "https://maps.googleapis.com/maps/api/weather/v1/forecast"
@@ -5152,7 +5158,7 @@ class GovData( Fetcher ):
 		self.query = None
 		self.params = None
 		
-	def search_criteria( self, criteria: str ) -> Dict[ str, Any ] | None:
+	def fetch( self, criteria: str ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Returns:
