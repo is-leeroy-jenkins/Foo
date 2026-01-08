@@ -155,8 +155,12 @@ def render_google_results( response ) -> str:
 # Streamlit Setup
 # ======================================================================================
 
-st.set_page_config( page_title="Foo", layout="wide", page_icon=config.FAVICON )
-st.title( "" )
+st.set_page_config( page_title='Foo', layout='wide', page_icon=config.FAVICON )
+
+col_left, col_center, col_right = st.columns( [ 1, 2, 1 ], vertical_alignment='top' )
+
+with col_left:
+    st.image( 'resources/images/foo_logo.png', width=100 )
 
 # ======================================================================================
 # Sidebar — Global API keys only
