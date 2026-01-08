@@ -4,7 +4,6 @@
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/is-leeroy-jenkins/Foo/blob/main/ipynb/soup.ipynb)
 
-*A Modular Python Framework for Retrieval-Augmented Pipelines and Agentic Workflows*
 A small, multi-tool framework to facilitate retrieval augmentation, sql querying, and document loading for agentic workflows that is written in python.
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://boo-py.streamlit.app/)
