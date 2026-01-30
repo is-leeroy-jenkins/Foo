@@ -43,12 +43,11 @@
 '''
 from typing import Optional, List, Pattern, Dict
 from bs4 import BeautifulSoup
-from requests import Response
+from requests import Response, HTTPError
 from boogr import Error, ErrorDialog
 import config as cfg
 import re
 import requests
-
 from core import Result
 
 def throw_if( name: str, value: object ):

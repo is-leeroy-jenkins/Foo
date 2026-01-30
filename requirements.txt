@@ -10,7 +10,6 @@ chromadb
 docx2txt
 extract_msg
 PyMuPDF==1.23.26
-FreeSimpleGUI
 google
 google-genai
 google-api-python-client
@@ -43,11 +42,12 @@ pymupdf
 pytube
 python-magic
 python-pptx
-requests
 requests-cache
 retry-requests
 sscws
 typing
 unstructured
+requests>=2.31.0
+urllib3>=2.0.7
 wikipedia
 youtube-transcript-api

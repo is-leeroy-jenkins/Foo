@@ -24,9 +24,11 @@ from fetchers import (
 )
 
 # ======================================================================================
-# Paths / Database
+# CONTSTANTS
 # ======================================================================================
-
+LOGO = r'resources/images/foo_logo.ico'
+BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
+FAVICON = r'resources/images/favicon.ico'
 BASE_DIR = Path( __file__ ).resolve( ).parent
 DB_PATH = BASE_DIR / "stores" / "sqlite" / "datamodels" / "Data.db"
 
@@ -38,9 +40,8 @@ if not DB_PATH.exists( ):
 	conn.close( )
 
 # ======================================================================================
-# Chat Helpers
+# Utilities / Helpers
 # ======================================================================================
-
 def _filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ str, Any ]:
 	try:
 		sig = inspect.signature( fn )
@@ -125,7 +126,6 @@ def _model_selector( key_prefix: str, label: str, options: list[ str ], default_
 # ======================================================================================
 # GOOGLE SEARCH FORMATTER
 # ======================================================================================
-
 def render_google_results( response ) -> str:
 	try:
 		data = response.json( )
@@ -152,23 +152,22 @@ def render_google_results( response ) -> str:
 	return "\n".join( lines )
 
 # ======================================================================================
-# Streamlit Setup
+# Application Setup
 # ======================================================================================
-
-st.set_page_config( page_title='Foo', layout='wide', page_icon=config.FAVICON )
+st.logo( LOGO, size='large' )
+st.set_page_config( page_title='Foo', layout='wide', page_icon=FAVICON )
 
 col_left, col_center, col_right = st.columns( [ 1, 2, 1 ], vertical_alignment='top' )
 
-with col_left:
-    st.image( 'resources/images/foo_logo.png', width=80 )
-
 # ======================================================================================
-# Sidebar — Global API keys only
+# Sidebar
 # ======================================================================================
-
 with st.sidebar:
 	st.header( "Configuration" )
 	
+	# ---------------------------
+	# API Keys
+	# ---------------------------
 	with st.expander( "API Keys", expanded=False ):
 		for attr in dir( config ):
 			if attr.endswith( "_API_KEY" ) or attr.endswith( "_TOKEN" ):
@@ -180,7 +179,6 @@ with st.sidebar:
 # ======================================================================================
 # Tabs
 # ======================================================================================
-
 tab_loaders, tab_scrapers, tab_fetchers, tab_chat, tab_maps, tab_data = st.tabs(
 	[ "Loaders",
 	  "Scrapers",
@@ -190,9 +188,8 @@ tab_loaders, tab_scrapers, tab_fetchers, tab_chat, tab_maps, tab_data = st.tabs(
 	  "Data" ] )
 
 # ======================================================================================
-# Loaders
+# LOADING TAB
 # ======================================================================================
-
 with tab_loaders:
 	# ---------------------------
 	# Persistent state
@@ -200,9 +197,9 @@ with tab_loaders:
 	st.session_state.setdefault( "loader_results", { } )
 	st.session_state.setdefault( "loader_documents", [ ] )
 
-	# ---------------------------
+    # -----------------------------------------------
 	# Top row: Browse (left) + Text/URLs (right)
-	# ---------------------------
+    # -----------------------------------------------
 	col_browse, col_text = st.columns( [ 1, 1 ], border=True )
 
 	with col_browse:
@@ -220,9 +217,9 @@ with tab_loaders:
 			key="loader_text_area",
 		)
 
-	# ---------------------------
+    # -----------------------------------------------
 	# Checkbox row (unchanged: its own row)
-	# ---------------------------
+    # -----------------------------------------------
 	col1, col2, col3, col4, col5, col6 = st.columns( 6 )
 
 	with col1:
@@ -239,7 +236,7 @@ with tab_loaders:
 		do_youtube = st.checkbox( label="Youtube", key="youtube_cb" )
 
 	# ---------------------------
-	# Action buttons (below the checkbox row)
+	# Action buttons
 	# ---------------------------
 	b1, b2 = st.columns( 2 )
 
@@ -270,9 +267,9 @@ with tab_loaders:
 		# Always use the correct object name.
 		extractor = scrapers.WebExtractor( )
 
-		# -----
+	    # -----------------------------------------------
 		# 1) URL scraping (from right text area)
-		# -----
+	    # -----------------------------------------------
 		urls = [ u.strip( ) for u in ( loader_text or "" ).splitlines( ) if u.strip( ) ]
 		if urls:
 			url_outputs: list[ dict[ str, Any ] ] = [ ]
@@ -288,8 +285,6 @@ with tab_loaders:
 					if do_excel:
 						output[ "excel" ] = extractor.scrape_tables( url )
 
-					# These are placeholders in your current codebase (scrape_).
-					# Preserve behavior: call the same method name if it exists.
 					if do_markdown and hasattr( extractor, "scrape_" ):
 						output[ "markdown" ] = extractor.scrape_( url )
 					if do_powerpoint and hasattr( extractor, "scrape_" ):
@@ -304,9 +299,9 @@ with tab_loaders:
 
 			results[ "urls" ] = url_outputs
 
-		# -----
+	    # -----------------------------------------------
 		# 2) Local file loading (from left uploader)
-		# -----
+	    # -----------------------------------------------
 		if uploaded_files:
 			file_outputs: list[ dict[ str, Any ] ] = [ ]
 
@@ -317,15 +312,13 @@ with tab_loaders:
 				out: dict[ str, Any ] = { "file": name, "type": suffix }
 
 				try:
-					# Persist the uploaded file to a temp path so existing loaders can use file paths.
 					tmp_dir = ( BASE_DIR / "stores" / "tmp_uploads" )
 					tmp_dir.mkdir( parents=True, exist_ok=True )
 					tmp_path = tmp_dir / name
 
 					with open( tmp_path, "wb" ) as fp:
 						fp.write( f.getbuffer( ) )
-
-					# Route to existing loaders already imported at top of app.py.
+						
 					if suffix == "pdf" and do_pdf:
 						ld = PdfLoader( )
 						docs = ld.load( str( tmp_path ) )
@@ -354,7 +347,6 @@ with tab_loaders:
 
 			results[ "files" ] = file_outputs
 
-		# Commit to state (render below checkboxes)
 		st.session_state.update(
 			{
 				"loader_results": results,
@@ -363,9 +355,9 @@ with tab_loaders:
 		)
 		st.rerun( )
 
-	# ---------------------------
+	# -----------------------------------------------
 	# Render results (below checkboxes)
-	# ---------------------------
+	# -----------------------------------------------
 	st.markdown( "----" )
 
 	# 1) Documents (from local loaders)
@@ -381,11 +373,9 @@ with tab_loaders:
 	if st.session_state[ "loader_results" ]:
 		st.markdown( "### Load Results" )
 		st.json( st.session_state[ "loader_results" ] )
-
-
-					
+		
 # ======================================================================================
-# Scrapers
+# SCRAPING TAB
 # ======================================================================================
 with tab_scrapers:
 	col_left, col_right = st.columns([1, 2], border=True)
@@ -399,16 +389,11 @@ with tab_scrapers:
 		st.markdown("#### Extraction Options")
 
 		fetcher = WebFetcher()
-
-		# ------------------------------------------------------------------
-		# Discover scrape* methods from WebFetcher.__dir__()
-		# ------------------------------------------------------------------
 		raw_names = [
 			name for name in fetcher.__dir__()
 			if name.startswith("scrape")
 		]
 
-		# Deduplicate + filter out invalid / misspelled names
 		VALID_SCRAPERS: dict[str, str] = {
 			"scrape_images": "Images",
 			"scrape_hyperlinks": "Hyperlinks",
@@ -473,14 +458,16 @@ with tab_scrapers:
 			except Exception as exc:
 				st.error( str( exc ) )
 
-
-
 # ======================================================================================
-# FETCHERS TAB — ArXiv
+# FETCHING TAB
 # ======================================================================================
 with tab_fetchers:
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
+	
+	# ---------------------------
+	# ArXiv
+	# ---------------------------
 	with st.expander( "ArXiv", expanded=True ):
 		col1, col2 = st.columns( 2, border=True )
 		
@@ -544,9 +531,9 @@ with tab_fetchers:
 						else:
 							st.write( doc )
 		
-	# ======================================================================================
-	# GoogleDrive Fetcher
-	# ======================================================================================
+	# ---------------------------
+	# Google Drive
+	# ---------------------------
 	with st.expander( "Google Drive", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -588,9 +575,9 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# Wikipedia Fetcher
-	# ======================================================================================
+	# ---------------------------
+	# Wikipedia
+	# ---------------------------
 	with st.expander( "Wikipedia", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -632,9 +619,9 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# TheNews
-	# ======================================================================================
+	# ---------------------------
+	# The News API
+	# ---------------------------
 	with st.expander( "The News API", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -697,9 +684,8 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# GoogleSearch
-	# ======================================================================================
+	# Google Search
+	# ---------------------------
 	with st.expander( "Google Search", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -750,11 +736,9 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	
-	
-	# ======================================================================================
-	# NavalObservatory
-	# ======================================================================================
+	# ---------------------------
+	# Naval Observatory
+	# ---------------------------
 	with st.expander( "US Naval Observatory", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -794,9 +778,9 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# OpenScience
-	# ======================================================================================
+	# ---------------------------
+	# Open Science
+	# ---------------------------
 	with st.expander( "Open Science", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -836,9 +820,9 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# GovData
-	# ======================================================================================
+	# ---------------------------
+	# Gov Data
+	# ---------------------------
 	with st.expander( "Gov Info", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -878,9 +862,9 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
+	# ---------------------------
 	# Congress
-	# ======================================================================================
+	# ---------------------------
 	with st.expander( "Congress", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -920,9 +904,9 @@ with tab_fetchers:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# InternetArchive
-	# ======================================================================================
+	# ---------------------------
+	# Internet Archive
+	# ---------------------------
 	with st.expander( "Internet Archive", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -963,9 +947,8 @@ with tab_fetchers:
 				st.error( str( exc ) )
 
 # ======================================================================================
-# DATA TAB
+# PERSISTENCE TAB
 # ======================================================================================
-
 with tab_data:
 	st.subheader( "" )
 	
@@ -978,9 +961,8 @@ with tab_data:
 	st.write( tables )
 
 # ======================================================================================
-# CHAT TAB — all clear() handlers replaced with update()+rerun()
+# TEXT GENERATION
 # ======================================================================================
-
 with tab_chat:
 	# -----------------------------
 	# Chat (OpenAI)
@@ -1078,7 +1060,7 @@ with tab_chat:
 			chat_output = st.empty( )
 		
 		# -----------------------------
-		# FIXED clear()
+		# Clear Button
 		# -----------------------------
 		if chat_clear:
 			st.session_state.update( {
@@ -1088,7 +1070,7 @@ with tab_chat:
 			st.rerun( )
 		
 		# -----------------------------
-		# Submit
+		# Submit Button
 		# -----------------------------
 		if chat_submit:
 			try:
@@ -1104,16 +1086,15 @@ with tab_chat:
 				}
 				
 				params = { k: v for k, v in params.items( ) if v is not None }
-				
 				result = _invoke_provider( fetcher, chat_prompt, params )
 				_render_output( chat_output, result )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 		
-	# ======================================================================================
+	# ---------------------------
 	# GROQ
-	# ======================================================================================
+	# ---------------------------
 	with st.expander( "Groq", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1227,9 +1208,9 @@ with tab_chat:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
+	# ---------------------------
 	# CLAUDE
-	# ======================================================================================
+	# ---------------------------
 	with st.expander( "Claude", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1354,9 +1335,9 @@ with tab_chat:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
+	# ---------------------------
 	# GEMINI
-	# ======================================================================================
+	# ---------------------------
 	with st.expander( "Gemini", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1479,9 +1460,9 @@ with tab_chat:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
+	# ---------------------------
 	# MISTRAL
-	# ======================================================================================
+	# ---------------------------
 	with st.expander( "Mistral", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1603,10 +1584,13 @@ with tab_chat:
 				st.error( str( exc ) )
 
 # ======================================================================================
-# MAPS TAB
+# MAPPING TAB
 # ======================================================================================
 with tab_maps:
 	
+	# ---------------------------
+	# Google Maps
+	# ---------------------------
 	with st.expander( "Google Maps", expanded=True ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1652,9 +1636,9 @@ with tab_maps:
 				except Exception as exc:
 					st.error( exc )
 	
-	# ======================================================================================
-	# GoogleWeather
-	# ======================================================================================
+	# ---------------------------
+	# Google Weather
+	# ---------------------------
 	with st.expander( "Google Weather", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1693,9 +1677,9 @@ with tab_maps:
 				except Exception as exc:
 					st.error( str( exc ) )
 					
-	# ======================================================================================
-	# SatelliteCenter
-	# ======================================================================================
+	# ---------------------------
+	# Satellite Center
+	# ---------------------------
 	with st.expander( "Satellite Center", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1735,9 +1719,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 		
-	# ======================================================================================
-	# AstroCatalog
-	# ======================================================================================
+	# ---------------------------
+	# Astro Catalog
+	# ---------------------------
 	with st.expander( "Astronomy Catalog", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1777,9 +1761,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 				
-	# ======================================================================================
-	# AstroQuery
-	# ======================================================================================
+	# ---------------------------
+	# Astro Query
+	# ---------------------------
 	with st.expander( "Astro Query", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1819,9 +1803,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 		
-	# ======================================================================================
-	# StarMap
-	# ======================================================================================
+	# ---------------------------
+	# Star Map
+	# ---------------------------
 	with st.expander( "Star Map", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1861,9 +1845,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 				
-	# ======================================================================================
-	# OpenWeather
-	# ======================================================================================
+	# ---------------------------
+	# Open Weather
+	# ---------------------------
 	with st.expander( "Open Weather", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1903,9 +1887,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
+	# ---------------------------
 	# Open Meteo / OpenWeather
-	# ======================================================================================
+	# ---------------------------
 	with st.expander( "Open Meteorology", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -1967,9 +1951,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
+	# ---------------------------
 	# Simbad Fetcher
-	# ======================================================================================
+	# ---------------------------
 	with st.expander( "Simbad", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -2009,9 +1993,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# EarthObservatory
-	# ======================================================================================
+	# ---------------------------
+	# Earth Observatory
+	# ---------------------------
 	with st.expander( "Earth Observatory", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -2051,9 +2035,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# SpaceWeather
-	# ======================================================================================
+	# ---------------------------
+	# Space Weather
+	# ---------------------------
 	with st.expander( "Space Weather", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -2093,9 +2077,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# ======================================================================================
-	# StarChart
-	# ======================================================================================
+	# ---------------------------
+	# Star Chart
+	# ---------------------------
 	with st.expander( "Star Chart", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -2135,9 +2119,9 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 		
-	# ======================================================================================
-	# NearbyObjects
-	# ======================================================================================
+	# ---------------------------
+	# Nearby Objects
+	# ---------------------------
 	with st.expander( "Near Earth Objects", expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -2177,6 +2161,3 @@ with tab_maps:
 			except Exception as exc:
 				st.error( str( exc ) )
 				
-# ======================================================================================
-# END OF FILE
-# ======================================================================================
