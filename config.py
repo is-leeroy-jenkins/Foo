@@ -76,12 +76,12 @@ THENEWS_API_KEY = os.getenv( 'THENEWSAPI_API_KEY' )
 WEATHERAPI_API_KEY = os.getenv( 'WEATHERAPI_API_KEY' )
 XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
 
-
 # ---------------- CONSTANTS -----------------------
+APP_TITLE = 'Foo'
 BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 SQLSERVER_DRIVER = r'DRIVER={ ODBC Driver 17 for SQL Server };SERVER=.\SQLExpress;'
 BASE_DIR = Path( __file__ ).resolve( ).parent
-DB_PATH = BASE_DIR / "stores" / "sqlite" / "datamodels" / "Data.db"
+DB_PATH = BASE_DIR / 'stores' / 'sqlite' / 'datamodels' / 'Data.db'
 AGENTS ='''Mozilla/5.0 Windows NT 10.0; Win64; x64; AppleWebKit/537.36 (KHTML, like Gecko)
 		Chrome/124.0 Safari/537.36'''
 SKYMAP_TOKEN = '''06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d7b5edd56e8d57766aa3
@@ -89,3 +89,4 @@ SKYMAP_TOKEN = '''06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d
 FAVICON = r'resources/images/favicon.ico'
 LOGO = r'resources/images/foo_logo.png'
 DB = r'stores/sqlite/datamodels/'
+MODES = [ 'Loaders', 'Scrapers', 'Fetchers', 'AI', 'Maps', 'Data' ]

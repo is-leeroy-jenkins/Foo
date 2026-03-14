@@ -44,15 +44,16 @@ from __future__ import annotations
 
 import inspect
 import json
+import numpy as np
 import os
+import re
 import sqlite3
-from langchain_core.documents import Document
 from pathlib import Path
 from typing import Any, Dict
 
 import streamlit as st
 
-import config
+import config as cfg
 import scrapers
 from loaders import PdfLoader, WordLoader, ExcelLoader
 import fetchers
@@ -82,8 +83,16 @@ if not DB_PATH.exists( ):
 	conn.close( )
 
 # ======================================================================================
-# Utilities / Helpers
+# SESSION STATE
 # ======================================================================================
+
+if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
+	st.session_state[ 'mode' ] = 'Loaders'
+
+# ======================================================================================
+# UTILITITES
+# ======================================================================================
+
 def _filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ str, Any ]:
 	try:
 		sig = inspect.signature( fn )
@@ -165,9 +174,6 @@ def _model_selector( key_prefix: str, label: str, options: list[ str ], default_
 	
 	return selected
 
-# ======================================================================================
-# GOOGLE SEARCH FORMATTER
-# ======================================================================================
 def render_google_results( response ) -> str:
 	try:
 		data = response.json( )
@@ -193,51 +199,193 @@ def render_google_results( response ) -> str:
 	
 	return "\n".join( lines )
 
+def style_subheaders( ) -> None:
+	"""
+	
+		Purpose:
+		_________
+		Sets the style of subheaders in the main UI
+		
+	"""
+	st.markdown(
+		"""
+		<style>
+		div[data-testid="stMarkdownContainer"] h2,
+		div[data-testid="stMarkdownContainer"] h3,
+		div[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] h2,
+		div[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] h3 {
+			color: rgb(0, 120, 252) !important;
+		}
+		</style>
+		""",
+		unsafe_allow_html=True, )
+
+def encode_image( path: str ) -> str:
+	"""
+	
+		Purpose:
+		_________
+		
+		Parametes:
+		----------
+		
+		
+		Returns:
+		--------
+		
+		
+	"""
+	data = Path( path ).read_bytes( )
+	return base64.b64encode( data ).decode( "utf-8" )
+
+def normalize_text( text: str ) -> str:
+	"""
+		
+		Purpose
+		-------
+		Normalize text by:
+			• Converting to lowercase
+			• Removing punctuation except sentence delimiters (. ! ?)
+			• Ensuring clean sentence boundary spacing
+			• Collapsing whitespace
+	
+		Parameters
+		----------
+		text: str
+	
+		Returns
+		-------
+		str
+		
+	"""
+	if not text:
+		return ""
+	
+	# Lowercase
+	text = text.lower( )
+	
+	# Remove punctuation except . ! ?
+	text = re.sub( r"[^\w\s\.\!\?]", "", text )
+	
+	# Ensure single space after sentence delimiters
+	text = re.sub( r"([.!?])\s*", r"\1 ", text )
+	
+	# Normalize whitespace
+	text = re.sub( r"\s+", " ", text ).strip( )
+	
+	return text
+
+def chunk_text( text: str, max_tokens: int = 400 ) -> list[ str ]:
+	"""
+		
+		Purpose
+		-------
+		Segment normalized text into chunks by:
+			1. Sentence boundaries
+			2. Fallback to token windowing if needed
+	
+		Parameters
+		----------
+		text: str
+		max_tokens: int
+	
+		Returns
+		-------
+		list[str]
+		
+	"""
+	if not text:
+		return [ ]
+	
+	# Sentence-based segmentation
+	sentences = re.split( r"(?<=[.!?])\s+", text )
+	sentences = [ s.strip( ) for s in sentences if s.strip( ) ]
+	
+	if len( sentences ) > 1:
+		return sentences
+	
+	# Fallback: token window segmentation
+	words = text.split( )
+	chunks = [ ]
+	current_chunk = [ ]
+	token_count = 0
+	
+	for word in words:
+		current_chunk.append( word )
+		token_count += 1
+		
+		if token_count >= max_tokens:
+			chunks.append( " ".join( current_chunk ) )
+			current_chunk = [ ]
+			token_count = 0
+	
+	if current_chunk:
+		chunks.append( " ".join( current_chunk ) )
+	
+	return chunks
+
+def cosine_similarity( a: np.ndarray, b: np.ndarray ) -> float:
+	denom = np.linalg.norm( a ) * np.linalg.norm( b )
+	return float( np.dot( a, b ) / denom ) if denom else 0.0
+
+def sanitize_markdown( text: str ) -> str:
+	"""
+	
+		Purpose:
+		_________
+		
+		
+	"""
+	# Remove bold markers
+	text = re.sub( r"\*\*(.*?)\*\*", r"\1", text )
+	# Optional: remove italics
+	text = re.sub( r"\*(.*?)\*", r"\1", text )
+	return text
+
 # ======================================================================================
-# Application Setup
+# APP SET-UP
 # ======================================================================================
+style_subheaders( )
 st.logo( LOGO, size='large' )
-st.set_page_config( page_title='Foo', layout='wide', page_icon=FAVICON )
+st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON )
 
 col_left, col_center, col_right = st.columns( [ 1, 2, 1 ], vertical_alignment='top' )
 
 # ======================================================================================
-# Sidebar
+# SIDEBAR
 # ======================================================================================
 with st.sidebar:
-	st.header( "Configuration" )
+	st.text( 'Configuration' )
+	st.divider( )
 	
 	# ---------------------------
 	# API Keys
 	# ---------------------------
-	with st.expander( "API Keys", expanded=False ):
-		for attr in dir( config ):
-			if attr.endswith( "_API_KEY" ) or attr.endswith( "_TOKEN" ):
-				current = getattr( config, attr, "" ) or ""
-				val = st.text_input( attr, value=current, type="password" )
+	with st.expander( 'API Keys', expanded=False ):
+		for attr in dir( cfg ):
+			if attr.endswith( '_API_KEY' ) or attr.endswith( '_TOKEN' ):
+				current = getattr( cfg, attr, "" ) or ""
+				val = st.text_input( attr, value=current, type='password' )
 				if val:
 					os.environ[ attr ] = val
-
+	
+	st.divider( )
+	st.text( 'Mode' )
+	mode = st.sidebar.radio( label='Mode', options=cfg.MODES, label_visibility='collapsed' )
+	if mode:
+		st.session_state[ 'mode' ] = mode
+	else:
+		st.session_state[ 'mode' ] = 'Loaders'
+		
 # ======================================================================================
-# Tabs
+# LOADING MODE
 # ======================================================================================
-tab_loaders, tab_scrapers, tab_fetchers, tab_chat, tab_maps, tab_data = st.tabs(
-	[ "Loaders",
-	  "Scrapers",
-	  "Fetchers",
-	  "Yappers",
-	  "Mappers",
-	  "Data" ] )
-
-# ======================================================================================
-# LOADING TAB
-# ======================================================================================
-with tab_loaders:
+if mode == 'Loaders':
 	# ---------------------------
 	# Persistent state
 	# ---------------------------
-	st.session_state.setdefault( "loader_results", { } )
-	st.session_state.setdefault( "loader_documents", [ ] )
+	st.session_state.setdefault( 'loader_results', { } )
+	st.session_state.setdefault( 'loader_documents', [ ] )
 
     # -----------------------------------------------
 	# Top row: Browse (left) + Text/URLs (right)
@@ -245,19 +393,13 @@ with tab_loaders:
 	col_browse, col_text = st.columns( [ 1, 1 ], border=True )
 
 	with col_browse:
-		uploaded_files = st.file_uploader(
-			"Choose file(s)",
-			type=[ "pdf", "docx", "xlsx", "xls" ],
-			accept_multiple_files=True,
-			key="loader_uploaded_files",
-		)
+		uploaded_files = st.file_uploader( 'Choose file(s)',
+			type=[ 'pdf', 'docx', 'xlsx', 'xls' ], accept_multiple_files=True,
+			key='loader_uploaded_files', )
 
 	with col_text:
-		loader_text = st.text_area(
-			"Enter one URL or file path",
-			height=40,
-			key="loader_text_area",
-		)
+		loader_text = st.text_area( 'Enter one URL or file path', height=40,
+			key='loader_text_area' )
 
     # -----------------------------------------------
 	# Checkbox row (unchanged: its own row)
@@ -265,17 +407,17 @@ with tab_loaders:
 	col1, col2, col3, col4, col5, col6 = st.columns( 6 )
 
 	with col1:
-		do_pdf = st.checkbox( label="PDF", key="pdf_cb" )
+		do_pdf = st.checkbox( label='PDF', key='pdf_cb' )
 	with col2:
-		do_word = st.checkbox( label="Word", key="word_cb" )
+		do_word = st.checkbox( label='Word', key='word_cb' )
 	with col3:
-		do_excel = st.checkbox( label="Excel", key="excel_cb" )
+		do_excel = st.checkbox( label='Excel', key='excel_cb' )
 	with col4:
-		do_markdown = st.checkbox( label="Markdown", key="markdown_cb" )
+		do_markdown = st.checkbox( label='Markdown', key='markdown_cb' )
 	with col5:
-		do_powerpoint = st.checkbox( label="Powerpoint", key="powerpoint_cb" )
+		do_powerpoint = st.checkbox( label='Powerpoint', key='powerpoint_cb' )
 	with col6:
-		do_youtube = st.checkbox( label="Youtube", key="youtube_cb" )
+		do_youtube = st.checkbox( label='Youtube', key='youtube_cb' )
 
 	# ---------------------------
 	# Action buttons
@@ -283,18 +425,18 @@ with tab_loaders:
 	b1, b2 = st.columns( 2 )
 
 	with b1:
-		do_load = st.button( "Load", key="loader_load_btn" )
+		do_load = st.button( 'Load', key='loader_load_btn' )
 
 	with b2:
-		do_clear = st.button( "Clear", key="loader_clear_btn" )
+		do_clear = st.button( 'Clear', key='loader_clear_btn' )
 
 	if do_clear:
 		st.session_state.update(
 			{
-				"loader_results": { },
-				"loader_documents": [ ],
-				"loader_text_area": "",
-				"loader_uploaded_files": None,
+				'loader_results': { },
+				'loader_documents': [ ],
+				'loader_text_area': "",
+				'loader_uploaded_files': None,
 			}
 		)
 		st.rerun( )
@@ -321,25 +463,25 @@ with tab_loaders:
 
 				try:
 					if do_pdf:
-						output[ "pdf" ] = extractor.scrape_links( url )
+						output[ 'pdf' ] = extractor.scrape_links( url )
 					if do_word:
-						output[ "word" ] = extractor.scrape_links( url )
+						output[ 'word' ] = extractor.scrape_links( url )
 					if do_excel:
-						output[ "excel" ] = extractor.scrape_tables( url )
+						output[ 'excel' ] = extractor.scrape_tables( url )
 
-					if do_markdown and hasattr( extractor, "scrape_" ):
-						output[ "markdown" ] = extractor.scrape_( url )
-					if do_powerpoint and hasattr( extractor, "scrape_" ):
-						output[ "powerpoint" ] = extractor.scrape_( url )
-					if do_youtube and hasattr( extractor, "scrape_" ):
-						output[ "youtube" ] = extractor.scrape_( url )
+					if do_markdown and hasattr( extractor, 'scrape_' ):
+						output[ 'markdown' ] = extractor.scrape_( url )
+					if do_powerpoint and hasattr( extractor, 'scrape_' ):
+						output[ 'powerpoint' ] = extractor.scrape_( url )
+					if do_youtube and hasattr( extractor, 'scrape_' ):
+						output[ 'youtube' ] = extractor.scrape_( url )
 
 				except Exception as exc:
-					output[ "error" ] = str( exc )
+					output[ 'error' ] = str( exc )
 
 				url_outputs.append( output )
 
-			results[ "urls" ] = url_outputs
+			results[ 'urls' ] = url_outputs
 
 	    # -----------------------------------------------
 		# 2) Local file loading (from left uploader)
@@ -348,53 +490,48 @@ with tab_loaders:
 			file_outputs: list[ dict[ str, Any ] ] = [ ]
 
 			for f in uploaded_files:
-				name = getattr( f, "name", "uploaded" )
-				suffix = Path( name ).suffix.lower( ).lstrip( "." )
+				name = getattr( f, 'name', 'uploaded' )
+				suffix = Path( name ).suffix.lower( ).lstrip( '.' )
 
-				out: dict[ str, Any ] = { "file": name, "type": suffix }
+				out: dict[ str, Any ] = { 'file': name, 'type': suffix }
 
 				try:
-					tmp_dir = ( BASE_DIR / "stores" / "tmp_uploads" )
+					tmp_dir = ( BASE_DIR / 'stores' / 'tmp_uploads' )
 					tmp_dir.mkdir( parents=True, exist_ok=True )
 					tmp_path = tmp_dir / name
 
-					with open( tmp_path, "wb" ) as fp:
+					with open( tmp_path, 'wb' ) as fp:
 						fp.write( f.getbuffer( ) )
 						
-					if suffix == "pdf" and do_pdf:
+					if suffix == 'pdf' and do_pdf:
 						ld = PdfLoader( )
 						docs = ld.load( str( tmp_path ) )
 						if isinstance( docs, list ):
 							documents.extend( docs )
 
-					elif suffix == "docx" and do_word:
+					elif suffix == 'docx' and do_word:
 						ld = WordLoader( )
 						docs = ld.load( str( tmp_path ) )
 						if isinstance( docs, list ):
 							documents.extend( docs )
 
-					elif suffix in ( "xlsx", "xls" ) and do_excel:
+					elif suffix in ( 'xlsx', 'xls' ) and do_excel:
 						ld = ExcelLoader( )
 						docs = ld.load( str( tmp_path ) )
 						if isinstance( docs, list ):
 							documents.extend( docs )
 
 					else:
-						out[ "skipped" ] = "Checkbox for this file type is not selected."
+						out[ 'skipped' ] = 'Checkbox for this file type is not selected.'
 
 				except Exception as exc:
-					out[ "error" ] = str( exc )
+					out[ 'error' ] = str( exc )
 
 				file_outputs.append( out )
 
-			results[ "files" ] = file_outputs
+			results[ 'files' ] = file_outputs
 
-		st.session_state.update(
-			{
-				"loader_results": results,
-				"loader_documents": documents,
-			}
-		)
+		st.session_state.update( { 'loader_results': results, 'loader_documents': documents, } )
 		st.rerun( )
 
 	# -----------------------------------------------
@@ -403,23 +540,23 @@ with tab_loaders:
 	st.markdown( "----" )
 
 	# 1) Documents (from local loaders)
-	if st.session_state[ "loader_documents" ]:
-		st.markdown( "### Loaded Documents" )
-		for idx, doc in enumerate( st.session_state[ "loader_documents" ], start=1 ):
-			with st.expander( f"Document {idx}", expanded=False ):
+	if st.session_state[ 'loader_documents' ]:
+		st.markdown( '### Loaded Documents' )
+		for idx, doc in enumerate( st.session_state[ 'loader_documents' ], start=1 ):
+			with st.expander( f'Document {idx}', expanded=False ):
 				st.text_area( "", value=( doc.page_content or "" ), height=260 )
-				if getattr( doc, "metadata", None ):
+				if getattr( doc, 'metadata', None ):
 					st.json( doc.metadata )
 
 	# 2) Raw results (from URL scraping and file processing metadata)
-	if st.session_state[ "loader_results" ]:
-		st.markdown( "### Load Results" )
-		st.json( st.session_state[ "loader_results" ] )
+	if st.session_state[ 'loader_results' ]:
+		st.markdown( '### Load Results' )
+		st.json( st.session_state[ 'loader_results' ] )
 		
 # ======================================================================================
 # SCRAPING TAB
 # ======================================================================================
-with tab_scrapers:
+elif mode == 'Scrapers':
 	col_left, col_right = st.columns([1, 2], border=True)
 	with col_left:
 		target_url = st.text_input(
@@ -503,7 +640,7 @@ with tab_scrapers:
 # ======================================================================================
 # FETCHING TAB
 # ======================================================================================
-with tab_fetchers:
+elif mode == 'Fetchers':
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
 	
@@ -989,23 +1126,9 @@ with tab_fetchers:
 				st.error( str( exc ) )
 
 # ======================================================================================
-# PERSISTENCE TAB
-# ======================================================================================
-with tab_data:
-	st.subheader( "" )
-	
-	conn = sqlite3.connect( f"file:{DB_PATH.as_posix( )}?mode=ro", uri=True )
-	cur = conn.cursor( )
-	cur.execute( "SELECT name FROM sqlite_master WHERE type='table';" )
-	tables = [ row[ 0 ] for row in cur.fetchall( ) ]
-	conn.close( )
-	
-	st.write( tables )
-
-# ======================================================================================
 # TEXT GENERATION
 # ======================================================================================
-with tab_chat:
+elif mode == 'AI':
 	# -----------------------------
 	# Chat (OpenAI)
 	# -----------------------------
@@ -1628,7 +1751,7 @@ with tab_chat:
 # ======================================================================================
 # MAPPING TAB
 # ======================================================================================
-with tab_maps:
+elif mode == 'Maps':
 	
 	# ---------------------------
 	# Google Maps
@@ -2202,4 +2325,19 @@ with tab_maps:
 			
 			except Exception as exc:
 				st.error( str( exc ) )
+
+# ======================================================================================
+# DATA MANAGEMENT TAB
+# ======================================================================================
+elif mode == 'Data':
+	st.subheader( "" )
+	
+	conn = sqlite3.connect( f"file:{DB_PATH.as_posix( )}?mode=ro", uri=True )
+	cur = conn.cursor( )
+	cur.execute( "SELECT name FROM sqlite_master WHERE type='table';" )
+	tables = [ row[ 0 ] for row in cur.fetchall( ) ]
+	conn.close( )
+	
+	st.write( tables )
+
 				

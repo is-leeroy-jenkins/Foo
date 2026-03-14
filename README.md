@@ -259,13 +259,11 @@ print(chunks)
 * `fetch(url, depth=1, **kwargs)` – Recursively crawls and fetches HTML from linked pages.
 
 
-
 ## 🌌 StarMap
 
 *Fetches celestial map images using coordinates from StarMap.org.*
 
 * `fetch_by_coordinates(ra, dec)` – Generates a star map based on right ascension and declination.
-
 
 
 ## 📚 ArxivFetcher
@@ -275,13 +273,11 @@ print(chunks)
 * `fetch(query, **kwargs)` – Retrieves papers matching the specified query.
 
 
-
 ## 🗂️ GoogleDriveFetcher
 
 *Loads files from Google Drive using LangChain retrievers.*
 
 * `fetch(query, **kwargs)` – Retrieves documents or file metadata from Google Drive.
-
 
 
 ## 📖 WikipediaFetcher
@@ -299,13 +295,11 @@ print(chunks)
 * `fetch(query, **kwargs)` – Retrieves news articles based on keyword and category.
 
 
-
 ## 🔎 GoogleSearch
 
 *Uses Google Custom Search API for web search.*
 
 * `fetch(query, **kwargs)` – Executes a web search and returns the top results.
-
 
 
 ## 🗺️ GoogleMaps
@@ -319,7 +313,6 @@ print(chunks)
 * `validate(address)` – Validates a given address.
 
 
-
 ## ☁️ GoogleWeather
 
 *Retrieves weather data using Google Weather API.*
@@ -327,7 +320,6 @@ print(chunks)
 * `fetch(location)` – Returns weather info for a location.
 
 * `resolve_location(query)` – Performs geocoding to determine a location from a query.
-
 
 
 ## 🕰️ NavalObservatory
@@ -348,7 +340,6 @@ print(chunks)
 * `fetch_ground_stations()` – Lists ground station metadata.
 
 
-
 ## 🌋 EarthObservatory
 
 *Connects to NASA EONET for global natural event data.*
@@ -358,13 +349,11 @@ print(chunks)
 * `fetch_categories()` – Returns the event categories.
 
 
-
 ## 🗾 GlobalImagery
 
 *Pulls satellite imagery from NASA GIBS WMS.*
 
 * `fetch_imagery(bbox, date)` – Returns satellite map tiles or images.
-
 
 
 ## ☄️ NearbyObjects
@@ -374,7 +363,6 @@ print(chunks)
 * `fetch_neos(start, end)` – Returns near-Earth object data for date range.
 
 * `fetch_fireballs(start, end)` – Returns fireball events for date range.
-
 
 
 ## 🕸️ Scrapers

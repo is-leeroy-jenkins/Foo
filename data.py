@@ -49,7 +49,7 @@ import sqlite3
 from sqlite3 import Connection, Cursor
 from typing import Optional, Any, List, Tuple
 from boogr import Error
-from boogr.enums import Source, SQL, ParamStyle, Provider
+from boogr.enums import Source, Provider
 import chromadb
 from chromadb.config import Settings
 import config as cfg
@@ -132,10 +132,10 @@ class DB( ):
 				return cfg.BASEDIR
 		except Exception as e:
 			_exc = Error( e )
+			_exc.module = 'data'
 			_exc.cause = 'DB'
 			_exc.method = 'getdriver_info( self )'
-			_error = ErrorDialog( _exc )
-			_error.show( )
+			raise _exc
 
 	@property
 	def data_path( self ) -> str:
@@ -166,10 +166,10 @@ class DB( ):
 				return self.path
 		except Exception as e:
 			_exc = Error( e )
+			_exc.module = 'data'
 			_exc.cause = 'DB'
 			_exc.method = 'get_data_path( self )'
-			_error = ErrorDialog( _exc )
-			_error.show( )
+			raise _exc
 
 	@property
 	def connection_string( self ) -> str:
@@ -197,10 +197,10 @@ class DB( ):
 				return f'{_path} '
 		except Exception as e:
 			_exc = Error( e )
+			_exc.module = 'data'
 			_exc.cause = 'DB'
 			_exc.method = 'get_connection_string( self )'
-			_error = ErrorDialog( _exc )
-			_error.show( )
+			raise _exc
 
 class SQLite( DB ):
 	"""
@@ -360,8 +360,7 @@ class SQLite( DB ):
 			exception = Error( e )
 			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = ('insert( self, df: str, columns: List[ str ], '
-			                    'target_values: Tuple[ Any, ... ] ) -> None')
+			exception.method = ('insert( self, **kwargs ) -> None')
 			raise exception
 			
 	
@@ -462,9 +461,7 @@ class SQLite( DB ):
 			exception = Error( e )
 			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = (
-					'fetch_one( self, df: str, where: str, params: Tuple[ Any, ... ] ) -> '
-					'Optional[ Tuple ]')
+			exception.method = 'fetch_one( self, **kwargs )'
 			raise exception
 			
 	
@@ -498,9 +495,7 @@ class SQLite( DB ):
 			exception = Error( e )
 			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = (
-					'update( self, df: str, pairs: str, where: str, params: Tuple[ Any, '
-					'... ] ) -> None')
+			exception.method = 'update( self, **kwargs )'
 			raise exception
 			
 	
@@ -532,7 +527,7 @@ class SQLite( DB ):
 			exception = Error( e )
 			exception.module = 'data'
 			exception.cause = 'SQLite'
-			exception.method = 'delete( self, df: str, where: str, params: Tuple[ Any] )->None'
+			exception.method = 'delete( self, **kwargs )'
 			raise exception
 			
 	
@@ -653,11 +648,11 @@ class Chroma:
 			exception = Error( e )
 			exception.module = 'Foo'
 			exception.cause = 'Chroma'
-			exception.method = 'add( )'
+			exception.method = 'add( self, **kwargs )'
 			raise exception
 			
 	
-	def query( self, text: List[ str ], num: int = 5, where: Optional[ dict ] = None ) -> List[ str ] | None:
+	def query( self, text: List[ str ], num: int=5, where: Optional[ dict ]=None ) -> List[ str ] | None:
 		'''
 
 			Purpose:

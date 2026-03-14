@@ -50,9 +50,8 @@ import io
 import re
 import urllib.parse
 from typing import Any, Dict, Optional, Pattern, List, Tuple
-
 import matplotlib.pyplot as plt
-from matplotlib.ticker import mticker
+import matplotlib.ticker as mticker
 from PIL.Image import Image
 from astropy.table import Table
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
@@ -65,16 +64,17 @@ import requests_cache
 from anthropic import Anthropic
 from astroquery.simbad import Simbad
 from google import genai
-from google.genai.types import HttpOptions
 from grokipedia_api import GrokipediaClient
 from groq import Groq as GroqClient
 import googlemaps as gmaps
 from langchain_core.documents import Document
+from langchain_classic.agents import AgentExecutor
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
 from langchain_googledrive.retrievers import GoogleDriveRetriever
 import os
 from openai import OpenAI
 import openmeteo_requests
+from pathlib import Path
 from owslib.wms import WebMapService
 from requests import Response
 from retry_requests import retry

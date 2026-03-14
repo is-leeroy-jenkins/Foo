@@ -43,18 +43,7 @@
 '''
 import glob
 import os
-import openai
-from langchain_community.chat_models import ChatOpenAI
-import config as cfg
-from boogr import Error
-import docx2txt
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
-from langchain_core.document_loaders.base import BaseLoader
-from langchain_google_community import GoogleDriveLoader
-from langchain_community.document_loaders.onedrive import OneDriveLoader
-from langchain_community.document_loaders.sharepoint import SharePointLoader
-from langchain_community.document_loaders.csv_loader import CSVLoader
+from typing import Optional, List, Dict, Any
 from langchain_community.document_loaders import (
 	ArxivLoader,
 	Docx2txtLoader,
@@ -69,13 +58,18 @@ from langchain_community.document_loaders import (
 	WebBaseLoader,
 	YoutubeLoader
 )
-
-from langchain_community.document_loaders.parsers import PyPDFParser
+from langchain_community.document_loaders.csv_loader import CSVLoader
+from langchain_community.document_loaders.onedrive import OneDriveLoader
 from langchain_community.document_loaders.parsers import RapidOCRBlobParser
+from langchain_community.document_loaders.sharepoint import SharePointLoader
+from langchain_core.document_loaders.base import BaseLoader
+from langchain_core.documents import Document
+from langchain_google_community import GoogleDriveLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.chat_models import ChatOpenAI
 
-from pathlib import Path
-import re
-from typing import Optional, List, Dict, Any
+import config as cfg
+from boogr import Error
 
 def throw_if( name: str, value: Any ) -> None:
 	'''

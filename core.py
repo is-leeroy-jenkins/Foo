@@ -41,8 +41,7 @@
 	******************************************************************************************
 '''
 from __future__ import annotations
-from typing import Dict, Optional, Any, List
-import requests
+from typing import Dict, Optional, Any
 from requests import Response
 
 def throw_if( name: str, value: object ) -> None:
