@@ -67,6 +67,7 @@ from fetchers import (
 )
 
 import pandas as pd
+from pandas import DataFrame
 import streamlit as st
 import scrapers
 import sqlite3
@@ -418,6 +419,22 @@ def sanitize_markdown( text: str ) -> str:
 	# Optional: remove italics
 	text = re.sub( r"\*(.*?)\*", r"\1", text )
 	return text
+
+def normalize( obj ):
+	if obj is None or isinstance( obj, (str, int, float, bool) ):
+		return obj
+	
+	if isinstance( obj, dict ):
+		return { k: normalize( v ) for k, v in obj.items( ) }
+	
+	if isinstance( obj, (list, tuple, set) ):
+		return [ normalize( v ) for v in obj ]
+	if hasattr( obj, 'model_dump' ):
+		try:
+			return obj.model_dump( )
+		except Exception:
+			return str( obj )
+	return str( obj )
 
 # ----------  Database Utilities --------------
 
