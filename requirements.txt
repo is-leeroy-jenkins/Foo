@@ -15,7 +15,6 @@ langchain>=0.3,<0.4
 langchain-core>=0.3,<0.4
 langchain-community>=0.3,<0.4
 langchain-text-splitters>=0.3,<0.4
-langchain-classic>=0.3,<0.4
 langchain-googledrive>=0.0.1
 langchain-google-community>=2,<3
 

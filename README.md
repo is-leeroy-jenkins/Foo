@@ -25,8 +25,6 @@ Foo is modular by design, allowing individual capabilities—loaders, scrapers, 
 * [Technical Notes](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-technical-notes)
 * [License](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
 
-
-
 ## ✨ Features
 
 * Modular, pluggable pipeline for document, web, and data retrieval and processing.
@@ -36,15 +34,11 @@ Foo is modular by design, allowing individual capabilities—loaders, scrapers, 
 * Strong type safety and error handling.
 * Simple, extensible codebase.
 
-
-
 ## 🏛️ Architecture
 
 ```
 📄 Fetcher → 🕸️ Scraper → 📤 Loader  
 ```
-
-
 
 ## 🗂️ Directory Structure
 
@@ -59,8 +53,6 @@ foo/
 ├── config.py
 ├── requirements.txt
 ```
-
-
 
 ## 🛡️ Installation
 
@@ -120,8 +112,6 @@ print(chunks)
 
 
 
-
-
 ## 🗂️ Loader
 
 *Abstract base class for all loaders; provides document loading and splitting interface.*
@@ -129,8 +119,6 @@ print(chunks)
 * `load(path)` – Loads the document from the specified path.
 
 * `split(doc, chunk=1000, overlap=100)` – Splits a loaded document into overlapping text chunks.
-
-
 
 ## 🧾 CsvLoader
 
@@ -140,8 +128,6 @@ print(chunks)
 
 * `split(doc, chunk=1000, overlap=100)` – Splits CSV content for batch processing.
 
-
-
 ## 📄 PdfLoader
 
 *Loads PDF files, supporting robust text extraction and chunking.*
@@ -149,7 +135,6 @@ print(chunks)
 * `load(path)` – Loads and extracts text from a PDF document.
 
 * `split(doc, chunk=1000, overlap=100)` – Splits PDF text into manageable chunks.
-
 
 
 ## 📝 DocxLoader
@@ -161,7 +146,6 @@ print(chunks)
 * `split(doc, chunk=1000, overlap=100)` – Splits DOCX text for analysis.
 
 
-
 ## 🌐 HtmlLoader
 
 *Loads and parses local HTML documents.*
@@ -169,7 +153,6 @@ print(chunks)
 * `load(path)` – Loads HTML content from a file.
 
 * `split(doc, chunk=1000, overlap=100)` – Splits HTML body text into chunks.
-
 
 
 ## 📊 PptxLoader
@@ -181,7 +164,6 @@ print(chunks)
 * `split(doc, chunk=1000, overlap=100)` – Splits slide text for downstream use.
 
 
-
 ## 📈 ExcelLoader
 
 *Loads and processes Excel spreadsheets (XLS/XLSX).*
@@ -189,7 +171,6 @@ print(chunks)
 * `load(path)` – Loads and reads an Excel file.
 
 * `split(doc, chunk=1000, overlap=100)` – Splits spreadsheet content for batch processing.
-
 
 
 ## 📜 TextLoader
@@ -201,7 +182,6 @@ print(chunks)
 * `split(doc, chunk=1000, overlap=100)` – Splits text file content into chunks.
 
 
-
 ## 🗃️ JsonLoader
 
 *Loads structured data from JSON files.*
@@ -209,7 +189,6 @@ print(chunks)
 * `load(path)` – Loads and parses JSON data.
 
 * `split(doc, chunk=1000, overlap=100)` – Splits JSON-encoded text as appropriate.
-
 
 
 ## 📝 MarkdownLoader
@@ -230,8 +209,6 @@ print(chunks)
 
 * `split(doc, chunk=1000, overlap=100)` – Splits XML text nodes for further use.
 
-
-
 ## 🖼️ ImageLoader
 
 *Loads and processes image files for downstream tasks (e.g., OCR, embeddings).*
@@ -239,7 +216,6 @@ print(chunks)
 * `load(path)` – Loads an image file.
 
 * `split(doc, chunk=1000, overlap=100)` – Optionally splits or processes image regions.
-
 
 
 ## 📺 YouTubeLoader
@@ -251,7 +227,6 @@ print(chunks)
 * `split(doc, chunk=1000, overlap=100)` – Splits transcript into chunks.
 
 
-
 ## 💾 UnstructuredLoader
 
 *Flexible loader for mixed-format or “messy” documents.*
@@ -261,15 +236,11 @@ print(chunks)
 * `split(doc, chunk=1000, overlap=100)` – Splits extracted text for processing.
 
 
-
-
-
 ## 🤖 Fetcher
 
 *Abstract base class for all fetchers, defining the core fetch interface.*
 
 * `fetch(url, **kwargs)` – Performs a data retrieval request to a specified endpoint.
-
 
 
 ## 🌍 WebFetcher
