@@ -381,7 +381,7 @@ with st.sidebar:
 # ======================================================================================
 # LOADING MODE
 # ======================================================================================
-if mode == 'Loaders':
+if mode == 'Document Loading':
 	st.subheader( '📤  Document Loading' )
 	st.divider( )
 	st.session_state.setdefault( 'loader_results', { } )
@@ -631,8 +631,8 @@ elif mode == 'Scrapers':
 # ======================================================================================
 # FETCHING TAB
 # ======================================================================================
-elif mode == 'Fetchers':
-	st.subheader( '🏛️  Data Collections' )
+elif mode == 'Data Collection':
+	st.subheader( '🏛️  Data Collection' )
 	st.divider( )
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
@@ -1020,7 +1020,7 @@ elif mode == 'Fetchers':
 # ======================================================================================
 # TEXT GENERATION
 # ======================================================================================
-elif mode == 'Gen AI':
+elif mode == 'Generative AI':
 	st.subheader( '🧠  Generative AI' )
 	st.divider( )
 	# -------- Chat GPT
@@ -1525,7 +1525,7 @@ elif mode == 'Gen AI':
 # ======================================================================================
 # MAPPING MODE
 # ======================================================================================
-elif mode == 'Maps':
+elif mode == 'Satellite Data':
 	st.subheader( '🚀  Satellite Data' )
 	st.divider( )
 	# -------- Google Maps
@@ -1988,7 +1988,7 @@ elif mode == 'Maps':
 # ======================================================================================
 # DATA MODE
 # ======================================================================================
-elif mode == 'Data':
+elif mode == 'Data Management':
 	st.subheader( 'Data Management' )
 	st.divider( )
 	
