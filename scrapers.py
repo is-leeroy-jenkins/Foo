@@ -44,7 +44,7 @@
 from typing import Optional, List, Pattern, Dict
 from bs4 import BeautifulSoup
 from requests import Response, HTTPError
-from boogr import Error, ErrorDialog
+from boogr import Error
 import config as cfg
 import re
 import requests
@@ -207,8 +207,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebFetcher'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def html_to_text( self, html: str ) -> str:
 		'''
@@ -241,8 +241,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'html2text( )'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_paragraphs( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -275,8 +275,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_paragraphs( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_lists( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -308,8 +308,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_lists( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_tables( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -350,8 +350,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_tables( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_articles( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -384,8 +384,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_articles( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_headings( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -423,8 +423,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_headings( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_divisions( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -456,8 +456,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_divisions( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_sections( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -489,8 +489,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_sections( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_blockquotes( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -523,8 +523,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_blockquotes( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_hyperlinks( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -556,8 +556,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_hyperlinks( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_images( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -589,8 +589,8 @@ class WebExtractor( Extractor):
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
 			exception.method = 'scrape_images( self, uri: str ) -> List[ str ] '
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:

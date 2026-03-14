@@ -46,18 +46,28 @@ from __future__ import annotations
 import base64
 import datetime as dt
 import http.client
+import io
 import re
 import urllib.parse
-from typing import Any, Dict, Optional, Pattern, List
+from typing import Any, Dict, Optional, Pattern, List, Tuple
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import mticker
+from PIL.Image import Image
+from astropy.table import Table
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+from langchain_classic.memory import ConversationBufferMemory
+from langchain_community.chat_models import ChatOpenAI
+from langchain_core.tools import Tool
+from pandas import DataFrame
 import requests
 import requests_cache
 from anthropic import Anthropic
 from astroquery.simbad import Simbad
+from google import genai
 from google.genai.types import HttpOptions
 from grokipedia_api import GrokipediaClient
-from groq import Groq
+from groq import Groq as GroqClient
 import googlemaps as gmaps
 from langchain_core.documents import Document
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
@@ -71,7 +81,7 @@ from retry_requests import retry
 from sscws.sscws import SscWs
 
 import config as cfg
-from boogr import Error, ErrorDialog
+from boogr import Error
 from core import Result
 
 def throw_if( name: str, value: Any ) -> None:
@@ -93,6 +103,24 @@ def throw_if( name: str, value: Any ) -> None:
 	'''
 	if value is None:
 		raise ValueError( f"Argument '{name}' cannot be empty!" )
+
+def encode_image( path: str ) -> str:
+	"""
+	
+		Purpose:
+		_________
+		
+		Parametes:
+		----------
+		
+		
+		Returns:
+		--------
+		
+		
+	"""
+	data = Path( path ).read_bytes( )
+	return base64.b64encode( data ).decode( "utf-8" )
 
 class Fetcher:
 	'''
@@ -244,8 +272,8 @@ class Fetch( ):
 	answer: Optional[ Dict ]
 	sources: Optional[ Dict[ str, str ] ]
 	
-	def __init__( self, db_uri: str, doc_paths: List[ str ], model: str = 'gpt-4o-mini',
-			temperature: float = 0.8 ):
+	def __init__( self, db_uri: str, doc_paths: List[ str ], model: str='gpt-5-mini',
+			temperature: float=0.8 ):
 		"""
 
 			Purpose:
@@ -306,8 +334,7 @@ class Fetch( ):
 			exception.module = 'fetchers'
 			exception.cause = 'Fetch'
 			exception.method = 'query_sql(self, question)'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def query_docs( self, question: str, with_sources: bool = False ) -> str | None:
 		"""
@@ -353,8 +380,7 @@ class Fetch( ):
 			exception.module = 'fetchers'
 			exception.cause = 'Fetch'
 			exception.method = 'query_docs(self, question, with_sources)'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def query_chat( self, prompt: str ) -> str | None:
 		"""
@@ -381,8 +407,8 @@ class Fetch( ):
 			exception.module = 'fetchers'
 			exception.cause = 'Fetch'
 			exception.method = 'query_chat(self, prompt)'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 
 class WebFetcher( Fetcher ):
 	'''
@@ -509,8 +535,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetcher'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def html_to_text( self, html: str ) -> str:
 		'''
@@ -543,8 +569,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'html2text( )'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_paragraphs( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -577,8 +603,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_paragraphs( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 
 	def scrape_lists( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -610,8 +636,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_lists( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_tables( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -651,8 +677,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_tables( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_articles( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -685,8 +711,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_articles( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_headings( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -724,8 +750,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_headings( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_divisions( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -757,8 +783,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_divisions( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_sections( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -790,8 +816,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_sections( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_blockquotes( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -824,8 +850,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_blockquotes( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_hyperlinks( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -857,8 +883,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_hyperlinks( self, uri: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def scrape_images( self, uri: str ) -> List[ str ] | None:
 		"""
@@ -890,8 +916,8 @@ class WebFetcher( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebFetchers'
 			exception.method = 'scrape_images( self, uri: str ) -> List[ str ] '
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -976,10 +1002,8 @@ class WebFetcher( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 			
-
 class WebCrawler( WebFetcher ):
 	'''
 		
@@ -1090,8 +1114,8 @@ class WebCrawler( WebFetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebCrawler'
 			exception.method = 'fetch( self, url: str, time: int=15 ) -> Result'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 
 	def render_with_playwright( self, url: str, timeout: int=15 ) -> str:
 		'''
@@ -1125,8 +1149,8 @@ class WebCrawler( WebFetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'WebCrawler'
 			exception.method = 'render_with_playwright'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 
 class ArXiv( Fetcher ):
 	'''
@@ -1200,8 +1224,8 @@ class ArXiv( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'ArXiv'
 			exception.method = 'fetch( self, path: str ) -> List[ Document ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -1286,10 +1310,8 @@ class ArXiv( Fetcher ):
 			exception.cause = 'ArXiv'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
-
+			raise exception
+			
 class GoogleDrive( Fetcher ):
 	'''
 
@@ -1406,7 +1428,7 @@ class GoogleDrive( Fetcher ):
 			self.documents = self.fetcher.invoke( input=self.query  )
 			return self.documents
 		except Exception as e:
-			st.error( str( e ) )
+			raise e
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -1491,9 +1513,8 @@ class GoogleDrive( Fetcher ):
 			exception.cause = 'GoogleDrive'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-	
+			raise exception
+			
 class Wikipedia( Fetcher ):
 	'''
 
@@ -1561,7 +1582,11 @@ class Wikipedia( Fetcher ):
 			self.documents = self.fetcher.invoke( input=self.query,  )
 			return self.documents
 		except Exception as exc:
-			st.error( str( exc ) )
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Wikipedia'
+			exception.method = 'fetch()'
+			raise exception
 	
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -1646,9 +1671,8 @@ class Wikipedia( Fetcher ):
 			exception.cause = 'Wikipedia'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class TheNews( Fetcher ):
 	'''
 
@@ -1778,8 +1802,8 @@ class TheNews( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'TheNews'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 
 	def html_to_text( self, html: str ) -> str:
 		'''
@@ -1812,8 +1836,8 @@ class TheNews( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'TheNews'
 			exception.method = 'html2text( )'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -1898,8 +1922,7 @@ class TheNews( Fetcher ):
 			exception.cause = 'TheNews'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 			
 class GoogleSearch( Fetcher ):
 	'''
@@ -2027,8 +2050,8 @@ class GoogleSearch( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleSearch'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def html_to_text( self, html: str ) -> str:
 		'''
@@ -2061,8 +2084,8 @@ class GoogleSearch( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleSearch'
 			exception.method = 'html2text( )'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -2147,9 +2170,8 @@ class GoogleSearch( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class GoogleMaps( Fetcher ):
 	'''
 
@@ -2244,8 +2266,8 @@ class GoogleMaps( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
 			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 
 	def geocode_coordinates( self, lat: float, long: float ) -> str | None:
 		'''
@@ -2279,8 +2301,8 @@ class GoogleMaps( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
 			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def validate_address( self, address: List[ str ]  ) -> Dict[ Any, Any ] | None:
 		"""
@@ -2326,8 +2348,8 @@ class GoogleMaps( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
 			exception.method = 'validate_address( self, address: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def request_directions( self, origin: str, destination: str, mode: str='driving' ) -> str | None:
 		"""
@@ -2371,8 +2393,8 @@ class GoogleMaps( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
 			exception.method = 'request_directions( self, origin: str, destination: str ) -> dict'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -2457,9 +2479,8 @@ class GoogleMaps( Fetcher ):
 			exception.cause = 'GoogleMaps'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class GoogleWeather( Fetcher ):
 	'''
 
@@ -2541,8 +2562,8 @@ class GoogleWeather( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = 'current_observation( self, address: str ) -> Dict[ Any, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def future_forecast( self, address: str ) -> Response | None:
 		"""
@@ -2575,8 +2596,8 @@ class GoogleWeather( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = 'future_forecast( self, address: str ) -> Dict[ Any, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -2661,9 +2682,8 @@ class GoogleWeather( Fetcher ):
 			exception.cause = 'GoogleWeather'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class NavalObservatory( Fetcher ):
 	'''
 
@@ -2714,12 +2734,12 @@ class NavalObservatory( Fetcher ):
 	calendar_date: Optional[ dt.datetime ]
 	julian_date: Optional[ float ]
 	sidereal_time: Optional[ str]
-	utc_time: Optonal[ dt.time ]
-	local_time: Optonal[ dt.time ]
+	utc_time: Optional[ dt.time ]
+	local_time: Optional[ dt.time ]
 	params: Optional[ Dict[ str, Any ] ]
 	era: Optional[ str ]
 	year: Optional[ str]
-	month: Optioanl[ str ]
+	month: Optional[ str ]
 	day: Optional[ str ]
 	gmaps: Optional[ GoogleMaps ]
 	
@@ -2779,8 +2799,8 @@ class NavalObservatory( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_sidereal( self, coords: Tuple[ float, float ], date: dt.date, time: dt.time ) -> float | None:
 		"""
@@ -2815,7 +2835,7 @@ class NavalObservatory( Fetcher ):
 			self.month = str( date.month )
 			self.day = str( date.day )
 			self.local_time = date.strftime( '%H:%M:%S' )
-			_coords = f'{sself.declination},{self.longitude}'
+			_coords = f'{self.declination},{self.longitude}'
 			self.url = f'https://aa.usno.navy.mil/api/siderealtime?'
 			self.params = \
 			{
@@ -2836,8 +2856,8 @@ class NavalObservatory( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -2922,9 +2942,8 @@ class NavalObservatory( Fetcher ):
 			exception.cause = 'NavalObservatory'
 			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
-			error = ErrorDialog( exception )
-			error.show( )
-	
+			raise exception
+			
 class SatelliteCenter( Fetcher ):
 	'''
 
@@ -2966,10 +2985,11 @@ class SatelliteCenter( Fetcher ):
 	url: Optional[ str ]
 	latitude: Optional[ float ]
 	longitude: Optional[ float ]
+	observatories: Optional[ List[ Dict[ str, Any ] ] ]
 	coordinates: Optional[ Tuple[ float, float ] ]
 	calendar_date: Optional[ dt.datetime ]
-	utc_time: Optonal[ dt.time ]
-	local_time: Optonal[ dt.time ]
+	utc_time: Optional[ dt.time ]
+	local_time: Optional[ dt.time ]
 	params: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self ) -> None:
@@ -2986,6 +3006,7 @@ class SatelliteCenter( Fetcher ):
 		self.julian_date = None
 		self.local_time = None
 		self.utc_time = None
+		self.observatories = [ ]
 		self.agents = cfg.AGENTS
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
@@ -3001,14 +3022,14 @@ class SatelliteCenter( Fetcher ):
 		try:
 			self.ssc = SscWs( )
 			result = self.ssc.get_observatories( )
-			observatories = result[ 'Observatory' ]
+			self.observatories.append( result )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'SatelliteCenter'
 			exception.method = 'fetch_observatories( self ) -> List[ str ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_locations( self ) ->  None:
 		"""
@@ -3046,8 +3067,8 @@ class SatelliteCenter( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'SatelliteCenter'
 			exception.method = 'fetch_locations( self )'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_time_interal( self, select_obs, observatories ):
 		try:
@@ -3062,8 +3083,8 @@ class SatelliteCenter( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'SatelliteCenter'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_ground_stations( self ):
 		try:
@@ -3076,8 +3097,8 @@ class SatelliteCenter( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'SatelliteCenter'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -3162,9 +3183,8 @@ class SatelliteCenter( Fetcher ):
 			exception.cause = 'SatelliteCenter'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class EarthObservatory( Fetcher ):
 	'''
 
@@ -3199,8 +3219,8 @@ class EarthObservatory( Fetcher ):
 	longitude: Optional[ float ]
 	days: Optional[ int ]
 	calendar_date: Optional[ dt.datetime ]
-	utc_time: Optonal[ dt.time ]
-	local_time: Optonal[ dt.time ]
+	utc_time: Optional[ dt.time ]
+	local_time: Optional[ dt.time ]
 	params: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self ) -> None:
@@ -3249,8 +3269,8 @@ class EarthObservatory( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EarthObservatory'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_categories( self, count: int=30 ) -> Dict[ str, Any ]| None:
 		"""
@@ -3282,8 +3302,8 @@ class EarthObservatory( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EarthObservatory'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -3368,9 +3388,8 @@ class EarthObservatory( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class GlobalImagery( Fetcher ):
 	'''
 
@@ -3411,12 +3430,12 @@ class GlobalImagery( Fetcher ):
 	calendar_date: Optional[ dt.datetime ]
 	julian_date: Optional[ float ]
 	sidereal_time: Optional[ str ]
-	utc_time: Optonal[ dt.time ]
-	local_time: Optonal[ dt.time ]
+	utc_time: Optional[ dt.time ]
+	local_time: Optional[ dt.time ]
 	params: Optional[ Dict[ str, Any ] ]
 	era: Optional[ str ]
 	year: Optional[ str ]
-	month: Optioanl[ str ]
+	month: Optional[ str ]
 	day: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -3459,10 +3478,10 @@ class GlobalImagery( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GlobalImagery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
-	def fetch_mercator_map( self ):
+	def fetch_mercator_map( self , ccrs=None ):
 		try:
 			proj3857 = 'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?\
 			version=1.3.0&service=WMS&\
@@ -3491,8 +3510,8 @@ class GlobalImagery( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GlobalImagery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -3577,9 +3596,8 @@ class GlobalImagery( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class NearbyObjects( Fetcher ):
 	'''
 
@@ -3675,8 +3693,8 @@ class NearbyObjects( Fetcher ):
 			exception.cause = 'NearByObjects'
 			exception.method = ('fetch_nearby( self, start: dt.date, end: dt.date, '
 			                    'min_dist: int=10 ) -> Dict[ str, Any ]')
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_fireballs( self,  start: dt.date, end: dt.date ) -> Dict[ str, Any ] | None:
 		"""
@@ -3711,8 +3729,8 @@ class NearbyObjects( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'SolarSystemDynamics'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_asteroids( self ) -> Dict[ str, Any ] | None:
 		try:
@@ -3726,8 +3744,8 @@ class NearbyObjects( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'NearByObjects'
 			exception.method = 'fetch_fireballs( self,  start: dt.date, end: dt.date ) -> Dict[ str, Any ] '
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -3812,9 +3830,8 @@ class NearbyObjects( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class OpenScience( Fetcher ):
 	'''
 
@@ -3909,8 +3926,8 @@ class OpenScience( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
 			exception.method = 'fetch_dataset( self, keyword: str, results: int=100 ) -> Dict[ str, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_studies( self, keywords: str ) -> Dict[ str, Any ] | None:
 		"""
@@ -3930,7 +3947,7 @@ class OpenScience( Fetcher ):
 		"""
 		try:
 			throw_if( 'keywords', keywords )
-			self.keywords = keyword
+			self.keywords = keywords
 			self.datasource = 'cgene, nih_geo, ebi_pride, mg_rast'
 			self.url = f'https://osdr.nasa.gov/bio/repo/search?'
 			self.params = \
@@ -3948,8 +3965,8 @@ class OpenScience( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
 			exception.method = 'fetch_studies( self, keywords: str ) -> Dict[ str, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -4034,9 +4051,8 @@ class OpenScience( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class SpaceWeather( Fetcher ):
 	'''
 
@@ -4122,8 +4138,8 @@ class SpaceWeather( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_analysis( self, start: dt.date, end: dt.date ) -> Dict[ str, Any ] | None:
 		"""
@@ -4169,8 +4185,8 @@ class SpaceWeather( Fetcher ):
 			exception.cause = 'SpaceWeather'
 			exception.method = ('fetch_ejection_analysis( self, start: dt.date, end: dt.date )'
 			                    ' -> Dict[ str, Any ]')
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_storms( self, start: dt.date, end: dt.date ) -> Dict[ str, Any ] | None:
 		"""
@@ -4202,8 +4218,8 @@ class SpaceWeather( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'SpaceWeather'
 			exception.method = 'fetch_geomagnetic_storms( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_solar_flares( self, start: dt.date, end: dt.date ) -> float | None:
 		"""
@@ -4237,8 +4253,8 @@ class SpaceWeather( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'DONKI'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -4323,9 +4339,8 @@ class SpaceWeather( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class AstroCatalog( Fetcher ):
 	'''
 
@@ -4430,8 +4445,8 @@ class AstroCatalog( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
 			exception.method = 'cone_search( self, ra: str, dec: str, radius: int=2 ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_supernovae( self ) -> Dict[ str, Any ] | None:
 		"""
@@ -4461,8 +4476,8 @@ class AstroCatalog( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_redshift( self, object: str ) -> float | None:
 		"""
@@ -4488,8 +4503,8 @@ class AstroCatalog( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_solar_flares( self, start: dt.date, end: dt.date ) -> float | None:
 		"""
@@ -4523,8 +4538,8 @@ class AstroCatalog( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -4609,9 +4624,8 @@ class AstroCatalog( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class AstroQuery( Fetcher ):
 	'''
 
@@ -4685,8 +4699,8 @@ class AstroQuery( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'AstroQuery'
 			exception.method = 'fetch_julian( self, address: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def region_search( self, dso: str, radius: float=0.5 ) -> Table | None:
 		"""
@@ -4708,8 +4722,8 @@ class AstroQuery( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'AstroQuery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def catalog_search( self, name: str='ESO' ) -> Table| None:
 		"""
@@ -4732,8 +4746,8 @@ class AstroQuery( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAstronomyCatalog'
 			exception.method = 'catalog_search( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -4818,9 +4832,8 @@ class AstroQuery( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class StarMap( Fetcher ):
 	'''
 		
@@ -4943,8 +4956,7 @@ class StarMap( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'StarMap'
 			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 	
 	def ssds_by_coordinates( self, ra: float, dec: float ) -> Dict[ str, Any ] | None:
 		'''
@@ -4985,8 +4997,8 @@ class StarMap( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'StarMap'
 			exception.method = 'sdss_by_coordinates( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 			
 	def fetch_by_object( self, name: str ) -> Dict[ str, Any ] | None:
 		'''
@@ -5023,8 +5035,8 @@ class StarMap( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'StarMap'
 			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def ssds_by_object( self, name: str ) -> Dict[ str, Any ] | None:
 		'''
@@ -5061,8 +5073,8 @@ class StarMap( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'StarMap'
 			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -5147,10 +5159,8 @@ class StarMap( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
-
+			raise exception
+			
 class GovData( Fetcher ):
 	'''
 		
@@ -5231,8 +5241,8 @@ class GovData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_regulations( self, title: int, part: int ) -> Dict[ str, Any ] | None:
 		'''
@@ -5264,8 +5274,8 @@ class GovData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 
 	def fetch_bills( self, congress: int, billtype: str, billnum: int ) -> Dict[ str, Any ] | None:
 		'''
@@ -5277,8 +5287,8 @@ class GovData( Fetcher ):
 		'''
 		try:
 			throw_if( 'congress', congress )
-			throw_if( 'type', type )
-			throw_if( 'part', part )
+			throw_if( 'billtype', billtype )
+			throw_if( 'billnum', billnum )
 			self.congress_number = congress
 			self.bill_type = billtype
 			self.bill_number = billnum
@@ -5300,8 +5310,8 @@ class GovData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 			
 	def fetch_statutes( self, congress: int, lawtype: str, lawnum: int ) -> Dict[ str, Any ] | None:
 		'''
@@ -5335,8 +5345,8 @@ class GovData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_statutes( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 			
 	def fetch_records( self, congress: str, billtype: str,  billnum: int ) -> Dict[ str, Any ] | None:
 		'''
@@ -5348,9 +5358,11 @@ class GovData( Fetcher ):
 		'''
 		try:
 			throw_if( 'congress', congress )
+			throw_if( 'billtype', billtype )
+			throw_if( 'billnum', billnum )
 			self.congress_number = congress
-			self.bill_type = lawtype
-			self.bill_number = lawnum
+			self.bill_type = billtype
+			self.bill_number = billnum
 			self.url = f'https://www.govinfo.gov/link/crec/cas/'
 			self.params = \
 			{
@@ -5368,8 +5380,8 @@ class GovData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_public_laws( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 			
 	def fetch_laws( self, congress: str, lawtype: str,  lawnum: int ) -> Dict[ str, Any ] | None:
 		'''
@@ -5401,8 +5413,8 @@ class GovData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GovInfo'
 			exception.method = 'fetch_public_laws( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -5487,8 +5499,7 @@ class GovData( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
 			
 class StarChart( Fetcher ):
 	'''
@@ -5556,7 +5567,7 @@ class StarChart( Fetcher ):
 			self.style = style
 			self.authString = base64.b64encode( self.userpass.encode( ) ).decode( )
 			self.url = f'https://api.astronomyapi.com/api/v2/studio/star-chart?'
-			self.headers[ 'Authorizeion' ] = 'Basic ' + authString
+			self.headers[ 'Authorizeion' ] = 'Basic ' + self.authString
 			self.params = \
 			{
                 'style': self.style,
@@ -5592,8 +5603,8 @@ class StarChart( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'StarChart'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -5678,9 +5689,8 @@ class StarChart( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class Congress( Fetcher ):
 	'''
 
@@ -5732,7 +5742,7 @@ class Congress( Fetcher ):
 		self.query = None
 		self.params = None
 	
-	def fetch_bills( self, congress: num ) -> Dict[ str, Any ] | None:
+	def fetch_bills( self, congress: int ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
@@ -5759,10 +5769,10 @@ class Congress( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
-	def fetch_laws( self, congress: num ) -> Dict[ str, Any ] | None:
+	def fetch_laws( self, congress: int ) -> Dict[ str, Any ] | None:
 		'''
 
 			Returns:
@@ -5789,8 +5799,8 @@ class Congress( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_reports( self, congress: int ) -> Dict[ str, Any ] | None:
 		'''
@@ -5819,8 +5829,8 @@ class Congress( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -5905,9 +5915,8 @@ class Congress( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class InternetArchive( Fetcher ):
 	'''
 
@@ -6030,8 +6039,8 @@ class InternetArchive( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'InternetArchive'
 			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def html_to_text( self, html: str ) -> str:
 		'''
@@ -6064,8 +6073,8 @@ class InternetArchive( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleSearch'
 			exception.method = 'html2text( )'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -6150,9 +6159,8 @@ class InternetArchive( Fetcher ):
 			exception.cause = ''
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class OpenWeather( Fetcher ):
 	'''
 
@@ -6332,8 +6340,8 @@ class OpenWeather( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
 			exception.method = 'fetch_current( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_hourly( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ] | None:
 		"""
@@ -6382,8 +6390,8 @@ class OpenWeather( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
 			exception.method = 'fetch_hourly( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ] | None:
 		"""
@@ -6432,8 +6440,8 @@ class OpenWeather( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
 			exception.method = 'fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_historical( self, lat: float, long: float, zone: str, start: dt.date, end: dt.date ) -> \
 	Dict[ str, Any ] | None:
@@ -6486,8 +6494,8 @@ class OpenWeather( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
 			exception.method = 'fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -6572,9 +6580,8 @@ class OpenWeather( Fetcher ):
 			exception.cause = 'OpenWeather'
 			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class Groq( Fetcher ):
 	'''
 
@@ -6596,7 +6603,7 @@ class Groq( Fetcher ):
 		fetch( ) -> Dict[ str, Any ]
 		
 	'''
-	client: Optional[ Groq ]
+	client: Optional[ GroqClient ]
 	model: Optional[ str ]
 	keywords: Optional[ str ]
 	url: Optional[ str ]
@@ -6607,7 +6614,7 @@ class Groq( Fetcher ):
 	params: Optional[ Dict[ str, str ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
-	top_p: Optioanl[ float ]
+	top_p: Optional[ float ]
 	reasonging_effort: Optional[ float ]
 	stream: Optional[ bool ]
 	store: Optional[ bool ]
@@ -6630,9 +6637,10 @@ class Groq( Fetcher ):
 			
 		'''
 		super( ).__init__( )
-		self.api_key = cfg.GROQ_API_KE
+		self.api_key = cfg.GROQ_API_KEY
 		self.model = 'openai/gpt-oss-120b'
 		self.url = r'https://api.groq.com/openai/v1?'
+		self.client = None
 		self.messages = None
 		self.temperature = 0.8
 		self.top_p =  0.9
@@ -6703,7 +6711,7 @@ class Groq( Fetcher ):
 		try:
 			throw_if( 'query', query )
 			self.query = query
-			self.client = Groq( )
+			self.client = GroqClient( api_key=self.api_key )
 			self.messages = [
 			{
 				'role': 'user',
@@ -6725,8 +6733,8 @@ class Groq( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Groq'
 			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def analyze_image( self, path: str, prompt: str, is_url=False ):
 		'''
@@ -6739,7 +6747,6 @@ class Groq( Fetcher ):
 		throw_if( 'prompt', prompt )
 		throw_if( 'path', path )
 		self.query = prompt
-	
 		self.client = Groq( api_key=self.api_key )
 		if is_url:
 			image_content = \
@@ -6758,7 +6765,7 @@ class Groq( Fetcher ):
 							"url": f"data:image/jpeg;base64,{base64_image}" } }
 		
 		try:
-			chat_completion = client.chat.completions.create(
+			chat_completion = self.client.chat.completions.create(
 				messages=[
 						{
 								"role": "user",
@@ -6778,8 +6785,8 @@ class Groq( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Groq'
 			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -6863,9 +6870,8 @@ class Groq( Fetcher ):
 			exception.cause = 'Groq'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class Gemini( Fetcher ):
 	'''
 
@@ -6901,7 +6907,7 @@ class Gemini( Fetcher ):
 	params: Optional[ Dict[ str, str ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
-	top_p: Optioanl[ float ]
+	top_p: Optional[ float ]
 	reasonging_effort: Optional[ float ]
 	http_options: Optional[ str ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
@@ -6921,6 +6927,7 @@ class Gemini( Fetcher ):
 		self.use_vertex = cfg.GOOGLE_GENAI_USE_VERTEXAI
 		self.model = 'gemini-2.5-flash'
 		self.headers = { }
+		self.client = None
 		self.timeout = None
 		self.contents = None
 		self.params = None
@@ -6980,7 +6987,7 @@ class Gemini( Fetcher ):
 		try:
 			throw_if( 'query', query )
 			self.contents = query
-			self.client = genai.Client( http_options=HttpOptions( api_version='v1' ) )
+			self.client = genai.Client( api_key=self.api_key )
 			_response = self.client.models.generate_content( model=self.model, contents=self.contents, )
 			return _response.text
 		except Exception as exc:
@@ -6988,8 +6995,8 @@ class Gemini( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Gemini'
 			exception.method = 'fetch( self, query: str ) -> str '
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 	
 	def analyze( self, query: str, path: str ) -> str | None:
 		'''
@@ -7013,16 +7020,16 @@ class Gemini( Fetcher ):
 			throw_if( 'path', path )
 			self.contents = query
 			self.file_path = path
-			_client = genai.Client( http_options=HttpOptions( api_version='v1' ) )
-			_response = client.models.generate_content( model=self.model, contents=self.contents, )
+			self.client = genai.Client( api_key=self.api_key )
+			_response = self.client.models.generate_content( model=self.model, contents=self.contents, )
 			return _response.text
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Gemini'
 			exception.method = 'analyze( self, query: str, path: str ) -> str'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -7107,9 +7114,8 @@ class Gemini( Fetcher ):
 			exception.cause = 'Gemini'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class Claude( Fetcher ):
 	'''
 
@@ -7140,7 +7146,7 @@ class Claude( Fetcher ):
 	params: Optional[ Dict[ str, str ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
-	top_p: Optioanl[ float ]
+	top_p: Optional[ float ]
 	reasonging_effort: Optional[ float ]
 	
 	def __init__( self ) -> None:
@@ -7237,8 +7243,8 @@ class Claude( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Claude'
 			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -7323,9 +7329,8 @@ class Claude( Fetcher ):
 			exception.cause = 'Claude'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class Mistral( Fetcher ):
 	'''
 
@@ -7355,7 +7360,7 @@ class Mistral( Fetcher ):
 	params: Optional[ Dict[ str, str ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
-	top_p: Optioanl[ float ]
+	top_p: Optional[ float ]
 	reasonging_effort: Optional[ float ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	
@@ -7379,6 +7384,7 @@ class Mistral( Fetcher ):
 		self.api_key = cfg.MISTRAL_API_KEY
 		self.model = 'mistral-medium-lates'
 		self.headers = { }
+		self.client = None
 		self.timeout = None
 		self.content = None
 		self.params = None
@@ -7452,8 +7458,8 @@ class Mistral( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Mistral'
 			exception.method = 'fetch( self, query: str ) -> List[ str ]'
-			dialog = ErrorDialog( exception )
-			dialog.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
@@ -7538,9 +7544,8 @@ class Mistral( Fetcher ):
 			exception.cause = 'Mistral'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class Chat( Fetcher ):
 	"""
 	
@@ -7634,8 +7639,8 @@ class Chat( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'generate_text( self, prompt: str )'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def generate_image( self, prompt: str ) -> str:
 		"""
@@ -7667,8 +7672,8 @@ class Chat( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'generate_image( self, prompt: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def analyze_image( self, prompt: str, url: str ) -> str:
 		"""
@@ -7713,8 +7718,8 @@ class Chat( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'analyze_image( self, prompt: str, url: str )'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def summarize_document( self, prompt: str, path: str ) -> str:
 		"""
@@ -7764,8 +7769,8 @@ class Chat( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'summarize_document( self, prompt: str, path: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def search_web( self, prompt: str ) -> str:
 		"""
@@ -7799,8 +7804,8 @@ class Chat( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'search_web( self, prompt: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def search_files( self, prompt: str ) -> str:
 		"""
@@ -7838,8 +7843,8 @@ class Chat( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'search_files( self, prompt: str ) -> str'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def translate( self, text: str ) -> str:
 		pass
@@ -8013,9 +8018,8 @@ class Chat( Fetcher ):
 			exception.cause = 'Chat'
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			error = ErrorDialog( exception )
-			error.show( )
-
+			raise exception
+			
 class Grokipedia( Fetcher ):
 	'''
 		
@@ -8098,8 +8102,8 @@ class Grokipedia( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Grokipedia'
 			exception.method = 'fetch( self, query: str ) -> Dict[ str, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_page( self, query: str ) -> Dict[ str, Any ] | None:
 		'''
@@ -8129,8 +8133,8 @@ class Grokipedia( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Grokipedia'
 			exception.method = 'fetch_page( self, query: str ) -> Dict[ str, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_pages( self, query: str ) -> Dict[ str, Any ] | None:
 		'''
@@ -8160,8 +8164,8 @@ class Grokipedia( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Grokipedia'
 			exception.method = 'fetch_pages( self, query: str ) -> Dict[ str, Any ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 		
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[
@@ -8248,5 +8252,5 @@ class Grokipedia( Fetcher ):
 			exception.method = (
 				'create_schema( self, function: str, tool: str, description: str, '
 				'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			

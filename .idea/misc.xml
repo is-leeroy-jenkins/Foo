@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Black">
-    <option name="sdkName" value="Foo-Py" />
+    <option name="sdkName" value="python ( foo )" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Foo-Py" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="python ( foo )" project-jdk-type="Python SDK" />
 </project>

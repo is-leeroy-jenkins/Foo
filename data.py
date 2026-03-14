@@ -1,16 +1,16 @@
 '''
   ******************************************************************************************
-      Assembly:                Name
-      Filename:                name.py
+      Assembly:                Foo
+      Filename:                data.py
       Author:                  Terry D. Eppler
       Created:                 05-31-2022
 
       Last Modified By:        Terry D. Eppler
       Last Modified On:        05-01-2025
   ******************************************************************************************
-  <copyright file="guro.py" company="Terry D. Eppler">
+  <copyright file="data.py" company="Terry D. Eppler">
 
-	     name.py
+	     data.py
 	     Copyright ©  2022  Terry Eppler
 
      Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,7 +37,7 @@
 
   </copyright>
   <summary>
-    name.py
+    data.py
   </summary>
   ******************************************************************************************
 '''
@@ -48,7 +48,7 @@ import os
 import sqlite3
 from sqlite3 import Connection, Cursor
 from typing import Optional, Any, List, Tuple
-from boogr import Error, ErrorDialog
+from boogr import Error
 from boogr.enums import Source, SQL, ParamStyle, Provider
 import chromadb
 from chromadb.config import Settings
@@ -305,8 +305,8 @@ class SQLite( DB ):
 			exception.module = 'data'
 			exception.cause = 'SQLite'
 			exception.method = 'create( self ) -> None'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def create_table( self, sql: str ) -> None:
 		"""
@@ -330,8 +330,8 @@ class SQLite( DB ):
 			exception.module = 'data'
 			exception.cause = 'SQLite'
 			exception.method = 'create_table( self, sql: str ) -> None'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def insert( self, table: str, columns: List[ str ], values: Tuple[ Any, ... ] ) -> None:
 		"""
@@ -362,8 +362,8 @@ class SQLite( DB ):
 			exception.cause = 'SQLite'
 			exception.method = ('insert( self, df: str, columns: List[ str ], '
 			                    'target_values: Tuple[ Any, ... ] ) -> None')
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def insert_many( self, source_file: str, chunks: List[ str ], vectors: np.ndarray ) -> None:
 		"""
@@ -399,8 +399,8 @@ class SQLite( DB ):
 			exception.module = 'data'
 			exception.cause = 'SQLite'
 			exception.method = 'insert_many'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_all( self, table: str ) -> List[ Tuple ] | None:
 		"""
@@ -428,8 +428,8 @@ class SQLite( DB ):
 			exception.module = 'data'
 			exception.cause = 'SQLite'
 			exception.method = 'fetch_all( self, df: str ) -> List[ Tuple ]'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def fetch_one( self, table: str, where: str, params: Tuple[ Any, ... ] ) -> Tuple | None:
 		"""
@@ -465,8 +465,8 @@ class SQLite( DB ):
 			exception.method = (
 					'fetch_one( self, df: str, where: str, params: Tuple[ Any, ... ] ) -> '
 					'Optional[ Tuple ]')
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def update( self, table: str, pairs: str, where: str, params: Tuple[ Any, ... ] ) -> None:
 		"""
@@ -501,8 +501,8 @@ class SQLite( DB ):
 			exception.method = (
 					'update( self, df: str, pairs: str, where: str, params: Tuple[ Any, '
 					'... ] ) -> None')
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def delete( self, table: str, where: str, params: Tuple[ Any, ... ] ) -> None:
 		"""
@@ -533,8 +533,8 @@ class SQLite( DB ):
 			exception.module = 'data'
 			exception.cause = 'SQLite'
 			exception.method = 'delete( self, df: str, where: str, params: Tuple[ Any] )->None'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def import_excel( self, path: str ) -> None:
 		"""
@@ -562,8 +562,8 @@ class SQLite( DB ):
 			exception.module = 'data'
 			exception.cause = 'SQLite'
 			exception.method = 'import_excel( self, path: str ) -> None'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def close( self ) -> None:
 		"""
@@ -581,8 +581,8 @@ class SQLite( DB ):
 			exception.module = 'data'
 			exception.cause = 'SQLite'
 			exception.method = 'close( self ) -> None'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 			
 class Chroma:
 	'''
@@ -654,8 +654,8 @@ class Chroma:
 			exception.module = 'Foo'
 			exception.cause = 'Chroma'
 			exception.method = 'add( )'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def query( self, text: List[ str ], num: int = 5, where: Optional[ dict ] = None ) -> List[ str ] | None:
 		'''
@@ -683,8 +683,8 @@ class Chroma:
 			exception.module = 'Foo'
 			exception.cause = 'Chroma'
 			exception.method = 'query( )'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def delete( self, ids: List[ str ] ) -> None:
 		'''
@@ -709,8 +709,8 @@ class Chroma:
 			exception.module = 'Foo'
 			exception.cause = 'Chroma'
 			exception.method = 'delete( )'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def count( self ) -> int | None:
 		'''
@@ -731,8 +731,8 @@ class Chroma:
 			exception.module = 'Foo'
 			exception.cause = 'Chroma'
 			exception.method = 'count( )'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def clear( self ) -> None:
 		'''
@@ -757,8 +757,8 @@ class Chroma:
 			exception.module = 'Foo'
 			exception.cause = 'Chroma'
 			exception.method = 'clear( )'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			
 	
 	def persist( self ) -> None:
 		'''
@@ -779,5 +779,5 @@ class Chroma:
 			exception.module = 'Foo'
 			exception.cause = 'Chroma'
 			exception.method = 'persist'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception
+			

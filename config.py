@@ -1,6 +1,6 @@
 '''
   ******************************************************************************************
-      Assembly:                Name
+      Assembly:                Foo
       Filename:                config.py
       Author:                  Terry Eppler
       Created:                 05-31-2022
@@ -8,10 +8,10 @@
       Last Modified By:        Terry Eppler
       Last Modified On:        05-01-2025
   ******************************************************************************************
-  <copyright file="guro.py" company="Terry D. Eppler">
+  <copyright file="config.py" company="Terry D. Eppler">
 
 	     config.py
-	     Copyright ©  2022  Terry Eppler
+	     Copyright ©  2024  Terry Eppler
 
      Permission is hereby granted, free of charge, to any person obtaining a copy
      of this software and associated documentation files (the “Software”),
@@ -37,20 +37,21 @@
 
   </copyright>
   <summary>
-    name.py
+    config.py
   </summary>
   ******************************************************************************************
   '''
 import os
+from pathlib import Path
 from typing import Optional, List, Dict
 
+# ------ ENVIRONMENT API KEYS  -------------------
 ACCESS_DRIVER = r'DRIVER={ Microsoft Access Driver (*.mdb, *.accdb) };DBQ='
 CLAUDE_API_KEY = os.getenv( 'CLAUDE_API_KEY' )
 CONGRESS_API_KEY = os.getenv( 'CONGRESS_API_KEY' )
 GEOAPIFY_API_KEY = os.getenv( 'GEOAPIFY_API_KEY' )
 GEOCODING_API_KEY = os.getenv( 'GEOCODING_API_KEY' )
 GEMINI_API_KEY = os.getenv( 'GEMINI_API_KEY' )
-GROQ_API_KEY = os.getenv( 'GROQ_API_KEY' )
 GOOGLE_API_KEY = os.getenv( 'GOOGLE_API_KEY' )
 GOOGLE_CSE_ID = os.getenv( 'GOOGLE_CSE_ID' )
 GOOGLE_CLOUD_PROJECT = os.getenv( 'GOOGLE_CLOUD_PROJECT' )
@@ -59,6 +60,7 @@ GOOGLE_CLOUD_LOCATION = os.getenv( 'GOOGLE_CLOUD_LOCATION' )
 GOOGLE_GENAI_USE_VERTEXAI = os.getenv( 'GOOGLE_GENAI_USE_VERTEXAI' )
 GOOGLE_PROJECT_ID = os.getenv( 'GOOGLE_PROJECT_ID' )
 GOOGLE_WEATHER_API_KEY = os.getenv( 'GOOGLE_WEATHER_API_KEY' )
+GROQ_API_KEY = os.getenv( 'GROQ_API_KEY' )
 HUGGINGFACE_API_KEY = os.getenv( 'HUGGINGFACE_API_KEY' )
 IPINFO_API_KEY = os.getenv( 'IPINFO_API_KEY' )
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
@@ -72,13 +74,18 @@ NASA_EARTHDATA_TOKEN = os.getenv( 'NASA_EARTHDATA_TOKEN' )
 NEWS_API_KEY = os.getenv( 'NEWSAPI_API_KEY' )
 THENEWS_API_KEY = os.getenv( 'THENEWSAPI_API_KEY' )
 WEATHERAPI_API_KEY = os.getenv( 'WEATHERAPI_API_KEY' )
-WEAVIEATE_API_KEY = os.getenv( 'WEAVIEATE_API_KEY' )
-QDRANT_API_KEY = os.getenv( 'QDRANT_API_KEY' )
-SINGLESTORE_API_KEY = os.getenv( 'SINGLESTORE_API_KEY' )
+XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
+
+
+# ---------------- CONSTANTS -----------------------
+BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
 SQLSERVER_DRIVER = r'DRIVER={ ODBC Driver 17 for SQL Server };SERVER=.\SQLExpress;'
-BASEDIR = os.curdir
-AGENTS = 'Mozilla/5.0 Windows NT 10.0; Win64; x64; AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
-SKYMAP_TOKEN = '06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d7b5edd56e8d57766aa37cb6d16dff82d6ccae1625233b27b05483fd534173bcae659e7edf7b083bb18b7786d03e874d921374dec9287626047f7e49637b701bf9420faee5cadffa46b1501c47366d9693e'
+BASE_DIR = Path( __file__ ).resolve( ).parent
+DB_PATH = BASE_DIR / "stores" / "sqlite" / "datamodels" / "Data.db"
+AGENTS ='''Mozilla/5.0 Windows NT 10.0; Win64; x64; AppleWebKit/537.36 (KHTML, like Gecko)
+		Chrome/124.0 Safari/537.36'''
+SKYMAP_TOKEN = '''06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d7b5edd56e8d57766aa3
+		7cb6d16dff82d6ccae1625233b27b05483fd534173bcae659e7edf7b083bb18b7786d03e874d921374dec9287626047f7e49637b701bf9420faee5cadffa46b1501c47366d9693e'''
 FAVICON = r'resources/images/favicon.ico'
 LOGO = r'resources/images/foo_logo.png'
 DB = r'stores/sqlite/datamodels/'

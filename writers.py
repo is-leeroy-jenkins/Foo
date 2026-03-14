@@ -44,7 +44,7 @@
 from pathlib import Path
 from typing import Optional
 from core import Result
-from boogr import Error, ErrorDialog
+from boogr import Error
 
 def throw_if( name: str, value: object ):
 	if not value:
@@ -105,9 +105,7 @@ class Writer( ):
 			exc.module = 'writers'
 			exc.cause = 'Writer'
 			exc.method = 'write( self, text: str, filename: str, directory: str="output" ) -> Path '
-			error = ErrorDialog( exc )
-			error.show( )
-
+			raise exc
 
 class MarkdownWriter( Writer ):
 	"""
@@ -160,5 +158,4 @@ class MarkdownWriter( Writer ):
 			exception.module = 'writers'
 			exception.cause = 'MarkdownWriter'
 			exception.method = 'write( self, result: Result, path: str  ) -> Path'
-			error = ErrorDialog( exception )
-			error.show( )
+			raise exception

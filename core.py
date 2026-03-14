@@ -44,7 +44,6 @@ from __future__ import annotations
 from typing import Dict, Optional, Any, List
 import requests
 from requests import Response
-from boogr import Error, ErrorDialog
 
 def throw_if( name: str, value: object ) -> None:
 	"""
