@@ -49,15 +49,14 @@ import json
 import numpy as np
 import os
 import re
-import sqlite3
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
-import streamlit as st
 
-import scrapers
 from langchain_core.documents import Document
-from loaders import PdfLoader, WordLoader, ExcelLoader
+from loaders import ( PdfLoader, WordLoader, ExcelLoader, MarkdownLoader,
+                     HtmlLoader, YouTubeLoader, RecursiveCharacterTextSplitter,
+                      PowerPointLoader )
 from fetchers import (
 	Wikipedia, TheNews, SatelliteCenter, WebFetcher,
 	GoogleWeather, Grokipedia, OpenWeather, NavalObservatory,
@@ -67,29 +66,104 @@ from fetchers import (
 	Groq, Mistral, Gemini, StarChart
 )
 
-# ======================================================================================
-# CONTSTANTS
-# ======================================================================================
-LOGO = r'resources/images/foo_logo.ico'
-BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
-FAVICON = r'resources/images/favicon.ico'
-BASE_DIR = Path( __file__ ).resolve( ).parent
-DB_PATH = BASE_DIR / 'stores' / 'sqlite' / 'datamodels' / 'Data.db'
+import pandas as pd
+import streamlit as st
+import scrapers
+import sqlite3
+from sqlite3 import Connection
 
-DB_PATH.parent.mkdir( parents=True, exist_ok=True )
-if not DB_PATH.exists( ):
-	conn = sqlite3.connect( DB_PATH )
-	conn.execute( 'PRAGMA journal_mode=WAL;' )
-	conn.commit( )
-	conn.close( )
+
+
 
 # ======================================================================================
 # SESSION STATE
 # ======================================================================================
 
 if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
-	st.session_state[ 'mode' ] = 'Loaders'
+	st.session_state[ 'mode' ] = 'Document Loading'
+	
+# -------- GENERATIVE AI VARIABLES --------------------
 
+if 'model' not in st.session_state:
+	st.session_state[ 'model' ] = ''
+
+if 'max_tools' not in st.session_state:
+	st.session_state[ 'max_tools' ] = 0
+
+if 'max_tokens' not in st.session_state:
+	st.session_state[ 'max_tokens' ] = 0
+
+if 'temperature' not in st.session_state:
+	st.session_state[ 'temperature' ] = 0.0
+
+if 'top_percent' not in st.session_state:
+	st.session_state[ 'top_percent' ] = 0.0
+
+if 'frequency_penalty' not in st.session_state:
+	st.session_state[ 'frequency_penalty' ] = 0.0
+
+if 'presense_penalty' not in st.session_state:
+	st.session_state[ 'presense_penalty' ] = 0.0
+
+if 'background' not in st.session_state:
+	st.session_state[ 'background' ] = False
+
+if 'parallel_tools' not in st.session_state:
+	st.session_state[ 'parallel_tools' ] = False
+
+if 'store' not in st.session_state:
+	st.session_state[ 'store' ] = False
+
+if 'stream' not in st.session_state:
+	st.session_state[ 'stream' ] = False
+
+if 'response_format' not in st.session_state:
+	st.session_state[ 'response_format' ] = ''
+
+if 'tool_choice' not in st.session_state:
+	st.session_state[ 'tool_choice' ] = ''
+
+if 'reasoning' not in st.session_state:
+	st.session_state[ 'reasoning' ] = ''
+
+if 'stops' not in st.session_state:
+	st.session_state[ 'stops' ] = [ ]
+
+if 'include' not in st.session_state:
+	st.session_state[ 'include' ] = [ ]
+
+if 'input' not in st.session_state:
+	st.session_state[ 'input' ] = [ ]
+
+if 'tools' not in st.session_state:
+	st.session_state[ 'tools' ] = [ ]
+
+if 'messages' not in st.session_state:
+	st.session_state[ 'messages' ] = [ ]
+
+# ------------ LOADER VARIABLES -----------
+
+if 'loader_results' not in st.session_state:
+	st.session_state[ 'loader_results' ] = { }
+
+if 'loader_documents' not in st.session_state:
+	st.session_state[ 'loader_documents' ] = [ ]
+
+if 'loader_path' not in st.session_state:
+	st.session_state[ 'loader_path' ] = ''
+	
+if 'loader_text' not in st.session_state:
+	st.session_state[ 'loader_text' ] = ''
+	
+if 'loader_files' not in st.session_state:
+	st.session_state[ 'loader_files' ] = ''
+
+# ------------- SCRAPPER VARIABLES --------------
+
+if 'target_url' not in st.session_state:
+	st.session_state[ 'target_url' ] = ''
+	
+	
 # ======================================================================================
 # UTILITITES
 # ======================================================================================
@@ -174,6 +248,8 @@ def _model_selector( key_prefix: str, label: str, options: list[ str ], default_
 		)
 	
 	return selected
+
+# -------- Text Utilities ---------------------
 
 def render_google_results( response ) -> str:
 	try:
@@ -343,12 +419,1069 @@ def sanitize_markdown( text: str ) -> str:
 	text = re.sub( r"\*(.*?)\*", r"\1", text )
 	return text
 
+# ----------  Database Utilities --------------
+
+def initialize_database( ) -> None:
+	"""
+		Purpose:
+		--------
+		Ensure required SQLite tables exist and that the Prompts table contains the
+		columns required by the prompt utilities and Prompt Engineering mode.
+
+		Parameters:
+		-----------
+		None
+
+		Returns:
+		--------
+		None
+	"""
+	Path( 'stores/sqlite' ).mkdir( parents=True, exist_ok=True )
+	with sqlite3.connect( cfg.DB_PATH ) as conn:
+		conn.execute(
+			"""
+            CREATE TABLE IF NOT EXISTS chat_history
+            (
+                id
+                INTEGER
+                PRIMARY
+                KEY
+                AUTOINCREMENT,
+                role
+                TEXT,
+                content
+                TEXT
+            )
+			"""
+		)
+		
+		conn.execute(
+			"""
+            CREATE TABLE IF NOT EXISTS embeddings
+            (
+                id
+                INTEGER
+                PRIMARY
+                KEY
+                AUTOINCREMENT,
+                chunk
+                TEXT,
+                vector
+                BLOB
+            )
+			"""
+		)
+		
+		conn.execute(
+			"""
+            CREATE TABLE IF NOT EXISTS Prompts
+            (
+                PromptsId
+                INTEGER
+                NOT
+                NULL
+                PRIMARY
+                KEY
+                AUTOINCREMENT,
+                Caption
+                TEXT,
+                Name
+                TEXT
+            (
+                80
+            ),
+                Text TEXT,
+                Version TEXT
+            (
+                80
+            ),
+                ID TEXT
+            (
+                80
+            )
+                )
+			"""
+		)
+		
+		prompt_columns = [ row[ 1 ] for row in
+		                   conn.execute( 'PRAGMA table_info("Prompts");' ).fetchall( ) ]
+		
+		if 'Caption' not in prompt_columns:
+			conn.execute( 'ALTER TABLE "Prompts" ADD COLUMN "Caption" TEXT;' )
+		
+		conn.commit( )
+
+def create_connection( ) -> Connection:
+	return sqlite3.connect( cfg.DB_PATH )
+
+def list_tables( ) -> List[ str ]:
+	with create_connection( ) as conn:
+		_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+		rows = conn.execute( _query ).fetchall( )
+		return [ r[ 0 ] for r in rows ]
+
+def create_schema( table: str ) -> List[ Tuple ]:
+	with create_connection( ) as conn:
+		return conn.execute( f'PRAGMA table_info("{table}");' ).fetchall( )
+
+def read_table( table: str, limit: int = None, offset: int = 0 ) -> DataFrame:
+	"""
+	
+		Purpose:
+		--------
+		Read a SQLite table into a pandas DataFrame using a normalized scalar-only path.
+	
+		Parameters:
+		-----------
+		table : str
+			Table name.
+		limit : int = None
+			Optional row limit.
+		offset : int = 0
+			Optional row offset.
+	
+		Returns:
+		--------
+		DataFrame
+			DataFrame of plain Python scalar values.
+	
+	"""
+	if not table:
+		return DataFrame( )
+	
+	query = f'SELECT * FROM "{table}"'
+	if limit:
+		query += f' LIMIT {int( limit )} OFFSET {int( offset )}'
+	
+	with create_connection( ) as conn:
+		cur = conn.cursor( )
+		cur.execute( query )
+		
+		raw_columns = [ d[ 0 ] for d in (cur.description or [ ]) ]
+		rows = cur.fetchall( )
+	
+	seen: Dict[ str, int ] = { }
+	columns: List[ str ] = [ ]
+	
+	for col in raw_columns:
+		name = str( col )
+		if name not in seen:
+			seen[ name ] = 0
+			columns.append( name )
+		else:
+			seen[ name ] += 1
+			columns.append( f'{name}_{seen[ name ]}' )
+	
+	def _scalarize( value: Any ) -> Any:
+		if value is None or isinstance( value, (str, int, float, bool) ):
+			return value
+		
+		if isinstance( value, bytes ):
+			try:
+				return value.decode( 'utf-8' )
+			except Exception:
+				return value.hex( )
+		
+		if isinstance( value, (list, tuple, set, dict) ):
+			try:
+				return str( normalize( value ) )
+			except Exception:
+				return str( value )
+		
+		if hasattr( value, 'model_dump' ):
+			try:
+				return str( value.model_dump( ) )
+			except Exception:
+				return str( value )
+		
+		return str( value )
+	
+	normalized_rows: List[ Dict[ str, Any ] ] = [ ]
+	for row in rows:
+		record: Dict[ str, Any ] = { }
+		for idx, col in enumerate( columns ):
+			record[ col ] = _scalarize( row[ idx ] )
+		normalized_rows.append( record )
+	
+	return DataFrame( normalized_rows, columns=columns )
+
+def render_table( df: DataFrame ) -> None:
+	"""
+	
+		Purpose:
+		--------
+		Render a DataFrame safely in Streamlit. Use the normal interactive dataframe
+		first, and fall back to HTML rendering if Streamlit/PyArrow serialization fails.
+	
+		Parameters:
+		-----------
+		df : DataFrame
+			The DataFrame to render.
+	
+		Returns:
+		--------
+		None
+	
+	"""
+	if df is None:
+		st.info( 'No data available.' )
+		return
+	
+	try:
+		st.data_editor( df, use_container_width=True )
+		return
+	except Exception:
+		pass
+	
+	fallback_df = df.copy( )
+	fallback_df = fallback_df.where( pd.notnull( fallback_df ), '' )
+	
+	for col in fallback_df.columns:
+		fallback_df[ col ] = fallback_df[ col ].map(
+			lambda x: x if isinstance( x, (str, int, float, bool) ) or x == '' else str( x ) )
+	
+	st.markdown( fallback_df.to_html( index=False, escape=True ), unsafe_allow_html=True )
+
+def make_display_safe( df: DataFrame ) -> DataFrame:
+	display_df = df.copy( )
+	
+	for col in display_df.columns:
+		display_df[ col ] = display_df[ col ].map(
+			lambda x: '' if x is None else str( x )
+		)
+	
+	return display_df
+
+def drop_table( table: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Safely drop a table if it exists.
+	
+		Parameters:
+		-----------
+		table : str
+			Table name.
+	"""
+	if not table:
+		return
+	
+	with create_connection( ) as conn:
+		conn.execute( f'DROP TABLE IF EXISTS "{table}";' )
+		conn.commit( )
+
+def create_index( table: str, column: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Create a safe SQLite index on a specified table column.
+	
+		Handles:
+			- Spaces in column names
+			- Special characters
+			- Reserved words
+			- Duplicate index names
+			- Validation against actual table schema
+	
+		Parameters:
+		-----------
+		table : str
+			Table name.
+		column : str
+			Column name to index.
+	"""
+	if not table or not column:
+		return
+	
+	# ------------------------------------------------------------------
+	# Validate table exists
+	# ------------------------------------------------------------------
+	tables = list_tables( )
+	if table not in tables:
+		raise ValueError( 'Invalid table name.' )
+	
+	# ------------------------------------------------------------------
+	# Validate column exists
+	# ------------------------------------------------------------------
+	schema = create_schema( table )
+	valid_columns = [ col[ 1 ] for col in schema ]
+	
+	if column not in valid_columns:
+		raise ValueError( 'Invalid column name.' )
+	
+	# ------------------------------------------------------------------
+	# Sanitize index name (identifier only)
+	# ------------------------------------------------------------------
+	safe_index_name = re.sub( r"[^0-9a-zA-Z_]+", "_", f"idx_{table}_{column}" )
+	
+	# ------------------------------------------------------------------
+	# Create index safely (quote identifiers)
+	# ------------------------------------------------------------------
+	sql = f'CREATE INDEX IF NOT EXISTS "{safe_index_name}" ON "{table}"("{column}");'
+	
+	with create_connection( ) as conn:
+		conn.execute( sql )
+		conn.commit( )
+
+def apply_filters( df: DataFrame ) -> DataFrame:
+	st.subheader( 'Advanced Filters' )
+	conditions = [ ]
+	col1, col2, col3 = st.columns( 3 )
+	column = col1.selectbox( 'Column', df.columns )
+	operator = col2.selectbox( 'Operator', [ '=', '!=', '>', '<', '>=', '<=', 'contains' ] )
+	value = col3.text_input( 'Value' )
+	if value:
+		if operator == '=':
+			df = df[ df[ column ] == value ]
+		elif operator == '!=':
+			df = df[ df[ column ] != value ]
+		elif operator == '>':
+			df = df[ df[ column ].astype( float ) > float( value ) ]
+		elif operator == '<':
+			df = df[ df[ column ].astype( float ) < float( value ) ]
+		elif operator == '>=':
+			df = df[ df[ column ].astype( float ) >= float( value ) ]
+		elif operator == '<=':
+			df = df[ df[ column ].astype( float ) <= float( value ) ]
+		elif operator == 'contains':
+			df = df[ df[ column ].astype( str ).str.contains( value ) ]
+	
+	return df
+
+def create_aggregation( df: DataFrame ):
+	st.subheader( 'Aggregation Engine' )
+	
+	numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
+	
+	if not numeric_cols:
+		st.info( 'No numeric columns available.' )
+		return
+	
+	col = st.selectbox( 'Column', numeric_cols )
+	agg = st.selectbox( 'Aggregation', [ 'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'MEDIAN' ] )
+	
+	if agg == 'COUNT':
+		result = df[ col ].count( )
+	elif agg == 'SUM':
+		result = df[ col ].sum( )
+	elif agg == 'AVG':
+		result = df[ col ].mean( )
+	elif agg == 'MIN':
+		result = df[ col ].min( )
+	elif agg == 'MAX':
+		result = df[ col ].max( )
+	elif agg == 'MEDIAN':
+		result = df[ col ].median( )
+	
+	st.metric( 'Result', result )
+
+def create_visualization( df: DataFrame ) -> None:
+	"""
+	
+		Purpose:
+		--------
+		Render data visualizations without passing pandas objects directly into
+		Plotly/Narwhals.
+		
+		Parameters:
+		-----------
+		df : DataFrame
+			The input DataFrame.
+		
+		Returns:
+		--------
+		None
+		
+	"""
+	st.subheader( 'Visualization Engine' )
+	
+	if df is None or df.empty:
+		st.info( 'No data available.' )
+		return
+	
+	df_plot = df.copy( )
+	
+	for col in df_plot.columns:
+		if df_plot[ col ].dtype == object:
+			df_plot[ col ] = df_plot[ col ].map(
+				lambda x: '' if x is None else str( x )
+			)
+	
+	numeric_cols: List[ str ] = [ ]
+	for col in df_plot.columns:
+		series_num = pd.to_numeric( df_plot[ col ], errors='coerce' )
+		if series_num.notna( ).any( ):
+			numeric_cols.append( col )
+	
+	categorical_cols: List[ str ] = [ col for col in df_plot.columns if col not in numeric_cols ]
+	
+	chart = st.selectbox(
+		'Chart Type',
+		[ 'Histogram', 'Bar', 'Line', 'Scatter', 'Box', 'Pie', 'Correlation' ] )
+	
+	if chart == 'Histogram':
+		if not numeric_cols:
+			st.info( 'No numeric columns available.' )
+			return
+		
+		col = st.selectbox( 'Column', numeric_cols )
+		values = pd.to_numeric( df_plot[ col ], errors='coerce' ).dropna( ).tolist( )
+		
+		fig = go.Figure( data=[ go.Histogram( x=values ) ] )
+		fig.update_layout( xaxis_title=col, yaxis_title='Count' )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == 'Bar':
+		if not numeric_cols:
+			st.info( 'No numeric columns available.' )
+			return
+		
+		x = st.selectbox( 'X', df_plot.columns )
+		y = st.selectbox( 'Y', numeric_cols )
+		
+		x_values = df_plot[ x ].astype( str ).tolist( )
+		y_values = pd.to_numeric( df_plot[ y ], errors='coerce' ).fillna( 0 ).tolist( )
+		
+		fig = go.Figure( data=[ go.Bar( x=x_values, y=y_values ) ] )
+		fig.update_layout( xaxis_title=x, yaxis_title=y )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == 'Line':
+		if not numeric_cols:
+			st.info( 'No numeric columns available.' )
+			return
+		
+		x = st.selectbox( 'X', df_plot.columns )
+		y = st.selectbox( 'Y', numeric_cols )
+		
+		x_values = df_plot[ x ].astype( str ).tolist( )
+		y_values = pd.to_numeric( df_plot[ y ], errors='coerce' ).fillna( 0 ).tolist( )
+		
+		fig = go.Figure( data=[ go.Scatter( x=x_values, y=y_values, mode='lines' ) ] )
+		fig.update_layout( xaxis_title=x, yaxis_title=y )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == 'Scatter':
+		if len( numeric_cols ) < 2:
+			st.info( 'At least two numeric columns are required.' )
+			return
+		
+		x = st.selectbox( 'X', numeric_cols, key='viz_scatter_x' )
+		y = st.selectbox( 'Y', numeric_cols, key='viz_scatter_y' )
+		
+		x_series = pd.to_numeric( df_plot[ x ], errors='coerce' )
+		y_series = pd.to_numeric( df_plot[ y ], errors='coerce' )
+		mask = x_series.notna( ) & y_series.notna( )
+		
+		x_values = x_series[ mask ].tolist( )
+		y_values = y_series[ mask ].tolist( )
+		
+		fig = go.Figure( data=[ go.Scatter( x=x_values, y=y_values, mode='markers' ) ] )
+		fig.update_layout( xaxis_title=x, yaxis_title=y )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == 'Box':
+		if not numeric_cols:
+			st.info( 'No numeric columns available.' )
+			return
+		
+		col = st.selectbox( 'Column', numeric_cols, key='viz_box_col' )
+		values = pd.to_numeric( df_plot[ col ], errors='coerce' ).dropna( ).tolist( )
+		
+		fig = go.Figure( data=[ go.Box( y=values, name=col ) ] )
+		fig.update_layout( yaxis_title=col )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == 'Pie':
+		if not categorical_cols:
+			st.info( 'No categorical columns available.' )
+			return
+		
+		col = st.selectbox( 'Category Column', categorical_cols )
+		counts = df_plot[ col ].astype( str ).value_counts( )
+		
+		fig = go.Figure(
+			data=[ go.Pie( labels=counts.index.tolist( ), values=counts.values.tolist( ) ) ] )
+		st.plotly_chart( fig, use_container_width=True )
+	
+	elif chart == 'Correlation':
+		if len( numeric_cols ) < 2:
+			st.info( 'At least two numeric columns are required.' )
+			return
+		
+		corr_df = DataFrame( )
+		for col in numeric_cols:
+			corr_df[ col ] = pd.to_numeric( df_plot[ col ], errors='coerce' )
+		
+		corr = corr_df.corr( )
+		
+		fig = go.Figure(
+			data=[ go.Heatmap(
+				z=corr.values.tolist( ),
+				x=corr.columns.tolist( ),
+				y=corr.index.tolist( ) ) ] )
+		st.plotly_chart( fig, use_container_width=True )
+
+def convert_dataframe( table_name: str, df: DataFrame ):
+	columns = [ ]
+	for col in df.columns:
+		sql_type = get_sqlite_type( df[ col ].dtype )
+		safe_col = col.replace( ' ', '_' )
+		columns.append( f'{safe_col} {sql_type}' )
+	
+	create_stmt = f'CREATE TABLE IF NOT EXISTS {table_name} ({", ".join( columns )});'
+	
+	with create_connection( ) as conn:
+		conn.execute( create_stmt )
+		conn.commit( )
+
+def insert_data( table_name: str, df: DataFrame ):
+	df = df.copy( )
+	df.columns = [ c.replace( ' ', '_' ) for c in df.columns ]
+	
+	placeholders = ', '.join( [ '?' ] * len( df.columns ) )
+	stmt = f'INSERT INTO {table_name} VALUES ({placeholders});'
+	
+	with create_connection( ) as conn:
+		conn.executemany( stmt, df.values.tolist( ) )
+		conn.commit( )
+
+def get_sqlite_type( dtype ) -> str:
+	"""
+		Purpose:
+		--------
+		Map a pandas dtype to an appropriate SQLite column type.
+	
+		Parameters:
+		-----------
+		dtype : pandas dtype
+			The dtype of a pandas Series.
+	
+		Returns:
+		--------
+		str
+			SQLite column type.
+	"""
+	dtype_str = str( dtype ).lower( )
+	
+	# ------------------------------------------------------------------
+	# Integer Types (including nullable Int64)
+	# ------------------------------------------------------------------
+	if 'int' in dtype_str:
+		return 'INTEGER'
+	
+	# ------------------------------------------------------------------
+	# Float Types
+	# ------------------------------------------------------------------
+	if 'float' in dtype_str:
+		return 'REAL'
+	
+	# ------------------------------------------------------------------
+	# Boolean
+	# ------------------------------------------------------------------
+	if 'bool' in dtype_str:
+		return 'INTEGER'
+	
+	# ------------------------------------------------------------------
+	# Datetime
+	# ------------------------------------------------------------------
+	if 'datetime' in dtype_str:
+		return 'TEXT'
+	
+	# ------------------------------------------------------------------
+	# Categorical
+	# ------------------------------------------------------------------
+	if 'category' in dtype_str:
+		return 'TEXT'
+	
+	# ------------------------------------------------------------------
+	# Default fallback
+	# ------------------------------------------------------------------
+	return 'TEXT'
+
+def create_custom_table( table_name: str, columns: list ) -> None:
+	"""
+		Purpose:
+		--------
+		Create a custom SQLite table from column definitions.
+	
+		Parameters:
+		-----------
+		table_name : str
+			Name of table.
+	
+		columns : list of dict
+			[
+				{
+					"name": str,
+					"type": str,
+					"not_null": bool,
+					"primary_key": bool,
+					"auto_increment": bool
+				}
+			]
+	"""
+	if not table_name:
+		raise ValueError( 'Table name required.' )
+	
+	# Validate identifier
+	if not re.match( r"^[A-Za-z_][A-Za-z0-9_]*$", table_name ):
+		raise ValueError( 'Invalid table name.' )
+	
+	col_defs = [ ]
+	
+	for col in columns:
+		col_name = col[ 'name' ]
+		col_type = col[ 'type' ].upper( )
+		
+		if not re.match( r"^[A-Za-z_][A-Za-z0-9_]*$", col_name ):
+			raise ValueError( f"Invalid column name: {col_name}" )
+		
+		definition = f'"{col_name}" {col_type}'
+		
+		if col[ 'primary_key' ]:
+			definition += ' PRIMARY KEY'
+			if col[ 'auto_increment' ] and col_type == 'INTEGER':
+				definition += ' AUTOINCREMENT'
+		
+		if col[ "not_null" ]:
+			definition += " NOT NULL"
+		
+		col_defs.append( definition )
+	
+	sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join( col_defs )});'
+	
+	with create_connection( ) as conn:
+		conn.execute( sql )
+		conn.commit( )
+
+def is_safe_query( query: str ) -> bool:
+	"""
+	
+		Purpose:
+		--------
+		Determine whether a SQL query is read-only and safe to execute.
+	
+		Allows:
+			SELECT
+			WITH (CTE returning SELECT)
+			EXPLAIN SELECT
+			PRAGMA (read-only)
+	
+		Blocks:
+			INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, ATTACH,
+			DETACH, VACUUM, REPLACE, TRIGGER, and multiple statements.
+			
+	"""
+	if not query or not isinstance( query, str ):
+		return False
+	
+	q = query.strip( ).lower( )
+	
+	# ------------------------------------------------------------------
+	# Block multiple statements
+	# ------------------------------------------------------------------
+	if ';' in q[ :-1 ]:
+		return False
+	
+	# ------------------------------------------------------------------
+	# Remove SQL comments
+	# ------------------------------------------------------------------
+	q = re.sub( r"--.*?$", "", q, flags=re.MULTILINE )
+	q = re.sub( r"/\*.*?\*/", "", q, flags=re.DOTALL )
+	q = q.strip( )
+	
+	# ------------------------------------------------------------------
+	# Allowed starting keywords
+	# ------------------------------------------------------------------
+	allowed_starts = ('select', 'with', 'explain', 'pragma')
+	if not q.startswith( allowed_starts ):
+		return False
+	
+	# ------------------------------------------------------------------
+	# Block dangerous keywords anywhere
+	# ------------------------------------------------------------------
+	blocked_keywords = ('insert ', 'update ', 'delete ', 'drop ', 'alter ',
+	                    'create ', 'attach ', 'detach ', 'vacuum ', 'replace ', 'trigger ')
+	
+	for keyword in blocked_keywords:
+		if keyword in q:
+			return False
+	
+	return True
+
+def create_identifier( name: str ) -> str:
+	"""
+	
+		Purpose:
+		--------
+		Sanitize a string into a safe SQLite identifier.
+	
+		- Replaces invalid characters with underscores
+		- Ensures it starts with a letter or underscore
+		- Prevents empty names
+		
+	"""
+	if not name or not isinstance( name, str ):
+		raise ValueError( 'Invalid Identifier.' )
+	
+	safe = re.sub( r'[^0-9a-zA-Z_]', '_', name.strip( ) )
+	if not re.match( r'^[A-Za-z_]', safe ):
+		safe = f'_{safe}'
+	
+	if not safe:
+		raise ValueError( 'Invalid identifier after sanitization.' )
+	
+	return safe
+
+def get_indexes( table: str ):
+	with create_connection( ) as conn:
+		rows = conn.execute( f'PRAGMA index_list("{table}");' ).fetchall( )
+		return rows
+
+def add_column( table: str, column: str, col_type: str ):
+	column = create_identifier( column )
+	col_type = col_type.upper( )
+	
+	with create_connection( ) as conn:
+		conn.execute(
+			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};' )
+		conn.commit( )
+
+def rename_column( table_name: str, old_name: str, new_name: str ) -> None:
+	"""
+	
+		Purpose:
+		--------
+		Rename a column within an existing SQLite table. Attempts native ALTER TABLE rename
+		first; if it fails, falls back to a schema-safe rebuild preserving column order, data,
+		and indexes.
+
+		Parameters:
+		-----------
+		table_name : str
+			Table containing the column.
+
+		old_name : str
+			Existing column name.
+
+		new_name : str
+			New column name.
+
+		Returns:
+		--------
+		None
+		
+	"""
+	if not table_name or not old_name or not new_name:
+		return
+	
+	with create_connection( ) as conn:
+		try:
+			conn.execute(
+				f'ALTER TABLE "{table_name}" RENAME COLUMN "{old_name}" TO "{new_name}";'
+			)
+			conn.commit( )
+			return
+		except Exception:
+			pass
+		
+		row = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='table' AND name =?
+			""",
+			(table_name,)
+		).fetchone( )
+		
+		if not row or not row[ 0 ]:
+			raise ValueError( "Table definition not found." )
+		
+		create_sql = row[ 0 ]
+		
+		indexes = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
+			""",
+			(table_name,)
+		).fetchall( )
+		
+		schema = conn.execute( f'PRAGMA table_info("{table_name}");' ).fetchall( )
+		cols = [ r[ 1 ] for r in schema ]
+		if old_name not in cols:
+			raise ValueError( "Column not found." )
+		
+		mapped_cols = [ (new_name if c == old_name else c) for c in cols ]
+		
+		temp_table = f"{table_name}__rebuild_temp"
+		
+		col_defs: List[ str ] = [ ]
+		pk_cols = [ r for r in schema if int( r[ 5 ] or 0 ) > 0 ]
+		single_pk = len( pk_cols ) == 1
+		
+		for row in schema:
+			col_name = row[ 1 ]
+			col_type = row[ 2 ] or ''
+			not_null = int( row[ 3 ] or 0 )
+			default_value = row[ 4 ]
+			pk = int( row[ 5 ] or 0 )
+			
+			out_name = new_name if col_name == old_name else col_name
+			col_def = f'"{out_name}" {col_type}'.strip( )
+			
+			if not_null:
+				col_def += ' NOT NULL'
+			
+			if default_value is not None:
+				col_def += f' DEFAULT {default_value}'
+			
+			if single_pk and pk == 1:
+				col_def += ' PRIMARY KEY'
+			
+			col_defs.append( col_def )
+		
+		new_create_sql = f'CREATE TABLE "{temp_table}" ({", ".join( col_defs )});'
+		
+		old_select = ", ".join( [ f'"{c}"' for c in cols ] )
+		new_insert = ", ".join( [ f'"{c}"' for c in mapped_cols ] )
+		
+		conn.execute( "BEGIN" )
+		conn.execute( new_create_sql )
+		conn.execute(
+			f'INSERT INTO "{temp_table}" ({new_insert}) SELECT {old_select} FROM "{table_name}";'
+		)
+		
+		conn.execute( f'DROP TABLE "{table_name}";' )
+		conn.execute( f'ALTER TABLE "{temp_table}" RENAME TO "{table_name}";' )
+		
+		for idx in indexes:
+			idx_sql = idx[ 0 ]
+			if idx_sql:
+				idx_sql = idx_sql.replace( f'"{old_name}"', f'"{new_name}"' )
+				conn.execute( idx_sql )
+		
+		conn.commit( )
+
+def create_profile_table( table: str ):
+	df = read_table( table )
+	profile_rows = [ ]
+	total_rows = len( df )
+	for col in df.columns:
+		series = df[ col ]
+		null_count = series.isna( ).sum( )
+		distinct_count = series.nunique( dropna=True )
+		row = \
+			{
+					'column': col, 'dtype': str( series.dtype ),
+					'null_%': round( (null_count / total_rows) * 100, 2 ) if total_rows else 0,
+					'distinct_%': round( (
+							                     distinct_count / total_rows) * 100, 2 ) if total_rows else 0,
+			}
+		
+		if pd.api.types.is_numeric_dtype( series ):
+			row[ 'min' ] = series.min( )
+			row[ 'max' ] = series.max( )
+			row[ 'mean' ] = series.mean( )
+		else:
+			row[ 'min' ] = None
+			row[ 'max' ] = None
+			row[ 'mean' ] = None
+		
+		profile_rows.append( row )
+	
+	return DataFrame( profile_rows )
+
+def drop_column( table: str, column: str ):
+	if not table or not column:
+		raise ValueError( 'Table and column required.' )
+	
+	with create_connection( ) as conn:
+		# ------------------------------------------------------------
+		# Fetch original CREATE TABLE statement
+		# ------------------------------------------------------------
+		row = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='table' AND name =?
+			""",
+			(table,)
+		).fetchone( )
+		
+		if not row or not row[ 0 ]:
+			raise ValueError( 'Table definition not found.' )
+		
+		create_sql = row[ 0 ]
+		
+		# ------------------------------------------------------------
+		# Extract column definitions
+		# ------------------------------------------------------------
+		open_paren = create_sql.find( "(" )
+		close_paren = create_sql.rfind( ")" )
+		
+		if open_paren == -1 or close_paren == -1:
+			raise ValueError( "Malformed CREATE TABLE statement." )
+		
+		inner = create_sql[ open_paren + 1: close_paren ]
+		
+		column_defs = [ c.strip( ) for c in inner.split( "," ) ]
+		
+		# Remove target column
+		new_defs = [ ]
+		for col_def in column_defs:
+			col_name = col_def.split( )[ 0 ].strip( '"' )
+			if col_name != column:
+				new_defs.append( col_def )
+		
+		if len( new_defs ) == len( column_defs ):
+			raise ValueError( "Column not found." )
+		
+		# ------------------------------------------------------------
+		# Build new CREATE TABLE statement
+		# ------------------------------------------------------------
+		temp_table = f"{table}_rebuild_temp"
+		
+		new_create_sql = (
+				f'CREATE TABLE "{temp_table}" ('
+				+ ", ".join( new_defs )
+				+ ");"
+		)
+		
+		# ------------------------------------------------------------
+		# Begin transaction
+		# ------------------------------------------------------------
+		conn.execute( "BEGIN" )
+		
+		conn.execute( new_create_sql )
+		
+		remaining_cols = [
+				c.split( )[ 0 ].strip( '"' )
+				for c in new_defs
+		]
+		
+		col_list = ", ".join( [ f'"{c}"' for c in remaining_cols ] )
+		
+		conn.execute(
+			f'INSERT INTO "{temp_table}" ({col_list}) '
+			f'SELECT {col_list} FROM "{table}";'
+		)
+		
+		# Preserve indexes
+		indexes = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
+			""",
+			(table,)
+		).fetchall( )
+		
+		conn.execute( f'DROP TABLE "{table}";' )
+		conn.execute(
+			f'ALTER TABLE "{temp_table}" RENAME TO "{table}";'
+		)
+		
+		# Recreate indexes
+		for idx in indexes:
+			idx_sql = idx[ 0 ]
+			if column not in idx_sql:
+				conn.execute( idx_sql )
+		
+		conn.commit( )
+
+def rename_table( old_name: str, new_name: str ) -> None:
+	"""
+	
+		Purpose:
+		--------
+		Rename an existing SQLite table. Attempts native ALTER TABLE rename first; if it fails,
+		falls back to a schema-safe rebuild using the original CREATE TABLE statement and
+		preserves indexes.
+
+		Parameters:
+		-----------
+		old_name : str
+			Existing table name.
+
+		new_name : str
+			New table name.
+
+		Returns:
+		--------
+		None
+		
+	"""
+	if not old_name or not new_name:
+		return
+	
+	with create_connection( ) as conn:
+		try:
+			conn.execute( f'ALTER TABLE "{old_name}" RENAME TO "{new_name}";' )
+			conn.commit( )
+			return
+		except Exception:
+			pass
+		
+		row = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='table' AND name =?
+			""",
+			(old_name,)
+		).fetchone( )
+		
+		if not row or not row[ 0 ]:
+			raise ValueError( "Table definition not found." )
+		
+		create_sql = row[ 0 ]
+		
+		indexes = conn.execute(
+			"""
+            SELECT sql
+            FROM sqlite_master
+            WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
+			""",
+			(old_name,)
+		).fetchall( )
+		
+		open_paren = create_sql.find( "(" )
+		if open_paren == -1:
+			raise ValueError( "Malformed CREATE TABLE statement." )
+		
+		temp_name = f"{new_name}__rebuild_temp"
+		
+		conn.execute( "BEGIN" )
+		conn.execute( f'CREATE TABLE "{temp_name}" {create_sql[ open_paren: ]}' )
+		
+		cols = [ r[ 1 ] for r in conn.execute( f'PRAGMA table_info("{old_name}");' ).fetchall( ) ]
+		col_list = ", ".join( [ f'"{c}"' for c in cols ] )
+		
+		conn.execute(
+			f'INSERT INTO "{temp_name}" ({col_list}) SELECT {col_list} FROM "{old_name}";'
+		)
+		
+		conn.execute( f'DROP TABLE "{old_name}";' )
+		conn.execute( f'ALTER TABLE "{temp_name}" RENAME TO "{new_name}";' )
+		
+		for idx in indexes:
+			idx_sql = idx[ 0 ]
+			if idx_sql:
+				idx_sql = idx_sql.replace( f'ON "{old_name}"', f'ON "{new_name}"' )
+				conn.execute( idx_sql )
+		
+		conn.commit( )
+
+
 # ======================================================================================
 # APP SET-UP
 # ======================================================================================
 
 style_subheaders( )
-st.logo( LOGO, size='large' )
+st.logo( cfg.LOGO, size='large' )
 st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON )
 col_left, col_center, col_right = st.columns( [ 1, 2, 1 ], vertical_alignment='top' )
 
@@ -379,41 +1512,52 @@ with st.sidebar:
 		st.session_state[ 'mode' ] = 'Loaders'
 		
 # ======================================================================================
-# LOADING MODE
+# DOCUMENT LOADING MODE
 # ======================================================================================
 if mode == 'Document Loading':
-	st.subheader( '📤  Document Loading' )
+	st.subheader( '📤   Document Loading' )
 	st.divider( )
-	st.session_state.setdefault( 'loader_results', { } )
-	st.session_state.setdefault( 'loader_documents', [ ] )
-	col_browse, col_text = st.columns( [ 1, 1 ], border=True )
-
+	loader_path = st.session_state.get( 'loader_path', '' )
+	loader_results = st.session_state.get( 'loader_results', { } )
+	loader_documents = st.session_state.get( 'loader_documents', [ ] )
+	loader_text = st.session_state.get( 'loader_text', '' )
+	loader_files = st.session_state.get( 'loader_files', [ ] )
+	loader = None
+	
+	col_browse, col_text = st.columns( [ 0.7, 0.3 ], border=True )
 	with col_browse:
 		uploaded_files = st.file_uploader( 'Choose file(s)',
-			type=[ 'pdf', 'docx', 'xlsx', 'xls' ], accept_multiple_files=True,
+			type=[ 'pdf', 'docx', 'xlsx', 'xls', 'pptx', 'txt', 'md' ], accept_multiple_files=True,
 			key='loader_uploaded_files', )
+		
+		# -----------------------------------------------
+		# Checkbox row (unchanged: its own row)
+		# -----------------------------------------------
+		col1, col2, col3, col4, col5, col6  = st.columns( 6 )
+		
+		with col1:
+			do_pdf = st.checkbox( label='PDF', key='pdf_cb' )
+			loader = PdfLoader( )
+		with col2:
+			do_word = st.checkbox( label='Word', key='word_cb' )
+			loader = WordLoader( )
+		with col3:
+			do_excel = st.checkbox( label='Excel', key='excel_cb' )
+			loader = ExcelLoader( )
+		with col4:
+			do_markdown = st.checkbox( label='Markdown', key='markdown_cb' )
+			loader = MarkdownLoader( )
+		with col5:
+			do_powerpoint = st.checkbox( label='Powerpoint', key='powerpoint_cb' )
+			loader = PowerPointLoader( )
+		with col6:
+			do_text = st.checkbox( label='Text', key='text_cb' )
+			loader = RecursiveCharacterTextSplitter( )
+
 
 	with col_text:
-		loader_text = st.text_area( 'Enter one URL or file path', height=40,
-			key='loader_text_area' )
-
-    # -----------------------------------------------
-	# Checkbox row (unchanged: its own row)
-    # -----------------------------------------------
-	col1, col2, col3, col4, col5, col6 = st.columns( 6 )
-
-	with col1:
-		do_pdf = st.checkbox( label='PDF', key='pdf_cb' )
-	with col2:
-		do_word = st.checkbox( label='Word', key='word_cb' )
-	with col3:
-		do_excel = st.checkbox( label='Excel', key='excel_cb' )
-	with col4:
-		do_markdown = st.checkbox( label='Markdown', key='markdown_cb' )
-	with col5:
-		do_powerpoint = st.checkbox( label='Powerpoint', key='powerpoint_cb' )
-	with col6:
-		do_youtube = st.checkbox( label='Youtube', key='youtube_cb' )
+		loader_text = st.text_area( 'Enter one URL or file path', height=20,
+			key='loader_path' )
 
 	b1, b2 = st.columns( 2 )
 	with b1:
@@ -427,7 +1571,7 @@ if mode == 'Document Loading':
 		{
 			'loader_results': { },
 			'loader_documents': [ ],
-			'loader_text_area': "",
+			'loader_path': '',
 			'loader_uploaded_files': None,
 		} )
 		st.rerun( )
@@ -454,7 +1598,7 @@ if mode == 'Document Loading':
 
 				try:
 					if do_pdf:
-						output[ 'pdf' ] = extractor.scrape_links( url )
+						output[ 'pdf' ] = extractor.scrape_hyperlinks( url )
 					if do_word:
 						output[ 'word' ] = extractor.scrape_links( url )
 					if do_excel:
@@ -487,7 +1631,7 @@ if mode == 'Document Loading':
 				out: dict[ str, Any ] = { 'file': name, 'type': suffix }
 
 				try:
-					tmp_dir = ( BASE_DIR / 'stores' / 'tmp_uploads' )
+					tmp_dir = ( cf.BASE_DIR / 'stores' / 'tmp_uploads' )
 					tmp_dir.mkdir( parents=True, exist_ok=True )
 					tmp_path = tmp_dir / name
 
@@ -547,16 +1691,13 @@ if mode == 'Document Loading':
 # ======================================================================================
 # SCRAPING MODE
 # ======================================================================================
-elif mode == 'Scrapers':
+elif mode == 'Web Scrapping':
 	st.subheader( '🕷️ Web Scrapping' )
 	st.divider( )
 	col_left, col_right = st.columns([1, 2], border=True)
 	with col_left:
-		target_url = st.text_input(
-			'Target URL',
-			placeholder='https://example.com',
-			key='webfetcher_url'
-		)
+		target_url = st.text_input( 'Target URL', placeholder='https://example.com',
+			key='webfetcher_url' )
 
 		st.markdown( '#### Extraction Options' )
 
@@ -629,10 +1770,10 @@ elif mode == 'Scrapers':
 				st.error( str( exc ) )
 
 # ======================================================================================
-# FETCHING TAB
+# FETCHING MODE
 # ======================================================================================
 elif mode == 'Data Collection':
-	st.subheader( '🏛️  Data Collection' )
+	st.subheader( '🏛️  Data Archives & Collections' )
 	st.divider( )
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
@@ -1018,7 +2159,7 @@ elif mode == 'Data Collection':
 				st.error( str( exc ) )
 
 # ======================================================================================
-# TEXT GENERATION
+# TEXT GENERATION MODE
 # ======================================================================================
 elif mode == 'Generative AI':
 	st.subheader( '🧠  Generative AI' )
@@ -1523,7 +2664,7 @@ elif mode == 'Generative AI':
 				st.error( str( exc ) )
 
 # ======================================================================================
-# MAPPING MODE
+# SATELLITE MODE
 # ======================================================================================
 elif mode == 'Satellite Data':
 	st.subheader( '🚀  Satellite Data' )
@@ -1985,19 +3126,467 @@ elif mode == 'Satellite Data':
 			except Exception as exc:
 				st.error( str( exc ) )
 
-# ======================================================================================
-# DATA MODE
-# ======================================================================================
+# ==============================================================================
+# DATA MANAGEMENT MODE
+# ==============================================================================
 elif mode == 'Data Management':
-	st.subheader( 'Data Management' )
+	st.subheader( "🏛️ Data Management", help=cfg.DATA_MANAGEMENT )
 	st.divider( )
-	
-	conn = sqlite3.connect( f"file:{DB_PATH.as_posix( )}?mode=ro", uri=True )
-	cur = conn.cursor( )
-	cur.execute( "SELECT name FROM sqlite_master WHERE type='table';" )
-	tables = [ row[ 0 ] for row in cur.fetchall( ) ]
-	conn.close( )
-	
-	st.write( tables )
-
+	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
+	with center:
+		tabs = st.tabs( [ "📥 Import", "🗂 Browse", "💉 CRUD", "📊 Explore", "🔎 Filter",
+		                  "🧮 Aggregate", "📈 Visualize", "⚙ Admin", "🧠 SQL" ] )
+		
+		tables = list_tables( )
+		if not tables:
+			st.info( "No tables available." )
+		else:
+			table = st.selectbox( "Table", tables )
+			df_full = read_table( table )
+		
+		# ------------------------------------------------------------------------------
+		# UPLOAD TAB
+		# ------------------------------------------------------------------------------
+		with tabs[ 0 ]:
+			uploaded_file = st.file_uploader( 'Upload Excel File', type=[ 'xlsx' ] )
+			overwrite = st.checkbox( 'Overwrite existing tables', value=True )
+			if uploaded_file:
+				try:
+					sheets = pd.read_excel( uploaded_file, sheet_name=None )
+					with create_connection( ) as conn:
+						conn.execute( 'BEGIN' )
+						for sheet_name, df in sheets.items( ):
+							table_name = create_identifier( sheet_name )
+							if overwrite:
+								conn.execute( f'DROP TABLE IF EXISTS "{table_name}"' )
+							
+							# --- Create Table ---
+							columns = [ ]
+							df.columns = [ create_identifier( c ) for c in df.columns ]
+							for col in df.columns:
+								sql_type = get_sqlite_type( df[ col ].dtype )
+								columns.append( f'"{col}" {sql_type}' )
+							
+							create_stmt = (
+									f'CREATE TABLE "{table_name}" '
+									f'({", ".join( columns )});'
+							)
+							
+							conn.execute( create_stmt )
+							
+							# --- Insert Data ---
+							placeholders = ", ".join( [ "?" ] * len( df.columns ) )
+							insert_stmt = (
+									f'INSERT INTO "{table_name}" '
+									f'VALUES ({placeholders});'
+							)
+							
+							conn.executemany( insert_stmt,
+								df.where( pd.notnull( df ), None ).values.tolist( ) )
+						
+						conn.commit( )
+					
+					st.success( 'Import completed successfully (transaction committed).' )
+					st.rerun( )
 				
+				except Exception as e:
+					try:
+						conn.rollback( )
+					except:
+						pass
+					st.error( f'Import failed — transaction rolled back.\n\n{e}' )
+		
+		# ------------------------------------------------------------------------------
+		# BROWSE TAB
+		# ------------------------------------------------------------------------------
+		with tabs[ 1 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='table_name' )
+				df = read_table( table )
+				render_table( df )
+			else:
+				st.info( 'No tables available.' )
+		
+		# ------------------------------------------------------------------------------
+		# CRUD (Schema-Aware)
+		# ------------------------------------------------------------------------------
+		with tabs[ 2 ]:
+			tables = list_tables( )
+			if not tables:
+				st.info( 'No tables available.' )
+			else:
+				table = st.selectbox( 'Select Table', tables, key='crud_table' )
+				df = read_table( table )
+				schema = create_schema( table )
+				
+				# Build type map
+				type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != 'rowid' }
+				
+				# ------------------------------------------------------------------
+				# INSERT
+				# ------------------------------------------------------------------
+				st.subheader( 'Insert Row' )
+				insert_data = { }
+				for column, col_type in type_map.items( ):
+					if 'INT' in col_type:
+						insert_data[
+							column ] = st.number_input( column, step=1, key=f'ins_{column}' )
+					
+					elif 'REAL' in col_type:
+						insert_data[
+							column ] = st.number_input( column, format='%.6f', key=f'ins_{column}' )
+					
+					elif 'BOOL' in col_type:
+						insert_data[
+							column ] = 1 if st.checkbox( column, key=f'ins_{column}' ) else 0
+					
+					else:
+						insert_data[ column ] = st.text_input( column, key=f'ins_{column}' )
+				
+				if st.button( 'Insert Row' ):
+					cols = list( insert_data.keys( ) )
+					placeholders = ', '.join( [ '?' ] * len( cols ) )
+					stmt = f'INSERT INTO "{table}" ({", ".join( cols )}) VALUES ({placeholders});'
+					
+					with create_connection( ) as conn:
+						conn.execute( stmt, list( insert_data.values( ) ) )
+						conn.commit( )
+					
+					st.success( 'Row inserted.' )
+					st.rerun( )
+				
+				# ------------------------------------------------------------------
+				# UPDATE
+				# ------------------------------------------------------------------
+				st.subheader( 'Update Row' )
+				rowid = st.number_input( 'Row ID', min_value=1, step=1 )
+				update_data = { }
+				for column, col_type in type_map.items( ):
+					if 'INT' in col_type:
+						val = st.number_input( column, step=1, key=f'upd_{column}' )
+						update_data[ column ] = val
+					
+					elif 'REAL' in col_type:
+						val = st.number_input( column, format='%.6f', key=f'upd_{column}' )
+						update_data[ column ] = val
+					
+					elif 'BOOL' in col_type:
+						val = 1 if st.checkbox( column, key=f'upd_{column}' ) else 0
+						update_data[ column ] = val
+					
+					else:
+						val = st.text_input( column, key=f"upd_{column}" )
+						update_data[ column ] = val
+				
+				if st.button( 'Update Row' ):
+					set_clause = ', '.join( [ f'{c}=?' for c in update_data ] )
+					stmt = f'UPDATE {table} SET {set_clause} WHERE rowid=?;'
+					
+					with create_connection( ) as conn:
+						conn.execute( stmt, list( update_data.values( ) ) + [ rowid ] )
+						conn.commit( )
+					
+					st.success( 'Row updated.' )
+					st.rerun( )
+				
+				# ------------------------------------------------------------------
+				# DELETE
+				# ------------------------------------------------------------------
+				st.subheader( 'Delete Row' )
+				delete_id = st.number_input( 'Row ID to Delete', min_value=1, step=1 )
+				if st.button( 'Delete Row' ):
+					with create_connection( ) as conn:
+						conn.execute( f'DELETE FROM {table} WHERE rowid=?;', (delete_id,) )
+						conn.commit( )
+					
+					st.success( 'Row deleted.' )
+					st.rerun( )
+		
+		# ------------------------------------------------------------------------------
+		# EXPLORE
+		# ------------------------------------------------------------------------------
+		with tabs[ 3 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='explore_table' )
+				page_size = st.slider( 'Rows per page', 10, 500, 50 )
+				page = st.number_input( 'Page', min_value=1, step=1 )
+				offset = (page - 1) * page_size
+				df_page = read_table( table, page_size, offset )
+				render_table( df_page )
+		
+		# ------------------------------------------------------------------------------
+		# FILTER
+		# ------------------------------------------------------------------------------
+		with tabs[ 4 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='filter_table' )
+				df = read_table( table )
+				column = st.selectbox( 'Column', df.columns )
+				value = st.text_input( 'Contains' )
+				if value:
+					df = df[ df[ column ].astype( str ).str.contains( value ) ]
+				
+				render_table( df )
+		
+		# ------------------------------------------------------------------------------
+		# AGGREGATE
+		# ------------------------------------------------------------------------------
+		with tabs[ 5 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='agg_table' )
+				df = read_table( table )
+				numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
+				if numeric_cols:
+					col = st.selectbox( 'Column', numeric_cols )
+					agg = st.selectbox( 'Function', [ 'SUM', 'AVG', 'COUNT' ] )
+					if agg == 'SUM':
+						st.metric( 'Result', df[ col ].sum( ) )
+					elif agg == 'AVG':
+						st.metric( 'Result', df[ col ].mean( ) )
+					elif agg == 'COUNT':
+						st.metric( 'Result', df[ col ].count( ) )
+		
+		# ------------------------------------------------------------------------------
+		# VISUALIZE
+		# ------------------------------------------------------------------------------
+		with tabs[ 6 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='viz_table' )
+				df = read_table( table )
+				create_visualization( df )
+		
+		# ------------------------------------------------------------------------------
+		# ADMIN
+		# ------------------------------------------------------------------------------
+		with tabs[ 7 ]:
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Table', tables, key='admin_table' )
+			
+			st.divider( )
+			
+			st.subheader( 'Data Profiling' )
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Select Table', tables, key='profile_table' )
+				if st.button( 'Generate Profile' ):
+					profile_df = create_profile_table( table )
+					render_table( profile_df )
+			
+			st.subheader( 'Drop Table' )
+			
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Select Table to Drop', tables, key='admin_drop_table' )
+				
+				# Initialize confirmation state
+				if 'dm_confirm_drop' not in st.session_state:
+					st.session_state.dm_confirm_drop = False
+				
+				# Step 1: Initial Drop click
+				if st.button( 'Drop Table', key='admin_drop_button' ):
+					st.session_state.dm_confirm_drop = True
+				
+				# Step 2: Confirmation UI
+				if st.session_state.dm_confirm_drop:
+					st.warning( f'You are about to permanently delete table {table}. '
+					            'This action cannot be undone.' )
+					
+					col1, col2 = st.columns( 2 )
+					
+					if col1.button( 'Confirm Drop', key='admin_confirm_drop' ):
+						try:
+							drop_table( table )
+							st.success( f'Table {table} dropped successfully.' )
+						except Exception as e:
+							st.error( f'Drop failed: {e}' )
+						
+						st.session_state.dm_confirm_drop = False
+						st.rerun( )
+					
+					if col2.button( 'Cancel', key='admin_cancel_drop' ):
+						st.session_state.dm_confirm_drop = False
+						st.rerun( )
+				
+				df = read_table( table )
+				col = st.selectbox( 'Create Index On', df.columns )
+				
+				if st.button( 'Create Index' ):
+					create_index( table, col )
+					st.success( 'Index created.' )
+			
+			st.divider( )
+			
+			st.subheader( 'Create Custom Table' )
+			new_table_name = st.text_input( 'Table Name' )
+			column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20, value=1 )
+			columns = [ ]
+			for i in range( column_count ):
+				st.markdown( f'### Column {i + 1}' )
+				col_name = st.text_input( 'Column Name', key=f'col_name_{i}' )
+				col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL', 'TEXT' ],
+					key=f'col_type_{i}' )
+				
+				not_null = st.checkbox( 'NOT NULL', key=f'not_null_{i}' )
+				primary_key = st.checkbox( 'PRIMARY KEY', key=f'pk_{i}' )
+				auto_inc = st.checkbox( 'AUTOINCREMENT (INTEGER only)', key=f'ai_{i}' )
+				
+				columns.append( {
+						'name': col_name,
+						'type': col_type,
+						'not_null': not_null,
+						'primary_key': primary_key,
+						'auto_increment': auto_inc } )
+			
+			if st.button( 'Create Table' ):
+				try:
+					create_custom_table( new_table_name, columns )
+					st.success( 'Table created successfully.' )
+					st.rerun( )
+				
+				except Exception as e:
+					st.error( f'Error: {e}' )
+			
+			st.divider( )
+			st.subheader( 'Schema Viewer' )
+			
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Select Table', tables, key='schema_view_table' )
+				
+				# Column schema
+				schema = create_schema( table )
+				schema_df = DataFrame(
+					schema,
+					columns=[ 'cid', 'name', 'type', 'notnull', 'default', 'pk' ] )
+				
+				st.markdown( "### Columns" )
+				st.data_editor(
+					make_display_safe( schema_df ),
+					hide_index=True,
+					use_container_width=True,
+					disabled=True )
+				
+				# Row count
+				with create_connection( ) as conn:
+					count = conn.execute(
+						f'SELECT COUNT(*) FROM "{table}"'
+					).fetchone( )[ 0 ]
+				
+				st.metric( "Row Count", f"{count:,}" )
+				
+				# Indexes
+				indexes = get_indexes( table )
+				if indexes:
+					idx_df = DataFrame(
+						indexes,
+						columns=[ 'seq', 'name', 'unique', 'origin', 'partial' ]
+					)
+					st.markdown( "### Indexes" )
+					st.data_editor(
+						make_display_safe( idx_df ),
+						hide_index=True,
+						use_container_width=True,
+						disabled=True )
+				else:
+					st.info( "No indexes defined." )
+			
+			st.divider( )
+			st.subheader( "ALTER TABLE Operations" )
+			
+			tables = list_tables( )
+			if tables:
+				table = st.selectbox( 'Select Table', tables, key='alter_table_select' )
+				operation = st.selectbox( 'Operation',
+					[ 'Add Column', 'Rename Column', 'Rename Table', 'Drop Column' ] )
+				
+				if operation == 'Add Column':
+					new_col = st.text_input( 'Column Name' )
+					col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL', 'TEXT' ] )
+					
+					if st.button( 'Add Column' ):
+						add_column( table, new_col, col_type )
+						st.success( 'Column added.' )
+						st.rerun( )
+				
+				elif operation == 'Rename Column':
+					schema = create_schema( table )
+					col_names = [ col[ 1 ] for col in schema ]
+					
+					old_col = st.selectbox( 'Column to Rename', col_names )
+					new_col = st.text_input( 'New Column Name' )
+					
+					if st.button( 'Rename Column' ):
+						rename_column( table, old_col, new_col )
+						st.success( 'Column renamed.' )
+						st.rerun( )
+				
+				elif operation == 'Rename Table':
+					new_name = st.text_input( 'New Table Name' )
+					
+					if st.button( 'Rename Table' ):
+						rename_table( table, new_name )
+						st.success( 'Table renamed.' )
+						st.rerun( )
+				
+				elif operation == 'Drop Column':
+					schema = create_schema( table )
+					col_names = [ col[ 1 ] for col in schema ]
+					
+					drop_col = st.selectbox( 'Column to Drop', col_names )
+					
+					if st.button( 'Drop Column' ):
+						drop_column( table, drop_col )
+						st.success( 'Column dropped.' )
+						st.rerun( )
+		
+		# ------------------------------------------------------------------------------
+		# SQL
+		# ------------------------------------------------------------------------------
+		with tabs[ 8 ]:
+			st.subheader( 'SQL Console' )
+			query = st.text_area( 'Enter SQL Query' )
+			if st.button( 'Run Query' ):
+				if not is_safe_query( query ):
+					st.error( 'Query blocked: Only read-only SELECT statements are allowed.' )
+				else:
+					try:
+						start_time = time.perf_counter( )
+						with create_connection( ) as conn:
+							result = pd.read_sql_query( query, conn )
+						
+						end_time = time.perf_counter( )
+						elapsed = end_time - start_time
+						
+						# ----------------------------------------------------------
+						# Display Results
+						# ----------------------------------------------------------
+						st.dataframe( result, use_container_width=True )
+						row_count = len( result )
+						
+						# ----------------------------------------------------------
+						# Execution Metrics
+						# ----------------------------------------------------------
+						col1, col2 = st.columns( 2 )
+						col1.metric( 'Rows Returned', f'{row_count:,}' )
+						col2.metric( 'Execution Time (seconds)', f'{elapsed:.6f}' )
+						
+						# Optional slow query warning
+						if elapsed > 2.0:
+							st.warning( 'Slow query detected (> 2 seconds). Consider indexing.' )
+						
+						# ----------------------------------------------------------
+						# Download
+						# ----------------------------------------------------------
+						if not result.empty:
+							csv = result.to_csv( index=False ).encode( 'utf-8' )
+							st.download_button( 'Download CSV', csv,
+								'query_results.csv', 'text/csv' )
+					
+					except Exception as e:
+						st.error( f'Execution failed: {e}' )

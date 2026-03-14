@@ -88,6 +88,6 @@ SKYMAP_TOKEN = '''06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d
 		7cb6d16dff82d6ccae1625233b27b05483fd534173bcae659e7edf7b083bb18b7786d03e874d921374dec9287626047f7e49637b701bf9420faee5cadffa46b1501c47366d9693e'''
 FAVICON = r'resources/images/favicon.ico'
 LOGO = r'resources/images/foo_logo.png'
-DB = r'stores/sqlite/datamodels/'
+DB = r'stores/sqlite/datamodels/Data.db'
 MODES = [ 'Document Loading', 'Web Scrapping', 'Data Collection',
           'Generative AI', 'Satellite Data', 'Data Management' ]
