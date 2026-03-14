@@ -1537,22 +1537,16 @@ if mode == 'Document Loading':
 		
 		with col1:
 			do_pdf = st.checkbox( label='PDF', key='pdf_cb' )
-			loader = PdfLoader( )
 		with col2:
 			do_word = st.checkbox( label='Word', key='word_cb' )
-			loader = WordLoader( )
 		with col3:
 			do_excel = st.checkbox( label='Excel', key='excel_cb' )
-			loader = ExcelLoader( )
 		with col4:
 			do_markdown = st.checkbox( label='Markdown', key='markdown_cb' )
-			loader = MarkdownLoader( )
 		with col5:
 			do_powerpoint = st.checkbox( label='Powerpoint', key='powerpoint_cb' )
-			loader = PowerPointLoader( )
 		with col6:
 			do_text = st.checkbox( label='Text', key='text_cb' )
-			loader = RecursiveCharacterTextSplitter( )
 
 
 	with col_text:
