@@ -89,4 +89,5 @@ SKYMAP_TOKEN = '''06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d
 FAVICON = r'resources/images/favicon.ico'
 LOGO = r'resources/images/foo_logo.png'
 DB = r'stores/sqlite/datamodels/'
-MODES = [ 'Loaders', 'Scrapers', 'Fetchers', 'AI', 'Maps', 'Data' ]
+MODES = [ 'Document Loading', 'Web Scrapping', 'Data Collection',
+          'Generative AI', 'Satellite Data', 'Data Management' ]

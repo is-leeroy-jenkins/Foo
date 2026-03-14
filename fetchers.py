@@ -79,7 +79,6 @@ from owslib.wms import WebMapService
 from requests import Response
 from retry_requests import retry
 from sscws.sscws import SscWs
-
 import config as cfg
 from boogr import Error
 from core import Result
