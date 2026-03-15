@@ -4046,176 +4046,945 @@ elif mode == 'Satellite Data':
 	
 	# -------- Google Weather
 	with st.expander( label='Google Weather', expanded=False ):
+		if 'googleweather_results' not in st.session_state:
+			st.session_state[ 'googleweather_results' ] = { }
+		
+		if 'googleweather_clear_request' not in st.session_state:
+			st.session_state[ 'googleweather_clear_request' ] = False
+		
+		if st.session_state.get( 'googleweather_clear_request', False ):
+			st.session_state[ 'googleweather_location' ] = ''
+			st.session_state[ 'googleweather_mode' ] = 'current'
+			st.session_state[ 'googleweather_units' ] = 'METRIC'
+			st.session_state[ 'googleweather_language' ] = 'en'
+			st.session_state[ 'googleweather_hours' ] = 24
+			st.session_state[ 'googleweather_days' ] = 5
+			st.session_state[ 'googleweather_timeout' ] = 10
+			st.session_state[ 'googleweather_results' ] = { }
+			st.session_state[ 'googleweather_clear_request' ] = False
+		
+		def _clear_googleweather_state( ) -> None:
+			st.session_state[ 'googleweather_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			gw_location = st.text_area( 'Location', value='', height=40,
-				key='googleweather_location' )
+			gw_location = st.text_area(
+				'Location',
+				height=70,
+				key='googleweather_location',
+				placeholder=(
+						'Examples:\n'
+						'Washington, DC\n'
+						'1600 Pennsylvania Ave NW, Washington, DC\n'
+						'Arlington, VA'
+				),
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				gw_mode = st.selectbox(
+					'Mode',
+					options=[ 'current', 'hourly_forecast', 'daily_forecast', 'alerts' ],
+					index=[ 'current', 'hourly_forecast', 'daily_forecast', 'alerts' ].index(
+						st.session_state.get( 'googleweather_mode', 'current' ) ),
+					key='googleweather_mode'
+				)
+			
+			with c2:
+				gw_units = st.selectbox(
+					'Units',
+					options=[ 'METRIC', 'IMPERIAL' ],
+					index=[ 'METRIC', 'IMPERIAL' ].index(
+						st.session_state.get( 'googleweather_units', 'METRIC' ) ),
+					key='googleweather_units'
+				)
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				gw_language = st.text_input(
+					'Language',
+					value=st.session_state.get( 'googleweather_language', 'en' ),
+					key='googleweather_language',
+					placeholder='en'
+				)
+			
+			with c4:
+				gw_hours = st.number_input(
+					'Hours',
+					min_value=1,
+					max_value=240,
+					value=int( st.session_state.get( 'googleweather_hours', 24 ) ),
+					step=1,
+					key='googleweather_hours',
+					disabled=(gw_mode != 'hourly_forecast')
+				)
+			
+			with c5:
+				gw_days = st.number_input(
+					'Days',
+					min_value=1,
+					max_value=10,
+					value=int( st.session_state.get( 'googleweather_days', 5 ) ),
+					step=1,
+					key='googleweather_days',
+					disabled=(gw_mode != 'daily_forecast')
+				)
+			
+			gw_timeout = st.number_input(
+				'Timeout',
+				min_value=1,
+				max_value=60,
+				value=int( st.session_state.get( 'googleweather_timeout', 10 ) ),
+				step=1,
+				key='googleweather_timeout'
+			)
+			
+			st.caption(
+				'Required key: GOOGLE_WEATHER_API_KEY. '
+				'Weather API must be enabled in your Google Cloud project.'
+			)
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
 				gw_submit = st.button( 'Submit', key='googleweather_submit' )
 			with b2:
-				gw_clear = st.button( 'Clear', key='googleweather_clear' )
+				st.button( 'Clear', key='googleweather_clear', on_click=_clear_googleweather_state )
 		
 		with col_right:
-			gw_output = st.empty( )
-			
-			if gw_clear:
-				st.session_state.update( { 'googleweather_location': '', } )
-				st.rerun( )
+			st.markdown( 'Results' )
 			
 			if gw_submit:
 				try:
 					f = GoogleWeather( )
-					result = f.fetch_current( address=gw_location )
-					if not result:
-						gw_output.info( 'No results returned.' )
+					
+					if gw_mode == 'current':
+						result = f.fetch_current(
+							address=gw_location,
+							units_system=gw_units,
+							language_code=gw_language,
+							time=int( gw_timeout ) )
+					elif gw_mode == 'hourly_forecast':
+						result = f.fetch_hourly_forecast(
+							address=gw_location,
+							hours=int( gw_hours ),
+							units_system=gw_units,
+							language_code=gw_language,
+							time=int( gw_timeout ) )
+					elif gw_mode == 'daily_forecast':
+						result = f.fetch_daily_forecast(
+							address=gw_location,
+							days=int( gw_days ),
+							units_system=gw_units,
+							language_code=gw_language,
+							time=int( gw_timeout ) )
 					else:
-						gw_output.text_area( 'Results', value=result.text, height=300 )
+						result = f.fetch_alerts(
+							address=gw_location,
+							language_code=gw_language,
+							time=int( gw_timeout ) )
+					
+					st.session_state[ 'googleweather_results' ] = result or { }
+					st.rerun( )
 				
 				except Exception as exc:
-					st.error( str( exc ) )
-					
+					st.error( 'Google Weather request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'googleweather_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				st.json( result )
+	
 	# -------- Satellite Center
 	with st.expander( label='Satellite Center', expanded=False ):
+		if 'satellitecenter_results' not in st.session_state:
+			st.session_state[ 'satellitecenter_results' ] = { }
+		
+		if 'satellitecenter_clear_request' not in st.session_state:
+			st.session_state[ 'satellitecenter_clear_request' ] = False
+		
+		if st.session_state.get( 'satellitecenter_clear_request', False ):
+			st.session_state[ 'satellitecenter_mode' ] = 'observatories'
+			st.session_state[ 'satellitecenter_query' ] = ''
+			st.session_state[ 'satellitecenter_start_time' ] = ''
+			st.session_state[ 'satellitecenter_end_time' ] = ''
+			st.session_state[ 'satellitecenter_coordinate_systems' ] = 'gse'
+			st.session_state[ 'satellitecenter_resolution_factor' ] = 1
+			st.session_state[ 'satellitecenter_timeout' ] = 20
+			st.session_state[ 'satellitecenter_results' ] = { }
+			st.session_state[ 'satellitecenter_clear_request' ] = False
+		
+		def _clear_satellitecenter_state( ) -> None:
+			st.session_state[ 'satellitecenter_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			satellite_query = st.text_area( 'Query', value='', height=40,
-				key='satellitecenter_query' )
+			satellite_mode = st.selectbox(
+				'Mode',
+				options=[ 'observatories', 'ground_stations', 'locations' ],
+				index=[ 'observatories', 'ground_stations', 'locations' ].index(
+					st.session_state.get( 'satellitecenter_mode', 'observatories' ) ),
+				key='satellitecenter_mode'
+			)
+			
+			satellite_query = st.text_area(
+				'Observatory Query',
+				height=90,
+				key='satellitecenter_query',
+				placeholder=(
+						'Examples:\n'
+						'iss\n'
+						'mms1,mms2\n'
+						'themisb\n'
+						'\n'
+						'Used for locations mode only. Leave blank for observatories and ground stations.'
+				),
+				disabled=(satellite_mode != 'locations')
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				satellite_start_time = st.text_input(
+					'Start Time (UTC)',
+					value=st.session_state.get( 'satellitecenter_start_time', '' ),
+					key='satellitecenter_start_time',
+					placeholder='2026-03-15T00:00:00Z',
+					disabled=(satellite_mode != 'locations')
+				)
+			
+			with c2:
+				satellite_end_time = st.text_input(
+					'End Time (UTC)',
+					value=st.session_state.get( 'satellitecenter_end_time', '' ),
+					key='satellitecenter_end_time',
+					placeholder='2026-03-15T02:00:00Z',
+					disabled=(satellite_mode != 'locations')
+				)
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				satellite_coordinate_systems = st.text_input(
+					'Coordinate Systems',
+					value=st.session_state.get( 'satellitecenter_coordinate_systems', 'gse' ),
+					key='satellitecenter_coordinate_systems',
+					placeholder='gse or geo,gsm',
+					disabled=(satellite_mode != 'locations')
+				)
+			
+			with c4:
+				satellite_resolution_factor = st.number_input(
+					'Resolution Factor',
+					min_value=1,
+					max_value=1000,
+					value=int( st.session_state.get( 'satellitecenter_resolution_factor', 1 ) ),
+					step=1,
+					key='satellitecenter_resolution_factor',
+					disabled=(satellite_mode != 'locations')
+				)
+			
+			with c5:
+				satellite_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'satellitecenter_timeout', 20 ) ),
+					step=1,
+					key='satellitecenter_timeout'
+				)
+			
+			st.caption(
+				'No API key is required for SSCWeb. '
+				'For locations mode, use UTC ISO 8601 timestamps and observatory IDs returned by the observatories service.'
+			)
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
 				satellite_submit = st.button( 'Submit', key='satellitecenter_submit' )
 			with b2:
-				satellite_clear = st.button( 'Clear', key='satellitecenter_clear' )
+				st.button( 'Clear', key='satellitecenter_clear', on_click=_clear_satellitecenter_state )
 		
 		with col_right:
-			satellite_output = st.empty( )
-		
-		if satellite_clear:
-			st.session_state.update( { 'satellitecenter_query': '', } )
-			st.rerun( )
-		
-		if satellite_submit:
-			try:
-				f = SatelliteCenter( )
-				result = f.fetch( satellite_query )
-				
-				if not result:
-					satellite_output.info( 'No results returned.' )
-				else:
-					satellite_output.text_area( 'Results', value=str( result ), height=300 )
+			st.markdown( 'Results' )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
-		
+			if satellite_submit:
+				try:
+					f = SatelliteCenter( )
+					result = f.fetch(
+						mode=satellite_mode,
+						query=satellite_query,
+						start_time=satellite_start_time,
+						end_time=satellite_end_time,
+						coordinate_systems=satellite_coordinate_systems,
+						resolution_factor=int( satellite_resolution_factor ),
+						time=int( satellite_timeout ) )
+					
+					st.session_state[ 'satellitecenter_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Satellite Center request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'satellitecenter_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				if satellite_mode == 'observatories':
+					items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
+					if items:
+						for idx, item in enumerate( items, start=1 ):
+							label = item.get( 'Id', f'Observatory {idx}' )
+							with st.expander( f'Observatory {idx}: {label}', expanded=False ):
+								st.json( item )
+					else:
+						st.json( result )
+				
+				elif satellite_mode == 'ground_stations':
+					items = result.get( 'GroundStation', [ ] ) if isinstance( result, dict ) else [ ]
+					if items:
+						for idx, item in enumerate( items, start=1 ):
+							label = item.get( 'Id', f'Ground Station {idx}' )
+							with st.expander( f'Ground Station {idx}: {label}', expanded=False ):
+								st.json( item )
+					else:
+						st.json( result )
+				
+				else:
+					data_items = result.get( 'Data', [ ] ) if isinstance( result, dict ) else [ ]
+					if data_items:
+						for idx, item in enumerate( data_items, start=1 ):
+							label = item.get( 'Id', f'Trajectory {idx}' )
+							with st.expander( f'Location Set {idx}: {label}', expanded=False ):
+								st.json( item )
+					else:
+						st.json( result )
+	
 	# -------- Astro Catalog
 	with st.expander( label='Astronomy Catalog', expanded=False ):
+		if 'astrocatalog_results' not in st.session_state:
+			st.session_state[ 'astrocatalog_results' ] = { }
+		
+		if 'astrocatalog_clear_request' not in st.session_state:
+			st.session_state[ 'astrocatalog_clear_request' ] = False
+		
+		if st.session_state.get( 'astrocatalog_clear_request', False ):
+			st.session_state[ 'astrocatalog_mode' ] = 'object_query'
+			st.session_state[ 'astrocatalog_query' ] = ''
+			st.session_state[ 'astrocatalog_quantity' ] = ''
+			st.session_state[ 'astrocatalog_attributes' ] = ''
+			st.session_state[ 'astrocatalog_arguments' ] = ''
+			st.session_state[ 'astrocatalog_ra' ] = ''
+			st.session_state[ 'astrocatalog_dec' ] = ''
+			st.session_state[ 'astrocatalog_radius' ] = 2
+			st.session_state[ 'astrocatalog_format' ] = 'json'
+			st.session_state[ 'astrocatalog_timeout' ] = 20
+			st.session_state[ 'astrocatalog_results' ] = { }
+			st.session_state[ 'astrocatalog_clear_request' ] = False
+		
+		def _clear_astrocatalog_state( ) -> None:
+			st.session_state[ 'astrocatalog_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			astro_query = st.text_area( 'Query', value='',
-				height=40, key='astrocatalog_query' )
+			astro_mode = st.selectbox(
+				'Mode',
+				options=[ 'object_query', 'cone_search' ],
+				index=[ 'object_query', 'cone_search' ].index(
+					st.session_state.get( 'astrocatalog_mode', 'object_query' ) ),
+				key='astrocatalog_mode'
+			)
+			
+			astro_query = st.text_area(
+				'Object / Event Name',
+				height=80,
+				key='astrocatalog_query',
+				placeholder=(
+						'Examples:\n'
+						'GW170817\n'
+						'SN2014J\n'
+						'AT2017gfo\n'
+						'\n'
+						'Used for object_query mode only.'
+				),
+				disabled=(astro_mode != 'object_query')
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				astro_quantity = st.text_input(
+					'Quantity',
+					value=st.session_state.get( 'astrocatalog_quantity', '' ),
+					key='astrocatalog_quantity',
+					placeholder='photometry, spectra, redshift'
+				)
+			
+			with c2:
+				astro_attributes = st.text_input(
+					'Attributes',
+					value=st.session_state.get( 'astrocatalog_attributes', '' ),
+					key='astrocatalog_attributes',
+					placeholder='time,magnitude,band'
+				)
+			
+			astro_arguments = st.text_area(
+				'Arguments',
+				height=90,
+				key='astrocatalog_arguments',
+				placeholder=(
+						'Examples:\n'
+						'band=R,time,e_magnitude,complete\n'
+						'telescope=HST\n'
+						'closest\n'
+						'first'
+				),
+			)
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				astro_ra = st.text_input(
+					'RA',
+					value=st.session_state.get( 'astrocatalog_ra', '' ),
+					key='astrocatalog_ra',
+					placeholder='197.45037 or 13:09:48.09',
+					disabled=(astro_mode != 'cone_search')
+				)
+			
+			with c4:
+				astro_dec = st.text_input(
+					'Dec',
+					value=st.session_state.get( 'astrocatalog_dec', '' ),
+					key='astrocatalog_dec',
+					placeholder='-23.38148 or -23:22:53.3',
+					disabled=(astro_mode != 'cone_search')
+				)
+			
+			with c5:
+				astro_radius = st.number_input(
+					'Radius (arcsec)',
+					min_value=1,
+					max_value=3600,
+					value=int( st.session_state.get( 'astrocatalog_radius', 2 ) ),
+					step=1,
+					key='astrocatalog_radius',
+					disabled=(astro_mode != 'cone_search')
+				)
+			
+			c6, c7 = st.columns( 2 )
+			
+			with c6:
+				astro_format = st.selectbox(
+					'Format',
+					options=[ 'json', 'csv', 'tsv' ],
+					index=[ 'json', 'csv', 'tsv' ].index(
+						st.session_state.get( 'astrocatalog_format', 'json' ) ),
+					key='astrocatalog_format'
+				)
+			
+			with c7:
+				astro_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'astrocatalog_timeout', 20 ) ),
+					step=1,
+					key='astrocatalog_timeout'
+				)
+			
+			st.caption(
+				'No API key is required for Open Astronomy Catalog. '
+				'Use object_query for named events and cone_search for coordinate searches.'
+			)
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
 				astro_submit = st.button( 'Submit', key='astrocatalog_submit' )
 			with b2:
-				astro_clear = st.button( 'Clear', key='astrocatalog_clear' )
+				st.button( 'Clear', key='astrocatalog_clear', on_click=_clear_astrocatalog_state )
 		
 		with col_right:
-			astro_output = st.empty( )
-		
-		if astro_clear:
-			st.session_state.update( { 'astrocatalog_query': '', } )
-			st.rerun( )
-		
-		if astro_submit:
-			try:
-				f = AstroCatalog( )
-				result = f.fetch( astro_query )
-				
-				if not result:
-					astro_output.info( "No results returned." )
-				else:
-					astro_output.text_area( "Results", value=str( result ), height=300 )
+			st.markdown( 'Results' )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			if astro_submit:
+				try:
+					f = AstroCatalog( )
+					result = f.fetch(
+						mode=astro_mode,
+						query=astro_query,
+						quantity=astro_quantity,
+						attributes=astro_attributes,
+						arguments=astro_arguments,
+						ra=astro_ra,
+						dec=astro_dec,
+						radius=int( astro_radius ),
+						data_format=astro_format,
+						time=int( astro_timeout ) )
+					
+					st.session_state[ 'astrocatalog_results' ] = result or { }
+					st.rerun( )
 				
+				except Exception as exc:
+					st.error( 'Astronomy Catalog request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'astrocatalog_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				if isinstance( result, str ):
+					st.text_area( 'Results', value=result, height=320 )
+				else:
+					st.json( result )
+	
 	# -------- Astro Query
 	with st.expander( label='Astro Query', expanded=False ):
+		if 'astroquery_results' not in st.session_state:
+			st.session_state[ 'astroquery_results' ] = { }
+		
+		if 'astroquery_clear_request' not in st.session_state:
+			st.session_state[ 'astroquery_clear_request' ] = False
+		
+		if st.session_state.get( 'astroquery_clear_request', False ):
+			st.session_state[ 'astroquery_mode' ] = 'object_search'
+			st.session_state[ 'astroquery_query' ] = ''
+			st.session_state[ 'astroquery_ra' ] = ''
+			st.session_state[ 'astroquery_dec' ] = ''
+			st.session_state[ 'astroquery_radius' ] = 0.5
+			st.session_state[ 'astroquery_radius_unit' ] = 'deg'
+			st.session_state[ 'astroquery_row_limit' ] = 100
+			st.session_state[ 'astroquery_results' ] = { }
+			st.session_state[ 'astroquery_clear_request' ] = False
+		
+		def _clear_astroquery_state( ) -> None:
+			st.session_state[ 'astroquery_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			astroquery_query = st.text_area( 'Query', value='',
-				height=40, key='astroquery_query' )
+			astroquery_mode = st.selectbox(
+				'Mode',
+				options=[ 'object_search', 'object_ids', 'region_search' ],
+				index=[ 'object_search', 'object_ids', 'region_search' ].index(
+					st.session_state.get( 'astroquery_mode', 'object_search' ) ),
+				key='astroquery_mode'
+			)
+			
+			astroquery_query = st.text_area(
+				'Object Query',
+				height=80,
+				key='astroquery_query',
+				placeholder=(
+						'Examples:\n'
+						'M81\n'
+						'Sirius\n'
+						'NGC 1300\n'
+						'\n'
+						'Used for object_search and object_ids.'
+				),
+				disabled=(astroquery_mode == 'region_search')
+			)
+			
+			c1, c2, c3 = st.columns( 3 )
+			
+			with c1:
+				astroquery_ra = st.text_input(
+					'RA',
+					value=st.session_state.get( 'astroquery_ra', '' ),
+					key='astroquery_ra',
+					placeholder='13:09:48.09',
+					disabled=(astroquery_mode != 'region_search'),
+					help='Right Ascension of the search center, e.g. 13:09:48.09'
+				)
+			
+			with c2:
+				astroquery_dec = st.text_input(
+					'Dec',
+					value=st.session_state.get( 'astroquery_dec', '' ),
+					key='astroquery_dec',
+					placeholder='-23:22:53.3',
+					disabled=(astroquery_mode != 'region_search'),
+					help='Declination of the search center, e.g. -23:22:53.3'
+				)
+			
+			with c3:
+				astroquery_radius = st.number_input(
+					'Radius',
+					min_value=0.001,
+					max_value=60.0,
+					value=float( st.session_state.get( 'astroquery_radius', 0.5 ) ),
+					step=0.1,
+					key='astroquery_radius',
+					disabled=(astroquery_mode != 'region_search'),
+					help='Cone-search radius around the RA/Dec sky position.'
+				)
+			
+			c4, c5 = st.columns( 2 )
+			
+			with c4:
+				astroquery_radius_unit = st.selectbox(
+					'Radius Unit',
+					options=[ 'deg', 'arcmin', 'arcsec' ],
+					index=[ 'deg', 'arcmin', 'arcsec' ].index(
+						st.session_state.get( 'astroquery_radius_unit', 'deg' ) ),
+					key='astroquery_radius_unit',
+					disabled=(astroquery_mode != 'region_search')
+				)
+			
+			with c5:
+				astroquery_row_limit = st.number_input(
+					'Row Limit',
+					min_value=1,
+					max_value=10000,
+					value=int( st.session_state.get( 'astroquery_row_limit', 100 ) ),
+					step=1,
+					key='astroquery_row_limit'
+				)
+			
+			st.caption(
+				'No API key is required for basic astroquery SIMBAD queries. '
+				'Use object_search for a named object, object_ids for alternate names, '
+				'and region_search for a cone search around RA/Dec.'
+			)
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
 				astroquery_submit = st.button( 'Submit', key='astroquery_submit' )
 			with b2:
-				astroquery_clear = st.button( 'Clear', key='astroquery_clear' )
+				st.button( 'Clear', key='astroquery_clear', on_click=_clear_astroquery_state )
 		
 		with col_right:
-			astroquery_output = st.empty( )
-		
-		if astroquery_clear:
-			st.session_state.update( { 'astroquery_query': "", } )
-			st.rerun( )
-		
-		if astroquery_submit:
-			try:
-				f = AstroQuery( )
-				result = f.fetch( astroquery_query )
-				
-				if not result:
-					astroquery_output.info( 'No results returned.' )
-				else:
-					astroquery_output.text_area( 'Results', value=str( result ), height=300 )
+			st.markdown( 'Results' )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
-		
+			if astroquery_submit:
+				try:
+					f = AstroQuery( )
+					result = f.fetch(
+						mode=astroquery_mode,
+						query=astroquery_query,
+						ra=astroquery_ra,
+						dec=astroquery_dec,
+						radius=float( astroquery_radius ),
+						radius_unit=astroquery_radius_unit,
+						row_limit=int( astroquery_row_limit ) )
+					
+					st.session_state[ 'astroquery_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Astro Query request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'astroquery_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_col1, meta_col2 = st.columns( 2 )
+				
+				with meta_col1:
+					if isinstance( result, dict ) and 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if isinstance( result, dict ) and 'query' in result:
+						st.markdown( f"**Query:** {result.get( 'query', '' )}" )
+					if isinstance( result, dict ) and 'ra' in result:
+						st.markdown( f"**RA:** {result.get( 'ra', '' )}" )
+				
+				with meta_col2:
+					if isinstance( result, dict ) and 'row_limit' in result:
+						st.markdown( f"**Row Limit:** {result.get( 'row_limit', '' )}" )
+					if isinstance( result, dict ) and 'dec' in result:
+						st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
+					if isinstance( result, dict ) and 'radius' in result:
+						st.markdown(
+							f"**Radius:** {result.get( 'radius', '' )} "
+							f"{result.get( 'radius_unit', '' )}"
+						)
+				
+				rows = result.get( 'rows', [ ] ) if isinstance( result, dict ) else [ ]
+				columns = result.get( 'columns', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if columns:
+					st.markdown( '#### Columns' )
+					st.write( ', '.join( [ str( c ) for c in columns ] ) )
+				
+				if not rows:
+					st.info( 'No rows returned.' )
+				else:
+					for idx, row in enumerate( rows, start=1 ):
+						label = row.get( 'MAIN_ID', f'Row {idx}' )
+						with st.expander( f'Row {idx}: {label}', expanded=False ):
+							st.json( row )
+	
 	# -------- Star Map
 	with st.expander( label='Star Map', expanded=False ):
+		if 'starmap_results' not in st.session_state:
+			st.session_state[ 'starmap_results' ] = { }
+		
+		if 'starmap_clear_request' not in st.session_state:
+			st.session_state[ 'starmap_clear_request' ] = False
+		
+		if st.session_state.get( 'starmap_clear_request', False ):
+			st.session_state[ 'starmap_mode' ] = 'object_link'
+			st.session_state[ 'starmap_query' ] = ''
+			st.session_state[ 'starmap_ra' ] = 15.2976
+			st.session_state[ 'starmap_dec' ] = -17.5892
+			st.session_state[ 'starmap_zoom' ] = 5
+			st.session_state[ 'starmap_image_source' ] = 'DSS2'
+			st.session_state[ 'starmap_box_color' ] = 'yellow'
+			st.session_state[ 'starmap_show_box' ] = True
+			st.session_state[ 'starmap_show_grid' ] = True
+			st.session_state[ 'starmap_show_lines' ] = True
+			st.session_state[ 'starmap_show_boundaries' ] = True
+			st.session_state[ 'starmap_show_const_names' ] = False
+			st.session_state[ 'starmap_timeout' ] = 20
+			st.session_state[ 'starmap_results' ] = { }
+			st.session_state[ 'starmap_clear_request' ] = False
+		
+		def _clear_starmap_state( ) -> None:
+			st.session_state[ 'starmap_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
+			starmap_mode = st.selectbox(
+				'Mode',
+				options=[ 'object_link', 'coordinate_link', 'snapshot' ],
+				index=[ 'object_link', 'coordinate_link', 'snapshot' ].index(
+					st.session_state.get( 'starmap_mode', 'object_link' ) ),
+				key='starmap_mode'
+			)
+			
 			starmap_query = st.text_area(
-				'Query',
-				value='',
-				height=40,
-				key='starmap_query'
+				'Object Query',
+				height=80,
+				key='starmap_query',
+				placeholder=(
+						'Examples:\n'
+						'Polaris\n'
+						'M31\n'
+						'NGC 1300\n'
+						'\n'
+						'Used for object_link mode only.'
+				),
+				disabled=(starmap_mode != 'object_link')
+			)
+			
+			c1, c2, c3 = st.columns( 3 )
+			
+			with c1:
+				starmap_ra = st.number_input(
+					'RA (hours)',
+					min_value=0.0,
+					max_value=24.0,
+					value=float( st.session_state.get( 'starmap_ra', 15.2976 ) ),
+					step=0.0001,
+					format='%.4f',
+					key='starmap_ra',
+					disabled=(starmap_mode == 'object_link'),
+					help='Right Ascension of the sky center in hours. Example: 15.2976'
+				)
+			
+			with c2:
+				starmap_dec = st.number_input(
+					'Dec (degrees)',
+					min_value=-90.0,
+					max_value=90.0,
+					value=float( st.session_state.get( 'starmap_dec', -17.5892 ) ),
+					step=0.0001,
+					format='%.4f',
+					key='starmap_dec',
+					disabled=(starmap_mode == 'object_link'),
+					help='Declination of the sky center in degrees. Example: -17.5892'
+				)
+			
+			with c3:
+				starmap_zoom = st.number_input(
+					'Zoom',
+					min_value=1,
+					max_value=18,
+					value=int( st.session_state.get( 'starmap_zoom', 5 ) ),
+					step=1,
+					key='starmap_zoom',
+					help='Smaller values show a wider field; larger values zoom in.'
+				)
+			
+			c4, c5 = st.columns( 2 )
+			
+			with c4:
+				starmap_image_source = st.selectbox(
+					'Image Source',
+					options=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS', 'H-Alpha' ],
+					index=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS', 'H-Alpha' ].index(
+						st.session_state.get( 'starmap_image_source', 'DSS2' ) ),
+					key='starmap_image_source',
+					disabled=(starmap_mode != 'snapshot'),
+					help='Sky survey source used for snapshot generation.'
+				)
+			
+			with c5:
+				starmap_box_color = st.text_input(
+					'Box Color',
+					value=st.session_state.get( 'starmap_box_color', 'yellow' ),
+					key='starmap_box_color',
+					placeholder='yellow',
+					disabled=(starmap_mode == 'snapshot')
+				)
+			
+			c6, c7 = st.columns( 2 )
+			
+			with c6:
+				starmap_show_box = st.checkbox(
+					'Show Box',
+					value=st.session_state.get( 'starmap_show_box', True ),
+					key='starmap_show_box',
+					disabled=(starmap_mode == 'snapshot')
+				)
+			
+			with c7:
+				starmap_show_grid = st.checkbox(
+					'Show Grid',
+					value=st.session_state.get( 'starmap_show_grid', True ),
+					key='starmap_show_grid',
+					disabled=(starmap_mode == 'object_link')
+				)
+			
+			c8, c9 = st.columns( 2 )
+			
+			with c8:
+				starmap_show_lines = st.checkbox(
+					'Show Constellation Lines',
+					value=st.session_state.get( 'starmap_show_lines', True ),
+					key='starmap_show_lines',
+					disabled=False
+				)
+			
+			with c9:
+				starmap_show_boundaries = st.checkbox(
+					'Show Constellation Boundaries',
+					value=st.session_state.get( 'starmap_show_boundaries', True ),
+					key='starmap_show_boundaries',
+					disabled=False
+				)
+			
+			starmap_show_const_names = st.checkbox(
+				'Show Constellation Names',
+				value=st.session_state.get( 'starmap_show_const_names', False ),
+				key='starmap_show_const_names',
+				disabled=(starmap_mode != 'snapshot')
+			)
+			
+			starmap_timeout = st.number_input(
+				'Timeout',
+				min_value=1,
+				max_value=120,
+				value=int( st.session_state.get( 'starmap_timeout', 20 ) ),
+				step=1,
+				key='starmap_timeout'
+			)
+			
+			st.caption(
+				'No API key is required. '
+				'Use object_link for a named object, coordinate_link for RA/Dec-centered interactive maps, '
+				'and snapshot for a static sky image page.'
 			)
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
 				starmap_submit = st.button( 'Submit', key='starmap_submit' )
 			with b2:
-				starmap_clear = st.button( 'Clear', key='starmap_clear' )
+				st.button( 'Clear', key='starmap_clear', on_click=_clear_starmap_state )
 		
 		with col_right:
-			starmap_output = st.empty( )
-		
-		if starmap_clear:
-			st.session_state.update( { 'starmap_query': '', } )
-			st.rerun( )
-		
-		if starmap_submit:
-			try:
-				f = StarMap( )
-				result = f.fetch( starmap_query )
-				
-				if not result:
-					starmap_output.info( 'No results returned.' )
-				else:
-					starmap_output.text_area( 'Results', value=str( result ), height=300 )
+			st.markdown( 'Results' )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			if starmap_submit:
+				try:
+					f = StarMap( )
+					result = f.fetch(
+						mode=starmap_mode,
+						query=starmap_query,
+						ra=float( starmap_ra ),
+						dec=float( starmap_dec ),
+						zoom=int( starmap_zoom ),
+						image_source=starmap_image_source,
+						box_color=starmap_box_color,
+						show_box=bool( starmap_show_box ),
+						show_grid=bool( starmap_show_grid ),
+						show_lines=bool( starmap_show_lines ),
+						show_boundaries=bool( starmap_show_boundaries ),
+						show_const_names=bool( starmap_show_const_names ),
+						time=int( starmap_timeout ) )
+					
+					st.session_state[ 'starmap_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Star Map request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'starmap_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_col1, meta_col2 = st.columns( 2 )
+				
+				with meta_col1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'object' in result:
+						st.markdown( f"**Object:** {result.get( 'object', '' )}" )
+					if 'ra' in result:
+						st.markdown( f"**RA:** {result.get( 'ra', '' )}" )
+				
+				with meta_col2:
+					if 'zoom' in result:
+						st.markdown( f"**Zoom:** {result.get( 'zoom', '' )}" )
+					if 'dec' in result:
+						st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
+					if 'image_source' in result:
+						st.markdown( f"**Image Source:** {result.get( 'image_source', '' )}" )
+				
+				if result.get( 'interactive_url', '' ):
+					st.markdown( f"**Interactive URL:** {result.get( 'interactive_url', '' )}" )
+				
+				if result.get( 'snapshot_page_url', '' ):
+					st.markdown( f"**Snapshot Page URL:** {result.get( 'snapshot_page_url', '' )}" )
+				
+				preferred_image_url = result.get( 'preferred_image_url', '' )
+				if preferred_image_url:
+					st.markdown( '#### Preferred Image' )
+					st.image( preferred_image_url, use_container_width=True )
+				
+				image_links = result.get( 'image_links', { } ) or { }
+				if image_links:
+					st.markdown( '#### Available Image Links' )
+					st.json( image_links )
+				
+				if result.get( 'params', { } ):
+					st.markdown( '#### Request Parameters' )
+					st.json( result.get( 'params', { } ) )
+				
+				if result.get( 'html_preview', '' ):
+					st.markdown( '#### HTML Preview' )
+					st.text_area(
+						'',
+						value=result.get( 'html_preview', '' ),
+						height=220,
+						key='starmap_html_preview'
+					)
 				
 	# -------- Open Weather
 	with st.expander( label='Open Weather', expanded=False ):

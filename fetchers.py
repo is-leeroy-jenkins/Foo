@@ -63,6 +63,7 @@ import requests
 import requests_cache
 from anthropic import Anthropic
 from astroquery.simbad import Simbad
+from astropy.coordinates import SkyCoord
 from google import genai
 from grokipedia_api import GrokipediaClient
 from groq import Groq as GroqClient
@@ -2301,43 +2302,26 @@ class GoogleMaps( Fetcher ):
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			raise exception
-			
+
 class GoogleWeather( Fetcher ):
 	'''
-
+	
 		Purpose:
 		--------
-		Provides the google drive loading functionality
-		to parse items on googke drive into Document objects.
-
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
+		Provides structured access to the Google Maps Platform Weather API.
 	
 	'''
 	gmaps: Optional[ GoogleMaps ]
-	header: Optional[ Dict[ str, Any ]]
-	file_path: Optional[ str ]
-	num_results: Optional[ int ]
+	headers: Optional[ Dict[ str, Any ] ]
 	api_key: Optional[ str ]
 	mode: Optional[ str ]
 	latitude: Optional[ float ]
 	longitude: Optional[ float ]
 	coordinates: Optional[ Tuple[ float, float ] ]
 	address: Optional[ str ]
-	directions: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
+	response: Optional[ Response ]
+	result: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
@@ -2345,164 +2329,248 @@ class GoogleWeather( Fetcher ):
 		self.headers = { }
 		self.gmaps = GoogleMaps( )
 		self.mode = None
-		self.url = None
-		self.file_path = None
+		self.url = 'https://weather.googleapis.com/v1'
 		self.longitude = None
 		self.latitude = None
 		self.coordinates = None
 		self.fetcher = None
 		self.address = None
-		self.directions = None
+		self.params = { }
+		self.response = None
+		self.result = None
+		self.timeout = 10
 		self.agents = cfg.AGENTS
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
+		
+		if 'Accept' not in self.headers:
+			self.headers[ 'Accept' ] = 'application/json'
 	
-	def fetch_current( self, address: str ) -> Response | None:
-		"""
+	def __dir__( self ) -> List[ str ]:
+		return [
+				'api_key',
+				'url',
+				'timeout',
+				'headers',
+				'fetch_current',
+				'fetch_hourly_forecast',
+				'fetch_daily_forecast',
+				'fetch_alerts',
+		]
+	
+	def _resolve_coordinates( self, address: str ) -> Tuple[ float, float ]:
+		'''
 		
 			Purpose:
 			--------
-			Retrieve current weather conditions for an address using the
-			Google Maps Weather API.
-			
-		"""
-		try:
-			throw_if( 'address', address )
-			self.address = address
-			lat, lng = self.gmaps.geocode_location( address=self.address )
-			self.latitude = lat
-			self.longitude = lng
-			self.url = f'https://weather.googleapis.com/v1/currentConditions:lookup?key='
-			self.url += f'{self.api_key}&location.latitude={lat}&location.longitude={lng}'
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GoogleWeather'
-			exception.method = 'current_observation( self, address: str ) -> Dict[ Any, Any ]'
-			raise exception
-			
-	
-	def future_forecast( self, address: str ) -> Response | None:
-		"""
-			
-			Purpose:
-			--------
-			Retrieve weather forecast (hourly + daily) for an address using
-			the Google Maps Weather API.
-			
-		"""
-		try:
-			throw_if( 'address', address )
-			self.address = address
-			lat, lng = self.gmaps.geocode_location( address=self.address )
-			self.latitude = lat
-			self.longitude = lng
-			self.url = "https://maps.googleapis.com/maps/api/weather/v1/forecast"
-			self.params = \
-			{
-				'location': f'{self.latitude},{self.longitude}',
-				'key': self.api_key
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GoogleWeather'
-			exception.method = 'future_forecast( self, address: str ) -> Dict[ Any, Any ]'
-			raise exception
-			
+			Resolve a user-supplied address into latitude and longitude by using
+			the existing GoogleMaps helper.
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
+			--------
+			Tuple[float, float]
+		
+		'''
 		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
+			throw_if( 'address', address )
+			self.address = address.strip( )
+			lat, lng = self.gmaps.geocode_location( address=self.address )
+			self.latitude = lat
+			self.longitude = lng
+			self.coordinates = (lat, lng)
+			return self.coordinates
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = '_resolve_coordinates( self, address: str ) -> Tuple[ float, float ]'
+			raise exception
+	
+	def _request( self, path: str, params: Dict[ str, Any ], time: int = 10 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Send a GET request to a Google Weather API endpoint and return JSON.
+		
+			Returns:
+			--------
+			Dict[str, Any] | None
+		
+		'''
+		try:
+			active_key = (self.api_key or '').strip( )
+			if not active_key:
+				raise ValueError( 'Google Weather API key is required. Set GOOGLE_WEATHER_API_KEY.' )
+			
+			self.timeout = int( time )
+			request_params = dict( params or { } )
+			request_params[ 'key' ] = active_key
+			
+			request_url = f'{self.url}/{path}'
+			self.response = requests.get(
+				url=request_url,
+				params=request_params,
+				headers=self.headers,
+				timeout=self.timeout )
+			
+			self.response.raise_for_status( )
+			self.result = self.response.json( )
+			return self.result
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleWeather'
+			exception.method = '_request( self, path: str, params: Dict[ str, Any ], time: int=10 ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_current( self, address: str, units_system: str = 'METRIC',
+			language_code: str = 'en', time: int = 10 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Retrieve current weather conditions for an address.
+		
+			Returns:
+			--------
+			Dict[str, Any] | None
+		
+		'''
+		try:
+			lat, lng = self._resolve_coordinates( address )
+			params = {
+					'location.latitude': lat,
+					'location.longitude': lng,
+					'unitsSystem': units_system,
+					'languageCode': language_code,
+			}
+			return self._request(
+				path='currentConditions:lookup',
+				params=params,
+				time=time )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleWeather'
+			exception.method = (
+					'fetch_current( self, address: str, units_system: str=METRIC, '
+					'language_code: str=en, time: int=10 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_hourly_forecast( self, address: str, hours: int = 24, units_system: str = 'METRIC',
+			language_code: str = 'en', time: int = 10 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Retrieve hourly weather forecast for an address.
+		
+			Returns:
+			--------
+			Dict[str, Any] | None
+		
+		'''
+		try:
+			lat, lng = self._resolve_coordinates( address )
+			params = {
+					'location.latitude': lat,
+					'location.longitude': lng,
+					'hours': max( 1, min( int( hours ), 240 ) ),
+					'unitsSystem': units_system,
+					'languageCode': language_code,
+			}
+			return self._request(
+				path='forecast/hours:lookup',
+				params=params,
+				time=time )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleWeather'
+			exception.method = (
+					'fetch_hourly_forecast( self, address: str, hours: int=24, '
+					'units_system: str=METRIC, language_code: str=en, time: int=10 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_daily_forecast( self, address: str, days: int = 5, units_system: str = 'METRIC',
+			language_code: str = 'en', time: int = 10 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Retrieve daily weather forecast for an address.
+		
+			Returns:
+			--------
+			Dict[str, Any] | None
+		
+		'''
+		try:
+			lat, lng = self._resolve_coordinates( address )
+			params = {
+					'location.latitude': lat,
+					'location.longitude': lng,
+					'days': max( 1, min( int( days ), 10 ) ),
+					'unitsSystem': units_system,
+					'languageCode': language_code,
+			}
+			return self._request(
+				path='forecast/days:lookup',
+				params=params,
+				time=time )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleWeather'
+			exception.method = (
+					'fetch_daily_forecast( self, address: str, days: int=5, '
+					'units_system: str=METRIC, language_code: str=en, time: int=10 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_alerts( self, address: str, language_code: str = 'en',
+			time: int = 10 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Retrieve public weather alerts for an address.
+		
+			Returns:
+			--------
+			Dict[str, Any] | None
+		
+		'''
+		try:
+			lat, lng = self._resolve_coordinates( address )
+			params = {
+					'location.latitude': lat,
+					'location.longitude': lng,
+					'languageCode': language_code,
+			}
+			return self._request(
+				path='publicAlerts:lookup',
+				params=params,
+				time=time )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleWeather'
+			exception.method = (
+					'fetch_alerts( self, address: str, language_code: str=en, '
+					'time: int=10 ) -> Dict[ str, Any ]'
+			)
 			raise exception
 			
 class NavalObservatory( Fetcher ):
@@ -2764,246 +2832,212 @@ class NavalObservatory( Fetcher ):
 			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
 			raise exception
-			
+
 class SatelliteCenter( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides access to APIs from NASA's Satellite Situation Center Web (SSCWeb) service
-		that is operated jointly by the NASA/GSFC Space Physics Data Facility (SPDF) and the
-		National Space Science Data Center (NSSDC) to support a range of NASA science programs
-		and to fulfill key international NASA responsibilities including those of NSSDC and the
-		World Data Center-A for Rockets and Satellites.
-		
-		The software and associated database of SSCWeb together form a system to cast geocentric
-		spacecraft location information into a framework of (empirical) geophysical regions and
-		mappings of spacecraft locations along lines of the Earth's magnetic field.
-		
-		This capability is one key to mission science planning (both single missions and
-		coordinated observations of multiple spacecraft with ground-based investigations) and to
-		subsequent multi-mission data analysis.
-
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
+		Provides access to NASA SSCWeb / Satellite Situation Center data for
+		observatories, ground stations, and location trajectories.
 
 	'''
 	ssc: Optional[ SscWs ]
-	file_path: Optional[ str ]
-	api_key: Optional[ str ]
 	url: Optional[ str ]
-	latitude: Optional[ float ]
-	longitude: Optional[ float ]
-	observatories: Optional[ List[ Dict[ str, Any ] ] ]
-	coordinates: Optional[ Tuple[ float, float ] ]
-	calendar_date: Optional[ dt.datetime ]
-	utc_time: Optional[ dt.time ]
-	local_time: Optional[ dt.time ]
 	params: Optional[ Dict[ str, Any ] ]
+	observatories: Optional[ List[ Dict[ str, Any ] ] ]
+	ground_stations: Optional[ List[ Dict[ str, Any ] ] ]
+	timeout: Optional[ int ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
-		self.api_key = cfg.NASA_API_KEY
 		self.ssc = None
-		self.url = None
-		self.file_path = None
-		self.longitude = None
-		self.latitude = None
-		self.coordinates = None
-		self.fetcher = None
-		self.calendar_date = None
-		self.julian_date = None
-		self.local_time = None
-		self.utc_time = None
+		self.url = 'https://sscweb.gsfc.nasa.gov/WS/sscr/2'
+		self.params = { }
 		self.observatories = [ ]
+		self.ground_stations = [ ]
+		self.timeout = 20
+		self.headers = { }
 		self.agents = cfg.AGENTS
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 		
-	def fetch_observatories( self ) -> List[ str ] | None:
+		if 'Accept' not in self.headers:
+			self.headers[ 'Accept' ] = 'application/json'
+	
+	def __dir__( self ) -> List[ str ]:
+		return [
+				'url',
+				'timeout',
+				'headers',
+				'fetch_observatories',
+				'fetch_ground_stations',
+				'fetch_locations',
+				'fetch',
+		]
+	
+	def fetch_observatories( self ) -> Dict[ str, Any ] | None:
 		"""
 
 			Purpose:
 			--------
-			This service provides descriptions of the observatories that are available from SSC.
-
-		"""
-		try:
-			self.ssc = SscWs( )
-			result = self.ssc.get_observatories( )
-			self.observatories.append( result )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'SatelliteCenter'
-			exception.method = 'fetch_observatories( self ) -> List[ str ]'
-			raise exception
-			
-	
-	def fetch_locations( self ) ->  None:
-		"""
-
-			Purpose:
-			--------
-			This service provides observatory location information.
-
-			Parameters:
-			----------
-			date - dt.date representing a calendar date
-
-		"""
-		try:
-			self.ssc = SscWs( )
-			result = self.ssc.get_locations( [ observatory ], example_interval )
-			data = result[ 'Data' ][ 0 ]
-			coords = data[ 'Coordinates' ][ 0 ]
-			fig = plt.figure( )
-			if version.parse( mpl.__version__ ) < version.parse( '3.4' ):
-				ax = fig.gca( projection='3d' )
-			else:
-				ax = Axes3D( fig, auto_add_to_figure=False )
-				fig.add_axes( ax )
-			ax.set_xlabel( 'X (km)' )
-			ax.set_ylabel( 'Y (km)' )
-			ax.set_zlabel( 'Z (km)' )
-			title = data[ 'Id' ] + ' Orbit (' + \
-			        coords[ 'CoordinateSystem' ].value.upper( ) + ')'
-			ax.plot( coords[ 'X' ], coords[ 'Y' ], coords[ 'Z' ], label=title )
-			ax.legend( )
-			plt.show( )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'SatelliteCenter'
-			exception.method = 'fetch_locations( self )'
-			raise exception
-			
-	
-	def fetch_time_interal( self, select_obs, observatories ):
-		try:
-			self.ssc = SscWs( )
-			for obs in observatories:
-				if obs[ 'Id' ] == select_obs:
-					end = obs[ 'EndTime' ]
-					return TimeInterval( end - timedelta( hours=2 ), end )
-			return None
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'SatelliteCenter'
-			exception.method = 'fetch_julian( self, address: str ) -> float'
-			raise exception
-			
-	
-	def fetch_ground_stations( self ):
-		try:
-			self.ssc = SscWs( )
-			result = self.ssc.get_ground_stations( )
-			for ground_station in result[ 'GroundStation' ][ :5 ]:
-				location = ground_station[ 'Location' ]
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'SatelliteCenter'
-			exception.method = 'fetch_julian( self, address: str ) -> float'
-			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			Get descriptions of the observatories available from SSC.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
+			--------
+			Dict[str, Any] | None
 
 		"""
 		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
+			self.ssc = SscWs( user_agent=self.agents, timeout=self.timeout )
+			result = self.ssc.get_observatories( )
+			return result
+		
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'SatelliteCenter'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = 'fetch_observatories( self ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_ground_stations( self ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Get descriptions of the ground stations available from SSC.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		"""
+		try:
+			self.ssc = SscWs( user_agent=self.agents, timeout=self.timeout )
+			result = self.ssc.get_ground_stations( )
+			return result
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'SatelliteCenter'
+			exception.method = 'fetch_ground_stations( self ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_locations( self, observatories: str, start_time: str, end_time: str,
+			coordinate_systems: str = 'gse', resolution_factor: int = 1,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Get location data for one or more observatories over a time range using
+			the documented SSC REST GET endpoint.
+
+			Parameters:
+			-----------
+			observatories:
+				Comma-separated observatory identifiers such as "iss" or "mms1,mms2".
+			start_time:
+				ISO 8601 UTC start like "2026-03-15T00:00:00Z".
+			end_time:
+				ISO 8601 UTC end like "2026-03-15T02:00:00Z".
+			coordinate_systems:
+				Comma-separated coordinate systems such as "gse", "geo", "gsm".
+			resolution_factor:
+				Return one out of every N values.
+			time:
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		"""
+		try:
+			throw_if( 'observatories', observatories )
+			throw_if( 'start_time', start_time )
+			throw_if( 'end_time', end_time )
+			
+			self.timeout = int( time )
+			
+			obs = observatories.strip( )
+			time_range = f'{start_time.strip( )},{end_time.strip( )}'
+			coords = (coordinate_systems or 'gse').strip( )
+			
+			request_url = (
+					f'{self.url}/locations/'
+					f'{obs}/'
+					f'{time_range}/'
+					f'{coords}/'
+			)
+			
+			self.params = {
+					'resolutionFactor': max( 1, int( resolution_factor ) )
+			}
+			
+			self.response = requests.get(
+				url=request_url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout )
+			
+			self.response.raise_for_status( )
+			return self.response.json( )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'SatelliteCenter'
+			exception.method = (
+					'fetch_locations( self, observatories: str, start_time: str, '
+					'end_time: str, coordinate_systems: str=gse, '
+					'resolution_factor: int=1, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'observatories', query: str = '', start_time: str = '',
+			end_time: str = '', coordinate_systems: str = 'gse', resolution_factor: int = 1,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Unified dispatch method for Satellite Center requests.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		"""
+		try:
+			active_mode = (mode or 'observatories').strip( ).lower( )
+			
+			if active_mode == 'observatories':
+				return self.fetch_observatories( )
+			
+			if active_mode == 'ground_stations':
+				return self.fetch_ground_stations( )
+			
+			if active_mode == 'locations':
+				return self.fetch_locations( observatories=query, start_time=start_time,
+					end_time=end_time, coordinate_systems=coordinate_systems,
+					resolution_factor=resolution_factor, time=time )
+			
+			raise ValueError(
+				"Unsupported mode. Use 'observatories', 'ground_stations', or 'locations'."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'SatelliteCenter'
+			exception.method = (
+					'fetch( self, mode: str=observatories, query: str=, '
+					'start_time: str=, end_time: str=, coordinate_systems: str=gse, '
+					'resolution_factor: int=1, time: int=20 ) -> Dict[ str, Any ]'
+			)
 			raise exception
 			
 class EarthObservatory( Fetcher ):
@@ -4161,825 +4195,1188 @@ class SpaceWeather( Fetcher ):
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			raise exception
-			
+
 class AstroCatalog( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Access to the Open Astronomy Catalog API (OACAPI) offers a lightweight,
-		simple way to access data available via the api.
-		
-		The pattern for the API is one of the domains listed above
-		(e.g. https://api.astrocats.space) followed by
-		
-			/OBJECT/QUANTITY/ATTRIBUTE?ARGUMENT1=VALUE1&ARGUMENT2=VALUE2&...
-		
-		where OBJECT is set to a transient's name, QUANTITY is set to a desired
-		quantity to retrieve (e.g. redshift), ATTRIBUTE is a property of that quantity,
-		and the ARGUMENT variables allow to user to filter data based upon various
-		attribute values. The ARGUMENT variables can either be used to guarantee that
-		a certain attribute appears in the returned results (e.g. adding &time&e_magnitude to
-		the query will guarantee that each returned item has a time and e_magnitude attribute),
-		or used to filter via a simple equality such as telescope=HST
-		(which would only return QUANTITY objects where the telescope attribute equals "HST"),
-		or they can be more powerful for certain filter attributes
-		(examples being ra and dec for performing cone searches).
+		Provides structured access to the Open Astronomy Catalog API (OACAPI).
 
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
-		
 	'''
-	api_key: Optional[ str ]
-	url: Optional[ str ]
-	radius: Optional[ int ]
+	base_url: Optional[ str ]
 	format: Optional[ str ]
 	name: Optional[ str ]
 	declination: Optional[ str ]
 	right_ascension: Optional[ str ]
-	start_date: Optional[ dt.datetime ]
-	end_date: Optional[ dt.datetime ]
+	radius: Optional[ int ]
 	params: Optional[ Dict[ str, Any ] ]
 	
-	def __init__( self ) -> None:
+	def __init__( self ):
 		super( ).__init__( )
-		self.api_key = cfg.GOVINFO_API_KEY
-		self.radius = None
-		self.format = None
+		self.base_url = 'https://api.astrocats.space'
+		self.format = 'json'
 		self.name = None
 		self.right_ascension = None
 		self.declination = None
-		self.start_date = None
-		self.end_date = None
-		self.url = None
+		self.radius = None
+		self.params = { }
+		self.headers = { }
+		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.params = None
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
+		
+		if 'Accept' not in self.headers:
+			self.headers[ 'Accept' ] = 'application/json'
 	
-	def cone_search( self, ra: str, dec: str, radius: int=2 ) -> float | None:
+	def __dir__( self ) -> List[ str ]:
+		return [
+				'base_url',
+				'timeout',
+				'headers',
+				'fetch_object',
+				'cone_search',
+				'fetch',
+		]
+	
+	def _normalize_attribute_path( self, quantity: str = '', attributes: str = '' ) -> str:
 		"""
-
 			Purpose:
 			--------
-			Submits query that returns all objects within a 2" cone about coordinates (ra, dec)
+			Build the OAC route path segment from quantity and attribute inputs.
 
-			Parameters:
-			----------
-			ra - str, eg. HH:MM:SS.AS
-			dec - str, eg. HH:MM:SS.AS
-			radius - int
+			Returns:
+			--------
+			str
+		"""
+		parts: list[ str ] = [ ]
+		if quantity and quantity.strip( ):
+			parts.append( quantity.strip( ) )
+		
+		if attributes and attributes.strip( ):
+			attr_parts = [ a.strip( ) for a in attributes.split( ',' ) if a.strip( ) ]
+			parts.extend( attr_parts )
+		
+		return '/'.join( parts )
+	
+	def _parse_argument_string( self, argument_string: str ) -> Dict[ str, Any ]:
+		"""
+			Purpose:
+			--------
+			Parse a comma-separated or newline-separated list of OAC query
+			arguments into a dictionary.
 
+			Examples:
+			---------
+			band=R,time,e_magnitude,complete
+		"""
+		params: Dict[ str, Any ] = { }
+		
+		if not argument_string or not argument_string.strip( ):
+			return params
+		
+		raw_items = re.split( r'[\n,]+', argument_string )
+		items = [ item.strip( ) for item in raw_items if item and item.strip( ) ]
+		
+		for item in items:
+			if '=' in item:
+				k, v = item.split( '=', 1 )
+				params[ k.strip( ) ] = v.strip( )
+			else:
+				params[ item ] = ''
+		
+		return params
+	
+	def _request( self, route: str, params: Dict[ str, Any ] | None = None,
+			time: int = 20 ) -> Any:
+		"""
+			Purpose:
+			--------
+			Send an HTTP request to the OAC API and return parsed JSON when possible.
+
+			Returns:
+			--------
+			Any
+		"""
+		try:
+			self.timeout = int( time )
+			self.url = f'{self.base_url}/{route.lstrip( "/" )}'
+			self.params = params or { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout )
+			
+			self.response.raise_for_status( )
+			
+			content_type = (self.response.headers.get( 'Content-Type', '' ) or '').lower( )
+			if 'json' in content_type:
+				return self.response.json( )
+			
+			return self.response.text
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'AstroCatalog'
+			exception.method = '_request( self, route: str, params: Dict[ str, Any ] | None=None, time: int=20 ) -> Any'
+			raise exception
+	
+	def fetch_object( self, name: str, quantity: str = '', attributes: str = '',
+			arguments: str = '', data_format: str = 'json', time: int = 20 ) -> Any:
+		"""
+			Purpose:
+			--------
+			Query OAC by object/event name using the documented route pattern.
+
+			Returns:
+			--------
+			Any
+		"""
+		try:
+			throw_if( 'name', name )
+			self.name = name.strip( )
+			self.format = (data_format or 'json').strip( ).lower( )
+			
+			route_parts = [ urllib.parse.quote( self.name ) ]
+			attr_path = self._normalize_attribute_path( quantity, attributes )
+			if attr_path:
+				route_parts.append( attr_path )
+			
+			route = '/'.join( route_parts )
+			params = self._parse_argument_string( arguments )
+			
+			if self.format:
+				params[ 'format' ] = self.format
+			
+			return self._request( route=route, params=params, time=time )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'AstroCatalog'
+			exception.method = (
+					'fetch_object( self, name: str, quantity: str=, attributes: str=, '
+					'arguments: str=, data_format: str=json, time: int=20 ) -> Any'
+			)
+			raise exception
+	
+	def cone_search( self, ra: str, dec: str, radius: int = 2, quantity: str = '',
+			attributes: str = '', arguments: str = '', data_format: str = 'json', time: int = 20 ) -> Any:
+		"""
+			Purpose:
+			--------
+			Query OAC using a coordinate cone search via special arguments.
+
+			Returns:
+			--------
+			Any
 		"""
 		try:
 			throw_if( 'ra', ra )
 			throw_if( 'dec', dec )
-			self.declination = dec
-			self.right_ascension = ra
-			self.radius = radius
-			self.url = f'https://api.astrocats.space/catalog?'
-			self.params = \
-			{
-				'ra': self.right_ascension,
-				'dec': self.declination,
-				'radius': f'{self.radius}',
-			}
 			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'AstroCatalog'
-			exception.method = 'cone_search( self, ra: str, dec: str, radius: int=2 ) -> float'
-			raise exception
+			self.right_ascension = ra.strip( )
+			self.declination = dec.strip( )
+			self.radius = max( 1, int( radius ) )
+			self.format = (data_format or 'json').strip( ).lower( )
 			
-	
-	def fetch_supernovae( self ) -> Dict[ str, Any ] | None:
-		"""
-
-			Purpose:
-			--------
-			Return all supernova metadata in CSV format
-
-			Parmeters:
-			----------
-			Void
-
-		"""
-		try:
-			self.format = 'CSV'
-			self.url = f'https://api.astrocats.space/catalog/sne?'
-			self.params = \
-			{
-				'format': self.format,
-			}
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'AstroCatalog'
-			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			raise exception
+			route = 'catalog'
+			attr_path = self._normalize_attribute_path( quantity, attributes )
+			if attr_path:
+				route = f'{route}/{attr_path}'
 			
-	
-	def fetch_redshift( self, object: str ) -> float | None:
-		"""
-
-			Purpose:
-			--------
-			Sumbits a query that gets the available redshift values for a given object
-
-			Parmeters:
-			----------
-
-		"""
-		try:
-			throw_if( 'object', object )
-			self.name = object
-			self.url = f'https://api.astrocats.space/{self.name}/redshift'
-			self.response = requests.get( url=self.url  )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'AstroCatalog'
-			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			raise exception
+			params = self._parse_argument_string( arguments )
+			params[ 'ra' ] = self.right_ascension
+			params[ 'dec' ] = self.declination
+			params[ 'radius' ] = str( self.radius )
 			
-	
-	def fetch_solar_flares( self, start: dt.date, end: dt.date ) -> float | None:
-		"""
-
-			Purpose:
-			--------
-
-
-			Parmeters:
-			----------
-
-
-		"""
-		try:
-			throw_if( 'start', start )
-			throw_if( 'end', end )
-			self.url = f'https://api.nasa.gov/DONKI/FLR?'
-			self.params = \
-				{
-						'startDate': self.calendar_date,
-						'endDate': self.local_time,
-						'api_key': self.api_key
-				}
+			if self.format:
+				params[ 'format' ] = self.format
 			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'AstroCatalog'
-			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			raise exception
-			
+			return self._request( route=route, params=params, time=time )
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'AstroCatalog'
+			exception.method = (
+					'cone_search( self, ra: str, dec: str, radius: int=2, '
+					'quantity: str=, attributes: str=, arguments: str=, '
+					'data_format: str=json, time: int=20 ) -> Any'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'object_query', query: str = '', quantity: str = '',
+			attributes: str = '', arguments: str = '', ra: str = '', dec: str = '',
+			radius: int = 2, data_format: str = 'json', time: int = 20 ) -> Any:
 		"""
-
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			--------
+			Unified dispatch for Astronomy Catalog operations.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
+			--------
+			Any
 		"""
 		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			raise exception
+			active_mode = (mode or 'object_query').strip( ).lower( )
 			
+			if active_mode == 'object_query':
+				return self.fetch_object(
+					name=query,
+					quantity=quantity,
+					attributes=attributes,
+					arguments=arguments,
+					data_format=data_format,
+					time=time )
+			
+			if active_mode == 'cone_search':
+				return self.cone_search(
+					ra=ra,
+					dec=dec,
+					radius=radius,
+					quantity=quantity,
+					attributes=attributes,
+					arguments=arguments,
+					data_format=data_format,
+					time=time )
+			
+			raise ValueError( "Unsupported mode. Use 'object_query' or 'cone_search'." )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'AstroCatalog'
+			exception.method = (
+					'fetch( self, mode: str=object_query, query: str=, quantity: str=, '
+					'attributes: str=, arguments: str=, ra: str=, dec: str=, '
+					'radius: int=2, data_format: str=json, time: int=20 ) -> Any'
+			)
+			raise exception
+
 class AstroQuery( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Access to the astropy package that contains key functionality and common tools needed for
-		performing astronomy and astrophysics with Python. It is at the core of the Astropy Project,
-		which aims to enable the community to develop a robust ecosystem of affiliated packages
-		covering a broad range of needs for astronomical research, data processing, and data analysis.
+		Provides a focused astroquery wrapper around the SIMBAD service for
+		named-object lookups, identifier retrieval, and cone/region searches.
 
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
+		Notes:
+		------
+		This wrapper does not require an API key for standard SIMBAD queries.
 
 	'''
-	api_key: Optional[ str ]
 	url: Optional[ str ]
-	radius: Optional[ int ]
-	format: Optional[ str ]
+	radius: Optional[ float ]
 	name: Optional[ str ]
-	catalog: Optional[ str ]
 	declination: Optional[ str ]
 	right_ascension: Optional[ str ]
-	start_date: Optional[ dt.datetime ]
-	end_date: Optional[ dt.datetime ]
 	params: Optional[ Dict[ str, Any ] ]
+	row_limit: Optional[ int ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
-		self.api_key = cfg.GOVINFO_API_KEY
+		self.url = None
 		self.radius = None
-		self.format = None
-		self.dso = None
-		self.radius = None
+		self.name = None
 		self.right_ascension = None
 		self.declination = None
-		self.start_date = None
-		self.end_date = None
-		self.url = None
+		self.params = { }
+		self.row_limit = 100
 		self.agents = cfg.AGENTS
-		self.params = None
-		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ] = self.agents
-	
-	def dso_search( self, dso: str ) -> Table | None:
-		"""
-
-			Purpose:
-			--------
-
-			Parameters:
-			----------
-
-		"""
-		try:
-			throw_if( 'dso', dso )
-			self.dso = dso
-			_results = Simbad.query_object( self.dso )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'AstroQuery'
-			exception.method = 'fetch_julian( self, address: str ) -> float'
-			raise exception
-			
-	
-	def region_search( self, dso: str, radius: float=0.5 ) -> Table | None:
-		"""
-
-			Purpose:
-			--------
-
-			Parmeters:
-			----------
-
-		"""
-		try:
-			simbad = Simbad( )
-			simbad.ROW_LIMIT = 100
-			_result = simbad.query_region( 'm81', radius='0.5d' )
-			return _result
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'AstroQuery'
-			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			raise exception
-			
-	
-	def catalog_search( self, name: str='ESO' ) -> Table| None:
-		"""
-
-			Purpose:
-			--------
-
-			Parmeters:
-			----------
-
-		"""
-		try:
-			throw_if( 'name', name )
-			self.name = name
-			simbad = Simbad( ROW_LIMIT=6 )
-			_results = simbad.query_catalog( 'ESO' )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'OpenAstronomyCatalog'
-			exception.method = 'catalog_search( self, name: str ) -> float'
-			raise exception
-			
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
-		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			raise exception
-			
-class StarMap( Fetcher ):
-	'''
-		
-		Purpose:
-		-------
-		Class providing access to StarMap.org celestial map generation functionality.
-
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-	'''
-	url: Optional[ str ]
-	image_source: Optional[ str ]
-	object: Optional[ str ]
-	right_ascension: Optional[ float ]
-	declination: Optional[ float ]
-	data: Optional[ dt.date ]
-	time: Optional[ dt.time ]
-	box_color: Optional[ str ]
-	main_color: Optional[ str ]
-	show_box: Optional[ bool ]
-	show_grid: Optional[ bool ]
-	show_lines: Optional[ bool ]
-	show_boundaries: Optional[ bool ]
-	params: Optional[ Dict[ str, Any ] ]
-	
-	def __init__( self ):
-		'''
-		
-			Purpose:
-			-------
-			StarMap Class constructor
-			
-		'''
-		super( ).__init__( )
-		self.api_key = cfg.GOVINFO_API_KEY
-		self.right_ascension = None
-		self.declination = None
-		self.object = None
-		self.date = None
-		self.time = None
-		self.show_box = True
-		self.show_grid = True
-		self.show_lines = True
-		self.show_boundaries = True
-		self.image_source = None
-		self.url = None
-		self.box_color = '#FFFFFF'
-		self.agents = cfg.AGENTS
-		self.params = None
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
 	def __dir__( self ) -> List[ str ]:
-		'''
-		
-		Returns:
-		-------
-		A List[ str ] of class members.
-		
-		'''
-		return [ 'url',
-		         'object',
-		         'right_ascension',
-		         'declination',
-		         'date',
-		         'time',
-		         'Show_box',
-		         'show_grid',
-		         'show_lines',
-		         'image_source',
-		         'show_boundaries',
-		         'params',
-		         'box_color' ]
-
-	def fetch_by_coordinates( self, ra: float, dec: float ) -> Dict[ str, Any ] | None:
-		'''
-			
-			Purpose:
-			-------
-			Generates a skymap from given coordinats
-			
-			Returns:
-			--------
-			ra - a float representing right ascension
-			dec - a float representing declination
-			
-		'''
-		try:
-			throw_if( 'ra', ra )
-			throw_if( 'dec', dec )
-			self.right_ascension = ra
-			self.declination = dec
-			self.url = f'http://www.sky-map.org/'
-			self.params = \
-			{
-				'ra': f'{ self.right_ascension }',
-				'dec': f'{ self.declination }',
-				'Show_box': f'{ self.show_box }',
-				'box_color': f'{ self.box_color }',
-				'show_constellation_lines': f'{ self.show_lines }',
-				'show_constellation_boundaries': f'{ self.show_boundaries }'
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'StarMap'
-			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
-			raise exception
+		return [
+				'headers',
+				'row_limit',
+				'object_search',
+				'object_ids',
+				'region_search',
+				'fetch',
+		]
 	
-	def ssds_by_coordinates( self, ra: float, dec: float ) -> Dict[ str, Any ] | None:
-		'''
-
-			Purpose:
-			-------
-			Generates a skymap using the Sloan Digital Sky Survey (SDSS) given coordinates
-
-			Returns:
-			--------
-			ra - a float representing right ascension
-			dec - a float representing declination
-
-		'''
-		try:
-			throw_if( 'ra', ra )
-			throw_if( 'dec', dec )
-			self.right_ascension = ra
-			self.declination = dec
-			self.url = f'http://www.sky-map.org/'
-			self.params = \
-			{
-					'ra': f'{self.right_ascension}',
-					'dec': f'{self.declination}',
-					'Show_box': f'{self.show_box}',
-					'box_color': f'{self.box_color}',
-					'show_constellation_lines': f'{self.show_lines}',
-					'show_constellation_boundaries': f'{self.show_boundaries}',
-					'image_source': 'SDSS'
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'StarMap'
-			exception.method = 'sdss_by_coordinates( self, name: str ) -> float'
-			raise exception
-			
-			
-	def fetch_by_object( self, name: str ) -> Dict[ str, Any ] | None:
-		'''
-			
-			Purpose:
-			-------
-			Generates a skymap from given an dso name
-			
-			Returns:
-			--------
-			name - str
-			
-
-		'''
-		try:
-			throw_if( 'name', name )
-			self.object = name
-			self.url = f'http://www.sky-map.org/'
-			self.params = \
-			{
-					'object': self.object,
-					'Show_box': f'{self.show_box}',
-					'box_color': f'{self.box_color}',
-					'show_constellation_lines': f'{self.show_lines}',
-					'show_constellation_boundaries': f'{self.show_boundaries}'
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'StarMap'
-			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
-			raise exception
-			
-	
-	def ssds_by_object( self, name: str ) -> Dict[ str, Any ] | None:
-		'''
-
-			Purpose:
-			-------
-			Generates a skymap using the Sloan Digital Sky Survey (SDSS) given a dso name
-
-			Returns:
-			--------
-			name: str
-
-		'''
-		try:
-			throw_if( 'name', name )
-			self.object = name
-			self.url = f'http://www.sky-map.org/'
-			self.params = \
-			{
-					'object': self.object,
-					'Show_box': f'{self.show_box}',
-					'box_color': f'{self.box_color}',
-					'show_constellation_lines': f'{self.show_lines}',
-					'show_constellation_boundaries': f'{self.show_boundaries}',
-					'image_source': 'SSDS'
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'StarMap'
-			exception.method = 'fetch_by_coordinates( self, name: str ) -> float'
-			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+	def _table_to_records( self, table: Table | None ) -> List[ Dict[ str, Any ] ]:
 		"""
 
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
+			--------
+			Convert an Astropy Table into a list of row dictionaries that can be
+			rendered easily in Streamlit.
 
 			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			-----------
+			table:
+				An astropy.table.Table returned by astroquery.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
+			--------
+			List[Dict[str, Any]]
 
 		"""
 		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
+			if table is None:
+				return [ ]
+			
+			records: List[ Dict[ str, Any ] ] = [ ]
+			for row in table:
+				record: Dict[ str, Any ] = { }
+				for col in table.colnames:
+					try:
+						value = row[ col ]
+						if hasattr( value, 'item' ):
+							try:
+								value = value.item( )
+							except Exception:
+								pass
+						record[ str( col ) ] = str( value )
+					except Exception:
+						record[ str( col ) ] = ''
+				records.append( record )
+			
+			return records
+		
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.cause = 'AstroQuery'
+			exception.method = '_table_to_records( self, table: Table | None ) -> List[ Dict[ str, Any ] ]'
+			raise exception
+	
+	def object_search( self, name: str, row_limit: int = 100 ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Query SIMBAD for a named astronomical object.
+
+			Parameters:
+			-----------
+			name:
+				Object identifier or common name such as "M81", "Sirius", or
+				"NGC 1300".
+			row_limit:
+				Maximum number of rows to return.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		"""
+		try:
+			throw_if( 'name', name )
+			self.name = name.strip( )
+			self.row_limit = max( 1, int( row_limit ) )
+			
+			simbad = Simbad( )
+			simbad.ROW_LIMIT = self.row_limit
+			result_table = simbad.query_object( self.name )
+			
+			return {
+					'mode': 'object_search',
+					'query': self.name,
+					'row_limit': self.row_limit,
+					'columns': list( result_table.colnames ) if result_table is not None else [ ],
+					'rows': self._table_to_records( result_table ),
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'AstroQuery'
+			exception.method = 'object_search( self, name: str, row_limit: int=100 ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def object_ids( self, name: str, row_limit: int = 100 ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Query SIMBAD for alternate identifiers of a named astronomical object.
+
+			Parameters:
+			-----------
+			name:
+				Object identifier or common name such as "M81" or "Sirius".
+			row_limit:
+				Maximum number of rows to return.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		"""
+		try:
+			throw_if( 'name', name )
+			self.name = name.strip( )
+			self.row_limit = max( 1, int( row_limit ) )
+			
+			simbad = Simbad( )
+			simbad.ROW_LIMIT = self.row_limit
+			result_table = simbad.query_objectids( self.name )
+			
+			return {
+					'mode': 'object_ids',
+					'query': self.name,
+					'row_limit': self.row_limit,
+					'columns': list( result_table.colnames ) if result_table is not None else [ ],
+					'rows': self._table_to_records( result_table ),
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'AstroQuery'
+			exception.method = 'object_ids( self, name: str, row_limit: int=100 ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def region_search( self, ra: str, dec: str, radius: float = 0.5,
+			radius_unit: str = 'deg', row_limit: int = 100 ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Query SIMBAD in a cone around a sky position.
+
+			Parameters:
+			-----------
+			ra:
+				Right Ascension of the search center. This is the east-west sky
+				coordinate. Example values:
+				- "13:09:48.09"
+				- "197.45037"
+
+			dec:
+				Declination of the search center. This is the north-south sky
+				coordinate. Example values:
+				- "-23:22:53.3"
+				- "-23.38148"
+
+			radius:
+				Angular search radius around the sky position.
+
+			radius_unit:
+				Unit for the radius. Supported values here are "deg", "arcmin",
+				and "arcsec".
+
+			row_limit:
+				Maximum number of rows to return.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		"""
+		try:
+			throw_if( 'ra', ra )
+			throw_if( 'dec', dec )
+			
+			self.right_ascension = ra.strip( )
+			self.declination = dec.strip( )
+			self.radius = float( radius )
+			self.row_limit = max( 1, int( row_limit ) )
+			
+			unit_map = {
+					'deg': u.deg,
+					'arcmin': u.arcmin,
+					'arcsec': u.arcsec,
+			}
+			
+			active_unit = unit_map.get( (radius_unit or 'deg').strip( ).lower( ), u.deg )
+			
+			coord = SkyCoord(
+				ra=self.right_ascension,
+				dec=self.declination,
+				unit=(u.hourangle, u.deg) )
+			
+			simbad = Simbad( )
+			simbad.ROW_LIMIT = self.row_limit
+			result_table = simbad.query_region(
+				coordinates=coord,
+				radius=self.radius * active_unit )
+			
+			return {
+					'mode': 'region_search',
+					'ra': self.right_ascension,
+					'dec': self.declination,
+					'radius': self.radius,
+					'radius_unit': (radius_unit or 'deg').strip( ).lower( ),
+					'row_limit': self.row_limit,
+					'columns': list( result_table.colnames ) if result_table is not None else [ ],
+					'rows': self._table_to_records( result_table ),
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'AstroQuery'
+			exception.method = (
+					'region_search( self, ra: str, dec: str, radius: float=0.5, '
+					'radius_unit: str=deg, row_limit: int=100 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'object_search', query: str = '',
+			ra: str = '', dec: str = '', radius: float = 0.5,
+			radius_unit: str = 'deg', row_limit: int = 100 ) -> Dict[ str, Any ] | None:
+		"""
+
+			Purpose:
+			--------
+			Unified dispatch for AstroQuery / SIMBAD operations.
+
+			Parameters:
+			-----------
+			mode:
+				One of:
+				- "object_search"
+				- "object_ids"
+				- "region_search"
+
+			query:
+				Named object for object-based modes.
+
+			ra:
+				Right Ascension used for region_search.
+
+			dec:
+				Declination used for region_search.
+
+			radius:
+				Angular radius used for region_search.
+
+			radius_unit:
+				Unit for radius used for region_search.
+
+			row_limit:
+				Maximum number of rows to return.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		"""
+		try:
+			active_mode = (mode or 'object_search').strip( ).lower( )
+			
+			if active_mode == 'object_search':
+				return self.object_search(
+					name=query,
+					row_limit=row_limit )
+			
+			if active_mode == 'object_ids':
+				return self.object_ids(
+					name=query,
+					row_limit=row_limit )
+			
+			if active_mode == 'region_search':
+				return self.region_search(
+					ra=ra,
+					dec=dec,
+					radius=radius,
+					radius_unit=radius_unit,
+					row_limit=row_limit )
+			
+			raise ValueError(
+				"Unsupported mode. Use 'object_search', 'object_ids', or 'region_search'."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'AstroQuery'
+			exception.method = (
+					'fetch( self, mode: str=object_search, query: str=, ra: str=, '
+					'dec: str=, radius: float=0.5, radius_unit: str=deg, '
+					'row_limit: int=100 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+
+class StarMap( Fetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides structured access to Sky-Map.org interactive links and
+		static snapshot generation.
+
+		Notes:
+		------
+		No API key is required for the public Site Link / Image Generator
+		behavior used here.
+
+	'''
+	base_url: Optional[ str ]
+	snapshot_url: Optional[ str ]
+	image_source: Optional[ str ]
+	object: Optional[ str ]
+	right_ascension: Optional[ float ]
+	declination: Optional[ float ]
+	box_color: Optional[ str ]
+	show_box: Optional[ bool ]
+	show_grid: Optional[ bool ]
+	show_lines: Optional[ bool ]
+	show_boundaries: Optional[ bool ]
+	show_const_names: Optional[ bool ]
+	zoom: Optional[ int ]
+	params: Optional[ Dict[ str, Any ] ]
+	
+	def __init__( self ) -> None:
+		'''
+		
+			Purpose:
+			--------
+			Initialize the StarMap
+
+			Returns:
+			--------
+			None
+
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://www.sky-map.org/'
+		self.snapshot_url = 'https://www.sky-map.org/snapshot'
+		self.image_source = 'DSS2'
+		self.object = None
+		self.right_ascension = None
+		self.declination = None
+		self.box_color = 'yellow'
+		self.show_box = True
+		self.show_grid = True
+		self.show_lines = True
+		self.show_boundaries = True
+		self.show_const_names = False
+		self.zoom = 5
+		self.params = { }
+		self.timeout = 20
+		self.headers = { }
+		self.agents = cfg.AGENTS
+		
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+		
+		if 'Accept' not in self.headers:
+			self.headers[
+				'Accept' ] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+	
+	def __dir__( self ) -> List[ str ]:
+		return [
+				'base_url',
+				'snapshot_url',
+				'object',
+				'right_ascension',
+				'declination',
+				'image_source',
+				'zoom',
+				'show_box',
+				'show_grid',
+				'show_lines',
+				'show_boundaries',
+				'show_const_names',
+				'box_color',
+				'params',
+				'fetch_object_link',
+				'fetch_coordinate_link',
+				'fetch_snapshot',
+				'fetch',
+		]
+	
+	def _normalize_bool( self, value: bool ) -> str:
+		'''
+		
+			Purpose:
+			--------
+			Convert a Python bool into the integer-style string form frequently
+			used by Sky-Map query parameters.
+
+			Parameters:
+			-----------
+			value:
+				Boolean value to convert.
+
+			Returns:
+			--------
+			str
+
+		'''
+		return '1' if bool( value ) else '0'
+	
+	def _extract_snapshot_links( self, html: str, base_url: str ) -> Dict[ str, str ]:
+		'''
+		
+			Purpose:
+			--------
+			Parse the snapshot HTML page and extract save-as image links for
+			formats like jpeg, png, gif, bmp, and tiff.
+
+			Parameters:
+			-----------
+			html:
+				Raw HTML returned by the snapshot endpoint.
+			base_url:
+				Base URL used to resolve relative hyperlinks.
+
+			Returns:
+			--------
+			Dict[str, str]
+
+		'''
+		try:
+			links: Dict[ str, str ] = { }
+			if not html or not isinstance( html, str ):
+				return links
+			
+			pattern = re.compile(
+				r'<a[^>]+href=["\']([^"\']+)["\'][^>]*>\s*(jpeg|png|gif|bmp|tiff)\s*</a>',
+				flags=re.IGNORECASE )
+			
+			for match in pattern.finditer( html ):
+				href = match.group( 1 )
+				label = match.group( 2 ).lower( )
+				links[ label ] = urllib.parse.urljoin( base_url, href )
+			
+			return links
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'StarMap'
+			exception.method = '_extract_snapshot_links( self, html: str, base_url: str ) -> Dict[ str, str ]'
+			raise exception
+	
+	def fetch_object_link(
+			self,
+			name: str,
+			zoom: int = 5,
+			box_color: str = 'yellow',
+			show_box: bool = True,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Construct an interactive Sky-Map link centered on a named object.
+
+			Parameters:
+			-----------
+			name:
+				Object name or identifier such as "Polaris", "M31", or
+				"NGC 1300".
+			zoom:
+				Map zoom level. Smaller values show a wider field; larger values
+				zoom further in.
+			box_color:
+				Color of the selection/highlight box.
+			show_box:
+				Whether to show the highlight box around the object.
+			time:
+				Request timeout in seconds used for validation.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			throw_if( 'name', name )
+			
+			self.object = name.strip( )
+			self.zoom = max( 1, min( int( zoom ), 18 ) )
+			self.box_color = box_color or 'yellow'
+			self.show_box = bool( show_box )
+			self.timeout = int( time )
+			
+			self.params = {
+					'object': self.object,
+					'show_box': self._normalize_bool( self.show_box ),
+					'zoom': str( self.zoom ),
+					'box_color': self.box_color,
+					'box_width': '50',
+					'box_height': '50',
+			}
+			
+			interactive_url = f'{self.base_url}?{urllib.parse.urlencode( self.params )}'
+			
+			self.response = requests.get(
+				url=self.base_url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout )
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'object_link',
+					'object': self.object,
+					'zoom': self.zoom,
+					'params': self.params,
+					'interactive_url': interactive_url,
+					'status_code': self.response.status_code,
+					'html_preview': self.response.text[ : 2000 ],
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'StarMap'
+			exception.method = (
+					'fetch_object_link( self, name: str, zoom: int=5, box_color: str=yellow, '
+					'show_box: bool=True, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_coordinate_link(
+			self,
+			ra: float,
+			dec: float,
+			zoom: int = 5,
+			box_color: str = 'yellow',
+			show_box: bool = True,
+			show_grid: bool = True,
+			show_lines: bool = True,
+			show_boundaries: bool = True,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Construct an interactive Sky-Map link centered on sky coordinates.
+
+			Parameters:
+			-----------
+			ra:
+				Right Ascension of the map center in hours.
+				Example values:
+				- 15.2976
+				- 5.9195
+
+			dec:
+				Declination of the map center in degrees.
+				Example values:
+				- -17.5892
+				- 41.2692
+
+			zoom:
+				Map zoom level.
+			box_color:
+				Color of the selection/highlight box.
+			show_box:
+				Whether to show the highlight box.
+			show_grid:
+				Whether to display coordinate grid lines.
+			show_lines:
+				Whether to display constellation lines.
+			show_boundaries:
+				Whether to display constellation boundaries.
+			time:
+				Request timeout in seconds used for validation.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			throw_if( 'ra', ra )
+			throw_if( 'dec', dec )
+			
+			self.right_ascension = float( ra )
+			self.declination = float( dec )
+			self.zoom = max( 1, min( int( zoom ), 18 ) )
+			self.box_color = box_color or 'yellow'
+			self.show_box = bool( show_box )
+			self.show_grid = bool( show_grid )
+			self.show_lines = bool( show_lines )
+			self.show_boundaries = bool( show_boundaries )
+			self.timeout = int( time )
+			
+			self.params = {
+					'ra': f'{self.right_ascension}',
+					'de': f'{self.declination}',
+					'show_box': self._normalize_bool( self.show_box ),
+					'zoom': str( self.zoom ),
+					'box_color': self.box_color,
+					'show_grid': self._normalize_bool( self.show_grid ),
+					'show_constellation_lines': self._normalize_bool( self.show_lines ),
+					'show_constellation_boundaries': self._normalize_bool( self.show_boundaries ),
+			}
+			
+			interactive_url = f'{self.base_url}?{urllib.parse.urlencode( self.params )}'
+			
+			self.response = requests.get(
+				url=self.base_url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout )
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'coordinate_link',
+					'ra': self.right_ascension,
+					'dec': self.declination,
+					'zoom': self.zoom,
+					'params': self.params,
+					'interactive_url': interactive_url,
+					'status_code': self.response.status_code,
+					'html_preview': self.response.text[ : 2000 ],
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'StarMap'
+			exception.method = (
+					'fetch_coordinate_link( self, ra: float, dec: float, zoom: int=5, '
+					'box_color: str=yellow, show_box: bool=True, show_grid: bool=True, '
+					'show_lines: bool=True, show_boundaries: bool=True, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_snapshot(
+			self,
+			ra: float,
+			dec: float,
+			zoom: int = 10,
+			image_source: str = 'DSS2',
+			show_grid: bool = True,
+			show_lines: bool = True,
+			show_boundaries: bool = True,
+			show_const_names: bool = False,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Request the Sky-Map snapshot generator page and extract the available
+			static image links.
+
+			Parameters:
+			-----------
+			ra:
+				Right Ascension of the image center in hours.
+				Example values:
+				- 15.2976
+				- 5.9195
+
+			dec:
+				Declination of the image center in degrees.
+				Example values:
+				- -17.5892
+				- 41.2692
+
+			zoom:
+				Snapshot zoom level / field scale.
+			image_source:
+				Survey source such as DSS2, SDSS, GALEX, IRAS, or RASS.
+			show_grid:
+				Whether to display the coordinate grid.
+			show_lines:
+				Whether to display constellation lines.
+			show_boundaries:
+				Whether to display constellation boundaries.
+			show_const_names:
+				Whether to display constellation names.
+			time:
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			throw_if( 'ra', ra )
+			throw_if( 'dec', dec )
+			
+			self.right_ascension = float( ra )
+			self.declination = float( dec )
+			self.zoom = max( 1, min( int( zoom ), 18 ) )
+			self.image_source = (image_source or 'DSS2').strip( )
+			self.show_grid = bool( show_grid )
+			self.show_lines = bool( show_lines )
+			self.show_boundaries = bool( show_boundaries )
+			self.show_const_names = bool( show_const_names )
+			self.timeout = int( time )
+			
+			self.params = {
+					'ra': f'{self.right_ascension}',
+					'de': f'{self.declination}',
+					'zoom': str( self.zoom ),
+					'img_source': self.image_source,
+					'show_grid': self._normalize_bool( self.show_grid ),
+					'show_constellation_lines': self._normalize_bool( self.show_lines ),
+					'show_constellation_boundaries': self._normalize_bool( self.show_boundaries ),
+					'show_const_names': self._normalize_bool( self.show_const_names ),
+			}
+			
+			page_url = f'{self.snapshot_url}?{urllib.parse.urlencode( self.params )}'
+			
+			self.response = requests.get(
+				url=self.snapshot_url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout )
+			self.response.raise_for_status( )
+			
+			image_links = self._extract_snapshot_links(
+				html=self.response.text,
+				base_url=self.snapshot_url )
+			
+			return {
+					'mode': 'snapshot',
+					'ra': self.right_ascension,
+					'dec': self.declination,
+					'zoom': self.zoom,
+					'image_source': self.image_source,
+					'params': self.params,
+					'snapshot_page_url': page_url,
+					'image_links': image_links,
+					'preferred_image_url': image_links.get( 'png' ) or image_links.get( 'jpeg', '' ),
+					'status_code': self.response.status_code,
+					'html_preview': self.response.text[ : 2000 ],
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'StarMap'
+			exception.method = (
+					'fetch_snapshot( self, ra: float, dec: float, zoom: int=10, '
+					'image_source: str=DSS2, show_grid: bool=True, show_lines: bool=True, '
+					'show_boundaries: bool=True, show_const_names: bool=False, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch(
+			self,
+			mode: str = 'object_link',
+			query: str = '',
+			ra: float = 0.0,
+			dec: float = 0.0,
+			zoom: int = 5,
+			image_source: str = 'DSS2',
+			box_color: str = 'yellow',
+			show_box: bool = True,
+			show_grid: bool = True,
+			show_lines: bool = True,
+			show_boundaries: bool = True,
+			show_const_names: bool = False,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Unified dispatch for StarMap object links, coordinate links, and
+			static snapshot generation.
+
+			Parameters:
+			-----------
+			mode:
+				One of:
+				- "object_link"
+				- "coordinate_link"
+				- "snapshot"
+
+			query:
+				Object name used for object_link.
+
+			ra:
+				Right Ascension used for coordinate_link and snapshot.
+
+			dec:
+				Declination used for coordinate_link and snapshot.
+
+			zoom:
+				Zoom level.
+
+			image_source:
+				Sky survey source used for snapshot.
+
+			box_color:
+				Highlight box color for interactive modes.
+
+			show_box:
+				Show highlight box for interactive modes.
+
+			show_grid:
+				Show grid for coordinate/snapshot modes.
+
+			show_lines:
+				Show constellation lines.
+
+			show_boundaries:
+				Show constellation boundaries.
+
+			show_const_names:
+				Show constellation names for snapshot mode.
+
+			time:
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			active_mode = (mode or 'object_link').strip( ).lower( )
+			
+			if active_mode == 'object_link':
+				return self.fetch_object_link(
+					name=query,
+					zoom=zoom,
+					box_color=box_color,
+					show_box=show_box,
+					time=time )
+			
+			if active_mode == 'coordinate_link':
+				return self.fetch_coordinate_link(
+					ra=ra,
+					dec=dec,
+					zoom=zoom,
+					box_color=box_color,
+					show_box=show_box,
+					show_grid=show_grid,
+					show_lines=show_lines,
+					show_boundaries=show_boundaries,
+					time=time )
+			
+			if active_mode == 'snapshot':
+				return self.fetch_snapshot(
+					ra=ra,
+					dec=dec,
+					zoom=zoom,
+					image_source=image_source,
+					show_grid=show_grid,
+					show_lines=show_lines,
+					show_boundaries=show_boundaries,
+					show_const_names=show_const_names,
+					time=time )
+			
+			raise ValueError(
+				"Unsupported mode. Use 'object_link', 'coordinate_link', or 'snapshot'."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'StarMap'
+			exception.method = (
+					'fetch( self, mode: str=object_link, query: str=, ra: float=0.0, '
+					'dec: float=0.0, zoom: int=5, image_source: str=DSS2, '
+					'box_color: str=yellow, show_box: bool=True, show_grid: bool=True, '
+					'show_lines: bool=True, show_boundaries: bool=True, '
+					'show_const_names: bool=False, time: int=20 ) -> Dict[ str, Any ]'
+			)
 			raise exception
 			
 class GovData( Fetcher ):
@@ -5520,7 +5917,7 @@ class Congress( Fetcher ):
 		Provides  service that can be used to query the GovInfo search engine and return results
 		that are the equivalent to what is returned by the main user interface.
 
-		You can use field operators, such as congress, publishdate, branch, and others to construct
+		You can use field operators, such as congress, published date, branch, and others to construct
 		complex queries that will return only matching documents.
 
 		Attribues:

@@ -38,6 +38,7 @@ pandas==2.2.2
 matplotlib>=3.8,<4
 chromadb>=0.5,<1
 
+astropy
 astroquery>=0.4.9,<1
 cartopy>=0.23,<1
 owslib>=0.32,<1
