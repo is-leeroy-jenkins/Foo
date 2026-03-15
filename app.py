@@ -44,6 +44,9 @@ from __future__ import annotations
 import inspect
 from astroquery.simbad import Simbad
 import base64
+
+from bs4 import BeautifulSoup
+
 import config as cfg
 from collections import deque
 import html as html_lib
