@@ -45,6 +45,8 @@ import inspect
 from astroquery.simbad import Simbad
 import base64
 import config as cfg
+from collections import deque
+import html as html_lib
 import json
 import numpy as np
 import os
@@ -72,7 +74,7 @@ import streamlit as st
 import scrapers
 import sqlite3
 from sqlite3 import Connection
-
+from urllib.parse import urljoin, urlparse
 
 
 
@@ -1533,23 +1535,64 @@ with st.sidebar:
 if mode == 'Document Loading':
 	st.subheader( '📤   Document Loading' )
 	st.divider( )
-	loader_path = st.session_state.get( 'loader_path', '' )
+	
+	if 'loader_clear_request' not in st.session_state:
+		st.session_state[ 'loader_clear_request' ] = False
+	
+	if 'loader_uploader_nonce' not in st.session_state:
+		st.session_state[ 'loader_uploader_nonce' ] = 0
+	
+	if st.session_state.get( 'loader_clear_request', False ):
+		st.session_state[ 'loader_results' ] = { }
+		st.session_state[ 'loader_documents' ] = [ ]
+		st.session_state[ 'loader_path' ] = ''
+		st.session_state[ 'loader_clear_request' ] = False
+	
 	loader_results = st.session_state.get( 'loader_results', { } )
 	loader_documents = st.session_state.get( 'loader_documents', [ ] )
-	loader_text = st.session_state.get( 'loader_text', '' )
-	loader_files = st.session_state.get( 'loader_files', [ ] )
+	loader_text = st.session_state.get( 'loader_path', '' )
 	loader = None
+	
+	def _clear_loader_state( ) -> None:
+		st.session_state[ 'loader_clear_request' ] = True
+		st.session_state[ 'loader_uploader_nonce' ] += 1
+	
+	def _load_from_path( file_path: str ) -> tuple[ list[ Document ] | None, dict[ str, Any ] ]:
+		path_obj = Path( file_path )
+		suffix = path_obj.suffix.lower( ).lstrip( '.' )
+		out: dict[ str, Any ] = { 'file': str( path_obj ), 'type': suffix }
+		docs: list[ Document ] | None = None
+		
+		if suffix == 'pdf' and do_pdf:
+			ld = PdfLoader( )
+			docs = ld.load( str( path_obj ) )
+		elif suffix == 'docx' and do_word:
+			ld = WordLoader( )
+			docs = ld.load( str( path_obj ) )
+		elif suffix in ('xlsx', 'xls') and do_excel:
+			ld = ExcelLoader( )
+			docs = ld.load( str( path_obj ) )
+		elif suffix == 'md' and do_markdown:
+			ld = MarkdownLoader( )
+			docs = ld.load( str( path_obj ) )
+		elif suffix == 'pptx' and do_powerpoint:
+			ld = PowerPointLoader( )
+			docs = ld.load( str( path_obj ) )
+		else:
+			out[
+				'skipped' ] = 'Checkbox for this file type is not selected or the file type is not implemented.'
+		
+		return docs, out
 	
 	col_browse, col_text = st.columns( [ 0.7, 0.3 ], border=True )
 	with col_browse:
-		uploaded_files = st.file_uploader( 'Choose file(s)',
-			type=[ 'pdf', 'docx', 'xlsx', 'xls', 'pptx', 'txt', 'md' ], accept_multiple_files=True,
-			key='loader_uploaded_files', )
+		uploaded_files = st.file_uploader(
+			'Choose file(s)',
+			type=[ 'pdf', 'docx', 'xlsx', 'xls', 'pptx', 'md' ],
+			accept_multiple_files=True,
+			key=f"loader_uploaded_files_{st.session_state[ 'loader_uploader_nonce' ]}", )
 		
-		# -----------------------------------------------
-		# Checkbox row (unchanged: its own row)
-		# -----------------------------------------------
-		col1, col2, col3, col4, col5, col6  = st.columns( 6 )
+		col1, col2, col3, col4, col5, col6 = st.columns( 6 )
 		
 		with col1:
 			do_pdf = st.checkbox( label='PDF', key='pdf_checkbox' )
@@ -1562,223 +1605,516 @@ if mode == 'Document Loading':
 		with col5:
 			do_powerpoint = st.checkbox( label='Powerpoint', key='powerpoint_checkbox' )
 		with col6:
-			do_text = st.checkbox( label='Text', key='text_checkbox' )
-
-
+			do_text = st.checkbox( label='Text', key='text_checkbox', disabled=True )
+			st.caption( 'Reserved' )
+	
 	with col_text:
-		loader_text = st.text_area( 'Enter one URL or file path', height=20,
+		loader_text = st.text_area(
+			'Enter one local file path per line',
+			height=20,
 			key='loader_path' )
-
+	
 	b1, b2 = st.columns( 2 )
 	with b1:
 		do_load = st.button( 'Load', key='loader_load_btn' )
-
+	
 	with b2:
-		do_clear = st.button( 'Clear', key='loader_clear_btn' )
-
-	if do_clear:
-		st.session_state.update(
-		{
-			'loader_results': { },
-			'loader_documents': [ ],
-			'loader_path': '',
-			'loader_uploaded_files': None,
-		} )
-		st.rerun( )
-
-	# ---------------------------
-	# Execute loads
-	# ---------------------------
+		st.button( 'Clear', key='loader_clear_btn', on_click=_clear_loader_state )
+	
 	if do_load:
 		results: Dict[ str, Any ] = { }
 		documents: list[ Document ] = [ ]
-
-		# Always use the correct object name.
-		extractor = scrapers.WebExtractor( )
-
-	    # -----------------------------------------------
-		# 1) URL scraping (from right text area)
-	    # -----------------------------------------------
-		urls = [ u.strip( ) for u in ( loader_text or "" ).splitlines( ) if u.strip( ) ]
-		if urls:
-			url_outputs: list[ dict[ str, Any ] ] = [ ]
-
-			for url in urls:
-				output: dict[ str, Any ] = { "url": url }
-
-				try:
-					if do_pdf:
-						output[ 'pdf' ] = extractor.scrape_hyperlinks( url )
-					if do_word:
-						output[ 'word' ] = extractor.scrape_links( url )
-					if do_excel:
-						output[ 'excel' ] = extractor.scrape_tables( url )
-
-					if do_markdown and hasattr( extractor, 'scrape_' ):
-						output[ 'markdown' ] = extractor.scrape_( url )
-					if do_powerpoint and hasattr( extractor, 'scrape_' ):
-						output[ 'powerpoint' ] = extractor.scrape_( url )
-					if do_youtube and hasattr( extractor, 'scrape_' ):
-						output[ 'youtube' ] = extractor.scrape_( url )
-
-				except Exception as exc:
-					output[ 'error' ] = str( exc )
-
-				url_outputs.append( output )
-
-			results[ 'urls' ] = url_outputs
-
-	    # -----------------------------------------------
-		# 2) Local file loading (from left uploader)
-	    # -----------------------------------------------
+		file_outputs: list[ dict[ str, Any ] ] = [ ]
+		
 		if uploaded_files:
-			file_outputs: list[ dict[ str, Any ] ] = [ ]
-
 			for f in uploaded_files:
 				name = getattr( f, 'name', 'uploaded' )
-				suffix = Path( name ).suffix.lower( ).lstrip( '.' )
-
-				out: dict[ str, Any ] = { 'file': name, 'type': suffix }
-
+				out: dict[ str, Any ] = { 'file': name }
+				
 				try:
-					tmp_dir = ( cf.BASE_DIR / 'stores' / 'tmp_uploads' )
+					tmp_dir = cfg.BASE_DIR / 'stores' / 'tmp_uploads'
 					tmp_dir.mkdir( parents=True, exist_ok=True )
 					tmp_path = tmp_dir / name
-
+					
 					with open( tmp_path, 'wb' ) as fp:
 						fp.write( f.getbuffer( ) )
-						
-					if suffix == 'pdf' and do_pdf:
-						ld = PdfLoader( )
-						docs = ld.load( str( tmp_path ) )
-						if isinstance( docs, list ):
-							documents.extend( docs )
-
-					elif suffix == 'docx' and do_word:
-						ld = WordLoader( )
-						docs = ld.load( str( tmp_path ) )
-						if isinstance( docs, list ):
-							documents.extend( docs )
-
-					elif suffix in ( 'xlsx', 'xls' ) and do_excel:
-						ld = ExcelLoader( )
-						docs = ld.load( str( tmp_path ) )
-						if isinstance( docs, list ):
-							documents.extend( docs )
-
-					else:
-						out[ 'skipped' ] = 'Checkbox for this file type is not selected.'
-
+					
+					docs, out = _load_from_path( str( tmp_path ) )
+					if isinstance( docs, list ):
+						documents.extend( docs )
+						out[ 'documents_loaded' ] = len( docs )
 				except Exception as exc:
 					out[ 'error' ] = str( exc )
-
+				
 				file_outputs.append( out )
-
-			results[ 'files' ] = file_outputs
-
-		st.session_state.update( { 'loader_results': results, 'loader_documents': documents, } )
+		
+		paths = [ p.strip( ) for p in (loader_text or '').splitlines( ) if p.strip( ) ]
+		if paths:
+			for file_path in paths:
+				out: dict[ str, Any ] = { 'file': file_path }
+				
+				try:
+					docs, out = _load_from_path( file_path )
+					if isinstance( docs, list ):
+						documents.extend( docs )
+						out[ 'documents_loaded' ] = len( docs )
+				except Exception as exc:
+					out[ 'error' ] = str( exc )
+				
+				file_outputs.append( out )
+		
+		results[ 'files' ] = file_outputs
+		st.session_state[ 'loader_results' ] = results
+		st.session_state[ 'loader_documents' ] = documents
 		st.rerun( )
-
-	# -----------------------------------------------
-	# Render results (below checkboxes)
-	# -----------------------------------------------
-	st.markdown( "----" )
-
-	# 1) Documents (from local loaders)
-	if st.session_state[ 'loader_documents' ]:
+	
+	st.markdown( '----' )
+	
+	if st.session_state.get( 'loader_documents' ):
 		st.markdown( '### Loaded Documents' )
 		for idx, doc in enumerate( st.session_state[ 'loader_documents' ], start=1 ):
 			with st.expander( f'Document {idx}', expanded=False ):
-				st.text_area( '', value=( doc.page_content or "" ), height=260 )
+				st.text_area( '', value=(doc.page_content or ''), height=260 )
 				if getattr( doc, 'metadata', None ):
 					st.json( doc.metadata )
-
-	# 2) Raw results (from URL scraping and file processing metadata)
-	if st.session_state[ 'loader_results' ]:
+	
+	if st.session_state.get( 'loader_results' ):
 		st.markdown( '### Load Results' )
 		st.json( st.session_state[ 'loader_results' ] )
-		
+
 # ======================================================================================
 # SCRAPING MODE
 # ======================================================================================
 elif mode == 'Web Scrapping':
 	st.subheader( '🕷️ Web Scrapping' )
 	st.divider( )
-	col_left, col_right = st.columns([1, 2], border=True)
-	with col_left:
-		target_url = st.text_input( 'Target URL', placeholder='https://example.com',
-			key='webfetcher_url' )
-
-		st.markdown( '#### Extraction Options' )
-
+	
+	if 'webscrape_clear_request' not in st.session_state:
+		st.session_state[ 'webscrape_clear_request' ] = False
+	
+	if st.session_state.get( 'webscrape_clear_request', False ):
+		st.session_state[ 'webfetcher_url' ] = ''
+		st.session_state[ 'webscrape_results' ] = [ ]
+		st.session_state[ 'webscrape_summary' ] = { }
+		st.session_state[ 'webscrape_clear_request' ] = False
+	
+	def _clear_webscrape_state( ) -> None:
+		st.session_state[ 'webscrape_clear_request' ] = True
+	
+	def _coerce_items( value: Any ) -> list[ str ]:
+		if value is None:
+			return [ ]
+		if isinstance( value, list ):
+			return [ str( item ) for item in value if item is not None ]
+		return [ str( value ) ]
+	
+	def _extract_title_from_html( html: str ) -> str:
+		try:
+			if not isinstance( html, str ) or not html.strip( ):
+				return ''
+			
+			match = re.search(
+				r'<title[^>]*>(.*?)</title>',
+				html,
+				flags=re.IGNORECASE | re.DOTALL )
+			
+			if not match:
+				return ''
+			
+			title = re.sub( r'\s+', ' ', match.group( 1 ) ).strip( )
+			return html_lib.unescape( title )
+		except Exception:
+			return ''
+	
+	def _truncate_text( text: str, limit: int = 12000 ) -> str:
+		if not isinstance( text, str ):
+			return ''
+		if len( text ) <= limit:
+			return text
+		return text[ : limit ] + '\n\n... [truncated]'
+	
+	def _normalize_url( base_url: str, href: str ) -> str:
+		try:
+			if not href or not isinstance( href, str ):
+				return ''
+			
+			href = href.strip( )
+			if not href:
+				return ''
+			
+			absolute = urljoin( base_url, href )
+			parsed = urlparse( absolute )
+			
+			if parsed.scheme not in ('http', 'https'):
+				return ''
+			
+			normalized = parsed._replace( fragment='' )
+			return normalized.geturl( )
+		except Exception:
+			return ''
+	
+	def _same_domain( left: str, right: str ) -> bool:
+		try:
+			left_host = (urlparse( left ).netloc or '').lower( )
+			right_host = (urlparse( right ).netloc or '').lower( )
+			return bool( left_host ) and left_host == right_host
+		except Exception:
+			return False
+	
+	def _extract_links_from_html( base_url: str, html: str ) -> list[ str ]:
+		try:
+			if not isinstance( html, str ) or not html.strip( ):
+				return [ ]
+			
+			soup = BeautifulSoup( html, 'html.parser' )
+			results: list[ str ] = [ ]
+			seen: set[ str ] = set( )
+			
+			for tag in soup.find_all( 'a', href=True ):
+				candidate = _normalize_url( base_url, tag.get( 'href', '' ) )
+				if candidate and candidate not in seen:
+					seen.add( candidate )
+					results.append( candidate )
+			
+			return results
+		except Exception:
+			return [ ]
+	
+	def _scrape_single_page(
+			url: str,
+			include_title: bool,
+			include_basic_text: bool,
+			include_raw_html: bool,
+			selected_methods: list[ str ] ) -> dict[ str, Any ]:
+		page_result: dict[ str, Any ] = \
+			{
+					'url': url,
+					'status_code': None,
+					'encoding': None,
+					'title': '',
+					'plain_text': '',
+					'raw_html': '',
+					'links_discovered': [ ],
+					'data': { },
+					'errors': [ ],
+			}
+		
 		fetcher = WebFetcher( )
-		raw_names = [ name for name in fetcher.__dir__()
-			if name.startswith('scrape') ]
-
-		VALID_SCRAPERS: dict[str, str] = {
-			'scrape_images': 'Images',
-			'scrape_hyperlinks': 'Hyperlinks',
-			'scrape_blockquotes': 'Blockquotes',
-			'scrape_sections': 'Sections',
-			'scrape_divisions': 'Divisions',
-			'scrape_tables': 'Tables',
-			'scrape_lists': 'Lists',
-			'scrape_paragraphs': 'Paragraphs',
-		}
-
-		available_methods: dict[ str, callable ] = { }
-
-		for name in raw_names:
-			if name in VALID_SCRAPERS and hasattr( fetcher, name ):
-				available_methods[name] = getattr( fetcher, name )
-
+		
+		try:
+			response = fetcher.fetch( url )
+			if response is None:
+				page_result[ 'errors' ].append( 'No response returned.' )
+				return page_result
+			
+			page_result[ 'status_code' ] = getattr( response, 'status_code', None )
+			page_result[ 'encoding' ] = getattr( response, 'encoding', None )
+			
+			raw_html = getattr( response, 'text', '' ) or ''
+			page_result[ 'links_discovered' ] = _extract_links_from_html( url, raw_html )
+			
+			if include_title:
+				page_result[ 'title' ] = _extract_title_from_html( raw_html )
+			
+			if include_basic_text:
+				try:
+					page_result[ 'plain_text' ] = fetcher.html_to_text( raw_html ) or ''
+				except Exception as exc:
+					page_result[ 'errors' ].append( f'Basic Text: {str( exc )}' )
+			
+			if include_raw_html:
+				page_result[ 'raw_html' ] = raw_html
+		
+		except Exception as exc:
+			page_result[ 'errors' ].append( f'Fetch: {str( exc )}' )
+			return page_result
+		
+		REGISTRY: dict[ str, tuple[ str, callable ] ] = \
+			{
+					'scrape_headings': ('Headings', fetcher.scrape_headings),
+					'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
+					'scrape_lists': ('Lists', fetcher.scrape_lists),
+					'scrape_tables': ('Tables', fetcher.scrape_tables),
+					'scrape_articles': ('Articles', fetcher.scrape_articles),
+					'scrape_sections': ('Sections', fetcher.scrape_sections),
+					'scrape_divisions': ('Divisions', fetcher.scrape_divisions),
+					'scrape_blockquotes': ('Blockquotes', fetcher.scrape_blockquotes),
+					'scrape_hyperlinks': ('Hyperlinks', fetcher.scrape_hyperlinks),
+					'scrape_images': ('Images', fetcher.scrape_images),
+			}
+		
+		for method_name in selected_methods:
+			if method_name not in REGISTRY:
+				continue
+			
+			label, method = REGISTRY[ method_name ]
+			
+			try:
+				data = method( url )
+				page_result[ 'data' ][ label ] = _coerce_items( data )
+			except Exception as exc:
+				page_result[ 'data' ][ label ] = [ ]
+				page_result[ 'errors' ].append( f'{label}: {str( exc )}' )
+		
+		return page_result
+	
+	def _crawl_pages(
+			seed_url: str,
+			include_title: bool,
+			include_basic_text: bool,
+			include_raw_html: bool,
+			selected_methods: list[ str ],
+			recursive: bool,
+			max_depth: int,
+			max_pages: int,
+			same_domain_only: bool ) -> tuple[ list[ dict[ str, Any ] ], dict[ str, Any ] ]:
+		results: list[ dict[ str, Any ] ] = [ ]
+		visited: set[ str ] = set( )
+		enqueued: set[ str ] = set( )
+		queue: deque[ tuple[ str, int ] ] = deque( )
+		skipped_urls: list[ str ] = [ ]
+		
+		normalized_seed = _normalize_url( seed_url, seed_url )
+		if not normalized_seed:
+			raise ValueError( 'A valid absolute URL is required.' )
+		
+		queue.append( (normalized_seed, 0) )
+		enqueued.add( normalized_seed )
+		
+		while queue and len( results ) < max_pages:
+			current_url, depth = queue.popleft( )
+			
+			if current_url in visited:
+				continue
+			
+			visited.add( current_url )
+			
+			page_result = _scrape_single_page(
+				url=current_url,
+				include_title=include_title,
+				include_basic_text=include_basic_text,
+				include_raw_html=include_raw_html,
+				selected_methods=selected_methods )
+			
+			page_result[ 'depth' ] = depth
+			results.append( page_result )
+			
+			if not recursive:
+				continue
+			
+			if depth >= max_depth:
+				continue
+			
+			discovered_links = page_result.get( 'links_discovered', [ ] ) or [ ]
+			for next_url in discovered_links:
+				if len( results ) + len( queue ) >= max_pages:
+					break
+				
+				if not next_url or next_url in visited or next_url in enqueued:
+					continue
+				
+				if same_domain_only and not _same_domain( normalized_seed, next_url ):
+					skipped_urls.append( next_url )
+					continue
+				
+				queue.append( (next_url, depth + 1) )
+				enqueued.add( next_url )
+		
+		summary: dict[ str, Any ] = \
+			{
+					'mode': 'recursive' if recursive else 'single-page',
+					'seed_url': normalized_seed,
+					'pages_processed': len( results ),
+					'pages_visited': len( visited ),
+					'pages_skipped': len( skipped_urls ),
+					'recursive_requested': bool( recursive ),
+					'max_depth': int( max_depth ),
+					'max_pages': int( max_pages ),
+					'same_domain_only': bool( same_domain_only ),
+					'visited_urls': list( visited ),
+					'skipped_urls': skipped_urls,
+			}
+		
+		return results, summary
+	
+	col_left, col_right = st.columns( [ 1, 2 ], border=True )
+	
+	with col_left:
+		target_url = st.text_input(
+			'Target URL',
+			placeholder='https://example.com',
+			key='webfetcher_url' )
+		
+		st.markdown( '#### Core Output' )
+		
+		include_title = st.checkbox(
+			'Page Title',
+			value=True,
+			key='wf_page_title' )
+		
+		include_basic_text = st.checkbox(
+			'Basic Text',
+			value=True,
+			key='wf_basic_text' )
+		
+		include_raw_html = st.checkbox(
+			'Raw HTML',
+			value=False,
+			key='wf_raw_html' )
+		
+		st.markdown( '#### Structured Extraction' )
+		
+		REGISTRY_LABELS: dict[ str, str ] = \
+			{
+					'scrape_headings': 'Headings',
+					'scrape_paragraphs': 'Paragraphs',
+					'scrape_lists': 'Lists',
+					'scrape_tables': 'Tables',
+					'scrape_articles': 'Articles',
+					'scrape_sections': 'Sections',
+					'scrape_divisions': 'Divisions',
+					'scrape_blockquotes': 'Blockquotes',
+					'scrape_hyperlinks': 'Hyperlinks',
+					'scrape_images': 'Images',
+			}
+		
 		selected_methods: list[ str ] = [ ]
-
-		for method_name, label in VALID_SCRAPERS.items():
-			if method_name in available_methods:
-				if st.checkbox(label, key=f'wf_{method_name}'):
-					selected_methods.append( method_name )
-
-		run_scraper = st.button( 'Run Scraper', key='webfetcher_run' )
-
+		
+		for method_name, label in REGISTRY_LABELS.items( ):
+			if st.checkbox( label, key=f'wf_{method_name}' ):
+				selected_methods.append( method_name )
+		
+		st.markdown( '#### Crawl Controls' )
+		
+		enable_recursive = st.checkbox(
+			'Recursive Crawl',
+			value=False,
+			key='wf_recursive' )
+		
+		max_depth = st.number_input(
+			'Max Depth',
+			min_value=0,
+			max_value=10,
+			value=1,
+			step=1,
+			key='wf_max_depth',
+			disabled=(not enable_recursive) )
+		
+		max_pages = st.number_input(
+			'Max Pages',
+			min_value=1,
+			max_value=500,
+			value=10,
+			step=1,
+			key='wf_max_pages' )
+		
+		same_domain_only = st.checkbox(
+			'Same Domain Only',
+			value=True,
+			key='wf_same_domain_only',
+			disabled=(not enable_recursive) )
+		
+		b1, b2 = st.columns( 2 )
+		
+		with b1:
+			run_scraper = st.button( 'Run Scraper', key='webfetcher_run' )
+		
+		with b2:
+			st.button( 'Clear', key='webfetcher_clear', on_click=_clear_webscrape_state )
+	
 	with col_right:
-		output = st.empty( )
-
 		if run_scraper:
 			try:
-				if not target_url:
-					raise ValueError('A target URL is required.')
-
-				if not selected_methods:
-					raise ValueError('At least one scraper must be selected.')
-
-				results: dict[str, list[str]] = { }
-
-				for method_name in selected_methods:
-					method = available_methods[method_name]
-					data = method(target_url)
-
-					if data is None:
-						results[method_name] = []
-					elif isinstance(data, list):
-						results[method_name] = data
-					else:
-						results[method_name] = [str(data)]
-
-				with output.container():
-					for method_name, items in results.items():
-						st.markdown( f'#### {VALID_SCRAPERS[method_name]}' )
-
-						if not items:
-							st.info('No results returned.')
-							continue
-
-						for idx, item in enumerate(items, start=1):
-							st.write(f"{idx}. {item}")
-
+				if not target_url or not target_url.strip( ):
+					raise ValueError( 'A target URL is required.' )
+				
+				results, summary = _crawl_pages(
+					seed_url=target_url.strip( ),
+					include_title=include_title,
+					include_basic_text=include_basic_text,
+					include_raw_html=include_raw_html,
+					selected_methods=selected_methods,
+					recursive=bool( enable_recursive ),
+					max_depth=int( max_depth ),
+					max_pages=int( max_pages ),
+					same_domain_only=bool( same_domain_only ) )
+				
+				st.session_state[ 'webscrape_results' ] = results
+				st.session_state[ 'webscrape_summary' ] = summary
+				st.rerun( )
+			
 			except Exception as exc:
 				st.error( str( exc ) )
-
+		
+		summary = st.session_state.get( 'webscrape_summary', { } )
+		results = st.session_state.get( 'webscrape_results', [ ] )
+		
+		if summary:
+			st.markdown( '### Summary' )
+			st.json( summary )
+		
+		if not results:
+			st.info( 'No results.' )
+		else:
+			st.markdown( '### Results' )
+			
+			for idx, page in enumerate( results, start=1 ):
+				title = page.get( 'title', '' ) or page.get( 'url', f'Page {idx}' )
+				depth = page.get( 'depth', 0 )
+				
+				with st.expander( f'Page {idx} [Depth {depth}]: {title}', expanded=(idx == 1) ):
+					meta_col1, meta_col2 = st.columns( 2 )
+					
+					with meta_col1:
+						st.markdown( f"**URL:** {page.get( 'url', '' )}" )
+						st.markdown( f"**Status Code:** {page.get( 'status_code', '' )}" )
+						st.markdown( f"**Depth:** {page.get( 'depth', 0 )}" )
+					
+					with meta_col2:
+						st.markdown( f"**Encoding:** {page.get( 'encoding', '' )}" )
+						st.markdown( f"**Title:** {page.get( 'title', '' )}" )
+					
+					plain_text = page.get( 'plain_text', '' )
+					if isinstance( plain_text, str ) and plain_text.strip( ):
+						st.markdown( '#### Basic Text' )
+						st.text_area(
+							label='',
+							value=_truncate_text( plain_text, limit=12000 ),
+							height=280,
+							key=f'webscrape_plain_text_{idx}' )
+					
+					raw_html = page.get( 'raw_html', '' )
+					if isinstance( raw_html, str ) and raw_html.strip( ):
+						st.markdown( '#### Raw HTML' )
+						st.text_area(
+							label='',
+							value=_truncate_text( raw_html, limit=12000 ),
+							height=240,
+							key=f'webscrape_raw_html_{idx}' )
+					
+					discovered_links = page.get( 'links_discovered', [ ] ) or [ ]
+					if discovered_links:
+						st.markdown( '#### Links Discovered' )
+						for link_idx, link in enumerate( discovered_links, start=1 ):
+							st.write( f'{link_idx}. {link}' )
+					
+					data = page.get( 'data', { } ) or { }
+					for label, items in data.items( ):
+						st.markdown( f'#### {label}' )
+						
+						if not items:
+							st.info( 'No results returned.' )
+							continue
+						
+						for item_idx, item in enumerate( items, start=1 ):
+							st.write( f'{item_idx}. {item}' )
+					
+					errors = page.get( 'errors', [ ] ) or [ ]
+					if errors:
+						st.markdown( '#### Errors' )
+						for err in errors:
+							st.error( err )
+							
 # ======================================================================================
 # FETCHING MODE
 # ======================================================================================

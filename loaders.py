@@ -782,17 +782,32 @@ class PdfLoader( PdfReader ):
 		'''
 		return [ 'html-img', 'markdown-img', 'text-img' ]
 	
-	
-	def load( self, path: str, mode: str='single', extract: str='plain',
-			include: bool=True, format: str='markdown-img' ) -> List[ Document ]:
+	def load( self, path: str, mode: str = 'single', extract: str = 'plain',
+			include: bool = False, format: str = 'markdown-img' ) -> List[ Document ]:
 		"""
 		
 			Purpose:
 			---------
-			Loads PDF document into Langchain documnet
+			Loads PDF document into Langchain document objects. Attempts image
+			extraction only when explicitly requested, and falls back to text-only
+			parsing if the image path fails.
+		
+			Parameters:
+			-----------
+			path:
+				Path to the PDF file.
+			mode:
+				PDF loading mode passed to PyPDFLoader.
+			extract:
+				Extraction mode passed to PyPDFLoader.
+			include:
+				When True, attempt image extraction. Defaults to False for stability.
+			format:
+				Image output format used when image extraction is enabled.
 		
 			Returns:
-				List[Document]
+			--------
+			List[Document]
 		"""
 		try:
 			throw_if( 'path', path )
@@ -801,16 +816,31 @@ class PdfLoader( PdfReader ):
 			self.extraction = extract
 			self.include_images = include
 			self.image_format = format
+			
 			if self.include_images:
-				self.image_parser = RapidOCRBlobParser( )
-				self.loader = PyPDFLoader( file_path=self.file_path, mode=self.mode,
-				extraction_mode=self.extraction, extract_images=self.inlude_images,
-					images_inner_format=self.image_format, images_parser=self.image_parser )
-				self.documents = self.loader.load( )
-				return self.documents
+				try:
+					self.image_parser = RapidOCRBlobParser( )
+					self.loader = PyPDFLoader(
+						file_path=self.file_path,
+						mode=self.mode,
+						extraction_mode=self.extraction,
+						extract_images=self.include_images,
+						images_inner_format=self.image_format,
+						images_parser=self.image_parser )
+					self.documents = self.loader.load( )
+					return self.documents
+				except Exception:
+					self.loader = PyPDFLoader(
+						file_path=self.file_path,
+						mode=self.mode,
+						extraction_mode=self.extraction )
+					self.documents = self.loader.load( )
+					return self.documents
 			else:
-				self.loader = PyPDFLoader( file_path=self.file_path, mode=self.mode,
-				extraction_mode=self.extraction   )
+				self.loader = PyPDFLoader(
+					file_path=self.file_path,
+					mode=self.mode,
+					extraction_mode=self.extraction )
 				self.documents = self.loader.load( )
 				return self.documents
 		except Exception as e:
@@ -924,7 +954,7 @@ class ExcelLoader( Loader ):
 			exception = Error( e )
 			exception.module = 'Foo'
 			exception.cause = 'ExcelLoader'
-			exception.method = 'load( self, path: str, mode: str=elements, include_headers: bool=True ) -> List[ Document ]'
+			exception.method = 'load( self, **kwargs ) -> List[ Document ]'
 			raise exception
 			
 	
