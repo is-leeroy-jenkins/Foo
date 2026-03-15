@@ -5993,37 +5993,301 @@ elif mode == 'Satellite Data':
 	
 	# -------- Star Chart
 	with st.expander( label='Star Chart', expanded=False ):
+		if 'starchart_results' not in st.session_state:
+			st.session_state[ 'starchart_results' ] = { }
+		
+		if 'starchart_clear_request' not in st.session_state:
+			st.session_state[ 'starchart_clear_request' ] = False
+		
+		if st.session_state.get( 'starchart_clear_request', False ):
+			st.session_state[ 'starchart_mode' ] = 'object_chart'
+			st.session_state[ 'starchart_query' ] = 'Polaris'
+			st.session_state[ 'starchart_ra' ] = 2.5302
+			st.session_state[ 'starchart_dec' ] = 89.2642
+			st.session_state[ 'starchart_zoom' ] = 5
+			st.session_state[ 'starchart_image_source' ] = 'DSS2'
+			st.session_state[ 'starchart_box_color' ] = 'yellow'
+			st.session_state[ 'starchart_show_box' ] = True
+			st.session_state[ 'starchart_show_grid' ] = True
+			st.session_state[ 'starchart_show_lines' ] = True
+			st.session_state[ 'starchart_show_boundaries' ] = True
+			st.session_state[ 'starchart_show_const_names' ] = False
+			st.session_state[ 'starchart_width' ] = 900
+			st.session_state[ 'starchart_height' ] = 450
+			st.session_state[ 'starchart_magnitude' ] = 7.5
+			st.session_state[ 'starchart_timeout' ] = 20
+			st.session_state[ 'starchart_results' ] = { }
+			st.session_state[ 'starchart_clear_request' ] = False
+		
+		def _clear_starchart_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Star Chart expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'starchart_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			starchart_query = st.text_area( 'Query', value='',
-				height=40, key='starchart_query' )
+			starchart_mode = st.selectbox(
+				'Mode',
+				options=[ 'object_search', 'object_chart', 'coordinate_chart', 'static_chart' ],
+				index=[ 'object_search', 'object_chart', 'coordinate_chart', 'static_chart' ].index(
+					st.session_state.get( 'starchart_mode', 'object_chart' )
+				),
+				key='starchart_mode'
+			)
+			
+			starchart_query = st.text_area(
+				'Object Query',
+				height=80,
+				key='starchart_query',
+				placeholder=(
+						'Examples:\n'
+						'Polaris\n'
+						'M31\n'
+						'NGC 1300\n'
+						'\n'
+						'Used for object_search and object_chart.'
+				),
+				disabled=(starchart_mode not in [ 'object_search', 'object_chart' ])
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				starchart_ra = st.number_input(
+					'RA',
+					value=float( st.session_state.get( 'starchart_ra', 2.5302 ) ),
+					format='%.4f',
+					key='starchart_ra',
+					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+				)
+			
+			with c2:
+				starchart_dec = st.number_input(
+					'Dec',
+					value=float( st.session_state.get( 'starchart_dec', 89.2642 ) ),
+					format='%.4f',
+					key='starchart_dec',
+					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+				)
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				starchart_zoom = st.number_input(
+					'Zoom',
+					min_value=0,
+					max_value=18,
+					value=int( st.session_state.get( 'starchart_zoom', 5 ) ),
+					step=1,
+					key='starchart_zoom'
+				)
+			
+			with c4:
+				starchart_width = st.number_input(
+					'Width',
+					min_value=100,
+					max_value=2400,
+					value=int( st.session_state.get( 'starchart_width', 900 ) ),
+					step=50,
+					key='starchart_width',
+					disabled=(starchart_mode != 'static_chart')
+				)
+			
+			with c5:
+				starchart_height = st.number_input(
+					'Height',
+					min_value=100,
+					max_value=2400,
+					value=int( st.session_state.get( 'starchart_height', 450 ) ),
+					step=50,
+					key='starchart_height',
+					disabled=(starchart_mode != 'static_chart')
+				)
+			
+			c6, c7, c8 = st.columns( 3 )
+			
+			with c6:
+				starchart_image_source = st.selectbox(
+					'Image Source',
+					options=[ 'DSS2', 'SDSS' ],
+					index=[ 'DSS2', 'SDSS' ].index(
+						st.session_state.get( 'starchart_image_source', 'DSS2' )
+					),
+					key='starchart_image_source'
+				)
+			
+			with c7:
+				starchart_box_color = st.text_input(
+					'Box Color',
+					value=st.session_state.get( 'starchart_box_color', 'yellow' ),
+					key='starchart_box_color',
+					disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ])
+				)
+			
+			with c8:
+				starchart_magnitude = st.number_input(
+					'Magnitude',
+					min_value=0.0,
+					max_value=20.0,
+					value=float( st.session_state.get( 'starchart_magnitude', 7.5 ) ),
+					step=0.1,
+					key='starchart_magnitude',
+					disabled=(starchart_mode != 'static_chart')
+				)
+			
+			c9, c10 = st.columns( 2 )
+			
+			with c9:
+				starchart_show_box = st.checkbox(
+					'Show Box',
+					value=bool( st.session_state.get( 'starchart_show_box', True ) ),
+					key='starchart_show_box',
+					disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ])
+				)
+			
+			with c10:
+				starchart_show_grid = st.checkbox(
+					'Show Grid',
+					value=bool( st.session_state.get( 'starchart_show_grid', True ) ),
+					key='starchart_show_grid',
+					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+				)
+			
+			c11, c12 = st.columns( 2 )
+			
+			with c11:
+				starchart_show_lines = st.checkbox(
+					'Show Lines',
+					value=bool( st.session_state.get( 'starchart_show_lines', True ) ),
+					key='starchart_show_lines',
+					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+				)
+			
+			with c12:
+				starchart_show_boundaries = st.checkbox(
+					'Show Boundaries',
+					value=bool( st.session_state.get( 'starchart_show_boundaries', True ) ),
+					key='starchart_show_boundaries',
+					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+				)
+			
+			starchart_show_const_names = st.checkbox(
+				'Show Constellation Names',
+				value=bool( st.session_state.get( 'starchart_show_const_names', False ) ),
+				key='starchart_show_const_names',
+				disabled=(starchart_mode != 'static_chart')
+			)
+			
+			starchart_timeout = st.number_input(
+				'Timeout',
+				min_value=1,
+				max_value=120,
+				value=int( st.session_state.get( 'starchart_timeout', 20 ) ),
+				step=1,
+				key='starchart_timeout'
+			)
+			
+			st.caption(
+				'Examples: object_search with Polaris, object_chart with M31, '
+				'coordinate_chart with RA=2.5302 and Dec=89.2642, or '
+				'static_chart with DSS2 and 900x450 output.'
+			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
-				starchart_submit = st.button( 'Submit', key='starchart_submit' )
+				starchart_submit = st.button(
+					'Submit',
+					key='starchart_submit'
+				)
+			
 			with b2:
-				starchart_clear = st.button( 'Clear', key='starchart_clear' )
+				st.button(
+					'Clear',
+					key='starchart_clear',
+					on_click=_clear_starchart_state
+				)
 		
 		with col_right:
-			starchart_output = st.empty( )
-		
-		if starchart_clear:
-			st.session_state.update( { 'starchart_query': '', } )
-			st.rerun( )
-		
-		if starchart_submit:
-			try:
-				f = StarChart( )
-				result = f.fetch( starchart_query )
+			if starchart_submit:
+				try:
+					f = StarChart( )
+					result = f.fetch(
+						mode=starchart_mode,
+						query=str( starchart_query or '' ),
+						ra=float( starchart_ra ),
+						dec=float( starchart_dec ),
+						zoom=int( starchart_zoom ),
+						image_source=str( starchart_image_source ),
+						box_color=str( starchart_box_color or 'yellow' ),
+						show_box=bool( starchart_show_box ),
+						show_grid=bool( starchart_show_grid ),
+						show_lines=bool( starchart_show_lines ),
+						show_boundaries=bool( starchart_show_boundaries ),
+						show_const_names=bool( starchart_show_const_names ),
+						width=int( starchart_width ),
+						height=int( starchart_height ),
+						magnitude=float( starchart_magnitude ),
+						time=int( starchart_timeout )
+					)
+					
+					st.session_state[ 'starchart_results' ] = result or { }
+					st.rerun( )
 				
-				if not result:
-					starchart_output.info( 'No results returned.' )
-				else:
-					starchart_output.text_area( 'Results', value=str( result ), height=300 )
+				except Exception as exc:
+					st.error( 'Star Chart request failed.' )
+					st.exception( exc )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			result = st.session_state.get( 'starchart_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					if 'chart_url' in result:
+						st.markdown( f"**Chart Link:** {result.get( 'chart_url', '' )}" )
+					if 'image_url' in result:
+						st.markdown( f"**Image URL:** {result.get( 'image_url', '' )}" )
+				
+				if result.get( 'search', { } ):
+					st.markdown( '#### Object Search' )
+					st.json( result.get( 'search', { } ) )
+				
+				search_data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				if search_data:
+					st.markdown( '#### Search Result' )
+					st.json( search_data )
+				
+				if result.get( 'params', { } ):
+					st.markdown( '#### Request Parameters' )
+					st.json( result.get( 'params', { } ) )
+				
+				if result.get( 'image_url', '' ):
+					st.markdown( '#### Static Chart Preview' )
+					st.image( result.get( 'image_url', '' ), use_container_width=True )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Nearby Objects
 	with st.expander( label='Near Earth Objects', expanded=False ):
