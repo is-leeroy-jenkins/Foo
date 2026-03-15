@@ -915,6 +915,7 @@ class ExcelLoader( Loader ):
 		try:
 			throw_if( 'path', path )
 			self.mode = mode
+			self.has_headers = headers
 			self.file_path = self.verify_exists( path )
 			self.loader = UnstructuredExcelLoader( file_path=self.file_path, mode=self.mode  )
 			self.documents = self.loader.load( )
