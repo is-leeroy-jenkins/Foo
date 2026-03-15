@@ -375,3 +375,18 @@ SKY_MAP = r'''Provides static and link-based star chart generation using the SKY
 			- Endpoint: https://server2.sky-map.org/map
 
 '''
+
+NAVAL_OBSERVATORY = r'''Provides access to the U.S. Naval Observatory Astronomical Applications
+				API for Celestial Navigation Data for Assumed Position and Time.
+				
+						Referenced API Requirements:
+						----------------------------
+						Celestial Navigation Data for Assumed Position and Time:
+							- Endpoint: https://aa.usno.navy.mil/api/celnav
+							- Required parameters:
+								- date (YYYY-MM-DD)
+								- time (HH:MM or HH:MM:SS.S)
+								- coords (latitude,longitude)
+								
+					Documentation here (https://aa.usno.navy.mil/)
+'''

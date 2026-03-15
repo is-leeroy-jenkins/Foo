@@ -2571,265 +2571,349 @@ class GoogleWeather( Fetcher ):
 					'time: int=10 ) -> Dict[ str, Any ]'
 			)
 			raise exception
-			
+
 class NavalObservatory( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides access to APIs from the US Naval Observatory's Celestial Navigation Data for
-		Assumed Position and Time:  this data service provides all the astronomical information
-		necessary to plot navigational lines of position from observations of the altitudes of
-		celestial bodies. Simply fill in the form below and click on the "Get Data" button at
-		the end of the form.
+		Provides access to the U.S. Naval Observatory Astronomical Applications
+		API for Celestial Navigation Data for Assumed Position and Time.
 
-		The output table gives both almanac data and altitude corrections for each celestial body
-		that is above the horizon at the place and time that you specify. Sea-level observations
-		are assumed. The almanac data consist of Greenwich hour angle (GHA), declination (Dec),
-		computed altitude (Hc), and computed azimuth (Zn). The altitude corrections consist of
-		atmospheric refraction (Refr), semidiameter (SD), parallax in altitude (PA), and the sum of
-		the altitude corrections (Sum = Refr + SD + PA). The SD and PA values are zero for stars.
-		The SD values are non-zero only for the Sun and Moon; for all other objects, it is assumed
-		that the center of light is observed.
+		This class is aligned to the current documented API endpoint:
 
-		The assumed position that you enter below can be your best estimate of your actual
-		location (e.g., your DR position); there is no need to round the coordinate values,
-		since all data is computed specifically for the exact position you provide without
-		any table lookup.
+			https://aa.usno.navy.mil/api/celnav
 
-		Attribues:
+		with required parameters:
+
+			- date
+			- time
+			- coords
+
+		Referenced API Requirements:
+		----------------------------
+		Celestial Navigation Data for Assumed Position and Time:
+			- Endpoint:
+				https://aa.usno.navy.mil/api/celnav
+			- Required parameters:
+				- date (YYYY-MM-DD)
+				- time (HH:MM or HH:MM:SS.S)
+				- coords (latitude,longitude)
+
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		base_url: Optional[str]
+			Base USNO API URL.
+
+		url: Optional[str]
+			Resolved request URL.
+
+		params: Optional[Dict[str, Any]]
+			Request parameters.
+
+		date_value: Optional[str]
+			Request date in YYYY-MM-DD format.
+
+		time_value: Optional[str]
+			Request UT1/UTC time in HH:MM or HH:MM:SS.S format.
+
+		latitude: Optional[float]
+			Latitude in decimal degrees, north positive.
+
+		longitude: Optional[float]
+			Longitude in decimal degrees, east positive.
+
+		location_label: Optional[str]
+			Optional display label retained client-side.
+
+		agents: Optional[str]
+			User-Agent string.
 
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
+		--------
+		__init__() -> None
+			Initialize fetcher defaults.
 
+		__dir__() -> List[str]
+			Provide ordered member visibility.
+
+		fetch_celnav(...) -> Dict[str, Any] | None
+			Fetch celestial navigation data from the USNO API.
+
+		fetch(...) -> Dict[str, Any] | None
+			Unified dispatcher for the celnav service.
+
+		create_schema(...) -> Dict[str, str] | None
+			Construct a dynamic tool schema.
 
 	'''
-	file_path: Optional[ str ]
-	api_key: Optional[ str ]
+	base_url: Optional[ str ]
 	url: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	date_value: Optional[ str ]
+	time_value: Optional[ str ]
 	latitude: Optional[ float ]
 	longitude: Optional[ float ]
-	coordinates: Optional[ Tuple[ float, float ] ]
-	calendar_date: Optional[ dt.datetime ]
-	julian_date: Optional[ float ]
-	sidereal_time: Optional[ str]
-	utc_time: Optional[ dt.time ]
-	local_time: Optional[ dt.time ]
-	params: Optional[ Dict[ str, Any ] ]
-	era: Optional[ str ]
-	year: Optional[ str]
-	month: Optional[ str ]
-	day: Optional[ str ]
-	gmaps: Optional[ GoogleMaps ]
+	location_label: Optional[ str ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the Naval Observatory fetcher with current API defaults.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
 		super( ).__init__( )
-		self.api_key = cfg.GOVINFO_API_KEY
-		self.mode = None
+		self.headers = { }
+		self.base_url = 'https://aa.usno.navy.mil/api'
 		self.url = None
-		self.file_path = None
-		self.longitude = None
-		self.latitude = None
-		self.coordinates = None
-		self.calendar_date = None
-		self.julian_date = None
-		self.sidereal_time = None
-		self.local_time = None
-		self.utc_time = None
+		self.params = { }
+		self.date_value = ''
+		self.time_value = ''
+		self.latitude = 38.9072
+		self.longitude = -77.0369
+		self.location_label = ''
 		self.agents = cfg.AGENTS
-		self.era = None
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
-	def fetch_julian( self, date: dt.date ) -> float | None:
-		"""
-
+	def __dir__( self ) -> List[ str ]:
+		'''
 			Purpose:
 			--------
-			Converts a given calendar date into a julian date
-			
-			Parameters:
-			----------
-			date - dt.date representing a calendar date
+			Provide ordered member visibility.
 
-		"""
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'url',
+				'params',
+				'date_value',
+				'time_value',
+				'latitude',
+				'longitude',
+				'location_label',
+				'fetch_celnav',
+				'fetch',
+				'create_schema'
+		]
+	
+	def fetch_celnav( self, date_value: str, time_value: str, latitude: float,
+			longitude: float, location_label: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch celestial navigation data for an assumed position and time.
+
+			Parameters:
+			-----------
+			date_value (str):
+				Date in YYYY-MM-DD format. Example: 2026-03-15
+
+			time_value (str):
+				UT1/UTC time in HH:MM or HH:MM:SS.S format.
+				Examples:
+				- 16:11
+				- 16:11:00
+				- 16:11:00.0
+
+			latitude (float):
+				Latitude in decimal degrees. North positive.
+
+			longitude (float):
+				Longitude in decimal degrees. East positive.
+
+			location_label (str):
+				Optional label preserved in the returned result for UI display.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
 		try:
-			throw_if( 'date', date )
-			self.calendar_date = date
-			self.year = str( date.year )
-			self.month = str( date.month )
-			self.day = str( date.day )
-			self.era = 'AD'
-			self.local_time = date.strftime( '%H:%M:%S' )
-			self.url = f'https://aa.usno.navy.mil/api/juliandate?'
-			self.params = \
-			{
-				'date': self.calendar_date,
-				'time': self.local_time,
-				'era': self.era,
+			throw_if( 'date_value', date_value )
+			throw_if( 'time_value', time_value )
+			
+			self.date_value = str( date_value ).strip( )
+			self.time_value = str( time_value ).strip( )
+			self.latitude = float( latitude )
+			self.longitude = float( longitude )
+			self.location_label = str( location_label or '' ).strip( )
+			
+			self.url = f'{self.base_url}/celnav'
+			self.params = {
+					'date': self.date_value,
+					'time': self.time_value,
+					'coords': f'{self.latitude},{self.longitude}'
 			}
 			
-			self.response = requests.get( url=self.url, params=self.params )
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
 			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': 'celnav',
+					'url': self.url,
+					'params': self.params,
+					'location_label': self.location_label,
+					'data': payload
+			}
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
-			exception.method = 'fetch_julian( self, address: str ) -> float'
+			exception.method = (
+					'fetch_celnav( self, date_value: str, time_value: str, '
+					'latitude: float, longitude: float, location_label: str=, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
 			raise exception
-			
 	
-	def fetch_sidereal( self, coords: Tuple[ float, float ], date: dt.date, time: dt.time ) -> float | None:
-		"""
-
+	def fetch( self, mode: str = 'celnav', date_value: str = '',
+			time_value: str = '', latitude: float = 0.0, longitude: float = 0.0,
+			location_label: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
 			Purpose:
 			--------
-			Converts local time into sidereal time given coordinates, date, and time
-			
-			Specifying the time interval requires the following three components:
-				1. reps — the number of iterations
-				2. intv_mag — the magnitude of the time interval between iterations
-				   (i.e. if an interval of 5 minutes is desired, set as "5")
-				3. intv_unit — the units of the time interval between iterations
-				   (days, hours, minutes, seconds)
-				   
-			Parmeters:
-			----------
-			coords - Tuple[ float, float ] representing geographic coordinates
-			date - the datetime
-			time - the time (HH:MM:SS)
-
-		"""
-		try:
-			throw_if( 'coords', coords )
-			throw_if( 'date', date )
-			throw_if( 'time', time )
-			self.coordinates = coords
-			self.latitude = coords[ 0 ]
-			self.longitude = coords[ 1 ]
-			self.calendar_date = f'{date.year}-{date.month}-{date.day}'
-			self.year = str( date.year )
-			self.month = str( date.month )
-			self.day = str( date.day )
-			self.local_time = date.strftime( '%H:%M:%S' )
-			_coords = f'{self.declination},{self.longitude}'
-			self.url = f'https://aa.usno.navy.mil/api/siderealtime?'
-			self.params = \
-			{
-				'date': self.calendar_date,
-				'time': self.local_time,
-				'coords': _coords,
-				'reps': str( 90 ),
-				'intv_mag': str( 5 ),
-				'intv_unit': 'minutes',
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GoogleWeather'
-			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			raise exception
-			
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
+			Unified dispatcher for Naval Observatory requests.
 
 			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
+			-----------
+			mode (str):
+				Currently supported:
+				- celnav
 
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+			date_value (str):
+				Date in YYYY-MM-DD format.
 
-			description (str):
-			Precise explanation of what the function does.
+			time_value (str):
+				Time in HH:MM or HH:MM:SS.S format.
 
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
+			latitude (float):
+				Latitude in decimal degrees.
 
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
+			longitude (float):
+				Longitude in decimal degrees.
 
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			location_label (str):
+				Optional display label.
+
+			time (int):
+				Request timeout in seconds.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'celnav' ).strip( ).lower( )
+			
+			if active_mode == 'celnav':
+				return self.fetch_celnav(
+					date_value=date_value,
+					time_value=time_value,
+					latitude=latitude,
+					longitude=longitude,
+					location_label=location_label,
+					time=time
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'celnav'." )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'NavalObservatory'
+			exception.method = (
+					'fetch( self, mode: str=celnav, date_value: str=, time_value: str=, '
+					'latitude: float=0.0, longitude: float=0.0, location_label: str=, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
 
-		"""
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			
+			return {
+					'name': function.strip( ),
+					'description': f'{description.strip( )} This function uses the {tool.strip( )} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
 			}
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
-			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 
 class SatelliteCenter( Fetcher ):
