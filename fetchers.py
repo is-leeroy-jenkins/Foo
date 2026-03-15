@@ -1149,801 +1149,623 @@ class WebCrawler( WebFetcher ):
 			exception.cause = 'WebCrawler'
 			exception.method = 'render_with_playwright'
 			raise exception
-			
 
 class ArXiv( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides the Arxiv loading functionality
-		to parse video research papers into Document objects.
-
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
+		Provides ArXiv retrieval functionality and converts returned entries into
+		LangChain Document objects.
 
 	'''
 	fetcher: Optional[ ArxivRetriever ]
-	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	max_documents: Optional[ int ]
 	full_documents: Optional[ bool ]
 	include_metadata: Optional[ bool ]
 	query: Optional[ str ]
 	
-	def __init__( self ) -> None:
+	def __init__( self, max_documents: int = 5, full_documents: bool = False,
+			include_metadata: bool = False ) -> None:
 		super( ).__init__( )
-		self.file_path = None
+		self.fetcher = None
 		self.documents = None
 		self.query = None
-		self.chunk_size = None
-		self.overlap_amount = None
-		self.loader = None
-		self.max_documents = 100
-		self.full_documents = True
-		self.include_metadata = False
+		self.max_documents = max( 1, min( int( max_documents ), 300 ) )
+		self.full_documents = bool( full_documents )
+		self.include_metadata = bool( include_metadata )
 	
-	def fetch( self, question: str ) -> List[ Document ] | None:
+	def fetch( self, question: str, max_documents: int | None = None,
+			full_documents: bool | None = None,
+			include_metadata: bool | None = None ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
 			--------
-			Load an arxiv document and convert its contents into LangChain Document objects.
+			Query ArXiv through LangChain's ArxivRetriever and return LangChain
+			Document objects.
 
 			Parameters:
 			-----------
-			question: query
+			question:
+				Free-text search query or arXiv identifier.
+			max_documents:
+				Optional override for maximum number of returned documents.
+			full_documents:
+				Optional override indicating whether full document text should be
+				fetched instead of summary-oriented retrieval.
+			include_metadata:
+				Optional override indicating whether all available metadata should
+				be included.
 
 			Returns:
 			--------
-			List[Document]: List of Document objects parsed from HTML content.
+			List[Document] | None
 
 		'''
 		try:
 			throw_if( 'question', question )
-			self.query = question
-			self.loader = ArxivRetriever( load_max_docs=self.max_documents,
-				 get_full_documents=self.full_documents, load_all_available_meta=self.include_metadata )
-			self.documents = self.loader.invoke( input=self.query )
+			self.query = question.strip( )
+			
+			max_docs = self.max_documents if max_documents is None else \
+				max( 1, min( int( max_documents ), 300 ) )
+			
+			get_full = self.full_documents if full_documents is None else \
+				bool( full_documents )
+			
+			load_meta = self.include_metadata if include_metadata is None else \
+				bool( include_metadata )
+			
+			self.fetcher = ArxivRetriever(
+				load_max_docs=max_docs,
+				get_full_documents=get_full,
+				load_all_available_meta=load_meta )
+			
+			self.documents = self.fetcher.invoke( self.query )
 			return self.documents
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'ArXiv'
-			exception.method = 'fetch( self, path: str ) -> List[ Document ]'
-			raise exception
-			
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
-		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ArXiv'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = (
+					'fetch( self, question: str, max_documents: int | None=None, '
+					'full_documents: bool | None=None, include_metadata: bool | None=None ) '
+					'-> List[ Document ]'
+			)
 			raise exception
-			
+
 class GoogleDrive( Fetcher ):
 	'''
-
+	
 		Purpose:
 		--------
-		Provides the google drive loading functionality
-		to parse items on googke drive into Document objects.
-
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
-
+		Provides Google Drive retrieval functionality and converts returned
+		items into LangChain Document objects.
+	
 	'''
 	fetcher: Optional[ GoogleDriveRetriever ]
-	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	num_results: Optional[ int ]
 	folder_id: Optional[ str ]
 	template: Optional[ str ]
 	query: Optional[ str ]
+	mime_type: Optional[ str ]
+	mode: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
-		self.file_path = None
+		self.fetcher = None
 		self.documents = None
 		self.query = None
-		self.chunk_size = None
-		self.overlap_amount = None
-		self.fetcher = None
-		self.template = None
-		self.folder_id = None
-		self.num_results = None
+		self.template = 'gdrive-query'
+		self.folder_id = 'root'
+		self.num_results = 10
+		self.mime_type = None
+		self.mode = 'documents'
 	
 	@property
-	def mime_options( self ):
+	def mime_options( self ) -> List[ str ]:
 		'''
-			
-			Returns:
-			--------
-			List[ str ] of mime types
-			
-		'''
-		return [ 'text/text',
-		         'text/plain',
-		         'text/html',
-		         'text/cvs',
-		         'text/markdown',
-		         'image/png',
-		         'image/jpg',
-		         'application/epub+zip',
-		         'application/pdf',
-		         'application/rtf',
-		         'application/vnd.google-apps.document',
-		         'application/vnd.google-apps.presentation',
-		         'application/vnd.google-apps.spreadsheet',
-		         'application/vnd.google.colaboratory',
-		         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-		         'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ]
-	
-	@property
-	def template_options( self ):
-		'''
-
-			Returns:
-			--------
-			List[ str ] of mime types
-
-		'''
-		return [ 'gdrive-all-in-folder',
-		         'gdrive-query',
-		         'gdrive-by-name',
-		         'gdrive-query-in-folder',
-		         'gdrive-mime-type',
-		         'gdrive-mime-type-in-folder',
-		         'gdrive-query-with-mime-type',
-		         'gdrive-query-with-mime-type-and-folder' ]
-	
-	def fetch( self, question: str, folder_id: str='root',
-			results: int=10, template: str='gdrive-query' ) -> List[ Document ] | None:
-		'''
-
+		
 			Purpose:
 			--------
-			Load an google drive items and convert its contents into LangChain Document objects.
-
+			Return supported MIME types aligned to the Google Drive retriever docs.
+		
+			Returns:
+			--------
+			List[str]
+		
+		'''
+		return [
+				'',
+				'text/text',
+				'text/plain',
+				'text/html',
+				'text/csv',
+				'text/markdown',
+				'image/png',
+				'image/jpeg',
+				'application/epub+zip',
+				'application/pdf',
+				'application/rtf',
+				'application/vnd.google-apps.document',
+				'application/vnd.google-apps.presentation',
+				'application/vnd.google-apps.spreadsheet',
+				'application/vnd.google.colaboratory',
+				'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+		]
+	
+	@property
+	def template_options( self ) -> List[ str ]:
+		'''
+		
+			Purpose:
+			--------
+			Return predefined template options supported by GoogleDriveRetriever.
+		
+			Returns:
+			--------
+			List[str]
+		
+		'''
+		return [
+				'gdrive-all-in-folder',
+				'gdrive-query',
+				'gdrive-by-name',
+				'gdrive-query-in-folder',
+				'gdrive-mime-type',
+				'gdrive-mime-type-in-folder',
+				'gdrive-query-with-mime-type',
+				'gdrive-query-with-mime-type-and-folder',
+		]
+	
+	@property
+	def mode_options( self ) -> List[ str ]:
+		'''
+		
+			Purpose:
+			--------
+			Return supported retrieval display modes.
+		
+			Returns:
+			--------
+			List[str]
+		
+		'''
+		return [ 'documents', 'snippets' ]
+	
+	def fetch( self, question: str, folder_id: str = 'root', results: int = 10,
+			template: str = 'gdrive-query', mime_type: str | None = None,
+			mode: str = 'documents' ) -> List[ Document ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Query Google Drive through LangChain's GoogleDriveRetriever and
+			return LangChain Document objects.
+		
 			Parameters:
 			-----------
-			path (str): Path to the HTML (.html or .htm) file.
-
+			question:
+				Free-text query used by the retriever. For templates that do not
+				require a query, a placeholder value may still be passed.
+			folder_id:
+				Google Drive folder id. Use 'root' for the user's root Drive.
+			results:
+				Maximum number of returned documents.
+			template:
+				Predefined GoogleDriveRetriever selection template.
+			mime_type:
+				Optional MIME type filter.
+			mode:
+				Retrieval mode, typically 'documents' or 'snippets'.
+		
 			Returns:
 			--------
-			List[Document]: List of Document objects parsed from HTML content.
-
+			List[Document] | None
+		
 		'''
 		try:
-			throw_if( 'question', question )
-			self.query = question
-			self.template = template
-			self.num_results = results
-			self.folder_id = folder_id
-			self.fetcher = GoogleDriveRetriever( num_results=self.num_results, template=self.template,
-				folder_id=self.folder_id )
-			self.documents = self.fetcher.invoke( input=self.query  )
-			return self.documents
-		except Exception as e:
-			raise e
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
-		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			throw_if( 'template', template )
+			throw_if( 'folder_id', folder_id )
+			
+			self.query = (question or '').strip( )
+			self.folder_id = folder_id.strip( ) if folder_id else 'root'
+			self.num_results = max( 1, min( int( results ), 100 ) )
+			self.template = template.strip( )
+			self.mime_type = mime_type.strip( ) if isinstance( mime_type, str ) and mime_type.strip( ) else None
+			self.mode = mode.strip( ) if mode else 'documents'
+			
+			retriever_kwargs: Dict[ str, Any ] = {
+					'folder_id': self.folder_id,
+					'template': self.template,
+					'num_results': self.num_results,
+					'mode': self.mode,
 			}
-			return _schema
+			
+			if self.mime_type:
+				retriever_kwargs[ 'mime_type' ] = self.mime_type
+			
+			if cfg.GOOGLE_ACCOUNT_FILE:
+				retriever_kwargs[ 'credentials_path' ] = cfg.GOOGLE_ACCOUNT_FILE
+			
+			if cfg.GOOGLE_DRIVE_TOKEN_PATH:
+				retriever_kwargs[ 'token_path' ] = cfg.GOOGLE_DRIVE_TOKEN_PATH
+			
+			self.fetcher = GoogleDriveRetriever( **retriever_kwargs )
+			
+			invoke_query = self.query
+			if not invoke_query:
+				if self.template in ('gdrive-all-in-folder', 'gdrive-mime-type',
+				                     'gdrive-mime-type-in-folder'):
+					invoke_query = '*'
+				else:
+					raise ValueError(
+						'A query is required for the selected Google Drive template.'
+					)
+			
+			self.documents = self.fetcher.invoke( invoke_query )
+			return self.documents
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleDrive'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = (
+					'fetch( self, question: str, folder_id: str=root, results: int=10, '
+					'template: str=gdrive-query, mime_type: str | None=None, '
+					'mode: str=documents ) -> List[ Document ]'
+			)
 			raise exception
-			
+
 class Wikipedia( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides the wikipedia searchig functionality.
-
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
+		Provides Wikipedia retrieval functionality and converts returned entries
+		into LangChain Document objects.
 
 	'''
 	fetcher: Optional[ WikipediaRetriever ]
-	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	max_documents: Optional[ int ]
-	language: Optional[ str ]
 	include_metadata: Optional[ bool ]
+	language: Optional[ str ]
 	query: Optional[ str ]
 	
-	def __init__( self ) -> None:
+	def __init__( self, language: str = 'en', max_documents: int = 5,
+			include_metadata: bool = False ) -> None:
 		super( ).__init__( )
-		self.file_path = None
+		self.fetcher = None
 		self.documents = None
 		self.query = None
-		self.chunk_size = None
-		self.overlap_amount = None
-		self.fetcher = None
-		self.max_documents = None
-		self.language = 'en'
-		self.include_metadata = False
+		self.language = (language or 'en').strip( ) or 'en'
+		self.max_documents = max( 1, min( int( max_documents ), 300 ) )
+		self.include_metadata = bool( include_metadata )
 	
-	def fetch( self, question: str, max_docs: int=100  ) -> List[ Document ] | None:
+	def fetch( self, question: str, language: str | None = None,
+			max_documents: int | None = None,
+			include_metadata: bool | None = None ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
 			--------
-			Searches wikipedia and provides its contents as LangChain Document objects.
+			Query Wikipedia through LangChain's WikipediaRetriever and return
+			LangChain Document objects.
 
 			Parameters:
 			-----------
-			question (str): query passed to wiki search
+			question:
+				Free-text Wikipedia query.
+			language:
+				Optional language code override, e.g. "en", "fr", "de", "ja".
+			max_documents:
+				Optional override for maximum number of returned documents.
+				Hard-capped at 300.
+			include_metadata:
+				Optional override indicating whether all available metadata
+				should be included.
 
 			Returns:
 			--------
-			List[Document]: List of Document objects parsed from HTML content.
+			List[Document] | None
 
 		'''
 		try:
 			throw_if( 'question', question )
-			self.query = question
-			self.max_documents = max_docs
-			self.fetcher = WikipediaRetriever( lang=self.language, load_all_available_meta=self.include_metadata )
-			self.documents = self.fetcher.invoke( input=self.query,  )
+			self.query = question.strip( )
+			
+			lang = self.language if language is None else \
+				(language.strip( ) if language else 'en')
+			
+			max_docs = self.max_documents if max_documents is None else \
+				max( 1, min( int( max_documents ), 300 ) )
+			
+			load_meta = self.include_metadata if include_metadata is None else \
+				bool( include_metadata )
+			
+			self.fetcher = WikipediaRetriever(
+				lang=lang,
+				load_max_docs=max_docs,
+				load_all_available_meta=load_meta )
+			
+			self.documents = self.fetcher.invoke( input=self.query )
 			return self.documents
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Wikipedia'
-			exception.method = 'fetch()'
+			exception.method = (
+					'fetch( self, question: str, language: str | None=None, '
+					'max_documents: int | None=None, include_metadata: bool | None=None ) '
+					'-> List[ Document ]'
+			)
 			raise exception
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
 
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
-		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Wikipedia'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			raise exception
-			
 class TheNews( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides the News API functionality.
-
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
+		Provides a structured wrapper around The News API endpoints.
 
 	'''
 	agents: Optional[ str ]
 	url: Optional[ str ]
-	html: Optional[ str ]
-	re_tag: Optional[ Pattern ]
-	re_ws: Optional[ Pattern ]
 	response: Optional[ Response ]
-	result: Optional[ Result ]
 	api_key: Optional[ str ]
-	categories: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	endpoint: Optional[ str ]
 	limit: Optional[ int ]
-	params: Optional[ Dict[ str, str ] ]
-
+	page: Optional[ int ]
+	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			-----------
-			Initialize WebFetcher with optional headers and sane defaults.
-			
-			Parameters:
-			-----------
-			headers (Optional[Dict[str, str]]): Optional headers for requests.
-			
-			Returns:
-			-----------
-			None
+			Initialize The News API wrapper with sane defaults and environment-
+			based authentication.
 		'''
 		super( ).__init__( )
-		self.timeout = None
-		self.re_tag = re.compile( r'<[^>]+>' )
-		self.re_ws = re.compile( r'\s+' )
-		self.url = 'api.thenewsapi.com'
-		self.html = None
+		self.timeout = 10
+		self.url = 'https://api.thenewsapi.com/v1/news'
 		self.response = None
 		self.result = None
 		self.headers = { }
 		self.params = { }
-		self.max_documents = 50
-		self.api_key = 'OgP3S1uQpZ73EvUlGlT7NzxS8LqSZijom4LrTKpA'
+		self.endpoint = 'all'
+		self.limit = 10
+		self.page = 1
+		self.api_key = cfg.THENEWS_API_KEY
 		self.agents = cfg.AGENTS
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
-
+		
+		if 'Accept' not in self.headers:
+			self.headers[ 'Accept' ] = 'application/json'
+	
 	def __dir__( self ) -> List[ str ]:
 		'''
-			
 			Purpose:
 			-----------
-			Control visible ordering for WebFetcher.
-			
-			Parameters:
-			-----------
-			None
-			
-			Returns:
-			-----------
-			list[str]: Ordered attribute/method names.
-			
+			Return visible member ordering.
 		'''
-		return [ 'agents',
-		         'url',
-		         'html',
-		         'timeout',
-		         'headers',
-		         'fetch',
-		         'html_to_text' ]
-
-	def fetch( self, query: str,  time: int=10  ) -> Result | None:
+		return [
+				'api_key',
+				'url',
+				'timeout',
+				'headers',
+				'endpoint',
+				'limit',
+				'page',
+				'params',
+				'fetch',
+		]
+	
+	def fetch( self, endpoint: str = 'all', query: str = '', language: str = 'en',
+			categories: str = '', exclude_categories: str = '', locale: str = '',
+			domains: str = '', exclude_domains: str = '', source_ids: str = '',
+			exclude_source_ids: str = '', published_after: str = '', published_before: str = '',
+			published_on: str = '', sort: str = 'published_at',
+			limit: int = 10, page: int = 1, include_similar: bool = True,
+			headlines_per_category: int = 6, time: int = 10,
+			api_key: str | None = None ) -> Dict[ str, Any ] | None:
 		'''
-			
-			Purpose:
-			-------
-			Perform an HTTP GET to fetch a page and return canonicalized Result.
-			
-			Parameters:
-			-----------
-			url (str): Absolute URL to fetch.
-			time (int): Timeout seconds to use for the request.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
-			
-			Returns:
-			---------
-			Optional[Result]: Result with url, status, text, html, headers on success.
-			
-		'''
-		try:
-			throw_if( 'query', query )
-			self.query = query
-			self.timeout = time
-			conn = http.client.HTTPSConnection( self.url )
-			params = urllib.parse.urlencode(
-			{
-				'api_token': self.api_key,
-				'search': self.query,
-				'language': 'en',
-				'limit': self.max_documents,
-			} )
-			
-			conn.request( 'GET', '/v1/news/all?{}'.format( params ) )
-			res = conn.getresponse( )
-			data = res.read( )
-			return data.decode( 'utf-8' )
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'TheNews'
-			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
-			raise exception
-			
-
-	def html_to_text( self, html: str ) -> str:
-		'''
-			
 			Purpose:
 			--------
-			Convert HTML to compact plain text with minimal heuristics (scripts and
-			styles removed, tags replaced with whitespace, whitespace normalized).
-			
+			Send a request to The News API using one of the documented endpoints
+			and return the parsed JSON response.
+
 			Parameters:
-			---------
-			html (str): Raw HTML string.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
-			
+			-----------
+			endpoint:
+				One of: all, top, headlines, sources
+			query:
+				Search query for endpoints that support search.
+			language:
+				Comma-separated language codes.
+			categories:
+				Comma-separated category filter.
+			exclude_categories:
+				Comma-separated excluded categories.
+			locale:
+				Comma-separated country codes where supported.
+			domains:
+				Comma-separated included domains.
+			exclude_domains:
+				Comma-separated excluded domains.
+			source_ids:
+				Comma-separated included source ids.
+			exclude_source_ids:
+				Comma-separated excluded source ids.
+			published_after:
+				Date/datetime filter when supported.
+			published_before:
+				Date/datetime filter when supported.
+			published_on:
+				Single publication date filter when supported.
+			sort:
+				Sort order for applicable endpoints.
+			limit:
+				Result size.
+			page:
+				Page number.
+			include_similar:
+				Headlines-only switch.
+			headlines_per_category:
+				Headlines-only per-category limit.
+			time:
+				Request timeout in seconds.
+			api_key:
+				Optional runtime override. Falls back to cfg.THENEWS_API_KEY.
+
 			Returns:
 			--------
-			str: Plain text extracted from HTML.
-			
+			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'html', html )
-			html = re.sub( r'<script[\s\S]*?</script>', ' ', html, flags = re.IGNORECASE )
-			html = re.sub( r'<style[\s\S]*?</style>', ' ', html, flags = re.IGNORECASE )
-			html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', html, flags = re.IGNORECASE )
-			text = re.sub( self.re_tag, ' ', html )
-			text = re.sub( self.re_ws, ' ', text ).strip( )
-			return text
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'TheNews'
-			exception.method = 'html2text( )'
-			raise exception
+			self.endpoint = (endpoint or 'all').strip( ).lower( )
+			self.timeout = int( time )
+			self.limit = max( 1, min( int( limit ), 50 ) )
+			self.page = max( 1, int( page ) )
 			
+			active_key = (api_key or self.api_key or '').strip( )
+			if not active_key:
+				raise ValueError(
+					'The News API key is required. Set THENEWSAPI_API_KEY or enter one in the UI.'
+				)
+			
+			valid_endpoints = { 'all', 'top', 'headlines', 'sources' }
+			if self.endpoint not in valid_endpoints:
+				raise ValueError(
+					f"Unsupported endpoint '{self.endpoint}'. "
+					f"Supported endpoints: {', '.join( sorted( valid_endpoints ) )}."
+				)
+			
+			self.params = { 'api_token': active_key }
+			
+			if self.endpoint in ('all', 'top'):
+				if query and query.strip( ):
+					self.params[ 'search' ] = query.strip( )
+				
+				if language and language.strip( ):
+					self.params[ 'language' ] = language.strip( )
+				
+				if categories and categories.strip( ):
+					self.params[ 'categories' ] = categories.strip( )
+				
+				if exclude_categories and exclude_categories.strip( ):
+					self.params[ 'exclude_categories' ] = exclude_categories.strip( )
+				
+				if domains and domains.strip( ):
+					self.params[ 'domains' ] = domains.strip( )
+				
+				if exclude_domains and exclude_domains.strip( ):
+					self.params[ 'exclude_domains' ] = exclude_domains.strip( )
+				
+				if source_ids and source_ids.strip( ):
+					self.params[ 'source_ids' ] = source_ids.strip( )
+				
+				if exclude_source_ids and exclude_source_ids.strip( ):
+					self.params[ 'exclude_source_ids' ] = exclude_source_ids.strip( )
+				
+				if published_after and published_after.strip( ):
+					self.params[ 'published_after' ] = published_after.strip( )
+				
+				if published_before and published_before.strip( ):
+					self.params[ 'published_before' ] = published_before.strip( )
+				
+				if published_on and published_on.strip( ):
+					self.params[ 'published_on' ] = published_on.strip( )
+				
+				if sort and sort.strip( ):
+					self.params[ 'sort' ] = sort.strip( )
+				
+				self.params[ 'limit' ] = self.limit
+				self.params[ 'page' ] = self.page
+				
+				if self.endpoint == 'top' and locale and locale.strip( ):
+					self.params[ 'locale' ] = locale.strip( )
+			
+			elif self.endpoint == 'headlines':
+				if locale and locale.strip( ):
+					self.params[ 'locale' ] = locale.strip( )
+				
+				if domains and domains.strip( ):
+					self.params[ 'domains' ] = domains.strip( )
+				
+				if exclude_domains and exclude_domains.strip( ):
+					self.params[ 'exclude_domains' ] = exclude_domains.strip( )
+				
+				if source_ids and source_ids.strip( ):
+					self.params[ 'source_ids' ] = source_ids.strip( )
+				
+				if exclude_source_ids and exclude_source_ids.strip( ):
+					self.params[ 'exclude_source_ids' ] = exclude_source_ids.strip( )
+				
+				if language and language.strip( ):
+					self.params[ 'language' ] = language.strip( )
+				
+				if published_on and published_on.strip( ):
+					self.params[ 'published_on' ] = published_on.strip( )
+				
+				self.params[ 'headlines_per_category' ] = max(
+					1,
+					min( int( headlines_per_category ), 10 ) )
+				
+				self.params[ 'include_similar' ] = \
+					'true' if bool( include_similar ) else 'false'
+			
+			elif self.endpoint == 'sources':
+				if categories and categories.strip( ):
+					self.params[ 'categories' ] = categories.strip( )
+				
+				if exclude_categories and exclude_categories.strip( ):
+					self.params[ 'exclude_categories' ] = exclude_categories.strip( )
+				
+				if language and language.strip( ):
+					self.params[ 'language' ] = language.strip( )
+				
+				self.params[ 'page' ] = self.page
+			
+			request_url = f'{self.url}/{self.endpoint}'
+			self.response = requests.get(
+				url=request_url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout )
+			
+			self.response.raise_for_status( )
+			return self.response.json( )
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
-		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'TheNews'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = (
+					'fetch( self, endpoint: str=all, query: str=, language: str=en, '
+					'categories: str=, exclude_categories: str=, locale: str=, '
+					'domains: str=, exclude_domains: str=, source_ids: str=, '
+					'exclude_source_ids: str=, published_after: str=, '
+					'published_before: str=, published_on: str=, '
+					'sort: str=published_at, limit: int=10, page: int=1, '
+					'include_similar: bool=True, headlines_per_category: int=6, '
+					'time: int=10, api_key: str | None=None ) -> Dict[ str, Any ]'
+			)
 			raise exception
-			
+
 class GoogleSearch( Fetcher ):
 	'''
 
 		Purpose:
 		---------
-		Class providing the functionality of the google custom search api.
-
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
+		Class providing structured access to the Google Custom Search JSON API.
 
 	'''
 	keywords: Optional[ str ]
@@ -1954,16 +1776,14 @@ class GoogleSearch( Fetcher ):
 	api_key: Optional[ str ]
 	cse_id: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
+	results: Optional[ int ]
+	start: Optional[ int ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			-----------
-			Initialize GoogleSearch with optional headers and sane defaults.
-
-			Parameters:
-			-----------
-			headers (Optional[Dict[str, str]]): Optional headers for requests.
+			Initialize GoogleSearch with environment-based credentials and sane defaults.
 
 			Returns:
 			-----------
@@ -1974,201 +1794,203 @@ class GoogleSearch( Fetcher ):
 		self.cse_id = cfg.GOOGLE_CSE_ID
 		self.re_tag = re.compile( r'<[^>]+>' )
 		self.re_ws = re.compile( r'\s+' )
-		self.url = None
+		self.url = 'https://customsearch.googleapis.com/customsearch/v1'
 		self.headers = { }
-		self.timeout = None
+		self.timeout = 10
 		self.keywords = None
 		self.params = { }
 		self.response = None
+		self.results = 10
+		self.start = 1
 		self.agents = cfg.AGENTS
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
+		
+		if 'Accept' not in self.headers:
+			self.headers[ 'Accept' ] = 'application/json'
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
-
 			Purpose:
 			-----------
-			Control visible ordering for WebFetcher.
-
-			Parameters:
-			-----------
-			None
-
-			Returns:
-			-----------
-			list[str]: Ordered attribute/method names.
-
+			Control visible ordering for GoogleSearch.
 		'''
-		return [ 'keywords',
-		         'url',
-		         'timeout',
-		         'headers',
-		         'fetch',
-		         'api_key',
-		         'response',
-		         'cse_id',
-		         'params',
-		         'agents,',
-		         'fetch' ]
+		return [
+				'keywords',
+				'url',
+				'timeout',
+				'headers',
+				'fetch',
+				'api_key',
+				'response',
+				'cse_id',
+				'params',
+				'agents',
+				'results',
+				'start',
+		]
 	
-	def fetch( self, keywords: str, results: int=10 ) -> Response | None:
+	def fetch( self, keywords: str, results: int = 10,
+			start: int = 1, exact_terms: str = '', exclude_terms: str = '',
+			file_type: str = '', date_restrict: str = '', gl: str = '', lr: str = '',
+			safe: str = 'off', search_type: str = '', site_search: str = '', site_search_filter: str = '',
+			sort: str = '', img_size: str = '', img_type: str = '', img_color_type: str = '',
+			img_dominant_color: str = '', time: int = 10, api_key: str | None = None,
+			cse_id: str | None = None ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
-			-------
-			Perform an HTTP GET to fetch a page and return canonicalized Result.
+			--------
+			Send a request to the Google Custom Search JSON API and return the
+			parsed JSON response.
 
 			Parameters:
 			-----------
-			url (str): Absolute URL to fetch.
-			time (int): Timeout seconds to use for the request.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
+			keywords:
+				Search query string.
+			results:
+				Number of results per request. Google supports up to 10 per request.
+			start:
+				Index of the first result to return. Combined paging is limited to
+				the first 100 results.
+			exact_terms:
+				Phrase that all documents must contain.
+			exclude_terms:
+				Words or phrases that must not appear.
+			file_type:
+				File extension filter, e.g. pdf, docx.
+			date_restrict:
+				Date restriction such as d7, w2, m1, y1.
+			gl:
+				Country boost code, e.g. us.
+			lr:
+				Language restrict code, e.g. lang_en.
+			safe:
+				Safe search value, typically active or off.
+			search_type:
+				Set to image for image search.
+			site_search:
+				Restrict to a site or domain.
+			site_search_filter:
+				i to include, e to exclude the specified site.
+			sort:
+				Sort expression when supported by the engine.
+			img_size:
+				Image size filter when search_type=image.
+			img_type:
+				Image type filter when search_type=image.
+			img_color_type:
+				Image color type filter when search_type=image.
+			img_dominant_color:
+				Image dominant color filter when search_type=image.
+			time:
+				Request timeout in seconds.
+			api_key:
+				Optional runtime override. Falls back to cfg.GOOGLE_API_KEY.
+			cse_id:
+				Optional runtime override. Falls back to cfg.GOOGLE_CSE_ID.
 
 			Returns:
-			---------
-			Optional[Result]: Result with url, status, text, html, headers on success.
+			--------
+			Dict[str, Any] | None
 
 		'''
 		try:
 			throw_if( 'keywords', keywords )
-			self.url = r'https://www.googleapis.com/customsearch/v1'
-			self.keywords = keywords
-			self.results = results
-			self.params = \
-			{
-				'q': self.keywords,
-				'key': self.api_key,
-				'cx': '376fd5d0d8ae948b2',
-				'results': self.results
+			
+			active_key = (api_key or self.api_key or '').strip( )
+			active_cse = (cse_id or self.cse_id or '').strip( )
+			
+			if not active_key:
+				raise ValueError(
+					'Google API key is required. Set GOOGLE_API_KEY or enter one in the UI.'
+				)
+			
+			if not active_cse:
+				raise ValueError(
+					'Google CSE ID is required. Set GOOGLE_CSE_ID or enter one in the UI.'
+				)
+			
+			self.timeout = int( time )
+			self.keywords = keywords.strip( )
+			self.results = max( 1, min( int( results ), 10 ) )
+			self.start = max( 1, min( int( start ), 91 ) )
+			
+			self.params = {
+					'q': self.keywords,
+					'key': active_key,
+					'cx': active_cse,
+					'num': self.results,
+					'start': self.start,
+					'safe': (safe or 'off').strip( ),
 			}
-			_response = requests.get( url=self.url, params=self.params )
-			return _response
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'GoogleSearch'
-			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
-			raise exception
 			
-	
-	def html_to_text( self, html: str ) -> str:
-		'''
-
-			Purpose:
-			--------
-			Convert HTML to compact plain text with minimal heuristics (scripts and
-			styles removed, tags replaced with whitespace, whitespace normalized).
-
-			Parameters:
-			---------
-			html (str): Raw HTML string.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
-
-			Returns:
-			--------
-			str: Plain text extracted from HTML.
-
-		'''
-		try:
-			throw_if( 'html', html )
-			html = re.sub( r'<script[\s\S]*?</script>', ' ', html, flags=re.IGNORECASE )
-			html = re.sub( r'<style[\s\S]*?</style>', ' ', html, flags=re.IGNORECASE )
-			html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', html, flags=re.IGNORECASE )
-			text = re.sub( self.re_tag, ' ', html )
-			text = re.sub( self.re_ws, ' ', text ).strip( )
-			return text
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'GoogleSearch'
-			exception.method = 'html2text( )'
-			raise exception
+			if exact_terms and exact_terms.strip( ):
+				self.params[ 'exactTerms' ] = exact_terms.strip( )
 			
+			if exclude_terms and exclude_terms.strip( ):
+				self.params[ 'excludeTerms' ] = exclude_terms.strip( )
+			
+			if file_type and file_type.strip( ):
+				self.params[ 'fileType' ] = file_type.strip( )
+			
+			if date_restrict and date_restrict.strip( ):
+				self.params[ 'dateRestrict' ] = date_restrict.strip( )
+			
+			if gl and gl.strip( ):
+				self.params[ 'gl' ] = gl.strip( )
+			
+			if lr and lr.strip( ):
+				self.params[ 'lr' ] = lr.strip( )
+			
+			if search_type and search_type.strip( ):
+				self.params[ 'searchType' ] = search_type.strip( )
+			
+			if site_search and site_search.strip( ):
+				self.params[ 'siteSearch' ] = site_search.strip( )
+			
+			if site_search_filter and site_search_filter.strip( ):
+				self.params[ 'siteSearchFilter' ] = site_search_filter.strip( )
+			
+			if sort and sort.strip( ):
+				self.params[ 'sort' ] = sort.strip( )
+			
+			if search_type.strip( ).lower( ) == 'image':
+				if img_size and img_size.strip( ):
+					self.params[ 'imgSize' ] = img_size.strip( )
+				
+				if img_type and img_type.strip( ):
+					self.params[ 'imgType' ] = img_type.strip( )
+				
+				if img_color_type and img_color_type.strip( ):
+					self.params[ 'imgColorType' ] = img_color_type.strip( )
+				
+				if img_dominant_color and img_dominant_color.strip( ):
+					self.params[ 'imgDominantColor' ] = img_dominant_color.strip( )
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout )
+			
+			self.response.raise_for_status( )
+			return self.response.json( )
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
-		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.cause = 'GoogleSearch'
+			exception.method = (
+					'fetch( self, keywords: str, results: int=10, start: int=1, '
+					'exact_terms: str=, exclude_terms: str=, file_type: str=, '
+					'date_restrict: str=, gl: str=, lr: str=, safe: str=off, '
+					'search_type: str=, site_search: str=, site_search_filter: str=, '
+					'sort: str=, img_size: str=, img_type: str=, '
+					'img_color_type: str=, img_dominant_color: str=, time: int=10, '
+					'api_key: str | None=None, cse_id: str | None=None ) -> Dict[ str, Any ]'
+			)
 			raise exception
 			
 class GoogleMaps( Fetcher ):

@@ -71,6 +71,7 @@ from fetchers import (
 	Groq, Mistral, Gemini, StarChart
 )
 
+import matplotlib as px
 import pandas as pd
 from pandas import DataFrame
 import streamlit as st
@@ -849,7 +850,7 @@ def create_visualization( df: DataFrame ) -> None:
 		col = st.selectbox( 'Column', numeric_cols )
 		values = pd.to_numeric( df_plot[ col ], errors='coerce' ).dropna( ).tolist( )
 		
-		fig = go.Figure( data=[ go.Histogram( x=values ) ] )
+		fig = px.Figure( data=[ px.Histogram( x=values ) ] )
 		fig.update_layout( xaxis_title=col, yaxis_title='Count' )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -864,7 +865,7 @@ def create_visualization( df: DataFrame ) -> None:
 		x_values = df_plot[ x ].astype( str ).tolist( )
 		y_values = pd.to_numeric( df_plot[ y ], errors='coerce' ).fillna( 0 ).tolist( )
 		
-		fig = go.Figure( data=[ go.Bar( x=x_values, y=y_values ) ] )
+		fig = px.Figure( data=[ px.Bar( x=x_values, y=y_values ) ] )
 		fig.update_layout( xaxis_title=x, yaxis_title=y )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -879,7 +880,7 @@ def create_visualization( df: DataFrame ) -> None:
 		x_values = df_plot[ x ].astype( str ).tolist( )
 		y_values = pd.to_numeric( df_plot[ y ], errors='coerce' ).fillna( 0 ).tolist( )
 		
-		fig = go.Figure( data=[ go.Scatter( x=x_values, y=y_values, mode='lines' ) ] )
+		fig = px.Figure( data=[ px.Scatter( x=x_values, y=y_values, mode='lines' ) ] )
 		fig.update_layout( xaxis_title=x, yaxis_title=y )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -898,7 +899,7 @@ def create_visualization( df: DataFrame ) -> None:
 		x_values = x_series[ mask ].tolist( )
 		y_values = y_series[ mask ].tolist( )
 		
-		fig = go.Figure( data=[ go.Scatter( x=x_values, y=y_values, mode='markers' ) ] )
+		fig = px.Figure( data=[ px.Scatter( x=x_values, y=y_values, mode='markers' ) ] )
 		fig.update_layout( xaxis_title=x, yaxis_title=y )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -910,7 +911,7 @@ def create_visualization( df: DataFrame ) -> None:
 		col = st.selectbox( 'Column', numeric_cols, key='viz_box_col' )
 		values = pd.to_numeric( df_plot[ col ], errors='coerce' ).dropna( ).tolist( )
 		
-		fig = go.Figure( data=[ go.Box( y=values, name=col ) ] )
+		fig = px.Figure( data=[ px.Box( y=values, name=col ) ] )
 		fig.update_layout( yaxis_title=col )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -922,8 +923,8 @@ def create_visualization( df: DataFrame ) -> None:
 		col = st.selectbox( 'Category Column', categorical_cols )
 		counts = df_plot[ col ].astype( str ).value_counts( )
 		
-		fig = go.Figure(
-			data=[ go.Pie( labels=counts.index.tolist( ), values=counts.values.tolist( ) ) ] )
+		fig = px.Figure(
+			data=[ px.Pie( labels=counts.index.tolist( ), values=counts.values.tolist( ) ) ] )
 		st.plotly_chart( fig, use_container_width=True )
 	
 	elif chart == 'Correlation':
@@ -937,8 +938,8 @@ def create_visualization( df: DataFrame ) -> None:
 		
 		corr = corr_df.corr( )
 		
-		fig = go.Figure(
-			data=[ go.Heatmap(
+		fig = px.Figure(
+			data=[ px.Heatmap(
 				z=corr.values.tolist( ),
 				x=corr.columns.tolist( ),
 				y=corr.index.tolist( ) ) ] )
@@ -2129,211 +2130,1203 @@ elif mode == 'Data Collection':
 	
 	# -------- ArXiv
 	with st.expander( label='ArXiv', expanded=True ):
+		if 'arxiv_results' not in st.session_state:
+			st.session_state[ 'arxiv_results' ] = [ ]
+		
+		if 'arxiv_clear_request' not in st.session_state:
+			st.session_state[ 'arxiv_clear_request' ] = False
+		
+		if st.session_state.get( 'arxiv_clear_request', False ):
+			st.session_state[ 'arxiv_input' ] = ''
+			st.session_state[ 'arxiv_results' ] = [ ]
+			st.session_state[ 'arxiv_max_docs' ] = 5
+			st.session_state[ 'arxiv_full_documents' ] = False
+			st.session_state[ 'arxiv_include_metadata' ] = False
+			st.session_state[ 'arxiv_clear_request' ] = False
+		
+		def _clear_arxiv_state( ) -> None:
+			st.session_state[ 'arxiv_clear_request' ] = True
+		
 		col1, col2 = st.columns( 2, border=True )
 		
 		with col1:
-			arxiv_input = st.text_area( 'Query', height=40, key='arxiv_input', )
+			arxiv_input = st.text_area(
+				'Query',
+				height=80,
+				key='arxiv_input',
+				placeholder=(
+						'Examples:\n'
+						'What is the ImageBind model?\n'
+						'2401.01234\n'
+						'graph neural networks for molecular property prediction'
+				),
+			)
+			
+			c1, c2 = st.columns( 2 )
+			with c1:
+				arxiv_max_docs = st.number_input(
+					'Max Docs',
+					min_value=1,
+					max_value=300,
+					value=st.session_state.get( 'arxiv_max_docs', 5 ),
+					step=1,
+					key='arxiv_max_docs',
+					help='Maximum number of ArXiv documents to retrieve.'
+				)
+			
+			with c2:
+				arxiv_full_documents = st.checkbox(
+					'Full Documents',
+					value=st.session_state.get( 'arxiv_full_documents', False ),
+					key='arxiv_full_documents',
+					help='When checked, retrieves fuller document text instead of lighter summary-based output.'
+				)
+			
+			arxiv_include_metadata = st.checkbox(
+				'Include All Metadata',
+				value=st.session_state.get( 'arxiv_include_metadata', False ),
+				key='arxiv_include_metadata',
+				help='Include additional metadata fields when available.'
+			)
 			
 			b1, b2 = st.columns( 2 )
 			
 			with b1:
-				if st.button( 'Submit', key='arxiv_submit' ):
-					try:
-						queries = [ q.strip( ) for q in arxiv_input.splitlines( ) if q.strip( ) ]
-						if not queries:
-							st.warning( 'No input provided.' )
-						else:
-							from fetchers import ArXiv
-							
-							f = ArXiv( )
-							results = [ ]
-							
-							for q in queries:
-								docs = f.fetch( q )
-								if isinstance( docs, list ):
-									results.append( docs )
-								elif isinstance( docs, list ):
-									results.extend( docs )
-							
-							st.session_state.update( { 'arxiv_results': results } )
-							st.rerun( )
-					
-					except Exception as exc:
-						st.error( 'ArXiv request failed.' )
-						st.exception( exc )
+				do_submit = st.button( 'Submit', key='arxiv_submit' )
 			
 			with b2:
-				if st.button( 'Clear', key='arxiv_clear' ):
-					st.session_state.update( { 'arxiv_input': '', 'arxiv_results': [ ] } )
-					st.rerun( )
+				st.button( 'Clear', key='arxiv_clear', on_click=_clear_arxiv_state )
+			
+			if do_submit:
+				try:
+					queries = [ q.strip( ) for q in (arxiv_input or '').splitlines( ) if
+					            q.strip( ) ]
+					
+					if not queries:
+						st.warning( 'No input provided.' )
+					else:
+						from fetchers import ArXiv
+						
+						fetcher = ArXiv(
+							max_documents=int( arxiv_max_docs ),
+							full_documents=bool( arxiv_full_documents ),
+							include_metadata=bool( arxiv_include_metadata ) )
+						
+						results: list[ Document ] = [ ]
+						
+						for q in queries:
+							docs = fetcher.fetch(
+								q,
+								max_documents=int( arxiv_max_docs ),
+								full_documents=bool( arxiv_full_documents ),
+								include_metadata=bool( arxiv_include_metadata ) )
+							
+							if isinstance( docs, list ):
+								results.extend( docs )
+						
+						st.session_state[ 'arxiv_results' ] = results
+						st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'ArXiv request failed.' )
+					st.exception( exc )
 		
 		with col2:
 			st.markdown( 'Results' )
 			
-			if not st.session_state[ 'arxiv_results' ]:
+			results = st.session_state.get( 'arxiv_results', [ ] )
+			
+			if not results:
 				st.text( 'No results.' )
 			else:
-				for idx, doc in enumerate( st.session_state[ 'arxiv_results' ], start=1 ):
-					with st.expander( f'Document {idx}', expanded=False ):
+				for idx, doc in enumerate( results, start=1 ):
+					title = ''
+					if isinstance( doc, Document ):
+						title = str( doc.metadata.get( 'Title', '' ) ) if doc.metadata else ''
+					label = f'Document {idx}' if not title else f'Document {idx}: {title}'
+					
+					with st.expander( label, expanded=False ):
 						if isinstance( doc, Document ):
-							st.text_area( 'Content', value=doc.page_content or '', height=300 )
+							if doc.metadata:
+								meta_col1, meta_col2 = st.columns( 2 )
+								
+								with meta_col1:
+									if 'Title' in doc.metadata:
+										st.markdown( f"**Title:** {doc.metadata.get( 'Title', '' )}" )
+									if 'Authors' in doc.metadata:
+										st.markdown( f"**Authors:** {doc.metadata.get( 'Authors', '' )}" )
+								
+								with meta_col2:
+									if 'Published' in doc.metadata:
+										st.markdown( f"**Published:** {doc.metadata.get( 'Published', '' )}" )
+									if 'Entry ID' in doc.metadata:
+										st.markdown( f"**Entry ID:** {doc.metadata.get( 'Entry ID', '' )}" )
+							
+							st.text_area(
+								'Content',
+								value=doc.page_content or '',
+								height=300,
+								key=f'arxiv_doc_{idx}' )
+							
 							if doc.metadata:
 								st.json( doc.metadata )
 						else:
 							st.write( doc )
-		
+	
 	# -------- Google Drive
 	with st.expander( label='Google Drive', expanded=False ):
+		if 'googledrive_results' not in st.session_state:
+			st.session_state[ 'googledrive_results' ] = [ ]
+		
+		if 'googledrive_clear_request' not in st.session_state:
+			st.session_state[ 'googledrive_clear_request' ] = False
+		
+		if st.session_state.get( 'googledrive_clear_request', False ):
+			st.session_state[ 'googledrive_query' ] = ''
+			st.session_state[ 'googledrive_folder_id' ] = cfg.GOOGLE_DRIVE_FOLDER_ID or 'root'
+			st.session_state[ 'googledrive_results_limit' ] = 10
+			st.session_state[ 'googledrive_template' ] = 'gdrive-query'
+			st.session_state[ 'googledrive_mode' ] = 'documents'
+			st.session_state[ 'googledrive_mime_type' ] = ''
+			st.session_state[ 'googledrive_results' ] = [ ]
+			st.session_state[ 'googledrive_clear_request' ] = False
+		
+		def _clear_googledrive_state( ) -> None:
+			st.session_state[ 'googledrive_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			gd_query = st.text_area( 'Google Drive Query', value='', height=40,
-				key='googledrive_query' )
+			gd_query = st.text_area(
+				'Google Drive Query',
+				height=90,
+				key='googledrive_query',
+				placeholder=(
+						'Examples:\n'
+						'machine learning\n'
+						'budget execution\n'
+						'FY 2026 operating plan\n'
+						'\n'
+						'Use "*" only when the selected template supports folder-wide or mime-type retrieval.'
+				),
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				gd_folder_id = st.text_input(
+					'Folder ID',
+					value=st.session_state.get( 'googledrive_folder_id', cfg.GOOGLE_DRIVE_FOLDER_ID or 'root' ),
+					key='googledrive_folder_id',
+					placeholder='root or a Google Drive folder id',
+					help='Use "root" for your My Drive root, or provide a specific folder id.'
+				)
+			
+			with c2:
+				gd_results_limit = st.number_input(
+					'Max Docs',
+					min_value=1,
+					max_value=100,
+					value=int( st.session_state.get( 'googledrive_results_limit', 10 ) ),
+					step=1,
+					key='googledrive_results_limit',
+				)
+			
+			c3, c4 = st.columns( 2 )
+			
+			with c3:
+				gd_template = st.selectbox(
+					'Template',
+					options=[
+							'gdrive-all-in-folder',
+							'gdrive-query',
+							'gdrive-by-name',
+							'gdrive-query-in-folder',
+							'gdrive-mime-type',
+							'gdrive-mime-type-in-folder',
+							'gdrive-query-with-mime-type',
+							'gdrive-query-with-mime-type-and-folder',
+					],
+					index=1,
+					key='googledrive_template',
+					help='Select the Drive retrieval strategy.'
+				)
+			
+			with c4:
+				gd_mode = st.selectbox(
+					'Mode',
+					options=[ 'documents', 'snippets' ],
+					index=0,
+					key='googledrive_mode',
+					help='Use snippets for short metadata-driven returns.'
+				)
+			
+			gd_mime_type = st.selectbox(
+				'MIME Type Filter',
+				options=[
+						'',
+						'text/text',
+						'text/plain',
+						'text/html',
+						'text/csv',
+						'text/markdown',
+						'image/png',
+						'image/jpeg',
+						'application/epub+zip',
+						'application/pdf',
+						'application/rtf',
+						'application/vnd.google-apps.document',
+						'application/vnd.google-apps.presentation',
+						'application/vnd.google-apps.spreadsheet',
+						'application/vnd.google.colaboratory',
+						'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+						'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+				],
+				index=0,
+				key='googledrive_mime_type',
+				help='Optional MIME type restriction.'
+			)
+			
+			st.caption(
+				'Expected auth: GOOGLE_ACCOUNT_FILE for credentials JSON. '
+				'Optional: GOOGLE_DRIVE_TOKEN_PATH for token persistence.'
+			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
 				gd_submit = st.button( 'Submit', key='googledrive_submit' )
+			
 			with b2:
-				gd_clear = st.button( 'Clear', key='googledrive_clear' )
+				st.button( 'Clear', key='googledrive_clear', on_click=_clear_googledrive_state )
+			
+			if gd_submit:
+				try:
+					from fetchers import GoogleDrive
+					
+					fetcher = GoogleDrive( )
+					docs = fetcher.fetch(
+						question=gd_query,
+						folder_id=gd_folder_id or 'root',
+						results=int( gd_results_limit ),
+						template=gd_template,
+						mime_type=gd_mime_type or None,
+						mode=gd_mode,
+					)
+					
+					st.session_state[ 'googledrive_results' ] = docs or [ ]
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Google Drive request failed.' )
+					st.exception( exc )
 		
 		with col_right:
-			gd_output = st.empty( )
-		
-		if gd_clear:
-			st.session_state.update( { 'googledrive_query': "" } )
-			st.rerun( )
-		
-		if gd_submit:
-			try:
-				f = GoogleDrive( )
-				docs = f.fetch( gd_query )
-				
-				if docs:
-					with gd_output.container( ):
-						for idx, doc in enumerate( docs, start=1 ):
-							st.markdown( f"**Document {idx}**" )
-							st.text_area( '', value=doc.page_content, height=200 )
-				else:
-					gd_output.info( 'No documents returned.' )
-			except Exception as exc:
-				st.error( str( exc ) )
+			st.markdown( 'Results' )
+			
+			results = st.session_state.get( 'googledrive_results', [ ] )
+			
+			if not results:
+				st.text( 'No results.' )
+			else:
+				for idx, doc in enumerate( results, start=1 ):
+					title = ''
+					if isinstance( doc, Document ):
+						title = str( doc.metadata.get( 'name', '' ) ) if doc.metadata else ''
+					
+					label = f'Document {idx}' if not title else f'Document {idx}: {title}'
+					
+					with st.expander( label, expanded=False ):
+						if isinstance( doc, Document ):
+							if doc.metadata:
+								meta_col1, meta_col2 = st.columns( 2 )
+								
+								with meta_col1:
+									if 'name' in doc.metadata:
+										st.markdown( f"**Name:** {doc.metadata.get( 'name', '' )}" )
+									if 'id' in doc.metadata:
+										st.markdown( f"**ID:** {doc.metadata.get( 'id', '' )}" )
+								
+								with meta_col2:
+									if 'mimeType' in doc.metadata:
+										st.markdown( f"**MIME Type:** {doc.metadata.get( 'mimeType', '' )}" )
+									if 'modifiedTime' in doc.metadata:
+										st.markdown( f"**Modified:** {doc.metadata.get( 'modifiedTime', '' )}" )
+							
+							st.text_area(
+								'Content',
+								value=doc.page_content or '',
+								height=300,
+								key=f'googledrive_doc_{idx}'
+							)
+							
+							if doc.metadata:
+								st.json( doc.metadata )
+						else:
+							st.write( doc )
 	
 	# -------- Wikipedia
 	with st.expander( label='Wikipedia', expanded=False ):
+		if 'wikipedia_results' not in st.session_state:
+			st.session_state[ 'wikipedia_results' ] = [ ]
+		
+		if 'wikipedia_clear_request' not in st.session_state:
+			st.session_state[ 'wikipedia_clear_request' ] = False
+		
+		if st.session_state.get( 'wikipedia_clear_request', False ):
+			st.session_state[ 'wikipedia_query' ] = ''
+			st.session_state[ 'wikipedia_language' ] = 'en'
+			st.session_state[ 'wikipedia_max_docs' ] = 5
+			st.session_state[ 'wikipedia_include_metadata' ] = False
+			st.session_state[ 'wikipedia_results' ] = [ ]
+			st.session_state[ 'wikipedia_clear_request' ] = False
+		
+		def _clear_wikipedia_state( ) -> None:
+			st.session_state[ 'wikipedia_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			wiki_query = st.text_area( 'Wikipedia Query', value='', height=40,
-				key='wikipedia_query' )
+			wiki_query = st.text_area(
+				'Wikipedia Query',
+				height=90,
+				key='wikipedia_query',
+				placeholder=(
+						'Examples:\n'
+						'Alan Turing\n'
+						'History of machine learning\n'
+						'Python (programming language)\n'
+						'Battle of Midway'
+				),
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				wiki_language = st.text_input(
+					'Language Code',
+					value=st.session_state.get( 'wikipedia_language', 'en' ),
+					key='wikipedia_language',
+					placeholder='en',
+					help='Wikipedia language code, e.g. en, fr, de, ja.'
+				)
+			
+			with c2:
+				wiki_max_docs = st.number_input(
+					'Max Docs',
+					min_value=1,
+					max_value=300,
+					value=int( st.session_state.get( 'wikipedia_max_docs', 5 ) ),
+					step=1,
+					key='wikipedia_max_docs',
+					help='Maximum number of Wikipedia documents to retrieve.'
+				)
+			
+			wiki_include_metadata = st.checkbox(
+				'Include All Metadata',
+				value=st.session_state.get( 'wikipedia_include_metadata', False ),
+				key='wikipedia_include_metadata',
+				help='Include additional metadata fields when available.'
+			)
+			
+			st.caption(
+				'No API key is required for Wikipedia retrieval. '
+				'Optional only: LANGSMITH_API_KEY for tracing.'
+			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
 				wiki_submit = st.button( 'Submit', key='wikipedia_submit' )
+			
 			with b2:
-				wiki_clear = st.button( 'Clear', key='wikipedia_clear' )
+				st.button( 'Clear', key='wikipedia_clear', on_click=_clear_wikipedia_state )
+			
+			if wiki_submit:
+				try:
+					queries = [ q.strip( ) for q in (wiki_query or '').splitlines( ) if q.strip( ) ]
+					
+					if not queries:
+						st.warning( 'No input provided.' )
+					else:
+						from fetchers import Wikipedia
+						
+						fetcher = Wikipedia(
+							language=wiki_language or 'en',
+							max_documents=int( wiki_max_docs ),
+							include_metadata=bool( wiki_include_metadata ) )
+						
+						results: list[ Document ] = [ ]
+						
+						for q in queries:
+							docs = fetcher.fetch(
+								q,
+								language=wiki_language or 'en',
+								max_documents=int( wiki_max_docs ),
+								include_metadata=bool( wiki_include_metadata ) )
+							
+							if isinstance( docs, list ):
+								results.extend( docs )
+						
+						st.session_state[ 'wikipedia_results' ] = results
+						st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Wikipedia request failed.' )
+					st.exception( exc )
 		
 		with col_right:
-			wiki_output = st.empty( )
-		
-		if wiki_clear:
-			st.session_state.update( { 'wikipedia_query': '' } )
-			st.rerun( )
-		
-		if wiki_submit:
-			try:
-				f = Wikipedia( )
-				docs = f.fetch( wiki_query )
-				
-				if docs:
-					with wiki_output.container( ):
-						for idx, doc in enumerate( docs, start=1 ):
-							st.markdown( f"**Document {idx}**" )
-							st.text_area( '', value=doc.page_content, height=200 )
-				else:
-					wiki_output.info( 'No documents returned.' )
-			except Exception as exc:
-				st.error( str( exc ) )
+			st.markdown( 'Results' )
+			
+			results = st.session_state.get( 'wikipedia_results', [ ] )
+			
+			if not results:
+				st.text( 'No results.' )
+			else:
+				for idx, doc in enumerate( results, start=1 ):
+					title = ''
+					if isinstance( doc, Document ):
+						title = str( doc.metadata.get( 'title', '' ) ) if doc.metadata else ''
+					
+					label = f'Document {idx}' if not title else f'Document {idx}: {title}'
+					
+					with st.expander( label, expanded=False ):
+						if isinstance( doc, Document ):
+							if doc.metadata:
+								meta_col1, meta_col2 = st.columns( 2 )
+								
+								with meta_col1:
+									if 'title' in doc.metadata:
+										st.markdown( f"**Title:** {doc.metadata.get( 'title', '' )}" )
+									if 'source' in doc.metadata:
+										st.markdown( f"**Source:** {doc.metadata.get( 'source', '' )}" )
+								
+								with meta_col2:
+									if 'categories' in doc.metadata:
+										st.markdown( f"**Categories:** {doc.metadata.get( 'categories', '' )}" )
+									if 'pageid' in doc.metadata:
+										st.markdown( f"**Page ID:** {doc.metadata.get( 'pageid', '' )}" )
+							
+							st.text_area(
+								'Content',
+								value=doc.page_content or '',
+								height=300,
+								key=f'wikipedia_doc_{idx}' )
+							
+							if doc.metadata:
+								st.json( doc.metadata )
+						else:
+							st.write( doc )
 	
 	# -------- The News API
 	with st.expander( label='The News API', expanded=False ):
+		if 'thenews_results' not in st.session_state:
+			st.session_state[ 'thenews_results' ] = { }
+		
+		if 'thenews_clear_request' not in st.session_state:
+			st.session_state[ 'thenews_clear_request' ] = False
+		
+		if st.session_state.get( 'thenews_clear_request', False ):
+			st.session_state[ 'thenews_query' ] = ''
+			st.session_state[ 'thenews_api_key' ] = ''
+			st.session_state[ 'thenews_endpoint' ] = 'all'
+			st.session_state[ 'thenews_language' ] = 'en'
+			st.session_state[ 'thenews_locale' ] = ''
+			st.session_state[ 'thenews_categories' ] = ''
+			st.session_state[ 'thenews_exclude_categories' ] = ''
+			st.session_state[ 'thenews_domains' ] = ''
+			st.session_state[ 'thenews_exclude_domains' ] = ''
+			st.session_state[ 'thenews_source_ids' ] = ''
+			st.session_state[ 'thenews_exclude_source_ids' ] = ''
+			st.session_state[ 'thenews_published_after' ] = ''
+			st.session_state[ 'thenews_published_before' ] = ''
+			st.session_state[ 'thenews_published_on' ] = ''
+			st.session_state[ 'thenews_sort' ] = 'published_at'
+			st.session_state[ 'thenews_limit' ] = 10
+			st.session_state[ 'thenews_page' ] = 1
+			st.session_state[ 'thenews_include_similar' ] = True
+			st.session_state[ 'thenews_headlines_per_category' ] = 6
+			st.session_state[ 'thenews_timeout' ] = 10
+			st.session_state[ 'thenews_results' ] = { }
+			st.session_state[ 'thenews_clear_request' ] = False
+		
+		def _clear_thenews_state( ) -> None:
+			st.session_state[ 'thenews_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			news_query = st.text_area( 'News Query', value='',
-				height=40, key='thenews_query' )
+			news_endpoint = st.selectbox(
+				'Endpoint',
+				options=[ 'all', 'top', 'headlines', 'sources' ],
+				index=[ 'all', 'top', 'headlines', 'sources' ].index(
+					st.session_state.get( 'thenews_endpoint', 'all' ) ),
+				key='thenews_endpoint',
+				help='Choose the documented The News API endpoint.'
+			)
 			
-			news_api_key = st.text_input( 'API Key', value='', type='password',
-				key='thenews_api_key' )
+			news_query = st.text_area(
+				'Search Query',
+				height=90,
+				key='thenews_query',
+				placeholder=(
+						'Examples:\n'
+						'apple\n'
+						'"Apple Inc"\n'
+						'forex + (usd | gbp) -cad\n'
+						'\n'
+						'Leave blank for "sources".'
+				),
+				disabled=(news_endpoint == 'sources')
+			)
 			
-			news_timeout = st.number_input( 'Timeout (seconds)', min_value=1, max_value=60,
-				value=10, step=1, key='thenews_timeout' )
+			news_api_key = st.text_input(
+				'API Key',
+				value='',
+				type='password',
+				key='thenews_api_key',
+				placeholder='Uses THENEWSAPI_API_KEY when left blank.',
+				help='Optional override. Environment variable THENEWSAPI_API_KEY is preferred.'
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				news_language = st.text_input(
+					'Language',
+					value=st.session_state.get( 'thenews_language', 'en' ),
+					key='thenews_language',
+					placeholder='en or en,es'
+				)
+			
+			with c2:
+				news_locale = st.text_input(
+					'Locale',
+					value=st.session_state.get( 'thenews_locale', '' ),
+					key='thenews_locale',
+					placeholder='us,ca',
+					disabled=(news_endpoint not in ('top', 'headlines'))
+				)
+			
+			c3, c4 = st.columns( 2 )
+			
+			with c3:
+				news_categories = st.text_input(
+					'Categories',
+					value=st.session_state.get( 'thenews_categories', '' ),
+					key='thenews_categories',
+					placeholder='business,tech'
+				)
+			
+			with c4:
+				news_exclude_categories = st.text_input(
+					'Exclude Categories',
+					value=st.session_state.get( 'thenews_exclude_categories', '' ),
+					key='thenews_exclude_categories',
+					placeholder='travel'
+				)
+			
+			c5, c6 = st.columns( 2 )
+			
+			with c5:
+				news_domains = st.text_input(
+					'Domains',
+					value=st.session_state.get( 'thenews_domains', '' ),
+					key='thenews_domains',
+					placeholder='cnn.com,bbc.com',
+					disabled=(news_endpoint == 'sources')
+				)
+			
+			with c6:
+				news_exclude_domains = st.text_input(
+					'Exclude Domains',
+					value=st.session_state.get( 'thenews_exclude_domains', '' ),
+					key='thenews_exclude_domains',
+					placeholder='example.com',
+					disabled=(news_endpoint == 'sources')
+				)
+			
+			c7, c8 = st.columns( 2 )
+			
+			with c7:
+				news_source_ids = st.text_input(
+					'Source IDs',
+					value=st.session_state.get( 'thenews_source_ids', '' ),
+					key='thenews_source_ids',
+					placeholder='arstechnica.com-1',
+					disabled=(news_endpoint == 'sources')
+				)
+			
+			with c8:
+				news_exclude_source_ids = st.text_input(
+					'Exclude Source IDs',
+					value=st.session_state.get( 'thenews_exclude_source_ids', '' ),
+					key='thenews_exclude_source_ids',
+					placeholder='foo.com-1',
+					disabled=(news_endpoint == 'sources')
+				)
+			
+			c9, c10 = st.columns( 2 )
+			
+			with c9:
+				news_published_after = st.text_input(
+					'Published After',
+					value=st.session_state.get( 'thenews_published_after', '' ),
+					key='thenews_published_after',
+					placeholder='2026-03-01',
+					disabled=(news_endpoint not in ('all', 'top'))
+				)
+			
+			with c10:
+				news_published_before = st.text_input(
+					'Published Before',
+					value=st.session_state.get( 'thenews_published_before', '' ),
+					key='thenews_published_before',
+					placeholder='2026-03-15',
+					disabled=(news_endpoint not in ('all', 'top'))
+				)
+			
+			c11, c12 = st.columns( 2 )
+			
+			with c11:
+				news_published_on = st.text_input(
+					'Published On',
+					value=st.session_state.get( 'thenews_published_on', '' ),
+					key='thenews_published_on',
+					placeholder='2026-03-15',
+					disabled=(news_endpoint not in ('all', 'top', 'headlines'))
+				)
+			
+			with c12:
+				news_sort = st.selectbox(
+					'Sort',
+					options=[ 'published_at', 'published_on', 'relevance_score' ],
+					index=[ 'published_at', 'published_on', 'relevance_score' ].index(
+						st.session_state.get( 'thenews_sort', 'published_at' ) ),
+					key='thenews_sort',
+					disabled=(news_endpoint not in ('all', 'top'))
+				)
+			
+			c13, c14, c15 = st.columns( 3 )
+			
+			with c13:
+				news_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=50,
+					value=int( st.session_state.get( 'thenews_limit', 10 ) ),
+					step=1,
+					key='thenews_limit',
+					disabled=(news_endpoint == 'sources')
+				)
+			
+			with c14:
+				news_page = st.number_input(
+					'Page',
+					min_value=1,
+					max_value=400,
+					value=int( st.session_state.get( 'thenews_page', 1 ) ),
+					step=1,
+					key='thenews_page'
+				)
+			
+			with c15:
+				news_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=60,
+					value=int( st.session_state.get( 'thenews_timeout', 10 ) ),
+					step=1,
+					key='thenews_timeout'
+				)
+			
+			c16, c17 = st.columns( 2 )
+			
+			with c16:
+				news_include_similar = st.checkbox(
+					'Include Similar',
+					value=st.session_state.get( 'thenews_include_similar', True ),
+					key='thenews_include_similar',
+					disabled=(news_endpoint != 'headlines')
+				)
+			
+			with c17:
+				news_headlines_per_category = st.number_input(
+					'Headlines / Category',
+					min_value=1,
+					max_value=10,
+					value=int( st.session_state.get( 'thenews_headlines_per_category', 6 ) ),
+					step=1,
+					key='thenews_headlines_per_category',
+					disabled=(news_endpoint != 'headlines')
+				)
+			
+			st.caption(
+				'Required key: THENEWSAPI_API_KEY. '
+				'Supported categories: general, science, sports, business, '
+				'health, entertainment, tech, politics, food, travel.'
+			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
 				news_submit = st.button( 'Submit', key='thenews_submit' )
+			
 			with b2:
-				news_clear = st.button( 'Clear', key='thenews_clear' )
+				st.button( 'Clear', key='thenews_clear', on_click=_clear_thenews_state )
 		
 		with col_right:
-			news_output = st.empty( )
-		
-		if news_clear:
-			st.session_state.update( { 'thenews_query': '', 'thenews_api_key': '',
-					'thenews_timeout': 10 } )
-			st.rerun( )
-		
-		if news_submit:
-			try:
-				f = TheNews( )
-				if news_api_key:
-					f.api_key = news_api_key
+			st.markdown( 'Results' )
+			
+			if news_submit:
+				try:
+					f = TheNews( )
+					result = f.fetch(
+						endpoint=news_endpoint,
+						query=news_query,
+						language=news_language,
+						categories=news_categories,
+						exclude_categories=news_exclude_categories,
+						locale=news_locale,
+						domains=news_domains,
+						exclude_domains=news_exclude_domains,
+						source_ids=news_source_ids,
+						exclude_source_ids=news_exclude_source_ids,
+						published_after=news_published_after,
+						published_before=news_published_before,
+						published_on=news_published_on,
+						sort=news_sort,
+						limit=int( news_limit ),
+						page=int( news_page ),
+						include_similar=bool( news_include_similar ),
+						headlines_per_category=int( news_headlines_per_category ),
+						time=int( news_timeout ),
+						api_key=(news_api_key or None)
+					)
+					
+					st.session_state[ 'thenews_results' ] = result or { }
+					st.rerun( )
 				
-				result = f.fetch(
-					query=news_query,
-					time=int( news_timeout )
-				)
+				except Exception as exc:
+					st.error( 'The News API request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'thenews_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta = result.get( 'meta', { } ) if isinstance( result, dict ) else { }
+				data = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
 				
-				if result and getattr( result, 'text', None ):
-					news_output.text_area( 'Result', value=result.text, height=300 )
+				if meta:
+					st.markdown( '#### Response Metadata' )
+					st.json( meta )
+				
+				if not data:
+					st.info( 'No results returned.' )
 				else:
-					news_output.info( 'No results returned.' )
-			except Exception as exc:
-				st.error( str( exc ) )
+					for idx, item in enumerate( data, start=1 ):
+						if news_endpoint == 'sources':
+							title = item.get( 'domain', f'Source {idx}' )
+							with st.expander( f'Source {idx}: {title}', expanded=False ):
+								ca, cb = st.columns( 2 )
+								with ca:
+									st.markdown( f"**Source ID:** {item.get( 'source_id', '' )}" )
+									st.markdown( f"**Domain:** {item.get( 'domain', '' )}" )
+								with cb:
+									st.markdown( f"**Language:** {item.get( 'language', '' )}" )
+									st.markdown( f"**Locale:** {item.get( 'locale', '' )}" )
+								
+								if item.get( 'categories' ):
+									st.markdown( f"**Categories:** {', '.join( item.get( 'categories', [ ] ) )}" )
+								
+								st.json( item )
+						else:
+							title = item.get( 'title', f'Article {idx}' )
+							with st.expander( f'Article {idx}: {title}', expanded=False ):
+								ca, cb = st.columns( 2 )
+								with ca:
+									st.markdown( f"**Source:** {item.get( 'source', '' )}" )
+									st.markdown( f"**Published:** {item.get( 'published_at', '' )}" )
+									st.markdown( f"**Language:** {item.get( 'language', '' )}" )
+								with cb:
+									st.markdown( f"**Locale:** {item.get( 'locale', '' )}" )
+									st.markdown( f"**URL:** {item.get( 'url', '' )}" )
+									st.markdown( f"**Image URL:** {item.get( 'image_url', '' )}" )
+								
+								if item.get( 'description' ):
+									st.markdown( '**Description:**' )
+									st.write( item.get( 'description', '' ) )
+								
+								if item.get( 'snippet' ):
+									st.markdown( '**Snippet:**' )
+									st.text_area(
+										'',
+										value=item.get( 'snippet', '' ),
+										height=160,
+										key=f'thenews_snippet_{idx}'
+									)
+								
+								if item.get( 'categories' ):
+									st.markdown(
+										f"**Categories:** {', '.join( item.get( 'categories', [ ] ) )}"
+									)
+								
+								st.json( item )
 	
 	# -------- Google Search
-	with st.expander( label="Google Search", expanded=False ):
+	with st.expander( label='Google Search', expanded=False ):
+		if 'googlesearch_results' not in st.session_state:
+			st.session_state[ 'googlesearch_results' ] = { }
+		
+		if 'googlesearch_clear_request' not in st.session_state:
+			st.session_state[ 'googlesearch_clear_request' ] = False
+		
+		if st.session_state.get( 'googlesearch_clear_request', False ):
+			st.session_state[ 'googlesearch_query' ] = ''
+			st.session_state[ 'googlesearch_num_results' ] = 10
+			st.session_state[ 'googlesearch_start' ] = 1
+			st.session_state[ 'googlesearch_exact_terms' ] = ''
+			st.session_state[ 'googlesearch_exclude_terms' ] = ''
+			st.session_state[ 'googlesearch_file_type' ] = ''
+			st.session_state[ 'googlesearch_date_restrict' ] = ''
+			st.session_state[ 'googlesearch_gl' ] = ''
+			st.session_state[ 'googlesearch_lr' ] = ''
+			st.session_state[ 'googlesearch_safe' ] = 'off'
+			st.session_state[ 'googlesearch_search_type' ] = ''
+			st.session_state[ 'googlesearch_site_search' ] = ''
+			st.session_state[ 'googlesearch_site_search_filter' ] = ''
+			st.session_state[ 'googlesearch_sort' ] = ''
+			st.session_state[ 'googlesearch_img_size' ] = ''
+			st.session_state[ 'googlesearch_img_type' ] = ''
+			st.session_state[ 'googlesearch_img_color_type' ] = ''
+			st.session_state[ 'googlesearch_img_dominant_color' ] = ''
+			st.session_state[ 'googlesearch_api_key' ] = ''
+			st.session_state[ 'googlesearch_cse_id' ] = ''
+			st.session_state[ 'googlesearch_timeout' ] = 10
+			st.session_state[ 'googlesearch_results' ] = { }
+			st.session_state[ 'googlesearch_clear_request' ] = False
+		
+		def _clear_googlesearch_state( ) -> None:
+			st.session_state[ 'googlesearch_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			google_query = st.text_area( "Query", value='', height=40,
-				key='googlesearch_query' )
+			google_query = st.text_area(
+				'Query',
+				height=90,
+				key='googlesearch_query',
+				placeholder=(
+						'Examples:\n'
+						'site:epa.gov budget execution\n'
+						'OpenAI GPT-5 reasoning\n'
+						'filetype:pdf appropriations law'
+				),
+			)
 			
-			google_num_results = st.number_input( 'Number of Results', min_value=1,
-				max_value=50, value=10, step=1, key='googlesearch_num_results' )
+			c1, c2, c3 = st.columns( 3 )
+			
+			with c1:
+				google_num_results = st.number_input(
+					'Results / Request',
+					min_value=1,
+					max_value=10,
+					value=int( st.session_state.get( 'googlesearch_num_results', 10 ) ),
+					step=1,
+					key='googlesearch_num_results',
+					help='Google Custom Search returns up to 10 results per request.'
+				)
+			
+			with c2:
+				google_start = st.number_input(
+					'Start Index',
+					min_value=1,
+					max_value=91,
+					value=int( st.session_state.get( 'googlesearch_start', 1 ) ),
+					step=1,
+					key='googlesearch_start',
+					help='Start index for paging. Combined paging is limited to the first 100 results.'
+				)
+			
+			with c3:
+				google_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=60,
+					value=int( st.session_state.get( 'googlesearch_timeout', 10 ) ),
+					step=1,
+					key='googlesearch_timeout'
+				)
+			
+			c4, c5 = st.columns( 2 )
+			
+			with c4:
+				google_exact_terms = st.text_input(
+					'Exact Terms',
+					value=st.session_state.get( 'googlesearch_exact_terms', '' ),
+					key='googlesearch_exact_terms',
+					placeholder='federal budget'
+				)
+			
+			with c5:
+				google_exclude_terms = st.text_input(
+					'Exclude Terms',
+					value=st.session_state.get( 'googlesearch_exclude_terms', '' ),
+					key='googlesearch_exclude_terms',
+					placeholder='contractor'
+				)
+			
+			c6, c7 = st.columns( 2 )
+			
+			with c6:
+				google_file_type = st.text_input(
+					'File Type',
+					value=st.session_state.get( 'googlesearch_file_type', '' ),
+					key='googlesearch_file_type',
+					placeholder='pdf'
+				)
+			
+			with c7:
+				google_date_restrict = st.text_input(
+					'Date Restrict',
+					value=st.session_state.get( 'googlesearch_date_restrict', '' ),
+					key='googlesearch_date_restrict',
+					placeholder='m1, y1, d7'
+				)
+			
+			c8, c9 = st.columns( 2 )
+			
+			with c8:
+				google_gl = st.text_input(
+					'Country Boost (gl)',
+					value=st.session_state.get( 'googlesearch_gl', '' ),
+					key='googlesearch_gl',
+					placeholder='us'
+				)
+			
+			with c9:
+				google_lr = st.text_input(
+					'Language Restrict (lr)',
+					value=st.session_state.get( 'googlesearch_lr', '' ),
+					key='googlesearch_lr',
+					placeholder='lang_en'
+				)
+			
+			c10, c11 = st.columns( 2 )
+			
+			with c10:
+				google_safe = st.selectbox(
+					'Safe Search',
+					options=[ 'off', 'active' ],
+					index=[ 'off', 'active' ].index(
+						st.session_state.get( 'googlesearch_safe', 'off' ) ),
+					key='googlesearch_safe'
+				)
+			
+			with c11:
+				google_search_type = st.selectbox(
+					'Search Type',
+					options=[ '', 'image' ],
+					index=[ '', 'image' ].index(
+						st.session_state.get( 'googlesearch_search_type', '' ) ),
+					key='googlesearch_search_type',
+					help='Leave blank for web search, or choose image.'
+				)
+			
+			c12, c13 = st.columns( 2 )
+			
+			with c12:
+				google_site_search = st.text_input(
+					'Site Search',
+					value=st.session_state.get( 'googlesearch_site_search', '' ),
+					key='googlesearch_site_search',
+					placeholder='epa.gov'
+				)
+			
+			with c13:
+				google_site_search_filter = st.selectbox(
+					'Site Search Filter',
+					options=[ '', 'i', 'e' ],
+					index=[ '', 'i', 'e' ].index(
+						st.session_state.get( 'googlesearch_site_search_filter', '' ) ),
+					key='googlesearch_site_search_filter',
+					help='i = include only siteSearch, e = exclude siteSearch.'
+				)
+			
+			google_sort = st.text_input(
+				'Sort',
+				value=st.session_state.get( 'googlesearch_sort', '' ),
+				key='googlesearch_sort',
+				placeholder='date'
+			)
+			
+			st.markdown( '#### Image Search Filters' )
+			
+			c14, c15 = st.columns( 2 )
+			
+			with c14:
+				google_img_size = st.selectbox(
+					'Image Size',
+					options=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge', 'huge' ],
+					index=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge',
+					        'huge' ].index(
+						st.session_state.get( 'googlesearch_img_size', '' ) ),
+					key='googlesearch_img_size',
+					disabled=(google_search_type != 'image')
+				)
+			
+			with c15:
+				google_img_type = st.selectbox(
+					'Image Type',
+					options=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ],
+					index=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ].index(
+						st.session_state.get( 'googlesearch_img_type', '' ) ),
+					key='googlesearch_img_type',
+					disabled=(google_search_type != 'image')
+				)
+			
+			c16, c17 = st.columns( 2 )
+			
+			with c16:
+				google_img_color_type = st.selectbox(
+					'Image Color Type',
+					options=[ '', 'color', 'gray', 'mono', 'trans' ],
+					index=[ '', 'color', 'gray', 'mono', 'trans' ].index(
+						st.session_state.get( 'googlesearch_img_color_type', '' ) ),
+					key='googlesearch_img_color_type',
+					disabled=(google_search_type != 'image')
+				)
+			
+			with c17:
+				google_img_dominant_color = st.selectbox(
+					'Image Dominant Color',
+					options=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange',
+					          'pink', 'purple', 'red', 'teal', 'white', 'yellow' ],
+					index=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange',
+					        'pink', 'purple', 'red', 'teal', 'white', 'yellow' ].index(
+						st.session_state.get( 'googlesearch_img_dominant_color', '' ) ),
+					key='googlesearch_img_dominant_color',
+					disabled=(google_search_type != 'image')
+				)
+			
+			c18, c19 = st.columns( 2 )
+			
+			with c18:
+				google_api_key = st.text_input(
+					'API Key',
+					value='',
+					type='password',
+					key='googlesearch_api_key',
+					placeholder='Uses GOOGLE_API_KEY when left blank.'
+				)
+			
+			with c19:
+				google_cse_id = st.text_input(
+					'CSE ID',
+					value='',
+					key='googlesearch_cse_id',
+					placeholder='Uses GOOGLE_CSE_ID when left blank.'
+				)
+			
+			st.caption(
+				'Required keys: GOOGLE_API_KEY and GOOGLE_CSE_ID. '
+				'Endpoint updated to customsearch.googleapis.com/customsearch/v1.'
+			)
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
 				google_submit = st.button( 'Submit', key='googlesearch_submit' )
 			with b2:
-				google_clear = st.button( 'Clear', key='googlesearch_clear' )
+				st.button( 'Clear', key='googlesearch_clear', on_click=_clear_googlesearch_state )
 		
 		with col_right:
-			google_output = st.empty( )
-		
-		if google_clear:
-			st.session_state.update( { 'googlesearch_query': '', 'googlesearch_num_results': 10 } )
-			st.rerun( )
-		
-		if google_submit:
-			try:
-				f = GoogleSearch( )
-				result = f.fetch( keywords=google_query, results=int( google_num_results ) )
-				
-				txt = render_google_results( result )
-				google_output.text_area( 'Results', value=txt, height=300 )
+			st.markdown( 'Results' )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			if google_submit:
+				try:
+					f = GoogleSearch( )
+					result = f.fetch(
+						keywords=google_query,
+						results=int( google_num_results ),
+						start=int( google_start ),
+						exact_terms=google_exact_terms,
+						exclude_terms=google_exclude_terms,
+						file_type=google_file_type,
+						date_restrict=google_date_restrict,
+						gl=google_gl,
+						lr=google_lr,
+						safe=google_safe,
+						search_type=google_search_type,
+						site_search=google_site_search,
+						site_search_filter=google_site_search_filter,
+						sort=google_sort,
+						img_size=google_img_size,
+						img_type=google_img_type,
+						img_color_type=google_img_color_type,
+						img_dominant_color=google_img_dominant_color,
+						time=int( google_timeout ),
+						api_key=(google_api_key or None),
+						cse_id=(google_cse_id or None) )
+					
+					st.session_state[ 'googlesearch_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Google Search request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'googlesearch_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				queries = result.get( 'queries', { } ) if isinstance( result, dict ) else { }
+				search_info = result.get( 'searchInformation', { } ) if isinstance( result, dict ) else { }
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if queries or search_info:
+					st.markdown( '#### Search Metadata' )
+					meta_block = {
+							'queries': queries,
+							'searchInformation': search_info,
+					}
+					st.json( meta_block )
+				
+				if not items:
+					st.info( 'No results returned.' )
+				else:
+					for idx, item in enumerate( items, start=1 ):
+						title = item.get( 'title', f'Result {idx}' )
+						
+						with st.expander( f'Result {idx}: {title}', expanded=False ):
+							ca, cb = st.columns( 2 )
+							
+							with ca:
+								st.markdown( f"**Link:** {item.get( 'link', '' )}" )
+								st.markdown( f"**Display Link:** {item.get( 'displayLink', '' )}" )
+							
+							with cb:
+								if 'mime' in item:
+									st.markdown( f"**MIME:** {item.get( 'mime', '' )}" )
+								if 'fileFormat' in item:
+									st.markdown( f"**File Format:** {item.get( 'fileFormat', '' )}" )
+							
+							if item.get( 'snippet' ):
+								st.markdown( '**Snippet:**' )
+								st.text_area(
+									'',
+									value=item.get( 'snippet', '' ),
+									height=180,
+									key=f'googlesearch_snippet_{idx}'
+								)
+							
+							if item.get( 'pagemap' ):
+								st.markdown( '**Page Map:**' )
+								st.json( item.get( 'pagemap', { } ) )
+							
+							st.json( item )
 	
 	# -------- Naval Observatory
 	with st.expander( label='US Naval Observatory', expanded=False ):

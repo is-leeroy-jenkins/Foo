@@ -60,6 +60,9 @@ GOOGLE_CLOUD_LOCATION = os.getenv( 'GOOGLE_CLOUD_LOCATION' )
 GOOGLE_GENAI_USE_VERTEXAI = os.getenv( 'GOOGLE_GENAI_USE_VERTEXAI' )
 GOOGLE_PROJECT_ID = os.getenv( 'GOOGLE_PROJECT_ID' )
 GOOGLE_WEATHER_API_KEY = os.getenv( 'GOOGLE_WEATHER_API_KEY' )
+GOOGLE_ACCOUNT_FILE = os.getenv( 'GOOGLE_ACCOUNT_FILE' )
+GOOGLE_DRIVE_TOKEN_PATH = os.getenv( 'GOOGLE_DRIVE_TOKEN_PATH' )
+GOOGLE_DRIVE_FOLDER_ID = os.getenv( 'GOOGLE_DRIVE_FOLDER_ID' )
 GROQ_API_KEY = os.getenv( 'GROQ_API_KEY' )
 HUGGINGFACE_API_KEY = os.getenv( 'HUGGINGFACE_API_KEY' )
 IPINFO_API_KEY = os.getenv( 'IPINFO_API_KEY' )
@@ -91,3 +94,39 @@ LOGO = r'resources/images/foo_logo.png'
 DB = r'stores/sqlite/datamodels/Data.db'
 MODES = [ 'Document Loading', 'Web Scrapping', 'Data Collection',
           'Generative AI', 'Satellite Data', 'Data Management' ]
+
+
+
+
+# ------------- API DEFINITIONS ------------------
+
+ARXIV_API = r'''arXiv is a free distribution service and an open-access archive for nearly 2.4 million
+		scholarly articles in the fields of physics, mathematics, computer science, quantitative
+		biology, quantitative finance, statistics, electrical engineering and systems science, and
+		economics. Materials on this site are not peer-reviewed by arXiv.
+		
+		More here (https://docs.langchain.com/oss/javascript/integrations/retrievers/arxiv-retriever)
+'''
+
+GOOGLE_DRIVE_API = r'''Google Drive is a file storage and synchronization service developed by Google
+		More here (https://docs.langchain.com/oss/python/integrations/document_loaders/google_drive)
+'''
+
+WIKIPEDIA_API = r'''Wikipedia is a free, multilingual online encyclopedia created and maintained by
+			a global community of volunteers through open collaboration. Offering over 55 million
+			articles in over 300 languages.
+			More here (https://wikipedia-api.readthedocs.io/en/latest/wikipediaapi/api.html)
+'''
+
+THENEWS_API = r'''An API to provide global news from thousands of sources with exceptional
+		response times adding over 1 million articles weekly.
+		More here (https://www.thenewsapi.com/documentation)
+'''
+
+GOOGLE_CSE_API = r'''The Cse Service is the endpoint that returns the requested searches.
+		You must identify a particular search engine to use in your request
+		(using the cx query parameter) as well as the search query (using the q query parameter).
+		In addition, you should provide a developer key (using the key query parameter).
+		
+		Documentation here (https://developers.google.com/custom-search/v1/cse)
+'''
