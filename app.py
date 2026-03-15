@@ -49,6 +49,7 @@ from bs4 import BeautifulSoup
 
 import config as cfg
 from collections import deque
+import datetime as dt
 import html as html_lib
 import json
 import numpy as np
@@ -68,7 +69,7 @@ from fetchers import (
 	GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
 	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
 	GovData, Congress, InternetArchive, Chat, Claude,
-	Groq, Mistral, Gemini, StarChart
+	Groq, Mistral, Gemini, StarChart, HistoricalWeather
 )
 
 import matplotlib as px
@@ -4770,14 +4771,7 @@ elif mode == 'Satellite Data':
 				'Object Query',
 				height=80,
 				key='starmap_query',
-				placeholder=(
-						'Examples:\n'
-						'Polaris\n'
-						'M31\n'
-						'NGC 1300\n'
-						'\n'
-						'Used for object_link mode only.'
-				),
+				placeholder='Examples: Polaris, M31, NGC 1300, Used for object_link mode only.',
 				disabled=(starmap_mode != 'object_link')
 			)
 			
@@ -4985,155 +4979,765 @@ elif mode == 'Satellite Data':
 						height=220,
 						key='starmap_html_preview'
 					)
-				
+	
 	# -------- Open Weather
 	with st.expander( label='Open Weather', expanded=False ):
+		if 'openweather_results' not in st.session_state:
+			st.session_state[ 'openweather_results' ] = { }
+		
+		if 'openweather_clear_request' not in st.session_state:
+			st.session_state[ 'openweather_clear_request' ] = False
+		
+		if st.session_state.get( 'openweather_clear_request', False ):
+			st.session_state[ 'openweather_location' ] = ''
+			st.session_state[ 'openweather_mode' ] = 'current'
+			st.session_state[ 'openweather_timezone' ] = 'auto'
+			st.session_state[ 'openweather_forecast_days' ] = 7
+			st.session_state[ 'openweather_past_days' ] = 0
+			st.session_state[ 'openweather_count' ] = 10
+			st.session_state[ 'openweather_results' ] = { }
+			st.session_state[ 'openweather_clear_request' ] = False
+		
+		def _clear_openweather_state( ) -> None:
+			'''
+
+				Purpose:
+				--------
+				Flag the Open Weather expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+
+			'''
+			st.session_state[ 'openweather_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			openweather_query = st.text_area( 'Location', value='',
-				height=40, key='openweather_query' )
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				openweather_submit = st.button( "Submit", key="openweather_submit" )
-			with b2:
-				openweather_clear = st.button( "Clear", key="openweather_clear" )
-		
-		with col_right:
-			openweather_output = st.empty( )
-		
-		if openweather_clear:
-			st.session_state.update( {
-					"openweather_query": "",
-			} )
-			st.rerun( )
-		
-		if openweather_submit:
-			try:
-				f = OpenWeather( )
-				result = f.fetch( openweather_query )
-				
-				if not result:
-					openweather_output.info( "No results returned." )
-				else:
-					openweather_output.text_area( "Results", value=str( result ), height=300 )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# -------- Open Meteo
-	with st.expander( label='Open Meteorology', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			latitude = st.number_input( 'Latitude', value=0.0,
-				format='%.6f', key='openmeteo_latitude' )
-			
-			longitude = st.number_input( 'Longitude', value=0.0,
-				format='%.6f', key='openmeteo_longitude' )
-			
-			days = st.number_input( 'Forecast Days', min_value=1, max_value=14,
-				value=7, step=1, key='openmeteo_days' )
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				om_submit = st.button( 'Submit', key='openmeteo_submit' )
-			with b2:
-				om_clear = st.button( 'Clear', key='openmeteo_clear' )
-		
-		with col_right:
-			om_output = st.empty( )
-		
-		if om_clear:
-			st.session_state.update( { 'openmeteo_latitude': 0.0, 'openmeteo_longitude': 0.0,
-					'openmeteo_days': 7 } )
-			st.rerun( )
-		
-		if om_submit:
-			try:
-				f = OpenWeather( )
-				result = f.fetch(
-					latitude=float( latitude ),
-					longitude=float( longitude ),
-					days=int( days )
+			openweather_location = st.text_area(
+				'Location',
+				height=80,
+				key='openweather_location',
+				placeholder=(
+						'Examples:\n'
+						'Arlington, VA\n'
+						'Paris, France\n'
+						'90210'
 				)
-				
-				if result:
-					om_output.text_area( 'Forecast Data', value=str( result ), height=300 )
-				else:
-					om_output.info( 'No data returned.' )
+			)
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			openweather_mode = st.selectbox(
+				'Mode',
+				options=[ 'current', 'hourly', 'daily' ],
+				index=[ 'current', 'hourly', 'daily' ].index(
+					st.session_state.get( 'openweather_mode', 'current' )
+				),
+				key='openweather_mode'
+			)
+			
+			cfg_c1, cfg_c2 = st.columns( 2 )
+			
+			with cfg_c1:
+				openweather_forecast_days = st.number_input(
+					'Forecast Days',
+					min_value=1,
+					max_value=16,
+					value=int( st.session_state.get( 'openweather_forecast_days', 7 ) ),
+					step=1,
+					key='openweather_forecast_days',
+					disabled=(openweather_mode == 'current')
+				)
+			
+			with cfg_c2:
+				openweather_past_days = st.number_input(
+					'Past Days',
+					min_value=0,
+					max_value=92,
+					value=int( st.session_state.get( 'openweather_past_days', 0 ) ),
+					step=1,
+					key='openweather_past_days'
+				)
+			
+			meta_c1, meta_c2 = st.columns( 2 )
+			
+			with meta_c1:
+				openweather_timezone = st.text_input(
+					'Timezone',
+					value=st.session_state.get( 'openweather_timezone', 'auto' ),
+					key='openweather_timezone',
+					placeholder='auto'
+				)
+			
+			with meta_c2:
+				openweather_count = st.number_input(
+					'Geocode Matches',
+					min_value=1,
+					max_value=20,
+					value=int( st.session_state.get( 'openweather_count', 10 ) ),
+					step=1,
+					key='openweather_count'
+				)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				openweather_submit = st.button(
+					'Submit',
+					key='openweather_submit'
+				)
+			
+			with btn_c2:
+				openweather_clear = st.button(
+					'Clear',
+					key='openweather_clear',
+					on_click=_clear_openweather_state
+				)
+		
+		with col_right:
+			if openweather_submit:
+				try:
+					f = OpenWeather( )
+					result = f.fetch(
+						location=str( openweather_location ),
+						mode=str( openweather_mode ),
+						zone=str( openweather_timezone or 'auto' ).strip( ),
+						forecast_days=int( openweather_forecast_days ),
+						past_days=int( openweather_past_days ),
+						count=int( openweather_count )
+					)
+					
+					st.session_state[ 'openweather_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Open Weather request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'openweather_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'location' in result:
+						st.markdown( f"**Location:** {result.get( 'location', '' )}" )
+					if 'latitude' in result:
+						st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
+				
+				with meta_c2:
+					if 'longitude' in result:
+						st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
+					if 'timezone' in result:
+						st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				geocoding = result.get( 'geocoding', { } ) or { }
+				if geocoding:
+					st.markdown( '#### Geocoding Result' )
+					st.json( geocoding )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					st.markdown( '#### Request Parameters' )
+					st.json( params )
+				
+				data = result.get( 'data', { } ) or { }
+				if data:
+					st.markdown( '#### Forecast Payload' )
+					st.json( data )
+				
+				message = result.get( 'message', '' )
+				if message:
+					st.info( message )
 	
-	# -------- Simbad Fetcher
-	with st.expander( label='Simbad', expanded=False ):
+	# -------- Historical Weather
+	with st.expander( label='Historical Weather', expanded=False ):
+		if 'historicalweather_results' not in st.session_state:
+			st.session_state[ 'historicalweather_results' ] = { }
+		
+		if 'historicalweather_clear_request' not in st.session_state:
+			st.session_state[ 'historicalweather_clear_request' ] = False
+		
+		if st.session_state.get( 'historicalweather_clear_request', False ):
+			st.session_state[ 'historicalweather_location' ] = ''
+			st.session_state[ 'historicalweather_date' ] = dt.date.today( ) - dt.timedelta( days=1 )
+			st.session_state[ 'historicalweather_timezone' ] = 'auto'
+			st.session_state[ 'historicalweather_count' ] = 10
+			st.session_state[ 'historicalweather_results' ] = { }
+			st.session_state[ 'historicalweather_clear_request' ] = False
+		
+		def _clear_historicalweather_state( ) -> None:
+			'''
+
+				Purpose:
+				--------
+				Flag the Historical Weather expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+
+			'''
+			st.session_state[ 'historicalweather_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			simbad_query = st.text_area( 'Astronomical Object Query', value='', height=120,
-				key='simbad_query' )
+			historicalweather_location = st.text_area(
+				'Location',
+				height=80,
+				key='historicalweather_location',
+				placeholder=(
+						'Examples:\n'
+						'Arlington, VA\n'
+						'Tokyo, Japan\n'
+						'90210'
+				)
+			)
 			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				simbad_submit = st.button( 'Submit', key='simbad_submit' )
-			with b2:
-				simbad_clear = st.button( 'Clear', key='simbad_clear' )
+			date_c1, date_c2 = st.columns( 2 )
+			
+			with date_c1:
+				historicalweather_date = st.date_input(
+					'Date',
+					value=st.session_state.get(
+						'historicalweather_date',
+						dt.date.today( ) - dt.timedelta( days=1 )
+					),
+					key='historicalweather_date'
+				)
+			
+			with date_c2:
+				historicalweather_count = st.number_input(
+					'Geocode Matches',
+					min_value=1,
+					max_value=20,
+					value=int( st.session_state.get( 'historicalweather_count', 10 ) ),
+					step=1,
+					key='historicalweather_count'
+				)
+			
+			historicalweather_timezone = st.text_input(
+				'Timezone',
+				value=st.session_state.get( 'historicalweather_timezone', 'auto' ),
+				key='historicalweather_timezone',
+				placeholder='auto'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				historicalweather_submit = st.button(
+					'Submit',
+					key='historicalweather_submit'
+				)
+			
+			with btn_c2:
+				historicalweather_clear = st.button(
+					'Clear',
+					key='historicalweather_clear',
+					on_click=_clear_historicalweather_state
+				)
 		
 		with col_right:
-			simbad_output = st.empty( )
-		
-		if simbad_clear:
-			st.session_state.update( { 'simbad_query': '' } )
-			st.rerun( )
-		
-		if simbad_submit:
-			try:
-				f = Simbad( )
-				result = f.fetch( simbad_query )
+			if historicalweather_submit:
+				try:
+					f = HistoricalWeather( )
+					result = f.fetch(
+						location=str( historicalweather_location ),
+						date=historicalweather_date,
+						zone=str( historicalweather_timezone or 'auto' ).strip( ),
+						count=int( historicalweather_count )
+					)
+					
+					st.session_state[ 'historicalweather_results' ] = result or { }
+					st.rerun( )
 				
-				if result:
-					simbad_output.text_area( 'Result', value=str( result ), height=300 )
-				else:
-					simbad_output.info( 'No results returned.' )
+				except Exception as exc:
+					st.error( 'Historical Weather request failed.' )
+					st.exception( exc )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			result = st.session_state.get( 'historicalweather_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'location' in result:
+						st.markdown( f"**Location:** {result.get( 'location', '' )}" )
+					if 'latitude' in result:
+						st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
+					if 'longitude' in result:
+						st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
+				
+				with meta_c2:
+					if 'date' in result:
+						st.markdown( f"**Date:** {result.get( 'date', '' )}" )
+					if 'timezone' in result:
+						st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				geocoding = result.get( 'geocoding', { } ) or { }
+				if geocoding:
+					st.markdown( '#### Geocoding Result' )
+					st.json( geocoding )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					st.markdown( '#### Request Parameters' )
+					st.json( params )
+				
+				data = result.get( 'data', { } ) or { }
+				if data:
+					st.markdown( '#### Historical Weather Payload' )
+					st.json( data )
+				
+				message = result.get( 'message', '' )
+				if message:
+					st.info( message )
+	
+	# -------- SIMBAD
+	with st.expander( label='SIMBAD', expanded=False ):
+		if 'simbad_results' not in st.session_state:
+			st.session_state[ 'simbad_results' ] = { }
+		
+		if 'simbad_clear_request' not in st.session_state:
+			st.session_state[ 'simbad_clear_request' ] = False
+		
+		if st.session_state.get( 'simbad_clear_request', False ):
+			st.session_state[ 'simbad_mode' ] = 'object_search'
+			st.session_state[ 'simbad_query' ] = 'Polaris'
+			st.session_state[ 'simbad_ra' ] = '02:31:49.09'
+			st.session_state[ 'simbad_dec' ] = '+89:15:50.8'
+			st.session_state[ 'simbad_radius' ] = 0.5
+			st.session_state[ 'simbad_radius_unit' ] = 'deg'
+			st.session_state[ 'simbad_row_limit' ] = 100
+			st.session_state[ 'simbad_results' ] = { }
+			st.session_state[ 'simbad_clear_request' ] = False
+		
+		def _clear_simbad_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the SIMBAD expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'simbad_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			simbad_mode = st.selectbox(
+				'Mode',
+				options=[ 'object_search', 'object_ids', 'region_search' ],
+				index=[ 'object_search', 'object_ids', 'region_search' ].index(
+					st.session_state.get( 'simbad_mode', 'object_search' )
+				),
+				key='simbad_mode',
+				help='Choose named-object lookup, alternate identifiers, or cone search.'
+			)
+			
+			simbad_query = st.text_area(
+				'Object Name',
+				height=80,
+				key='simbad_query',
+				placeholder=(
+						'Examples:\n'
+						'Polaris\n'
+						'M 31\n'
+						'NGC 1300\n'
+						'\n'
+						'Used for object_search and object_ids.'
+				),
+				disabled=(simbad_mode == 'region_search')
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				simbad_ra = st.text_input(
+					'Right Ascension',
+					value=st.session_state.get( 'simbad_ra', '02:31:49.09' ),
+					key='simbad_ra',
+					placeholder='13:09:48.09',
+					disabled=(simbad_mode != 'region_search'),
+					help='Hourangle format recommended for this wrapper.'
+				)
+			
+			with c2:
+				simbad_dec = st.text_input(
+					'Declination',
+					value=st.session_state.get( 'simbad_dec', '+89:15:50.8' ),
+					key='simbad_dec',
+					placeholder='-23:22:53.3',
+					disabled=(simbad_mode != 'region_search')
+				)
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				simbad_radius = st.number_input(
+					'Radius',
+					min_value=0.001,
+					max_value=60.0,
+					value=float( st.session_state.get( 'simbad_radius', 0.5 ) ),
+					step=0.1,
+					key='simbad_radius',
+					disabled=(simbad_mode != 'region_search'),
+					help='Cone-search radius around the RA/Dec position.'
+				)
+			
+			with c4:
+				simbad_radius_unit = st.selectbox(
+					'Radius Unit',
+					options=[ 'deg', 'arcmin', 'arcsec' ],
+					index=[ 'deg', 'arcmin', 'arcsec' ].index(
+						st.session_state.get( 'simbad_radius_unit', 'deg' )
+					),
+					key='simbad_radius_unit',
+					disabled=(simbad_mode != 'region_search')
+				)
+			
+			with c5:
+				simbad_row_limit = st.number_input(
+					'Row Limit',
+					min_value=1,
+					max_value=10000,
+					value=int( st.session_state.get( 'simbad_row_limit', 100 ) ),
+					step=1,
+					key='simbad_row_limit'
+				)
+			
+			st.caption(
+				'SIMBAD named-object queries do not require an API key. '
+				'Use object_search for a record lookup, object_ids for aliases, '
+				'and region_search for a cone search around sky coordinates.'
+			)
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				simbad_submit = st.button(
+					'Submit',
+					key='simbad_submit'
+				)
+			
+			with b2:
+				st.button(
+					'Clear',
+					key='simbad_clear',
+					on_click=_clear_simbad_state
+				)
+		
+		with col_right:
+			st.markdown( 'Results' )
+			
+			if simbad_submit:
+				try:
+					f = AstroQuery( )
+					result = f.fetch(
+						mode=simbad_mode,
+						query=simbad_query,
+						ra=simbad_ra,
+						dec=simbad_dec,
+						radius=float( simbad_radius ),
+						radius_unit=simbad_radius_unit,
+						row_limit=int( simbad_row_limit )
+					)
+					
+					st.session_state[ 'simbad_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'SIMBAD request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'simbad_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if isinstance( result, dict ) and 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if isinstance( result, dict ) and 'query' in result:
+						st.markdown( f"**Query:** {result.get( 'query', '' )}" )
+					if isinstance( result, dict ) and 'ra' in result:
+						st.markdown( f"**RA:** {result.get( 'ra', '' )}" )
+				
+				with meta_c2:
+					if isinstance( result, dict ) and 'row_limit' in result:
+						st.markdown( f"**Row Limit:** {result.get( 'row_limit', '' )}" )
+					if isinstance( result, dict ) and 'dec' in result:
+						st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
+					if isinstance( result, dict ) and 'radius' in result:
+						st.markdown(
+							f"**Radius:** {result.get( 'radius', '' )} "
+							f"{result.get( 'radius_unit', '' )}"
+						)
+				
+				columns = result.get( 'columns', [ ] ) if isinstance( result, dict ) else [ ]
+				rows = result.get( 'rows', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if columns:
+					st.markdown( '#### Columns' )
+					st.write( columns )
+				
+				if rows:
+					st.markdown( '#### Rows' )
+					df_simbad = pd.DataFrame( rows )
+					st.dataframe( df_simbad, use_container_width=True, hide_index=True )
+				else:
+					st.text( 'No rows returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Earth Observatory
 	with st.expander( label='Earth Observatory', expanded=False ):
+		if 'earthobservatory_results' not in st.session_state:
+			st.session_state[ 'earthobservatory_results' ] = { }
+		
+		if 'earthobservatory_clear_request' not in st.session_state:
+			st.session_state[ 'earthobservatory_clear_request' ] = False
+		
+		if st.session_state.get( 'earthobservatory_clear_request', False ):
+			st.session_state[ 'earthobservatory_mode' ] = 'events'
+			st.session_state[ 'earthobservatory_status' ] = 'open'
+			st.session_state[ 'earthobservatory_category' ] = ''
+			st.session_state[ 'earthobservatory_source' ] = ''
+			st.session_state[ 'earthobservatory_limit' ] = 20
+			st.session_state[ 'earthobservatory_days' ] = 30
+			st.session_state[ 'earthobservatory_start_date' ] = ''
+			st.session_state[ 'earthobservatory_end_date' ] = ''
+			st.session_state[ 'earthobservatory_timeout' ] = 20
+			st.session_state[ 'earthobservatory_results' ] = { }
+			st.session_state[ 'earthobservatory_clear_request' ] = False
+		
+		def _clear_earthobservatory_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Earth Observatory expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'earthobservatory_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			earth_query = st.text_area( 'Query', value='',
-				height=40, key='earthobservatory_query' )
+			earth_mode = st.selectbox(
+				'Mode',
+				options=[ 'events', 'categories', 'sources', 'layers' ],
+				index=[ 'events', 'categories', 'sources', 'layers' ].index(
+					st.session_state.get( 'earthobservatory_mode', 'events' )
+				),
+				key='earthobservatory_mode',
+				help='Choose the current documented EONET v3 endpoint.'
+			)
+			
+			earth_status = st.selectbox(
+				'Status',
+				options=[ 'open', 'closed', 'all' ],
+				index=[ 'open', 'closed', 'all' ].index(
+					st.session_state.get( 'earthobservatory_status', 'open' )
+				),
+				key='earthobservatory_status',
+				disabled=(earth_mode != 'events')
+			)
+			
+			earth_category = st.text_input(
+				'Category',
+				value=st.session_state.get( 'earthobservatory_category', '' ),
+				key='earthobservatory_category',
+				placeholder='Examples: wildfires, severe storms, volcanoes ',
+				help='Used for events filtering and layers category path.',
+				disabled=(earth_mode not in [ 'events', 'layers' ])
+			)
+			
+			earth_source = st.text_input(
+				'Source',
+				value=st.session_state.get( 'earthobservatory_source', '' ),
+				key='earthobservatory_source',
+				placeholder=(
+						'Examples: InciWeb, InciWeb, EO'
+				),
+				disabled=(earth_mode != 'events')
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				earth_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=500,
+					value=int( st.session_state.get( 'earthobservatory_limit', 20 ) ),
+					step=1,
+					key='earthobservatory_limit',
+					disabled=(earth_mode != 'events')
+				)
+			
+			with c2:
+				earth_days = st.number_input(
+					'Days',
+					min_value=1,
+					max_value=3650,
+					value=int( st.session_state.get( 'earthobservatory_days', 30 ) ),
+					step=1,
+					key='earthobservatory_days',
+					disabled=(earth_mode != 'events')
+				)
+			
+			d1, d2 = st.columns( 2 )
+			
+			with d1:
+				earth_start_date = st.text_input(
+					'Start Date',
+					value=st.session_state.get( 'earthobservatory_start_date', '' ),
+					key='earthobservatory_start_date',
+					placeholder='2026-03-01',
+					disabled=(earth_mode != 'events')
+				)
+			
+			with d2:
+				earth_end_date = st.text_input(
+					'End Date',
+					value=st.session_state.get( 'earthobservatory_end_date', '' ),
+					key='earthobservatory_end_date',
+					placeholder='2026-03-15',
+					disabled=(earth_mode != 'events')
+				)
+			
+			earth_timeout = st.number_input(
+				'Timeout',
+				min_value=1,
+				max_value=120,
+				value=int( st.session_state.get( 'earthobservatory_timeout', 20 ) ),
+				step=1,
+				key='earthobservatory_timeout'
+			)
+			
+			st.caption(
+				'Examples: use events + category=wildfires, status=open; '
+				'use sources to list event source providers; '
+				'use layers + category=wildfires to inspect imagery layers.'
+			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
-				earth_submit = st.button( 'Submit', key='earthobservatory_submit' )
+				earth_submit = st.button(
+					'Submit',
+					key='earthobservatory_submit'
+				)
+			
 			with b2:
-				earth_clear = st.button( 'Clear', key='earthobservatory_clear' )
+				st.button(
+					'Clear',
+					key='earthobservatory_clear',
+					on_click=_clear_earthobservatory_state
+				)
 		
 		with col_right:
-			earth_output = st.empty( )
-		
-		if earth_clear:
-			st.session_state.update( { 'earthobservatory_query': '', } )
-			st.rerun( )
-		
-		if earth_submit:
-			try:
-				f = EarthObservatory( )
-				result = f.fetch( earth_query )
+			if earth_submit:
+				try:
+					f = EarthObservatory( )
+					result = f.fetch(
+						mode=earth_mode,
+						status=earth_status,
+						category=earth_category,
+						source=earth_source,
+						limit=int( earth_limit ),
+						days=int( earth_days ),
+						start_date=str( earth_start_date ),
+						end_date=str( earth_end_date ),
+						time=int( earth_timeout )
+					)
+					
+					st.session_state[ 'earthobservatory_results' ] = result or { }
+					st.rerun( )
 				
-				if not result:
-					earth_output.info( 'No results returned.' )
-				else:
-					earth_output.text_area( 'Results', value=str( result ), height=300 )
+				except Exception as exc:
+					st.error( 'Earth Observatory request failed.' )
+					st.exception( exc )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			result = st.session_state.get( 'earthobservatory_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					if result.get( 'params', { } ):
+						st.markdown( f"**Parameters:** {len( result.get( 'params', { } ) )}" )
+				
+				if result.get( 'params', { } ):
+					st.markdown( '#### Request Parameters' )
+					st.json( result.get( 'params', { } ) )
+				
+				if result.get( 'events', [ ] ):
+					st.markdown( '#### Events' )
+					df_events = pd.DataFrame( result.get( 'events', [ ] ) )
+					st.dataframe( df_events, use_container_width=True, hide_index=True )
+				
+				if result.get( 'categories', [ ] ):
+					st.markdown( '#### Categories' )
+					df_categories = pd.DataFrame( result.get( 'categories', [ ] ) )
+					st.dataframe( df_categories, use_container_width=True, hide_index=True )
+				
+				if result.get( 'sources', [ ] ):
+					st.markdown( '#### Sources' )
+					df_sources = pd.DataFrame( result.get( 'sources', [ ] ) )
+					st.dataframe( df_sources, use_container_width=True, hide_index=True )
+				
+				if result.get( 'layers', [ ] ):
+					st.markdown( '#### Layers' )
+					df_layers = pd.DataFrame( result.get( 'layers', [ ] ) )
+					st.dataframe( df_layers, use_container_width=True, hide_index=True )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Space Weather
 	with st.expander( label='Space Weather', expanded=False ):

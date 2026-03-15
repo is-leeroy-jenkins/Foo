@@ -269,3 +269,76 @@ ASTRO_QUERY = r'''Access to the astropy package that contains key functionality 
 		
 		Documentation here (https://github.com/astropy/astroquery)
 '''
+
+OPEN_WEATHER = r'''
+		Provides forecast weather retrieval by location name using the Open-Meteo
+		Geocoding API and Open-Meteo Forecast API.
+
+		This class is forecast-only by design and intentionally excludes archive /
+		historical date-based retrieval so it does not overlap with the separate
+		HistoricalWeather class.
+
+		Referenced API Requirements:
+		----------------------------
+		Geocoding API:
+			- Endpoint: https://geocoding-api.open-meteo.com/v1/search
+			- Required parameter: name
+			- Optional parameter: count
+
+		Forecast API:
+			- Endpoint: https://api.open-meteo.com/v1/forecast
+			- Required parameters: latitude, longitude
+			- Optional parameters used here:
+				- current
+				- hourly
+				- daily
+				- timezone
+				- forecast_days
+				- past_days
+				- temperature_unit
+				- wind_speed_unit
+				- precipitation_unit
+'''
+
+HISTORICAL_WEATHER = r'''Provides historical weather retrieval by location name and date using the
+		Open-Meteo Geocoding API and Open-Meteo Historical Weather API.
+
+		This class is intentionally designed around the actual user-facing need in
+		the Foo fetcher expander: enter a location and a date, resolve that location
+		to coordinates, then retrieve historical weather for that date.
+
+		Referenced API Requirements:
+		----------------------------
+		Geocoding API:
+			- Endpoint: https://geocoding-api.open-meteo.com/v1/search
+			- Required parameter: name
+			- Optional parameter: count
+
+		Historical Weather API:
+			- Endpoint: https://archive-api.open-meteo.com/v1/archive
+			- Required parameters: latitude, longitude, start_date, end_date
+			- Optional parameters used here:
+				- timezone
+				- daily
+				- hourly
+				- temperature_unit
+				- wind_speed_unit
+				- precipitation_unit
+
+'''
+
+EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EONET) allows users to access imagery,
+				often in near real-time (NRT), of natural events such as dust storms, forest fires, and
+				tropical cyclones—empowering people all across the planet to locate, track, and potentially
+				prepare for and manage events that affect communities in their paths.
+				Version 3 API for events, categories, sources, and layers.
+		
+				This class is aligned to the current documented EONET v3 API and supports:
+				- events
+				- categories
+				- sources
+				- layers
+				
+				Documentation here (https://eonet.gsfc.nasa.gov/docs/v3)
+'''
+

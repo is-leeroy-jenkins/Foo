@@ -3038,210 +3038,584 @@ class SatelliteCenter( Fetcher ):
 					'resolution_factor: int=1, time: int=20 ) -> Dict[ str, Any ]'
 			)
 			raise exception
-			
+
 class EarthObservatory( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides access to APIs from NASA's Earth Obseratory Natural Events Tracker (EONET) .
-		The Earth Observatory Natural Event Tracker (EONET) is a web service for
-		providing a curated source of continuously updated natural event metadata;
-		providing a service that links those natural events to thematically-related
-		web service-enabled image sources (e.g., via WMS, WMTS, etc.).
+		NASA Earth Observatory's Natural Event Tracker (EONET) allows users to access imagery,
+		often in near real-time (NRT), of natural events such as dust storms, forest fires, and
+		tropical cyclones—empowering people all across the planet to locate, track, and potentially
+		prepare for and manage events that affect communities in their paths.
+		Version 3 API for events, categories, sources, and layers.
 
-		Attribues:
+		This class is aligned to the current documented EONET v3 API and supports:
+		- events
+		- categories
+		- sources
+		- layers
+
+		Referenced API Requirements:
+		----------------------------
+		Base:
+			https://eonet.gsfc.nasa.gov/api/v3
+
+		Events:
+			https://eonet.gsfc.nasa.gov/api/v3/events
+			Optional parameters:
+				- source
+				- category
+				- status
+				- limit
+				- days
+				- start
+				- end
+
+		Categories:
+			https://eonet.gsfc.nasa.gov/api/v3/categories
+
+		Sources:
+			https://eonet.gsfc.nasa.gov/api/v3/sources
+
+		Layers:
+			https://eonet.gsfc.nasa.gov/api/v3/layers
+			Optional category-specific path:
+				https://eonet.gsfc.nasa.gov/api/v3/layers/{category}
+
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		base_url: Optional[str]
+			Base EONET API URL.
+
+		url: Optional[str]
+			Resolved request URL.
+
+		params: Optional[Dict[str, Any]]
+			Request parameters.
+
+		mode: Optional[str]
+			Selected API mode.
+
+		query: Optional[str]
+			Reserved generic query field.
+
+		status: Optional[str]
+			Event status filter.
+
+		category: Optional[str]
+			Event or layer category filter.
+
+		source: Optional[str]
+			Event source filter.
+
+		days: Optional[int]
+			Prior-day filter.
+
+		limit: Optional[int]
+			Returned record limit.
+
+		start_date: Optional[str]
+			Event-range start date in YYYY-MM-DD format.
+
+		end_date: Optional[str]
+			Event-range end date in YYYY-MM-DD format.
+
+		agents: Optional[str]
+			User-Agent string.
 
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
+		--------
+		__init__() -> None
+			Initialize fetcher defaults.
 
+		__dir__() -> List[str]
+			Provide ordered member visibility.
+
+		fetch_events(...) -> Dict[str, Any] | None
+			Fetch event records.
+
+		fetch_categories() -> Dict[str, Any] | None
+			Fetch category metadata.
+
+		fetch_sources() -> Dict[str, Any] | None
+			Fetch source metadata.
+
+		fetch_layers(...) -> Dict[str, Any] | None
+			Fetch layer metadata, optionally filtered by category.
+
+		fetch(...) -> Dict[str, Any] | None
+			Unified dispatcher.
+
+		create_schema(...) -> Dict[str, str] | None
+			Construct a dynamic tool schema.
 
 	'''
-	file_path: Optional[ str ]
-	api_key: Optional[ str ]
+	base_url: Optional[ str ]
 	url: Optional[ str ]
-	latitude: Optional[ float ]
-	longitude: Optional[ float ]
-	days: Optional[ int ]
-	calendar_date: Optional[ dt.datetime ]
-	utc_time: Optional[ dt.time ]
-	local_time: Optional[ dt.time ]
 	params: Optional[ Dict[ str, Any ] ]
+	mode: Optional[ str ]
+	status: Optional[ str ]
+	category: Optional[ str ]
+	source: Optional[ str ]
+	days: Optional[ int ]
+	limit: Optional[ int ]
+	start_date: Optional[ str ]
+	end_date: Optional[ str ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the EONET fetcher with current API defaults.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
 		super( ).__init__( )
-		self.api_key = cfg.NASA_API_KEY
+		self.headers = { }
+		self.base_url = 'https://eonet.gsfc.nasa.gov/api/v3'
 		self.url = None
-		self.days = None
-		self.longitude = None
-		self.latitude = None
-		self.coordinates = None
-		self.calendar_date = None
-		self.local_time = None
-		self.utc_time = None
+		self.params = { }
+		self.mode = 'events'
+		self.status = 'open'
+		self.category = ''
+		self.source = ''
+		self.days = 30
+		self.limit = 20
+		self.start_date = ''
+		self.end_date = ''
 		self.agents = cfg.AGENTS
-		self.era = None
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
-	def fetch_events( self, count: int=30 ) -> Dict[ str, Any ]| None:
-		"""
-
+	def __dir__( self ) -> List[ str ]:
+		'''
 			Purpose:
 			--------
-			Converts a given calendar date into a julian date
+			Provide ordered member visibility.
 
 			Parameters:
-			----------
-			date - dt.date representing a calendar date
-
-		"""
-		try:
-			throw_if( 'count', count )
-			self.days = count
-			self.url = f'https://eonet.gsfc.nasa.gov/api/v2.1/events?'
-			self.params = \
-			{
-					'days': f'{ self.days }',
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'EarthObservatory'
-			exception.method = 'fetch_julian( self, address: str ) -> float'
-			raise exception
-			
-	
-	def fetch_categories( self, count: int=30 ) -> Dict[ str, Any ]| None:
-		"""
-
-			Purpose:
-			--------
-			Converts a given calendar date into a julian date
-
-			Parameters:
-			----------
-			date - dt.date representing a calendar date
-
-		"""
-		try:
-			throw_if( 'count', count )
-			self.days = count
-			self.url = f'https://eonet.gsfc.nasa.gov/api/v2.1/events?'
-			self.params = \
-				{
-						'days': f'{self.days}',
-				}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'EarthObservatory'
-			exception.method = 'fetch_julian( self, address: str ) -> float'
-			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			-----------
+			None
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'url',
+				'params',
+				'mode',
+				'status',
+				'category',
+				'source',
+				'days',
+				'limit',
+				'start_date',
+				'end_date',
+				'fetch_events',
+				'fetch_categories',
+				'fetch_sources',
+				'fetch_layers',
+				'fetch',
+				'create_schema'
+		]
+	
+	def fetch_events( self, status: str = 'open', category: str = '',
+			source: str = '', limit: int = 20, days: int = 30,
+			start_date: str = '', end_date: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch EONET events using documented v3 filters.
 
-		"""
+			Parameters:
+			-----------
+			status (str):
+				Event status filter. Typical values: open, closed, all.
+
+			category (str):
+				Optional category slug or comma-separated category list.
+
+			source (str):
+				Optional source id or comma-separated source ids.
+
+			limit (int):
+				Maximum number of events to return.
+
+			days (int):
+				Number of prior days, including today, from which to return events.
+
+			start_date (str):
+				Optional inclusive start date in YYYY-MM-DD format.
+
+			end_date (str):
+				Optional inclusive end date in YYYY-MM-DD format.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'events'
+			self.status = str( status or 'open' ).strip( ).lower( )
+			self.category = str( category or '' ).strip( )
+			self.source = str( source or '' ).strip( )
+			self.limit = int( limit )
+			self.days = int( days )
+			self.start_date = str( start_date or '' ).strip( )
+			self.end_date = str( end_date or '' ).strip( )
+			self.url = f'{self.base_url}/events'
+			self.params = { }
+			
+			if self.status:
+				self.params[ 'status' ] = self.status
+			
+			if self.category:
+				self.params[ 'category' ] = self.category
+			
+			if self.source:
+				self.params[ 'source' ] = self.source
+			
+			if self.limit > 0:
+				self.params[ 'limit' ] = self.limit
+			
+			if self.start_date and self.end_date:
+				self.params[ 'start' ] = self.start_date
+				self.params[ 'end' ] = self.end_date
+			elif self.days > 0:
+				self.params[ 'days' ] = self.days
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'events': payload.get( 'events', [ ] ),
+					'title': payload.get( 'title', '' ),
+					'description': payload.get( 'description', '' )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EarthObservatory'
+			exception.method = (
+					'fetch_events( self, status: str=open, category: str=, source: str=, '
+					'limit: int=20, days: int=30, start_date: str=, end_date: str=, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_categories( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch EONET category metadata.
+
+			Parameters:
+			-----------
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'categories'
+			self.url = f'{self.base_url}/categories'
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'categories': payload.get( 'categories', [ ] ),
+					'title': payload.get( 'title', '' ),
+					'description': payload.get( 'description', '' )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EarthObservatory'
+			exception.method = 'fetch_categories( self, time: int=20 ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_sources( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch EONET source metadata.
+
+			Parameters:
+			-----------
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'sources'
+			self.url = f'{self.base_url}/sources'
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'sources': payload.get( 'sources', [ ] ),
+					'title': payload.get( 'title', '' ),
+					'description': payload.get( 'description', '' )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EarthObservatory'
+			exception.method = 'fetch_sources( self, time: int=20 ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_layers( self, category: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch EONET layer metadata, optionally scoped to a category.
+
+			Parameters:
+			-----------
+			category (str):
+				Optional category slug.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'layers'
+			self.category = str( category or '' ).strip( )
+			
+			if self.category:
+				self.url = f'{self.base_url}/layers/{self.category}'
+			else:
+				self.url = f'{self.base_url}/layers'
+			
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'category': self.category,
+					'layers': payload.get( 'layers', [ ] ),
+					'title': payload.get( 'title', '' ),
+					'description': payload.get( 'description', '' )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EarthObservatory'
+			exception.method = (
+					'fetch_layers( self, category: str=, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'events', status: str = 'open',
+			category: str = '', source: str = '', limit: int = 20,
+			days: int = 30, start_date: str = '', end_date: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for EONET v3 operations.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of: events, categories, sources, layers
+
+			status (str):
+				Event status filter for events mode.
+
+			category (str):
+				Category filter for events mode or category path for layers mode.
+
+			source (str):
+				Source filter for events mode.
+
+			limit (int):
+				Event record limit for events mode.
+
+			days (int):
+				Prior-day window for events mode.
+
+			start_date (str):
+				Optional start date in YYYY-MM-DD format.
+
+			end_date (str):
+				Optional end date in YYYY-MM-DD format.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = (mode or 'events').strip( ).lower( )
+			
+			if active_mode == 'events':
+				return self.fetch_events(
+					status=status,
+					category=category,
+					source=source,
+					limit=limit,
+					days=days,
+					start_date=start_date,
+					end_date=end_date,
+					time=time
+				)
+			
+			if active_mode == 'categories':
+				return self.fetch_categories( time=time )
+			
+			if active_mode == 'sources':
+				return self.fetch_sources( time=time )
+			
+			if active_mode == 'layers':
+				return self.fetch_layers( category=category, time=time )
+			
+			raise ValueError(
+				"Unsupported mode. Use 'events', 'categories', 'sources', or 'layers'."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'EarthObservatory'
+			exception.method = (
+					'fetch( self, mode: str=events, status: str=open, category: str=, '
+					'source: str=, limit: int=20, days: int=30, start_date: str=, '
+					'end_date: str=, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			
+			return {
+					'name': function.strip( ),
+					'description': f'{description.strip( )} This function uses the {tool.strip( )} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
 			}
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.cause = 'EarthObservatory'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 			
 class GlobalImagery( Fetcher ):
@@ -3308,9 +3682,8 @@ class GlobalImagery( Fetcher ):
 		self.local_time = None
 		self.utc_time = None
 		self.agents = cfg.AGENTS
+		self.headers[ 'User-Agent' ] = self.agents
 		self.era = None
-		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ] = self.agents
 	
 	def fetch_map_services( self ):
 		try:
@@ -6377,426 +6750,1278 @@ class InternetArchive( Fetcher ):
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			raise exception
-			
+
 class OpenWeather( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides access to weather data via the OpenMeteo API.
+		Provides forecast weather retrieval by location name using the Open-Meteo
+		Geocoding API and Open-Meteo Forecast API.
 
-		Attribues:
+		This class is forecast-only by design and intentionally excludes archive /
+		historical date-based retrieval so it does not overlap with the separate
+		HistoricalWeather class.
+
+		Referenced API Requirements:
+		----------------------------
+		Geocoding API:
+			- Endpoint: https://geocoding-api.open-meteo.com/v1/search
+			- Required parameter: name
+			- Optional parameter: count
+
+		Forecast API:
+			- Endpoint: https://api.open-meteo.com/v1/forecast
+			- Required parameters: latitude, longitude
+			- Optional parameters used here:
+				- current
+				- hourly
+				- daily
+				- timezone
+				- forecast_days
+				- past_days
+				- temperature_unit
+				- wind_speed_unit
+				- precipitation_unit
+
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		geocode_url: Optional[str]
+			The Open-Meteo geocoding endpoint.
+
+		forecast_url: Optional[str]
+			The Open-Meteo forecast endpoint.
+
+		location: Optional[str]
+			User-supplied location query.
+
+		latitude: Optional[float]
+			Resolved latitude from geocoding.
+
+		longitude: Optional[float]
+			Resolved longitude from geocoding.
+
+		timezone: Optional[str]
+			Resolved or user-requested timezone.
+
+		mode: Optional[str]
+			Forecast mode: current, hourly, or daily.
+
+		current_metrics: Optional[List[str]]
+			Current weather metrics requested from the API.
+
+		hourly_metrics: Optional[List[str]]
+			Hourly metrics requested from the API.
+
+		daily_metrics: Optional[List[str]]
+			Daily metrics requested from the API.
+
+		windspeed_unit: Optional[str]
+			Wind speed unit passed to the API.
+
+		temperature_unit: Optional[str]
+			Temperature unit passed to the API.
+
+		precipitation_unit: Optional[str]
+			Precipitation unit passed to the API.
+
+		params: Optional[Dict[str, Any]]
+			Request parameters for the forecast call.
+
+		geocode_params: Optional[Dict[str, Any]]
+			Request parameters for the geocoding call.
+
+		result_limit: Optional[int]
+			Maximum number of geocoding candidates to request.
 
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
+		--------
+		__init__() -> None
+			Initialize the fetcher and default metric sets.
 
+		__dir__() -> List[str]
+			Provide ordered member visibility.
 
+		geocode_location(...) -> Dict[str, Any] | None
+			Resolve a place name into a selected geocoding record.
+
+		fetch(...) -> Dict[str, Any] | None
+			Resolve a location string and retrieve forecast weather.
+
+		fetch_current(...) -> Dict[str, Any] | None
+			Retrieve current forecast conditions only.
+
+		fetch_hourly(...) -> Dict[str, Any] | None
+			Retrieve hourly forecast data.
+
+		fetch_daily(...) -> Dict[str, Any] | None
+			Retrieve daily forecast data.
+
+		create_schema(...) -> Dict[str, str] | None
+			Generate a dynamic tool schema definition.
 
 	'''
-	url: Optional[ str ]
-	client: Optional[ openmeteo_requests.Client ]
+	geocode_url: Optional[ str ]
+	forecast_url: Optional[ str ]
+	location: Optional[ str ]
 	latitude: Optional[ float ]
 	longitude: Optional[ float ]
 	timezone: Optional[ str ]
-	daily_metrics: Optional[ List[ str ] ]
-	hourly_metrics: Optional[ List[ str ] ]
+	mode: Optional[ str ]
 	current_metrics: Optional[ List[ str ] ]
+	hourly_metrics: Optional[ List[ str ] ]
+	daily_metrics: Optional[ List[ str ] ]
 	windspeed_unit: Optional[ str ]
 	temperature_unit: Optional[ str ]
 	precipitation_unit: Optional[ str ]
-	current_forecast: Optional[ DataFrame ]
-	hourly_forecast: Optional[ DataFrame ]
-	daily_forecast: Optional[ DataFrame ]
-	cache_session: Optional[ requests_cache.CachedSession ]
-	retry_session: Optional[ retry ]
 	params: Optional[ Dict[ str, Any ] ]
+	geocode_params: Optional[ Dict[ str, Any ] ]
+	result_limit: Optional[ int ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
-		super( ).__init__( )
-		self.client = None
-		self.url = None
-		self.longitude = None
-		self.latitude = None
-		self.timezone = None
-		self.windspeed_unit = 'kn'
-		self.temperature_unit = 'fahrenheit'
-		self.precipitation_unit = 'inches'
-		self.cache_session = None
-		self.retry_session = None
-		self.agents = cfg.AGENTS
-		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ] = self.agents
-		self.current_metrics = [ 'temperature_2m',
-		                         'relative_humidity_2m',
-		                         'apparent_temperature',
-		                         'is_day',
-		                         'snowfall',
-		                         'showers',
-		                         'rain',
-		                         'precipitation',
-		                         'weather_code',
-		                         'cloud_cover',
-		                         'pressure_msl',
-		                         'surface_pressure',
-		                         'wind_gusts_10m',
-		                         'wind_direction_10m',
-		                         'wind_speed_10m' ]
-		self.hourly_metrics = [ 'temperature_2m',
-		                        'uv_index',
-		                        'uv_index_clear_sky',
-		                        'is_day',
-		                        'sunshine_duration',
-		                        'relative_humidity_2m',
-		                        'dew_point_2m',
-		                        'apparent_temperature',
-		                        'precipitation_probability',
-		                        'precipitation',
-		                        'rain',
-		                        'showers',
-		                        'snowfall',
-		                        'snow_depth',
-		                        'cloud_cover_high',
-		                        'visibility',
-		                        'cloud_cover_mid',
-		                        'cloud_cover_low',
-		                        'cloud_cover',
-		                        'surface_pressure',
-		                        'pressure_msl',
-		                        'weather_code',
-		                        'evapotranspiration',
-		                        'et0_fao_evapotranspiration',
-		                        'vapour_pressure_deficit',
-		                        'wind_speed_10m',
-		                        'wind_direction_10m',
-		                        'wind_gusts_10m' ]
-		self.daily_metrics = [ 'weather_code',
-		                       'temperature_2m_max',
-		                       'temperature_2m_min',
-		                       'apparent_temperature_max',
-		                       'apparent_temperature_min',
-		                       'uv_index_clear_sky_max',
-		                       'uv_index_max',
-		                       'sunshine_duration',
-		                       'daylight_duration',
-		                       'sunset',
-		                       'sunrise',
-		                       'rain_sum',
-		                       'showers_sum',
-		                       'snowfall_sum',
-		                       'precipitation_sum',
-		                       'precipitation_hours',
-		                       'precipitation_probability_max',
-		                       'et0_fao_evapotranspiration',
-		                       'shortwave_radiation_sum',
-		                       'wind_direction_10m_dominant',
-		                       'wind_gusts_10m_max',
-		                       'wind_speed_10m_max',
-		                       'temperature_2m_mean',
-		                       'apparent_temperature_mean',
-		                       'dew_point_2m_mean',
-		                       'precipitation_probability_mean',
-		                       'relative_humidity_2m_mean',
-		                       'pressure_msl_mean',
-		                       'visibility_mean',
-		                       'surface_pressure_mean',
-		                       'wind_gusts_10m_mean',
-		                       'wind_speed_10m_mean' ]
-	
-	def fetch_current( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ] | None:
-		"""
+		'''
 
 			Purpose:
 			--------
-			Retrieves current weather data given a location in coordinates and a timezone.
+			Initialize the OpenWeather forecast fetcher with forecast-only defaults,
+			endpoints, headers, unit selections, and metric collections.
 
 			Parameters:
-			----------
-			lat - float representing a location's latitude
-			long - float representing a location's longitude
-			zone - str representing a location's timezone
-
-		"""
-		try:
-			throw_if( 'lat', lat )
-			throw_if( 'long', long )
-			throw_if( 'zone', zone )
-			self.latitude = lat
-			self.longitude = long
-			self.timezone = zone
-			self.cache_session = requests_cache.CachedSession( '.cache', expire_after=-1 )
-			self.retry_session = retry( self.cache_session, retries=5, backoff_factor=0.2 )
-			self.client = openmeteo_requests.Client( session=self.retry_session )
-			self.url = r'https://api.open-meteo.com/v1/forecast'
-			self.params = \
-			{
-				'longitude': self.longitude,
-				'latitude': self.latitude,
-				'daily': self.daily_metrics,
-				'hourly': self.hourly_metrics,
-				'current': self.current_metrics,
-				'timezone': self.timezone,
-				'windspeed_unit': self.windspeed_unit,
-				'temperature_unit': self.temperature_unit,
-				'precipitation_unit': self.precipitation_unit,
-			}
-			
-			self.response = self.client.weather_api( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'OpenWeather'
-			exception.method = 'fetch_current( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
-			raise exception
-			
-	
-	def fetch_hourly( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ] | None:
-		"""
-
-			Purpose:
-			--------
-			Retrieves hourly forecast data given a location in coordinates and a timezone.
-
-			Parameters:
-			----------
-			lat - float representing a location's latitude
-			long - float representing a location's longitude
-			zone - str representing a location's timezone
-
-		"""
-		try:
-			throw_if( 'lat', lat )
-			throw_if( 'long', long )
-			throw_if( 'zone', zone )
-			self.latitude = lat
-			self.longitude = long
-			self.timezone = zone
-			self.cache_session = requests_cache.CachedSession( '.cache', expire_after=-1 )
-			self.retry_session = retry( self.cache_session, retries=5, backoff_factor=0.2 )
-			self.client = openmeteo_requests.Client( session=self.retry_session )
-			self.url = r'https://api.open-meteo.com/v1/forecast'
-			self.params = \
-			{
-				'longitude': self.longitude,
-				'latitude': self.latitude,
-				'daily': self.daily_metrics,
-				'hourly': self.hourly_metrics,
-				'current': self.current_metrics,
-				'timezone': self.timezone,
-				'windspeed_unit': self.windspeed_unit,
-				'temperature_unit': self.temperature_unit,
-				'precipitation_unit': self.precipitation_unit,
-			}
-			
-			self.response = self.client.weather_api( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'OpenWeather'
-			exception.method = 'fetch_hourly( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
-			raise exception
-			
-	
-	def fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ] | None:
-		"""
-
-			Purpose:
-			--------
-			Retrieves daily forecast data given a location in coordinates and a timezone.
-
-			Parameters:
-			----------
-			lat - float representing a location's latitude
-			long - float representing a location's longitude
-			zone - str representing a location's timezone
-
-		"""
-		try:
-			throw_if( 'lat', lat )
-			throw_if( 'long', long )
-			throw_if( 'zone', zone )
-			self.latitude = lat
-			self.longitude = long
-			self.timezone = zone
-			self.cache_session = requests_cache.CachedSession( '.cache', expire_after=-1 )
-			self.retry_session = retry( self.cache_session, retries=5, backoff_factor=0.2 )
-			self.client = openmeteo_requests.Client( session=self.retry_session )
-			self.url = r'https://api.open-meteo.com/v1/forecast'
-			self.params = \
-			{
-				'longitude': self.longitude,
-				'latitude': self.latitude,
-				'daily': self.daily_metrics,
-				'hourly': self.hourly_metrics,
-				'current': self.current_metrics,
-				'timezone': self.timezone,
-				'windspeed_unit': self.windspeed_unit,
-				'temperature_unit': self.temperature_unit,
-				'precipitation_unit': self.precipitation_unit,
-			}
-			
-			self.response = self.client.weather_api( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'OpenWeather'
-			exception.method = 'fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
-			raise exception
-			
-	
-	def fetch_historical( self, lat: float, long: float, zone: str, start: dt.date, end: dt.date ) -> \
-	Dict[ str, Any ] | None:
-		"""
-
-			Purpose:
-			--------
-			Retrieves historical weather data given a location in coordinates, a timezone, a start
-			and end date
-
-			Parameters:
-			----------
-			lat - float representing a location's latitude
-			long - float representing a location's longitude
-			zone - str representing a location's timezone
-			start - datetime representing the beginning of a historical timeframe
-			end - datetime representing the ending of a historical timeframe
-
-		"""
-		try:
-			throw_if( 'lat', lat )
-			throw_if( 'long', long )
-			throw_if( 'zone', zone )
-			self.latitude = lat
-			self.longitude = long
-			self.timezone = zone
-			self.cache_session = requests_cache.CachedSession( '.cache', expire_after=-1 )
-			self.retry_session = retry( self.cache_session, retries=5, backoff_factor=0.2 )
-			self.client = openmeteo_requests.Client( session=self.retry_session )
-			self.url = 'https://archive-api.open-meteo.com/v1/archive'
-			self.params = \
-			{
-				'longitude': self.longitude,
-				'latitude': self.latitude,
-				'daily': self.daily_metrics,
-				'hourly': self.hourly_metrics,
-				'current': self.current_metrics,
-				'timezone': self.timezone,
-				'windspeed_unit': self.windspeed_unit,
-				'temperature_unit': self.temperature_unit,
-				'precipitation_unit': self.precipitation_unit,
-			}
-			
-			self.response = self.client.weather_api( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'OpenWeather'
-			exception.method = 'fetch_daily( self, lat: float, long: float, zone: str ) -> Dict[ str, Any ]'
-			raise exception
-			
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			-----------
+			None
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
+			--------
+			None
 
-		"""
+		'''
+		super( ).__init__( )
+		self.headers = { }
+		self.agents = cfg.AGENTS
+		self.location = None
+		self.latitude = None
+		self.longitude = None
+		self.timezone = 'auto'
+		self.mode = 'current'
+		self.result_limit = 10
+		self.geocode_url = 'https://geocoding-api.open-meteo.com/v1/search'
+		self.forecast_url = 'https://api.open-meteo.com/v1/forecast'
+		self.temperature_unit = 'fahrenheit'
+		self.windspeed_unit = 'kn'
+		self.precipitation_unit = 'inch'
+		self.geocode_params = None
+		self.params = None
+		
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+		
+		self.current_metrics = [
+				'temperature_2m',
+				'relative_humidity_2m',
+				'apparent_temperature',
+				'is_day',
+				'precipitation',
+				'rain',
+				'showers',
+				'snowfall',
+				'weather_code',
+				'cloud_cover',
+				'pressure_msl',
+				'surface_pressure',
+				'wind_speed_10m',
+				'wind_direction_10m',
+				'wind_gusts_10m'
+		]
+		
+		self.hourly_metrics = [
+				'temperature_2m',
+				'relative_humidity_2m',
+				'apparent_temperature',
+				'precipitation_probability',
+				'precipitation',
+				'rain',
+				'showers',
+				'snowfall',
+				'weather_code',
+				'cloud_cover',
+				'pressure_msl',
+				'surface_pressure',
+				'visibility',
+				'wind_speed_10m',
+				'wind_direction_10m',
+				'wind_gusts_10m'
+		]
+		
+		self.daily_metrics = [
+				'weather_code',
+				'temperature_2m_max',
+				'temperature_2m_min',
+				'apparent_temperature_max',
+				'apparent_temperature_min',
+				'sunrise',
+				'sunset',
+				'daylight_duration',
+				'sunshine_duration',
+				'precipitation_sum',
+				'rain_sum',
+				'showers_sum',
+				'snowfall_sum',
+				'precipitation_hours',
+				'precipitation_probability_max',
+				'wind_speed_10m_max',
+				'wind_gusts_10m_max',
+				'wind_direction_10m_dominant'
+		]
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+
+			Purpose:
+			--------
+			Provide ordered member visibility for introspection and editor discovery.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]:
+				Ordered attribute and method names.
+
+		'''
+		return [
+				'geocode_url',
+				'forecast_url',
+				'location',
+				'latitude',
+				'longitude',
+				'timezone',
+				'mode',
+				'current_metrics',
+				'hourly_metrics',
+				'daily_metrics',
+				'windspeed_unit',
+				'temperature_unit',
+				'precipitation_unit',
+				'params',
+				'geocode_params',
+				'result_limit',
+				'geocode_location',
+				'fetch',
+				'fetch_current',
+				'fetch_hourly',
+				'fetch_daily',
+				'create_schema'
+		]
+	
+	def geocode_location( self, location: str, count: int = 10 ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Resolve a user-supplied location string into a geocoding result from
+			the Open-Meteo Geocoding API.
+
+			Parameters:
+			-----------
+			location (str):
+				The place name or postal code to search for.
+
+			count (int):
+				The maximum number of geocoding matches to request.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				The selected geocoding record, typically the first result.
+
+		'''
+		try:
+			throw_if( 'location', location )
+			self.location = location.strip( )
+			self.geocode_params = {
+					'name': self.location,
+					'count': int( count )
+			}
+			
+			self.url = self.geocode_url
+			self.response = requests.get(
+				self.url,
+				params=self.geocode_params,
+				headers=self.headers,
+				timeout=20
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			results = payload.get( 'results', [ ] ) or [ ]
+			
+			if not results:
+				return None
+			
+			selected = results[ 0 ]
+			self.latitude = selected.get( 'latitude', None )
+			self.longitude = selected.get( 'longitude', None )
+			
+			resolved_timezone = selected.get( 'timezone', None )
+			if resolved_timezone:
+				self.timezone = resolved_timezone
+			
+			return selected
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenWeather'
+			exception.method = (
+					'geocode_location( self, location: str, count: int=10 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_current( self, lat: float, long: float, zone: str = 'auto',
+			past_days: int = 0 ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Retrieve current forecast conditions for a coordinate pair.
+
+			Parameters:
+			-----------
+			lat (float):
+				The latitude of the resolved location.
+
+			long (float):
+				The longitude of the resolved location.
+
+			zone (str):
+				The timezone for the response. Supports 'auto'.
+
+			past_days (int):
+				Optional number of previous days to include when supported by
+				the forecast API.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				Normalized forecast response containing current conditions.
+
+		'''
+		try:
+			throw_if( 'lat', lat )
+			throw_if( 'long', long )
+			throw_if( 'zone', zone )
+			
+			self.mode = 'current'
+			self.latitude = float( lat )
+			self.longitude = float( long )
+			self.timezone = str( zone or 'auto' ).strip( )
+			
+			self.params = {
+					'latitude': self.latitude,
+					'longitude': self.longitude,
+					'current': self.current_metrics,
+					'timezone': self.timezone,
+					'temperature_unit': self.temperature_unit,
+					'wind_speed_unit': self.windspeed_unit,
+					'precipitation_unit': self.precipitation_unit,
+					'past_days': int( past_days )
+			}
+			
+			self.url = self.forecast_url
+			self.response = requests.get(
+				self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=30
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'location': self.location,
+					'latitude': payload.get( 'latitude', self.latitude ),
+					'longitude': payload.get( 'longitude', self.longitude ),
+					'timezone': payload.get( 'timezone', self.timezone ),
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenWeather'
+			exception.method = (
+					'fetch_current( self, lat: float, long: float, zone: str=auto, '
+					'past_days: int=0 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_hourly( self, lat: float, long: float, zone: str = 'auto',
+			forecast_days: int = 7, past_days: int = 0 ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Retrieve hourly forecast data for a coordinate pair.
+
+			Parameters:
+			-----------
+			lat (float):
+				The latitude of the resolved location.
+
+			long (float):
+				The longitude of the resolved location.
+
+			zone (str):
+				The timezone for the response. Supports 'auto'.
+
+			forecast_days (int):
+				Number of forecast days to request.
+
+			past_days (int):
+				Optional number of previous days to include.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				Normalized forecast response containing hourly data.
+
+		'''
+		try:
+			throw_if( 'lat', lat )
+			throw_if( 'long', long )
+			throw_if( 'zone', zone )
+			
+			self.mode = 'hourly'
+			self.latitude = float( lat )
+			self.longitude = float( long )
+			self.timezone = str( zone or 'auto' ).strip( )
+			
+			self.params = {
+					'latitude': self.latitude,
+					'longitude': self.longitude,
+					'hourly': self.hourly_metrics,
+					'timezone': self.timezone,
+					'forecast_days': int( forecast_days ),
+					'past_days': int( past_days ),
+					'temperature_unit': self.temperature_unit,
+					'wind_speed_unit': self.windspeed_unit,
+					'precipitation_unit': self.precipitation_unit
+			}
+			
+			self.url = self.forecast_url
+			self.response = requests.get(
+				self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=30
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'location': self.location,
+					'latitude': payload.get( 'latitude', self.latitude ),
+					'longitude': payload.get( 'longitude', self.longitude ),
+					'timezone': payload.get( 'timezone', self.timezone ),
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenWeather'
+			exception.method = (
+					'fetch_hourly( self, lat: float, long: float, zone: str=auto, '
+					'forecast_days: int=7, past_days: int=0 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_daily( self, lat: float, long: float, zone: str = 'auto',
+			forecast_days: int = 7, past_days: int = 0 ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Retrieve daily forecast data for a coordinate pair.
+
+			Parameters:
+			-----------
+			lat (float):
+				The latitude of the resolved location.
+
+			long (float):
+				The longitude of the resolved location.
+
+			zone (str):
+				The timezone for the response. Supports 'auto'.
+
+			forecast_days (int):
+				Number of forecast days to request.
+
+			past_days (int):
+				Optional number of previous days to include.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				Normalized forecast response containing daily data.
+
+		'''
+		try:
+			throw_if( 'lat', lat )
+			throw_if( 'long', long )
+			throw_if( 'zone', zone )
+			
+			self.mode = 'daily'
+			self.latitude = float( lat )
+			self.longitude = float( long )
+			self.timezone = str( zone or 'auto' ).strip( )
+			
+			self.params = {
+					'latitude': self.latitude,
+					'longitude': self.longitude,
+					'daily': self.daily_metrics,
+					'timezone': self.timezone,
+					'forecast_days': int( forecast_days ),
+					'past_days': int( past_days ),
+					'temperature_unit': self.temperature_unit,
+					'wind_speed_unit': self.windspeed_unit,
+					'precipitation_unit': self.precipitation_unit
+			}
+			
+			self.url = self.forecast_url
+			self.response = requests.get(
+				self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=30
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'location': self.location,
+					'latitude': payload.get( 'latitude', self.latitude ),
+					'longitude': payload.get( 'longitude', self.longitude ),
+					'timezone': payload.get( 'timezone', self.timezone ),
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenWeather'
+			exception.method = (
+					'fetch_daily( self, lat: float, long: float, zone: str=auto, '
+					'forecast_days: int=7, past_days: int=0 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, location: str, mode: str = 'current', zone: str = 'auto',
+			forecast_days: int = 7, past_days: int = 0,
+			count: int = 10 ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Resolve a location string to coordinates, then retrieve forecast weather
+			using the selected non-historical mode.
+
+			Parameters:
+			-----------
+			location (str):
+				The place name entered by the user.
+
+			mode (str):
+				Forecast mode. Supported values are current, hourly, and daily.
+
+			zone (str):
+				The timezone requested for the forecast response. If 'auto', the API
+				will resolve the local timezone for the coordinates.
+
+			forecast_days (int):
+				Number of forecast days to request for hourly and daily modes.
+
+			past_days (int):
+				Optional number of previous days to include.
+
+			count (int):
+				Maximum number of geocoding matches to request before selecting the
+				first result.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				Combined geocoding and forecast result.
+
+		'''
+		try:
+			throw_if( 'location', location )
+			throw_if( 'mode', mode )
+			throw_if( 'zone', zone )
+			
+			selected = self.geocode_location( location=location, count=count )
+			
+			if not selected:
+				return {
+						'location': location,
+						'mode': mode,
+						'message': 'No geocoding results found.',
+						'data': { }
+				}
+			
+			lat = selected.get( 'latitude', None )
+			long = selected.get( 'longitude', None )
+			
+			if lat is None or long is None:
+				return {
+						'location': location,
+						'mode': mode,
+						'message': 'Geocoding returned no usable coordinates.',
+						'geocoding': selected,
+						'data': { }
+				}
+			
+			active_mode = str( mode ).strip( ).lower( )
+			if active_mode == 'current':
+				result = self.fetch_current(
+					lat=float( lat ),
+					long=float( long ),
+					zone=str( zone or 'auto' ).strip( ),
+					past_days=int( past_days )
+				) or { }
+			
+			elif active_mode == 'hourly':
+				result = self.fetch_hourly(
+					lat=float( lat ),
+					long=float( long ),
+					zone=str( zone or 'auto' ).strip( ),
+					forecast_days=int( forecast_days ),
+					past_days=int( past_days )
+				) or { }
+			
+			elif active_mode == 'daily':
+				result = self.fetch_daily(
+					lat=float( lat ),
+					long=float( long ),
+					zone=str( zone or 'auto' ).strip( ),
+					forecast_days=int( forecast_days ),
+					past_days=int( past_days )
+				) or { }
+			
+			else:
+				raise ValueError(
+					"Unsupported mode. Use 'current', 'hourly', or 'daily'."
+				)
+			
+			result[ 'geocoding' ] = selected
+			return result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenWeather'
+			exception.method = (
+					'fetch( self, location: str, mode: str=current, zone: str=auto, '
+					'forecast_days: int=7, past_days: int=0, count: int=10 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None:
+				A JSON-compatible dictionary defining the tool schema.
+
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema = \
-				{
-						'name': func_name,
-						'description': f'{desc} This function uses the {tool_name} service.',
-						'parameters':
-							{
-									'type': 'object',
-									'properties': parameters,
-									'required': required
-							}
-				}
-			return _schema
+			
+			return {
+					'name': function.strip( ),
+					'description': f"{description.strip( )} This function uses the {tool.strip( )} service.",
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
-			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class HistoricalWeather( Fetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides historical weather retrieval by location name and date using the
+		Open-Meteo Geocoding API and Open-Meteo Historical Weather API.
+
+		This class is intentionally designed around the actual user-facing need in
+		the Foo fetcher expander: enter a location and a date, resolve that location
+		to coordinates, then retrieve historical weather for that date.
+
+		Referenced API Requirements:
+		----------------------------
+		Geocoding API:
+			- Endpoint: https://geocoding-api.open-meteo.com/v1/search
+			- Required parameter: name
+			- Optional parameter: count
+
+		Historical Weather API:
+			- Endpoint: https://archive-api.open-meteo.com/v1/archive
+			- Required parameters: latitude, longitude, start_date, end_date
+			- Optional parameters used here:
+				- timezone
+				- daily
+				- hourly
+				- temperature_unit
+				- wind_speed_unit
+				- precipitation_unit
+
+		Attributes:
+		-----------
+		geocode_url: Optional[str]
+			The Open-Meteo geocoding endpoint.
+
+		archive_url: Optional[str]
+			The Open-Meteo historical weather endpoint.
+
+		location: Optional[str]
+			User-supplied location query.
+
+		latitude: Optional[float]
+			Resolved latitude from geocoding.
+
+		longitude: Optional[float]
+			Resolved longitude from geocoding.
+
+		timezone: Optional[str]
+			Resolved or user-requested timezone. Defaults to 'auto'.
+
+		target_date: Optional[dt.date]
+			The requested historical date.
+
+		daily_metrics: Optional[List[str]]
+			Daily historical metrics requested from the archive API.
+
+		hourly_metrics: Optional[List[str]]
+			Hourly historical metrics requested from the archive API.
+
+		windspeed_unit: Optional[str]
+			Wind speed unit passed to the API.
+
+		temperature_unit: Optional[str]
+			Temperature unit passed to the API.
+
+		precipitation_unit: Optional[str]
+			Precipitation unit passed to the API.
+
+		params: Optional[Dict[str, Any]]
+			Request parameters for the historical weather call.
+
+		geocode_params: Optional[Dict[str, Any]]
+			Request parameters for the geocoding call.
+
+		result_limit: Optional[int]
+			Maximum number of geocoding candidates to request.
+
+		Methods:
+		--------
+		__init__() -> None
+			Initialize the fetcher and default metrics.
+
+		__dir__() -> List[str]
+			Provide ordered introspection members.
+
+		fetch(...) -> Dict[str, Any] | None
+			Resolve a location string and retrieve historical weather for one date.
+
+		geocode_location(...) -> Dict[str, Any] | None
+			Resolve a place name into a selected geocoding record.
+
+		fetch_historical(...) -> Dict[str, Any] | None
+			Retrieve historical weather for resolved coordinates and a date.
+
+		create_schema(...) -> Dict[str, str] | None
+			Generate a dynamic tool schema definition.
+
+	'''
+	geocode_url: Optional[ str ]
+	archive_url: Optional[ str ]
+	location: Optional[ str ]
+	latitude: Optional[ float ]
+	longitude: Optional[ float ]
+	timezone: Optional[ str ]
+	target_date: Optional[ dt.date ]
+	daily_metrics: Optional[ List[ str ] ]
+	hourly_metrics: Optional[ List[ str ] ]
+	windspeed_unit: Optional[ str ]
+	temperature_unit: Optional[ str ]
+	precipitation_unit: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	geocode_params: Optional[ Dict[ str, Any ] ]
+	result_limit: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+
+			Purpose:
+			--------
+			Initialize the HistoricalWeather fetcher with default endpoints,
+			request headers, metric collections, and unit selections.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+
+		'''
+		super( ).__init__( )
+		self.headers = { }
+		self.agents = cfg.AGENTS
+		self.location = None
+		self.latitude = None
+		self.longitude = None
+		self.timezone = 'auto'
+		self.target_date = None
+		self.result_limit = 10
+		self.geocode_url = 'https://geocoding-api.open-meteo.com/v1/search'
+		self.archive_url = 'https://archive-api.open-meteo.com/v1/archive'
+		self.temperature_unit = 'fahrenheit'
+		self.windspeed_unit = 'kn'
+		self.precipitation_unit = 'inch'
+		self.geocode_params = None
+		self.params = None
+		
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+		
+		self.daily_metrics = [
+				'weather_code',
+				'temperature_2m_max',
+				'temperature_2m_min',
+				'apparent_temperature_max',
+				'apparent_temperature_min',
+				'sunrise',
+				'sunset',
+				'daylight_duration',
+				'sunshine_duration',
+				'precipitation_sum',
+				'rain_sum',
+				'showers_sum',
+				'snowfall_sum',
+				'precipitation_hours',
+				'wind_speed_10m_max',
+				'wind_gusts_10m_max',
+				'wind_direction_10m_dominant'
+		]
+		
+		self.hourly_metrics = [
+				'temperature_2m',
+				'relative_humidity_2m',
+				'apparent_temperature',
+				'precipitation',
+				'rain',
+				'showers',
+				'snowfall',
+				'weather_code',
+				'cloud_cover',
+				'pressure_msl',
+				'surface_pressure',
+				'wind_speed_10m',
+				'wind_direction_10m',
+				'wind_gusts_10m'
+		]
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+
+			Purpose:
+			--------
+			Provide ordered member visibility for introspection and editor discovery.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]:
+				Ordered attribute and method names.
+
+		'''
+		return [
+				'geocode_url',
+				'archive_url',
+				'location',
+				'latitude',
+				'longitude',
+				'timezone',
+				'target_date',
+				'daily_metrics',
+				'hourly_metrics',
+				'windspeed_unit',
+				'temperature_unit',
+				'precipitation_unit',
+				'params',
+				'geocode_params',
+				'result_limit',
+				'fetch',
+				'geocode_location',
+				'fetch_historical',
+				'create_schema'
+		]
+	
+	def geocode_location( self, location: str, count: int = 10 ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Resolve a user-supplied location string into a geocoding result from
+			the Open-Meteo Geocoding API.
+
+			Parameters:
+			-----------
+			location (str):
+				The place name or postal code to search for.
+
+			count (int):
+				The maximum number of geocoding matches to request.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				The selected geocoding record, typically the first result.
+
+		'''
+		try:
+			throw_if( 'location', location )
+			self.location = location.strip( )
+			self.geocode_params = {
+					'name': self.location,
+					'count': int( count )
+			}
+			
+			self.url = self.geocode_url
+			self.response = requests.get(
+				self.url,
+				params=self.geocode_params,
+				headers=self.headers,
+				timeout=20
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			results = payload.get( 'results', [ ] ) or [ ]
+			
+			if not results:
+				return None
+			
+			selected = results[ 0 ]
+			self.latitude = selected.get( 'latitude', None )
+			self.longitude = selected.get( 'longitude', None )
+			
+			resolved_timezone = selected.get( 'timezone', None )
+			if resolved_timezone:
+				self.timezone = resolved_timezone
+			
+			return selected
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HistoricalWeather'
+			exception.method = (
+					'geocode_location( self, location: str, count: int=10 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_historical( self, lat: float, long: float, date: dt.date,
+			zone: str = 'auto' ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Retrieve historical weather for a single date using the Open-Meteo
+			Historical Weather API.
+
+			Parameters:
+			-----------
+			lat (float):
+				The latitude of the resolved location.
+
+			long (float):
+				The longitude of the resolved location.
+
+			date (dt.date):
+				The requested historical date. This is used for both start_date
+				and end_date so the response is limited to that day.
+
+			zone (str):
+				The timezone to use in the response. Supports 'auto'.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				Normalized response payload including request metadata, selected
+				location metadata, and archive data.
+
+		'''
+		try:
+			throw_if( 'lat', lat )
+			throw_if( 'long', long )
+			throw_if( 'date', date )
+			throw_if( 'zone', zone )
+			
+			self.latitude = float( lat )
+			self.longitude = float( long )
+			self.target_date = date
+			self.timezone = zone.strip( ) if zone else 'auto'
+			
+			self.params = {
+					'latitude': self.latitude,
+					'longitude': self.longitude,
+					'start_date': self.target_date.isoformat( ),
+					'end_date': self.target_date.isoformat( ),
+					'timezone': self.timezone,
+					'daily': self.daily_metrics,
+					'hourly': self.hourly_metrics,
+					'temperature_unit': self.temperature_unit,
+					'wind_speed_unit': self.windspeed_unit,
+					'precipitation_unit': self.precipitation_unit
+			}
+			
+			self.url = self.archive_url
+			self.response = requests.get(
+				self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=30
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'location': self.location,
+					'latitude': self.latitude,
+					'longitude': self.longitude,
+					'timezone': payload.get( 'timezone', self.timezone ),
+					'date': self.target_date.isoformat( ),
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HistoricalWeather'
+			exception.method = (
+					'fetch_historical( self, lat: float, long: float, date: dt.date, '
+					'zone: str=auto ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, location: str, date: dt.date,
+			zone: str = 'auto', count: int = 10 ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Resolve a location string to coordinates, then retrieve historical
+			weather for the requested date.
+
+			Parameters:
+			-----------
+			location (str):
+				The place name entered by the user.
+
+			date (dt.date):
+				The requested historical date.
+
+			zone (str):
+				The timezone requested for the archive response. If 'auto', the API
+				will resolve the local timezone for the coordinates.
+
+			count (int):
+				Maximum number of geocoding matches to request before selecting the
+				first result.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				Combined geocoding and historical weather result.
+
+		'''
+		try:
+			throw_if( 'location', location )
+			throw_if( 'date', date )
+			throw_if( 'zone', zone )
+			
+			selected = self.geocode_location( location=location, count=count )
+			
+			if not selected:
+				return {
+						'location': location,
+						'date': date.isoformat( ),
+						'message': 'No geocoding results found.',
+						'data': { }
+				}
+			
+			lat = selected.get( 'latitude', None )
+			long = selected.get( 'longitude', None )
+			
+			if lat is None or long is None:
+				return {
+						'location': location,
+						'date': date.isoformat( ),
+						'message': 'Geocoding returned no usable coordinates.',
+						'geocoding': selected,
+						'data': { }
+				}
+			
+			result = self.fetch_historical(
+				lat=float( lat ),
+				long=float( long ),
+				date=date,
+				zone=str( zone or 'auto' ).strip( )
+			) or { }
+			
+			result[ 'geocoding' ] = selected
+			return result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HistoricalWeather'
+			exception.method = (
+					'fetch( self, location: str, date: dt.date, zone: str=auto, '
+					'count: int=10 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None:
+				A JSON-compatible dictionary defining the tool schema.
+
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': f"{description.strip( )} This function uses the {tool.strip( )} service.",
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HistoricalWeather'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 			
 class Groq( Fetcher ):
