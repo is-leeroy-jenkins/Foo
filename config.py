@@ -342,3 +342,36 @@ EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EONET) a
 				Documentation here (https://eonet.gsfc.nasa.gov/docs/v3)
 '''
 
+SPACE_WEATHER = r'''NASA DONKI (Space Weather Database Of Notifications, Knowledge, Information) is
+		is a comprehensive on-line tool for space weather forecasters, scientists, and the general
+		space science community. DONKI chronicles the daily interpretations of space weather observations,
+		analysis, models, forecasts, and notifications provided by the Space Weather Research Center (SWRC),
+		comprehensive knowledge-base search functionality to support anomaly resolution and space
+		science research, intelligent linkages, relationships, cause-and-effects between space weather
+		activities and comprehensive webservice API access to information stored in DONKI.
+		
+		Documentation here (https://api.nasa.gov/)
+'''
+
+NEAR_BY_OBJECTS = r''''SSD (Solar System Dynamics) and CNEOS (Center for Near-Earth Object Studies)
+		API (Application Program Interface) service. This service provides an interface to
+		machine-readable data (JSON-format) related to SSD and CNEOS.
+		
+		Documentation here (https://ssd-api.jpl.nasa.gov/)
+'''
+
+SKY_MAP = r'''Provides static and link-based star chart generation using the SKY-MAP.ORG
+		XML API, Site Linker, and Image Generator interfaces.
+		
+		Referenced API Requirements:
+		----------------------------
+		XML Search:
+			- Endpoint: https://server1.sky-map.org/search
+
+		Site Linker:
+			- Endpoint: https://www.sky-map.org/
+
+		Image Generator:
+			- Endpoint: https://server2.sky-map.org/map
+
+'''

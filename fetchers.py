@@ -3824,239 +3824,822 @@ class GlobalImagery( Fetcher ):
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			raise exception
-			
+
 class NearbyObjects( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides access to APIs from JPL’s SSD (Solar System Dynamics) and CNEOS
-		(Center for Near-Earth Object Studies) API (Application Program Interface) service.
-		This service provides an interface to machine-readable data (JSON-format) related to SSD
-		and CNEOS.
+		Provides access to current JPL SSD / CNEOS APIs relevant to near-Earth
+		objects, close approaches, and human-accessible target screening.
 
-		Attribues:
+		This class is aligned to the current documented APIs and supports the
+		following modes:
+
+		- close_approaches
+		- object_lookup
+		- nhats_summary
+		- nhats_object
+		- fireballs
+
+		Referenced API Requirements:
+		----------------------------
+		CAD API:
+			GET https://ssd-api.jpl.nasa.gov/cad.api
+			Common parameters used here:
+				- date-min
+				- date-max
+				- dist-max
+				- body
+				- sort
+				- limit
+
+		SBDB API:
+			GET https://ssd-api.jpl.nasa.gov/sbdb.api
+			One and only one of:
+				- sstr
+				- spk
+				- des
+			Optional parameters used here:
+				- phys-par
+				- ca-data
+				- ca-body
+				- discovery
+
+		NHATS API:
+			GET https://ssd-api.jpl.nasa.gov/nhats.api
+			Summary filters optionally include:
+				- dv
+				- dur
+				- stay
+				- launch
+				- h
+				- occ
+			Object-specific details use:
+				- des
+
+		Fireball API:
+			GET https://ssd-api.jpl.nasa.gov/fireball.api
+			Common parameters used here:
+				- date-min
+				- limit
+
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		base_url: Optional[str]
+			Base SSD API URL.
+
+		url: Optional[str]
+			Resolved request URL.
+
+		params: Optional[Dict[str, Any]]
+			Request parameters for the active call.
+
+		mode: Optional[str]
+			Selected operating mode.
+
+		start_date: Optional[str]
+			Inclusive start date in YYYY-MM-DD format.
+
+		end_date: Optional[str]
+			Inclusive end date in YYYY-MM-DD format.
+
+		query: Optional[str]
+			Generic object lookup string or designation.
+
+		dist_max: Optional[str]
+			Close-approach maximum distance filter.
+
+		body: Optional[str]
+			Close-approach body selector, typically Earth.
+
+		sort: Optional[str]
+			CAD sorting key.
+
+		limit: Optional[int]
+			Result limit.
+
+		agents: Optional[str]
+			User-Agent string.
 
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
+		--------
+		__init__() -> None
+			Initialize fetcher defaults.
+
+		__dir__() -> List[str]
+			Provide ordered member visibility.
+
+		fetch_close_approaches(...) -> Dict[str, Any] | None
+			Fetch close-approach records from the CAD API.
+
+		fetch_object_lookup(...) -> Dict[str, Any] | None
+			Fetch detailed object information from the SBDB API.
+
+		fetch_nhats_summary(...) -> Dict[str, Any] | None
+			Fetch NHATS summary rows using screening constraints.
+
+		fetch_nhats_object(...) -> Dict[str, Any] | None
+			Fetch NHATS details for a single designation.
+
+		fetch_fireballs(...) -> Dict[str, Any] | None
+			Fetch fireball atmospheric impact records.
+
+		fetch(...) -> Dict[str, Any] | None
+			Unified dispatcher for NEO-related operations.
+
+		create_schema(...) -> Dict[str, str] | None
+			Construct a dynamic tool schema.
 
 	'''
-	file_path: Optional[ str ]
-	api_key: Optional[ str ]
+	base_url: Optional[ str ]
 	url: Optional[ str ]
-	declination: Optional[ float ]
-	right_ascension: Optional[ float ]
-	coordinates: Optional[ Tuple[ float, float ] ]
-	start_date: Optional[ dt.date ]
-	end_date: Optional[ dt.date ]
-	distance: Optional[ int ]
 	params: Optional[ Dict[ str, Any ] ]
+	mode: Optional[ str ]
+	start_date: Optional[ str ]
+	end_date: Optional[ str ]
+	query: Optional[ str ]
+	dist_max: Optional[ str ]
+	body: Optional[ str ]
+	sort: Optional[ str ]
+	limit: Optional[ int ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the NearbyObjects fetcher with current JPL SSD defaults.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
 		super( ).__init__( )
-		self.api_key = cfg.GOVINFO_API_KEY
+		self.headers = { }
+		self.base_url = 'https://ssd-api.jpl.nasa.gov'
 		self.url = None
-		self.file_path = None
-		self.right_ascension = None
-		self.declination = None
-		self.coordinates = None
-		self.start_date = None
-		self.end_date = None
-		self.distance = None
+		self.params = { }
+		self.mode = 'close_approaches'
+		self.start_date = ''
+		self.end_date = ''
+		self.query = ''
+		self.dist_max = '10LD'
+		self.body = 'Earth'
+		self.sort = 'date'
+		self.limit = 20
 		self.agents = cfg.AGENTS
-		self.era = None
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
-	def fetch_nearby( self, start: dt.date, end: dt.date, min_dist: int=10 ) -> Dict[ str, Any ] | None:
-		"""
-
+	def __dir__( self ) -> List[ str ]:
+		'''
 			Purpose:
 			--------
-			Converts a given calendar date into a julian date
-			*Lunar Distance units are in 'LD', ex. 10LD
-			*Date formats are YYYY-MM-DD
+			Provide ordered member visibility.
 
 			Parameters:
-			----------
-			start - dt.date representing a calendar date
-			end - dt.date representing a calendar date
-			min_dist - lunar distance minimum
-			
+			-----------
+			None
+
 			Returns:
-			-------
-			Dict[ stc, Any ]
-
-		"""
-		try:
-			throw_if( 'start', start )
-			throw_if( 'end', end )
-			self.start_date = start
-			self.end_date = end
-			self.distance = min_dist
-			self.url = f'https://ssd-api.jpl.nasa.gov/cad.api?'
-			self.params = \
-			{
-					'date-min': f'{ self.start_date }',
-					'date-max': f'{ self.end_date }',
-					'min-dist-min': f'{ self.distance }',
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'NearByObjects'
-			exception.method = ('fetch_nearby( self, start: dt.date, end: dt.date, '
-			                    'min_dist: int=10 ) -> Dict[ str, Any ]')
-			raise exception
-			
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'url',
+				'params',
+				'mode',
+				'start_date',
+				'end_date',
+				'query',
+				'dist_max',
+				'body',
+				'sort',
+				'limit',
+				'fetch_close_approaches',
+				'fetch_object_lookup',
+				'fetch_nhats_summary',
+				'fetch_nhats_object',
+				'fetch_fireballs',
+				'fetch',
+				'create_schema'
+		]
 	
-	def fetch_fireballs( self,  start: dt.date, end: dt.date ) -> Dict[ str, Any ] | None:
-		"""
-
+	def fetch_close_approaches( self, start_date: str, end_date: str,
+			dist_max: str = '10LD', body: str = 'Earth',
+			sort: str = 'date', limit: int = 20,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
 			Purpose:
 			--------
-
-
-			Parmeters:
-			----------
-
-
-		"""
-		try:
-			throw_if( 'start', start )
-			throw_if( 'end', end )
-			self.start_date = start
-			self.end_date = end
-			self.url = f'https://aa.usno.navy.mil/api/siderealtime?'
-			self.params = \
-			{
-				'date-min': f'{ self.start_date }',
-				'date-max': f'{ self.end_date }',
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'SolarSystemDynamics'
-			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			raise exception
-			
-	
-	def fetch_asteroids( self ) -> Dict[ str, Any ] | None:
-		try:
-			self.url = r'https://ssd-api.jpl.nasa.gov/nhats.api?'
-			self.response = requests.get( url=self.url )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'NearByObjects'
-			exception.method = 'fetch_fireballs( self,  start: dt.date, end: dt.date ) -> Dict[ str, Any ] '
-			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
+			Fetch close-approach data from the JPL SB Close Approach Data API.
 
 			Parameters:
-			___________
+			-----------
+			start_date (str):
+				Inclusive lower date bound in YYYY-MM-DD format.
+
+			end_date (str):
+				Inclusive upper date bound in YYYY-MM-DD format.
+
+			dist_max (str):
+				Maximum close-approach distance. Examples:
+				- 10LD
+				- 0.05AU
+
+			body (str):
+				Close-approach body selector. Example values include Earth, Moon,
+				Mars, Juptr.
+
+			sort (str):
+				Sort key for the returned records. Example values include date and dist.
+
+			limit (int):
+				Maximum number of rows to return.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'start_date', start_date )
+			throw_if( 'end_date', end_date )
+			
+			self.mode = 'close_approaches'
+			self.start_date = str( start_date ).strip( )
+			self.end_date = str( end_date ).strip( )
+			self.dist_max = str( dist_max or '10LD' ).strip( )
+			self.body = str( body or 'Earth' ).strip( )
+			self.sort = str( sort or 'date' ).strip( )
+			self.limit = int( limit )
+			
+			self.url = f'{self.base_url}/cad.api'
+			self.params = {
+					'date-min': self.start_date,
+					'date-max': self.end_date,
+					'dist-max': self.dist_max,
+					'body': self.body,
+					'sort': self.sort,
+					'limit': self.limit
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'count': payload.get( 'count', 0 ),
+					'fields': payload.get( 'fields', [ ] ),
+					'data': payload.get( 'data', [ ] ),
+					'signature': payload.get( 'signature', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'NearbyObjects'
+			exception.method = (
+					'fetch_close_approaches( self, start_date: str, end_date: str, '
+					'dist_max: str=10LD, body: str=Earth, sort: str=date, '
+					'limit: int=20, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_object_lookup( self, query: str, query_type: str = 'sstr',
+			include_physical: bool = True, include_close_approaches: bool = True,
+			ca_body: str = 'Earth', include_discovery: bool = True,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch a single-object record from the JPL SBDB API.
+
+			Parameters:
+			-----------
+			query (str):
+				Object identifier or name. Examples:
+				- Apophis
+				- Eros
+				- 2000 SG344
+				- 99942
+
+			query_type (str):
+				Exactly one of:
+				- sstr
+				- spk
+				- des
+
+			include_physical (bool):
+				If True, request physical parameters.
+
+			include_close_approaches (bool):
+				If True, request close-approach data.
+
+			ca_body (str):
+				Body filter for close-approach data, typically Earth.
+
+			include_discovery (bool):
+				If True, request discovery circumstances when available.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'query', query )
+			throw_if( 'query_type', query_type )
+			
+			self.mode = 'object_lookup'
+			self.query = str( query ).strip( )
+			active_type = str( query_type ).strip( ).lower( )
+			
+			if active_type not in [ 'sstr', 'spk', 'des' ]:
+				raise ValueError( "query_type must be 'sstr', 'spk', or 'des'." )
+			
+			self.url = f'{self.base_url}/sbdb.api'
+			self.params = {
+					active_type: self.query,
+					'phys-par': '1' if bool( include_physical ) else '0',
+					'ca-data': '1' if bool( include_close_approaches ) else '0',
+					'discovery': '1' if bool( include_discovery ) else '0'
+			}
+			
+			if include_close_approaches and str( ca_body or '' ).strip( ):
+				self.params[ 'ca-body' ] = str( ca_body ).strip( )
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'NearbyObjects'
+			exception.method = (
+					'fetch_object_lookup( self, query: str, query_type: str=sstr, '
+					'include_physical: bool=True, include_close_approaches: bool=True, '
+					'ca_body: str=Earth, include_discovery: bool=True, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_nhats_summary( self, dv: float = 6.0, dur: int = 360,
+			stay: int = 8, launch: str = '2020-2045',
+			h: float = 26.0, occ: int = 7,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch NHATS summary data using standard screening constraints.
+
+			Parameters:
+			-----------
+			dv (float):
+				Maximum total delta-V in km/s.
+
+			dur (int):
+				Maximum mission duration in days.
+
+			stay (int):
+				Minimum stay duration in days.
+
+			launch (str):
+				Launch window year range. Example: 2020-2045.
+
+			h (float):
+				Maximum H magnitude.
+
+			occ (int):
+				Maximum Orbit Condition Code.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'nhats_summary'
+			self.url = f'{self.base_url}/nhats.api'
+			self.params = {
+					'dv': float( dv ),
+					'dur': int( dur ),
+					'stay': int( stay ),
+					'launch': str( launch ).strip( ),
+					'h': float( h ),
+					'occ': int( occ )
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'NearbyObjects'
+			exception.method = (
+					'fetch_nhats_summary( self, dv: float=6.0, dur: int=360, stay: int=8, '
+					'launch: str=2020-2045, h: float=26.0, occ: int=7, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_nhats_object( self, designation: str, dv: float = 6.0,
+			dur: int = 360, stay: int = 8, launch: str = '2020-2045',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch NHATS details for a single object designation.
+
+			Parameters:
+			-----------
+			designation (str):
+				Designation of the NEO. Examples:
+				- 99942
+				- 2000 SG344
+
+			dv (float):
+				Maximum total delta-V in km/s.
+
+			dur (int):
+				Maximum mission duration in days.
+
+			stay (int):
+				Minimum stay duration in days.
+
+			launch (str):
+				Launch window year range.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'designation', designation )
+			
+			self.mode = 'nhats_object'
+			self.query = str( designation ).strip( )
+			self.url = f'{self.base_url}/nhats.api'
+			self.params = {
+					'des': self.query,
+					'dv': float( dv ),
+					'dur': int( dur ),
+					'stay': int( stay ),
+					'launch': str( launch ).strip( )
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'NearbyObjects'
+			exception.method = (
+					'fetch_nhats_object( self, designation: str, dv: float=6.0, '
+					'dur: int=360, stay: int=8, launch: str=2020-2045, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_fireballs( self, date_min: str = '', limit: int = 20,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch atmospheric fireball records from the JPL Fireball API.
+
+			Parameters:
+			-----------
+			date_min (str):
+				Optional lower date bound in YYYY-MM-DD or
+				YYYY-MM-DDThh:mm:ss format.
+
+			limit (int):
+				Maximum number of rows to return.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'fireballs'
+			self.url = f'{self.base_url}/fireball.api'
+			self.params = { 'limit': int( limit ) }
+			
+			if str( date_min or '' ).strip( ):
+				self.params[ 'date-min' ] = str( date_min ).strip( )
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'count': payload.get( 'count', 0 ),
+					'fields': payload.get( 'fields', [ ] ),
+					'data': payload.get( 'data', [ ] ),
+					'signature': payload.get( 'signature', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'NearbyObjects'
+			exception.method = (
+					'fetch_fireballs( self, date_min: str=, limit: int=20, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'close_approaches', start_date: str = '',
+			end_date: str = '', query: str = '', query_type: str = 'sstr',
+			dist_max: str = '10LD', body: str = 'Earth', sort: str = 'date',
+			limit: int = 20, dv: float = 6.0, dur: int = 360,
+			stay: int = 8, launch: str = '2020-2045', h: float = 26.0,
+			occ: int = 7, include_physical: bool = True,
+			include_close_approaches: bool = True, ca_body: str = 'Earth',
+			include_discovery: bool = True, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for JPL SSD / CNEOS NEO-related endpoints.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of:
+				- close_approaches
+				- object_lookup
+				- nhats_summary
+				- nhats_object
+				- fireballs
+
+			start_date (str):
+				Date lower bound for close_approaches.
+
+			end_date (str):
+				Date upper bound for close_approaches.
+
+			query (str):
+				Object query or designation for object_lookup or nhats_object.
+
+			query_type (str):
+				Object lookup selector: sstr, spk, or des.
+
+			dist_max (str):
+				Close-approach distance ceiling.
+
+			body (str):
+				Close-approach body selector.
+
+			sort (str):
+				Close-approach sort key.
+
+			limit (int):
+				Result limit.
+
+			dv (float):
+				NHATS delta-V filter.
+
+			dur (int):
+				NHATS duration filter.
+
+			stay (int):
+				NHATS stay filter.
+
+			launch (str):
+				NHATS launch window.
+
+			h (float):
+				NHATS H-magnitude filter.
+
+			occ (int):
+				NHATS OCC filter.
+
+			include_physical (bool):
+				SBDB physical-parameter switch.
+
+			include_close_approaches (bool):
+				SBDB close-approach section switch.
+
+			ca_body (str):
+				SBDB close-approach body filter.
+
+			include_discovery (bool):
+				SBDB discovery-data switch.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'close_approaches' ).strip( ).lower( )
+			
+			if active_mode == 'close_approaches':
+				return self.fetch_close_approaches(
+					start_date=start_date,
+					end_date=end_date,
+					dist_max=dist_max,
+					body=body,
+					sort=sort,
+					limit=limit,
+					time=time
+				)
+			
+			if active_mode == 'object_lookup':
+				return self.fetch_object_lookup(
+					query=query,
+					query_type=query_type,
+					include_physical=include_physical,
+					include_close_approaches=include_close_approaches,
+					ca_body=ca_body,
+					include_discovery=include_discovery,
+					time=time
+				)
+			
+			if active_mode == 'nhats_summary':
+				return self.fetch_nhats_summary(
+					dv=dv,
+					dur=dur,
+					stay=stay,
+					launch=launch,
+					h=h,
+					occ=occ,
+					time=time
+				)
+			
+			if active_mode == 'nhats_object':
+				return self.fetch_nhats_object(
+					designation=query,
+					dv=dv,
+					dur=dur,
+					stay=stay,
+					launch=launch,
+					time=time
+				)
+			
+			if active_mode == 'fireballs':
+				return self.fetch_fireballs(
+					date_min=start_date,
+					limit=limit,
+					time=time
+				)
+			
+			raise ValueError(
+				"Unsupported mode. Use 'close_approaches', 'object_lookup', "
+				"'nhats_summary', 'nhats_object', or 'fireballs'."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'NearbyObjects'
+			exception.method = (
+					'fetch( self, mode: str=close_approaches, start_date: str=, '
+					'end_date: str=, query: str=, query_type: str=sstr, '
+					'dist_max: str=10LD, body: str=Earth, sort: str=date, '
+					'limit: int=20, dv: float=6.0, dur: int=360, stay: int=8, '
+					'launch: str=2020-2045, h: float=26.0, occ: int=7, '
+					'include_physical: bool=True, include_close_approaches: bool=True, '
+					'ca_body: str=Earth, include_discovery: bool=True, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
 			function (str):
-			The function name exposed to the LLM.
+				The function name exposed to the LLM.
 
 			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+				The underlying system or service the function wraps.
 
 			description (str):
-			Precise explanation of what the function does.
+				Precise explanation of what the function does.
 
 			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
+				A dictionary defining parameter names and JSON schema descriptors.
 
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			required (list[str]):
+				List of required parameter names.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			
+			return {
+					'name': function.strip( ),
+					'description': f'{description.strip( )} This function uses the {tool.strip( )} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
 			}
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.cause = 'NearbyObjects'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 			
 class OpenScience( Fetcher ):
@@ -4279,293 +4862,480 @@ class OpenScience( Fetcher ):
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			raise exception
-			
+
 class SpaceWeather( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Access to The Space Weather Database Of Notifications, Knowledge, Information (DONKI)
-		is a comprehensive on-line tool for space weather forecasters, scientists, and the general
-		space science community.
-		
-		DONKI chronicles the daily interpretations of space weather observations, analysis, models,
-		forecasts, and notifications provided by the Space Weather Research Center (SWRC),
-		comprehensive knowledge-base search functionality to support anomaly resolution and space
-		science research, intelligent linkages, relationships, cause-and-effects between  space
-		weather activities and comprehensive webservice API access to information stored in DONKI.
+		Provides access to NASA DONKI space weather endpoints through the
+		NASA Open APIs gateway.
 
-		Attribues:
+		This class is aligned to the currently documented DONKI endpoints and
+		supports the following modes:
+
+		- cme
+		- cme_analysis
+		- gst
+		- ips
+		- flr
+		- sep
+		- mpc
+		- rbe
+		- hss
+		- wsa_enlil
+		- notifications
+
+		Referenced API Requirements:
+		----------------------------
+		Base:
+			https://api.nasa.gov/DONKI
+
+		Common parameters:
+			- startDate
+			- endDate
+			- api_key
+
+		Endpoint-specific parameters supported here:
+			- location
+			- catalog
+			- type
+			- mostAccurateOnly
+			- completeEntryOnly
+			- speed
+			- halfAngle
+			- keyword
+
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		base_url: Optional[str]
+			Base DONKI API URL.
+
+		api_key: Optional[str]
+			NASA API key from configuration.
+
+		url: Optional[str]
+			Resolved endpoint URL.
+
+		params: Optional[Dict[str, Any]]
+			Request parameters sent to DONKI.
+
+		mode: Optional[str]
+			Selected DONKI endpoint mode.
+
+		start_date: Optional[str]
+			Inclusive start date in YYYY-MM-DD format.
+
+		end_date: Optional[str]
+			Inclusive end date in YYYY-MM-DD format.
+
+		location: Optional[str]
+			IPS endpoint location filter.
+
+		catalog: Optional[str]
+			CMEAnalysis or IPS catalog filter.
+
+		notification_type: Optional[str]
+			Notifications endpoint event type filter.
+
+		limit_note: Optional[str]
+			Reserved descriptive note.
+
+		agents: Optional[str]
+			User-Agent string.
 
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
+		--------
+		__init__() -> None
+			Initialize fetcher defaults.
+
+		__dir__() -> List[str]
+			Provide ordered member visibility.
+
+		fetch_endpoint(...) -> Dict[str, Any] | None
+			Fetch a single DONKI endpoint with normalized parameters.
+
+		fetch(...) -> Dict[str, Any] | None
+			Unified dispatcher for DONKI modes.
+
+		create_schema(...) -> Dict[str, str] | None
+			Construct a dynamic tool schema.
 
 	'''
+	base_url: Optional[ str ]
 	api_key: Optional[ str ]
 	url: Optional[ str ]
-	start_date: Optional[ dt.datetime ]
-	end_date: Optional[ dt.datetime ]
 	params: Optional[ Dict[ str, Any ] ]
+	mode: Optional[ str ]
+	start_date: Optional[ str ]
+	end_date: Optional[ str ]
+	location: Optional[ str ]
+	catalog: Optional[ str ]
+	notification_type: Optional[ str ]
+	limit_note: Optional[ str ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the DONKI fetcher with current endpoint defaults.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
 		super( ).__init__( )
-		self.api_key = cfg.GOVINFO_API_KEY
-		self.start_date = None
-		self.end_date = None
+		self.headers = { }
+		self.base_url = 'https://api.nasa.gov/DONKI'
+		self.api_key = cfg.NASA_API_KEY
 		self.url = None
+		self.params = { }
+		self.mode = 'cme'
+		self.start_date = ''
+		self.end_date = ''
+		self.location = 'ALL'
+		self.catalog = 'ALL'
+		self.notification_type = 'all'
+		self.limit_note = None
 		self.agents = cfg.AGENTS
-		self.params = None
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
-	def fetch_ejections( self, start: dt.date, end: dt.date ) -> Dict[ str, Any ] | None:
-		"""
-
+	def __dir__( self ) -> List[ str ]:
+		'''
 			Purpose:
 			--------
-			Retrieves Coronal Mass Ejectionss given a start and end date
+			Provide ordered member visibility.
 
 			Parameters:
-			----------
-			start - dt.date representing a calendar date
-			end - dt.date
-			
-			Returns:
-			-------
-			Dict[ str, Any ]
+			-----------
+			None
 
-		"""
-		try:
-			throw_if( 'start', start )
-			throw_if( 'end', end )
-			self.start_date = start
-			self.end_date = end
-			self.url = f'https://api.nasa.gov/DONKI/CME?'
-			self.params = \
-			{
-				'startDate': f'{ self.start_date }',
-				'endDate': f'{ self.end_date }',
-				'api_key': f'{ self.api_key }',
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'NavalObservatory'
-			exception.method = 'fetch_julian( self, address: str ) -> float'
-			raise exception
-			
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'api_key',
+				'url',
+				'params',
+				'mode',
+				'start_date',
+				'end_date',
+				'location',
+				'catalog',
+				'notification_type',
+				'fetch_endpoint',
+				'fetch',
+				'create_schema'
+		]
 	
-	def fetch_analysis( self, start: dt.date, end: dt.date ) -> Dict[ str, Any ] | None:
-		"""
-
+	def fetch_endpoint( self, endpoint: str, start_date: str, end_date: str,
+			time: int = 20, location: str = '', catalog: str = '',
+			notification_type: str = '', most_accurate_only: bool = True,
+			complete_entry_only: bool = True, speed: int = 0,
+			half_angle: int = 0, keyword: str = '',
+			api_key: str | None = None ) -> Dict[ str, Any ] | None:
+		'''
 			Purpose:
 			--------
-			Retrieves CME analysis data given a start and end date
+			Send a request to a specific DONKI endpoint and return normalized JSON.
 
 			Parameters:
-			----------
-			start - dt.date representing a calendar date
-			end - dt.date
-			
-			Returns:
-			-------
-			Dict[ str, Any ]
+			-----------
+			endpoint (str):
+				DONKI endpoint path fragment.
 
-		"""
+			start_date (str):
+				Inclusive start date in YYYY-MM-DD format.
+
+			end_date (str):
+				Inclusive end date in YYYY-MM-DD format.
+
+			time (int):
+				Request timeout in seconds.
+
+			location (str):
+				IPS location filter.
+
+			catalog (str):
+				CMEAnalysis or IPS catalog filter.
+
+			notification_type (str):
+				Notifications type filter.
+
+			most_accurate_only (bool):
+				CMEAnalysis filter.
+
+			complete_entry_only (bool):
+				CMEAnalysis filter.
+
+			speed (int):
+				CMEAnalysis lower-bound speed filter.
+
+			half_angle (int):
+				CMEAnalysis lower-bound half-angle filter.
+
+			keyword (str):
+				CMEAnalysis keyword filter.
+
+			api_key (str | None):
+				Optional runtime override for NASA API key.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
 		try:
-			throw_if( 'start', start )
-			throw_if( 'end', end )
-			self.start_date = start
-			self.end_date = end
-			self.url = f'https://api.nasa.gov/DONKI/CMEAnalysis?'
-			self.params = \
-			{
-					'startDate': f'{ self.start_date }',
-					'endDate': f'{ self.end_date }',
-					'api_key': f'{ self.api_key }',
-					'mostAccurateOnly': 'true',
-					'speed': '500',
-					'halfAngle': '30',
-					'catalog': 'ALL'
+			throw_if( 'endpoint', endpoint )
+			throw_if( 'start_date', start_date )
+			throw_if( 'end_date', end_date )
+			
+			active_key = str( api_key or self.api_key or '' ).strip( )
+			if not active_key:
+				raise ValueError( 'NASA API key is required for DONKI requests.' )
+			
+			self.url = f'{self.base_url}/{endpoint}'
+			self.params = {
+					'startDate': str( start_date ).strip( ),
+					'endDate': str( end_date ).strip( ),
+					'api_key': active_key
 			}
 			
-			self.response = requests.get( url=self.url, params=self.params )
+			if endpoint == 'IPS' and location.strip( ):
+				self.params[ 'location' ] = location.strip( )
+			
+			if endpoint == 'IPS' and catalog.strip( ):
+				self.params[ 'catalog' ] = catalog.strip( )
+			
+			if endpoint == 'CMEAnalysis':
+				self.params[ 'mostAccurateOnly' ] = str( bool( most_accurate_only ) ).lower( )
+				self.params[ 'completeEntryOnly' ] = str( bool( complete_entry_only ) ).lower( )
+				self.params[ 'speed' ] = int( speed )
+				self.params[ 'halfAngle' ] = int( half_angle )
+				
+				if catalog.strip( ):
+					self.params[ 'catalog' ] = catalog.strip( )
+				
+				if keyword.strip( ):
+					self.params[ 'keyword' ] = keyword.strip( )
+			
+			if endpoint == 'notifications' and notification_type.strip( ):
+				self.params[ 'type' ] = notification_type.strip( )
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
 			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
+			payload = self.response.json( )
+			
+			return {
+					'mode': self.mode,
+					'endpoint': endpoint,
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'SpaceWeather'
-			exception.method = ('fetch_ejection_analysis( self, start: dt.date, end: dt.date )'
-			                    ' -> Dict[ str, Any ]')
+			exception.method = (
+					'fetch_endpoint( self, endpoint: str, start_date: str, end_date: str, '
+					'time: int=20, location: str=, catalog: str=, notification_type: str=, '
+					'most_accurate_only: bool=True, complete_entry_only: bool=True, '
+					'speed: int=0, half_angle: int=0, keyword: str=, '
+					'api_key: str|None=None ) -> Dict[ str, Any ]'
+			)
 			raise exception
-			
 	
-	def fetch_storms( self, start: dt.date, end: dt.date ) -> Dict[ str, Any ] | None:
-		"""
-
+	def fetch( self, mode: str = 'cme', start_date: str = '', end_date: str = '',
+			time: int = 20, location: str = 'ALL', catalog: str = 'ALL',
+			notification_type: str = 'all', most_accurate_only: bool = True,
+			complete_entry_only: bool = True, speed: int = 0,
+			half_angle: int = 0, keyword: str = '',
+			api_key: str | None = None ) -> Dict[ str, Any ] | None:
+		'''
 			Purpose:
 			--------
+			Unified dispatcher for NASA DONKI endpoints.
 
-			Parmeters:
-			----------
+			Parameters:
+			-----------
+			mode (str):
+				One of:
+				- cme
+				- cme_analysis
+				- gst
+				- ips
+				- flr
+				- sep
+				- mpc
+				- rbe
+				- hss
+				- wsa_enlil
+				- notifications
 
-		"""
+			start_date (str):
+				Inclusive start date in YYYY-MM-DD format.
+
+			end_date (str):
+				Inclusive end date in YYYY-MM-DD format.
+
+			time (int):
+				Request timeout in seconds.
+
+			location (str):
+				IPS location filter.
+
+			catalog (str):
+				CMEAnalysis or IPS catalog filter.
+
+			notification_type (str):
+				Notifications type filter.
+
+			most_accurate_only (bool):
+				CMEAnalysis filter.
+
+			complete_entry_only (bool):
+				CMEAnalysis filter.
+
+			speed (int):
+				CMEAnalysis speed filter.
+
+			half_angle (int):
+				CMEAnalysis half-angle filter.
+
+			keyword (str):
+				CMEAnalysis keyword filter.
+
+			api_key (str | None):
+				Optional runtime override for NASA API key.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
 		try:
-			throw_if( 'start', start )
-			throw_if( 'end', end )
-			self.url = f'https://api.nasa.gov/DONKI/GST?'
-			self.params = \
-			{
-				'startDate': f'{ self.start_date }',
-				'endDate': f'{ self.end_date }',
-				'api_key': f'{ self.api_key }',
+			active_mode = str( mode or 'cme' ).strip( ).lower( )
+			self.mode = active_mode
+			
+			endpoint_map = {
+					'cme': 'CME',
+					'cme_analysis': 'CMEAnalysis',
+					'gst': 'GST',
+					'ips': 'IPS',
+					'flr': 'FLR',
+					'sep': 'SEP',
+					'mpc': 'MPC',
+					'rbe': 'RBE',
+					'hss': 'HSS',
+					'wsa_enlil': 'WSAEnlilSimulations',
+					'notifications': 'notifications'
 			}
 			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
+			if active_mode not in endpoint_map:
+				raise ValueError(
+					"Unsupported mode. Use 'cme', 'cme_analysis', 'gst', 'ips', "
+					"'flr', 'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', or 'notifications'."
+				)
+			
+			return self.fetch_endpoint(
+				endpoint=endpoint_map[ active_mode ],
+				start_date=str( start_date ).strip( ),
+				end_date=str( end_date ).strip( ),
+				time=int( time ),
+				location=str( location or 'ALL' ).strip( ),
+				catalog=str( catalog or 'ALL' ).strip( ),
+				notification_type=str( notification_type or 'all' ).strip( ),
+				most_accurate_only=bool( most_accurate_only ),
+				complete_entry_only=bool( complete_entry_only ),
+				speed=int( speed ),
+				half_angle=int( half_angle ),
+				keyword=str( keyword or '' ).strip( ),
+				api_key=api_key
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'SpaceWeather'
-			exception.method = 'fetch_geomagnetic_storms( self, date: str ) -> float'
+			exception.method = (
+					'fetch( self, mode: str=cme, start_date: str=, end_date: str=, '
+					'time: int=20, location: str=ALL, catalog: str=ALL, '
+					'notification_type: str=all, most_accurate_only: bool=True, '
+					'complete_entry_only: bool=True, speed: int=0, half_angle: int=0, '
+					'keyword: str=, api_key: str|None=None ) -> Dict[ str, Any ]'
+			)
 			raise exception
-			
 	
-	def fetch_solar_flares( self, start: dt.date, end: dt.date ) -> float | None:
-		"""
-
-			Purpose:
-			--------
-		
-
-			Parmeters:
-			----------
-			
-
-		"""
-		try:
-			throw_if( 'start', start )
-			throw_if( 'end', end )
-			self.url = f'https://api.nasa.gov/DONKI/FLR?'
-			self.params = \
-			{
-					'startDate': self.calendar_date,
-					'endDate': self.local_time,
-					'api_key': self.api_key
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'DONKI'
-			exception.method = 'fetch_sidereal( self, date: str ) -> float'
-			raise exception
-			
-		
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
 			Purpose:
-			________
+			--------
 			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
 
 			Parameters:
-			___________
+			-----------
 			function (str):
-			The function name exposed to the LLM.
+				The function name exposed to the LLM.
 
 			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+				The underlying system or service the function wraps.
 
 			description (str):
-			Precise explanation of what the function does.
+				Precise explanation of what the function does.
 
 			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
+				A dictionary defining parameter names and JSON schema descriptors.
 
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			required (list[str]):
+				List of required parameter names.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			
+			return {
+					'name': function.strip( ),
+					'description': f'{description.strip( )} This function uses the {tool.strip( )} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
 			}
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.cause = 'SpaceWeather'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 
 class AstroCatalog( Fetcher ):
@@ -6090,195 +6860,817 @@ class GovData( Fetcher ):
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			raise exception
-			
+
 class StarChart( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides functionality via the Astronomy API for creating a Star Chart
-		given a location and date
-		
-		style options [ default, inverted, navy, red ]
+		Provides static and link-based star chart generation using the SKY-MAP.ORG
+		XML API, Site Linker, and Image Generator interfaces.
 
-		Attribues:
+		This class is intentionally chart-focused and kept separate from StarMap.
+
+		Referenced API Requirements:
+		----------------------------
+		XML Search:
+			- Endpoint: https://server1.sky-map.org/search
+			- Required parameter:
+				- star
+
+		Site Linker:
+			- Endpoint: https://www.sky-map.org/
+			- Supported parameters used here:
+				- object
+				- ra
+				- de
+				- zoom
+				- show_box
+				- box_color
+				- show_grid
+				- show_constellation_lines
+				- show_constellation_boundaries
+				- img_source
+
+		Image Generator:
+			- Endpoint: https://server2.sky-map.org/map
+			- Supported parameters used here:
+				- ra
+				- de
+				- zoom
+				- show_grid
+				- show_constellation_lines
+				- show_constellation_boundaries
+				- show_const_names
+				- img_source
+				- w
+				- h
+				- mag
+
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		search_url: Optional[str]
+			SKY-MAP XML search endpoint.
+
+		link_url: Optional[str]
+			SKY-MAP site-link endpoint.
+
+		image_url: Optional[str]
+			SKY-MAP image-generator endpoint.
+
+		url: Optional[str]
+			Resolved request URL.
+
+		params: Optional[Dict[str, Any]]
+			Request parameters.
+
+		mode: Optional[str]
+			Selected chart mode.
+
+		query: Optional[str]
+			Object query string.
+
+		ra: Optional[float]
+			Right Ascension in decimal hours.
+
+		dec: Optional[float]
+			Declination in decimal degrees.
+
+		zoom: Optional[int]
+			Chart zoom level.
+
+		image_source: Optional[str]
+			Chart image source.
+
+		box_color: Optional[str]
+			Pointer box color.
+
+		show_box: Optional[bool]
+			Show highlight box.
+
+		show_grid: Optional[bool]
+			Show coordinate grid.
+
+		show_lines: Optional[bool]
+			Show constellation lines.
+
+		show_boundaries: Optional[bool]
+			Show constellation boundaries.
+
+		show_const_names: Optional[bool]
+			Show constellation names.
+
+		width: Optional[int]
+			Generated image width.
+
+		height: Optional[int]
+			Generated image height.
+
+		magnitude: Optional[float]
+			Image generator limiting magnitude.
+
+		agents: Optional[str]
+			User-Agent string.
 
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
+		--------
+		__init__() -> None
+			Initialize chart defaults.
+
+		__dir__() -> List[str]
+			Provide ordered member visibility.
+
+		search_object(...) -> Dict[str, Any] | None
+			Resolve an object name through the SKY-MAP XML API.
+
+		fetch_object_chart(...) -> Dict[str, Any] | None
+			Build an object-based chart link.
+
+		fetch_coordinate_chart(...) -> Dict[str, Any] | None
+			Build a coordinate-based chart link.
+
+		fetch_static_chart(...) -> Dict[str, Any] | None
+			Build a static chart image URL.
+
+		fetch(...) -> Dict[str, Any] | None
+			Unified dispatcher.
+
+		create_schema(...) -> Dict[str, str] | None
+			Construct a dynamic tool schema.
 
 	'''
-	app_id: Optional[ str ]
-	app_token: Optional[ str ]
-	userpass: Optional[ str ]
-	authString: Optional[ str ]
-	latitude: Optional[ float ]
-	longitude: Optional[ float ]
-	date: Optional[ dt.date ]
+	search_url: Optional[ str ]
+	link_url: Optional[ str ]
+	image_url: Optional[ str ]
 	url: Optional[ str ]
-	style: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
+	mode: Optional[ str ]
+	query: Optional[ str ]
+	ra: Optional[ float ]
+	dec: Optional[ float ]
+	zoom: Optional[ int ]
+	image_source: Optional[ str ]
+	box_color: Optional[ str ]
+	show_box: Optional[ bool ]
+	show_grid: Optional[ bool ]
+	show_lines: Optional[ bool ]
+	show_boundaries: Optional[ bool ]
+	show_const_names: Optional[ bool ]
+	width: Optional[ int ]
+	height: Optional[ int ]
+	magnitude: Optional[ float ]
+	agents: Optional[ str ]
 	
-	def __init__( self ):
-		super( ).__init__( )
-		self.app_id = r'565d535c-be49-42ab-b960-73b8aaafb0e5'
-		self.app_token = cfg.SKYMAP_TOKEN
-		self.userpass = f'{self.app_id}:{self.app_token}'
-		self.authString = None
-		self.latitude = None
-		self.longitude = None
-		self.date = None
-		self.url = None
-		self.params = None
-		self.headers = { }
-	
-	def fetch_by_location( self, lat: float, lng: float, date: dt.date, style: str='red' ) -> str | None:
+	def __init__( self ) -> None:
 		'''
+			Purpose:
+			--------
+			Initialize the StarChart fetcher with current SKY-MAP defaults.
+
+			Parameters:
+			-----------
+			None
 
 			Returns:
-			-------
-			Starmap
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.headers = { }
+		self.search_url = 'https://server1.sky-map.org/search'
+		self.link_url = 'https://www.sky-map.org/'
+		self.image_url = 'https://server2.sky-map.org/map'
+		self.url = None
+		self.params = { }
+		self.mode = 'object_chart'
+		self.query = ''
+		self.ra = 0.0
+		self.dec = 0.0
+		self.zoom = 5
+		self.image_source = 'DSS2'
+		self.box_color = 'yellow'
+		self.show_box = True
+		self.show_grid = True
+		self.show_lines = True
+		self.show_boundaries = True
+		self.show_const_names = False
+		self.width = 900
+		self.height = 450
+		self.magnitude = 7.5
+		self.agents = cfg.AGENTS
+		
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
 
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+			
+		'''
+		return [
+				'search_url',
+				'link_url',
+				'image_url',
+				'url',
+				'params',
+				'mode',
+				'query',
+				'ra',
+				'dec',
+				'zoom',
+				'image_source',
+				'box_color',
+				'show_box',
+				'show_grid',
+				'show_lines',
+				'show_boundaries',
+				'show_const_names',
+				'width',
+				'height',
+				'magnitude',
+				'search_object',
+				'fetch_object_chart',
+				'fetch_coordinate_chart',
+				'fetch_static_chart',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _flag( self, value: bool, invert: bool = False ) -> int:
+		'''
+			Purpose:
+			--------
+			Convert boolean UI flags into SKY-MAP numeric flags.
+
+			Parameters:
+			-----------
+			value (bool):
+				Input boolean value.
+
+			invert (bool):
+				If True, invert the SKY-MAP convention.
+
+			Returns:
+			--------
+			int
+		'''
+		if invert:
+			return 0 if bool( value ) else 1
+		
+		return 1 if bool( value ) else 0
+	
+	def search_object( self, name: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Resolve an object name into SKY-MAP coordinates using the XML API.
+
+			Parameters:
+			-----------
+			name (str):
+				Object name or catalog id. Examples:
+				- Polaris
+				- M31
+				- NGC 1300
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'lat', lat )
-			throw_if( 'lng', lng )
-			throw_if( 'date', date )
-			self.latitude = lat
-			self.longitude = lng
-			self.date = date
-			self.style = style
-			self.authString = base64.b64encode( self.userpass.encode( ) ).decode( )
-			self.url = f'https://api.astronomyapi.com/api/v2/studio/star-chart?'
-			self.headers[ 'Authorizeion' ] = 'Basic ' + self.authString
-			self.params = \
-			{
-                'style': self.style,
-				'observer':
-				{
-						'latitude': self.latitude,
-						'longitude': self.longitude,
-						'date': f'{ self.date }'
-				},
-				'view':
-				{
-					'type': 'area',
-					'parameters':
-					{
-						'position':
-						{
-							'equatorial':
-							{
-								'rightAscension':  14.83,
-								'declination': 33.3
-							}
-						}
-					}
+			throw_if( 'name', name )
+			self.query = str( name ).strip( )
+			self.url = self.search_url
+			self.params = { 'star': self.query }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			root = ET.fromstring( self.response.text )
+			status = root.findtext( 'status', default='' )
+			verbiage = root.findtext( 'verbiage', default='' )
+			star = root.find( 'star' )
+			
+			if star is None:
+				return {
+						'mode': 'object_search',
+						'url': self.url,
+						'params': self.params,
+						'status': status,
+						'verbiage': verbiage,
+						'data': { }
 				}
+			
+			result = {
+					'id': star.attrib.get( 'id', '' ),
+					'catalog_id': star.findtext( 'catId', default='' ),
+					'constellation': star.findtext( 'constellation', default='' ),
+					'ra': float( star.findtext( 'ra', default='0' ) ),
+					'dec': float( star.findtext( 'de', default='0' ) ),
+					'magnitude': star.findtext( 'mag', default='' )
 			}
 			
-			self.response = requests.post( url=self.url, params=self.params, headers=self.headers )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
+			self.ra = result[ 'ra' ]
+			self.dec = result[ 'dec' ]
+			
+			return {
+					'mode': 'object_search',
+					'url': self.url,
+					'params': self.params,
+					'status': status,
+					'verbiage': verbiage,
+					'data': result
+			}
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'StarChart'
-			exception.method = 'fetch_by_location( self, name: str ) -> float'
+			exception.method = (
+					'search_object( self, name: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
 			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
+	
+	def fetch_object_chart( self, name: str, zoom: int = 5,
+			box_color: str = 'yellow', show_box: bool = True,
+			image_source: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
+			--------
+			Build an object-based SKY-MAP chart link.
 
 			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
+			-----------
+			name (str):
+				Object name or catalog id.
 
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+			zoom (int):
+				Chart zoom level.
 
-			description (str):
-			Precise explanation of what the function does.
+			box_color (str):
+				Pointer box color.
 
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
+			show_box (bool):
+				Show pointer box.
 
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
+			image_source (str):
+				Optional image source such as SDSS.
 
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			time (int):
+				Request timeout in seconds.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'name', name )
+			self.mode = 'object_chart'
+			self.query = str( name ).strip( )
+			self.zoom = int( zoom )
+			self.box_color = str( box_color or 'yellow' ).strip( )
+			self.show_box = bool( show_box )
+			self.image_source = str( image_source or '' ).strip( )
+			
+			self.url = self.link_url
+			self.params = {
+					'object': self.query,
+					'zoom': self.zoom,
+					'show_box': self._flag( self.show_box ),
+					'box_color': self.box_color
+			}
+			
+			if self.image_source:
+				self.params[ 'img_source' ] = self.image_source
+			
+			link = requests.Request( 'GET', self.url, params=self.params ).prepare( ).url
+			
+			search = self.search_object( name=self.query, time=time ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'chart_url': link,
+					'search': search
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'StarChart'
+			exception.method = (
+					'fetch_object_chart( self, name: str, zoom: int=5, '
+					'box_color: str=yellow, show_box: bool=True, image_source: str=, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_coordinate_chart( self, ra: float, dec: float, zoom: int = 5,
+			box_color: str = 'yellow', show_box: bool = True,
+			show_grid: bool = True, show_lines: bool = True,
+			show_boundaries: bool = True, image_source: str = '' ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Build a coordinate-based SKY-MAP chart link.
 
-		"""
+			Parameters:
+			-----------
+			ra (float):
+				Right Ascension in decimal hours.
+
+			dec (float):
+				Declination in decimal degrees.
+
+			zoom (int):
+				Chart zoom level.
+
+			box_color (str):
+				Pointer box color.
+
+			show_box (bool):
+				Show pointer box.
+
+			show_grid (bool):
+				Show coordinate grid.
+
+			show_lines (bool):
+				Show constellation lines.
+
+			show_boundaries (bool):
+				Show constellation boundaries.
+
+			image_source (str):
+				Optional image source such as SDSS.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'coordinate_chart'
+			self.ra = float( ra )
+			self.dec = float( dec )
+			self.zoom = int( zoom )
+			self.box_color = str( box_color or 'yellow' ).strip( )
+			self.show_box = bool( show_box )
+			self.show_grid = bool( show_grid )
+			self.show_lines = bool( show_lines )
+			self.show_boundaries = bool( show_boundaries )
+			self.image_source = str( image_source or '' ).strip( )
+			
+			self.url = self.link_url
+			self.params = {
+					'ra': self.ra,
+					'de': self.dec,
+					'zoom': self.zoom,
+					'show_box': self._flag( self.show_box ),
+					'box_color': self.box_color,
+					'show_grid': self._flag( self.show_grid, invert=True ),
+					'show_constellation_lines': self._flag( self.show_lines, invert=True ),
+					'show_constellation_boundaries': self._flag( self.show_boundaries, invert=True )
+			}
+			
+			if self.image_source:
+				self.params[ 'img_source' ] = self.image_source
+			
+			link = requests.Request( 'GET', self.url, params=self.params ).prepare( ).url
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'chart_url': link
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'StarChart'
+			exception.method = (
+					'fetch_coordinate_chart( self, ra: float, dec: float, zoom: int=5, '
+					'box_color: str=yellow, show_box: bool=True, show_grid: bool=True, '
+					'show_lines: bool=True, show_boundaries: bool=True, image_source: str= ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_static_chart( self, ra: float, dec: float, zoom: int = 5,
+			image_source: str = 'DSS2', show_grid: bool = True,
+			show_lines: bool = True, show_boundaries: bool = True,
+			show_const_names: bool = False, width: int = 900,
+			height: int = 450, magnitude: float = 7.5 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Build a static SKY-MAP chart image URL.
+
+			Parameters:
+			-----------
+			ra (float):
+				Right Ascension in decimal hours.
+
+			dec (float):
+				Declination in decimal degrees.
+
+			zoom (int):
+				Chart zoom level.
+
+			image_source (str):
+				Image survey source.
+
+			show_grid (bool):
+				Show grid.
+
+			show_lines (bool):
+				Show constellation lines.
+
+			show_boundaries (bool):
+				Show constellation boundaries.
+
+			show_const_names (bool):
+				Show constellation names.
+
+			width (int):
+				Image width in pixels.
+
+			height (int):
+				Image height in pixels.
+
+			magnitude (float):
+				Limiting magnitude.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'static_chart'
+			self.ra = float( ra )
+			self.dec = float( dec )
+			self.zoom = int( zoom )
+			self.image_source = str( image_source or 'DSS2' ).strip( )
+			self.show_grid = bool( show_grid )
+			self.show_lines = bool( show_lines )
+			self.show_boundaries = bool( show_boundaries )
+			self.show_const_names = bool( show_const_names )
+			self.width = int( width )
+			self.height = int( height )
+			self.magnitude = float( magnitude )
+			
+			self.url = self.image_url
+			self.params = {
+					'type': 'FULL',
+					'w': self.width,
+					'h': self.height,
+					'ra': self.ra,
+					'de': self.dec,
+					'zoom': self.zoom,
+					'mag': self.magnitude,
+					'show_grid': self._flag( self.show_grid ),
+					'grid_color': '404040',
+					'grid_color_zero': '808080',
+					'show_constellation_lines': self._flag( self.show_lines ),
+					'show_constellation_boundaries': self._flag( self.show_boundaries ),
+					'show_const_names': self._flag( self.show_const_names ),
+					'img_source': self.image_source
+			}
+			
+			image_link = requests.Request( 'GET', self.url, params=self.params ).prepare( ).url
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'image_url': image_link
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'StarChart'
+			exception.method = (
+					'fetch_static_chart( self, ra: float, dec: float, zoom: int=5, '
+					'image_source: str=DSS2, show_grid: bool=True, show_lines: bool=True, '
+					'show_boundaries: bool=True, show_const_names: bool=False, '
+					'width: int=900, height: int=450, magnitude: float=7.5 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'object_chart', query: str = '',
+			ra: float = 0.0, dec: float = 0.0, zoom: int = 5,
+			image_source: str = 'DSS2', box_color: str = 'yellow',
+			show_box: bool = True, show_grid: bool = True,
+			show_lines: bool = True, show_boundaries: bool = True,
+			show_const_names: bool = False, width: int = 900,
+			height: int = 450, magnitude: float = 7.5,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for SKY-MAP chart generation.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of:
+				- object_search
+				- object_chart
+				- coordinate_chart
+				- static_chart
+
+			query (str):
+				Object query for object_search and object_chart.
+
+			ra (float):
+				Right Ascension for coordinate_chart and static_chart.
+
+			dec (float):
+				Declination for coordinate_chart and static_chart.
+
+			zoom (int):
+				Chart zoom level.
+
+			image_source (str):
+				Image source.
+
+			box_color (str):
+				Pointer box color.
+
+			show_box (bool):
+				Show pointer box.
+
+			show_grid (bool):
+				Show coordinate grid.
+
+			show_lines (bool):
+				Show constellation lines.
+
+			show_boundaries (bool):
+				Show constellation boundaries.
+
+			show_const_names (bool):
+				Show constellation names.
+
+			width (int):
+				Static image width.
+
+			height (int):
+				Static image height.
+
+			magnitude (float):
+				Static image limiting magnitude.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = (mode or 'object_chart').strip( ).lower( )
+			
+			if active_mode == 'object_search':
+				return self.search_object(
+					name=query,
+					time=time
+				)
+			
+			if active_mode == 'object_chart':
+				return self.fetch_object_chart(
+					name=query,
+					zoom=zoom,
+					box_color=box_color,
+					show_box=show_box,
+					image_source=image_source if image_source != 'DSS2' else '',
+					time=time
+				)
+			
+			if active_mode == 'coordinate_chart':
+				return self.fetch_coordinate_chart(
+					ra=ra,
+					dec=dec,
+					zoom=zoom,
+					box_color=box_color,
+					show_box=show_box,
+					show_grid=show_grid,
+					show_lines=show_lines,
+					show_boundaries=show_boundaries,
+					image_source=image_source if image_source != 'DSS2' else ''
+				)
+			
+			if active_mode == 'static_chart':
+				return self.fetch_static_chart(
+					ra=ra,
+					dec=dec,
+					zoom=zoom,
+					image_source=image_source,
+					show_grid=show_grid,
+					show_lines=show_lines,
+					show_boundaries=show_boundaries,
+					show_const_names=show_const_names,
+					width=width,
+					height=height,
+					magnitude=magnitude
+				)
+			
+			raise ValueError(
+				"Unsupported mode. Use 'object_search', 'object_chart', "
+				"'coordinate_chart', or 'static_chart'."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'StarChart'
+			exception.method = (
+					'fetch( self, mode: str=object_chart, query: str=, ra: float=0.0, '
+					'dec: float=0.0, zoom: int=5, image_source: str=DSS2, '
+					'box_color: str=yellow, show_box: bool=True, show_grid: bool=True, '
+					'show_lines: bool=True, show_boundaries: bool=True, '
+					'show_const_names: bool=False, width: int=900, height: int=450, '
+					'magnitude: float=7.5, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			
+			return {
+					'name': function.strip( ),
+					'description': f'{description.strip( )} This function uses the {tool.strip( )} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
 			}
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.cause = 'StarChart'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 			
 class Congress( Fetcher ):

@@ -5741,37 +5741,255 @@ elif mode == 'Satellite Data':
 	
 	# -------- Space Weather
 	with st.expander( label='Space Weather', expanded=False ):
+		if 'spaceweather_results' not in st.session_state:
+			st.session_state[ 'spaceweather_results' ] = { }
+		
+		if 'spaceweather_clear_request' not in st.session_state:
+			st.session_state[ 'spaceweather_clear_request' ] = False
+		
+		if st.session_state.get( 'spaceweather_clear_request', False ):
+			st.session_state[ 'spaceweather_mode' ] = 'cme'
+			st.session_state[ 'spaceweather_start_date' ] = '2026-03-01'
+			st.session_state[ 'spaceweather_end_date' ] = '2026-03-15'
+			st.session_state[ 'spaceweather_location' ] = 'ALL'
+			st.session_state[ 'spaceweather_catalog' ] = 'ALL'
+			st.session_state[ 'spaceweather_notification_type' ] = 'all'
+			st.session_state[ 'spaceweather_most_accurate_only' ] = True
+			st.session_state[ 'spaceweather_complete_entry_only' ] = True
+			st.session_state[ 'spaceweather_speed' ] = 0
+			st.session_state[ 'spaceweather_half_angle' ] = 0
+			st.session_state[ 'spaceweather_keyword' ] = ''
+			st.session_state[ 'spaceweather_timeout' ] = 20
+			st.session_state[ 'spaceweather_results' ] = { }
+			st.session_state[ 'spaceweather_clear_request' ] = False
+		
+		def _clear_spaceweather_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Space Weather expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'spaceweather_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			spaceweather_query = st.text_area( 'Query', value='',
-				height=40, key='spaceweather_query' )
+			spaceweather_mode = st.selectbox(
+				'Mode',
+				options=[
+						'cme', 'cme_analysis', 'gst', 'ips', 'flr',
+						'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', 'notifications'
+				],
+				index=[
+						'cme', 'cme_analysis', 'gst', 'ips', 'flr',
+						'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', 'notifications'
+				].index(
+					st.session_state.get( 'spaceweather_mode', 'cme' )
+				),
+				key='spaceweather_mode',
+				help='Choose the documented DONKI endpoint to query.'
+			)
+			
+			d1, d2 = st.columns( 2 )
+			
+			with d1:
+				spaceweather_start_date = st.text_input(
+					'Start Date',
+					value=st.session_state.get( 'spaceweather_start_date', '2026-03-01' ),
+					key='spaceweather_start_date',
+					placeholder='2026-03-01'
+				)
+			
+			with d2:
+				spaceweather_end_date = st.text_input(
+					'End Date',
+					value=st.session_state.get( 'spaceweather_end_date', '2026-03-15' ),
+					key='spaceweather_end_date',
+					placeholder='2026-03-15'
+				)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				spaceweather_location = st.text_input(
+					'Location',
+					value=st.session_state.get( 'spaceweather_location', 'ALL' ),
+					key='spaceweather_location',
+					placeholder='ALL or Earth',
+					disabled=(spaceweather_mode != 'ips')
+				)
+			
+			with c2:
+				spaceweather_catalog = st.text_input(
+					'Catalog',
+					value=st.session_state.get( 'spaceweather_catalog', 'ALL' ),
+					key='spaceweather_catalog',
+					placeholder='ALL or SWRC_CATALOG',
+					disabled=(spaceweather_mode not in [ 'ips', 'cme_analysis' ])
+				)
+			
+			c3, c4 = st.columns( 2 )
+			
+			with c3:
+				spaceweather_notification_type = st.text_input(
+					'Notification Type',
+					value=st.session_state.get( 'spaceweather_notification_type', 'all' ),
+					key='spaceweather_notification_type',
+					placeholder='all or FLR',
+					disabled=(spaceweather_mode != 'notifications')
+				)
+			
+			with c4:
+				spaceweather_keyword = st.text_input(
+					'Keyword',
+					value=st.session_state.get( 'spaceweather_keyword', '' ),
+					key='spaceweather_keyword',
+					placeholder='swpc_annex',
+					disabled=(spaceweather_mode != 'cme_analysis')
+				)
+			
+			c5, c6 = st.columns( 2 )
+			
+			with c5:
+				spaceweather_speed = st.number_input(
+					'Speed',
+					min_value=0,
+					max_value=5000,
+					value=int( st.session_state.get( 'spaceweather_speed', 0 ) ),
+					step=10,
+					key='spaceweather_speed',
+					disabled=(spaceweather_mode != 'cme_analysis')
+				)
+			
+			with c6:
+				spaceweather_half_angle = st.number_input(
+					'Half Angle',
+					min_value=0,
+					max_value=180,
+					value=int( st.session_state.get( 'spaceweather_half_angle', 0 ) ),
+					step=1,
+					key='spaceweather_half_angle',
+					disabled=(spaceweather_mode != 'cme_analysis')
+				)
+			
+			c7, c8, c9 = st.columns( 3 )
+			
+			with c7:
+				spaceweather_most_accurate_only = st.checkbox(
+					'Most Accurate Only',
+					value=bool( st.session_state.get( 'spaceweather_most_accurate_only', True ) ),
+					key='spaceweather_most_accurate_only',
+					disabled=(spaceweather_mode != 'cme_analysis')
+				)
+			
+			with c8:
+				spaceweather_complete_entry_only = st.checkbox(
+					'Complete Entry Only',
+					value=bool( st.session_state.get( 'spaceweather_complete_entry_only', True ) ),
+					key='spaceweather_complete_entry_only',
+					disabled=(spaceweather_mode != 'cme_analysis')
+				)
+			
+			with c9:
+				spaceweather_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'spaceweather_timeout', 20 ) ),
+					step=1,
+					key='spaceweather_timeout'
+				)
+			
+			st.caption(
+				'Examples: cme for coronal mass ejections, gst for geomagnetic storms, '
+				'ips with Location=Earth, notifications with Type=all, or '
+				'cme_analysis with Catalog=ALL and Speed=500.'
+			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
-				spaceweather_submit = st.button( 'Submit', key='spaceweather_submit' )
+				spaceweather_submit = st.button(
+					'Submit',
+					key='spaceweather_submit'
+				)
+			
 			with b2:
-				spaceweather_clear = st.button( 'Clear', key='spaceweather_clear' )
+				st.button(
+					'Clear',
+					key='spaceweather_clear',
+					on_click=_clear_spaceweather_state
+				)
 		
 		with col_right:
-			spaceweather_output = st.empty( )
-		
-		if spaceweather_clear:
-			st.session_state.update( { 'spaceweather_query': '', } )
-			st.rerun( )
-		
-		if spaceweather_submit:
-			try:
-				f = SpaceWeather( )
-				result = f.fetch( spaceweather_query )
+			if spaceweather_submit:
+				try:
+					f = SpaceWeather( )
+					result = f.fetch(
+						mode=spaceweather_mode,
+						start_date=str( spaceweather_start_date ),
+						end_date=str( spaceweather_end_date ),
+						location=str( spaceweather_location or 'ALL' ),
+						catalog=str( spaceweather_catalog or 'ALL' ),
+						notification_type=str( spaceweather_notification_type or 'all' ),
+						most_accurate_only=bool( spaceweather_most_accurate_only ),
+						complete_entry_only=bool( spaceweather_complete_entry_only ),
+						speed=int( spaceweather_speed ),
+						half_angle=int( spaceweather_half_angle ),
+						keyword=str( spaceweather_keyword or '' ),
+						time=int( spaceweather_timeout )
+					)
+					
+					st.session_state[ 'spaceweather_results' ] = result or { }
+					st.rerun( )
 				
-				if not result:
-					spaceweather_output.info( 'No results returned.' )
-				else:
-					spaceweather_output.text_area( 'Results', value=str( result ), height=300 )
+				except Exception as exc:
+					st.error( 'Space Weather request failed.' )
+					st.exception( exc )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			result = st.session_state.get( 'spaceweather_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'endpoint' in result:
+						st.markdown( f"**Endpoint:** {result.get( 'endpoint', '' )}" )
+				
+				with meta_c2:
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				if result.get( 'params', { } ):
+					st.markdown( '#### Request Parameters' )
+					st.json( result.get( 'params', { } ) )
+				
+				data = result.get( 'data', [ ] )
+				if isinstance( data, list ):
+					if data:
+						st.markdown( '#### Results' )
+						df_spaceweather = pd.DataFrame( data )
+						st.dataframe( df_spaceweather, use_container_width=True, hide_index=True )
+					else:
+						st.text( 'No rows returned.' )
+				else:
+					st.markdown( '#### Results' )
+					st.json( data )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Star Chart
 	with st.expander( label='Star Chart', expanded=False ):
@@ -5806,40 +6024,383 @@ elif mode == 'Satellite Data':
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-		
+	
 	# -------- Nearby Objects
 	with st.expander( label='Near Earth Objects', expanded=False ):
+		if 'nearbyobjects_results' not in st.session_state:
+			st.session_state[ 'nearbyobjects_results' ] = { }
+		
+		if 'nearbyobjects_clear_request' not in st.session_state:
+			st.session_state[ 'nearbyobjects_clear_request' ] = False
+		
+		if st.session_state.get( 'nearbyobjects_clear_request', False ):
+			st.session_state[ 'nearbyobjects_mode' ] = 'close_approaches'
+			st.session_state[ 'nearbyobjects_start_date' ] = '2026-03-01'
+			st.session_state[ 'nearbyobjects_end_date' ] = '2026-03-31'
+			st.session_state[ 'nearbyobjects_query' ] = 'Apophis'
+			st.session_state[ 'nearbyobjects_query_type' ] = 'sstr'
+			st.session_state[ 'nearbyobjects_dist_max' ] = '10LD'
+			st.session_state[ 'nearbyobjects_body' ] = 'Earth'
+			st.session_state[ 'nearbyobjects_sort' ] = 'date'
+			st.session_state[ 'nearbyobjects_limit' ] = 20
+			st.session_state[ 'nearbyobjects_dv' ] = 6.0
+			st.session_state[ 'nearbyobjects_dur' ] = 360
+			st.session_state[ 'nearbyobjects_stay' ] = 8
+			st.session_state[ 'nearbyobjects_launch' ] = '2020-2045'
+			st.session_state[ 'nearbyobjects_h' ] = 26.0
+			st.session_state[ 'nearbyobjects_occ' ] = 7
+			st.session_state[ 'nearbyobjects_include_physical' ] = True
+			st.session_state[ 'nearbyobjects_include_close_approaches' ] = True
+			st.session_state[ 'nearbyobjects_ca_body' ] = 'Earth'
+			st.session_state[ 'nearbyobjects_include_discovery' ] = True
+			st.session_state[ 'nearbyobjects_timeout' ] = 20
+			st.session_state[ 'nearbyobjects_results' ] = { }
+			st.session_state[ 'nearbyobjects_clear_request' ] = False
+		
+		def _clear_nearbyobjects_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Near Earth Objects expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'nearbyobjects_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			nearby_query = st.text_area( 'Query', value='',
-				height=40, key='nearbyobjects_query' )
+			nearby_mode = st.selectbox(
+				'Mode',
+				options=[
+						'close_approaches',
+						'object_lookup',
+						'nhats_summary',
+						'nhats_object',
+						'fireballs'
+				],
+				index=[
+						'close_approaches',
+						'object_lookup',
+						'nhats_summary',
+						'nhats_object',
+						'fireballs'
+				].index(
+					st.session_state.get( 'nearbyobjects_mode', 'close_approaches' )
+				),
+				key='nearbyobjects_mode',
+				help='Choose close approaches, single-object lookup, NHATS screening, or fireball data.'
+			)
+			
+			d1, d2 = st.columns( 2 )
+			
+			with d1:
+				nearby_start_date = st.text_input(
+					'Start Date',
+					value=st.session_state.get( 'nearbyobjects_start_date', '2026-03-01' ),
+					key='nearbyobjects_start_date',
+					placeholder='2026-03-01',
+					disabled=(nearby_mode not in [ 'close_approaches', 'fireballs' ])
+				)
+			
+			with d2:
+				nearby_end_date = st.text_input(
+					'End Date',
+					value=st.session_state.get( 'nearbyobjects_end_date', '2026-03-31' ),
+					key='nearbyobjects_end_date',
+					placeholder='2026-03-31',
+					disabled=(nearby_mode != 'close_approaches')
+				)
+			
+			nearby_query = st.text_area(
+				'Object Query / Designation',
+				height=80,
+				key='nearbyobjects_query',
+				placeholder=(
+						'Examples:\n'
+						'Apophis\n'
+						'Eros\n'
+						'99942\n'
+						'2000 SG344'
+				),
+				disabled=(nearby_mode not in [ 'object_lookup', 'nhats_object' ])
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				nearby_query_type = st.selectbox(
+					'Query Type',
+					options=[ 'sstr', 'spk', 'des' ],
+					index=[ 'sstr', 'spk', 'des' ].index(
+						st.session_state.get( 'nearbyobjects_query_type', 'sstr' )
+					),
+					key='nearbyobjects_query_type',
+					disabled=(nearby_mode != 'object_lookup')
+				)
+			
+			with c2:
+				nearby_dist_max = st.text_input(
+					'Distance Max',
+					value=st.session_state.get( 'nearbyobjects_dist_max', '10LD' ),
+					key='nearbyobjects_dist_max',
+					placeholder='10LD or 0.05AU',
+					disabled=(nearby_mode != 'close_approaches')
+				)
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				nearby_body = st.text_input(
+					'Body',
+					value=st.session_state.get( 'nearbyobjects_body', 'Earth' ),
+					key='nearbyobjects_body',
+					placeholder='Earth',
+					disabled=(nearby_mode != 'close_approaches')
+				)
+			
+			with c4:
+				nearby_sort = st.text_input(
+					'Sort',
+					value=st.session_state.get( 'nearbyobjects_sort', 'date' ),
+					key='nearbyobjects_sort',
+					placeholder='date or dist',
+					disabled=(nearby_mode != 'close_approaches')
+				)
+			
+			with c5:
+				nearby_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=500,
+					value=int( st.session_state.get( 'nearbyobjects_limit', 20 ) ),
+					step=1,
+					key='nearbyobjects_limit'
+				)
+			
+			st.markdown( '#### NHATS Filters' )
+			
+			n1, n2, n3 = st.columns( 3 )
+			
+			with n1:
+				nearby_dv = st.number_input(
+					'ΔV',
+					min_value=0.0,
+					max_value=20.0,
+					value=float( st.session_state.get( 'nearbyobjects_dv', 6.0 ) ),
+					step=0.1,
+					key='nearbyobjects_dv',
+					disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
+				)
+			
+			with n2:
+				nearby_dur = st.number_input(
+					'Duration',
+					min_value=1,
+					max_value=3000,
+					value=int( st.session_state.get( 'nearbyobjects_dur', 360 ) ),
+					step=1,
+					key='nearbyobjects_dur',
+					disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
+				)
+			
+			with n3:
+				nearby_stay = st.number_input(
+					'Stay',
+					min_value=0,
+					max_value=365,
+					value=int( st.session_state.get( 'nearbyobjects_stay', 8 ) ),
+					step=1,
+					key='nearbyobjects_stay',
+					disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
+				)
+			
+			n4, n5, n6 = st.columns( 3 )
+			
+			with n4:
+				nearby_launch = st.text_input(
+					'Launch Window',
+					value=st.session_state.get( 'nearbyobjects_launch', '2020-2045' ),
+					key='nearbyobjects_launch',
+					placeholder='2020-2045',
+					disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
+				)
+			
+			with n5:
+				nearby_h = st.number_input(
+					'H Max',
+					min_value=0.0,
+					max_value=40.0,
+					value=float( st.session_state.get( 'nearbyobjects_h', 26.0 ) ),
+					step=0.1,
+					key='nearbyobjects_h',
+					disabled=(nearby_mode != 'nhats_summary')
+				)
+			
+			with n6:
+				nearby_occ = st.number_input(
+					'OCC Max',
+					min_value=0,
+					max_value=20,
+					value=int( st.session_state.get( 'nearbyobjects_occ', 7 ) ),
+					step=1,
+					key='nearbyobjects_occ',
+					disabled=(nearby_mode != 'nhats_summary')
+				)
+			
+			st.markdown( '#### SBDB Options' )
+			
+			s1, s2, s3 = st.columns( 3 )
+			
+			with s1:
+				nearby_include_physical = st.checkbox(
+					'Physical Params',
+					value=bool( st.session_state.get( 'nearbyobjects_include_physical', True ) ),
+					key='nearbyobjects_include_physical',
+					disabled=(nearby_mode != 'object_lookup')
+				)
+			
+			with s2:
+				nearby_include_close_approaches = st.checkbox(
+					'CA Data',
+					value=bool( st.session_state.get( 'nearbyobjects_include_close_approaches', True ) ),
+					key='nearbyobjects_include_close_approaches',
+					disabled=(nearby_mode != 'object_lookup')
+				)
+			
+			with s3:
+				nearby_include_discovery = st.checkbox(
+					'Discovery',
+					value=bool( st.session_state.get( 'nearbyobjects_include_discovery', True ) ),
+					key='nearbyobjects_include_discovery',
+					disabled=(nearby_mode != 'object_lookup')
+				)
+			
+			nearby_ca_body = st.text_input(
+				'CA Body',
+				value=st.session_state.get( 'nearbyobjects_ca_body', 'Earth' ),
+				key='nearbyobjects_ca_body',
+				placeholder='Earth',
+				disabled=(nearby_mode != 'object_lookup')
+			)
+			
+			nearby_timeout = st.number_input(
+				'Timeout',
+				min_value=1,
+				max_value=120,
+				value=int( st.session_state.get( 'nearbyobjects_timeout', 20 ) ),
+				step=1,
+				key='nearbyobjects_timeout'
+			)
+			
+			st.caption(
+				'Examples: close_approaches with Distance Max=10LD and Body=Earth; '
+				'object_lookup with Query=Apophis and Query Type=sstr; '
+				'nhats_object with Query=99942; fireballs with Start Date=2014-01-01.'
+			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
-				nearby_submit = st.button( 'Submit', key='nearbyobjects_submit' )
+				nearby_submit = st.button(
+					'Submit',
+					key='nearbyobjects_submit'
+				)
+			
 			with b2:
-				nearby_clear = st.button( 'Clear', key='nearbyobjects_clear' )
+				st.button(
+					'Clear',
+					key='nearbyobjects_clear',
+					on_click=_clear_nearbyobjects_state
+				)
 		
 		with col_right:
-			nearby_output = st.empty( )
-		
-		if nearby_clear:
-			st.session_state.update( { 'nearbyobjects_query': "", } )
-			st.rerun( )
-		
-		if nearby_submit:
-			try:
-				f = NearbyObjects( )
-				result = f.fetch( nearby_query )
+			if nearby_submit:
+				try:
+					f = NearbyObjects( )
+					result = f.fetch(
+						mode=nearby_mode,
+						start_date=str( nearby_start_date ),
+						end_date=str( nearby_end_date ),
+						query=str( nearby_query or '' ).strip( ),
+						query_type=str( nearby_query_type ),
+						dist_max=str( nearby_dist_max or '10LD' ),
+						body=str( nearby_body or 'Earth' ),
+						sort=str( nearby_sort or 'date' ),
+						limit=int( nearby_limit ),
+						dv=float( nearby_dv ),
+						dur=int( nearby_dur ),
+						stay=int( nearby_stay ),
+						launch=str( nearby_launch or '2020-2045' ),
+						h=float( nearby_h ),
+						occ=int( nearby_occ ),
+						include_physical=bool( nearby_include_physical ),
+						include_close_approaches=bool( nearby_include_close_approaches ),
+						ca_body=str( nearby_ca_body or 'Earth' ),
+						include_discovery=bool( nearby_include_discovery ),
+						time=int( nearby_timeout )
+					)
+					
+					st.session_state[ 'nearbyobjects_results' ] = result or { }
+					st.rerun( )
 				
-				if not result:
-					nearby_output.info( 'No results returned.' )
-				else:
-					nearby_output.text_area( 'Results', value=str( result ), height=300 )
+				except Exception as exc:
+					st.error( 'Near Earth Objects request failed.' )
+					st.exception( exc )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
+			result = st.session_state.get( 'nearbyobjects_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					if 'count' in result:
+						st.markdown( f"**Count:** {result.get( 'count', '' )}" )
+				
+				if result.get( 'params', { } ):
+					st.markdown( '#### Request Parameters' )
+					st.json( result.get( 'params', { } ) )
+				
+				if result.get( 'fields', [ ] ) and result.get( 'data', [ ] ):
+					st.markdown( '#### Results' )
+					df_nearby = pd.DataFrame(
+						result.get( 'data', [ ] ),
+						columns=result.get( 'fields', [ ] )
+					)
+					st.dataframe( df_nearby, use_container_width=True, hide_index=True )
+				
+				elif 'data' in result:
+					st.markdown( '#### Results' )
+					data = result.get( 'data', { } )
+					if isinstance( data, list ):
+						if data:
+							df_nearby = pd.DataFrame( data )
+							st.dataframe( df_nearby, use_container_width=True, hide_index=True )
+						else:
+							st.text( 'No rows returned.' )
+					else:
+						st.json( data )
+				
+				if result.get( 'signature', { } ):
+					with st.expander( 'Signature', expanded=False ):
+						st.json( result.get( 'signature', { } ) )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 
 # ==============================================================================
 # DATA MANAGEMENT MODE
