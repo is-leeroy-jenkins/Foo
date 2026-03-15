@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="32a5d7b3-c147-4de4-97eb-9bee64e5817d" name="Changes" comment="update" />
+    <list default="true" id="32a5d7b3-c147-4de4-97eb-9bee64e5817d" name="Changes" comment="update">
+      <change beforePath="$PROJECT_DIR$/fetchers.py" beforeDir="false" afterPath="$PROJECT_DIR$/fetchers.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -85,7 +87,7 @@
       <workItem from="1773503227241" duration="655000" />
       <workItem from="1773503920910" duration="12124000" />
       <workItem from="1773531965931" duration="7667000" />
-      <workItem from="1773578737318" duration="10754000" />
+      <workItem from="1773578737318" duration="11111000" />
     </task>
     <task id="LOCAL-00001" summary="update">
       <option name="closed" value="true" />

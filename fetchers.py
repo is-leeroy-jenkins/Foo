@@ -409,7 +409,6 @@ class Fetch( ):
 			exception.method = 'query_chat(self, prompt)'
 			raise exception
 			
-
 class WebFetcher( Fetcher ):
 	'''
 		
