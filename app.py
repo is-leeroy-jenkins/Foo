@@ -55,6 +55,7 @@ import json
 import numpy as np
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -69,7 +70,7 @@ from fetchers import (
 	GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
 	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
 	GovData, Congress, InternetArchive, Chat, Claude,
-	Groq, Mistral, Gemini, StarChart, HistoricalWeather
+	Groq, Mistral, Gemini, StarChart, HistoricalWeather, GoogleGeocoding
 )
 
 import matplotlib as px
@@ -2130,7 +2131,7 @@ elif mode == 'Data Retrieval':
 	st.session_state.setdefault( "arxiv_results", [ ] )
 	
 	# -------- ArXiv
-	with st.expander( label='ArXiv', expanded=True ):
+	with st.expander( label='ArXiv', expanded=False ):
 		if 'arxiv_results' not in st.session_state:
 			st.session_state[ 'arxiv_results' ] = [ ]
 		
@@ -5082,42 +5083,137 @@ elif mode == 'Data Generation':
 	st.subheader( '🧠  Generative AI' )
 	st.divider( )
 	
-	# -------- Chat GPT
+	# -------- ChatGPT
 	with st.expander( label='ChatGPT', expanded=True ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			chat_prompt = st.text_area( 'Prompt', value='', height=40, key='chat_prompt' )
+			chat_prompt = st.text_area( 'Prompt', value='', height=120, key='chat_prompt' )
 			
 			p_row1 = st.columns( 2 )
 			p_row2 = st.columns( 2 )
 			p_row3 = st.columns( 2 )
+			p_row4 = st.columns( 2 )
+			p_row5 = st.columns( 2 )
 			
 			with p_row1[ 0 ]:
-				chat_model = _model_selector( key_prefix='chat', label='Model',
-					options=[ 'gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.1', 'o3-mini',  ],
-					default_model='gpt-4o-mini', )
+				_chat_models = cfg.GPT_MODELS if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS else \
+					[ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1' ]
+				chat_model = _model_selector(
+					key_prefix='chat',
+					label='Model',
+					options=_chat_models,
+					default_model=(
+						'gpt-5-mini' if 'gpt-5-mini' in _chat_models else _chat_models[ 0 ]),
+				)
 			
 			with p_row1[ 1 ]:
-				chat_temperature = st.slider( 'Temperature', min_value=0.0, max_value=2.0,
-					value=0.7, step=0.05, key='chat_temperature', )
+				chat_temperature = st.slider(
+					'Temperature',
+					min_value=0.0,
+					max_value=2.0,
+					value=0.7,
+					step=0.05,
+					key='chat_temperature',
+				)
 			
 			with p_row2[ 0 ]:
-				chat_max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=32768,
-					value=1024, step=1, key='chat_max_tokens', )
+				chat_max_tokens = st.number_input(
+					'Max Tokens',
+					min_value=1,
+					max_value=32768,
+					value=2048,
+					step=1,
+					key='chat_max_tokens',
+				)
 			
 			with p_row2[ 1 ]:
-				chat_top_p = st.slider( 'Top-P', min_value=0.0, max_value=1.0,
-					value=1.0, step=0.01, key='chat_top_p', )
+				chat_top_p = st.slider(
+					'Top-P',
+					min_value=0.0,
+					max_value=1.0,
+					value=1.0,
+					step=0.01,
+					key='chat_top_p',
+				)
 			
 			with p_row3[ 0 ]:
-				chat_seed = st.number_input( 'Seed', min_value=0, max_value=2_147_483_647,
-					value=0, step=1, key='chat_seed', )
+				chat_seed = st.number_input(
+					'Seed',
+					min_value=0,
+					max_value=2_147_483_647,
+					value=0,
+					step=1,
+					key='chat_seed',
+				)
 			
 			with p_row3[ 1 ]:
-				chat_json_mode = st.checkbox( 'JSON Mode', value=False, key='chat_json_mode' )
+				chat_json_mode = st.checkbox(
+					'JSON Mode',
+					value=False,
+					key='chat_json_mode',
+				)
 			
-			chat_system = st.text_area( 'System', value='', height=100, key='chat_system' )
+			with p_row4[ 0 ]:
+				chat_reasoning = st.checkbox(
+					'Reasoning',
+					value=False,
+					key='chat_reasoning',
+				)
+			
+			with p_row4[ 1 ]:
+				chat_web_search = st.checkbox(
+					'Web Search',
+					value=False,
+					key='chat_web_search',
+				)
+			
+			with p_row5[ 0 ]:
+				chat_store = st.checkbox(
+					'Store',
+					value=True,
+					key='chat_store',
+				)
+			
+			with p_row5[ 1 ]:
+				chat_stream = st.checkbox(
+					'Stream',
+					value=False,
+					key='chat_stream',
+				)
+			
+			_chat_supports_reasoning = (
+					str( chat_model ).strip( ).lower( ).startswith( 'gpt-5' )
+					or str( chat_model ).strip( ).lower( ).startswith( 'o' )
+			)
+			
+			if _chat_supports_reasoning and chat_reasoning:
+				chat_reasoning_effort = st.selectbox(
+					'Reasoning Effort',
+					options=[ 'minimal', 'low', 'medium', 'high' ],
+					index=1,
+					key='chat_reasoning_effort',
+				)
+			else:
+				chat_reasoning_effort = None
+			
+			chat_system = st.text_area(
+				'System',
+				value='',
+				height=120,
+				key='chat_system',
+			)
+			
+			if chat_web_search:
+				chat_domains = st.text_area(
+					'Preferred Search Domains (one per line or comma-separated)',
+					value='',
+					height=90,
+					key='chat_domains',
+					help='Examples: openai.com, platform.openai.com, arxiv.org',
+				)
+			else:
+				chat_domains = ''
 			
 			btn_row = st.columns( 2 )
 			with btn_row[ 0 ]:
@@ -5132,7 +5228,19 @@ elif mode == 'Data Generation':
 		# Clear Button
 		# -----------------------------
 		if chat_clear:
-			st.session_state.update( { "chat_prompt": '', "chat_system": "" } )
+			st.session_state.update(
+				{
+						'chat_prompt': '',
+						'chat_system': '',
+						'chat_domains': '',
+						'chat_json_mode': False,
+						'chat_reasoning': False,
+						'chat_web_search': False,
+						'chat_store': True,
+						'chat_stream': False,
+						'chat_seed': 0,
+				}
+			)
 			st.rerun( )
 		
 		# -----------------------------
@@ -5140,17 +5248,53 @@ elif mode == 'Data Generation':
 		# -----------------------------
 		if chat_submit:
 			try:
+				if not str( chat_prompt ).strip( ):
+					raise ValueError( 'Prompt cannot be empty.' )
+				
+				chat_domains_list = [ ]
+				if chat_domains and str( chat_domains ).strip( ):
+					_domain_entries = re.split( r'[\n,;]+', str( chat_domains ) )
+					for _entry in _domain_entries:
+						_value = str( _entry ).strip( ).lower( )
+						if not _value:
+							continue
+						
+						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+							_value = f'https://{_value}'
+						
+						_parsed = urlparse( _value )
+						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+						_domain = re.sub( r':\d+$', '', _domain )
+						_domain = _domain.lstrip( '.' )
+						
+						if _domain.startswith( 'www.' ):
+							_domain = _domain[ 4: ]
+						
+						if _domain and _domain not in chat_domains_list:
+							chat_domains_list.append( _domain )
+				
 				fetcher = Chat( )
 				params = \
-				{ 
-						'model': chat_model, 
-				        'temperature': float( chat_temperature ),
-				        'max_tokens': int( chat_max_tokens ), 
-				        'top_p': float( chat_top_p ), 
-				        'seed': int( chat_seed ) if int( chat_seed ) > 0 else None, 
-				        'system': chat_system if chat_system.strip( ) else None, 
-				        'response_format': ('json' if chat_json_mode else None),
-				}
+					{
+							'model': chat_model,
+							'temperature': float( chat_temperature ),
+							'max_tokens': int( chat_max_tokens ),
+							'top_p': float( chat_top_p ),
+							'seed': int( chat_seed ) if int( chat_seed ) > 0 else None,
+							'system': chat_system if str( chat_system ).strip( ) else None,
+							'response_format': ('json' if chat_json_mode else None),
+							'reasoning_effort': (
+									chat_reasoning_effort
+									if _chat_supports_reasoning and chat_reasoning and chat_reasoning_effort
+									else None
+							),
+							'web_search': bool( chat_web_search ),
+							'search_domains': chat_domains_list if chat_domains_list else None,
+							'store': bool( chat_store ),
+							'stream': bool( chat_stream ),
+							'parallel_tool_calls': True,
+							'tool_choice': 'auto',
+					}
 				
 				params = { k: v for k, v in params.items( ) if v is not None }
 				result = _invoke_provider( fetcher, chat_prompt, params )
@@ -5158,42 +5302,161 @@ elif mode == 'Data Generation':
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-		
-	# -------- GROQ
+	
+	# -------- Groq
 	with st.expander( label='Groq', expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			groq_prompt = st.text_area( 'Prompt', value='', height=40,
-				key='groq_prompt_chat' )
+			groq_prompt = st.text_area(
+				'Prompt',
+				value='',
+				height=120,
+				key='groq_prompt_chat',
+			)
 			
 			p_row1 = st.columns( 2 )
 			p_row2 = st.columns( 2 )
 			p_row3 = st.columns( 2 )
+			p_row4 = st.columns( 2 )
+			p_row5 = st.columns( 2 )
 			
 			with p_row1[ 0 ]:
-				groq_model = _model_selector( key_prefix='groq', label='Model',
-					options=[ 'llama3-70b-8192', 'llama3-8b-8192', 'mixtral-8x7b-32768', ],
-					default_model='llama3-70b-8192', )
+				_grok_models = cfg.GROK_MODELS if hasattr( cfg, 'GROK_MODELS' ) and cfg.GROK_MODELS else \
+					[ 'grok-4-1-fast-reasoning',
+					  'grok-4-fast-reasoning',
+					  'grok-4',
+					  'grok-code-fast-1',
+					  'grok-3-mini' ]
+				groq_model = _model_selector(
+					key_prefix='groq',
+					label='Model',
+					options=_grok_models,
+					default_model=(
+						'grok-4-fast-reasoning' if 'grok-4-fast-reasoning' in _grok_models else
+						_grok_models[ 0 ]),
+				)
 			
 			with p_row1[ 1 ]:
-				groq_temperature = st.slider( 'Temperature', min_value=0.0, max_value=2.0,
-					value=0.7, step=0.05, key='groq_temperature_chat', )
+				groq_temperature = st.slider(
+					'Temperature',
+					min_value=0.0,
+					max_value=2.0,
+					value=0.7,
+					step=0.05,
+					key='groq_temperature_chat',
+				)
 			
 			with p_row2[ 0 ]:
-				groq_max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=32768,
-					value=1024, step=1, key='groq_max_tokens_chat', )
+				groq_max_tokens = st.number_input(
+					'Max Tokens',
+					min_value=1,
+					max_value=32768,
+					value=2048,
+					step=1,
+					key='groq_max_tokens_chat',
+				)
 			
 			with p_row2[ 1 ]:
-				groq_top_p = st.slider( 'Top-P', min_value=0.0,
-					max_value=1.0, value=1.0, step=0.01, key='groq_top_p_chat', )
+				groq_top_p = st.slider(
+					'Top-P',
+					min_value=0.0,
+					max_value=1.0,
+					value=1.0,
+					step=0.01,
+					key='groq_top_p_chat',
+				)
 			
 			with p_row3[ 0 ]:
-				groq_stop = st.text_area( 'Stop Sequences (one per line)', value='', height=80,
-					key='groq_stop_chat', )
+				groq_seed = st.number_input(
+					'Seed',
+					min_value=0,
+					max_value=2_147_483_647,
+					value=0,
+					step=1,
+					key='groq_seed_chat',
+				)
 			
 			with p_row3[ 1 ]:
-				groq_stream = st.checkbox( 'Stream', value=False, key='groq_stream_chat' )
+				groq_json_mode = st.checkbox(
+					'JSON Mode',
+					value=False,
+					key='groq_json_mode_chat',
+				)
+			
+			with p_row4[ 0 ]:
+				groq_reasoning = st.checkbox(
+					'Reasoning',
+					value=False,
+					key='groq_reasoning_chat',
+					help='Use for models that support explicit reasoning controls. Grok 4 models reason natively.',
+				)
+			
+			with p_row4[ 1 ]:
+				groq_web_search = st.checkbox(
+					'Web Search',
+					value=False,
+					key='groq_web_search_chat',
+				)
+			
+			with p_row5[ 0 ]:
+				groq_store = st.checkbox(
+					'Store',
+					value=True,
+					key='groq_store_chat',
+				)
+			
+			with p_row5[ 1 ]:
+				groq_stream = st.checkbox(
+					'Stream',
+					value=False,
+					key='groq_stream_chat',
+				)
+			
+			_groq_supports_reasoning_effort = 'grok-3-mini' in str( groq_model ).strip( ).lower( )
+			_groq_is_reasoning_model = (
+					'grok-4' in str( groq_model ).strip( ).lower( )
+					or 'reasoning' in str( groq_model ).strip( ).lower( )
+			)
+			
+			if _groq_supports_reasoning_effort and groq_reasoning:
+				groq_reasoning_effort = st.selectbox(
+					'Reasoning Effort',
+					options=[ 'low', 'high' ],
+					index=0,
+					key='groq_reasoning_effort_chat',
+				)
+			else:
+				groq_reasoning_effort = None
+			
+			groq_system = st.text_area(
+				'System',
+				value='',
+				height=120,
+				key='groq_system_chat',
+			)
+			
+			if not _groq_is_reasoning_model:
+				groq_stop = st.text_area(
+					'Stop Sequences (one per line)',
+					value='',
+					height=90,
+					key='groq_stop_chat',
+				)
+			else:
+				groq_stop = ''
+				st.caption( 'Stop sequences are omitted for Grok reasoning models.' )
+			
+			if groq_web_search:
+				groq_domains = st.text_area(
+					'Allowed Search Domains (one per line or comma-separated)',
+					value='',
+					height=90,
+					key='groq_domains_chat',
+					help='Examples: x.ai, docs.x.ai, arxiv.org',
+				)
+			else:
+				groq_domains = ''
 			
 			btn_row = st.columns( 2 )
 			with btn_row[ 0 ]:
@@ -5204,29 +5467,77 @@ elif mode == 'Data Generation':
 		with col_right:
 			groq_output = st.empty( )
 		
-		
 		if groq_clear:
-			st.session_state.update( { 'groq_prompt_chat': '', 'groq_stop_chat': '' } )
+			st.session_state.update(
+				{
+						'groq_prompt_chat': '',
+						'groq_system_chat': '',
+						'groq_stop_chat': '',
+						'groq_domains_chat': '',
+						'groq_json_mode_chat': False,
+						'groq_reasoning_chat': False,
+						'groq_web_search_chat': False,
+						'groq_store_chat': True,
+						'groq_stream_chat': False,
+						'groq_seed_chat': 0,
+				}
+			)
 			st.rerun( )
 		
 		if groq_submit:
 			try:
-				fetcher = Groq( )
-				stop_lines = [ s.strip( ) for s in (groq_stop or "").splitlines( ) if
-				               s.strip( ) ]
+				if not str( groq_prompt ).strip( ):
+					raise ValueError( 'Prompt cannot be empty.' )
 				
+				groq_domains_list = [ ]
+				if groq_domains and str( groq_domains ).strip( ):
+					_domain_entries = re.split( r'[\n,;]+', str( groq_domains ) )
+					for _entry in _domain_entries:
+						_value = str( _entry ).strip( ).lower( )
+						if not _value:
+							continue
+						
+						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+							_value = f'https://{_value}'
+						
+						_parsed = urlparse( _value )
+						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+						_domain = re.sub( r':\d+$', '', _domain )
+						_domain = _domain.lstrip( '.' )
+						
+						if _domain.startswith( 'www.' ):
+							_domain = _domain[ 4: ]
+						
+						if _domain and _domain not in groq_domains_list:
+							groq_domains_list.append( _domain )
+				
+				stop_lines = [ s.strip( ) for s in (groq_stop or '').splitlines( ) if s.strip( ) ]
+				
+				fetcher = Groq( )
 				params = \
-				{
-						'model': groq_model,
-						'temperature': float( groq_temperature ),
-						'max_tokens': int( groq_max_tokens ),
-						'top_p': float( groq_top_p ),
-						'stop': stop_lines if stop_lines else None,
-						'stream': bool( groq_stream ),
-				}
+					{
+							'model': groq_model,
+							'temperature': float( groq_temperature ),
+							'max_tokens': int( groq_max_tokens ),
+							'top_p': float( groq_top_p ),
+							'seed': int( groq_seed ) if int( groq_seed ) > 0 else None,
+							'system': groq_system if str( groq_system ).strip( ) else None,
+							'response_format': ('json' if groq_json_mode else None),
+							'reasoning_effort': (
+									groq_reasoning_effort
+									if _groq_supports_reasoning_effort and groq_reasoning and groq_reasoning_effort
+									else None
+							),
+							'web_search': bool( groq_web_search ),
+							'search_domains': groq_domains_list if groq_domains_list else None,
+							'stop': stop_lines if stop_lines and not _groq_is_reasoning_model else None,
+							'stream': bool( groq_stream ),
+							'store': bool( groq_store ),
+							'parallel_tool_calls': True,
+							'tool_choice': 'auto',
+					}
 				
 				params = { k: v for k, v in params.items( ) if v is not None }
-				
 				result = _invoke_provider( fetcher, groq_prompt, params )
 				_render_output( groq_output, result )
 			
@@ -5238,30 +5549,57 @@ elif mode == 'Data Generation':
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			claude_prompt = st.text_area( 'Prompt', value='', height=40, key='claude_prompt_chat' )
+			claude_prompt = st.text_area(
+				'Prompt',
+				value='',
+				height=120,
+				key='claude_prompt_chat',
+			)
 			
 			p_row1 = st.columns( 2 )
 			p_row2 = st.columns( 2 )
 			p_row3 = st.columns( 2 )
+			p_row4 = st.columns( 2 )
+			p_row5 = st.columns( 2 )
 			
 			with p_row1[ 0 ]:
-				claude_model = _model_selector( key_prefix='claude', label='Model',
-					options=[
-							'claude-3-5-sonnet-latest',
-							'claude-3-5-haiku-latest',
-							'claude-3-opus-latest',
-							'Custom...',
-					],
-					default_model='claude-3-5-sonnet-latest',
+				_claude_models = (
+						cfg.CLAUDE_MODELS
+						if hasattr( cfg, 'CLAUDE_MODELS' ) and cfg.CLAUDE_MODELS
+						else [
+								'claude-opus-4-6',
+								'claude-sonnet-4-6',
+								'claude-haiku-4-5',
+								'claude-3-5-haiku-latest',
+						]
+				)
+				claude_model = _model_selector(
+					key_prefix='claude',
+					label='Model',
+					options=_claude_models,
+					default_model=('claude-sonnet-4-6' if 'claude-sonnet-4-6' in _claude_models else
+					               _claude_models[ 0 ]),
 				)
 			
 			with p_row1[ 1 ]:
-				claude_temperature = st.slider( 'Temperature', min_value=0.0, max_value=1.0,
-					value=0.7, step=0.05, key='claude_temperature_chat', )
+				claude_temperature = st.slider(
+					'Temperature',
+					min_value=0.0,
+					max_value=1.0,
+					value=0.7,
+					step=0.05,
+					key='claude_temperature_chat',
+				)
 			
 			with p_row2[ 0 ]:
-				claude_max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=8192,
-					value=1024, step=1, key='claude_max_tokens_chat', )
+				claude_max_tokens = st.number_input(
+					'Max Tokens',
+					min_value=1,
+					max_value=65536,
+					value=2048,
+					step=1,
+					key='claude_max_tokens_chat',
+				)
 			
 			with p_row2[ 1 ]:
 				claude_top_p = st.slider(
@@ -5284,6 +5622,21 @@ elif mode == 'Data Generation':
 				)
 			
 			with p_row3[ 1 ]:
+				claude_thinking = st.checkbox(
+					'Reasoning',
+					value=False,
+					key='claude_thinking_chat',
+					help='Anthropic exposes this as extended thinking with a token budget.',
+				)
+			
+			with p_row4[ 0 ]:
+				claude_web_search = st.checkbox(
+					'Web Search',
+					value=False,
+					key='claude_web_search_chat',
+				)
+			
+			with p_row4[ 1 ]:
 				claude_stop = st.text_area(
 					'Stop Sequences (one per line)',
 					value='',
@@ -5291,12 +5644,51 @@ elif mode == 'Data Generation':
 					key='claude_stop_chat',
 				)
 			
-			claude_system = st.text_area(
-				'System',
-				value='',
-				height=100,
-				key='claude_system_chat',
-			)
+			with p_row5[ 0 ]:
+				if claude_thinking:
+					claude_thinking_budget = st.number_input(
+						'Thinking Budget',
+						min_value=1024,
+						max_value=64000,
+						value=1024,
+						step=1024,
+						key='claude_thinking_budget_chat',
+					)
+				else:
+					claude_thinking_budget = None
+			
+			with p_row5[ 1 ]:
+				claude_system = st.text_area(
+					'System',
+					value='',
+					height=100,
+					key='claude_system_chat',
+				)
+			
+			if claude_web_search:
+				claude_domains = st.text_area(
+					'Allowed Search Domains (one per line or comma-separated)',
+					value='',
+					height=90,
+					key='claude_domains_chat',
+					help='Examples: docs.anthropic.com, arxiv.org, github.com',
+				)
+				
+				claude_blocked_domains = st.text_area(
+					'Blocked Search Domains (one per line or comma-separated)',
+					value='',
+					height=90,
+					key='claude_blocked_domains_chat',
+					help='Optional denylist for domains you do not want Claude to use.',
+				)
+			else:
+				claude_domains = ''
+				claude_blocked_domains = ''
+			
+			if claude_thinking:
+				st.caption(
+					'When Reasoning is enabled, temperature and top-k are omitted to match Anthropic compatibility rules.'
+				)
 			
 			btn_row = st.columns( 2 )
 			with btn_row[ 0 ]:
@@ -5306,40 +5698,101 @@ elif mode == 'Data Generation':
 		
 		with col_right:
 			claude_output = st.empty( )
-			
+		
 		if claude_clear:
-			st.session_state.update( {
-					'claude_prompt_chat': '',
-					'claude_stop_chat': '',
-					'claude_system_chat': ''
-			} )
+			st.session_state.update(
+				{
+						'claude_prompt_chat': '',
+						'claude_stop_chat': '',
+						'claude_system_chat': '',
+						'claude_domains_chat': '',
+						'claude_blocked_domains_chat': '',
+						'claude_thinking_chat': False,
+						'claude_web_search_chat': False,
+				}
+			)
 			st.rerun( )
 		
 		if claude_submit:
 			try:
-				fetcher = Claude( )
-				stop_lines = [ s.strip( ) for s in (claude_stop or "").splitlines( ) if
-				               s.strip( ) ]
+				if not str( claude_prompt ).strip( ):
+					raise ValueError( 'Prompt cannot be empty.' )
 				
-				params = {
-						'model': claude_model,
-						'temperature': float( claude_temperature ),
-						'max_tokens': int( claude_max_tokens ),
-						'top_p': float( claude_top_p ),
-						'top_k': int( claude_top_k ) if int( claude_top_k ) > 0 else None,
-						'stop_sequences': stop_lines if stop_lines else None,
-						'system': claude_system if claude_system.strip( ) else None,
-				}
+				claude_domains_list = [ ]
+				if claude_domains and str( claude_domains ).strip( ):
+					_domain_entries = re.split( r'[\n,;]+', str( claude_domains ) )
+					for _entry in _domain_entries:
+						_value = str( _entry ).strip( ).lower( )
+						if not _value:
+							continue
+						
+						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+							_value = f'https://{_value}'
+						
+						_parsed = urlparse( _value )
+						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+						_domain = re.sub( r':\d+$', '', _domain )
+						_domain = _domain.lstrip( '.' )
+						
+						if _domain.startswith( 'www.' ):
+							_domain = _domain[ 4: ]
+						
+						if _domain and _domain not in claude_domains_list:
+							claude_domains_list.append( _domain )
+				
+				claude_blocked_domains_list = [ ]
+				if claude_blocked_domains and str( claude_blocked_domains ).strip( ):
+					_block_entries = re.split( r'[\n,;]+', str( claude_blocked_domains ) )
+					for _entry in _block_entries:
+						_value = str( _entry ).strip( ).lower( )
+						if not _value:
+							continue
+						
+						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+							_value = f'https://{_value}'
+						
+						_parsed = urlparse( _value )
+						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+						_domain = re.sub( r':\d+$', '', _domain )
+						_domain = _domain.lstrip( '.' )
+						
+						if _domain.startswith( 'www.' ):
+							_domain = _domain[ 4: ]
+						
+						if _domain and _domain not in claude_blocked_domains_list:
+							claude_blocked_domains_list.append( _domain )
+				
+				stop_lines = [ s.strip( ) for s in (claude_stop or '').splitlines( ) if s.strip( ) ]
+				
+				fetcher = Claude( )
+				params = \
+					{
+							'model': claude_model,
+							'temperature': float( claude_temperature ),
+							'max_tokens': int( claude_max_tokens ),
+							'top_p': float( claude_top_p ),
+							'top_k': int( claude_top_k ) if int( claude_top_k ) > 0 else None,
+							'stop_sequences': stop_lines if stop_lines else None,
+							'system': claude_system if claude_system.strip( ) else None,
+							'thinking': bool( claude_thinking ),
+							'thinking_budget': int( claude_thinking_budget ) if claude_thinking and claude_thinking_budget else None,
+							'web_search': bool( claude_web_search ),
+							'search_domains': claude_domains_list if claude_domains_list else None,
+							'blocked_domains': claude_blocked_domains_list if claude_blocked_domains_list else None,
+					}
+				
+				if claude_thinking:
+					params.pop( 'temperature', None )
+					params.pop( 'top_k', None )
 				
 				params = { k: v for k, v in params.items( ) if v is not None }
-				
 				result = _invoke_provider( fetcher, claude_prompt, params )
 				_render_output( claude_output, result )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------- GEMINI
+	# -------- Gemini
 	with st.expander( label='Gemini', expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -5460,7 +5913,7 @@ elif mode == 'Data Generation':
 			except Exception as exc:
 				st.error( str( exc ) )
 	
-	# -------- MISTRAL
+	# -------- Mistral
 	with st.expander( label='Mistral', expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -5589,7 +6042,7 @@ elif mode == 'Geospatial Data':
 	st.divider( )
 	
 	# -------- Google Maps
-	with st.expander( label='Google Maps', expanded=True ):
+	with st.expander( label='Google Maps', expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
@@ -8816,18 +9269,18 @@ elif mode == 'Geospatial Data':
 # DATA MANAGEMENT MODE
 # ==============================================================================
 elif mode == 'Data Management':
-	st.subheader( "🏛️ Data Management", help=cfg.DATA_MANAGEMENT )
+	st.subheader( '🏛️ Data Management', help=cfg.DATA_MANAGEMENT )
 	st.divider( )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
-		tabs = st.tabs( [ "📥 Import", "🗂 Browse", "💉 CRUD", "📊 Explore", "🔎 Filter",
-		                  "🧮 Aggregate", "📈 Visualize", "⚙ Admin", "🧠 SQL" ] )
+		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
+		                  '🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
 		
 		tables = list_tables( )
 		if not tables:
-			st.info( "No tables available." )
+			st.info( 'No tables available.' )
 		else:
-			table = st.selectbox( "Table", tables )
+			table = st.selectbox( 'Table', tables )
 			df_full = read_table( table )
 		
 		# ------------------------------------------------------------------------------
@@ -8895,7 +9348,7 @@ elif mode == 'Data Management':
 				st.info( 'No tables available.' )
 		
 		# ------------------------------------------------------------------------------
-		# CRUD (Schema-Aware)
+		# CRUD
 		# ------------------------------------------------------------------------------
 		with tabs[ 2 ]:
 			tables = list_tables( )
@@ -8916,16 +9369,13 @@ elif mode == 'Data Management':
 				insert_data = { }
 				for column, col_type in type_map.items( ):
 					if 'INT' in col_type:
-						insert_data[
-							column ] = st.number_input( column, step=1, key=f'ins_{column}' )
+						insert_data[ column ] = st.number_input( column, step=1, key=f'ins_{column}' )
 					
 					elif 'REAL' in col_type:
-						insert_data[
-							column ] = st.number_input( column, format='%.6f', key=f'ins_{column}' )
+						insert_data[ column ] = st.number_input( column, format='%.6f', key=f'ins_{column}' )
 					
 					elif 'BOOL' in col_type:
-						insert_data[
-							column ] = 1 if st.checkbox( column, key=f'ins_{column}' ) else 0
+						insert_data[ column ] = 1 if st.checkbox( column, key=f'ins_{column}' ) else 0
 					
 					else:
 						insert_data[ column ] = st.text_input( column, key=f'ins_{column}' )

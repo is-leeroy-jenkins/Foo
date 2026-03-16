@@ -11062,96 +11062,116 @@ class HistoricalWeather( Fetcher ):
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
 			)
 			raise exception
-			
+
 class Groq( Fetcher ):
 	'''
-
+	
 		Purpose:
 		---------
-		Class providing to the Groq API
-
+		Class providing xAI Grok text-generation and search functionality through
+		the OpenAI-compatible xAI Responses API.
+	
 		Attribues:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
+		client - OpenAI
+		model - str
+		response - Any
+		api_key - str
+		query - str
+		params - Dict[ str, Any ]
+		temperature - float
+		max_tokens - int
+		top_p - float
+		reasoning_effort - str | None
+		stream - bool
+		store - bool
+		messages - List[ Dict[ str, Any ] ]
+	
 		Methods:
 		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
+		fetch( ) -> str
+		generate_text( ) -> str
+		search_web( ) -> str
+	
 	'''
-	client: Optional[ GroqClient ]
+	client: Optional[ OpenAI ]
 	model: Optional[ str ]
-	keywords: Optional[ str ]
-	url: Optional[ str ]
-	file_path: Optional[ str ]
 	response: Optional[ Response ]
 	api_key: Optional[ str ]
-	query: Optional[  str  ]
-	params: Optional[ Dict[ str, str ] ]
+	query: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
 	top_p: Optional[ float ]
-	reasonging_effort: Optional[ float ]
+	reasoning_effort: Optional[ str ]
 	stream: Optional[ bool ]
 	store: Optional[ bool ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
+	system_instructions: Optional[ str ]
+	web_search: Optional[ bool ]
+	search_domains: Optional[ List[ str ] ]
+	parallel_tool_calls: Optional[ bool ]
+	tool_choice: Optional[ str ]
+	tools: Optional[ List[ Dict[ str, Any ] ] ]
 	
 	def __init__( self ) -> None:
 		'''
 		
 			Purpose:
 			-----------
-			Initialize Groq API.
-
+			Initialize xAI Grok via the OpenAI-compatible Responses API.
+			
 			Parameters:
 			-----------
-			headers (Optional[Dict[str, str]]): Optional headers for requests.
-
+			None
+			
 			Returns:
 			-----------
 			None
 			
 		'''
 		super( ).__init__( )
-		self.api_key = cfg.GROQ_API_KEY
-		self.model = 'openai/gpt-oss-120b'
-		self.url = r'https://api.groq.com/openai/v1?'
-		self.client = None
+		self.api_key = cfg.XAI_API_KEY
+		self.model = 'grok-4-fast-reasoning'
+		self.client = OpenAI( api_key=self.api_key, base_url='https://api.x.ai/v1' )
 		self.messages = None
-		self.temperature = 0.8
-		self.top_p =  0.9
-		self.max_tokens = 8192
-		self.reasonging_effort = 'medium'
+		self.temperature = 0.7
+		self.top_p = 1.0
+		self.max_tokens = 2048
+		self.reasoning_effort = None
 		self.headers = { }
 		self.timeout = None
 		self.file_path = None
 		self.content = None
 		self.params = None
 		self.response = None
+		self.query = None
+		self.system_instructions = None
+		self.web_search = False
+		self.search_domains = [ ]
+		self.parallel_tool_calls = True
+		self.tool_choice = 'auto'
+		self.tools = [ ]
 		self.agents = cfg.AGENTS
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
-
+		
 			Purpose:
 			-----------
 			Groq list of members.
-
+			
 			Parameters:
 			-----------
 			None
-
+			
 			Returns:
 			-----------
 			list[str]: Ordered attribute/method names.
-
+			
 		'''
 		return [ 'content',
 		         'url',
@@ -11169,228 +11189,426 @@ class Groq( Fetcher ):
 		         'api_key',
 		         'response',
 		         'params',
-		         'agents' ]
+		         'agents',
+		         'system_instructions',
+		         'web_search',
+		         'search_domains',
+		         'parallel_tool_calls',
+		         'tool_choice',
+		         'tools' ]
 	
-	def fetch( self, query: str, time: int=10 ) -> str | None:
+	def _normalize_domains( self, domains: Any ) -> List[ str ]:
 		'''
-
+		
 			Purpose:
-			-------
-			Sends an API request to Groq given a query as input
-
+			-----------
+			Normalize domain input into a canonical, de-duplicated list.
+			
 			Parameters:
 			-----------
-			url (str): Absolute URL to fetch.
-			time (int): Timeout seconds to use for the request.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
-
+			domains (Any): String, list, tuple, set, or None.
+			
+			Returns:
+			-----------
+			List[str]
+			
+		'''
+		try:
+			if domains is None:
+				return [ ]
+			
+			if isinstance( domains, str ):
+				_parts = re.split( r'[\n,;]+', domains )
+			elif isinstance( domains, (list, tuple, set) ):
+				_parts = [ str( x ) for x in domains if x is not None ]
+			else:
+				_parts = [ str( domains ) ]
+			
+			_values = [ ]
+			for _entry in _parts:
+				_value = str( _entry ).strip( ).lower( )
+				if not _value:
+					continue
+				
+				if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+					_value = f'https://{_value}'
+				
+				_parsed = urllib.parse.urlparse( _value )
+				_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+				_domain = re.sub( r':\d+$', '', _domain )
+				_domain = _domain.lstrip( '.' )
+				
+				if _domain.startswith( 'www.' ):
+					_domain = _domain[ 4: ]
+				
+				if _domain and _domain not in _values:
+					_values.append( _domain )
+			
+			return _values
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Groq'
+			exception.method = '_normalize_domains( self, domains: Any ) -> List[ str ]'
+			raise exception
+	
+	def _supports_reasoning_effort( self, model: str ) -> bool:
+		'''
+		
+			Purpose:
+			-----------
+			Determine whether the selected xAI model accepts the reasoning_effort
+			parameter.
+			
+			Parameters:
+			-----------
+			model (str): Model name.
+			
+			Returns:
+			-----------
+			bool
+			
+		'''
+		try:
+			throw_if( 'model', model )
+			_name = str( model ).strip( ).lower( )
+			return 'grok-3-mini' in _name
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Groq'
+			exception.method = '_supports_reasoning_effort( self, model: str ) -> bool'
+			raise exception
+	
+	def _is_reasoning_model( self, model: str ) -> bool:
+		'''
+		
+			Purpose:
+			-----------
+			Identify models where reasoning is native or otherwise model-defined.
+			
+			Parameters:
+			-----------
+			model (str): Model name.
+			
+			Returns:
+			-----------
+			bool
+			
+		'''
+		try:
+			throw_if( 'model', model )
+			_name = str( model ).strip( ).lower( )
+			return 'grok-4' in _name or 'reasoning' in _name
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Groq'
+			exception.method = '_is_reasoning_model( self, model: str ) -> bool'
+			raise exception
+	
+	def _build_instructions( self, system: str | None = None, response_format: str | None = None ) -> str | None:
+		'''
+		
+			Purpose:
+			-----------
+			Build the final instruction block sent to xAI.
+			
+			Parameters:
+			-----------
+			system (str | None): Optional system instructions.
+			response_format (str | None): Optional output mode.
+			
+			Returns:
+			-----------
+			str | None
+			
+		'''
+		try:
+			_parts = [ ]
+			
+			if system and str( system ).strip( ):
+				_parts.append( str( system ).strip( ) )
+			
+			if response_format and str( response_format ).strip( ).lower( ) == 'json':
+				_parts.append( 'Return valid JSON only. Do not include markdown fences or commentary.' )
+			
+			if _parts:
+				return '\n\n'.join( _parts )
+			
+			return None
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Groq'
+			exception.method = ('_build_instructions( self, system: str | None=None, '
+			                    'response_format: str | None=None ) -> str | None')
+			raise exception
+	
+	def fetch( self, query: str, model: str = 'grok-4-fast-reasoning', temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, seed: int | None = None,
+			system: str | None = None, response_format: str | None = None,
+			reasoning_effort: str | None = None, web_search: bool = False,
+			search_domains: Any = None, stop: List[ str ] | None = None, stream: bool = False,
+			store: bool = True, parallel_tool_calls: bool = True,
+			tool_choice: str = 'auto' ) -> str | None:
+		'''
+		
+			Purpose:
+			-------
+			Send an xAI Responses API request for Grok text generation, optional
+			reasoning effort, and optional server-side web search with domain filtering.
+			
+			Parameters:
+			-----------
+			query (str): User prompt.
+			model (str): Grok model name.
+			temperature (float): Sampling temperature.
+			max_tokens (int): Max output tokens.
+			top_p (float): Top-p nucleus sampling parameter.
+			seed (int | None): Optional deterministic seed.
+			system (str | None): Optional system prompt.
+			response_format (str | None): Optional output mode.
+			reasoning_effort (str | None): Optional xAI reasoning effort.
+			web_search (bool): Enable xAI web search.
+			search_domains (Any): Optional domain filter input.
+			stop (List[str] | None): Optional stop sequences.
+			stream (bool): Stream response.
+			store (bool): Store response server-side.
+			parallel_tool_calls (bool): Allow server-side parallel tool calls.
+			tool_choice (str): Tool choice behavior.
+			
 			Returns:
 			---------
-			Optional[Result]: Result with url, status, text, html, headers on success.
-
+			str | None
+			
 		'''
 		try:
 			throw_if( 'query', query )
+			throw_if( 'model', model )
+			
 			self.query = query
-			self.client = GroqClient( api_key=self.api_key )
-			self.messages = [
-			{
-				'role': 'user',
-				'content': self.query
-			} ]
-			completion = self.client.chat.completions.create( model=self.model,
-				messages=self.messages,
-				temperature=1,
-				max_completion_tokens=8192,
-				top_p=1,
-				reasoning_effort='medium',
-				stream=True,
-				stop=None
+			self.model = str( model ).strip( )
+			self.temperature = float( temperature )
+			self.max_tokens = int( max_tokens )
+			self.top_p = float( top_p )
+			self.reasoning_effort = reasoning_effort if reasoning_effort else None
+			self.stream = bool( stream )
+			self.store = bool( store )
+			self.web_search = bool( web_search )
+			self.search_domains = self._normalize_domains( search_domains )
+			self.parallel_tool_calls = bool( parallel_tool_calls )
+			self.tool_choice = tool_choice or 'auto'
+			self.system_instructions = self._build_instructions(
+				system=system,
+				response_format=response_format,
 			)
-			_results = completion.choices[0].message
-			return _results
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'Groq'
-			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
-			raise exception
 			
-	
-	def analyze_image( self, path: str, prompt: str, is_url=False ):
-		'''
-		
-			Purpose:
-			--------
-			Uses the Groq API to analyze an image given a prompt and path
+			self.tools = [ ]
+			if self.web_search:
+				_web_tool = { 'type': 'web_search' }
+				if self.search_domains:
+					_web_tool[ 'allowed_domains' ] = self.search_domains
+				self.tools.append( _web_tool )
 			
-		'''
-		throw_if( 'prompt', prompt )
-		throw_if( 'path', path )
-		self.query = prompt
-		self.client = Groq( api_key=self.api_key )
-		if is_url:
-			image_content = \
-			{
-					'type': 'image_url',
-					'image_url':
-					{
-						'url': path
-					}
-			}
-		else:
-			base64_image = encode_image( path )
-			image_content = {
-					"type": "image_url",
-					"image_url": {
-							"url": f"data:image/jpeg;base64,{base64_image}" } }
-		
-		try:
-			chat_completion = self.client.chat.completions.create(
-				messages=[
-						{
-								"role": "user",
-								"content": [
-										{
-												"type": "text",
-												"text": prompt },
-										image_content,
-								],
-						}
-				],
-				model="llava-v1.5-7b-4096-preview",
-			)
-			return chat_completion.choices[ 0 ].message.content
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'Groq'
-			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
-			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
-		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			return \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
+			self.request = \
 				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
+						'model': self.model,
+						'input': self.query,
+						'max_output_tokens': self.max_tokens,
+						'temperature': self.temperature,
+						'top_p': self.top_p,
+						'stream': self.stream,
+						'store': self.store,
+						'parallel_tool_calls': self.parallel_tool_calls,
 				}
-			}
-		except Exception as e:
-			exception = Error( e )
+			
+			if seed is not None:
+				self.request[ 'seed' ] = int( seed )
+			
+			if self.system_instructions:
+				self.request[ 'instructions' ] = self.system_instructions
+			
+			if self.tools:
+				self.request[ 'tools' ] = self.tools
+				self.request[ 'tool_choice' ] = self.tool_choice
+			
+			if self._supports_reasoning_effort( self.model ) and self.reasoning_effort:
+				self.request[ 'reasoning_effort' ] = self.reasoning_effort
+			
+			if stop and not self._is_reasoning_model( self.model ):
+				self.request[ 'stop' ] = stop
+			
+			self.response = self.client.responses.create( **self.request )
+			return self.response.output_text
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Groq'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = (
+					'fetch( self, query: str, model: str="grok-4-fast-reasoning", '
+					'temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0, '
+					'seed: int | None=None, system: str | None=None, '
+					'response_format: str | None=None, reasoning_effort: str | None=None, '
+					'web_search: bool=False, search_domains: Any=None, '
+					'stop: List[ str ] | None=None, stream: bool=False, store: bool=True, '
+					'parallel_tool_calls: bool=True, tool_choice: str="auto" ) -> str | None'
+			)
 			raise exception
+	
+	def generate_text( self, query: str, model: str = 'grok-4-fast-reasoning', temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, seed: int | None = None,
+			system: str | None = None, response_format: str | None = None,
+			reasoning_effort: str | None = None, web_search: bool = False,
+			search_domains: Any = None, stop: List[ str ] | None = None, stream: bool = False,
+			store: bool = True, parallel_tool_calls: bool = True,
+			tool_choice: str = 'auto' ) -> str | None:
+		'''
+		
+			Purpose:
+			-----------
+			Convenience wrapper around fetch for text generation.
 			
+			Parameters:
+			-----------
+			query (str): User prompt.
+			
+			Returns:
+			-----------
+			str | None
+			
+		'''
+		try:
+			return self.fetch(
+				query=query,
+				model=model,
+				temperature=temperature,
+				max_tokens=max_tokens,
+				top_p=top_p,
+				seed=seed,
+				system=system,
+				response_format=response_format,
+				reasoning_effort=reasoning_effort,
+				web_search=web_search,
+				search_domains=search_domains,
+				stop=stop,
+				stream=stream,
+				store=store,
+				parallel_tool_calls=parallel_tool_calls,
+				tool_choice=tool_choice,
+			)
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Groq'
+			exception.method = 'generate_text( self, query: str, ... ) -> str | None'
+			raise exception
+	
+	def search_web( self, query: str, model: str = 'grok-4-fast-reasoning', temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, seed: int | None = None,
+			system: str | None = None, response_format: str | None = None,
+			reasoning_effort: str | None = None, search_domains: Any = None,
+			stream: bool = False, store: bool = True, parallel_tool_calls: bool = True,
+			tool_choice: str = 'auto' ) -> str | None:
+		'''
+		
+			Purpose:
+			-----------
+			Convenience wrapper around fetch with web search enabled.
+			
+			Parameters:
+			-----------
+			query (str): User prompt.
+			
+			Returns:
+			-----------
+			str | None
+			
+		'''
+		try:
+			return self.fetch(
+				query=query,
+				model=model,
+				temperature=temperature,
+				max_tokens=max_tokens,
+				top_p=top_p,
+				seed=seed,
+				system=system,
+				response_format=response_format,
+				reasoning_effort=reasoning_effort,
+				web_search=True,
+				search_domains=search_domains,
+				stop=None,
+				stream=stream,
+				store=store,
+				parallel_tool_calls=parallel_tool_calls,
+				tool_choice=tool_choice,
+			)
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Groq'
+			exception.method = 'search_web( self, query: str, ... ) -> str | None'
+			raise exception
+
 class Gemini( Fetcher ):
 	'''
 
 		Purpose:
 		---------
-		Class providing the Google's Gemini API
+		Class providing Google's Gemini API text generation, optional grounding
+		with Google Search, optional JSON output, and optional reasoning through
+		thinking configuration.
 
 		Attribues:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		client - genai.Client
+		prompt - str
+		response - Any
+		api_key - str
+		id - str
+		location - str
+		use_vertex - bool
+		model - str
+		params - Dict[ str, Any ]
+		temperature - float
+		max_tokens - int
+		top_p - float
+		top_k - int | None
+		candidate_count - int
+		thinking_level - str | None
+		include_thoughts - bool
+		system_instructions - str | None
+		grounding - bool
+		search_domains - List[ str ]
 
 		Methods:
 		-----------
-		fetch( ) -> Dict[ str, Any ]
+		fetch( ) -> str | None
+		generate_text( ) -> str | None
+		search_web( ) -> str | None
 
 	'''
 	client: Optional[ genai.Client ]
 	prompt: Optional[ str ]
-	file_path: Optional[ str ]
 	response: Optional[ Response ]
-	mime_type: Optional[ str ]
 	api_key: Optional[ str ]
 	id: Optional[ str ]
 	location: Optional[ str ]
 	use_vertex: Optional[ bool ]
-	contents: Optional[  str  ]
 	model: Optional[ str ]
-	params: Optional[ Dict[ str, str ] ]
+	params: Optional[ Dict[ str, Any ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
 	top_p: Optional[ float ]
-	reasonging_effort: Optional[ float ]
-	http_options: Optional[ str ]
+	top_k: Optional[ int ]
+	candidate_count: Optional[ int ]
+	thinking_level: Optional[ str ]
+	include_thoughts: Optional[ bool ]
+	system_instructions: Optional[ str ]
+	grounding: Optional[ bool ]
+	search_domains: Optional[ List[ str ] ]
+	http_options: Optional[ Dict[ str, Any ] ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
 	
 	def __init__( self ) -> None:
@@ -11398,22 +11616,33 @@ class Gemini( Fetcher ):
 		
 			Purpose:
 			-----------
-			Initialize the Gmemini Class
+			Initialize the Gemini class.
 			
 		'''
 		super( ).__init__( )
 		self.api_key = cfg.GEMINI_API_KEY
 		self.id = cfg.GOOGLE_PROJECT_ID
 		self.location = cfg.GOOGLE_CLOUD_LOCATION
-		self.use_vertex = cfg.GOOGLE_GENAI_USE_VERTEXAI
+		self.use_vertex = self._to_bool( cfg.GOOGLE_GENAI_USE_VERTEXAI )
 		self.model = 'gemini-2.5-flash'
 		self.headers = { }
-		self.client = None
+		self.client = self._create_client( )
 		self.timeout = None
-		self.contents = None
 		self.params = None
 		self.response = None
 		self.agents = cfg.AGENTS
+		self.temperature = 0.7
+		self.max_tokens = 2048
+		self.top_p = 1.0
+		self.top_k = None
+		self.candidate_count = 1
+		self.thinking_level = None
+		self.include_thoughts = False
+		self.system_instructions = None
+		self.grounding = False
+		self.search_domains = [ ]
+		self.http_options = None
+		self.messages = None
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
@@ -11422,7 +11651,7 @@ class Gemini( Fetcher ):
 
 			Purpose:
 			-----------
-			Groq list of members.
+			Gemini list of members.
 
 			Parameters:
 			-----------
@@ -11433,214 +11662,542 @@ class Gemini( Fetcher ):
 			list[str]: Ordered attribute/method names.
 
 		'''
-		return [ 'query',
-		         'url',
-		         'client',
+		return [ 'client',
+		         'prompt',
+		         'response',
+		         'api_key',
 		         'id',
 		         'location',
 		         'use_vertex',
-		         'headers',
-		         'fetch',
-		         'api_key',
-		         'response',
-		         'cse_id',
+		         'model',
 		         'params',
-		         'agents,',
-		         'fetch' ]
+		         'temperature',
+		         'max_tokens',
+		         'top_p',
+		         'top_k',
+		         'candidate_count',
+		         'thinking_level',
+		         'include_thoughts',
+		         'system_instructions',
+		         'grounding',
+		         'search_domains',
+		         'fetch',
+		         'generate_text',
+		         'search_web' ]
 	
-	def fetch( self, query: str ) -> str | None:
+	def _to_bool( self, value: Any ) -> bool:
 		'''
-
-			Purpose:
-			-------
-			Sends query/content to the Gemini API
-
-			Parameters:
-			-----------
-			query (str): Absolute URL to fetch.
-			
-
-			Returns:
-			---------
-			str
-
-		'''
-		try:
-			throw_if( 'query', query )
-			self.contents = query
-			self.client = genai.Client( api_key=self.api_key )
-			_response = self.client.models.generate_content( model=self.model, contents=self.contents, )
-			return _response.text
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'Gemini'
-			exception.method = 'fetch( self, query: str ) -> str '
-			raise exception
-			
-	
-	def analyze( self, query: str, path: str ) -> str | None:
-		'''
-
-			Purpose:
-			-------
-			Sends image request to the Gemini API given a query and path
-
-			Parameters:
-			-----------
-			query (str): content/query passed to the Gemini API
-			path (str): path to image file
-
-			Returns:
-			---------
-			str.
-
-		'''
-		try:
-			throw_if( 'query', query )
-			throw_if( 'path', path )
-			self.contents = query
-			self.file_path = path
-			self.client = genai.Client( api_key=self.api_key )
-			_response = self.client.models.generate_content( model=self.model, contents=self.contents, )
-			return _response.text
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'Gemini'
-			exception.method = 'analyze( self, query: str, path: str ) -> str'
-			raise exception
-			
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
+			-----------
+			Convert configuration values into a stable boolean.
+			
 			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
+			-----------
+			value (Any): Source value.
+			
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
+			-----------
+			bool
+			
+		'''
 		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
+			if isinstance( value, bool ):
+				return value
+			
+			if value is None:
+				return False
+			
+			return str( value ).strip( ).lower( ) in [ '1', 'true', 'yes', 'y', 'on' ]
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Gemini'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = '_to_bool( self, value: Any ) -> bool'
 			raise exception
+	
+	def _create_client( self ) -> genai.Client:
+		'''
+		
+			Purpose:
+			-----------
+			Create a Gemini client against either the Gemini Developer API or
+			Vertex AI, depending on configuration.
 			
+			Parameters:
+			-----------
+			None
+			
+			Returns:
+			-----------
+			genai.Client
+			
+		'''
+		try:
+			if self.use_vertex:
+				return genai.Client(
+					vertexai=True,
+					project=self.id,
+					location=self.location,
+				)
+			
+			return genai.Client( api_key=self.api_key )
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = '_create_client( self ) -> genai.Client'
+			raise exception
+	
+	def _normalize_domains( self, domains: Any ) -> List[ str ]:
+		'''
+		
+			Purpose:
+			-----------
+			Normalize domain input into a canonical, de-duplicated list.
+			
+			Parameters:
+			-----------
+			domains (Any): String, list, tuple, set, or None.
+			
+			Returns:
+			-----------
+			List[str]
+			
+		'''
+		try:
+			if domains is None:
+				return [ ]
+			
+			if isinstance( domains, str ):
+				_parts = re.split( r'[\n,;]+', domains )
+			elif isinstance( domains, (list, tuple, set) ):
+				_parts = [ str( x ) for x in domains if x is not None ]
+			else:
+				_parts = [ str( domains ) ]
+			
+			_values = [ ]
+			for _entry in _parts:
+				_value = str( _entry ).strip( ).lower( )
+				if not _value:
+					continue
+				
+				if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+					_value = f'https://{_value}'
+				
+				_parsed = urllib.parse.urlparse( _value )
+				_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+				_domain = re.sub( r':\d+$', '', _domain )
+				_domain = _domain.lstrip( '.' )
+				
+				if _domain.startswith( 'www.' ):
+					_domain = _domain[ 4: ]
+				
+				if _domain and _domain not in _values:
+					_values.append( _domain )
+			
+			return _values
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = '_normalize_domains( self, domains: Any ) -> List[ str ]'
+			raise exception
+	
+	def _supports_thinking( self, model: str ) -> bool:
+		'''
+		
+			Purpose:
+			-----------
+			Determine whether the selected Gemini model should receive a thinking
+			configuration.
+			
+			Parameters:
+			-----------
+			model (str): Model name.
+			
+			Returns:
+			-----------
+			bool
+			
+		'''
+		try:
+			throw_if( 'model', model )
+			_name = str( model ).strip( ).lower( )
+			return _name.startswith( 'gemini-3' )
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = '_supports_thinking( self, model: str ) -> bool'
+			raise exception
+	
+	def _build_system_instruction( self, system: str | None = None, response_format: str | None = None,
+			search_domains: Any = None ) -> str | None:
+		'''
+		
+			Purpose:
+			-----------
+			Build the final Gemini system instruction string.
+			
+			Parameters:
+			-----------
+			system (str | None): Optional system prompt.
+			response_format (str | None): Optional output mode.
+			search_domains (Any): Optional domain preference input.
+			
+			Returns:
+			-----------
+			str | None
+			
+		'''
+		try:
+			_parts = [ ]
+			
+			if system and str( system ).strip( ):
+				_parts.append( str( system ).strip( ) )
+			
+			if response_format and str( response_format ).strip( ).lower( ) == 'json':
+				_parts.append( 'Return valid JSON only. Do not include markdown fences or commentary.' )
+			
+			_domains = self._normalize_domains( search_domains )
+			if _domains:
+				_parts.append(
+					'When grounding or searching the web, prefer sources from these domains '
+					f'when relevant and available: {", ".join( _domains )}.'
+				)
+			
+			if _parts:
+				return '\n\n'.join( _parts )
+			
+			return None
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = ('_build_system_instruction( self, system: str | None=None, '
+			                    'response_format: str | None=None, search_domains: Any=None ) -> str | None')
+			raise exception
+	
+	def _extract_text( self, response: Any ) -> str:
+		'''
+		
+			Purpose:
+			-----------
+			Extract plain text from a Gemini response.
+			
+			Parameters:
+			-----------
+			response (Any): Gemini response object.
+			
+			Returns:
+			-----------
+			str
+			
+		'''
+		try:
+			if response is None:
+				return ''
+			
+			if hasattr( response, 'text' ) and response.text:
+				return str( response.text )
+			
+			if hasattr( response, 'candidates' ) and response.candidates:
+				_parts = [ ]
+				for _candidate in response.candidates:
+					_content = getattr( _candidate, 'content', None )
+					if _content is None:
+						continue
+					
+					for _part in getattr( _content, 'parts', [ ] ):
+						_text = getattr( _part, 'text', None )
+						if _text:
+							_parts.append( str( _text ) )
+				
+				if _parts:
+					return '\n'.join( _parts ).strip( )
+			
+			return str( response )
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = '_extract_text( self, response: Any ) -> str'
+			raise exception
+	
+	def fetch( self, prompt: str, model: str = 'gemini-2.5-flash', temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
+			candidate_count: int = 1, seed: int | None = None, system: str | None = None,
+			response_format: str | None = None, stop_sequences: List[ str ] | None = None,
+			grounding: bool = False, search_domains: Any = None, reasoning: bool = False,
+			thinking_level: str | None = None, include_thoughts: bool = False ) -> str | None:
+		'''
+		
+			Purpose:
+			-------
+			Send a Gemini GenerateContent request for text generation with optional
+			grounding, JSON output, and thinking configuration.
+			
+			Parameters:
+			-----------
+			prompt (str): User prompt.
+			model (str): Gemini model name.
+			temperature (float): Sampling temperature.
+			max_tokens (int): Max output tokens.
+			top_p (float): Top-p nucleus sampling parameter.
+			top_k (int | None): Top-k sampling parameter.
+			candidate_count (int): Number of candidates.
+			seed (int | None): Optional deterministic seed.
+			system (str | None): Optional system prompt.
+			response_format (str | None): Optional output mode.
+			stop_sequences (List[str] | None): Optional stop sequences.
+			grounding (bool): Enable grounding with Google Search.
+			search_domains (Any): Optional preferred domains.
+			reasoning (bool): Enable thinking configuration where supported.
+			thinking_level (str | None): Optional Gemini thinking level.
+			include_thoughts (bool): Include thoughts in response where available.
+			
+			Returns:
+			---------
+			str | None
+			
+		'''
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'model', model )
+			
+			self.prompt = prompt
+			self.model = str( model ).strip( )
+			self.temperature = float( temperature )
+			self.max_tokens = int( max_tokens )
+			self.top_p = float( top_p )
+			self.top_k = int( top_k ) if top_k is not None else None
+			self.candidate_count = int( candidate_count )
+			self.thinking_level = thinking_level if thinking_level else None
+			self.include_thoughts = bool( include_thoughts )
+			self.grounding = bool( grounding )
+			self.search_domains = self._normalize_domains( search_domains )
+			self.system_instructions = self._build_system_instruction(
+				system=system,
+				response_format=response_format,
+				search_domains=self.search_domains,
+			)
+			
+			self.tools = [ ]
+			if self.grounding:
+				self.tools.append(
+					genai.types.Tool(
+						google_search=genai.types.GoogleSearch( )
+					)
+				)
+			
+			self.config = genai.types.GenerateContentConfig(
+				max_output_tokens=self.max_tokens,
+				temperature=self.temperature,
+				top_p=self.top_p,
+				candidate_count=self.candidate_count,
+			)
+			
+			if self.top_k is not None and self.top_k > 0:
+				self.config.top_k = self.top_k
+			
+			if seed is not None:
+				self.config.seed = int( seed )
+			
+			if stop_sequences:
+				self.config.stop_sequences = stop_sequences
+			
+			if response_format and str( response_format ).strip( ).lower( ) == 'json':
+				self.config.response_mime_type = 'application/json'
+			
+			if self.system_instructions:
+				self.config.system_instruction = self.system_instructions
+			
+			if self.tools:
+				self.config.tools = self.tools
+			
+			if reasoning and self._supports_thinking( self.model ):
+				self.config.thinking_config = genai.types.ThinkingConfig(
+					thinking_level=(self.thinking_level or 'low'),
+					include_thoughts=self.include_thoughts,
+				)
+			
+			self.response = self.client.models.generate_content(
+				model=self.model,
+				contents=self.prompt,
+				config=self.config,
+			)
+			
+			return self._extract_text( self.response )
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = (
+					'fetch( self, prompt: str, model: str="gemini-2.5-flash", '
+					'temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0, '
+					'top_k: int | None=None, candidate_count: int=1, seed: int | None=None, '
+					'system: str | None=None, response_format: str | None=None, '
+					'stop_sequences: List[ str ] | None=None, grounding: bool=False, '
+					'search_domains: Any=None, reasoning: bool=False, '
+					'thinking_level: str | None=None, include_thoughts: bool=False ) -> str | None'
+			)
+			raise exception
+	
+	def generate_text( self, prompt: str, model: str = 'gemini-2.5-flash', temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
+			candidate_count: int = 1, seed: int | None = None, system: str | None = None,
+			response_format: str | None = None, stop_sequences: List[ str ] | None = None,
+			grounding: bool = False, search_domains: Any = None, reasoning: bool = False,
+			thinking_level: str | None = None, include_thoughts: bool = False ) -> str | None:
+		'''
+		
+			Purpose:
+			-----------
+			Convenience wrapper around fetch for text generation.
+			
+			Parameters:
+			-----------
+			prompt (str): User prompt.
+			
+			Returns:
+			-----------
+			str | None
+			
+		'''
+		try:
+			return self.fetch(
+				prompt=prompt,
+				model=model,
+				temperature=temperature,
+				max_tokens=max_tokens,
+				top_p=top_p,
+				top_k=top_k,
+				candidate_count=candidate_count,
+				seed=seed,
+				system=system,
+				response_format=response_format,
+				stop_sequences=stop_sequences,
+				grounding=grounding,
+				search_domains=search_domains,
+				reasoning=reasoning,
+				thinking_level=thinking_level,
+				include_thoughts=include_thoughts,
+			)
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = 'generate_text( self, prompt: str, ... ) -> str | None'
+			raise exception
+	
+	def search_web( self, prompt: str, model: str = 'gemini-2.5-flash', temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
+			candidate_count: int = 1, seed: int | None = None, system: str | None = None,
+			response_format: str | None = None, stop_sequences: List[ str ] | None = None,
+			search_domains: Any = None, reasoning: bool = False, thinking_level: str | None = None,
+			include_thoughts: bool = False ) -> str | None:
+		'''
+		
+			Purpose:
+			-----------
+			Convenience wrapper around fetch with grounding enabled.
+			
+			Parameters:
+			-----------
+			prompt (str): User prompt.
+			
+			Returns:
+			-----------
+			str | None
+			
+		'''
+		try:
+			return self.fetch(
+				prompt=prompt,
+				model=model,
+				temperature=temperature,
+				max_tokens=max_tokens,
+				top_p=top_p,
+				top_k=top_k,
+				candidate_count=candidate_count,
+				seed=seed,
+				system=system,
+				response_format=response_format,
+				stop_sequences=stop_sequences,
+				grounding=True,
+				search_domains=search_domains,
+				reasoning=reasoning,
+				thinking_level=thinking_level,
+				include_thoughts=include_thoughts,
+			)
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Gemini'
+			exception.method = 'search_web( self, prompt: str, ... ) -> str | None'
+			raise exception
+
 class Claude( Fetcher ):
 	'''
-
+	
 		Purpose:
 		---------
-		Class providing to the Groq API
-
+		Class providing Anthropic Claude text-generation, extended thinking,
+		and optional web search support through the Messages API.
+	
 		Attribues:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
+		client - Anthropic
+		model - str
+		response - Any
+		api_key - str
+		messages - List[ Dict[ str, Any ] ]
+		params - Dict[ str, Any ]
+		temperature - float
+		max_tokens - int
+		top_p - float
+		top_k - int | None
+		thinking_budget - int | None
+		system_instructions - str | None
+		web_search - bool
+		search_domains - List[ str ]
+		blocked_domains - List[ str ]
+	
 		Methods:
 		-----------
-		fetch( ) -> Dict[ str, Any ]
+		fetch( ) -> str | None
+		generate_text( ) -> str | None
+		search_web( ) -> str | None
 		
 	'''
 	client: Optional[ Anthropic ]
 	model: Optional[ str ]
-	keywords: Optional[ str ]
-	response: Optional[ Response ]
+	response: Optional[ Any ]
 	api_key: Optional[ str ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
-	params: Optional[ Dict[ str, str ] ]
+	params: Optional[ Dict[ str, Any ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
 	top_p: Optional[ float ]
-	reasonging_effort: Optional[ float ]
+	top_k: Optional[ int ]
+	thinking_budget: Optional[ int ]
+	system_instructions: Optional[ str ]
+	web_search: Optional[ bool ]
+	search_domains: Optional[ List[ str ] ]
+	blocked_domains: Optional[ List[ str ] ]
 	
 	def __init__( self ) -> None:
 		'''
 		
 			Purpose:
 			-----------
-			Initialize Groq API.
-
+			Initialize Anthropic Claude API client.
+			
 			Parameters:
 			-----------
-			headers (Optional[Dict[str, str]]): Optional headers for requests.
-
+			None
+			
 			Returns:
 			-----------
 			None
@@ -11649,34 +12206,43 @@ class Claude( Fetcher ):
 		super( ).__init__( )
 		self.api_key = cfg.CLAUDE_API_KEY
 		self.url = r'https://api.anthropic.com'
-		self.client = None
+		self.client = Anthropic( api_key=self.api_key )
 		self.messages = None
-		self.model = 'claude-sonnet-4-5'
-		self.max_tokens = 1000
+		self.model = 'claude-sonnet-4-6'
+		self.max_tokens = 2048
+		self.temperature = 0.7
+		self.top_p = 1.0
+		self.top_k = None
+		self.thinking_budget = None
 		self.headers = { }
 		self.timeout = None
 		self.content = None
 		self.params = None
 		self.response = None
+		self.system_instructions = None
+		self.web_search = False
+		self.search_domains = [ ]
+		self.blocked_domains = [ ]
 		self.agents = cfg.AGENTS
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
-
+		
 			Purpose:
 			-----------
-			Groq list of members.
-
+			Claude list of members.
+			
 			Parameters:
 			-----------
 			None
-
+			
 			Returns:
 			-----------
 			list[str]: Ordered attribute/method names.
-
+			
 		'''
 		return [ 'content',
 		         'url',
@@ -11686,130 +12252,340 @@ class Claude( Fetcher ):
 		         'fetch',
 		         'api_key',
 		         'response',
-		         'cse_id',
 		         'params',
-		         'agents,',
-		         'fetch' ]
+		         'agents',
+		         'messages',
+		         'temperature',
+		         'top_p',
+		         'top_k',
+		         'thinking_budget',
+		         'system_instructions',
+		         'web_search',
+		         'search_domains',
+		         'blocked_domains' ]
 	
-	def fetch( self, query: str ) -> str | None:
+	def _normalize_domains( self, domains: Any ) -> List[ str ]:
 		'''
-
+		
 			Purpose:
-			-------
-			Sends an API request to Groq given a query as input
-
+			-----------
+			Normalize domain input into a canonical, de-duplicated list.
+			
 			Parameters:
 			-----------
-			url (str): Absolute URL to fetch.
-			time (int): Timeout seconds to use for the request.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
-
+			domains (Any): String, list, tuple, set, or None.
+			
 			Returns:
-			---------
-			Optional[Result]: Result with url, status, text, html, headers on success.
-
+			-----------
+			List[str]
+			
 		'''
 		try:
-			throw_if( 'query', query )
-			self.keywords = query
-			self.client = Anthropic( )
-			message = self.client.messages.create( model=self.model, max_tokens=self.max_tokens,
-		    messages=[
-	        {
-	            'role': 'user',
-	            'content': self.query
-	        }])
+			if domains is None:
+				return [ ]
+			
+			if isinstance( domains, str ):
+				_parts = re.split( r'[\n,;]+', domains )
+			elif isinstance( domains, (list, tuple, set) ):
+				_parts = [ str( x ) for x in domains if x is not None ]
+			else:
+				_parts = [ str( domains ) ]
+			
+			_values = [ ]
+			for _entry in _parts:
+				_value = str( _entry ).strip( ).lower( )
+				if not _value:
+					continue
+				
+				if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+					_value = f'https://{_value}'
+				
+				_parsed = urllib.parse.urlparse( _value )
+				_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+				_domain = re.sub( r':\d+$', '', _domain )
+				_domain = _domain.lstrip( '.' )
+				
+				if _domain.startswith( 'www.' ):
+					_domain = _domain[ 4: ]
+				
+				if _domain and _domain not in _values:
+					_values.append( _domain )
+			
+			return _values
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Claude'
-			exception.method = 'fetch( self, query: str, time: int=10 ) -> str'
+			exception.method = '_normalize_domains( self, domains: Any ) -> List[ str ]'
 			raise exception
-			
+	
+	def _supports_thinking( self, model: str ) -> bool:
+		'''
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
+			-----------
+			Determine whether the selected Claude model supports extended thinking.
+			
 			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
+			-----------
+			model (str): Model name.
+			
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
+			-----------
+			bool
+			
+		'''
 		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
+			throw_if( 'model', model )
+			_name = str( model ).strip( ).lower( )
+			return _name.startswith( 'claude-' )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Claude'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = '_supports_thinking( self, model: str ) -> bool'
+			raise exception
+	
+	def _extract_text( self, response: Any ) -> str:
+		'''
+		
+			Purpose:
+			-----------
+			Extract plain text from an Anthropic Messages API response.
+			
+			Parameters:
+			-----------
+			response (Any): Anthropic response object.
+			
+			Returns:
+			-----------
+			str
+			
+		'''
+		try:
+			if response is None:
+				return ''
+			
+			if hasattr( response, 'content' ) and response.content:
+				_parts = [ ]
+				for _block in response.content:
+					_type = getattr( _block, 'type', None )
+					if _type == 'text':
+						_text = getattr( _block, 'text', '' )
+						if _text:
+							_parts.append( _text )
+				if _parts:
+					return '\n'.join( _parts ).strip( )
+			
+			return str( response )
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Claude'
+			exception.method = '_extract_text( self, response: Any ) -> str'
+			raise exception
+	
+	def fetch( self, query: str, model: str = 'claude-sonnet-4-6', temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
+			system: str | None = None, stop_sequences: List[ str ] | None = None,
+			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
+			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
+		'''
+		
+			Purpose:
+			-------
+			Send an Anthropic Messages API request for Claude text generation,
+			optional extended thinking, and optional server-side web search.
+			
+			Parameters:
+			-----------
+			query (str): User prompt.
+			model (str): Claude model name.
+			temperature (float): Sampling temperature.
+			max_tokens (int): Max output tokens.
+			top_p (float): Top-p nucleus sampling parameter.
+			top_k (int | None): Top-k sampling parameter.
+			system (str | None): Optional system prompt.
+			stop_sequences (List[str] | None): Optional stop sequences.
+			thinking (bool): Enable extended thinking when supported.
+			thinking_budget (int | None): Claude thinking budget in tokens.
+			web_search (bool): Enable Claude web search tool.
+			search_domains (Any): Optional allowlist domain input.
+			blocked_domains (Any): Optional blocklist domain input.
+			
+			Returns:
+			---------
+			str | None
+			
+		'''
+		try:
+			throw_if( 'query', query )
+			throw_if( 'model', model )
+			
+			self.query = query
+			self.model = str( model ).strip( )
+			self.temperature = float( temperature )
+			self.max_tokens = int( max_tokens )
+			self.top_p = float( top_p )
+			self.top_k = int( top_k ) if top_k is not None else None
+			self.system_instructions = system if system and str( system ).strip( ) else None
+			self.web_search = bool( web_search )
+			self.search_domains = self._normalize_domains( search_domains )
+			self.blocked_domains = self._normalize_domains( blocked_domains )
+			self.thinking_budget = int( thinking_budget ) if thinking_budget is not None else None
+			
+			self.messages = [ { 'role': 'user', 'content': self.query } ]
+			self.params = \
+				{
+						'model': self.model,
+						'max_tokens': self.max_tokens,
+						'messages': self.messages,
+				}
+			
+			if self.system_instructions:
+				self.params[ 'system' ] = self.system_instructions
+			
+			if stop_sequences:
+				self.params[ 'stop_sequences' ] = stop_sequences
+			
+			if thinking and self._supports_thinking( self.model ):
+				_budget = self.thinking_budget if self.thinking_budget is not None else 1024
+				if _budget < 1024:
+					_budget = 1024
+				
+				self.params[ 'thinking' ] = \
+					{
+							'type': 'enabled',
+							'budget_tokens': _budget,
+					}
+				
+				# Anthropic docs indicate thinking is not compatible with temperature/top_k changes.
+				if self.top_p is not None:
+					self.params[ 'top_p' ] = min( 1.0, max( 0.95, self.top_p ) )
+			else:
+				self.params[ 'temperature' ] = self.temperature
+				self.params[ 'top_p' ] = self.top_p
+				
+				if self.top_k is not None and self.top_k > 0:
+					self.params[ 'top_k' ] = self.top_k
+			
+			if self.web_search:
+				self.tools = [ ]
+				self.web_tool = \
+					{
+							'type': 'web_search_20250305',
+							'name': 'web_search',
+					}
+				
+				if self.search_domains:
+					self.web_tool[ 'allowed_domains' ] = self.search_domains
+				
+				if self.blocked_domains:
+					self.web_tool[ 'blocked_domains' ] = self.blocked_domains
+				
+				self.tools.append( self.web_tool )
+				self.params[ 'tools' ] = self.tools
+			
+			self.response = self.client.messages.create( **self.params )
+			return self._extract_text( self.response )
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Claude'
+			exception.method = (
+					'fetch( self, query: str, model: str="claude-sonnet-4-6", '
+					'temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0, '
+					'top_k: int | None=None, system: str | None=None, '
+					'stop_sequences: List[ str ] | None=None, thinking: bool=False, '
+					'thinking_budget: int | None=None, web_search: bool=False, '
+					'search_domains: Any=None, blocked_domains: Any=None ) -> str | None'
+			)
+			raise exception
+	
+	def generate_text( self, query: str, model: str = 'claude-sonnet-4-6', temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
+			system: str | None = None, stop_sequences: List[ str ] | None = None,
+			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
+			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
+		'''
+		
+			Purpose:
+			-----------
+			Convenience wrapper around fetch for text generation.
+			
+			Parameters:
+			-----------
+			query (str): User prompt.
+			
+			Returns:
+			-----------
+			str | None
+			
+		'''
+		try:
+			return self.fetch(
+				query=query,
+				model=model,
+				temperature=temperature,
+				max_tokens=max_tokens,
+				top_p=top_p,
+				top_k=top_k,
+				system=system,
+				stop_sequences=stop_sequences,
+				thinking=thinking,
+				thinking_budget=thinking_budget,
+				web_search=web_search,
+				search_domains=search_domains,
+				blocked_domains=blocked_domains,
+			)
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Claude'
+			exception.method = 'generate_text( self, query: str, ... ) -> str | None'
+			raise exception
+	
+	def search_web( self, query: str, model: str = 'claude-sonnet-4-6', temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
+			system: str | None = None, stop_sequences: List[ str ] | None = None,
+			thinking: bool = False, thinking_budget: int | None = None,
+			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
+		'''
+		
+			Purpose:
+			-----------
+			Convenience wrapper around fetch with web search enabled.
+			
+			Parameters:
+			-----------
+			query (str): User prompt.
+			
+			Returns:
+			-----------
+			str | None
+			
+		'''
+		try:
+			return self.fetch(
+				query=query,
+				model=model,
+				temperature=temperature,
+				max_tokens=max_tokens,
+				top_p=top_p,
+				top_k=top_k,
+				system=system,
+				stop_sequences=stop_sequences,
+				thinking=thinking,
+				thinking_budget=thinking_budget,
+				web_search=True,
+				search_domains=search_domains,
+				blocked_domains=blocked_domains,
+			)
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Claude'
+			exception.method = 'search_web( self, query: str, ... ) -> str | None'
 			raise exception
 			
 class Mistral( Fetcher ):
@@ -12026,13 +12802,14 @@ class Mistral( Fetcher ):
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			raise exception
-			
+
 class Chat( Fetcher ):
 	"""
 	
 	    Purpose
 	    ___________
-	    Class used for interacting with a Data Science & Programming assistant
+	    Class used for interacting with OpenAI text-generation and reasoning models
+	    through the Responses API, including optional built-in web search support.
 	
 	
 	    Parameters
@@ -12049,27 +12826,28 @@ class Chat( Fetcher ):
 	
 	    Methods
 	    ------------
-	    get_model_options( self ) -> str
-	    generate_text( self, prompt: str ) -> str:
-	    analyze_image( self, prompt: str, url: str ) -> str:
+	    fetch( self, prompt: str, ... ) -> str
+	    get_model_options( self ) -> List[ str ]
+	    get_effort_options( self ) -> List[ str ]
+	    generate_text( self, prompt: str, ... ) -> str
+	    analyze_image( self, prompt: str, url: str ) -> str
 	    summarize_document( self, prompt: str, path: str ) -> str
-	    search_web( self, prompt: str ) -> str
+	    search_web( self, prompt: str, ... ) -> str
 	    search_files( self, prompt: str ) -> str
 	    dump( self ) -> str
-	    get_data( self ) -> { }
-
-
+	    get_data( self ) -> Dict[ str, Any ]
 
     """
 	
-	def __init__( self, num: int=1, temp: float=0.8, top: float=0.9,
-			freq: float=0.0, pres: float=0.0, iters: int=10000, store: bool=True, stream: bool=True, ):
+	def __init__( self, num: int = 1, temp: float = 0.8, top: float = 0.9,
+			freq: float = 0.0, pres: float = 0.0, iters: int = 10000, store: bool = True,
+			stream: bool = True ):
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
-		self.system_instructions = None
 		self.client = OpenAI( api_key=self.api_key )
 		self.client.api_key = cfg.OPENAI_API_KEY
-		self.model = ''
+		self.system_instructions = None
+		self.model = 'gpt-5-mini'
 		self.number = num
 		self.temperature = temp
 		self.top_percent = top
@@ -12090,13 +12868,273 @@ class Chat( Fetcher ):
 		self.metadata = { }
 		self.tools = [ ]
 		self.vector_stores = { 'Code': 'vs_67e83bdf8abc81918bda0d6b39a19372', }
+		self.web_search = False
+		self.search_domains = [ ]
+		self.parallel_tool_calls = True
+		self.tool_choice = 'auto'
 	
-	def generate_text( self, prompt: str ) -> str:
+	def _supports_reasoning( self, model: str ) -> bool:
 		"""
 	
 	        Purpose
 	        _______
-	        Generates a chat completion given a prompt
+	        Indicates whether the selected model family should receive
+	        reasoning options.
+	
+	
+	        Parameters
+	        ----------
+	        model: str
+	
+	
+	        Returns
+	        -------
+	        bool
+
+        """
+		try:
+			throw_if( 'model', model )
+			_name = model.strip( ).lower( )
+			return _name.startswith( 'gpt-5' ) or _name.startswith( 'o' )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = '_supports_reasoning( self, model: str ) -> bool'
+			raise exception
+	
+	def _normalize_domains( self, domains: Any ) -> List[ str ]:
+		"""
+	
+	        Purpose
+	        _______
+	        Normalize a string or list of domain entries into a canonical,
+	        de-duplicated list suitable for provider routing.
+	
+	
+	        Parameters
+	        ----------
+	        domains: Any
+	
+	
+	        Returns
+	        -------
+	        List[ str ]
+
+        """
+		try:
+			if domains is None:
+				return [ ]
+			
+			if isinstance( domains, str ):
+				_parts = re.split( r'[\n,;]+', domains )
+			elif isinstance( domains, list ) or isinstance( domains, tuple ) or isinstance( domains, set ):
+				_parts = [ str( x ) for x in domains if x is not None ]
+			else:
+				_parts = [ str( domains ) ]
+			
+			_values = [ ]
+			for _entry in _parts:
+				_value = str( _entry ).strip( ).lower( )
+				if not _value:
+					continue
+				
+				if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+					_value = f'https://{_value}'
+				
+				_parsed = urllib.parse.urlparse( _value )
+				_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+				_domain = re.sub( r':\d+$', '', _domain )
+				_domain = _domain.lstrip( '.' )
+				
+				if _domain.startswith( 'www.' ):
+					_domain = _domain[ 4: ]
+				
+				if _domain and _domain not in _values:
+					_values.append( _domain )
+			
+			return _values
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = '_normalize_domains( self, domains: Any ) -> List[ str ]'
+			raise exception
+	
+	def _build_instructions( self, system: str | None = None, response_format: str | None = None,
+			web_search: bool = False, search_domains: Any = None ) -> str | None:
+		"""
+	
+	        Purpose
+	        _______
+	        Build the final instruction block sent to the OpenAI Responses API.
+	
+	
+	        Parameters
+	        ----------
+	        system: str | None=None
+	        response_format: str | None=None
+	        web_search: bool=False
+	        search_domains: Any=None
+	
+	
+	        Returns
+	        -------
+	        str | None
+
+        """
+		try:
+			_parts = [ ]
+			
+			if system and str( system ).strip( ):
+				_parts.append( str( system ).strip( ) )
+			
+			if response_format and str( response_format ).strip( ).lower( ) == 'json':
+				_parts.append( 'Return valid JSON only. Do not include markdown fences or commentary.' )
+			
+			_domains = self._normalize_domains( search_domains )
+			if web_search and _domains:
+				_parts.append(
+					'When using web search, strongly prefer sources from the following domains '
+					f'when they are relevant and available: {", ".join( _domains )}.'
+				)
+			
+			if _parts:
+				return '\n\n'.join( _parts )
+			
+			return None
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = ('_build_instructions( self, system: str | None=None, '
+			                    'response_format: str | None=None, web_search: bool=False, '
+			                    'search_domains: Any=None ) -> str | None')
+			raise exception
+	
+	def fetch( self, prompt: str, model: str = 'gpt-5-mini', temperature: float = 0.7,
+			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
+			system: str | None = None, response_format: str | None = None,
+			reasoning_effort: str | None = None, web_search: bool = False,
+			search_domains: Any = None, store: bool = True, stream: bool = False,
+			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str:
+		"""
+	
+	        Purpose
+	        _______
+	        Primary provider entry point used by the UI. Executes text generation
+	        or reasoning through OpenAI's Responses API with optional built-in
+	        web search.
+	
+	
+	        Parameters
+	        ----------
+	        prompt: str
+	        model: str='gpt-5-mini'
+	        temperature: float=0.7
+	        max_tokens: int=1024
+	        top_p: float=1.0
+	        seed: int | None=None
+	        system: str | None=None
+	        response_format: str | None=None
+	        reasoning_effort: str | None=None
+	        web_search: bool=False
+	        search_domains: Any=None
+	        store: bool=True
+	        stream: bool=False
+	        parallel_tool_calls: bool=True
+	        tool_choice: str='auto'
+	
+	
+	        Returns
+	        -------
+	        str
+
+        """
+		try:
+			throw_if( 'prompt', prompt )
+			throw_if( 'model', model )
+			
+			self.model = str( model ).strip( )
+			self.input_text = str( prompt )
+			self.temperature = float( temperature )
+			self.top_percent = float( top_p )
+			self.max_completion_tokens = int( max_tokens )
+			self.response_format = response_format or 'auto'
+			self.reasoning_effort = reasoning_effort if reasoning_effort else None
+			self.store = bool( store )
+			self.stream = bool( stream )
+			self.web_search = bool( web_search )
+			self.search_domains = self._normalize_domains( search_domains )
+			self.parallel_tool_calls = bool( parallel_tool_calls )
+			self.tool_choice = tool_choice or 'auto'
+			self.system_instructions = self._build_instructions(
+				system=system,
+				response_format=self.response_format,
+				web_search=self.web_search,
+				search_domains=self.search_domains,
+			)
+			
+			self.tools = [ ]
+			if self.web_search:
+				self.tools.append( { 'type': 'web_search_preview' } )
+			
+			self.request = \
+				{
+						'model': self.model,
+						'input': self.input_text,
+						'max_output_tokens': self.max_completion_tokens,
+						'store': self.store,
+						'stream': self.stream,
+						'parallel_tool_calls': self.parallel_tool_calls,
+				}
+			
+			if self.system_instructions:
+				self.request[ 'instructions' ] = self.system_instructions
+			
+			if self.tools:
+				self.request[ 'tools' ] = self.tools
+				self.request[ 'tool_choice' ] = self.tool_choice
+			
+			if self.temperature is not None:
+				self.request[ 'temperature' ] = self.temperature
+			
+			if self.top_percent is not None:
+				self.request[ 'top_p' ] = self.top_percent
+			
+			if seed is not None:
+				self.request[ 'seed' ] = int( seed )
+			
+			if self._supports_reasoning( self.model ) and self.reasoning_effort:
+				self.request[ 'reasoning' ] = { 'effort': self.reasoning_effort }
+			
+			self.response = self.client.responses.create( **self.request )
+			return self.response.output_text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = (
+					'fetch( self, prompt: str, model: str="gpt-5-mini", temperature: float=0.7, '
+					'max_tokens: int=1024, top_p: float=1.0, seed: int | None=None, '
+					'system: str | None=None, response_format: str | None=None, '
+					'reasoning_effort: str | None=None, web_search: bool=False, '
+					'search_domains: Any=None, store: bool=True, stream: bool=False, '
+					'parallel_tool_calls: bool=True, tool_choice: str="auto" ) -> str'
+			)
+			raise exception
+	
+	def generate_text( self, prompt: str, model: str = 'gpt-5-mini', temperature: float = 0.7,
+			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
+			system: str | None = None, response_format: str | None = None,
+			reasoning_effort: str | None = None, web_search: bool = False,
+			search_domains: Any = None, store: bool = True, stream: bool = False,
+			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str:
+		"""
+	
+	        Purpose
+	        _______
+	        Convenience wrapper around fetch for text generation.
 	
 	
 	        Parameters
@@ -12110,25 +13148,36 @@ class Chat( Fetcher ):
 
         """
 		try:
-			throw_if( 'prompt', prompt )
-			self.input_text = prompt
-			self.response = self.client.responses.create( model=self.model, input=self.input_text )
-			generated_text = self.response.output_text
-			return generated_text
+			return self.fetch(
+				prompt=prompt,
+				model=model,
+				temperature=temperature,
+				max_tokens=max_tokens,
+				top_p=top_p,
+				seed=seed,
+				system=system,
+				response_format=response_format,
+				reasoning_effort=reasoning_effort,
+				web_search=web_search,
+				search_domains=search_domains,
+				store=store,
+				stream=stream,
+				parallel_tool_calls=parallel_tool_calls,
+				tool_choice=tool_choice,
+			)
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
-			exception.method = 'generate_text( self, prompt: str )'
+			exception.method = 'generate_text( self, prompt: str, ... ) -> str'
 			raise exception
-			
 	
 	def generate_image( self, prompt: str ) -> str:
 		"""
 	
 	        Purpose
 	        _______
-	        Generates a chat completion given a prompt
+	        Generate an image using the OpenAI image API.
 	
 	
 	        Parameters
@@ -12144,29 +13193,36 @@ class Chat( Fetcher ):
 		try:
 			throw_if( 'prompt', prompt )
 			self.input_text = prompt
-			self.response = self.client.images.generate( model='dall-e-3', prompt=self.input_text,
-				size='1024x1024', quality='standard', n=1, )
-			generated_image = self.response.data[ 0 ].url
-			return generated_image
+			self.response = self.client.images.generate(
+				model='gpt-image-1',
+				prompt=self.input_text,
+				size='1024x1024',
+			)
+			if hasattr( self.response, 'data' ) and self.response.data:
+				_image = self.response.data[ 0 ]
+				if hasattr( _image, 'url' ) and _image.url:
+					return _image.url
+			return str( self.response )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'generate_image( self, prompt: str ) -> str'
 			raise exception
-			
 	
 	def analyze_image( self, prompt: str, url: str ) -> str:
 		"""
-
+	
 	        Purpose
 	        _______
-	        Method that analyzeses an image given a prompt,
+	        Analyze an image using a multimodal OpenAI model.
+	
 	
 	        Parameters
 	        ----------
-	        prompt (str) - user input text
-	        url: str - file path to image
+	        prompt: str
+	        url: str
+	
 	
 	        Returns
 	        -------
@@ -12179,41 +13235,43 @@ class Chat( Fetcher ):
 			self.input_text = prompt
 			self.image_url = url
 			self.input = [
-			{
-				'role': 'user',
-				'content': [
-				{
-					'type': 'input_text',
-					'text': self.input_text
-				},
-				{
-					'type': 'input_image',
-					'image_url': self.image_url
-				},],
-			} ]
-			self.response = self.client.responses.create( model=self.model, input=self.input )
-			image_analysis = self.response.output_text
-			return image_analysis
+					{
+							'role': 'user',
+							'content': [
+									{
+											'type': 'input_text',
+											'text': self.input_text,
+									},
+									{
+											'type': 'input_image',
+											'image_url': self.image_url,
+									}, ],
+					} ]
+			self.response = self.client.responses.create(
+				model=self.model,
+				input=self.input,
+			)
+			return self.response.output_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
-			exception.method = 'analyze_image( self, prompt: str, url: str )'
+			exception.method = 'analyze_image( self, prompt: str, url: str ) -> str'
 			raise exception
-			
 	
 	def summarize_document( self, prompt: str, path: str ) -> str:
 		"""
-
+	
 	        Purpose
 	        _______
-	        Method that summarizes a document given a
-	        path prompt, and a path
+	        Summarize a document provided by file path.
+	
 	
 	        Parameters
 	        ----------
 	        prompt: str
 	        path: str
+	
 	
 	        Returns
 	        -------
@@ -12225,113 +13283,188 @@ class Chat( Fetcher ):
 			throw_if( 'path', path )
 			self.input_text = prompt
 			self.file_path = path
-			self.file = self.client.files.create( file=open( self.file_path, 'rb' ), purpose='user_data' )
+			
+			with open( self.file_path, 'rb' ) as _handle:
+				self.file = self.client.files.create( file=_handle, purpose='user_data' )
+			
 			self.messages = [
-			{
-				'role': 'user',
-				'content': [
-				{
-					'type': 'file',
-					'file':
 					{
-						'file_id': self.file.id,
-					},
-				},
-				{
-					'type': 'text',
-					'text': self.input_text,
-				}, ],
-			}, ]
-			self.response = self.client.responses.create( model=self.model, inputs=self.messages )
-			document_summary = self.reponse.output_text
-			return document_summary
+							'role': 'user',
+							'content': [
+									{
+											'type': 'input_file',
+											'file_id': self.file.id,
+									},
+									{
+											'type': 'input_text',
+											'text': self.input_text,
+									}, ],
+					} ]
+			
+			self.response = self.client.responses.create(
+				model=self.model,
+				input=self.messages,
+			)
+			return self.response.output_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'summarize_document( self, prompt: str, path: str ) -> str'
 			raise exception
-			
 	
-	def search_web( self, prompt: str ) -> str:
+	def search_web( self, prompt: str, model: str = 'gpt-5-mini', temperature: float = 0.7,
+			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
+			system: str | None = None, response_format: str | None = None,
+			reasoning_effort: str | None = None, search_domains: Any = None,
+			store: bool = True, stream: bool = False, parallel_tool_calls: bool = True,
+			tool_choice: str = 'auto' ) -> str:
 		"""
-
-                Purpose
-                _______
-                Use web_search_options to retrieve and synthesize
-                recent web results for `prompt`.
-
-
-                Parameters
-                ----------
-                prompt: str
-                url: str
-
-                Returns
-                -------
-                str
+	
+	        Purpose
+	        _______
+	        Execute a Responses API request with the built-in web search tool enabled.
+	
+	
+	        Parameters
+	        ----------
+	        prompt: str
+	
+	
+	        Returns
+	        -------
+	        str
 
         """
 		try:
-			throw_if( 'prompt', prompt )
-			self.web_options = { 'search_recency_days': 30, 'max_search_results': 8 }
-			self.messages = [ {'role': 'user', 'content': prompt,} ]
-			self.response = self.client.responses.create( model=self.model,
-				web_search_options=self.web_options, input=self.messages )
-			web_results = self.response.output_text
-			return web_results
+			return self.fetch(
+				prompt=prompt,
+				model=model,
+				temperature=temperature,
+				max_tokens=max_tokens,
+				top_p=top_p,
+				seed=seed,
+				system=system,
+				response_format=response_format,
+				reasoning_effort=reasoning_effort,
+				web_search=True,
+				search_domains=search_domains,
+				store=store,
+				stream=stream,
+				parallel_tool_calls=parallel_tool_calls,
+				tool_choice=tool_choice,
+			)
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
-			exception.method = 'search_web( self, prompt: str ) -> str'
+			exception.method = 'search_web( self, prompt: str, ... ) -> str'
 			raise exception
-			
 	
 	def search_files( self, prompt: str ) -> str:
 		"""
-
-            Purpose
-	        -------
+	
+	        Purpose
+	        _______
 	        Run a file-search tool call against configured vector stores using
 	        the Responses API, and return the textual result.
-
-
-            Parameters
-            ----------
-            prompt: str
-
-            Returns
-            -------
-            str
+	
+	
+	        Parameters
+	        ----------
+	        prompt: str
+	
+	
+	        Returns
+	        -------
+	        str
 
         """
 		try:
 			throw_if( 'prompt', prompt )
 			self.query = prompt
 			self.tools = [
-			{
-				'type': 'file_search',
-				'vector_store_ids': self.vector_store_ids,
-				'max_num_results': 20,
-			} ]
-			self.response = self.client.responses.create( model=self.model, tools=self.tools,
-				input=prompt )
-			file_search = self.response.output_text
-			return file_search
+					{
+							'type': 'file_search',
+							'vector_store_ids': self.vector_store_ids,
+							'max_num_results': 20,
+					} ]
+			self.response = self.client.responses.create(
+				model=self.model,
+				tools=self.tools,
+				input=prompt,
+			)
+			return self.response.output_text
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
 			exception.method = 'search_files( self, prompt: str ) -> str'
 			raise exception
-			
 	
 	def translate( self, text: str ) -> str:
-		pass
+		"""
+	
+	        Purpose
+	        _______
+	        Translate text using the currently selected text model.
+	
+	
+	        Parameters
+	        ----------
+	        text: str
+	
+	
+	        Returns
+	        -------
+	        str
+
+        """
+		try:
+			throw_if( 'text', text )
+			return self.fetch(
+				prompt=f'Translate the following text faithfully and preserve meaning:\n\n{text}',
+				model=self.model,
+				temperature=0.2,
+				max_tokens=self.max_completion_tokens,
+				top_p=self.top_percent,
+				system=self.system_instructions,
+			)
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = 'translate( self, text: str ) -> str'
+			raise exception
 	
 	def transcribe( self, text: str ) -> str:
-		pass
+		"""
+	
+	        Purpose
+	        _______
+	        Placeholder passthrough for compatibility until audio transcription
+	        is split into its own provider path.
+	
+	
+	        Parameters
+	        ----------
+	        text: str
+	
+	
+	        Returns
+	        -------
+	        str
+
+        """
+		try:
+			throw_if( 'text', text )
+			return text
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Chat'
+			exception.method = 'transcribe( self, text: str ) -> str'
+			raise exception
 	
 	def get_format_options( self ) -> List[ str ]:
 		'''
@@ -12351,154 +13484,70 @@ class Chat( Fetcher ):
 	        Method that returns a list of available models
 
         '''
-		return [ 'gpt-4-0613',
-		         'gpt-4-0314',
-				 'gpt-4-turbo-2024-04-09',
-				 'gpt-4o-2024-08-06',
-				 'gpt-4o-2024-11-20',
-				 'gpt-4o-2024-05-13',
-				 'gpt-4o-mini-2024-07-18',
-				 'o1-2024-12-17',
-				 'o1-mini-2024-09-12',
-				 'o3-mini-2025-01-31',
-				 'ft:gpt-4.1-2025-04-14:leeroy-jenkins:bro-gpt-4-1-df-analysis-2025-21-05:BZetxEQa',
-				 'ft:gpt-4o-2024-08-06:leeroy-jenkins:bro-fine-tuned-05052025:BTryvkMx',
-				 'ft:gpt-4o-2024-08-06:leeroy-jenkins:bro-analytics:BTX4TYqY',
-				 'ft:gpt-4o-2024-08-06:leeroy-jenkins:bro-fine-tuned-05052025:BTryvkMx', ]
+		if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS:
+			return list( cfg.GPT_MODELS )
+		
+		return [ 'gpt-5.4',
+		         'gpt-5',
+		         'gpt-5-mini',
+		         'gpt-5-nano',
+		         'gpt-5.1',
+		         'gpt-5.2',
+		         'gpt-4.1', ]
 	
 	def get_effort_options( self ) -> List[ str ]:
 		'''
 	
 	        Purpose:
 	        ---------
-	        Method that returns a list of available models
+	        Method that returns a list of available reasoning effort levels
 
         '''
-		return [ 'auto',
-		         'low',
-		         'high' ]
+		return [ 'minimal', 'low', 'medium', 'high' ]
 	
 	def get_data( self ) -> Dict[ str, Any ]:
 		'''
 	
 	        Purpose:
 	        ---------
-	        Returns: dict[ str ] of members
+	        Returns: dict[ str, Any ] of members
 
         '''
 		return \
 		{
-			'num': self.number,
-			'temperature': self.temperature,
-			'top_percent': self.top_percent,
-			'frequency_penalty': self.frequency_penalty,
-			'presence_penalty': self.presence_penalty,
-			'store': self.store,
-			'stream': self.stream,
-			'size': self.size,
+				'num': self.number,
+				'model': self.model,
+				'temperature': self.temperature,
+				'top_percent': self.top_percent,
+				'frequency_penalty': self.frequency_penalty,
+				'presence_penalty': self.presence_penalty,
+				'max_completion_tokens': self.max_completion_tokens,
+				'store': self.store,
+				'stream': self.stream,
+				'response_format': self.response_format,
+				'reasoning_effort': self.reasoning_effort,
+				'web_search': self.web_search,
+				'search_domains': self.search_domains,
+				'parallel_tool_calls': self.parallel_tool_calls,
+				'tool_choice': self.tool_choice,
+				'vector_store_ids': self.vector_store_ids,
 		}
 	
 	def dump( self ) -> str:
 		'''
-
+	
 	        Purpose:
 	        ---------
-	        Returns: dict of members
+	        Returns: JSON-like string representation of members
 
         '''
-		new = '\r\n'
-		return ( 'num' + f' = {self.number}' + new
-				+ 'temperature' + f' = {self.temperature}' + new
-				+ 'top_percent' + f' = {self.top_percent}' + new
-				+ 'frequency_penalty' + f' = {self.frequency_penalty}' + new
-				+ 'presence_penalty' + f' = {self.presence_penalty}' + new
-				+ 'max_completion_tokens' + f' = {self.max_completion_tokens}' + new
-				+ 'store' + f' = {self.store}' + new
-				+ 'stream' + f' = {self.stream}' + new )
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
 		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
+			return str( self.get_data( ) )
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Chat'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = 'dump( self ) -> str'
 			raise exception
 
 class Grokipedia( Fetcher ):
