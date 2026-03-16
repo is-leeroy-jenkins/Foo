@@ -493,7 +493,7 @@ def initialize_database( ) -> None:
 			"""
 		)
 		conn.execute(
-			"""
+		"""
             CREATE TABLE IF NOT EXISTS Prompts
             (
                 PromptsId
