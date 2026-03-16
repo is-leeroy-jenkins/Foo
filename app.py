@@ -3469,29 +3469,84 @@ elif mode == 'Data Retrieval':
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-		
-		result = st.session_state.get( 'navalobservatory_results', { } )
+				
+				result = st.session_state.get( 'navalobservatory_results', { } )
 		
 		if not result:
 			naval_output.text( 'No results.' )
 		else:
-			naval_output.markdown( '#### Request Metadata' )
-			naval_output.json(
-				{
-						'mode': result.get( 'mode', '' ),
-						'url': result.get( 'url', '' ),
-						'params': result.get( 'params', { } ),
-						'location_label': result.get( 'location_label', '' ),
-				}
-			)
-			
 			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 			
-			if data:
-				naval_output.markdown( '#### Raw Result' )
-				naval_output.json( data )
-			else:
-				naval_output.info( 'No results returned.' )
+			with col_right:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': result.get( 'mode', '' ),
+							'url': result.get( 'url', '' ),
+							'params': params,
+							'location_label': result.get( 'location_label', '' ),
+					}
+				)
+				
+				if not data:
+					st.info( 'No results returned.' )
+				else:
+					st.markdown( '#### Observation Summary' )
+					
+					c1, c2 = st.columns( 2 )
+					
+					with c1:
+						if params.get( 'date', '' ):
+							st.markdown( f"**Date:** {params.get( 'date', '' )}" )
+						if params.get( 'time', '' ):
+							st.markdown( f"**Time:** {params.get( 'time', '' )}" )
+						if result.get( 'location_label', '' ):
+							st.markdown(
+								f"**Location Label:** {result.get( 'location_label', '' )}"
+							)
+					
+					with c2:
+						if params.get( 'coords', '' ):
+							st.markdown( f"**Coordinates:** {params.get( 'coords', '' )}" )
+					
+					bodies: List[ Dict[ str, Any ] ] = [ ]
+					
+					if isinstance( data, dict ):
+						for key in [ 'data', 'bodies', 'results', 'celestialBodies',
+						             'celestial_bodies' ]:
+							value = data.get( key, None )
+							if isinstance( value, list ):
+								bodies = [ item for item in value if isinstance( item, dict ) ]
+								break
+					
+					if bodies:
+						st.markdown( '#### Celestial Bodies' )
+						df_bodies = pd.DataFrame( bodies )
+						if not df_bodies.empty:
+							st.dataframe( df_bodies, use_container_width=True, hide_index=True )
+						else:
+							st.info( 'No displayable celestial body rows were found.' )
+					else:
+						top_fields = { }
+						
+						if isinstance( data, dict ):
+							for key in [
+									'gha', 'dec', 'hc', 'zn', 'altitude', 'azimuth',
+									'sunrise', 'sunset', 'moonrise', 'moonset'
+							]:
+								if key in data:
+									top_fields[ key ] = data.get( key )
+						
+						if top_fields:
+							st.markdown( '#### Key Values' )
+							st.json( top_fields )
+						else:
+							st.markdown( '#### Result' )
+							st.json( data )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Open Science
 	with st.expander( label='Open Science', expanded=False ):
@@ -3830,36 +3885,147 @@ elif mode == 'Data Retrieval':
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-		
-		result = st.session_state.get( 'govinfo_results', { } )
+				
+				result = st.session_state.get( 'govinfo_results', { } )
 		
 		if not result:
 			govinfo_output.text( 'No results.' )
 		else:
-			govinfo_output.markdown( '#### Request Metadata' )
-			govinfo_output.json(
-				{
-						'mode': result.get( 'mode', '' ),
-						'url': result.get( 'url', '' ),
-						'params': result.get( 'params', { } ),
-						'payload': result.get( 'payload', { } ),
-				}
-			)
-			
+			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
 			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+			payload = result.get( 'payload', { } ) if isinstance( result, dict ) else { }
 			
-			if isinstance( data, dict ) or isinstance( data, list ):
-				govinfo_output.markdown( '#### Result' )
-				govinfo_output.json( data )
-			elif data:
-				govinfo_output.markdown( '#### Result' )
-				govinfo_output.text_area(
-					'Output',
-					value=str( data ),
-					height=320
+			with col_right:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': mode_value,
+							'url': result.get( 'url', '' ),
+							'params': params,
+							'payload': payload,
+					}
 				)
-			else:
-				govinfo_output.info( 'No results returned.' )
+				
+				items: List[ Dict[ str, Any ] ] = [ ]
+				
+				if isinstance( data, dict ):
+					for key in [ 'packages', 'results', 'items' ]:
+						value = data.get( key, None )
+						if isinstance( value, list ):
+							items = [ item for item in value if isinstance( item, dict ) ]
+							break
+				elif isinstance( data, list ):
+					items = [ item for item in data if isinstance( item, dict ) ]
+				
+				if mode_value == 'package_summary' and isinstance( data, dict ) and data:
+					st.markdown( '#### Package Summary' )
+					
+					title_value = (
+							data.get( 'title' )
+							or data.get( 'packageTitle' )
+							or data.get( 'packageId' )
+							or 'Package'
+					)
+					
+					st.markdown( f'### {title_value}' )
+					
+					meta_parts: List[ str ] = [ ]
+					for key in [ 'packageId', 'collectionCode', 'lastModified', 'dateIssued' ]:
+						if key in data and str( data.get( key ) ).strip( ):
+							meta_parts.append( f'{key}: `{data.get( key )}`' )
+					
+					if meta_parts:
+						st.caption( ' | '.join( meta_parts ) )
+					
+					for text_key in [ 'summary', 'description' ]:
+						if text_key in data and str( data.get( text_key ) ).strip( ):
+							st.write( str( data.get( text_key ) ) )
+							break
+					
+					with st.expander( 'Raw Package JSON', expanded=False ):
+						st.json( data )
+				
+				elif items:
+					st.markdown( '#### Results' )
+					
+					for index, item in enumerate( items, start=1 ):
+						title_value = (
+								item.get( 'title' )
+								or item.get( 'packageTitle' )
+								or item.get( 'packageId' )
+								or item.get( 'granuleId' )
+								or f'Result {index}'
+						)
+						
+						package_value = (
+								item.get( 'packageId' )
+								or item.get( 'granuleId' )
+								or item.get( 'id' )
+								or ''
+						)
+						
+						collection_value = (
+								item.get( 'collectionCode' )
+								or item.get( 'collectionName' )
+								or item.get( 'collection' )
+								or ''
+						)
+						
+						date_value = (
+								item.get( 'lastModified' )
+								or item.get( 'dateIssued' )
+								or item.get( 'publishDate' )
+								or ''
+						)
+						
+						summary_value = (
+								item.get( 'summary' )
+								or item.get( 'description' )
+								or item.get( 'snippet' )
+								or ''
+						)
+						
+						with st.container( border=True ):
+							st.markdown( f'**{index}. {title_value}**' )
+							
+							meta_parts: List[ str ] = [ ]
+							
+							if package_value:
+								meta_parts.append( f'ID: `{package_value}`' )
+							
+							if collection_value:
+								meta_parts.append( f'Collection: `{collection_value}`' )
+							
+							if date_value:
+								meta_parts.append( f'Date: `{date_value}`' )
+							
+							if meta_parts:
+								st.caption( ' | '.join( meta_parts ) )
+							
+							if summary_value:
+								st.write( str( summary_value ) )
+							else:
+								st.caption( 'No summary available.' )
+							
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
+				
+				elif isinstance( data, dict ) and data:
+					st.markdown( '#### Result' )
+					st.json( data )
+				elif data:
+					st.markdown( '#### Result' )
+					st.text_area(
+						'Output',
+						value=str( data ),
+						height=320
+					)
+				else:
+					st.info( 'No results returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Congress
 	with st.expander( label='Congress', expanded=False ):
@@ -4122,35 +4288,151 @@ elif mode == 'Data Retrieval':
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-		
-		result = st.session_state.get( 'congress_results', { } )
+				
+				result = st.session_state.get( 'congress_results', { } )
 		
 		if not result:
 			congress_output.text( 'No results.' )
 		else:
-			congress_output.markdown( '#### Request Metadata' )
-			congress_output.json(
-				{
-						'mode': result.get( 'mode', '' ),
-						'url': result.get( 'url', '' ),
-						'params': result.get( 'params', { } ),
-				}
-			)
-			
+			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
 			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 			
-			if isinstance( data, dict ) or isinstance( data, list ):
-				congress_output.markdown( '#### Result' )
-				congress_output.json( data )
-			elif data:
-				congress_output.markdown( '#### Result' )
-				congress_output.text_area(
-					'Output',
-					value=str( data ),
-					height=320
+			with col_right:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': mode_value,
+							'url': result.get( 'url', '' ),
+							'params': params,
+					}
 				)
-			else:
-				congress_output.info( 'No results returned.' )
+				
+				items: List[ Dict[ str, Any ] ] = [ ]
+				
+				if isinstance( data, dict ):
+					for key in [
+							'bills',
+							'laws',
+							'reports',
+							'committeeReports',
+							'congresses',
+							'sessions',
+							'results',
+							'items'
+					]:
+						value = data.get( key, None )
+						if isinstance( value, list ):
+							items = [ item for item in value if isinstance( item, dict ) ]
+							break
+				elif isinstance( data, list ):
+					items = [ item for item in data if isinstance( item, dict ) ]
+				
+				if items:
+					st.markdown( '#### Results' )
+					
+					for index, item in enumerate( items, start=1 ):
+						title_value = (
+								item.get( 'title' )
+								or item.get( 'name' )
+								or item.get( 'number' )
+								or item.get( 'billNumber' )
+								or item.get( 'lawNumber' )
+								or item.get( 'reportNumber' )
+								or f'Result {index}'
+						)
+						
+						id_parts: List[ str ] = [ ]
+						for key in [
+								'congress',
+								'type',
+								'number',
+								'billType',
+								'billNumber',
+								'lawType',
+								'lawNumber',
+								'reportType',
+								'reportNumber'
+						]:
+							if key in item and str( item.get( key ) ).strip( ):
+								id_parts.append( f'{key}={item.get( key )}' )
+						
+						action_value = (
+								item.get( 'latestAction' )
+								or item.get( 'latestActionText' )
+								or item.get( 'actionDate' )
+								or ''
+						)
+						
+						with st.container( border=True ):
+							st.markdown( f'**{index}. {title_value}**' )
+							
+							if id_parts:
+								st.caption( ' | '.join( id_parts ) )
+							
+							if isinstance( action_value, dict ):
+								st.write( str( action_value ) )
+							elif action_value:
+								st.write( str( action_value ) )
+							
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
+				
+				elif isinstance( data, dict ) and data:
+					st.markdown( '#### Detail' )
+					
+					title_value = (
+							data.get( 'title' )
+							or data.get( 'name' )
+							or data.get( 'number' )
+							or data.get( 'billNumber' )
+							or data.get( 'lawNumber' )
+							or data.get( 'reportNumber' )
+							or 'Result'
+					)
+					
+					st.markdown( f'### {title_value}' )
+					
+					summary_fields: Dict[ str, Any ] = { }
+					for key in [
+							'congress',
+							'type',
+							'number',
+							'billType',
+							'billNumber',
+							'lawType',
+							'lawNumber',
+							'reportType',
+							'reportNumber',
+							'updateDate',
+							'actionDate'
+					]:
+						if key in data:
+							summary_fields[ key ] = data.get( key )
+					
+					if summary_fields:
+						st.json( summary_fields )
+					
+					for key in [ 'summary', 'latestAction', 'description' ]:
+						if key in data and str( data.get( key ) ).strip( ):
+							st.markdown( f'#### {key}' )
+							st.write( str( data.get( key ) ) )
+					
+					with st.expander( 'Raw Detail JSON', expanded=False ):
+						st.json( data )
+				
+				elif data:
+					st.markdown( '#### Result' )
+					st.text_area(
+						'Output',
+						value=str( data ),
+						height=320
+					)
+				else:
+					st.info( 'No results returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Internet Archive
 	with st.expander( label='Internet Archive', expanded=False ):
@@ -4314,35 +4596,122 @@ elif mode == 'Data Retrieval':
 			
 			except Exception as exc:
 				st.error( str( exc ) )
-		
-		result = st.session_state.get( 'internetarchive_results', { } )
+				
+				result = st.session_state.get( 'internetarchive_results', { } )
 		
 		if not result:
 			ia_output.text( 'No results.' )
 		else:
-			ia_output.markdown( '#### Request Metadata' )
-			ia_output.json(
-				{
-						'mode': result.get( 'mode', '' ),
-						'url': result.get( 'url', '' ),
-						'params': result.get( 'params', { } ),
-				}
-			)
-			
+			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
 			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 			
-			if isinstance( data, dict ) or isinstance( data, list ):
-				ia_output.markdown( '#### Result' )
-				ia_output.json( data )
-			elif data:
-				ia_output.markdown( '#### Result' )
-				ia_output.text_area(
-					'Output',
-					value=str( data ),
-					height=320
+			with col_right:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': mode_value,
+							'url': result.get( 'url', '' ),
+							'params': params,
+					}
 				)
-			else:
-				ia_output.info( 'No results returned.' )
+				
+				docs: List[ Dict[ str, Any ] ] = [ ]
+				num_found = None
+				
+				if isinstance( data, dict ):
+					response_block = data.get( 'response', { } )
+					
+					if isinstance( response_block, dict ):
+						num_found = response_block.get( 'numFound', None )
+						value = response_block.get( 'docs', [ ] )
+						if isinstance( value, list ):
+							docs = [ item for item in value if isinstance( item, dict ) ]
+				
+				if num_found is not None:
+					st.markdown( f'#### Search Results ({num_found})' )
+				else:
+					st.markdown( '#### Search Results' )
+				
+				if docs:
+					for index, item in enumerate( docs, start=1 ):
+						title_value = (
+								item.get( 'title' )
+								or item.get( 'identifier' )
+								or f'Result {index}'
+						)
+						
+						identifier_value = item.get( 'identifier', '' )
+						mediatype_value = item.get( 'mediatype', '' )
+						
+						collection_value = ''
+						collection_raw = item.get( 'collection', '' )
+						if isinstance( collection_raw, list ) and collection_raw:
+							collection_value = ', '.join( [ str( x ) for x in
+							                                collection_raw[ :3 ] ] )
+						elif collection_raw:
+							collection_value = str( collection_raw )
+						
+						date_value = (
+								item.get( 'publicdate' )
+								or item.get( 'date' )
+								or item.get( 'addeddate' )
+								or ''
+						)
+						
+						desc_value = item.get( 'description', '' )
+						if isinstance( desc_value, list ):
+							desc_value = ' '.join( [ str( x ) for x in desc_value[ :2 ] ] )
+						
+						with st.container( border=True ):
+							st.markdown( f'**{index}. {title_value}**' )
+							
+							meta_parts: List[ str ] = [ ]
+							
+							if identifier_value:
+								meta_parts.append( f'Identifier: `{identifier_value}`' )
+							
+							if mediatype_value:
+								meta_parts.append( f'Mediatype: `{mediatype_value}`' )
+							
+							if collection_value:
+								meta_parts.append( f'Collection: `{collection_value}`' )
+							
+							if date_value:
+								meta_parts.append( f'Date: `{date_value}`' )
+							
+							if meta_parts:
+								st.caption( ' | '.join( meta_parts ) )
+							
+							if desc_value:
+								st.write( str( desc_value ) )
+							else:
+								st.caption( 'No description available.' )
+							
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
+				
+				elif isinstance( data, dict ) and data:
+					st.markdown( '#### Result' )
+					st.json( data )
+				elif isinstance( data, list ) and data:
+					df_ia = pd.DataFrame( data )
+					if not df_ia.empty:
+						st.dataframe( df_ia, use_container_width=True, hide_index=True )
+					else:
+						st.json( data )
+				elif data:
+					st.markdown( '#### Result' )
+					st.text_area(
+						'Output',
+						value=str( data ),
+						height=320
+					)
+				else:
+					st.info( 'No results returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Grokipedia
 	with st.expander( label='Grokipedia', expanded=False ):
@@ -5394,12 +5763,147 @@ elif mode == 'Geospatial Data':
 				except Exception as exc:
 					st.error( 'Google Weather request failed.' )
 					st.exception( exc )
+					
+					result = st.session_state.get( 'googleweather_results', { } )
+		
+		if not result:
+			st.text( 'No results.' )
+		else:
+			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 			
-			result = st.session_state.get( 'googleweather_results', { } )
+			st.markdown( '#### Request Metadata' )
+			st.json(
+				{
+						'mode': mode_value,
+						'url': result.get( 'url', '' ),
+						'params': params,
+				}
+			)
 			
-			if not result:
-				st.text( 'No results.' )
+			if isinstance( data, dict ) and data:
+				current = (
+						data.get( 'currentWeather' )
+						or data.get( 'current_weather' )
+						or data.get( 'currentConditions' )
+						or data.get( 'current_conditions' )
+						or { }
+				)
+				
+				hourly = (
+						data.get( 'hourlyForecasts' )
+						or data.get( 'hourly_forecasts' )
+						or data.get( 'hours' )
+						or [ ]
+				)
+				
+				daily = (
+						data.get( 'dailyForecasts' )
+						or data.get( 'daily_forecasts' )
+						or data.get( 'days' )
+						or [ ]
+				)
+				
+				alerts = (
+						data.get( 'weatherAlerts' )
+						or data.get( 'alerts' )
+						or [ ]
+				)
+				
+				location_bits: List[ str ] = [ ]
+				for key in [ 'address', 'resolvedAddress', 'location', 'displayName', 'name' ]:
+					value = data.get( key, '' )
+					if value:
+						location_bits.append( str( value ) )
+						break
+				
+				if location_bits:
+					st.markdown( '#### Location' )
+					st.write( location_bits[ 0 ] )
+				
+				if current:
+					st.markdown( '#### Current Conditions' )
+					
+					c1, c2, c3 = st.columns( 3 )
+					
+					with c1:
+						for key in [ 'temperature', 'temp', 'temperature_f', 'temperature_c' ]:
+							if key in current:
+								st.metric( 'Temperature', current.get( key ) )
+								break
+					
+					with c2:
+						for key in [ 'humidity', 'relativeHumidity', 'relative_humidity' ]:
+							if key in current:
+								st.metric( 'Humidity', current.get( key ) )
+								break
+					
+					with c3:
+						for key in [ 'weatherCondition', 'condition', 'description', 'icon' ]:
+							if key in current:
+								st.metric( 'Condition', current.get( key ) )
+								break
+					
+					with st.expander( 'Current Conditions Detail', expanded=False ):
+						st.json( current )
+				
+				if isinstance( hourly, list ) and hourly:
+					st.markdown( '#### Hourly Forecast' )
+					df_hourly = pd.DataFrame( hourly )
+					if not df_hourly.empty:
+						st.dataframe( df_hourly.head( 24 ), use_container_width=True, hide_index=True )
+					else:
+						st.info( 'Hourly forecast returned no displayable rows.' )
+				
+				if isinstance( daily, list ) and daily:
+					st.markdown( '#### Daily Forecast' )
+					df_daily = pd.DataFrame( daily )
+					if not df_daily.empty:
+						st.dataframe( df_daily, use_container_width=True, hide_index=True )
+					else:
+						st.info( 'Daily forecast returned no displayable rows.' )
+				
+				if isinstance( alerts, list ) and alerts:
+					st.markdown( '#### Alerts' )
+					for idx, alert in enumerate( alerts, start=1 ):
+						with st.expander( f'Alert {idx}', expanded=False ):
+							if isinstance( alert, dict ):
+								title_value = (
+										alert.get( 'headline' )
+										or alert.get( 'title' )
+										or alert.get( 'event' )
+										or f'Alert {idx}'
+								)
+								st.markdown( f'**{title_value}**' )
+								
+								desc_value = (
+										alert.get( 'description' )
+										or alert.get( 'summary' )
+										or ''
+								)
+								if desc_value:
+									st.write( str( desc_value ) )
+								
+								st.json( alert )
+							else:
+								st.write( alert )
+				
+				if not current and not hourly and not daily and not alerts:
+					st.markdown( '#### Result' )
+					st.json( data )
+			
+			elif isinstance( data, list ) and data:
+				st.markdown( '#### Results' )
+				df_weather = pd.DataFrame( data )
+				if not df_weather.empty:
+					st.dataframe( df_weather, use_container_width=True, hide_index=True )
+				else:
+					st.json( data )
 			else:
+				st.info( 'No results returned.' )
+			
+			with st.expander( 'Raw Result', expanded=False ):
 				st.json( result )
 	
 	# -------- Satellite Center
@@ -7450,45 +7954,111 @@ elif mode == 'Geospatial Data':
 				except Exception as exc:
 					st.error( 'Star Chart request failed.' )
 					st.exception( exc )
+					
+					result = st.session_state.get( 'starchart_results', { } )
+		
+		if not result:
+			st.text( 'No results.' )
+		else:
+			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+			search_payload = result.get( 'search', { } ) if isinstance( result, dict ) else { }
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			chart_url = result.get( 'chart_url', '' ) if isinstance( result, dict ) else ''
+			image_url = result.get( 'image_url', '' ) if isinstance( result, dict ) else ''
 			
-			result = st.session_state.get( 'starchart_results', { } )
+			st.markdown( '#### Chart Summary' )
 			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
+			meta_c1, meta_c2 = st.columns( 2 )
+			
+			with meta_c1:
+				if mode_value:
+					st.markdown( f'**Mode:** {mode_value}' )
+				if result.get( 'url', '' ):
+					st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				if params:
+					if 'query' in params and params.get( 'query', '' ):
+						st.markdown( f"**Query:** {params.get( 'query', '' )}" )
+					if 'ra' in params and 'dec' in params:
+						st.markdown(
+							f"**Coordinates:** RA={params.get( 'ra', '' )}, "
+							f"Dec={params.get( 'dec', '' )}"
+						)
+			
+			with meta_c2:
+				if chart_url:
+					st.markdown( f'**Chart Link:** {chart_url}' )
+				if image_url:
+					st.markdown( f'**Image URL:** {image_url}' )
+				if 'zoom' in params:
+					st.markdown( f"**Zoom:** {params.get( 'zoom', '' )}" )
+			
+			if image_url:
+				st.markdown( '#### Preview' )
+				st.image( image_url, use_container_width=True )
+			
+			if search_payload:
+				st.markdown( '#### Object Search' )
 				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				if isinstance( search_payload, list ):
+					items = [ item for item in search_payload if isinstance( item, dict ) ]
+				elif isinstance( search_payload, dict ):
+					items = [ search_payload ]
+				else:
+					items = [ ]
 				
-				with meta_c2:
-					if 'chart_url' in result:
-						st.markdown( f"**Chart Link:** {result.get( 'chart_url', '' )}" )
-					if 'image_url' in result:
-						st.markdown( f"**Image URL:** {result.get( 'image_url', '' )}" )
+				if items:
+					for idx, item in enumerate( items, start=1 ):
+						title_value = (
+								item.get( 'name' )
+								or item.get( 'title' )
+								or item.get( 'object' )
+								or f'Result {idx}'
+						)
+						
+						with st.expander( f'Result {idx}: {title_value}', expanded=False ):
+							summary_parts: List[ str ] = [ ]
+							
+							for key in [ 'ra', 'dec', 'type', 'constellation', 'magnitude' ]:
+								if key in item and str( item.get( key ) ).strip( ):
+									summary_parts.append( f'{key}={item.get( key )}' )
+							
+							if summary_parts:
+								st.caption( ' | '.join( summary_parts ) )
+							
+							st.json( item )
+				else:
+					st.json( search_payload )
+			
+			if data:
+				st.markdown( '#### Chart Data' )
 				
-				if result.get( 'search', { } ):
-					st.markdown( '#### Object Search' )
-					st.json( result.get( 'search', { } ) )
-				
-				search_data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-				if search_data:
-					st.markdown( '#### Search Result' )
-					st.json( search_data )
-				
-				if result.get( 'params', { } ):
-					st.markdown( '#### Request Parameters' )
-					st.json( result.get( 'params', { } ) )
-				
-				if result.get( 'image_url', '' ):
-					st.markdown( '#### Static Chart Preview' )
-					st.image( result.get( 'image_url', '' ), use_container_width=True )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
+				if isinstance( data, list ):
+					df_chart = pd.DataFrame( data )
+					if not df_chart.empty:
+						st.dataframe( df_chart, use_container_width=True, hide_index=True )
+					else:
+						st.json( data )
+				elif isinstance( data, dict ):
+					key_fields = { }
+					for key in [ 'name', 'title', 'ra', 'dec', 'type', 'constellation',
+					             'magnitude' ]:
+						if key in data:
+							key_fields[ key ] = data.get( key )
+					
+					if key_fields:
+						st.json( key_fields )
+					else:
+						st.json( data )
+				else:
+					st.write( data )
+			
+			if params:
+				with st.expander( 'Request Parameters', expanded=False ):
+					st.json( params )
+			
+			with st.expander( 'Raw Result', expanded=False ):
+				st.json( result )
 	
 	# -------- Nearby Objects
 	with st.expander( label='Near Earth Objects', expanded=False ):
