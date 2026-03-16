@@ -2591,33 +2591,33 @@ elif mode == 'Data Retrieval':
 					
 					label = f'Document {idx}' if not title else f'Document {idx}: {title}'
 					
-			with st.expander( 'Search Results', expanded=False ):
-				if isinstance( doc, Document ):
-					if doc.metadata:
-						meta_col1, meta_col2 = st.columns( 2 )
-						
-						with meta_col1:
-							if 'title' in doc.metadata:
-								st.markdown( f"**Title:** {doc.metadata.get( 'title', '' )}" )
-							if 'source' in doc.metadata:
-								st.markdown( f"**Source:** {doc.metadata.get( 'source', '' )}" )
-						
-						with meta_col2:
-							if 'categories' in doc.metadata:
-								st.markdown( f"**Categories:** {doc.metadata.get( 'categories', '' )}" )
-							if 'pageid' in doc.metadata:
-								st.markdown( f"**Page ID:** {doc.metadata.get( 'pageid', '' )}" )
-					
-					st.text_area(
-						'Content',
-						value=doc.page_content or '',
-						height=300,
-						key=f'wikipedia_doc_{idx}' )
-					
-					if doc.metadata:
-						st.json( doc.metadata )
-				else:
-					st.write( doc )
+					with st.expander( 'Search Results', expanded=False ):
+						if isinstance( doc, Document ):
+							if doc.metadata:
+								meta_col1, meta_col2 = st.columns( 2 )
+								
+								with meta_col1:
+									if 'title' in doc.metadata:
+										st.markdown( f"**Title:** {doc.metadata.get( 'title', '' )}" )
+									if 'source' in doc.metadata:
+										st.markdown( f"**Source:** {doc.metadata.get( 'source', '' )}" )
+								
+								with meta_col2:
+									if 'categories' in doc.metadata:
+										st.markdown( f"**Categories:** {doc.metadata.get( 'categories', '' )}" )
+									if 'pageid' in doc.metadata:
+										st.markdown( f"**Page ID:** {doc.metadata.get( 'pageid', '' )}" )
+							
+							st.text_area(
+								'Content',
+								value=doc.page_content or '',
+								height=300,
+								key=f'wikipedia_doc_{idx}' )
+							
+							if doc.metadata:
+								st.json( doc.metadata )
+						else:
+							st.write( doc )
 	
 	# -------- Google Search
 	with st.expander( label='Google Search', expanded=False ):
