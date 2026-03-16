@@ -95,6 +95,16 @@ DB = r'stores/sqlite/datamodels/Data.db'
 MODES = [ 'Data Loading', 'Data Scraping', 'Data Retrieval',
           'Data Generation', 'Geospatial Data', 'Data Management' ]
 
+MODE_MAP = \
+{
+		'Loading': 'Data Loading',
+		'Scraping': 'Data Scraping',
+		'Retrieval': 'Data Retrieval',
+		'Generation': 'Data Generation',
+		'Geospatial': 'Geospatial Data',
+		'Management': 'Data Management'
+ }
+
 GPT_MODELS = [ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano',
                'gpt-5.1', 'gpt-5.2', 'gpt-4.1' ]
 
