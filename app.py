@@ -2591,33 +2591,33 @@ elif mode == 'Data Retrieval':
 					
 					label = f'Document {idx}' if not title else f'Document {idx}: {title}'
 					
-					with st.expander( label, expanded=False ):
-						if isinstance( doc, Document ):
-							if doc.metadata:
-								meta_col1, meta_col2 = st.columns( 2 )
-								
-								with meta_col1:
-									if 'title' in doc.metadata:
-										st.markdown( f"**Title:** {doc.metadata.get( 'title', '' )}" )
-									if 'source' in doc.metadata:
-										st.markdown( f"**Source:** {doc.metadata.get( 'source', '' )}" )
-								
-								with meta_col2:
-									if 'categories' in doc.metadata:
-										st.markdown( f"**Categories:** {doc.metadata.get( 'categories', '' )}" )
-									if 'pageid' in doc.metadata:
-										st.markdown( f"**Page ID:** {doc.metadata.get( 'pageid', '' )}" )
-							
-							st.text_area(
-								'Content',
-								value=doc.page_content or '',
-								height=300,
-								key=f'wikipedia_doc_{idx}' )
-							
-							if doc.metadata:
-								st.json( doc.metadata )
-						else:
-							st.write( doc )
+			with st.expander( label, expanded=False ):
+				if isinstance( doc, Document ):
+					if doc.metadata:
+						meta_col1, meta_col2 = st.columns( 2 )
+						
+						with meta_col1:
+							if 'title' in doc.metadata:
+								st.markdown( f"**Title:** {doc.metadata.get( 'title', '' )}" )
+							if 'source' in doc.metadata:
+								st.markdown( f"**Source:** {doc.metadata.get( 'source', '' )}" )
+						
+						with meta_col2:
+							if 'categories' in doc.metadata:
+								st.markdown( f"**Categories:** {doc.metadata.get( 'categories', '' )}" )
+							if 'pageid' in doc.metadata:
+								st.markdown( f"**Page ID:** {doc.metadata.get( 'pageid', '' )}" )
+					
+					st.text_area(
+						'Content',
+						value=doc.page_content or '',
+						height=300,
+						key=f'wikipedia_doc_{idx}' )
+					
+					if doc.metadata:
+						st.json( doc.metadata )
+				else:
+					st.write( doc )
 	
 	# -------- The News API
 	with st.expander( label='The News API', expanded=False ):
@@ -3470,7 +3470,7 @@ elif mode == 'Data Retrieval':
 			except Exception as exc:
 				st.error( str( exc ) )
 				
-				result = st.session_state.get( 'navalobservatory_results', { } )
+		result = st.session_state.get( 'navalobservatory_results', { } )
 		
 		if not result:
 			naval_output.text( 'No results.' )
@@ -3566,19 +3566,6 @@ elif mode == 'Data Retrieval':
 			st.session_state[ 'openscience_clear_request' ] = False
 		
 		def _clear_openscience_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Open Science expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
 			st.session_state[ 'openscience_clear_request' ] = True
 		
 		col_left, col_right = st.columns( 2, border=True )
@@ -3641,7 +3628,7 @@ elif mode == 'Data Retrieval':
 					use_container_width=True
 				)
 			with b2:
-				openscience_clear = st.button(
+				st.button(
 					'Clear',
 					key='openscience_clear',
 					on_click=_clear_openscience_state,
@@ -3649,54 +3636,119 @@ elif mode == 'Data Retrieval':
 				)
 		
 		with col_right:
-			openscience_output = st.empty( )
-		
-		if openscience_submit:
-			try:
-				f = OpenScience( )
+			st.markdown( 'Results' )
+			
+			if openscience_submit:
+				try:
+					f = OpenScience( )
+					
+					result = f.fetch(
+						mode=str( openscience_mode ),
+						query=str( openscience_query ),
+						accession=str( openscience_accession ),
+						format_value=str( openscience_format ),
+						time=int( openscience_timeout )
+					)
+					
+					st.session_state[ 'openscience_results' ] = result or { }
+					st.rerun( )
 				
-				result = f.fetch(
-					mode=str( openscience_mode ),
-					query=str( openscience_query ),
-					accession=str( openscience_accession ),
-					format_value=str( openscience_format ),
-					time=int( openscience_timeout )
-				)
-				
-				st.session_state[ 'openscience_results' ] = result or { }
-				st.rerun( )
+				except Exception as exc:
+					st.error( str( exc ) )
 			
-			except Exception as exc:
-				st.error( str( exc ) )
-		
-		result = st.session_state.get( 'openscience_results', { } )
-		
-		if not result:
-			openscience_output.text( 'No results.' )
-		else:
-			openscience_output.markdown( '#### Request Metadata' )
-			openscience_output.json(
-				{
-						'mode': result.get( 'mode', '' ),
-						'url': result.get( 'url', '' ),
-						'params': result.get( 'params', { } ),
-				}
-			)
+			result = st.session_state.get( 'openscience_results', { } )
 			
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-			
-			if isinstance( data, dict ) or isinstance( data, list ):
-				openscience_output.markdown( '#### Result' )
-				openscience_output.json( data )
-			elif data:
-				openscience_output.markdown( '#### Result' )
-				openscience_output.text_area(
-					'Output',
-					value=str( data ),
-					height=320
-				)
+			if not result:
+				st.text( 'No results.' )
 			else:
-				openscience_output.info( 'No results returned.' )
+				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+				
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': mode_value,
+							'url': result.get( 'url', '' ),
+							'params': params,
+					}
+				)
+				
+				if mode_value == 'dataset' and isinstance( data, dict ) and data:
+					title_value = (
+							data.get( 'title' )
+							or data.get( 'name' )
+							or data.get( 'accession' )
+							or params.get( 'accession', '' )
+							or 'Dataset'
+					)
+					
+					st.markdown( f'### {title_value}' )
+					
+					meta_fields: Dict[ str, Any ] = { }
+					for key in [
+							'accession',
+							'identifier',
+							'organism',
+							'platform',
+							'assay',
+							'project',
+							'study'
+					]:
+						if key in data:
+							meta_fields[ key ] = data.get( key )
+					
+					if meta_fields:
+						st.json( meta_fields )
+					
+					for key in [ 'summary', 'description', 'abstract' ]:
+						if key in data and str( data.get( key ) ).strip( ):
+							st.markdown( '#### Description' )
+							st.write( str( data.get( key ) ) )
+							break
+					
+					with st.expander( 'Raw Dataset JSON', expanded=False ):
+						st.json( data )
+				
+				elif isinstance( data, list ) and data:
+					df_os = pd.DataFrame( data )
+					if not df_os.empty:
+						st.markdown( f'#### Result Rows ({len( df_os )})' )
+						st.dataframe( df_os, use_container_width=True, hide_index=True )
+					else:
+						st.json( data )
+				
+				elif isinstance( data, dict ) and data:
+					table_candidates: List[ Dict[ str, Any ] ] = [ ]
+					for key in [ 'results', 'items', 'rows', 'data' ]:
+						value = data.get( key, None )
+						if isinstance( value, list ) and value:
+							table_candidates = [ item for item in value if
+							                     isinstance( item, dict ) ]
+							break
+					
+					if table_candidates:
+						df_os = pd.DataFrame( table_candidates )
+						if not df_os.empty:
+							st.markdown( f'#### Result Rows ({len( df_os )})' )
+							st.dataframe( df_os, use_container_width=True, hide_index=True )
+						else:
+							st.json( data )
+					else:
+						st.markdown( '#### Result' )
+						st.json( data )
+				
+				elif data:
+					st.text_area(
+						'Output',
+						value=str( data ),
+						height=320
+					)
+				else:
+					st.info( 'No results returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Gov Info
 	with st.expander( label='Gov Info', expanded=False ):
@@ -4289,7 +4341,7 @@ elif mode == 'Data Retrieval':
 			except Exception as exc:
 				st.error( str( exc ) )
 				
-				result = st.session_state.get( 'congress_results', { } )
+		result = st.session_state.get( 'congress_results', { } )
 		
 		if not result:
 			congress_output.text( 'No results.' )
@@ -4597,121 +4649,121 @@ elif mode == 'Data Retrieval':
 			except Exception as exc:
 				st.error( str( exc ) )
 				
-				result = st.session_state.get( 'internetarchive_results', { } )
+			result = st.session_state.get( 'internetarchive_results', { } )
 		
-		if not result:
-			ia_output.text( 'No results.' )
-		else:
-			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
-			
-			with col_right:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': mode_value,
-							'url': result.get( 'url', '' ),
-							'params': params,
-					}
-				)
+			if not result:
+				ia_output.text( 'No results.' )
+			else:
+				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 				
-				docs: List[ Dict[ str, Any ] ] = [ ]
-				num_found = None
-				
-				if isinstance( data, dict ):
-					response_block = data.get( 'response', { } )
-					
-					if isinstance( response_block, dict ):
-						num_found = response_block.get( 'numFound', None )
-						value = response_block.get( 'docs', [ ] )
-						if isinstance( value, list ):
-							docs = [ item for item in value if isinstance( item, dict ) ]
-				
-				if num_found is not None:
-					st.markdown( f'#### Search Results ({num_found})' )
-				else:
-					st.markdown( '#### Search Results' )
-				
-				if docs:
-					for index, item in enumerate( docs, start=1 ):
-						title_value = (
-								item.get( 'title' )
-								or item.get( 'identifier' )
-								or f'Result {index}'
-						)
-						
-						identifier_value = item.get( 'identifier', '' )
-						mediatype_value = item.get( 'mediatype', '' )
-						
-						collection_value = ''
-						collection_raw = item.get( 'collection', '' )
-						if isinstance( collection_raw, list ) and collection_raw:
-							collection_value = ', '.join( [ str( x ) for x in
-							                                collection_raw[ :3 ] ] )
-						elif collection_raw:
-							collection_value = str( collection_raw )
-						
-						date_value = (
-								item.get( 'publicdate' )
-								or item.get( 'date' )
-								or item.get( 'addeddate' )
-								or ''
-						)
-						
-						desc_value = item.get( 'description', '' )
-						if isinstance( desc_value, list ):
-							desc_value = ' '.join( [ str( x ) for x in desc_value[ :2 ] ] )
-						
-						with st.container( border=True ):
-							st.markdown( f'**{index}. {title_value}**' )
-							
-							meta_parts: List[ str ] = [ ]
-							
-							if identifier_value:
-								meta_parts.append( f'Identifier: `{identifier_value}`' )
-							
-							if mediatype_value:
-								meta_parts.append( f'Mediatype: `{mediatype_value}`' )
-							
-							if collection_value:
-								meta_parts.append( f'Collection: `{collection_value}`' )
-							
-							if date_value:
-								meta_parts.append( f'Date: `{date_value}`' )
-							
-							if meta_parts:
-								st.caption( ' | '.join( meta_parts ) )
-							
-							if desc_value:
-								st.write( str( desc_value ) )
-							else:
-								st.caption( 'No description available.' )
-							
-							with st.expander( 'Raw Item', expanded=False ):
-								st.json( item )
-				
-				elif isinstance( data, dict ) and data:
-					st.markdown( '#### Result' )
-					st.json( data )
-				elif isinstance( data, list ) and data:
-					df_ia = pd.DataFrame( data )
-					if not df_ia.empty:
-						st.dataframe( df_ia, use_container_width=True, hide_index=True )
-					else:
-						st.json( data )
-				elif data:
-					st.markdown( '#### Result' )
-					st.text_area(
-						'Output',
-						value=str( data ),
-						height=320
+				with col_right:
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': mode_value,
+								'url': result.get( 'url', '' ),
+								'params': params,
+						}
 					)
-				else:
-					st.info( 'No results returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
+					
+					docs: List[ Dict[ str, Any ] ] = [ ]
+					num_found = None
+					
+					if isinstance( data, dict ):
+						response_block = data.get( 'response', { } )
+						
+						if isinstance( response_block, dict ):
+							num_found = response_block.get( 'numFound', None )
+							value = response_block.get( 'docs', [ ] )
+							if isinstance( value, list ):
+								docs = [ item for item in value if isinstance( item, dict ) ]
+					
+					if num_found is not None:
+						st.markdown( f'#### Search Results ({num_found})' )
+					else:
+						st.markdown( '#### Search Results' )
+					
+					if docs:
+						for index, item in enumerate( docs, start=1 ):
+							title_value = (
+									item.get( 'title' )
+									or item.get( 'identifier' )
+									or f'Result {index}'
+							)
+							
+							identifier_value = item.get( 'identifier', '' )
+							mediatype_value = item.get( 'mediatype', '' )
+							
+							collection_value = ''
+							collection_raw = item.get( 'collection', '' )
+							if isinstance( collection_raw, list ) and collection_raw:
+								collection_value = ', '.join( [ str( x ) for x in
+								                                collection_raw[ :3 ] ] )
+							elif collection_raw:
+								collection_value = str( collection_raw )
+							
+							date_value = (
+									item.get( 'publicdate' )
+									or item.get( 'date' )
+									or item.get( 'addeddate' )
+									or ''
+							)
+							
+							desc_value = item.get( 'description', '' )
+							if isinstance( desc_value, list ):
+								desc_value = ' '.join( [ str( x ) for x in desc_value[ :2 ] ] )
+							
+							with st.container( border=True ):
+								st.markdown( f'**{index}. {title_value}**' )
+								
+								meta_parts: List[ str ] = [ ]
+								
+								if identifier_value:
+									meta_parts.append( f'Identifier: `{identifier_value}`' )
+								
+								if mediatype_value:
+									meta_parts.append( f'Mediatype: `{mediatype_value}`' )
+								
+								if collection_value:
+									meta_parts.append( f'Collection: `{collection_value}`' )
+								
+								if date_value:
+									meta_parts.append( f'Date: `{date_value}`' )
+								
+								if meta_parts:
+									st.caption( ' | '.join( meta_parts ) )
+								
+								if desc_value:
+									st.write( str( desc_value ) )
+								else:
+									st.caption( 'No description available.' )
+								
+								with st.expander( 'Raw Item', expanded=False ):
+									st.json( item )
+					
+					elif isinstance( data, dict ) and data:
+						st.markdown( '#### Result' )
+						st.json( data )
+					elif isinstance( data, list ) and data:
+						df_ia = pd.DataFrame( data )
+						if not df_ia.empty:
+							st.dataframe( df_ia, use_container_width=True, hide_index=True )
+						else:
+							st.json( data )
+					elif data:
+						st.markdown( '#### Result' )
+						st.text_area(
+							'Output',
+							value=str( data ),
+							height=320
+						)
+					else:
+						st.info( 'No results returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 	
 	# -------- Grokipedia
 	with st.expander( label='Grokipedia', expanded=False ):
@@ -5076,6 +5128,7 @@ elif mode == 'Data Retrieval':
 elif mode == 'Data Generation':
 	st.subheader( '🧠  Generative AI' )
 	st.divider( )
+	
 	# -------- Chat GPT
 	with st.expander( label='ChatGPT', expanded=True ):
 		col_left, col_right = st.columns( 2, border=True )
@@ -5764,7 +5817,7 @@ elif mode == 'Geospatial Data':
 					st.error( 'Google Weather request failed.' )
 					st.exception( exc )
 					
-					result = st.session_state.get( 'googleweather_results', { } )
+		result = st.session_state.get( 'googleweather_results', { } )
 		
 		if not result:
 			st.text( 'No results.' )
@@ -5935,7 +5988,8 @@ elif mode == 'Geospatial Data':
 				'Mode',
 				options=[ 'observatories', 'ground_stations', 'locations' ],
 				index=[ 'observatories', 'ground_stations', 'locations' ].index(
-					st.session_state.get( 'satellitecenter_mode', 'observatories' ) ),
+					st.session_state.get( 'satellitecenter_mode', 'observatories' )
+				),
 				key='satellitecenter_mode'
 			)
 			
@@ -5949,7 +6003,8 @@ elif mode == 'Geospatial Data':
 						'mms1,mms2\n'
 						'themisb\n'
 						'\n'
-						'Used for locations mode only. Leave blank for observatories and ground stations.'
+						'Used for locations mode only. Leave blank for observatories '
+						'and ground stations.'
 				),
 				disabled=(satellite_mode != 'locations')
 			)
@@ -5979,7 +6034,10 @@ elif mode == 'Geospatial Data':
 			with c3:
 				satellite_coordinate_systems = st.text_input(
 					'Coordinate Systems',
-					value=st.session_state.get( 'satellitecenter_coordinate_systems', 'gse' ),
+					value=st.session_state.get(
+						'satellitecenter_coordinate_systems',
+						'gse'
+					),
 					key='satellitecenter_coordinate_systems',
 					placeholder='gse or geo,gsm',
 					disabled=(satellite_mode != 'locations')
@@ -5990,7 +6048,9 @@ elif mode == 'Geospatial Data':
 					'Resolution Factor',
 					min_value=1,
 					max_value=1000,
-					value=int( st.session_state.get( 'satellitecenter_resolution_factor', 1 ) ),
+					value=int(
+						st.session_state.get( 'satellitecenter_resolution_factor', 1 )
+					),
 					step=1,
 					key='satellitecenter_resolution_factor',
 					disabled=(satellite_mode != 'locations')
@@ -6007,15 +6067,25 @@ elif mode == 'Geospatial Data':
 				)
 			
 			st.caption(
-				'No API key is required for SSCWeb. '
-				'For locations mode, use UTC ISO 8601 timestamps and observatory IDs returned by the observatories service.'
+				'No API key is required for SSCWeb. For locations mode, use UTC ISO '
+				'8601 timestamps and observatory IDs returned by the observatories '
+				'service.'
 			)
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				satellite_submit = st.button( 'Submit', key='satellitecenter_submit' )
+				satellite_submit = st.button(
+					'Submit',
+					key='satellitecenter_submit',
+					use_container_width=True
+				)
 			with b2:
-				st.button( 'Clear', key='satellitecenter_clear', on_click=_clear_satellitecenter_state )
+				st.button(
+					'Clear',
+					key='satellitecenter_clear',
+					on_click=_clear_satellitecenter_state,
+					use_container_width=True
+				)
 		
 		with col_right:
 			st.markdown( 'Results' )
@@ -6030,7 +6100,8 @@ elif mode == 'Geospatial Data':
 						end_time=satellite_end_time,
 						coordinate_systems=satellite_coordinate_systems,
 						resolution_factor=int( satellite_resolution_factor ),
-						time=int( satellite_timeout ) )
+						time=int( satellite_timeout )
+					)
 					
 					st.session_state[ 'satellitecenter_results' ] = result or { }
 					st.rerun( )
@@ -6044,38 +6115,174 @@ elif mode == 'Geospatial Data':
 			if not result:
 				st.text( 'No results.' )
 			else:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': satellite_mode,
+							'query': satellite_query,
+							'start_time': satellite_start_time,
+							'end_time': satellite_end_time,
+							'coordinate_systems': satellite_coordinate_systems,
+							'resolution_factor': int( satellite_resolution_factor ),
+					}
+				)
+				
 				if satellite_mode == 'observatories':
 					items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
+					
 					if items:
-						for idx, item in enumerate( items, start=1 ):
-							label = item.get( 'Id', f'Observatory {idx}' )
-							with st.expander( f'Observatory {idx}: {label}', expanded=False ):
-								st.json( item )
+						summary_rows: List[ Dict[ str, Any ] ] = [ ]
+						
+						for item in items:
+							if isinstance( item, dict ):
+								location_value = ''
+								geo_value = item.get( 'GeoLocation', { } )
+								
+								if isinstance( geo_value, dict ):
+									lat_value = geo_value.get( 'Latitude', '' )
+									lon_value = geo_value.get( 'Longitude', '' )
+									if str( lat_value ).strip( ) or str( lon_value ).strip( ):
+										location_value = f'{lat_value}, {lon_value}'
+								
+								summary_rows.append(
+									{
+											'Id': item.get( 'Id', '' ),
+											'Name': item.get( 'Name', '' ),
+											'Resolution': item.get( 'Resolution', '' ),
+											'StartTime': item.get( 'StartTime', '' ),
+											'EndTime': item.get( 'EndTime', '' ),
+											'GeoLocation': location_value,
+									}
+								)
+						
+						st.markdown( f'#### Observatories ({len( summary_rows )})' )
+						df_satellite = pd.DataFrame( summary_rows )
+						
+						if not df_satellite.empty:
+							st.dataframe(
+								df_satellite,
+								use_container_width=True,
+								hide_index=True
+							)
+						else:
+							st.info( 'No displayable observatory rows were found.' )
+						
+						with st.expander( 'Observatory Details', expanded=False ):
+							for idx, item in enumerate( items, start=1 ):
+								label = item.get( 'Id', f'Observatory {idx}' )
+								with st.expander(
+										f'Observatory {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
 					else:
-						st.json( result )
+						st.info( 'No observatories returned.' )
 				
 				elif satellite_mode == 'ground_stations':
 					items = result.get( 'GroundStation', [ ] ) if isinstance( result, dict ) else [ ]
+					
 					if items:
-						for idx, item in enumerate( items, start=1 ):
-							label = item.get( 'Id', f'Ground Station {idx}' )
-							with st.expander( f'Ground Station {idx}: {label}', expanded=False ):
-								st.json( item )
+						summary_rows: List[ Dict[ str, Any ] ] = [ ]
+						
+						for item in items:
+							if isinstance( item, dict ):
+								location_value = ''
+								geo_value = item.get( 'Location', { } )
+								
+								if isinstance( geo_value, dict ):
+									lat_value = geo_value.get( 'Latitude', '' )
+									lon_value = geo_value.get( 'Longitude', '' )
+									if str( lat_value ).strip( ) or str( lon_value ).strip( ):
+										location_value = f'{lat_value}, {lon_value}'
+								
+								summary_rows.append(
+									{
+											'Id': item.get( 'Id', '' ),
+											'Name': item.get( 'Name', '' ),
+											'Provider': item.get( 'Provider', '' ),
+											'Type': item.get( 'Type', '' ),
+											'Location': location_value,
+									}
+								)
+						
+						st.markdown( f'#### Ground Stations ({len( summary_rows )})' )
+						df_satellite = pd.DataFrame( summary_rows )
+						
+						if not df_satellite.empty:
+							st.dataframe(
+								df_satellite,
+								use_container_width=True,
+								hide_index=True
+							)
+						else:
+							st.info( 'No displayable ground-station rows were found.' )
+						
+						with st.expander( 'Ground Station Details', expanded=False ):
+							for idx, item in enumerate( items, start=1 ):
+								label = item.get( 'Id', f'Ground Station {idx}' )
+								with st.expander(
+										f'Ground Station {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
 					else:
-						st.json( result )
+						st.info( 'No ground stations returned.' )
 				
 				else:
 					data_items = result.get( 'Data', [ ] ) if isinstance( result, dict ) else [ ]
+					
 					if data_items:
-						for idx, item in enumerate( data_items, start=1 ):
-							label = item.get( 'Id', f'Trajectory {idx}' )
-							with st.expander( f'Location Set {idx}: {label}', expanded=False ):
-								st.json( item )
+						summary_rows: List[ Dict[ str, Any ] ] = [ ]
+						
+						for item in data_items:
+							if isinstance( item, dict ):
+								coordinates_value = item.get( 'Coordinates', [ ] )
+								point_count = 0
+								
+								if isinstance( coordinates_value, list ):
+									point_count = len( coordinates_value )
+								
+								summary_rows.append(
+									{
+											'Id': item.get( 'Id', '' ),
+											'CoordinateSystem': item.get(
+												'CoordinateSystem',
+												''
+											),
+											'StartTime': item.get( 'StartTime', '' ),
+											'EndTime': item.get( 'EndTime', '' ),
+											'PointCount': point_count,
+									}
+								)
+						
+						st.markdown( f'#### Location Sets ({len( summary_rows )})' )
+						df_satellite = pd.DataFrame( summary_rows )
+						
+						if not df_satellite.empty:
+							st.dataframe(
+								df_satellite,
+								use_container_width=True,
+								hide_index=True
+							)
+						else:
+							st.info( 'No displayable location rows were found.' )
+						
+						with st.expander( 'Location Set Details', expanded=False ):
+							for idx, item in enumerate( data_items, start=1 ):
+								label = item.get( 'Id', f'Trajectory {idx}' )
+								with st.expander(
+										f'Location Set {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
 					else:
-						st.json( result )
+						st.info( 'No location data returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Astro Catalog
-	with st.expander( label='Astronomy Catalog', expanded=False ):
+	with st.expander( label='Astro Catalog', expanded=False ):
 		if 'astrocatalog_results' not in st.session_state:
 			st.session_state[ 'astrocatalog_results' ] = { }
 		
@@ -6106,21 +6313,22 @@ elif mode == 'Geospatial Data':
 				'Mode',
 				options=[ 'object_query', 'cone_search' ],
 				index=[ 'object_query', 'cone_search' ].index(
-					st.session_state.get( 'astrocatalog_mode', 'object_query' ) ),
+					st.session_state.get( 'astrocatalog_mode', 'object_query' )
+				),
 				key='astrocatalog_mode'
 			)
 			
 			astro_query = st.text_area(
-				'Object / Event Name',
+				'Object Query',
 				height=80,
 				key='astrocatalog_query',
 				placeholder=(
 						'Examples:\n'
+						'SN1987A\n'
+						'AT2024abc\n'
 						'GW170817\n'
-						'SN2014J\n'
-						'AT2017gfo\n'
 						'\n'
-						'Used for object_query mode only.'
+						'Used for object_query mode.'
 				),
 				disabled=(astro_mode != 'object_query')
 			)
@@ -6132,7 +6340,8 @@ elif mode == 'Geospatial Data':
 					'Quantity',
 					value=st.session_state.get( 'astrocatalog_quantity', '' ),
 					key='astrocatalog_quantity',
-					placeholder='photometry, spectra, redshift'
+					placeholder='Example: photometry',
+					disabled=(astro_mode != 'object_query')
 				)
 			
 			with c2:
@@ -6140,20 +6349,21 @@ elif mode == 'Geospatial Data':
 					'Attributes',
 					value=st.session_state.get( 'astrocatalog_attributes', '' ),
 					key='astrocatalog_attributes',
-					placeholder='time,magnitude,band'
+					placeholder='Example: time,magnitude,band',
+					disabled=(astro_mode != 'object_query')
 				)
 			
 			astro_arguments = st.text_area(
 				'Arguments',
-				height=90,
+				height=80,
 				key='astrocatalog_arguments',
 				placeholder=(
+						'Optional query arguments.\n'
 						'Examples:\n'
-						'band=R,time,e_magnitude,complete\n'
-						'telescope=HST\n'
-						'closest\n'
-						'first'
+						'time=2450000\n'
+						'band=V'
 				),
+				disabled=(astro_mode != 'object_query')
 			)
 			
 			c3, c4, c5 = st.columns( 3 )
@@ -6163,7 +6373,7 @@ elif mode == 'Geospatial Data':
 					'RA',
 					value=st.session_state.get( 'astrocatalog_ra', '' ),
 					key='astrocatalog_ra',
-					placeholder='197.45037 or 13:09:48.09',
+					placeholder='13:09:48.09',
 					disabled=(astro_mode != 'cone_search')
 				)
 			
@@ -6172,7 +6382,7 @@ elif mode == 'Geospatial Data':
 					'Dec',
 					value=st.session_state.get( 'astrocatalog_dec', '' ),
 					key='astrocatalog_dec',
-					placeholder='-23.38148 or -23:22:53.3',
+					placeholder='+27:57:34.8',
 					disabled=(astro_mode != 'cone_search')
 				)
 			
@@ -6194,7 +6404,8 @@ elif mode == 'Geospatial Data':
 					'Format',
 					options=[ 'json', 'csv', 'tsv' ],
 					index=[ 'json', 'csv', 'tsv' ].index(
-						st.session_state.get( 'astrocatalog_format', 'json' ) ),
+						st.session_state.get( 'astrocatalog_format', 'json' )
+					),
 					key='astrocatalog_format'
 				)
 			
@@ -6215,9 +6426,18 @@ elif mode == 'Geospatial Data':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				astro_submit = st.button( 'Submit', key='astrocatalog_submit' )
+				astro_submit = st.button(
+					'Submit',
+					key='astrocatalog_submit',
+					use_container_width=True
+				)
 			with b2:
-				st.button( 'Clear', key='astrocatalog_clear', on_click=_clear_astrocatalog_state )
+				st.button(
+					'Clear',
+					key='astrocatalog_clear',
+					on_click=_clear_astrocatalog_state,
+					use_container_width=True
+				)
 		
 		with col_right:
 			st.markdown( 'Results' )
@@ -6235,7 +6455,8 @@ elif mode == 'Geospatial Data':
 						dec=astro_dec,
 						radius=int( astro_radius ),
 						data_format=astro_format,
-						time=int( astro_timeout ) )
+						time=int( astro_timeout )
+					)
 					
 					st.session_state[ 'astrocatalog_results' ] = result or { }
 					st.rerun( )
@@ -6249,10 +6470,136 @@ elif mode == 'Geospatial Data':
 			if not result:
 				st.text( 'No results.' )
 			else:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': astro_mode,
+							'query': astro_query,
+							'quantity': astro_quantity,
+							'attributes': astro_attributes,
+							'arguments': astro_arguments,
+							'ra': astro_ra,
+							'dec': astro_dec,
+							'radius': int( astro_radius ),
+							'format': astro_format,
+					}
+				)
+				
+				parsed_result = result
+				
 				if isinstance( result, str ):
-					st.text_area( 'Results', value=result, height=320 )
+					text_value = result.strip( )
+					
+					if astro_format == 'json':
+						try:
+							parsed_result = json.loads( text_value )
+						except Exception:
+							parsed_result = result
+					else:
+						parsed_result = result
+				
+				if isinstance( parsed_result, list ):
+					st.markdown( f'#### Result Rows ({len( parsed_result )})' )
+					
+					df_catalog = pd.DataFrame( parsed_result )
+					if not df_catalog.empty:
+						st.dataframe(
+							df_catalog,
+							use_container_width=True,
+							hide_index=True
+						)
+					else:
+						st.text_area(
+							'Results',
+							value=str( parsed_result ),
+							height=320
+						)
+				
+				elif isinstance( parsed_result, dict ):
+					candidate_rows: List[ Dict[ str, Any ] ] = [ ]
+					
+					for key in [ 'results', 'items', 'data', 'objects' ]:
+						value = parsed_result.get( key, None )
+						if isinstance( value, list ) and value:
+							candidate_rows = [
+									item for item in value
+									if isinstance( item, dict )
+							]
+							break
+					
+					if candidate_rows:
+						st.markdown( f'#### Result Rows ({len( candidate_rows )})' )
+						df_catalog = pd.DataFrame( candidate_rows )
+						
+						if not df_catalog.empty:
+							st.dataframe(
+								df_catalog,
+								use_container_width=True,
+								hide_index=True
+							)
+						else:
+							st.json( parsed_result )
+					
+					else:
+						title_value = (
+								parsed_result.get( 'name' )
+								or parsed_result.get( 'alias' )
+								or parsed_result.get( 'event' )
+								or parsed_result.get( 'id' )
+								or 'Catalog Result'
+						)
+						
+						st.markdown( f'### {title_value}' )
+						
+						top_fields: Dict[ str, Any ] = { }
+						for key in [
+								'name',
+								'alias',
+								'ra',
+								'dec',
+								'redshift',
+								'type',
+								'claimedtype',
+								'schema'
+						]:
+							if key in parsed_result:
+								top_fields[ key ] = parsed_result.get( key )
+						
+						if top_fields:
+							st.json( top_fields )
+						
+						for key in [ 'summary', 'description', 'comments' ]:
+							if key in parsed_result and str( parsed_result.get( key ) ).strip( ):
+								st.markdown( f'#### {key.title( )}' )
+								st.write( str( parsed_result.get( key ) ) )
+						
+						if not top_fields:
+							st.json( parsed_result )
+				
+				elif isinstance( parsed_result, str ):
+					st.markdown( '#### Result Text' )
+					st.text_area(
+						'Results',
+						value=parsed_result,
+						height=320
+					)
+				
 				else:
-					st.json( result )
+					st.text_area(
+						'Results',
+						value=str( parsed_result ),
+						height=320
+					)
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					if isinstance( result, (dict, list) ):
+						st.json( result )
+					else:
+						st.text_area(
+							'Raw',
+							value=str( result ),
+							height=240
+						)
 	
 	# -------- Astro Query
 	with st.expander( label='Astro Query', expanded=False ):
@@ -6391,9 +6738,9 @@ elif mode == 'Geospatial Data':
 				except Exception as exc:
 					st.error( 'Astro Query request failed.' )
 					st.exception( exc )
-			
+					
 			result = st.session_state.get( 'astroquery_results', { } )
-			
+		
 			if not result:
 				st.text( 'No results.' )
 			else:
@@ -6428,10 +6775,24 @@ elif mode == 'Geospatial Data':
 				if not rows:
 					st.info( 'No rows returned.' )
 				else:
-					for idx, row in enumerate( rows, start=1 ):
-						label = row.get( 'MAIN_ID', f'Row {idx}' )
-						with st.expander( f'Row {idx}: {label}', expanded=False ):
-							st.json( row )
+					df_rows = pd.DataFrame( rows )
+					
+					if columns:
+						ordered_columns = [ c for c in columns if c in df_rows.columns ]
+						if ordered_columns:
+							df_rows = df_rows[ ordered_columns ]
+					
+					st.markdown( f'#### Result Rows ({len( df_rows )})' )
+					st.dataframe( df_rows, use_container_width=True, hide_index=True )
+					
+					with st.expander( 'Row Details', expanded=False ):
+						for idx, row in enumerate( rows, start=1 ):
+							label = row.get( 'MAIN_ID', f'Row {idx}' )
+							with st.expander( f'Row {idx}: {label}', expanded=False ):
+								st.json( row )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Star Map
 	with st.expander( label='Star Map', expanded=False ):
@@ -7659,39 +8020,80 @@ elif mode == 'Geospatial Data':
 				except Exception as exc:
 					st.error( 'Space Weather request failed.' )
 					st.exception( exc )
-			
-			result = st.session_state.get( 'spaceweather_results', { } )
-			
+					
+			result = st.session_state.get( 'satellitecenter_results', { } )
+		
 			if not result:
 				st.text( 'No results.' )
 			else:
-				meta_c1, meta_c2 = st.columns( 2 )
+				st.markdown( '#### Result Summary' )
 				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'endpoint' in result:
-						st.markdown( f"**Endpoint:** {result.get( 'endpoint', '' )}" )
-				
-				with meta_c2:
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				if result.get( 'params', { } ):
-					st.markdown( '#### Request Parameters' )
-					st.json( result.get( 'params', { } ) )
-				
-				data = result.get( 'data', [ ] )
-				if isinstance( data, list ):
-					if data:
-						st.markdown( '#### Results' )
-						df_spaceweather = pd.DataFrame( data )
-						st.dataframe( df_spaceweather, use_container_width=True, hide_index=True )
+				if satellite_mode == 'observatories':
+					items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						df_sat = pd.DataFrame( items )
+						if not df_sat.empty:
+							st.caption( f'Observatories returned: {len( df_sat )}' )
+							st.dataframe( df_sat, use_container_width=True, hide_index=True )
+						else:
+							st.info( 'No displayable observatory rows were found.' )
+						
+						for idx, item in enumerate( items, start=1 ):
+							label = item.get( 'Id', f'Observatory {idx}' )
+							with st.expander( f'Observatory {idx}: {label}', expanded=False ):
+								st.json( item )
 					else:
-						st.text( 'No rows returned.' )
+						st.info( 'No observatories returned.' )
+				
+				elif satellite_mode == 'ground_stations':
+					items = result.get( 'GroundStation', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						df_sat = pd.DataFrame( items )
+						if not df_sat.empty:
+							st.caption( f'Ground stations returned: {len( df_sat )}' )
+							st.dataframe( df_sat, use_container_width=True, hide_index=True )
+						else:
+							st.info( 'No displayable ground-station rows were found.' )
+						
+						for idx, item in enumerate( items, start=1 ):
+							label = item.get( 'Id', f'Ground Station {idx}' )
+							with st.expander( f'Ground Station {idx}: {label}', expanded=False ):
+								st.json( item )
+					else:
+						st.info( 'No ground stations returned.' )
+				
 				else:
-					st.markdown( '#### Results' )
-					st.json( data )
+					data_items = result.get( 'Data', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if data_items:
+						summary_rows: List[ Dict[ str, Any ] ] = [ ]
+						
+						for item in data_items:
+							if isinstance( item, dict ):
+								summary_rows.append(
+									{
+											'Id': item.get( 'Id', '' ),
+											'CoordinateSystem': item.get( 'CoordinateSystem', '' ),
+											'Start': item.get( 'StartTime', '' ),
+											'End': item.get( 'EndTime', '' )
+									}
+								)
+						
+						df_sat = pd.DataFrame( summary_rows )
+						if not df_sat.empty:
+							st.caption( f'Location sets returned: {len( df_sat )}' )
+							st.dataframe( df_sat, use_container_width=True, hide_index=True )
+						else:
+							st.info( 'No displayable location-set summary rows were found.' )
+						
+						for idx, item in enumerate( data_items, start=1 ):
+							label = item.get( 'Id', f'Trajectory {idx}' )
+							with st.expander( f'Location Set {idx}: {label}', expanded=False ):
+								st.json( item )
+					else:
+						st.info( 'No location data returned.' )
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
@@ -7955,110 +8357,110 @@ elif mode == 'Geospatial Data':
 					st.error( 'Star Chart request failed.' )
 					st.exception( exc )
 					
-					result = st.session_state.get( 'starchart_results', { } )
+			result = st.session_state.get( 'starchart_results', { } )
 		
-		if not result:
-			st.text( 'No results.' )
-		else:
-			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
-			search_payload = result.get( 'search', { } ) if isinstance( result, dict ) else { }
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-			chart_url = result.get( 'chart_url', '' ) if isinstance( result, dict ) else ''
-			image_url = result.get( 'image_url', '' ) if isinstance( result, dict ) else ''
-			
-			st.markdown( '#### Chart Summary' )
-			
-			meta_c1, meta_c2 = st.columns( 2 )
-			
-			with meta_c1:
-				if mode_value:
-					st.markdown( f'**Mode:** {mode_value}' )
-				if result.get( 'url', '' ):
-					st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				if params:
-					if 'query' in params and params.get( 'query', '' ):
-						st.markdown( f"**Query:** {params.get( 'query', '' )}" )
-					if 'ra' in params and 'dec' in params:
-						st.markdown(
-							f"**Coordinates:** RA={params.get( 'ra', '' )}, "
-							f"Dec={params.get( 'dec', '' )}"
-						)
-			
-			with meta_c2:
-				if chart_url:
-					st.markdown( f'**Chart Link:** {chart_url}' )
+			if not result:
+				st.text( 'No results.' )
+			else:
+				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+				search_payload = result.get( 'search', { } ) if isinstance( result, dict ) else { }
+				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				chart_url = result.get( 'chart_url', '' ) if isinstance( result, dict ) else ''
+				image_url = result.get( 'image_url', '' ) if isinstance( result, dict ) else ''
+				
+				st.markdown( '#### Chart Summary' )
+				
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if mode_value:
+						st.markdown( f'**Mode:** {mode_value}' )
+					if result.get( 'url', '' ):
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					if params:
+						if 'query' in params and params.get( 'query', '' ):
+							st.markdown( f"**Query:** {params.get( 'query', '' )}" )
+						if 'ra' in params and 'dec' in params:
+							st.markdown(
+								f"**Coordinates:** RA={params.get( 'ra', '' )}, "
+								f"Dec={params.get( 'dec', '' )}"
+							)
+				
+				with meta_c2:
+					if chart_url:
+						st.markdown( f'**Chart Link:** {chart_url}' )
+					if image_url:
+						st.markdown( f'**Image URL:** {image_url}' )
+					if 'zoom' in params:
+						st.markdown( f"**Zoom:** {params.get( 'zoom', '' )}" )
+				
 				if image_url:
-					st.markdown( f'**Image URL:** {image_url}' )
-				if 'zoom' in params:
-					st.markdown( f"**Zoom:** {params.get( 'zoom', '' )}" )
-			
-			if image_url:
-				st.markdown( '#### Preview' )
-				st.image( image_url, use_container_width=True )
-			
-			if search_payload:
-				st.markdown( '#### Object Search' )
+					st.markdown( '#### Preview' )
+					st.image( image_url, use_container_width=True )
 				
-				if isinstance( search_payload, list ):
-					items = [ item for item in search_payload if isinstance( item, dict ) ]
-				elif isinstance( search_payload, dict ):
-					items = [ search_payload ]
-				else:
-					items = [ ]
-				
-				if items:
-					for idx, item in enumerate( items, start=1 ):
-						title_value = (
-								item.get( 'name' )
-								or item.get( 'title' )
-								or item.get( 'object' )
-								or f'Result {idx}'
-						)
-						
-						with st.expander( f'Result {idx}: {title_value}', expanded=False ):
-							summary_parts: List[ str ] = [ ]
-							
-							for key in [ 'ra', 'dec', 'type', 'constellation', 'magnitude' ]:
-								if key in item and str( item.get( key ) ).strip( ):
-									summary_parts.append( f'{key}={item.get( key )}' )
-							
-							if summary_parts:
-								st.caption( ' | '.join( summary_parts ) )
-							
-							st.json( item )
-				else:
-					st.json( search_payload )
-			
-			if data:
-				st.markdown( '#### Chart Data' )
-				
-				if isinstance( data, list ):
-					df_chart = pd.DataFrame( data )
-					if not df_chart.empty:
-						st.dataframe( df_chart, use_container_width=True, hide_index=True )
-					else:
-						st.json( data )
-				elif isinstance( data, dict ):
-					key_fields = { }
-					for key in [ 'name', 'title', 'ra', 'dec', 'type', 'constellation',
-					             'magnitude' ]:
-						if key in data:
-							key_fields[ key ] = data.get( key )
+				if search_payload:
+					st.markdown( '#### Object Search' )
 					
-					if key_fields:
-						st.json( key_fields )
+					if isinstance( search_payload, list ):
+						items = [ item for item in search_payload if isinstance( item, dict ) ]
+					elif isinstance( search_payload, dict ):
+						items = [ search_payload ]
 					else:
-						st.json( data )
-				else:
-					st.write( data )
-			
-			if params:
-				with st.expander( 'Request Parameters', expanded=False ):
-					st.json( params )
-			
-			with st.expander( 'Raw Result', expanded=False ):
-				st.json( result )
+						items = [ ]
+					
+					if items:
+						for idx, item in enumerate( items, start=1 ):
+							title_value = (
+									item.get( 'name' )
+									or item.get( 'title' )
+									or item.get( 'object' )
+									or f'Result {idx}'
+							)
+							
+							with st.expander( f'Result {idx}: {title_value}', expanded=False ):
+								summary_parts: List[ str ] = [ ]
+								
+								for key in [ 'ra', 'dec', 'type', 'constellation', 'magnitude' ]:
+									if key in item and str( item.get( key ) ).strip( ):
+										summary_parts.append( f'{key}={item.get( key )}' )
+								
+								if summary_parts:
+									st.caption( ' | '.join( summary_parts ) )
+								
+								st.json( item )
+					else:
+						st.json( search_payload )
+				
+				if data:
+					st.markdown( '#### Chart Data' )
+					
+					if isinstance( data, list ):
+						df_chart = pd.DataFrame( data )
+						if not df_chart.empty:
+							st.dataframe( df_chart, use_container_width=True, hide_index=True )
+						else:
+							st.json( data )
+					elif isinstance( data, dict ):
+						key_fields = { }
+						for key in [ 'name', 'title', 'ra', 'dec', 'type', 'constellation',
+						             'magnitude' ]:
+							if key in data:
+								key_fields[ key ] = data.get( key )
+						
+						if key_fields:
+							st.json( key_fields )
+						else:
+							st.json( data )
+					else:
+						st.write( data )
+				
+				if params:
+					with st.expander( 'Request Parameters', expanded=False ):
+						st.json( params )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Nearby Objects
 	with st.expander( label='Near Earth Objects', expanded=False ):

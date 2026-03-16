@@ -422,3 +422,58 @@ MISTRAL = r'''
 
 CLAUDE = r'''
 '''
+
+# -------- GENERATION PARAMETER DEFINITIONS -------------------
+
+TEMPERATURE = r'''Optional. A number between 0 and 2. Higher values like 0.8 will make the output
+		more random, while lower values like 0.2 will make it more focused and deterministic'''
+
+TOP_P = r'''Optional. The maximum cumulative probability of tokens to consider when sampling.
+		The model uses combined Top-k and Top-p (nucleus) sampling. Tokens are sorted based on
+		their assigned probabilities so that only the most likely tokens are considered.
+		Top-k sampling directly limits the maximum number of tokens to consider,
+		while Nucleus sampling limits the number of tokens based on the cumulative probability.'''
+
+TOP_K = r'''Optional. The maximum number of tokens to consider when sampling. Gemini models use
+		Top-p (nucleus) sampling or a combination of Top-k and nucleus sampling. Top-k sampling considers
+		the set of topK most probable tokens. Models running with nucleus sampling don't allow topK setting.
+		Note: The default value varies by Model and is specified by theModel.top_p attribute returned
+		from the getModel function. An empty topK attribute indicates that the model doesn't apply
+		top-k sampling and doesn't allow setting topK on requests.'''
+
+PRESENCE_PENALTY = r'''Optional. Presence penalty applied to the next token's logprobs
+		if the token has already been seen in the response. This penalty is binary on/off
+		and not dependant on the number of times the token is used (after the first).'''
+
+FREQUENCY_PENALTY = r'''Optional. Frequency penalty applied to the next token's logprobs,
+		multiplied by the number of times each token has been seen in the respponse so far.
+		A positive penalty will discourage the use of tokens that have already been used,
+		proportional to the number of times the token has been used: The more a token is used,
+		the more difficult it is for the model to use that token again increasing
+		the vocabulary of responses.'''
+
+MAX_OUTPUT_TOKENS = r'''Optional. The maximum number of tokens used in generating output content'''
+
+ALLOWED_DOMAINS = r'''Optional. The allowed domains used in generating output content and
+		grounding of generated content to reduce halucinations.'''
+
+STOP_SEQUENCE = r'''Optional. Up to 4 string sequences where the API will stop generating further tokens.'''
+
+STORE = 'Optional. Whether to maintain state from turn to turn, preserving reasoning and tool context '
+
+STREAM = 'Optional. Whether to return the generated respose in asynchronous chunks'
+
+TOOLS = '''Optional. An array of tools the model may call while generating a response. You can specify which
+		tool to use by setting the tool_choice parameter. Used by the Reponses API
+		and Reasoning models'''
+
+INCLUDE = r'''Optional. Specifies additional output data to include in the model response enabling reasoning
+			items to be used in multi-turn conversations when using the Responses API statelessly
+			and Reasoning models.
+			'''
+
+REASONING = r'''Optional. Reasoning models introduce reasoning tokens in addition to input and output tokens.
+				The models use these reasoning tokens to “think,” breaking down the prompt and
+				considering multiple approaches to generating a response. After generating reasoning tokens,
+				the model produces an answer as visible completion tokens and discards
+				the reasoning tokens from its context. Used by the Reasoning models'''
