@@ -4352,6 +4352,9 @@ elif mode == 'Data Retrieval':
 		if 'grokipedia_clear_request' not in st.session_state:
 			st.session_state[ 'grokipedia_clear_request' ] = False
 		
+		if 'grokipedia_auto_fetch_page' not in st.session_state:
+			st.session_state[ 'grokipedia_auto_fetch_page' ] = False
+		
 		if st.session_state.get( 'grokipedia_clear_request', False ):
 			st.session_state[ 'grokipedia_mode' ] = 'search'
 			st.session_state[ 'grokipedia_query' ] = ''
@@ -4360,6 +4363,7 @@ elif mode == 'Data Retrieval':
 			st.session_state[ 'grokipedia_offset' ] = 0
 			st.session_state[ 'grokipedia_include_content' ] = True
 			st.session_state[ 'grokipedia_results' ] = { }
+			st.session_state[ 'grokipedia_auto_fetch_page' ] = False
 			st.session_state[ 'grokipedia_clear_request' ] = False
 		
 		def _clear_grokipedia_state( ) -> None:
@@ -4377,6 +4381,27 @@ elif mode == 'Data Retrieval':
 				None
 			'''
 			st.session_state[ 'grokipedia_clear_request' ] = True
+		
+		def _load_grokipedia_page( slug: str ) -> None:
+			'''
+				Purpose:
+				--------
+				Load a selected Grokipedia slug into the page controls and trigger
+				an immediate page fetch on rerun.
+
+				Parameters:
+				-----------
+				slug (str):
+					The selected page slug.
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'grokipedia_mode' ] = 'page'
+			st.session_state[ 'grokipedia_page' ] = str( slug ).strip( )
+			st.session_state[ 'grokipedia_include_content' ] = True
+			st.session_state[ 'grokipedia_auto_fetch_page' ] = True
 		
 		col_left, col_right = st.columns( 2, border=True )
 		
@@ -4455,26 +4480,38 @@ elif mode == 'Data Retrieval':
 		with col_right:
 			grokipedia_output = st.empty( )
 		
+		should_fetch_grokipedia = False
+		
 		if grokipedia_submit:
+			should_fetch_grokipedia = True
+		
+		if st.session_state.get( 'grokipedia_auto_fetch_page', False ):
+			should_fetch_grokipedia = True
+		
+		if should_fetch_grokipedia:
 			try:
 				f = Grokipedia( )
 				
 				result = f.fetch(
-					mode=str( grokipedia_mode ),
-					query=str( grokipedia_query ),
-					page=str( grokipedia_page ),
-					limit=int( grokipedia_limit ),
-					offset=int( grokipedia_offset ),
-					include_content=bool( grokipedia_include_content )
+					mode=str( st.session_state.get( 'grokipedia_mode', 'search' ) ),
+					query=str( st.session_state.get( 'grokipedia_query', '' ) ),
+					page=str( st.session_state.get( 'grokipedia_page', '' ) ),
+					limit=int( st.session_state.get( 'grokipedia_limit', 12 ) ),
+					offset=int( st.session_state.get( 'grokipedia_offset', 0 ) ),
+					include_content=bool(
+						st.session_state.get( 'grokipedia_include_content', True )
+					)
 				)
 				
 				st.session_state[ 'grokipedia_results' ] = result or { }
+				st.session_state[ 'grokipedia_auto_fetch_page' ] = False
 				st.rerun( )
 			
 			except Exception as exc:
+				st.session_state[ 'grokipedia_auto_fetch_page' ] = False
 				st.error( str( exc ) )
-				
-				result = st.session_state.get( 'grokipedia_results', { } )
+		
+		result = st.session_state.get( 'grokipedia_results', { } )
 		
 		if not result:
 			grokipedia_output.text( 'No results.' )
@@ -4509,7 +4546,10 @@ elif mode == 'Data Retrieval':
 					
 					if not items:
 						if data:
-							st.info( 'No structured search hits were detected. Showing raw output.' )
+							st.info(
+								'No structured search hits were detected. '
+								'Showing raw output.'
+							)
 							st.json( data )
 						else:
 							st.info( 'No results returned.' )
@@ -4564,8 +4604,21 @@ elif mode == 'Data Retrieval':
 								else:
 									st.caption( 'No summary available.' )
 								
-								with st.expander( 'Raw Item', expanded=False ):
-									st.json( item )
+								ca, cb = st.columns( 2 )
+								
+								with ca:
+									if slug_value:
+										if st.button(
+												'Load Page',
+												key=f'grokipedia_load_page_{index}_{slug_value}',
+												use_container_width=True
+										):
+											_load_grokipedia_page( slug_value )
+											st.rerun( )
+								
+								with cb:
+									with st.expander( 'Raw Item', expanded=False ):
+										st.json( item )
 				
 				elif mode_value == 'page':
 					st.markdown( '#### Page Result' )
