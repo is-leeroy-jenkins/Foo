@@ -95,8 +95,20 @@ DB = r'stores/sqlite/datamodels/Data.db'
 MODES = [ 'Data Loading', 'Data Scraping', 'Data Retrieval',
           'Data Generation', 'Geospatial Data', 'Data Management' ]
 
+GPT_MODELS = [ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano',
+               'gpt-5.1', 'gpt-5.2', 'gpt-4.1' ]
 
+GEMINI_MODELS = [ 'gemini-2.5-flash', 'gemini-2.5-flash-lite',
+                  'gemini-2.5-flash-lite' ]
 
+GROK_MODELS = [ 'grok-4-1-fast-reasoning', 'grok-4-fast-reasoning', 'grok-4',
+                'grok-code-fast-1', 'grok-3-mini', 'grok-2-image-1212' ]
+
+CLAUDE_MODELS = [ 'claude-opus-4-6', 'claude-sonnet-4-6',
+                  'claude-haiku-4-5' ]
+
+MISTRAL_MODELS = [ 'mistral-large-latest', 'mistral-medium-latest',
+                   'mistral-small-latest', 'mistral-ocr-latest'  ]
 
 # ------------- API DEFINITIONS ------------------
 

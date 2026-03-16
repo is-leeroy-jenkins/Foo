@@ -12500,238 +12500,415 @@ class Chat( Fetcher ):
 			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
 			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
 			raise exception
-			
+
 class Grokipedia( Fetcher ):
 	'''
-		
-			Purpose:
-			-------
-			Class providing access to the Grokipedia API
-			
-			Attributes:
-			----------
-			client - GrokipediaClient
-			query - str
-			response - Response
-			page - str
-			api_key - str
-			params - Dict[ str, Any ]
-			
-			
-			Methods:
-			--------
-			fetch( )
-			fetch_page( )
-			fetch_pages( )
-			create_schema( )
-		
-	
+
+		Purpose:
+		--------
+		Provides structured access to Grokipedia content through the
+		`grokipedia-api` Python client.
+
+		Current published client examples expose:
+			- client.search( query, limit=..., offset=... )
+			- client.get_page( slug_or_title, include_content=True )
+
+		Notes:
+		------
+		The current public package documentation does not describe mandatory API key
+		authentication for these client calls. This wrapper therefore reads
+		cfg.XAI_API_KEY for future compatibility and environment consistency, but
+		does not hard-require it for current package usage.
+
 	'''
 	api_key: Optional[ str ]
 	client: Optional[ GrokipediaClient ]
 	query: Optional[ str ]
 	page: Optional[ str ]
 	limit: Optional[ int ]
+	offset: Optional[ int ]
 	include_content: Optional[ bool ]
-	response: Optional[ Response ]
+	response: Optional[ Dict[ str, Any ] ]
 	params: Optional[ Dict[ str, Any ] ]
 	
-	def __init__( self ):
+	def __init__( self ) -> None:
 		'''
-		
-		Purpose:
-		-------
-		Class constructor: initializes fields
-		
-		'''
-		super( ).__init__( )
-		self.api_key = cfg.GROQ_API_KEY
-		self.url = None
-		self.client = None
-		self.query = None
-		self.page = None
-		self.response = None
-		self.params = None
-		self.limit = 12
-		self.include_content = True
-		
-	def fetch( self, query: str ) -> Dict[ str, Any ] | None:
-		'''
-			
 			Purpose:
-			-------
-			Method for submitting request to the Grokipedia API
-			
-			Paramters:
-			---------
-			query - str
-			
-			Returns:
-			-------
-			Dict[ str, Any ]
-			
-			
-		'''
-		try:
-			throw_if( 'query', query )
-			self.query = query
-			self.client = GrokipediaClient( )
-			_results = self.client.search( query=self.query )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Grokipedia'
-			exception.method = 'fetch( self, query: str ) -> Dict[ str, Any ]'
-			raise exception
-			
-	
-	def fetch_page( self, query: str ) -> Dict[ str, Any ] | None:
-		'''
-			
-			Purpose:
-			-------
-			Method for submitting request to the Grokipedia API for a specific page
-			
-			Paramters:
-			---------
-			query - str
-			
-			Returns:
-			-------
-			Dict[ str, Any ]
-			
-			
-		'''
-		try:
-			throw_if( 'query', query )
-			self.query = query
-			self.client = GrokipediaClient( )
-			_results = self.client.get_page( query=self.query, include_content=True )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Grokipedia'
-			exception.method = 'fetch_page( self, query: str ) -> Dict[ str, Any ]'
-			raise exception
-			
-	
-	def fetch_pages( self, query: str ) -> Dict[ str, Any ] | None:
-		'''
-			
-			Purpose:
-			-------
-			Method for submitting request to the Grokipedia API for a specific page
-			
-			Paramters:
-			---------
-			query - str
-			
-			Returns:
-			-------
-			Dict[ str, Any ]
-			
-			
-		'''
-		try:
-			throw_if( 'query', query )
-			self.query = query
-			self.client = GrokipediaClient( )
-			_results = self.client.get_page( query=self.query, include_content=True )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Grokipedia'
-			exception.method = 'fetch_pages( self, query: str ) -> Dict[ str, Any ]'
-			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[
-				                                                               str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
+			--------
+			Initialize the Grokipedia wrapper.
 
 			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			-----------
+			None
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.api_key = cfg.XAI_API_KEY
+		self.url = None
+		self.client = None
+		self.query = ''
+		self.page = ''
+		self.response = None
+		self.params = { }
+		self.limit = 12
+		self.offset = 0
+		self.include_content = True
+		self.headers = { }
+		self.timeout = 20
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
 
-		"""
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'api_key',
+				'client',
+				'query',
+				'page',
+				'limit',
+				'offset',
+				'include_content',
+				'response',
+				'params',
+				'fetch_search',
+				'fetch_page',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _validate_limit( self, limit: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate result limit.
+
+			Parameters:
+			-----------
+			limit (int):
+				Requested maximum number of results.
+
+			Returns:
+			--------
+			int
+		'''
 		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			value = int( limit )
+			if value < 1 or value > 100:
+				raise ValueError( 'limit must be between 1 and 100.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = '_validate_limit( self, limit: int ) -> int'
+			raise exception
+	
+	def _validate_offset( self, offset: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate pagination offset.
+
+			Parameters:
+			-----------
+			offset (int):
+				Requested result offset.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			value = int( offset )
+			if value < 0:
+				raise ValueError( 'offset must be greater than or equal to 0.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = '_validate_offset( self, offset: int ) -> int'
+			raise exception
+	
+	def _get_client( self ) -> GrokipediaClient:
+		'''
+			Purpose:
+			--------
+			Create a Grokipedia client instance.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			GrokipediaClient
+		'''
+		try:
+			return GrokipediaClient( )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = '_get_client( self ) -> GrokipediaClient'
+			raise exception
+	
+	def fetch_search( self, query: str, limit: int = 12,
+			offset: int = 0 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Search Grokipedia for matching articles.
+
+			Parameters:
+			-----------
+			query (str):
+				Free-text search query.
+
+			limit (int):
+				Maximum number of results to request.
+
+			offset (int):
+				Result offset for pagination.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'query', query )
+			
+			self.query = str( query ).strip( )
+			self.limit = self._validate_limit( limit )
+			self.offset = self._validate_offset( offset )
+			self.client = self._get_client( )
+			self.params = {
+					'query': self.query,
+					'limit': self.limit,
+					'offset': self.offset
 			}
-			return _schema
+			
+			_results = self.client.search(
+				query=self.query,
+				limit=self.limit,
+				offset=self.offset
+			)
+			
+			return {
+					'mode': 'search',
+					'url': 'grokipedia.search',
+					'params': self.params,
+					'api_key_configured': bool( str( self.api_key or '' ).strip( ) ),
+					'data': _results
+			}
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Grokipedia'
 			exception.method = (
-				'create_schema( self, function: str, tool: str, description: str, '
-				'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
+					'fetch_search( self, query: str, limit: int=12, '
+					'offset: int=0 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_page( self, page: str,
+			include_content: bool = True ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch a specific Grokipedia page by slug or page identifier.
+
+			Parameters:
+			-----------
+			page (str):
+				Page slug or page identifier.
+
+			include_content (bool):
+				If True, request full page content.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'page', page )
+			
+			self.page = str( page ).strip( )
+			self.include_content = bool( include_content )
+			self.client = self._get_client( )
+			self.params = {
+					'page': self.page,
+					'include_content': self.include_content
+			}
+			
+			_result = self.client.get_page(
+				self.page,
+				include_content=self.include_content
+			)
+			
+			return {
+					'mode': 'page',
+					'url': 'grokipedia.get_page',
+					'params': self.params,
+					'api_key_configured': bool( str( self.api_key or '' ).strip( ) ),
+					'data': _result
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = (
+					'fetch_page( self, page: str, include_content: bool=True ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'search', query: str = '',
+			page: str = '', limit: int = 12, offset: int = 0,
+			include_content: bool = True ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for Grokipedia operations.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- search
+				- page
+
+			query (str):
+				Free-text search query for search mode.
+
+			page (str):
+				Page slug or identifier for page mode.
+
+			limit (int):
+				Maximum search results for search mode.
+
+			offset (int):
+				Pagination offset for search mode.
+
+			include_content (bool):
+				Whether to request full page content for page mode.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'search' ).strip( ).lower( )
+			
+			if active_mode == 'search':
+				return self.fetch_search(
+					query=query,
+					limit=limit,
+					offset=offset
+				)
+			
+			if active_mode == 'page':
+				return self.fetch_page(
+					page=page,
+					include_content=include_content
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'search' or 'page'." )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = (
+					'fetch( self, mode: str=search, query: str=, page: str=, '
+					'limit: int=12, offset: int=0, include_content: bool=True ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name → schema definitions.'
+				)
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f'{description.strip( )} '
+							f'This function uses the {tool.strip( )} service.'
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Grokipedia'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 			

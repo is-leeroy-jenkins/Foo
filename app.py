@@ -4343,6 +4343,310 @@ elif mode == 'Data Retrieval':
 				)
 			else:
 				ia_output.info( 'No results returned.' )
+	
+	# -------- Grokipedia
+	with st.expander( label='Grokipedia', expanded=False ):
+		if 'grokipedia_results' not in st.session_state:
+			st.session_state[ 'grokipedia_results' ] = { }
+		
+		if 'grokipedia_clear_request' not in st.session_state:
+			st.session_state[ 'grokipedia_clear_request' ] = False
+		
+		if st.session_state.get( 'grokipedia_clear_request', False ):
+			st.session_state[ 'grokipedia_mode' ] = 'search'
+			st.session_state[ 'grokipedia_query' ] = ''
+			st.session_state[ 'grokipedia_page' ] = ''
+			st.session_state[ 'grokipedia_limit' ] = 12
+			st.session_state[ 'grokipedia_offset' ] = 0
+			st.session_state[ 'grokipedia_include_content' ] = True
+			st.session_state[ 'grokipedia_results' ] = { }
+			st.session_state[ 'grokipedia_clear_request' ] = False
+		
+		def _clear_grokipedia_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Grokipedia expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'grokipedia_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			grokipedia_mode = st.selectbox(
+				'Mode',
+				options=[ 'search', 'page' ],
+				index=[ 'search', 'page' ].index(
+					st.session_state.get( 'grokipedia_mode', 'search' )
+				),
+				key='grokipedia_mode',
+				help='search = keyword search; page = fetch a specific page by slug.'
+			)
+			
+			grokipedia_query = st.text_input(
+				'Query',
+				value=st.session_state.get( 'grokipedia_query', '' ),
+				key='grokipedia_query',
+				placeholder='Example: machine learning'
+			)
+			
+			grokipedia_page = st.text_input(
+				'Page Slug',
+				value=st.session_state.get( 'grokipedia_page', '' ),
+				key='grokipedia_page',
+				placeholder='Example: United_Petroleum'
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				grokipedia_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=100,
+					value=int( st.session_state.get( 'grokipedia_limit', 12 ) ),
+					step=1,
+					key='grokipedia_limit'
+				)
+			
+			with c2:
+				grokipedia_offset = st.number_input(
+					'Offset',
+					min_value=0,
+					max_value=100000,
+					value=int( st.session_state.get( 'grokipedia_offset', 0 ) ),
+					step=1,
+					key='grokipedia_offset'
+				)
+			
+			grokipedia_include_content = st.checkbox(
+				'Include Content',
+				value=bool(
+					st.session_state.get( 'grokipedia_include_content', True )
+				),
+				key='grokipedia_include_content'
+			)
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				grokipedia_submit = st.button(
+					'Submit',
+					key='grokipedia_submit',
+					use_container_width=True
+				)
+			
+			with b2:
+				grokipedia_clear = st.button(
+					'Clear',
+					key='grokipedia_clear',
+					on_click=_clear_grokipedia_state,
+					use_container_width=True
+				)
+		
+		with col_right:
+			grokipedia_output = st.empty( )
+		
+		if grokipedia_submit:
+			try:
+				f = Grokipedia( )
+				
+				result = f.fetch(
+					mode=str( grokipedia_mode ),
+					query=str( grokipedia_query ),
+					page=str( grokipedia_page ),
+					limit=int( grokipedia_limit ),
+					offset=int( grokipedia_offset ),
+					include_content=bool( grokipedia_include_content )
+				)
+				
+				st.session_state[ 'grokipedia_results' ] = result or { }
+				st.rerun( )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+				
+				result = st.session_state.get( 'grokipedia_results', { } )
+		
+		if not result:
+			grokipedia_output.text( 'No results.' )
+		else:
+			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			
+			with col_right:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': result.get( 'mode', '' ),
+							'url': result.get( 'url', '' ),
+							'params': result.get( 'params', { } ),
+							'api_key_configured': result.get( 'api_key_configured', False )
+					}
+				)
+				
+				if mode_value == 'search':
+					st.markdown( '#### Search Results' )
+					
+					items: List[ Dict[ str, Any ] ] = [ ]
+					
+					if isinstance( data, list ):
+						items = [ item for item in data if isinstance( item, dict ) ]
+					elif isinstance( data, dict ):
+						for key in [ 'results', 'items', 'pages', 'data' ]:
+							value = data.get( key, None )
+							if isinstance( value, list ):
+								items = [ item for item in value if isinstance( item, dict ) ]
+								break
+					
+					if not items:
+						if data:
+							st.info( 'No structured search hits were detected. Showing raw output.' )
+							st.json( data )
+						else:
+							st.info( 'No results returned.' )
+					else:
+						for index, item in enumerate( items, start=1 ):
+							title_value = (
+									item.get( 'title' )
+									or item.get( 'name' )
+									or item.get( 'slug' )
+									or item.get( 'id' )
+									or f'Result {index}'
+							)
+							
+							slug_value = (
+									item.get( 'slug' )
+									or item.get( 'page' )
+									or item.get( 'path' )
+									or item.get( 'id' )
+									or ''
+							)
+							
+							summary_value = (
+									item.get( 'summary' )
+									or item.get( 'description' )
+									or item.get( 'excerpt' )
+									or item.get( 'snippet' )
+									or ''
+							)
+							
+							score_value = (
+									item.get( 'score' )
+									or item.get( 'rank' )
+									or item.get( 'relevance' )
+							)
+							
+							with st.container( border=True ):
+								st.markdown( f'**{index}. {title_value}**' )
+								
+								meta_parts: List[ str ] = [ ]
+								
+								if slug_value:
+									meta_parts.append( f'Slug: `{slug_value}`' )
+								
+								if score_value is not None and str( score_value ).strip( ):
+									meta_parts.append( f'Score: `{score_value}`' )
+								
+								if meta_parts:
+									st.caption( ' | '.join( meta_parts ) )
+								
+								if summary_value:
+									st.write( str( summary_value ) )
+								else:
+									st.caption( 'No summary available.' )
+								
+								with st.expander( 'Raw Item', expanded=False ):
+									st.json( item )
+				
+				elif mode_value == 'page':
+					st.markdown( '#### Page Result' )
+					
+					page_item: Dict[ str, Any ] = data if isinstance( data, dict ) else { }
+					
+					if not page_item:
+						if data:
+							st.text_area(
+								'Output',
+								value=str( data ),
+								height=320
+							)
+						else:
+							st.info( 'No results returned.' )
+					else:
+						title_value = (
+								page_item.get( 'title' )
+								or page_item.get( 'name' )
+								or page_item.get( 'slug' )
+								or page_item.get( 'id' )
+								or 'Untitled Page'
+						)
+						
+						slug_value = (
+								page_item.get( 'slug' )
+								or page_item.get( 'page' )
+								or page_item.get( 'path' )
+								or page_item.get( 'id' )
+								or ''
+						)
+						
+						summary_value = (
+								page_item.get( 'summary' )
+								or page_item.get( 'description' )
+								or page_item.get( 'excerpt' )
+								or ''
+						)
+						
+						content_value = (
+								page_item.get( 'content' )
+								or page_item.get( 'text' )
+								or page_item.get( 'body' )
+								or ''
+						)
+						
+						st.markdown( f'### {title_value}' )
+						
+						if slug_value:
+							st.caption( f'Slug: `{slug_value}`' )
+						
+						if summary_value:
+							st.markdown( '#### Summary' )
+							st.write( str( summary_value ) )
+						
+						if content_value:
+							st.markdown( '#### Content' )
+							st.text_area(
+								'Page Content',
+								value=str( content_value ),
+								height=360
+							)
+						else:
+							st.info( 'No page content was returned.' )
+						
+						with st.expander( 'Raw Page JSON', expanded=False ):
+							st.json( page_item )
+				
+				else:
+					st.markdown( '#### Result' )
+					
+					if isinstance( data, dict ) or isinstance( data, list ):
+						st.json( data )
+					elif data:
+						st.text_area(
+							'Output',
+							value=str( data ),
+							height=320
+						)
+					else:
+						st.info( 'No results returned.' )
 
 # ======================================================================================
 # TEXT GENERATION MODE
