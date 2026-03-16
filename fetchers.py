@@ -45,40 +45,38 @@ from __future__ import annotations
 
 import base64
 import datetime as dt
-import http.client
 import io
 import re
 import urllib.parse
+from pathlib import Path
 from typing import Any, Dict, Optional, Pattern, List, Tuple
+
+import crawl4ai
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
-from PIL.Image import Image
-from astropy.table import Table
-from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-from langchain_classic.memory import ConversationBufferMemory
-from langchain_community.chat_models import ChatOpenAI
-from langchain_core.tools import Tool
-from pandas import DataFrame
 import requests
-import requests_cache
+from PIL.Image import Image
 from anthropic import Anthropic
-from astroquery.simbad import Simbad
 from astropy.coordinates import SkyCoord
+from astropy.table import Table
+from astropy import units as u
+from astroquery.simbad import Simbad
+from bs4 import BeautifulSoup
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from google import genai
 from grokipedia_api import GrokipediaClient
 from groq import Groq as GroqClient
-import googlemaps as gmaps
-from langchain_core.documents import Document
-from langchain_classic.agents import AgentExecutor
+from langchain_classic.agents import AgentExecutor, initialize_agent, AgentType
+from langchain_classic.memory import ConversationBufferMemory
+from langchain_community.chat_models import ChatOpenAI
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
+from langchain_core.documents import Document
+from langchain_core.tools import Tool
 from langchain_googledrive.retrievers import GoogleDriveRetriever
-import os
+from playwright.sync_api import sync_playwright
 from openai import OpenAI
-import openmeteo_requests
-from pathlib import Path
 from owslib.wms import WebMapService
 from requests import Response
-from retry_requests import retry
 from sscws.sscws import SscWs
 import config as cfg
 from boogr import Error
@@ -703,7 +701,7 @@ class WebFetcher( Fetcher ):
 			self.response = requests.get( uri, timeout=10 )
 			self.response.raise_for_status( )
 			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			blocks = [ art.get_text( " ", strip=True ) for art in soup.find_all( 'article' ) ]
+			blocks = [ art.get_text( " ", strip=True ) for art in self.soup.find_all( 'article' ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -806,7 +804,7 @@ class WebFetcher( Fetcher ):
 		try:
 			throw_if( 'uri', uri )
 			self.response = requests.get( uri, timeout=10 )
-			rself.esponse.raise_for_status( )
+			self.response.raise_for_status( )
 			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
 			blocks = [ sec.get_text( " ", strip=True ) for sec in self.soup.find_all( 'section' ) ]
 			return [ b for b in blocks if b ]
