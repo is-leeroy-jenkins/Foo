@@ -2577,7 +2577,7 @@ class NavalObservatory( Fetcher ):
 		Provides access to the U.S. Naval Observatory Astronomical Applications
 		API for Celestial Navigation Data for Assumed Position and Time.
 
-		This class is aligned to the current documented API endpoint:
+		The current documented endpoint is:
 
 			https://aa.usno.navy.mil/api/celnav
 
@@ -2587,61 +2587,9 @@ class NavalObservatory( Fetcher ):
 			- time
 			- coords
 
-		Referenced API Requirements:
-		----------------------------
-		Celestial Navigation Data for Assumed Position and Time:
-			- Endpoint:
-				https://aa.usno.navy.mil/api/celnav
-			- Required parameters:
-				- date (YYYY-MM-DD)
-				- time (HH:MM or HH:MM:SS.S)
-				- coords (latitude,longitude)
-
-		Attributes:
+		References:
 		-----------
-		base_url: Optional[str]
-			Base USNO API URL.
-
-		url: Optional[str]
-			Resolved request URL.
-
-		params: Optional[Dict[str, Any]]
-			Request parameters.
-
-		date_value: Optional[str]
-			Request date in YYYY-MM-DD format.
-
-		time_value: Optional[str]
-			Request UT1/UTC time in HH:MM or HH:MM:SS.S format.
-
-		latitude: Optional[float]
-			Latitude in decimal degrees, north positive.
-
-		longitude: Optional[float]
-			Longitude in decimal degrees, east positive.
-
-		location_label: Optional[str]
-			Optional display label retained client-side.
-
-		agents: Optional[str]
-			User-Agent string.
-
-		Methods:
-		--------
-		__init__() -> None
-			Initialize fetcher defaults.
-
-		__dir__() -> List[str]
-			Provide ordered member visibility.
-
-		fetch_celnav(...) -> Dict[str, Any] | None
-			Fetch celestial navigation data from the USNO API.
-
-		fetch(...) -> Dict[str, Any] | None
-			Unified dispatcher for the celnav service.
-
-		create_schema(...) -> Dict[str, str] | None
-			Construct a dynamic tool schema.
+		https://aa.usno.navy.mil/data/api
 
 	'''
 	base_url: Optional[ str ]
@@ -2711,6 +2659,115 @@ class NavalObservatory( Fetcher ):
 				'create_schema'
 		]
 	
+	def _validate_date( self, date_value: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate and normalize a USNO date string.
+
+			Parameters:
+			-----------
+			date_value (str):
+				Date in YYYY-MM-DD format.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( date_value ).strip( )
+			throw_if( 'date_value', value )
+			
+			dt.datetime.strptime( value, '%Y-%m-%d' )
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'NavalObservatory'
+			exception.method = '_validate_date( self, date_value: str ) -> str'
+			raise exception
+	
+	def _validate_time( self, time_value: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate and normalize a USNO time string.
+
+			Parameters:
+			-----------
+			time_value (str):
+				Time in HH:MM, HH:MM:SS, or HH:MM:SS.S format.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( time_value ).strip( )
+			throw_if( 'time_value', value )
+			
+			pattern = (
+					r'^(?:[01]\d|2[0-3]):[0-5]\d'
+					r'(?:'
+					r':[0-5]\d(?:\.\d{1,6})?'
+					r')?$'
+			)
+			
+			if not re.fullmatch( pattern, value ):
+				raise ValueError(
+					"Invalid time format. Use HH:MM, HH:MM:SS, or HH:MM:SS.S"
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'NavalObservatory'
+			exception.method = '_validate_time( self, time_value: str ) -> str'
+			raise exception
+	
+	def _validate_coordinates( self, latitude: float, longitude: float ) -> tuple[ float, float ]:
+		'''
+			Purpose:
+			--------
+			Validate latitude and longitude against documented decimal-degree ranges.
+
+			Parameters:
+			-----------
+			latitude (float):
+				Latitude in decimal degrees.
+
+			longitude (float):
+				Longitude in decimal degrees.
+
+			Returns:
+			--------
+			tuple[float, float]
+		'''
+		try:
+			lat = float( latitude )
+			lon = float( longitude )
+			
+			if lat < -90.0 or lat > 90.0:
+				raise ValueError( 'Latitude must be between -90 and 90.' )
+			
+			if lon < -180.0 or lon > 180.0:
+				raise ValueError( 'Longitude must be between -180 and 180.' )
+			
+			return lat, lon
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'NavalObservatory'
+			exception.method = (
+					'_validate_coordinates( self, latitude: float, '
+					'longitude: float ) -> tuple[ float, float ]'
+			)
+			raise exception
+	
 	def fetch_celnav( self, date_value: str, time_value: str, latitude: float,
 			longitude: float, location_label: str = '',
 			time: int = 20 ) -> Dict[ str, Any ] | None:
@@ -2722,14 +2779,10 @@ class NavalObservatory( Fetcher ):
 			Parameters:
 			-----------
 			date_value (str):
-				Date in YYYY-MM-DD format. Example: 2026-03-15
+				Date in YYYY-MM-DD format.
 
 			time_value (str):
-				UT1/UTC time in HH:MM or HH:MM:SS.S format.
-				Examples:
-				- 16:11
-				- 16:11:00
-				- 16:11:00.0
+				Time in HH:MM, HH:MM:SS, or HH:MM:SS.S format.
 
 			latitude (float):
 				Latitude in decimal degrees. North positive.
@@ -2738,7 +2791,7 @@ class NavalObservatory( Fetcher ):
 				Longitude in decimal degrees. East positive.
 
 			location_label (str):
-				Optional label preserved in the returned result for UI display.
+				Optional client-side label preserved in the result payload.
 
 			time (int):
 				Request timeout in seconds.
@@ -2748,13 +2801,12 @@ class NavalObservatory( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'date_value', date_value )
-			throw_if( 'time_value', time_value )
-			
-			self.date_value = str( date_value ).strip( )
-			self.time_value = str( time_value ).strip( )
-			self.latitude = float( latitude )
-			self.longitude = float( longitude )
+			self.date_value = self._validate_date( date_value )
+			self.time_value = self._validate_time( time_value )
+			self.latitude, self.longitude = self._validate_coordinates(
+				latitude=latitude,
+				longitude=longitude
+			)
 			self.location_label = str( location_label or '' ).strip( )
 			
 			self.url = f'{self.base_url}/celnav'
@@ -2811,7 +2863,7 @@ class NavalObservatory( Fetcher ):
 				Date in YYYY-MM-DD format.
 
 			time_value (str):
-				Time in HH:MM or HH:MM:SS.S format.
+				Time in HH:MM, HH:MM:SS, or HH:MM:SS.S format.
 
 			latitude (float):
 				Latitude in decimal degrees.
@@ -2895,7 +2947,10 @@ class NavalObservatory( Fetcher ):
 			
 			return {
 					'name': function.strip( ),
-					'description': f'{description.strip( )} This function uses the {tool.strip( )} service.',
+					'description': (
+							f'{description.strip( )} '
+							f'This function uses the {tool.strip( )} service.'
+					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
@@ -4722,226 +4777,524 @@ class NearbyObjects( Fetcher ):
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
 			)
 			raise exception
-			
+
 class OpenScience( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides access to APIs from NASA's Open Science Data Repostitory (OSDR).
-		NASA OSDR provides a RESTful Application Programming Interface (API) to its
-		full-text search, data file retrieval, and metadata retrieval capabilities.
-		The API provides a choice of standard web output formats,
-		either JavaScript Object Notation (JSON) or Hyper Text Markup Language (HTML),
-		of query results.
-		
-		The Data File API returns metadata on data files associated with dataset(s),
-		including the location of these files for download via https. The Metadata API returns
-		entire sets of metadata for input study dataset accession numbers. The Search API can be
-		used to search dataset metadata by keywords and/or metadata. It can also be used to provide
-		search of three other omics databases: the National Institutes of Health (NIH) /
-		National Center for Biotechnology Information's (NCBI) Gene Expression Omnibus (GEO);
-		the European Bioinformatics Institute's (EBI) Proteomics Identification (PRIDE);
-		the Argonne National Laboratory's (ANL);
-		Metagenomics Rapid Annotations using Subsystems Technology (MG-RAST).
+		Provides access to NASA's Open Science Data Repository (OSDR) Biological
+		Data API.
 
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		The current public API surface documented by NASA emphasizes:
+			- REST traversal endpoints such as /v2/dataset/<accession>/
+			- Query endpoints such as:
+				/v2/query/metadata/
+				/v2/query/assays/
+				/v2/query/data/
 
-		Methods:
+		References:
 		-----------
-		fetch( ) -> Dict[ str, Any ]
+		https://visualization.osdr.nasa.gov/biodata/api/
 
 	'''
-	file_path: Optional[ str ]
-	api_key: Optional[ str ]
+	base_url: Optional[ str ]
 	url: Optional[ str ]
-	keywords: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	query_text: Optional[ str ]
+	format_value: Optional[ str ]
 	size: Optional[ int ]
-	datasource: Optional[ str ]
+	endpoint: Optional[ str ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the OpenScience fetcher with current OSDR defaults.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
 		super( ).__init__( )
-		self.api_key = cfg.GOVINFO_API_KEY
+		self.headers = { }
+		self.base_url = 'https://visualization.osdr.nasa.gov/biodata/api'
 		self.url = None
+		self.params = { }
+		self.query_text = ''
+		self.format_value = 'json'
+		self.size = 100
+		self.endpoint = ''
 		self.agents = cfg.AGENTS
-		self.keywords = None
-		self.size = None
-		self.datasource = None
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
-	def fetch_dataset( self, keyword: str, results: int=100 ) -> Dict[ str, Any ] | None:
-		"""
-
+	def __dir__( self ) -> List[ str ]:
+		'''
 			Purpose:
 			--------
-			Requests study data to OSDR given  'keywords' and a limitation ('results')
-			
-			Parameters:
-			----------
-			keyword - str, the search criteria
-			results - int, the limit
-			
-			Returns:
-			-------
-			Dict[ str, Any ]
+			Provide ordered member visibility.
 
-		"""
-		try:
-			throw_if( 'keyword', keyword )
-			self.keywords = keyword
-			self.datasource = 'cgene, nih_geo, ebi_pride, mg_rast'
-			self.size = results
-			self.url = f'https://osdr.nasa.gov/osdr/data/search?'
-			self.params = \
-			{
-					'term': self.keywords,
-					'type': self.datasource,
-					'size': f'{ self.size }',
-					'api_key': self.api_key
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'OpenScience'
-			exception.method = 'fetch_dataset( self, keyword: str, results: int=100 ) -> Dict[ str, Any ]'
-			raise exception
-			
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'url',
+				'params',
+				'query_text',
+				'format_value',
+				'size',
+				'endpoint',
+				'fetch_dataset',
+				'fetch_metadata',
+				'fetch_assays',
+				'fetch_data',
+				'fetch',
+				'create_schema'
+		]
 	
-	def fetch_studies( self, keywords: str ) -> Dict[ str, Any ] | None:
-		"""
-
+	def _validate_format( self, format_value: str ) -> str:
+		'''
 			Purpose:
 			--------
-			Requests study data to OSDR given  'keywords'
+			Validate output format for OSDR query endpoints.
 
-			Parmeters:
-			----------
-			keyword - str, the search criteria
-			
+			Parameters:
+			-----------
+			format_value (str):
+				Desired format.
+
 			Returns:
-			-------
-			Dict[ str, Any ]
-
-		"""
+			--------
+			str
+		'''
 		try:
-			throw_if( 'keywords', keywords )
-			self.keywords = keywords
-			self.datasource = 'cgene, nih_geo, ebi_pride, mg_rast'
-			self.url = f'https://osdr.nasa.gov/bio/repo/search?'
-			self.params = \
-			{
-					'q': self.keywords,
-					'type': self.datasource,
-			}
+			value = str( format_value or 'json' ).strip( ).lower( )
 			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
+			allowed = { 'json', 'csv', 'tsv', 'browser' }
+			if value not in allowed:
+				raise ValueError(
+					"Unsupported format. Use one of: json, csv, tsv, browser."
+				)
+			
+			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
-			exception.method = 'fetch_studies( self, keywords: str ) -> Dict[ str, Any ]'
+			exception.method = '_validate_format( self, format_value: str ) -> str'
 			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
+	
+	def _coerce_response( self, response: requests.Response ) -> Dict[ str, Any ] | str:
+		'''
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
+			--------
+			Convert an HTTP response into JSON when possible, otherwise text.
 
 			Parameters:
-			___________
+			-----------
+			response (requests.Response):
+				HTTP response object.
+
+			Returns:
+			--------
+			Dict[str, Any] | str
+		'''
+		try:
+			content_type = str( response.headers.get( 'Content-Type', '' ) ).lower( )
+			
+			if 'application/json' in content_type:
+				return response.json( )
+			
+			try:
+				return response.json( )
+			except Exception:
+				return response.text
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenScience'
+			exception.method = (
+					'_coerce_response( self, response: requests.Response ) '
+					'-> Dict[ str, Any ] | str'
+			)
+			raise exception
+	
+	def fetch_dataset( self, accession: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch dataset-level metadata by OSDR accession.
+
+			Parameters:
+			-----------
+			accession (str):
+				OSDR accession such as OSD-48.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'accession', accession )
+			value = str( accession ).strip( )
+			self.endpoint = f'/v2/dataset/{value}/'
+			self.url = f'{self.base_url}{self.endpoint}'
+			self.params = { }
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'dataset',
+					'url': self.url,
+					'params': self.params,
+					'data': self._coerce_response( self.response )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenScience'
+			exception.method = (
+					'fetch_dataset( self, accession: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_metadata( self, query: str, format_value: str = 'json',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Query OSDR sample-level metadata using the current metadata query endpoint.
+
+			Parameters:
+			-----------
+			query (str):
+				Query string to pass through to the endpoint.
+
+			format_value (str):
+				Output format. Supports json, csv, tsv, browser.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'query', query )
+			self.query_text = str( query ).strip( )
+			self.format_value = self._validate_format( format_value )
+			self.endpoint = '/v2/query/metadata/'
+			self.url = f'{self.base_url}{self.endpoint}'
+			self.params = {
+					'query': self.query_text,
+					'format': self.format_value
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'metadata',
+					'url': self.url,
+					'params': self.params,
+					'data': self._coerce_response( self.response )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenScience'
+			exception.method = (
+					'fetch_metadata( self, query: str, format_value: str=json, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_assays( self, query: str, format_value: str = 'json',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Query OSDR assay-grouped metadata using the current assays query endpoint.
+
+			Parameters:
+			-----------
+			query (str):
+				Query string to pass through to the endpoint.
+
+			format_value (str):
+				Output format. Supports json, csv, tsv, browser.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'query', query )
+			
+			self.query_text = str( query ).strip( )
+			self.format_value = self._validate_format( format_value )
+			self.endpoint = '/v2/query/assays/'
+			self.url = f'{self.base_url}{self.endpoint}'
+			self.params = {
+					'query': self.query_text,
+					'format': self.format_value
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'assays',
+					'url': self.url,
+					'params': self.params,
+					'data': self._coerce_response( self.response )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenScience'
+			exception.method = (
+					'fetch_assays( self, query: str, format_value: str=json, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_data( self, query: str, format_value: str = 'json',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Query OSDR data using the current data query endpoint.
+
+			Parameters:
+			-----------
+			query (str):
+				Query string to pass through to the endpoint.
+
+			format_value (str):
+				Output format. Supports json, csv, tsv, browser.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'query', query )
+			
+			self.query_text = str( query ).strip( )
+			self.format_value = self._validate_format( format_value )
+			self.endpoint = '/v2/query/data/'
+			self.url = f'{self.base_url}{self.endpoint}'
+			self.params = {
+					'query': self.query_text,
+					'format': self.format_value
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'data',
+					'url': self.url,
+					'params': self.params,
+					'data': self._coerce_response( self.response )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenScience'
+			exception.method = (
+					'fetch_data( self, query: str, format_value: str=json, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'dataset', query: str = '',
+			accession: str = '', format_value: str = 'json',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for Open Science requests.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- dataset
+				- metadata
+				- assays
+				- data
+
+			query (str):
+				Query expression for metadata, assays, or data modes.
+
+			accession (str):
+				OSDR dataset accession for dataset mode.
+
+			format_value (str):
+				Output format for query modes.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'dataset' ).strip( ).lower( )
+			
+			if active_mode == 'dataset':
+				return self.fetch_dataset(
+					accession=accession,
+					time=time
+				)
+			
+			if active_mode == 'metadata':
+				return self.fetch_metadata(
+					query=query,
+					format_value=format_value,
+					time=time
+				)
+			
+			if active_mode == 'assays':
+				return self.fetch_assays(
+					query=query,
+					format_value=format_value,
+					time=time
+				)
+			
+			if active_mode == 'data':
+				return self.fetch_data(
+					query=query,
+					format_value=format_value,
+					time=time
+				)
+			
+			raise ValueError(
+				"Unsupported mode. Use one of: dataset, metadata, assays, data."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenScience'
+			exception.method = (
+					'fetch( self, mode: str=dataset, query: str=, accession: str=, '
+					'format_value: str=json, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
 			function (str):
-			The function name exposed to the LLM.
+				The function name exposed to the LLM.
 
 			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+				The underlying system or service the function wraps.
 
 			description (str):
-			Precise explanation of what the function does.
+				Precise explanation of what the function does.
 
 			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
+				A dictionary defining parameter names and JSON schema descriptors.
 
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			required (list[str]):
+				List of required parameter names.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f'{description.strip( )} '
+							f'This function uses the {tool.strip( )} service.'
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
 			}
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.cause = 'OpenScience'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 
 class SpaceWeather( Fetcher ):
@@ -6601,345 +6954,595 @@ class StarMap( Fetcher ):
 					'show_const_names: bool=False, time: int=20 ) -> Dict[ str, Any ]'
 			)
 			raise exception
-			
+
 class GovData( Fetcher ):
 	'''
-		
+
 		Purpose:
 		--------
-		Provides  service that can be used to query the GovInfo search engine and return results
-		that are the equivalent to what is returned by the main user interface.
-		
-		You can use field operators, such as congress, publishdate, branch, and others to construct
-		complex queries that will return only matching documents.
-		
-		bill_type - [ hr, s, hjres, sjres, hconres, sconres, hres, sres ]
+		Provides access to the GovInfo API Search Service and selected GovInfo API
+		retrieval endpoints.
 
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		Current documented surfaces used here:
+			- POST https://api.govinfo.gov/search
+			- GET  https://api.govinfo.gov/packages/{packageId}/summary
+			- GET  https://api.govinfo.gov/collections/{collection}/{startDate}
 
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-	
+		The Search Service is the preferred interface for the general Gov Info
+		expander because it mirrors the main website search experience.
+
 	'''
 	api_key: Optional[ str ]
-	congress_number: Optional[ int ]
-	bill_number: Optional[ int ]
-	bill_type: Optional[ str ]
-	law_type: Optional[ str ]
-	law_number: Optional[ str ]
-	part_number: Optional[ int ]
-	title_number: Optional[ int ]
-	date: Optional[ dt.date ]
+	base_url: Optional[ str ]
 	url: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Dict[ str, Any ] ]
 	query: Optional[ str ]
+	page_size: Optional[ int ]
+	offset_mark: Optional[ str ]
+	sort_field: Optional[ str ]
+	sort_order: Optional[ str ]
+	package_id: Optional[ str ]
+	collection: Optional[ str ]
+	start_date: Optional[ str ]
+	agents: Optional[ str ]
 	
-	def __init__( self ):
-		super( ).__init__( )
-		self.api_key = cfg.GOVINFO_API_KEY
-		self.date = None
-		self.congress_number = None
-		self.bill_number = None
-		self.bill_type = None
-		self.law_type = None
-		self.law_number = None
-		self.part_number = None
-		self.url = None
-		self.query = None
-		self.params = None
-		
-	def fetch( self, criteria: str ) -> Dict[ str, Any ] | None:
+	def __init__( self ) -> None:
 		'''
-		
-			Returns:
-			-------
-			Starmap
-			
-		'''
-		try:
-			throw_if( 'criteria', criteria )
-			self.query = criteria
-			self.url = f'https://api.govinfo.gov/search'
-			self.params = \
-			{
-				'query': self.query +'&api_key=' + self.api_key,
-			}
-			
-			self.response = requests.post( url=self.url, data=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GovInfo'
-			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			raise exception
-			
-	
-	def fetch_regulations( self, title: int, part: int ) -> Dict[ str, Any ] | None:
-		'''
-
-			Returns:
-			-------
-			Starmap
-
-		'''
-		try:
-			throw_if( 'title', title )
-			throw_if( 'part', part )
-			self.title_number = title
-			self.part_number = part
-			self.url = r'https://www.govinfo.gov/link/cfr/'
-			self.params = \
-			{
-					'api_key': self.api_key,
-					'titlenum': self.title_number,
-					'partnum': self.part_number
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GovInfo'
-			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			raise exception
-			
-
-	def fetch_bills( self, congress: int, billtype: str, billnum: int ) -> Dict[ str, Any ] | None:
-		'''
-
-			Returns:
-			-------
-			Starmap
-
-		'''
-		try:
-			throw_if( 'congress', congress )
-			throw_if( 'billtype', billtype )
-			throw_if( 'billnum', billnum )
-			self.congress_number = congress
-			self.bill_type = billtype
-			self.bill_number = billnum
-			self.url = f'https://www.govinfo.gov/link/bills/'
-			self.params = \
-			{
-					'api_key': self.api_key,
-					'congress': self.congress_number,
-					'billtype': self.bill_type,
-					'billnum': self.bill_number
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GovInfo'
-			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			raise exception
-			
-			
-	def fetch_statutes( self, congress: int, lawtype: str, lawnum: int ) -> Dict[ str, Any ] | None:
-		'''
-
-			Returns:
-			-------
-			Starmap
-
-		'''
-		try:
-			throw_if( 'congress', congress )
-			throw_if( 'lawtype', lawtype )
-			throw_if( 'lawnum', lawnum )
-			self.congress_number = congress
-			self.law_type = lawtype
-			self.law_number = lawnum
-			self.url = f'https://www.govinfo.gov/link/statute/'
-			self.params = \
-			{
-					'congress': self.congress_number,
-					'lawtype': self.law_type,
-					'lawnum': self.law_number
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GovInfo'
-			exception.method = 'fetch_statutes( self, name: str ) -> float'
-			raise exception
-			
-			
-	def fetch_records( self, congress: str, billtype: str,  billnum: int ) -> Dict[ str, Any ] | None:
-		'''
-
-			Returns:
-			-------
-			Starmap
-
-		'''
-		try:
-			throw_if( 'congress', congress )
-			throw_if( 'billtype', billtype )
-			throw_if( 'billnum', billnum )
-			self.congress_number = congress
-			self.bill_type = billtype
-			self.bill_number = billnum
-			self.url = f'https://www.govinfo.gov/link/crec/cas/'
-			self.params = \
-			{
-					'congress': self.congress_number,
-					'billtype': self.bill_type,
-					'billnum': self.bill_number
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GovInfo'
-			exception.method = 'fetch_public_laws( self, name: str ) -> float'
-			raise exception
-			
-			
-	def fetch_laws( self, congress: str, lawtype: str,  lawnum: int ) -> Dict[ str, Any ] | None:
-		'''
-
-			Returns:
-			-------
-			Starmap
-
-		'''
-		try:
-			throw_if( 'congress', congress )
-			self.congress_number = congress
-			self.law_type = lawtype
-			self.law_number = lawnum
-			self.url = f'https://www.govinfo.gov/link/plaw/'
-			self.params = \
-			{
-					'congress': self.congress_number,
-					'lawtype': self.law_type,
-					'lawnum': self.law_number
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GovInfo'
-			exception.method = 'fetch_public_laws( self, name: str ) -> float'
-			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
+			--------
+			Initialize the GovInfo fetcher with current API defaults.
 
 			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			-----------
+			None
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.api_key = cfg.GOVINFO_API_KEY
+		self.base_url = 'https://api.govinfo.gov'
+		self.url = None
+		self.params = { }
+		self.payload = { }
+		self.query = ''
+		self.page_size = 10
+		self.offset_mark = '*'
+		self.sort_field = 'score'
+		self.sort_order = 'DESC'
+		self.package_id = ''
+		self.collection = ''
+		self.start_date = ''
+		self.headers = {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+				'User-Agent': cfg.AGENTS
+		}
+		self.agents = cfg.AGENTS
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
 
-		"""
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'api_key',
+				'base_url',
+				'url',
+				'params',
+				'payload',
+				'query',
+				'page_size',
+				'offset_mark',
+				'sort_field',
+				'sort_order',
+				'package_id',
+				'collection',
+				'start_date',
+				'fetch_search',
+				'fetch_package_summary',
+				'fetch_collection',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _resolve_api_key( self ) -> str:
+		'''
+			Purpose:
+			--------
+			Resolve the GovInfo API key, falling back to DEMO_KEY if none is set.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( self.api_key or '' ).strip( )
+			return value if value else 'DEMO_KEY'
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GovData'
+			exception.method = '_resolve_api_key( self ) -> str'
+			raise exception
+	
+	def _validate_page_size( self, page_size: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate GovInfo page size.
+
+			Parameters:
+			-----------
+			page_size (int):
+				Requested page size.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			value = int( page_size )
+			if value < 1 or value > 1000:
+				raise ValueError( 'page_size must be between 1 and 1000.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GovData'
+			exception.method = '_validate_page_size( self, page_size: int ) -> int'
+			raise exception
+	
+	def _validate_sort_field( self, sort_field: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate supported sort field values for the search expander.
+
+			Parameters:
+			-----------
+			sort_field (str):
+				Sort field.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( sort_field or 'score' ).strip( )
+			allowed = { 'score', 'lastModified' }
+			
+			if value not in allowed:
+				raise ValueError(
+					"Unsupported sort field. Use 'score' or 'lastModified'."
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GovData'
+			exception.method = '_validate_sort_field( self, sort_field: str ) -> str'
+			raise exception
+	
+	def _validate_sort_order( self, sort_order: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate supported sort order values.
+
+			Parameters:
+			-----------
+			sort_order (str):
+				Sort order.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( sort_order or 'DESC' ).strip( ).upper( )
+			allowed = { 'ASC', 'DESC' }
+			
+			if value not in allowed:
+				raise ValueError( "Unsupported sort order. Use 'ASC' or 'DESC'." )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GovData'
+			exception.method = '_validate_sort_order( self, sort_order: str ) -> str'
+			raise exception
+	
+	def fetch_search( self, query: str, page_size: int = 10,
+			offset_mark: str = '*', sort_field: str = 'score',
+			sort_order: str = 'DESC', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Execute a GovInfo Search Service query.
+
+			Parameters:
+			-----------
+			query (str):
+				GovInfo search expression. May include field operators such as
+				collection, congress, publishdate, and lastModified.
+
+			page_size (int):
+				Number of records to return. GovInfo allows up to 1000.
+
+			offset_mark (str):
+				Use '*' for the first page; for subsequent pages use the offsetMark
+				returned by the prior response.
+
+			sort_field (str):
+				Supported here:
+				- score
+				- lastModified
+
+			sort_order (str):
+				ASC or DESC.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'query', query )
+			
+			self.query = str( query ).strip( )
+			self.page_size = self._validate_page_size( page_size )
+			self.offset_mark = str( offset_mark or '*' ).strip( )
+			self.sort_field = self._validate_sort_field( sort_field )
+			self.sort_order = self._validate_sort_order( sort_order )
+			
+			self.url = f'{self.base_url}/search'
+			self.params = {
+					'api_key': self._resolve_api_key( )
+			}
+			self.payload = {
+					'query': self.query,
+					'pageSize': self.page_size,
+					'offsetMark': self.offset_mark,
+					'sorts': [
+							{
+									'field': self.sort_field,
+									'sortOrder': self.sort_order
+							}
+					]
+			}
+			
+			self.response = requests.post(
+				url=self.url,
+				params=self.params,
+				json=self.payload,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'search',
+					'url': self.url,
+					'params': self.params,
+					'payload': self.payload,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GovData'
+			exception.method = (
+					'fetch_search( self, query: str, page_size: int=10, '
+					'offset_mark: str=*, sort_field: str=score, '
+					'sort_order: str=DESC, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_package_summary( self, package_id: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch a GovInfo package summary by package ID.
+
+			Parameters:
+			-----------
+			package_id (str):
+				GovInfo package identifier, such as CREC-2018-10-10.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'package_id', package_id )
+			
+			self.package_id = str( package_id ).strip( )
+			self.url = f'{self.base_url}/packages/{self.package_id}/summary'
+			self.params = {
+					'api_key': self._resolve_api_key( )
+			}
+			self.payload = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'package_summary',
+					'url': self.url,
+					'params': self.params,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GovData'
+			exception.method = (
+					'fetch_package_summary( self, package_id: str, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_collection( self, collection: str, start_date: str,
+			page_size: int = 10, offset_mark: str = '*',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch packages from a GovInfo collection since a given ISO timestamp.
+
+			Parameters:
+			-----------
+			collection (str):
+				Collection code, such as CREC, FR, or BILLS.
+
+			start_date (str):
+				ISO timestamp such as 2018-10-01T00:00:00Z.
+
+			page_size (int):
+				Number of records to return.
+
+			offset_mark (str):
+				Use '*' for the first page.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'collection', collection )
+			throw_if( 'start_date', start_date )
+			
+			self.collection = str( collection ).strip( )
+			self.start_date = str( start_date ).strip( )
+			self.page_size = self._validate_page_size( page_size )
+			self.offset_mark = str( offset_mark or '*' ).strip( )
+			
+			self.url = f'{self.base_url}/collections/{self.collection}/{self.start_date}'
+			self.params = {
+					'pageSize': self.page_size,
+					'offsetMark': self.offset_mark,
+					'api_key': self._resolve_api_key( )
+			}
+			self.payload = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'collection',
+					'url': self.url,
+					'params': self.params,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GovData'
+			exception.method = (
+					'fetch_collection( self, collection: str, start_date: str, '
+					'page_size: int=10, offset_mark: str=*, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'search', query: str = '',
+			page_size: int = 10, offset_mark: str = '*',
+			sort_field: str = 'score', sort_order: str = 'DESC',
+			package_id: str = '', collection: str = '',
+			start_date: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for GovInfo requests.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- search
+				- package_summary
+				- collection
+
+			query (str):
+				GovInfo search query for search mode.
+
+			page_size (int):
+				Page size for search or collection mode.
+
+			offset_mark (str):
+				Offset marker for search or collection mode.
+
+			sort_field (str):
+				Sort field for search mode.
+
+			sort_order (str):
+				Sort order for search mode.
+
+			package_id (str):
+				Package ID for package_summary mode.
+
+			collection (str):
+				Collection code for collection mode.
+
+			start_date (str):
+				ISO timestamp for collection mode.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'search' ).strip( ).lower( )
+			
+			if active_mode == 'search':
+				return self.fetch_search(
+					query=query,
+					page_size=page_size,
+					offset_mark=offset_mark,
+					sort_field=sort_field,
+					sort_order=sort_order,
+					time=time
+				)
+			
+			if active_mode == 'package_summary':
+				return self.fetch_package_summary(
+					package_id=package_id,
+					time=time
+				)
+			
+			if active_mode == 'collection':
+				return self.fetch_collection(
+					collection=collection,
+					start_date=start_date,
+					page_size=page_size,
+					offset_mark=offset_mark,
+					time=time
+				)
+			
+			raise ValueError(
+				"Unsupported mode. Use one of: search, package_summary, collection."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'GovData'
+			exception.method = (
+					'fetch( self, mode: str=search, query: str=, page_size: int=10, '
+					'offset_mark: str=*, sort_field: str=score, '
+					'sort_order: str=DESC, package_id: str=, collection: str=, '
+					'start_date: str=, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f'{description.strip( )} '
+							f'This function uses the {tool.strip( )} service.'
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
 			}
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.cause = 'GovData'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 
 class StarChart( Fetcher ):
@@ -7740,475 +8343,1451 @@ class StarChart( Fetcher ):
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
 			)
 			raise exception
-			
+
 class Congress( Fetcher ):
 	'''
 
 		Purpose:
 		--------
-		Provides  service that can be used to query the GovInfo search engine and return results
-		that are the equivalent to what is returned by the main user interface.
+		Provides access to the Congress.gov API v3 for bills, laws, and committee
+		reports.
 
-		You can use field operators, such as congress, published date, branch, and others to construct
-		complex queries that will return only matching documents.
+		The Congress.gov API is a structured endpoint API and is not a free-text
+		search wrapper. Requests are made against mode-specific endpoints such as:
 
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+			- /congress
+			- /bill/{congress}
+			- /bill/{congress}/{billType}
+			- /bill/{congress}/{billType}/{billNumber}
+			- /law/{congress}
+			- /law/{congress}/{lawType}
+			- /law/{congress}/{lawType}/{lawNumber}
+			- /committee-report/{congress}
+			- /committee-report/{congress}/{reportType}
+			- /committee-report/{congress}/{reportType}/{reportNumber}
 
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
 	'''
 	api_key: Optional[ str ]
-	congress_number: Optional[ int ]
-	bill_number: Optional[ int ]
-	bill_type: Optional[ str ]
-	law_type: Optional[ str ]
-	law_number: Optional[ str ]
-	part_number: Optional[ int ]
-	title_number: Optional[ int ]
-	date: Optional[ dt.date ]
+	base_url: Optional[ str ]
 	url: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
-	query: Optional[ str ]
-	
-	def __init__( self ):
-		super( ).__init__( )
-		self.api_key = cfg.CONGRESS_API_KEY
-		self.date = None
-		self.congress_number = None
-		self.bill_number = None
-		self.bill_type = None
-		self.law_type = None
-		self.law_number = None
-		self.part_number = None
-		self.url = None
-		self.query = None
-		self.params = None
-	
-	def fetch_bills( self, congress: int ) -> Dict[ str, Any ] | None:
-		'''
-
-			Returns:
-			-------
-			All congressional bills given a Congress (eg, 117)
-
-		'''
-		try:
-			throw_if( 'congress', congress)
-			self.congress_number = congress
-			self.url = f'https://api.congress.gov/v3/bill/'
-			self.params = \
-			{
-				'api_key': self.api_key,
-				'congress': self.congress_number,
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Congress'
-			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			raise exception
-			
-	
-	def fetch_laws( self, congress: int ) -> Dict[ str, Any ] | None:
-		'''
-
-			Returns:
-			-------
-			All laws passed given a Congress (eg, 117)
-
-		'''
-		try:
-			throw_if( 'congress', congress )
-			self.congress_number = congress
-			self.url = f'https://api.congress.gov/v3/law/'
-			self.params = \
-			{
-				'api_key': self.api_key,
-				'congress': self.congress_number,
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Congress'
-			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			raise exception
-			
-	
-	def fetch_reports( self, congress: int ) -> Dict[ str, Any ] | None:
-		'''
-
-			Returns:
-			-------
-			All congressional reports given a Congress (eg, 117)
-
-		'''
-		try:
-			throw_if( 'congress', congress )
-			self.congress_number = congress
-			self.url = f'https://api.congress.gov/v3/law/'
-			self.params = \
-			{
-				'api_key': self.api_key,
-				'congress': self.congress_number,
-			}
-			
-			self.response = requests.get( url=self.url, params=self.params )
-			self.response.raise_for_status( )
-			_results = self.response.json( )
-			return _results
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Congress'
-			exception.method = 'fetch_by_location( self, name: str ) -> float'
-			raise exception
-			
-		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
-		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			raise exception
-			
-class InternetArchive( Fetcher ):
-	'''
-
-		Purpose:
-		---------
-		Class providing the functionality of the Internet Archive Search api.
-
-		Attribues:
-		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
-		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-	'''
-	keywords: Optional[ str ]
-	url: Optional[ str ]
-	re_tag: Optional[ Pattern ]
-	re_ws: Optional[ Pattern ]
-	response: Optional[ Response ]
-	api_key: Optional[ str ]
-	fields: Optional[ List[ str ] ]
-	count: Optional[ int ]
-	params: Optional[ Dict[ str, str ] ]
+	mode: Optional[ str ]
+	congress_number: Optional[ int ]
+	bill_type: Optional[ str ]
+	bill_number: Optional[ int ]
+	law_type: Optional[ str ]
+	law_number: Optional[ int ]
+	report_type: Optional[ str ]
+	report_number: Optional[ int ]
+	offset: Optional[ int ]
+	limit: Optional[ int ]
+	sort: Optional[ str ]
+	from_date_time: Optional[ str ]
+	to_date_time: Optional[ str ]
+	conference: Optional[ bool ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
-			-----------
-			Initialize InternetArchive with optional headers and sane defaults.
+			--------
+			Initialize the Congress fetcher with current API defaults.
 
 			Parameters:
 			-----------
-			headers (Optional[Dict[str, str]]): Optional headers for requests.
+			None
 
 			Returns:
-			-----------
+			--------
 			None
 		'''
 		super( ).__init__( )
-		self.re_tag = re.compile( r'<[^>]+>' )
-		self.re_ws = re.compile( r'\s+' )
+		self.api_key = cfg.CONGRESS_API_KEY
+		self.base_url = 'https://api.congress.gov/v3'
 		self.url = None
-		self.headers = { }
-		self.timeout = None
-		self.keywords = None
-		self.params = None
-		self.fields = [ 'identifier', 'name', 'subject', 'title', 'source', 'type', 'publicdate' ]
-		self.response = None
+		self.params = { }
+		self.mode = 'congresses'
+		self.congress_number = None
+		self.bill_type = None
+		self.bill_number = None
+		self.law_type = None
+		self.law_number = None
+		self.report_type = None
+		self.report_number = None
+		self.offset = 0
+		self.limit = 20
+		self.sort = 'updateDate+desc'
+		self.from_date_time = ''
+		self.to_date_time = ''
+		self.conference = False
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': cfg.AGENTS
+		}
 		self.agents = cfg.AGENTS
-		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ] = self.agents
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
-
 			Purpose:
-			-----------
-			Internet Archive list of members.
+			--------
+			Provide ordered member visibility.
 
 			Parameters:
 			-----------
 			None
 
 			Returns:
-			-----------
-			list[str]: Ordered attribute/method names.
-
+			--------
+			List[str]
 		'''
-		return [ 'keywords',
-		         'url',
-		         'timeout',
-		         'headers',
-		         'fetch',
-		         'api_key',
-		         'response',
-		         'cse_id',
-		         'params',
-		         'agents,',
-		         'fetch' ]
+		return [
+				'api_key',
+				'base_url',
+				'url',
+				'params',
+				'mode',
+				'congress_number',
+				'bill_type',
+				'bill_number',
+				'law_type',
+				'law_number',
+				'report_type',
+				'report_number',
+				'offset',
+				'limit',
+				'sort',
+				'from_date_time',
+				'to_date_time',
+				'conference',
+				'fetch_congresses',
+				'fetch_bills',
+				'fetch_bill',
+				'fetch_laws',
+				'fetch_law',
+				'fetch_reports',
+				'fetch_report',
+				'fetch',
+				'create_schema'
+		]
 	
-	def fetch( self, keywords: str, time: int = 10 ) -> Response | None:
+	def _resolve_api_key( self ) -> str:
 		'''
-
 			Purpose:
-			-------
-			Perform an HTTP GET to fetch a page and return canonicalized Result.
+			--------
+			Resolve the Congress.gov API key.
 
 			Parameters:
 			-----------
-			url (str): Absolute URL to fetch.
-			time (int): Timeout seconds to use for the request.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
-
-			Returns:
-			---------
-			Optional[Result]: Result with url, status, text, html, headers on success.
-
-		'''
-		try:
-			throw_if( 'keywords', keywords )
-			self.url = r'https://archive.org/advancedsearch.php?'
-			self.keywords = keywords
-			self.timeout = time
-			self.params = \
-			{
-					'q': self.keywords,
-					'fields': self.fields,
-					'num': self.timeout
-			}
-			_response = requests.get( url=self.url, params=self.params )
-			return _response
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'InternetArchive'
-			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
-			raise exception
-			
-	
-	def html_to_text( self, html: str ) -> str:
-		'''
-
-			Purpose:
-			--------
-			Convert HTML to compact plain text with minimal heuristics (scripts and
-			styles removed, tags replaced with whitespace, whitespace normalized).
-
-			Parameters:
-			---------
-			html (str): Raw HTML string.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
+			None
 
 			Returns:
 			--------
-			str: Plain text extracted from HTML.
-
+			str
 		'''
 		try:
-			throw_if( 'html', html )
-			html = re.sub( r'<script[\s\S]*?</script>', ' ', html, flags=re.IGNORECASE )
-			html = re.sub( r'<style[\s\S]*?</style>', ' ', html, flags=re.IGNORECASE )
-			html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', html, flags=re.IGNORECASE )
-			text = re.sub( self.re_tag, ' ', html )
-			text = re.sub( self.re_ws, ' ', text ).strip( )
-			return text
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'GoogleSearch'
-			exception.method = 'html2text( )'
-			raise exception
-			
+			value = str( self.api_key or '' ).strip( )
+			throw_if( 'CONGRESS_API_KEY', value )
+			return value
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = '_resolve_api_key( self ) -> str'
+			raise exception
+	
+	def _validate_limit( self, limit: int ) -> int:
+		'''
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
+			--------
+			Validate list request page size.
 
 			Parameters:
-			___________
+			-----------
+			limit (int):
+				Page size.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			value = int( limit )
+			if value < 1 or value > 250:
+				raise ValueError( 'limit must be between 1 and 250.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = '_validate_limit( self, limit: int ) -> int'
+			raise exception
+	
+	def _validate_offset( self, offset: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate list request offset.
+
+			Parameters:
+			-----------
+			offset (int):
+				Offset value.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			value = int( offset )
+			if value < 0:
+				raise ValueError( 'offset must be greater than or equal to 0.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = '_validate_offset( self, offset: int ) -> int'
+			raise exception
+	
+	def _normalize_bill_type( self, bill_type: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Normalize bill type codes.
+
+			Parameters:
+			-----------
+			bill_type (str):
+				Bill type code.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( bill_type or '' ).strip( ).lower( )
+			throw_if( 'bill_type', value )
+			
+			allowed = {
+					'hr', 's', 'hjres', 'sjres',
+					'hconres', 'sconres', 'hres', 'sres'
+			}
+			
+			if value not in allowed:
+				raise ValueError(
+					"Unsupported bill_type. Use hr, s, hjres, sjres, "
+					"hconres, sconres, hres, or sres."
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = '_normalize_bill_type( self, bill_type: str ) -> str'
+			raise exception
+	
+	def _normalize_law_type( self, law_type: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Normalize law type codes.
+
+			Parameters:
+			-----------
+			law_type (str):
+				Law type code.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( law_type or '' ).strip( ).lower( )
+			throw_if( 'law_type', value )
+			
+			allowed = { 'pub', 'priv' }
+			
+			if value not in allowed:
+				raise ValueError( "Unsupported law_type. Use 'pub' or 'priv'." )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = '_normalize_law_type( self, law_type: str ) -> str'
+			raise exception
+	
+	def _normalize_report_type( self, report_type: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Normalize committee report type codes.
+
+			Parameters:
+			-----------
+			report_type (str):
+				Committee report type code.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( report_type or '' ).strip( ).lower( )
+			throw_if( 'report_type', value )
+			
+			allowed = { 'hrpt', 'srpt', 'erpt' }
+			
+			if value not in allowed:
+				raise ValueError(
+					"Unsupported report_type. Use 'hrpt', 'srpt', or 'erpt'."
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = '_normalize_report_type( self, report_type: str ) -> str'
+			raise exception
+	
+	def _base_params( self, limit: int = 20, offset: int = 0,
+			sort: str = 'updateDate+desc' ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Construct shared list-query parameters.
+
+			Parameters:
+			-----------
+			limit (int):
+				Page size.
+
+			offset (int):
+				Result offset.
+
+			sort (str):
+				Sort directive.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			return {
+					'api_key': self._resolve_api_key( ),
+					'format': 'json',
+					'limit': self._validate_limit( limit ),
+					'offset': self._validate_offset( offset ),
+					'sort': str( sort or 'updateDate+desc' ).strip( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'_base_params( self, limit: int=20, offset: int=0, '
+					'sort: str=updateDate+desc ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_congresses( self, limit: int = 20, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch the list of congresses and sessions.
+
+			Parameters:
+			-----------
+			limit (int):
+				Page size.
+
+			offset (int):
+				Result offset.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.url = f'{self.base_url}/congress'
+			self.params = self._base_params(
+				limit=limit,
+				offset=offset,
+				sort='updateDate+desc'
+			)
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'congresses',
+					'url': self.url,
+					'params': self.params,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'fetch_congresses( self, limit: int=20, offset: int=0, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_bills( self, congress: int, bill_type: str = '',
+			offset: int = 0, limit: int = 20, from_date_time: str = '',
+			to_date_time: str = '', sort: str = 'updateDate+desc',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch bills for a congress, optionally filtered by bill type.
+
+			Parameters:
+			-----------
+			congress (int):
+				Congress number.
+
+			bill_type (str):
+				Optional bill type code.
+
+			offset (int):
+				Result offset.
+
+			limit (int):
+				Page size.
+
+			from_date_time (str):
+				Optional ISO timestamp filter.
+
+			to_date_time (str):
+				Optional ISO timestamp filter.
+
+			sort (str):
+				Sort directive.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'congress', congress )
+			
+			self.congress_number = int( congress )
+			self.bill_type = str( bill_type or '' ).strip( ).lower( )
+			
+			if self.bill_type:
+				self.bill_type = self._normalize_bill_type( self.bill_type )
+				self.url = f'{self.base_url}/bill/{self.congress_number}/{self.bill_type}'
+			else:
+				self.url = f'{self.base_url}/bill/{self.congress_number}'
+			
+			self.params = self._base_params(
+				limit=limit,
+				offset=offset,
+				sort=sort
+			)
+			
+			if from_date_time:
+				self.params[ 'fromDateTime' ] = str( from_date_time ).strip( )
+			
+			if to_date_time:
+				self.params[ 'toDateTime' ] = str( to_date_time ).strip( )
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'bills',
+					'url': self.url,
+					'params': self.params,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'fetch_bills( self, congress: int, bill_type: str=, '
+					'offset: int=0, limit: int=20, from_date_time: str=, '
+					'to_date_time: str=, sort: str=updateDate+desc, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_bill( self, congress: int, bill_type: str,
+			bill_number: int, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch a specific bill by congress, bill type, and bill number.
+
+			Parameters:
+			-----------
+			congress (int):
+				Congress number.
+
+			bill_type (str):
+				Bill type code.
+
+			bill_number (int):
+				Bill number.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'congress', congress )
+			throw_if( 'bill_type', bill_type )
+			throw_if( 'bill_number', bill_number )
+			
+			self.congress_number = int( congress )
+			self.bill_type = self._normalize_bill_type( bill_type )
+			self.bill_number = int( bill_number )
+			
+			self.url = (
+					f'{self.base_url}/bill/{self.congress_number}/'
+					f'{self.bill_type}/{self.bill_number}'
+			)
+			self.params = {
+					'api_key': self._resolve_api_key( ),
+					'format': 'json'
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'bill_detail',
+					'url': self.url,
+					'params': self.params,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'fetch_bill( self, congress: int, bill_type: str, '
+					'bill_number: int, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_laws( self, congress: int, law_type: str = '',
+			offset: int = 0, limit: int = 20,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch laws for a congress, optionally filtered by law type.
+
+			Parameters:
+			-----------
+			congress (int):
+				Congress number.
+
+			law_type (str):
+				Optional law type code: pub or priv.
+
+			offset (int):
+				Result offset.
+
+			limit (int):
+				Page size.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'congress', congress )
+			
+			self.congress_number = int( congress )
+			self.law_type = str( law_type or '' ).strip( ).lower( )
+			
+			if self.law_type:
+				self.law_type = self._normalize_law_type( self.law_type )
+				self.url = f'{self.base_url}/law/{self.congress_number}/{self.law_type}'
+			else:
+				self.url = f'{self.base_url}/law/{self.congress_number}'
+			
+			self.params = self._base_params(
+				limit=limit,
+				offset=offset,
+				sort='updateDate+desc'
+			)
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'laws',
+					'url': self.url,
+					'params': self.params,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'fetch_laws( self, congress: int, law_type: str=, '
+					'offset: int=0, limit: int=20, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_law( self, congress: int, law_type: str,
+			law_number: int, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch a specific law by congress, law type, and law number.
+
+			Parameters:
+			-----------
+			congress (int):
+				Congress number.
+
+			law_type (str):
+				Law type code: pub or priv.
+
+			law_number (int):
+				Law number.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'congress', congress )
+			throw_if( 'law_type', law_type )
+			throw_if( 'law_number', law_number )
+			
+			self.congress_number = int( congress )
+			self.law_type = self._normalize_law_type( law_type )
+			self.law_number = int( law_number )
+			
+			self.url = (
+					f'{self.base_url}/law/{self.congress_number}/'
+					f'{self.law_type}/{self.law_number}'
+			)
+			self.params = {
+					'api_key': self._resolve_api_key( ),
+					'format': 'json'
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'law_detail',
+					'url': self.url,
+					'params': self.params,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'fetch_law( self, congress: int, law_type: str, '
+					'law_number: int, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_reports( self, congress: int, report_type: str = '',
+			offset: int = 0, limit: int = 20, conference: bool = False,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch committee reports for a congress, optionally filtered by
+			report type.
+
+			Parameters:
+			-----------
+			congress (int):
+				Congress number.
+
+			report_type (str):
+				Optional report type code: hrpt, srpt, or erpt.
+
+			offset (int):
+				Result offset.
+
+			limit (int):
+				Page size.
+
+			conference (bool):
+				Whether to request conference reports where supported.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'congress', congress )
+			
+			self.congress_number = int( congress )
+			self.report_type = str( report_type or '' ).strip( ).lower( )
+			self.conference = bool( conference )
+			
+			if self.report_type:
+				self.report_type = self._normalize_report_type( self.report_type )
+				self.url = (
+						f'{self.base_url}/committee-report/'
+						f'{self.congress_number}/{self.report_type}'
+				)
+			else:
+				self.url = f'{self.base_url}/committee-report/{self.congress_number}'
+			
+			self.params = self._base_params(
+				limit=limit,
+				offset=offset,
+				sort='updateDate+desc'
+			)
+			self.params[ 'conference' ] = str( self.conference ).lower( )
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'reports',
+					'url': self.url,
+					'params': self.params,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'fetch_reports( self, congress: int, report_type: str=, '
+					'offset: int=0, limit: int=20, conference: bool=False, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_report( self, congress: int, report_type: str,
+			report_number: int, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch a specific committee report.
+
+			Parameters:
+			-----------
+			congress (int):
+				Congress number.
+
+			report_type (str):
+				Report type code.
+
+			report_number (int):
+				Report number.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'congress', congress )
+			throw_if( 'report_type', report_type )
+			throw_if( 'report_number', report_number )
+			
+			self.congress_number = int( congress )
+			self.report_type = self._normalize_report_type( report_type )
+			self.report_number = int( report_number )
+			
+			self.url = (
+					f'{self.base_url}/committee-report/{self.congress_number}/'
+					f'{self.report_type}/{self.report_number}'
+			)
+			self.params = {
+					'api_key': self._resolve_api_key( ),
+					'format': 'json'
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': 'report_detail',
+					'url': self.url,
+					'params': self.params,
+					'data': self.response.json( )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'fetch_report( self, congress: int, report_type: str, '
+					'report_number: int, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'congresses', congress: int = 0,
+			bill_type: str = '', bill_number: int = 0, law_type: str = '',
+			law_number: int = 0, report_type: str = '',
+			report_number: int = 0, offset: int = 0, limit: int = 20,
+			sort: str = 'updateDate+desc', from_date_time: str = '',
+			to_date_time: str = '', conference: bool = False,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for Congress.gov requests.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- congresses
+				- bills
+				- bill_detail
+				- laws
+				- law_detail
+				- reports
+				- report_detail
+
+			congress (int):
+				Congress number for congress-scoped modes.
+
+			bill_type (str):
+				Bill type code for bill modes.
+
+			bill_number (int):
+				Bill number for bill_detail mode.
+
+			law_type (str):
+				Law type code for law modes.
+
+			law_number (int):
+				Law number for law_detail mode.
+
+			report_type (str):
+				Report type code for report modes.
+
+			report_number (int):
+				Report number for report_detail mode.
+
+			offset (int):
+				Result offset for list modes.
+
+			limit (int):
+				Page size for list modes.
+
+			sort (str):
+				Sort directive for bill list modes.
+
+			from_date_time (str):
+				Optional ISO timestamp for bill list mode.
+
+			to_date_time (str):
+				Optional ISO timestamp for bill list mode.
+
+			conference (bool):
+				Conference report filter for report list mode.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'congresses' ).strip( ).lower( )
+			
+			if active_mode == 'congresses':
+				return self.fetch_congresses(
+					limit=limit,
+					offset=offset,
+					time=time
+				)
+			
+			if active_mode == 'bills':
+				return self.fetch_bills(
+					congress=congress,
+					bill_type=bill_type,
+					offset=offset,
+					limit=limit,
+					from_date_time=from_date_time,
+					to_date_time=to_date_time,
+					sort=sort,
+					time=time
+				)
+			
+			if active_mode == 'bill_detail':
+				return self.fetch_bill(
+					congress=congress,
+					bill_type=bill_type,
+					bill_number=bill_number,
+					time=time
+				)
+			
+			if active_mode == 'laws':
+				return self.fetch_laws(
+					congress=congress,
+					law_type=law_type,
+					offset=offset,
+					limit=limit,
+					time=time
+				)
+			
+			if active_mode == 'law_detail':
+				return self.fetch_law(
+					congress=congress,
+					law_type=law_type,
+					law_number=law_number,
+					time=time
+				)
+			
+			if active_mode == 'reports':
+				return self.fetch_reports(
+					congress=congress,
+					report_type=report_type,
+					offset=offset,
+					limit=limit,
+					conference=conference,
+					time=time
+				)
+			
+			if active_mode == 'report_detail':
+				return self.fetch_report(
+					congress=congress,
+					report_type=report_type,
+					report_number=report_number,
+					time=time
+				)
+			
+			raise ValueError(
+				"Unsupported mode. Use one of: congresses, bills, bill_detail, "
+				"laws, law_detail, reports, report_detail."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'fetch( self, mode: str=congresses, congress: int=0, '
+					'bill_type: str=, bill_number: int=0, law_type: str=, '
+					'law_number: int=0, report_type: str=, report_number: int=0, '
+					'offset: int=0, limit: int=20, sort: str=updateDate+desc, '
+					'from_date_time: str=, to_date_time: str=, '
+					'conference: bool=False, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
 			function (str):
-			The function name exposed to the LLM.
+				The function name exposed to the LLM.
 
 			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+				The underlying system or service the function wraps.
 
 			description (str):
-			Precise explanation of what the function does.
+				Precise explanation of what the function does.
 
 			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
+				A dictionary defining parameter names and JSON schema descriptors.
 
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			required (list[str]):
+				List of required parameter names.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f'{description.strip( )} '
+							f'This function uses the {tool.strip( )} service.'
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
 			}
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.cause = 'Congress'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class InternetArchive( Fetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides structured access to the Internet Archive Advanced Search API.
+
+		The advanced search endpoint supports query-driven retrieval with
+		parameters such as:
+
+			- q
+			- fl[]
+			- rows
+			- page
+			- sort[]
+			- output=json
+
+		This wrapper keeps the API provider-specific and returns parsed JSON
+		with request metadata for downstream UI rendering.
+
+	'''
+	keywords: Optional[ str ]
+	url: Optional[ str ]
+	response: Optional[ Response ]
+	fields: Optional[ List[ str ] ]
+	rows: Optional[ int ]
+	page: Optional[ int ]
+	sort: Optional[ str ]
+	media_type: Optional[ str ]
+	collection: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the Internet Archive wrapper with sane defaults.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.url = 'https://archive.org/advancedsearch.php'
+		self.headers = { }
+		self.timeout = 20
+		self.keywords = ''
+		self.params = { }
+		self.fields = [
+				'identifier',
+				'title',
+				'creator',
+				'mediatype',
+				'collection',
+				'publicdate',
+				'description'
+		]
+		self.rows = 10
+		self.page = 1
+		self.sort = 'downloads desc'
+		self.media_type = ''
+		self.collection = ''
+		self.response = None
+		self.agents = cfg.AGENTS
+		
+		if 'User-Agent' not in self.headers:
+			self.headers[ 'User-Agent' ] = self.agents
+		
+		if 'Accept' not in self.headers:
+			self.headers[ 'Accept' ] = 'application/json'
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'keywords',
+				'url',
+				'timeout',
+				'headers',
+				'fields',
+				'rows',
+				'page',
+				'sort',
+				'media_type',
+				'collection',
+				'params',
+				'agents',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _validate_rows( self, rows: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate requested page size.
+
+			Parameters:
+			-----------
+			rows (int):
+				Requested number of results.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			value = int( rows )
+			if value < 1 or value > 100:
+				raise ValueError( 'rows must be between 1 and 100.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'InternetArchive'
+			exception.method = '_validate_rows( self, rows: int ) -> int'
+			raise exception
+	
+	def _validate_page( self, page: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate requested page number.
+
+			Parameters:
+			-----------
+			page (int):
+				Requested page number.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			value = int( page )
+			if value < 1:
+				raise ValueError( 'page must be greater than or equal to 1.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'InternetArchive'
+			exception.method = '_validate_page( self, page: int ) -> int'
+			raise exception
+	
+	def _build_query( self, keywords: str, media_type: str = '',
+			collection: str = '' ) -> str:
+		'''
+			Purpose:
+			--------
+			Build an Internet Archive advanced search query expression.
+
+			Parameters:
+			-----------
+			keywords (str):
+				Base free-text query.
+
+			media_type (str):
+				Optional mediatype filter.
+
+			collection (str):
+				Optional collection filter.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'keywords', keywords )
+			
+			parts: List[ str ] = [ f'({str( keywords ).strip( )})' ]
+			
+			if media_type and str( media_type ).strip( ):
+				parts.append( f'AND mediatype:({str( media_type ).strip( )})' )
+			
+			if collection and str( collection ).strip( ):
+				parts.append( f'AND collection:({str( collection ).strip( )})' )
+			
+			return ' '.join( parts )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'InternetArchive'
+			exception.method = (
+					'_build_query( self, keywords: str, media_type: str=, '
+					'collection: str= ) -> str'
+			)
+			raise exception
+	
+	def fetch( self, keywords: str, fields: List[ str ] | None = None,
+			rows: int = 10, page: int = 1, sort: str = 'downloads desc',
+			media_type: str = '', collection: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Execute an Internet Archive advanced search request.
+
+			Parameters:
+			-----------
+			keywords (str):
+				Free-text Internet Archive query.
+
+			fields (List[str] | None):
+				Optional list of result fields to request.
+
+			rows (int):
+				Number of results per page.
+
+			page (int):
+				Page number.
+
+			sort (str):
+				Archive sort directive such as downloads desc or publicdate desc.
+
+			media_type (str):
+				Optional media type filter.
+
+			collection (str):
+				Optional collection filter.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.keywords = str( keywords ).strip( )
+			throw_if( 'keywords', self.keywords )
+			
+			self.timeout = int( time )
+			self.rows = self._validate_rows( rows )
+			self.page = self._validate_page( page )
+			self.sort = str( sort or 'downloads desc' ).strip( )
+			self.media_type = str( media_type or '' ).strip( )
+			self.collection = str( collection or '' ).strip( )
+			
+			active_fields = fields if fields else self.fields
+			if not isinstance( active_fields, list ) or not active_fields:
+				raise ValueError( 'fields must be a non-empty list of field names.' )
+			
+			query_text = self._build_query(
+				keywords=self.keywords,
+				media_type=self.media_type,
+				collection=self.collection
+			)
+			
+			self.params = {
+					'q': query_text,
+					'fl[]': active_fields,
+					'rows': self.rows,
+					'page': self.page,
+					'sort[]': self.sort,
+					'output': 'json'
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': 'advanced_search',
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'InternetArchive'
+			exception.method = (
+					'fetch( self, keywords: str, fields: List[ str ] | None=None, '
+					'rows: int=10, page: int=1, sort: str=downloads desc, '
+					'media_type: str=, collection: str=, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f'{description.strip( )} '
+							f'This function uses the {tool.strip( )} service.'
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'InternetArchive'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			raise exception
 
 class OpenWeather( Fetcher ):

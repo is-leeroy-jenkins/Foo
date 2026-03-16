@@ -92,8 +92,8 @@ SKYMAP_TOKEN = '''06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d
 FAVICON = r'resources/images/favicon.ico'
 LOGO = r'resources/images/foo_logo.png'
 DB = r'stores/sqlite/datamodels/Data.db'
-MODES = [ 'Document Loading', 'Web Scrapping', 'Data Collection',
-          'Generative AI', 'Satellite Data', 'Data Management' ]
+MODES = [ 'Data Loading', 'Data Scraping', 'Data Retrieval',
+          'Data Generation', 'Geospatial Data', 'Data Management' ]
 
 
 
@@ -193,17 +193,19 @@ OPEN_SCIENCE = r'''Provides access to APIs from NASA's Open Science Data Reposti
 '''
 
 GOV_INFO = r'''The GovInfo Link Service provides services for developers and webmasters to access
-		content and metadata on GovInfo. Current and planned services include a link service,
-		list service, and search service.
+        content and metadata on GovInfo. Current and planned services include a link service,
+        list service, and search service.
+        
+		The link service is used to create embedded links to content and metadata on GovInfo and is
+		currently enabled for the collections below. The collection code is listed in parenthesis
+		after each collection name, and the available queries are listed below each collection.
+		More information about each query is provided on the individual collection page.
 		
 		Documentation here (https://www.govinfo.gov/link-docs/)
 '''
 
-CONGRESS = r'''Provides  service that can be used to query the GovInfo search engine and return results
-		that are the equivalent to what is returned by the main user interface.
-
-		You can use field operators, such as congress, published date, branch, and others to construct
-		complex queries that will return only matching documents.
+CONGRESS = r'''Submit queries against the Congressional Research Service's (CRS) Appropriation
+		Status Table.
 		
 		Documentation here (https://api.congress.gov/)
 '''
@@ -376,3 +378,25 @@ SKY_MAP = r'''Provides static and link-based star chart generation using the SKY
 
 '''
 
+OPEN_SCIENCE = r'''NASA’s Open Science Data Repository (OSDR) enables the reuse of comprehensive,
+		multi-modal space life science data—including omics, physiological, phenotypic, behavioral,
+		and environmental telemetry—to advance basic and applied research as well as operational
+		outcomes for human space exploration.
+		
+		Documentation here (https://science.nasa.gov/biological-physical/data/osdr/)
+'''
+
+GROK = r'''
+'''
+
+CHATGPT = r'''
+'''
+
+GEMINI = r'''
+'''
+
+MISTRAL = r'''
+'''
+
+CLAUDE = r'''
+'''

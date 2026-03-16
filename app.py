@@ -1537,8 +1537,8 @@ with st.sidebar:
 # ======================================================================================
 # DOCUMENT LOADING MODE
 # ======================================================================================
-if mode == 'Document Loading':
-	st.subheader( '📤   Document Loading' )
+if mode == 'Data Loading':
+	st.subheader( '📤   Data Loading' )
 	st.divider( )
 	
 	if 'loader_clear_request' not in st.session_state:
@@ -1690,8 +1690,8 @@ if mode == 'Document Loading':
 # ======================================================================================
 # SCRAPING MODE
 # ======================================================================================
-elif mode == 'Web Scrapping':
-	st.subheader( '🕷️ Web Scrapping' )
+elif mode == 'Data Scraping':
+	st.subheader( '🕷️ Data Scraping' )
 	st.divider( )
 	
 	if 'webscrape_clear_request' not in st.session_state:
@@ -2123,8 +2123,8 @@ elif mode == 'Web Scrapping':
 # ======================================================================================
 # FETCHING MODE
 # ======================================================================================
-elif mode == 'Data Collection':
-	st.subheader( '🏛️  Data Archives & Collections' )
+elif mode == 'Data Retrieval':
+	st.subheader( '🏛️  Data Retrieval' )
 	st.divider( )
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
@@ -3331,180 +3331,1023 @@ elif mode == 'Data Collection':
 	
 	# -------- Naval Observatory
 	with st.expander( label='US Naval Observatory', expanded=False ):
+		if 'navalobservatory_results' not in st.session_state:
+			st.session_state[ 'navalobservatory_results' ] = { }
+		
+		if 'navalobservatory_clear_request' not in st.session_state:
+			st.session_state[ 'navalobservatory_clear_request' ] = False
+		
+		if st.session_state.get( 'navalobservatory_clear_request', False ):
+			st.session_state[ 'navalobservatory_date' ] = dt.date.today( )
+			st.session_state[ 'navalobservatory_time' ] = dt.time( 12, 0 )
+			st.session_state[ 'navalobservatory_latitude' ] = 38.9072
+			st.session_state[ 'navalobservatory_longitude' ] = -77.0369
+			st.session_state[ 'navalobservatory_location_label' ] = ''
+			st.session_state[ 'navalobservatory_timeout' ] = 20
+			st.session_state[ 'navalobservatory_results' ] = { }
+			st.session_state[ 'navalobservatory_clear_request' ] = False
+		
+		def _clear_navalobservatory_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Naval Observatory expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'navalobservatory_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			naval_query = st.text_area( 'Query', value='', height=40,
-				key='navalobservatory_query' )
+			naval_date = st.date_input(
+				'Date',
+				value=st.session_state.get(
+					'navalobservatory_date',
+					dt.date.today( )
+				),
+				key='navalobservatory_date',
+				help='USNO date parameter in YYYY-MM-DD format.'
+			)
+			
+			naval_time = st.time_input(
+				'Time (UTC)',
+				value=st.session_state.get(
+					'navalobservatory_time',
+					dt.time( 12, 0 )
+				),
+				key='navalobservatory_time',
+				help='USNO time parameter in 24-hour format.'
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				naval_latitude = st.number_input(
+					'Latitude',
+					min_value=-90.0,
+					max_value=90.0,
+					value=float(
+						st.session_state.get( 'navalobservatory_latitude', 38.9072 )
+					),
+					step=0.0001,
+					format='%.6f',
+					key='navalobservatory_latitude',
+					help='Decimal degrees. North positive.'
+				)
+			
+			with c2:
+				naval_longitude = st.number_input(
+					'Longitude',
+					min_value=-180.0,
+					max_value=180.0,
+					value=float(
+						st.session_state.get( 'navalobservatory_longitude', -77.0369 )
+					),
+					step=0.0001,
+					format='%.6f',
+					key='navalobservatory_longitude',
+					help='Decimal degrees. East positive, west negative.'
+				)
+			
+			naval_location_label = st.text_input(
+				'Location Label',
+				value=st.session_state.get( 'navalobservatory_location_label', '' ),
+				key='navalobservatory_location_label',
+				placeholder='Example: Washington, DC'
+			)
+			
+			naval_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'navalobservatory_timeout', 20 ) ),
+				step=1,
+				key='navalobservatory_timeout'
+			)
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				naval_submit = st.button( 'Submit', key='navalobservatory_submit' )
+				naval_submit = st.button(
+					'Submit',
+					key='navalobservatory_submit',
+					use_container_width=True
+				)
 			with b2:
-				naval_clear = st.button( 'Clear', key='navalobservatory_clear' )
+				naval_clear = st.button(
+					'Clear',
+					key='navalobservatory_clear',
+					on_click=_clear_navalobservatory_state,
+					use_container_width=True
+				)
 		
 		with col_right:
 			naval_output = st.empty( )
 		
-		if naval_clear:
-			st.session_state.update( { 'navalobservatory_query': '', } )
-			st.rerun( )
-		
 		if naval_submit:
 			try:
 				f = NavalObservatory( )
-				result = f.fetch( naval_query )
 				
-				if not result:
-					naval_output.info( 'No results returned.' )
-				else:
-					naval_output.text_area( 'Results', value=str( result ), height=300 )
+				result = f.fetch(
+					mode='celnav',
+					date_value=naval_date.strftime( '%Y-%m-%d' ),
+					time_value=naval_time.strftime( '%H:%M:%S' ),
+					latitude=float( naval_latitude ),
+					longitude=float( naval_longitude ),
+					location_label=naval_location_label,
+					time=int( naval_timeout )
+				)
+				
+				st.session_state[ 'navalobservatory_results' ] = result or { }
+				st.rerun( )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
+		
+		result = st.session_state.get( 'navalobservatory_results', { } )
+		
+		if not result:
+			naval_output.text( 'No results.' )
+		else:
+			naval_output.markdown( '#### Request Metadata' )
+			naval_output.json(
+				{
+						'mode': result.get( 'mode', '' ),
+						'url': result.get( 'url', '' ),
+						'params': result.get( 'params', { } ),
+						'location_label': result.get( 'location_label', '' ),
+				}
+			)
+			
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			
+			if data:
+				naval_output.markdown( '#### Raw Result' )
+				naval_output.json( data )
+			else:
+				naval_output.info( 'No results returned.' )
 	
 	# -------- Open Science
 	with st.expander( label='Open Science', expanded=False ):
+		if 'openscience_results' not in st.session_state:
+			st.session_state[ 'openscience_results' ] = { }
+		
+		if 'openscience_clear_request' not in st.session_state:
+			st.session_state[ 'openscience_clear_request' ] = False
+		
+		if st.session_state.get( 'openscience_clear_request', False ):
+			st.session_state[ 'openscience_mode' ] = 'dataset'
+			st.session_state[ 'openscience_accession' ] = ''
+			st.session_state[ 'openscience_query' ] = ''
+			st.session_state[ 'openscience_format' ] = 'json'
+			st.session_state[ 'openscience_timeout' ] = 20
+			st.session_state[ 'openscience_results' ] = { }
+			st.session_state[ 'openscience_clear_request' ] = False
+		
+		def _clear_openscience_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Open Science expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'openscience_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			openscience_query = st.text_area( 'Query', value='', height=40,
-				key='openscience_query' )
+			openscience_mode = st.selectbox(
+				'Mode',
+				options=[ 'dataset', 'metadata', 'assays', 'data' ],
+				index=[ 'dataset', 'metadata', 'assays', 'data' ].index(
+					st.session_state.get( 'openscience_mode', 'dataset' )
+				),
+				key='openscience_mode',
+				help=(
+						'dataset = fetch dataset metadata by accession; '
+						'metadata/assays/data = query the corresponding OSDR API endpoint.'
+				)
+			)
+			
+			openscience_accession = st.text_input(
+				'Dataset Accession',
+				value=st.session_state.get( 'openscience_accession', '' ),
+				key='openscience_accession',
+				placeholder='Example: OSD-48'
+			)
+			
+			openscience_query = st.text_area(
+				'Query',
+				value=st.session_state.get( 'openscience_query', '' ),
+				height=120,
+				key='openscience_query',
+				placeholder=(
+						'Example: (id.accession=OSD-48) '
+						'OR study.characteristics.organism=Mus musculus'
+				)
+			)
+			
+			openscience_format = st.selectbox(
+				'Format',
+				options=[ 'json', 'csv', 'tsv', 'browser' ],
+				index=[ 'json', 'csv', 'tsv', 'browser' ].index(
+					st.session_state.get( 'openscience_format', 'json' )
+				),
+				key='openscience_format'
+			)
+			
+			openscience_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'openscience_timeout', 20 ) ),
+				step=1,
+				key='openscience_timeout'
+			)
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				openscience_submit = st.button( 'Submit', key='openscience_submit' )
+				openscience_submit = st.button(
+					'Submit',
+					key='openscience_submit',
+					use_container_width=True
+				)
 			with b2:
-				openscience_clear = st.button( 'Clear', key='openscience_clear' )
+				openscience_clear = st.button(
+					'Clear',
+					key='openscience_clear',
+					on_click=_clear_openscience_state,
+					use_container_width=True
+				)
 		
 		with col_right:
 			openscience_output = st.empty( )
 		
-		if openscience_clear:
-			st.session_state.update( { 'openscience_query': '', } )
-			st.rerun( )
-		
 		if openscience_submit:
 			try:
 				f = OpenScience( )
-				result = f.fetch( openscience_query )
 				
-				if not result:
-					openscience_output.info( 'No results returned.' )
-				else:
-					openscience_output.text_area( 'Results', value=str( result ), height=300 )
+				result = f.fetch(
+					mode=str( openscience_mode ),
+					query=str( openscience_query ),
+					accession=str( openscience_accession ),
+					format_value=str( openscience_format ),
+					time=int( openscience_timeout )
+				)
+				
+				st.session_state[ 'openscience_results' ] = result or { }
+				st.rerun( )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
+		
+		result = st.session_state.get( 'openscience_results', { } )
+		
+		if not result:
+			openscience_output.text( 'No results.' )
+		else:
+			openscience_output.markdown( '#### Request Metadata' )
+			openscience_output.json(
+				{
+						'mode': result.get( 'mode', '' ),
+						'url': result.get( 'url', '' ),
+						'params': result.get( 'params', { } ),
+				}
+			)
+			
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			
+			if isinstance( data, dict ) or isinstance( data, list ):
+				openscience_output.markdown( '#### Result' )
+				openscience_output.json( data )
+			elif data:
+				openscience_output.markdown( '#### Result' )
+				openscience_output.text_area(
+					'Output',
+					value=str( data ),
+					height=320
+				)
+			else:
+				openscience_output.info( 'No results returned.' )
 	
-	# -------- Gov Data
+	# -------- Gov Info
 	with st.expander( label='Gov Info', expanded=False ):
+		if 'govinfo_results' not in st.session_state:
+			st.session_state[ 'govinfo_results' ] = { }
+		
+		if 'govinfo_clear_request' not in st.session_state:
+			st.session_state[ 'govinfo_clear_request' ] = False
+		
+		if st.session_state.get( 'govinfo_clear_request', False ):
+			st.session_state[ 'govinfo_mode' ] = 'search'
+			st.session_state[ 'govinfo_query' ] = ''
+			st.session_state[ 'govinfo_page_size' ] = 10
+			st.session_state[ 'govinfo_offset_mark' ] = '*'
+			st.session_state[ 'govinfo_sort_field' ] = 'score'
+			st.session_state[ 'govinfo_sort_order' ] = 'DESC'
+			st.session_state[ 'govinfo_package_id' ] = ''
+			st.session_state[ 'govinfo_collection' ] = ''
+			st.session_state[ 'govinfo_start_date' ] = '2025-01-01T00:00:00Z'
+			st.session_state[ 'govinfo_timeout' ] = 20
+			st.session_state[ 'govinfo_results' ] = { }
+			st.session_state[ 'govinfo_clear_request' ] = False
+		
+		def _clear_govinfo_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Gov Info expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'govinfo_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			govdata_query = st.text_area( 'Query', value='', height=40, key='govdata_query' )
+			govinfo_mode = st.selectbox(
+				'Mode',
+				options=[ 'search', 'package_summary', 'collection' ],
+				index=[ 'search', 'package_summary', 'collection' ].index(
+					st.session_state.get( 'govinfo_mode', 'search' )
+				),
+				key='govinfo_mode',
+				help=(
+						'search = GovInfo Search Service; '
+						'package_summary = package details by package ID; '
+						'collection = browse a collection since an ISO timestamp.'
+				)
+			)
+			
+			govinfo_query = st.text_area(
+				'Query',
+				value=st.session_state.get( 'govinfo_query', '' ),
+				height=120,
+				key='govinfo_query',
+				placeholder=(
+						'Example: collection:BILLS AND congress:118 '
+						'AND title:"appropriations"'
+				)
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				govinfo_page_size = st.number_input(
+					'Page Size',
+					min_value=1,
+					max_value=1000,
+					value=int( st.session_state.get( 'govinfo_page_size', 10 ) ),
+					step=1,
+					key='govinfo_page_size'
+				)
+			
+			with c2:
+				govinfo_offset_mark = st.text_input(
+					'Offset Mark',
+					value=st.session_state.get( 'govinfo_offset_mark', '*' ),
+					key='govinfo_offset_mark',
+					placeholder='*'
+				)
+			
+			c3, c4 = st.columns( 2 )
+			
+			with c3:
+				govinfo_sort_field = st.selectbox(
+					'Sort Field',
+					options=[ 'score', 'lastModified' ],
+					index=[ 'score', 'lastModified' ].index(
+						st.session_state.get( 'govinfo_sort_field', 'score' )
+					),
+					key='govinfo_sort_field'
+				)
+			
+			with c4:
+				govinfo_sort_order = st.selectbox(
+					'Sort Order',
+					options=[ 'DESC', 'ASC' ],
+					index=[ 'DESC', 'ASC' ].index(
+						st.session_state.get( 'govinfo_sort_order', 'DESC' )
+					),
+					key='govinfo_sort_order'
+				)
+			
+			govinfo_package_id = st.text_input(
+				'Package ID',
+				value=st.session_state.get( 'govinfo_package_id', '' ),
+				key='govinfo_package_id',
+				placeholder='Example: CREC-2018-10-10'
+			)
+			
+			c5, c6 = st.columns( 2 )
+			
+			with c5:
+				govinfo_collection = st.text_input(
+					'Collection',
+					value=st.session_state.get( 'govinfo_collection', '' ),
+					key='govinfo_collection',
+					placeholder='Example: CREC'
+				)
+			
+			with c6:
+				govinfo_start_date = st.text_input(
+					'Start Date (ISO)',
+					value=st.session_state.get(
+						'govinfo_start_date',
+						'2025-01-01T00:00:00Z'
+					),
+					key='govinfo_start_date',
+					placeholder='YYYY-MM-DDTHH:MM:SSZ'
+				)
+			
+			govinfo_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'govinfo_timeout', 20 ) ),
+				step=1,
+				key='govinfo_timeout'
+			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
-				govdata_submit = st.button( 'Submit', key='govdata_submit' )
+				govinfo_submit = st.button(
+					'Submit',
+					key='govinfo_submit',
+					use_container_width=True
+				)
+			
 			with b2:
-				govdata_clear = st.button( 'Clear', key='govdata_clear' )
+				govinfo_clear = st.button(
+					'Clear',
+					key='govinfo_clear',
+					on_click=_clear_govinfo_state,
+					use_container_width=True
+				)
 		
 		with col_right:
-			govdata_output = st.empty( )
+			govinfo_output = st.empty( )
 		
-		if govdata_clear:
-			st.session_state.update( { 'govdata_query': '', } )
-			st.rerun( )
-		
-		if govdata_submit:
+		if govinfo_submit:
 			try:
 				f = GovData( )
-				result = f.fetch( govdata_query )
 				
-				if not result:
-					govdata_output.info( 'No results returned.' )
-				else:
-					govdata_output.text_area( 'Results', value=str( result ), height=300 )
+				result = f.fetch(
+					mode=str( govinfo_mode ),
+					query=str( govinfo_query ),
+					page_size=int( govinfo_page_size ),
+					offset_mark=str( govinfo_offset_mark ),
+					sort_field=str( govinfo_sort_field ),
+					sort_order=str( govinfo_sort_order ),
+					package_id=str( govinfo_package_id ),
+					collection=str( govinfo_collection ),
+					start_date=str( govinfo_start_date ),
+					time=int( govinfo_timeout )
+				)
+				
+				st.session_state[ 'govinfo_results' ] = result or { }
+				st.rerun( )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
+		
+		result = st.session_state.get( 'govinfo_results', { } )
+		
+		if not result:
+			govinfo_output.text( 'No results.' )
+		else:
+			govinfo_output.markdown( '#### Request Metadata' )
+			govinfo_output.json(
+				{
+						'mode': result.get( 'mode', '' ),
+						'url': result.get( 'url', '' ),
+						'params': result.get( 'params', { } ),
+						'payload': result.get( 'payload', { } ),
+				}
+			)
+			
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			
+			if isinstance( data, dict ) or isinstance( data, list ):
+				govinfo_output.markdown( '#### Result' )
+				govinfo_output.json( data )
+			elif data:
+				govinfo_output.markdown( '#### Result' )
+				govinfo_output.text_area(
+					'Output',
+					value=str( data ),
+					height=320
+				)
+			else:
+				govinfo_output.info( 'No results returned.' )
 	
 	# -------- Congress
 	with st.expander( label='Congress', expanded=False ):
+		if 'congress_results' not in st.session_state:
+			st.session_state[ 'congress_results' ] = { }
+		
+		if 'congress_clear_request' not in st.session_state:
+			st.session_state[ 'congress_clear_request' ] = False
+		
+		if st.session_state.get( 'congress_clear_request', False ):
+			st.session_state[ 'congress_mode' ] = 'congresses'
+			st.session_state[ 'congress_number' ] = 119
+			st.session_state[ 'congress_bill_type' ] = ''
+			st.session_state[ 'congress_bill_number' ] = 0
+			st.session_state[ 'congress_law_type' ] = ''
+			st.session_state[ 'congress_law_number' ] = 0
+			st.session_state[ 'congress_report_type' ] = ''
+			st.session_state[ 'congress_report_number' ] = 0
+			st.session_state[ 'congress_offset' ] = 0
+			st.session_state[ 'congress_limit' ] = 20
+			st.session_state[ 'congress_sort' ] = 'updateDate+desc'
+			st.session_state[ 'congress_from_datetime' ] = ''
+			st.session_state[ 'congress_to_datetime' ] = ''
+			st.session_state[ 'congress_conference' ] = False
+			st.session_state[ 'congress_timeout' ] = 20
+			st.session_state[ 'congress_results' ] = { }
+			st.session_state[ 'congress_clear_request' ] = False
+		
+		def _clear_congress_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Congress expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'congress_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
-			congress_query = st.text_area( 'Query', value='', height=40, key='congress_query' )
+			congress_mode = st.selectbox(
+				'Mode',
+				options=[
+						'congresses',
+						'bills',
+						'bill_detail',
+						'laws',
+						'law_detail',
+						'reports',
+						'report_detail'
+				],
+				index=[
+						'congresses',
+						'bills',
+						'bill_detail',
+						'laws',
+						'law_detail',
+						'reports',
+						'report_detail'
+				].index( st.session_state.get( 'congress_mode', 'congresses' ) ),
+				key='congress_mode',
+				help=(
+						'Congress.gov is a structured endpoint API. '
+						'Choose the specific operation you want to perform.'
+				)
+			)
+			
+			congress_number = st.number_input(
+				'Congress Number',
+				min_value=1,
+				max_value=999,
+				value=int( st.session_state.get( 'congress_number', 119 ) ),
+				step=1,
+				key='congress_number'
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				congress_bill_type = st.selectbox(
+					'Bill Type',
+					options=[ '', 'hr', 's', 'hjres', 'sjres', 'hconres', 'sconres', 'hres',
+					          'sres' ],
+					index=[ '', 'hr', 's', 'hjres', 'sjres', 'hconres', 'sconres', 'hres',
+					        'sres' ].index(
+						st.session_state.get( 'congress_bill_type', '' )
+					),
+					key='congress_bill_type'
+				)
+			
+			with c2:
+				congress_bill_number = st.number_input(
+					'Bill Number',
+					min_value=0,
+					max_value=999999,
+					value=int( st.session_state.get( 'congress_bill_number', 0 ) ),
+					step=1,
+					key='congress_bill_number'
+				)
+			
+			c3, c4 = st.columns( 2 )
+			
+			with c3:
+				congress_law_type = st.selectbox(
+					'Law Type',
+					options=[ '', 'pub', 'priv' ],
+					index=[ '', 'pub', 'priv' ].index(
+						st.session_state.get( 'congress_law_type', '' )
+					),
+					key='congress_law_type'
+				)
+			
+			with c4:
+				congress_law_number = st.number_input(
+					'Law Number',
+					min_value=0,
+					max_value=999999,
+					value=int( st.session_state.get( 'congress_law_number', 0 ) ),
+					step=1,
+					key='congress_law_number'
+				)
+			
+			c5, c6 = st.columns( 2 )
+			
+			with c5:
+				congress_report_type = st.selectbox(
+					'Report Type',
+					options=[ '', 'hrpt', 'srpt', 'erpt' ],
+					index=[ '', 'hrpt', 'srpt', 'erpt' ].index(
+						st.session_state.get( 'congress_report_type', '' )
+					),
+					key='congress_report_type'
+				)
+			
+			with c6:
+				congress_report_number = st.number_input(
+					'Report Number',
+					min_value=0,
+					max_value=999999,
+					value=int( st.session_state.get( 'congress_report_number', 0 ) ),
+					step=1,
+					key='congress_report_number'
+				)
+			
+			c7, c8 = st.columns( 2 )
+			
+			with c7:
+				congress_offset = st.number_input(
+					'Offset',
+					min_value=0,
+					max_value=1000000,
+					value=int( st.session_state.get( 'congress_offset', 0 ) ),
+					step=1,
+					key='congress_offset'
+				)
+			
+			with c8:
+				congress_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=250,
+					value=int( st.session_state.get( 'congress_limit', 20 ) ),
+					step=1,
+					key='congress_limit'
+				)
+			
+			congress_sort = st.selectbox(
+				'Sort',
+				options=[ 'updateDate+desc', 'updateDate+asc' ],
+				index=[ 'updateDate+desc', 'updateDate+asc' ].index(
+					st.session_state.get( 'congress_sort', 'updateDate+desc' )
+				),
+				key='congress_sort'
+			)
+			
+			c9, c10 = st.columns( 2 )
+			
+			with c9:
+				congress_from_datetime = st.text_input(
+					'From DateTime (ISO)',
+					value=st.session_state.get( 'congress_from_datetime', '' ),
+					key='congress_from_datetime',
+					placeholder='YYYY-MM-DDTHH:MM:SSZ'
+				)
+			
+			with c10:
+				congress_to_datetime = st.text_input(
+					'To DateTime (ISO)',
+					value=st.session_state.get( 'congress_to_datetime', '' ),
+					key='congress_to_datetime',
+					placeholder='YYYY-MM-DDTHH:MM:SSZ'
+				)
+			
+			congress_conference = st.checkbox(
+				'Conference Reports',
+				value=bool( st.session_state.get( 'congress_conference', False ) ),
+				key='congress_conference'
+			)
+			
+			congress_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'congress_timeout', 20 ) ),
+				step=1,
+				key='congress_timeout'
+			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
-				congress_submit = st.button( 'Submit', key='congress_submit' )
+				congress_submit = st.button(
+					'Submit',
+					key='congress_submit',
+					use_container_width=True
+				)
+			
 			with b2:
-				congress_clear = st.button( 'Clear', key='congress_clear' )
+				congress_clear = st.button(
+					'Clear',
+					key='congress_clear',
+					on_click=_clear_congress_state,
+					use_container_width=True
+				)
 		
 		with col_right:
 			congress_output = st.empty( )
 		
-		if congress_clear:
-			st.session_state.update( { 'congress_query': '', } )
-			st.rerun( )
-		
 		if congress_submit:
 			try:
 				f = Congress( )
-				result = f.fetch( congress_query )
 				
-				if not result:
-					congress_output.info( 'No results returned.' )
-				else:
-					congress_output.text_area( 'Results', value=str( result ), height=300 )
+				result = f.fetch(
+					mode=str( congress_mode ),
+					congress=int( congress_number ),
+					bill_type=str( congress_bill_type ),
+					bill_number=int( congress_bill_number ),
+					law_type=str( congress_law_type ),
+					law_number=int( congress_law_number ),
+					report_type=str( congress_report_type ),
+					report_number=int( congress_report_number ),
+					offset=int( congress_offset ),
+					limit=int( congress_limit ),
+					sort=str( congress_sort ),
+					from_date_time=str( congress_from_datetime ),
+					to_date_time=str( congress_to_datetime ),
+					conference=bool( congress_conference ),
+					time=int( congress_timeout )
+				)
+				
+				st.session_state[ 'congress_results' ] = result or { }
+				st.rerun( )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
+		
+		result = st.session_state.get( 'congress_results', { } )
+		
+		if not result:
+			congress_output.text( 'No results.' )
+		else:
+			congress_output.markdown( '#### Request Metadata' )
+			congress_output.json(
+				{
+						'mode': result.get( 'mode', '' ),
+						'url': result.get( 'url', '' ),
+						'params': result.get( 'params', { } ),
+				}
+			)
+			
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			
+			if isinstance( data, dict ) or isinstance( data, list ):
+				congress_output.markdown( '#### Result' )
+				congress_output.json( data )
+			elif data:
+				congress_output.markdown( '#### Result' )
+				congress_output.text_area(
+					'Output',
+					value=str( data ),
+					height=320
+				)
+			else:
+				congress_output.info( 'No results returned.' )
 	
 	# -------- Internet Archive
 	with st.expander( label='Internet Archive', expanded=False ):
+		if 'internetarchive_results' not in st.session_state:
+			st.session_state[ 'internetarchive_results' ] = { }
+		
+		if 'internetarchive_clear_request' not in st.session_state:
+			st.session_state[ 'internetarchive_clear_request' ] = False
+		
+		if st.session_state.get( 'internetarchive_clear_request', False ):
+			st.session_state[ 'internetarchive_query' ] = ''
+			st.session_state[ 'internetarchive_rows' ] = 10
+			st.session_state[ 'internetarchive_page' ] = 1
+			st.session_state[ 'internetarchive_sort' ] = 'downloads desc'
+			st.session_state[ 'internetarchive_media_type' ] = ''
+			st.session_state[ 'internetarchive_collection' ] = ''
+			st.session_state[ 'internetarchive_timeout' ] = 20
+			st.session_state[ 'internetarchive_results' ] = { }
+			st.session_state[ 'internetarchive_clear_request' ] = False
+		
+		def _clear_internetarchive_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Internet Archive expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'internetarchive_clear_request' ] = True
+		
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
 			ia_query = st.text_area(
 				'Query',
-				value='',
-				height=40,
-				key='internetarchive_query'
+				value=st.session_state.get( 'internetarchive_query', '' ),
+				height=80,
+				key='internetarchive_query',
+				placeholder=(
+						'Examples:\n'
+						'climate change\n'
+						'title:"appropriations" AND creator:"Congress"\n'
+						'budget execution'
+				)
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				ia_rows = st.number_input(
+					'Rows',
+					min_value=1,
+					max_value=100,
+					value=int( st.session_state.get( 'internetarchive_rows', 10 ) ),
+					step=1,
+					key='internetarchive_rows'
+				)
+			
+			with c2:
+				ia_page = st.number_input(
+					'Page',
+					min_value=1,
+					max_value=100000,
+					value=int( st.session_state.get( 'internetarchive_page', 1 ) ),
+					step=1,
+					key='internetarchive_page'
+				)
+			
+			ia_sort = st.selectbox(
+				'Sort',
+				options=[
+						'downloads desc',
+						'downloads asc',
+						'publicdate desc',
+						'publicdate asc',
+						'titleSorter asc',
+						'titleSorter desc'
+				],
+				index=[
+						'downloads desc',
+						'downloads asc',
+						'publicdate desc',
+						'publicdate asc',
+						'titleSorter asc',
+						'titleSorter desc'
+				].index(
+					st.session_state.get( 'internetarchive_sort', 'downloads desc' )
+				),
+				key='internetarchive_sort'
+			)
+			
+			c3, c4 = st.columns( 2 )
+			
+			with c3:
+				ia_media_type = st.text_input(
+					'Mediatype',
+					value=st.session_state.get( 'internetarchive_media_type', '' ),
+					key='internetarchive_media_type',
+					placeholder='Example: texts'
+				)
+			
+			with c4:
+				ia_collection = st.text_input(
+					'Collection',
+					value=st.session_state.get( 'internetarchive_collection', '' ),
+					key='internetarchive_collection',
+					placeholder='Example: americana'
+				)
+			
+			ia_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'internetarchive_timeout', 20 ) ),
+				step=1,
+				key='internetarchive_timeout'
 			)
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
-				ia_submit = st.button( 'Submit', key='internetarchive_submit' )
+				ia_submit = st.button(
+					'Submit',
+					key='internetarchive_submit',
+					use_container_width=True
+				)
+			
 			with b2:
-				ia_clear = st.button( 'Clear', key='internetarchive_clear' )
+				ia_clear = st.button(
+					'Clear',
+					key='internetarchive_clear',
+					on_click=_clear_internetarchive_state,
+					use_container_width=True
+				)
 		
 		with col_right:
 			ia_output = st.empty( )
 		
-		if ia_clear:
-			st.session_state.update( { 'internetarchive_query': '', } )
-			st.rerun( )
-		
 		if ia_submit:
 			try:
 				f = InternetArchive( )
-				result = f.fetch( ia_query )
 				
-				if not result:
-					ia_output.info( 'No results returned.' )
-				else:
-					ia_output.text_area( 'Results', value=str( result ), height=300 )
+				result = f.fetch(
+					keywords=str( ia_query ),
+					rows=int( ia_rows ),
+					page=int( ia_page ),
+					sort=str( ia_sort ),
+					media_type=str( ia_media_type ),
+					collection=str( ia_collection ),
+					time=int( ia_timeout )
+				)
+				
+				st.session_state[ 'internetarchive_results' ] = result or { }
+				st.rerun( )
 			
 			except Exception as exc:
 				st.error( str( exc ) )
+		
+		result = st.session_state.get( 'internetarchive_results', { } )
+		
+		if not result:
+			ia_output.text( 'No results.' )
+		else:
+			ia_output.markdown( '#### Request Metadata' )
+			ia_output.json(
+				{
+						'mode': result.get( 'mode', '' ),
+						'url': result.get( 'url', '' ),
+						'params': result.get( 'params', { } ),
+				}
+			)
+			
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			
+			if isinstance( data, dict ) or isinstance( data, list ):
+				ia_output.markdown( '#### Result' )
+				ia_output.json( data )
+			elif data:
+				ia_output.markdown( '#### Result' )
+				ia_output.text_area(
+					'Output',
+					value=str( data ),
+					height=320
+				)
+			else:
+				ia_output.info( 'No results returned.' )
 
 # ======================================================================================
 # TEXT GENERATION MODE
 # ======================================================================================
-elif mode == 'Generative AI':
+elif mode == 'Data Generation':
 	st.subheader( '🧠  Generative AI' )
 	st.divider( )
 	# -------- Chat GPT
@@ -4009,9 +4852,10 @@ elif mode == 'Generative AI':
 # ======================================================================================
 # SATELLITE MODE
 # ======================================================================================
-elif mode == 'Satellite Data':
-	st.subheader( '🚀  Satellite Data' )
+elif mode == 'Geospatial Data':
+	st.subheader( '🚀  Geospatial Information' )
 	st.divider( )
+	
 	# -------- Google Maps
 	with st.expander( label='Google Maps', expanded=True ):
 		col_left, col_right = st.columns( 2, border=True )
