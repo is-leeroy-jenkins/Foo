@@ -58,22 +58,20 @@ import re
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
-
-
 from langchain_core.documents import Document
 from loaders import ( PdfLoader, WordLoader, ExcelLoader, MarkdownLoader,
                      HtmlLoader, YouTubeLoader, RecursiveCharacterTextSplitter,
                       PowerPointLoader )
+
+from generators import Chat, Claude, Grok, Mistral, Gemini
 from fetchers import (
 	Wikipedia, TheNews, SatelliteCenter, WebFetcher,
 	GoogleWeather, Grokipedia, OpenWeather, NavalObservatory,
 	GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
 	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
-	GovData, Congress, InternetArchive, Chat, Claude,
-	Groq, Mistral, Gemini, StarChart, HistoricalWeather, GoogleGeocoding
-)
+	GovData, Congress, InternetArchive, StarChart, HistoricalWeather, GoogleGeocoding )
 
-import matplotlib as px
+import plotly.graph_objects as px
 import pandas as pd
 from pandas import DataFrame
 import streamlit as st
@@ -82,14 +80,12 @@ import sqlite3
 from sqlite3 import Connection
 from urllib.parse import urljoin, urlparse
 
-
-
-# ======================================================================================
+# =====================================================================
 # SESSION STATE
-# ======================================================================================
+# =====================================================================
 
 if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
-	st.session_state[ 'mode' ] = 'Document Loading'
+	st.session_state[ 'mode' ] = list( cfg.MODE_MAP.keys( ) )[ 0 ]
 	
 # -------- GENERATIVE AI VARIABLES --------------------
 
@@ -173,9 +169,9 @@ if 'target_url' not in st.session_state:
 	st.session_state[ 'target_url' ] = ''
 	
 	
-# ======================================================================================
+# =====================================================================
 # UTILITITES
-# ======================================================================================
+# =====================================================================
 
 def _filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ str, Any ]:
 	try:
@@ -496,7 +492,6 @@ def initialize_database( ) -> None:
             )
 			"""
 		)
-		
 		conn.execute(
 			"""
             CREATE TABLE IF NOT EXISTS Prompts
@@ -511,20 +506,14 @@ def initialize_database( ) -> None:
                 Caption
                 TEXT,
                 Name
+                TEXT,
+                Text
+                TEXT,
+                Version
+                TEXT,
+                ID
                 TEXT
-            (
-                80
-            ),
-                Text TEXT,
-                Version TEXT
-            (
-                80
-            ),
-                ID TEXT
-            (
-                80
             )
-                )
 			"""
 		)
 		
@@ -1500,18 +1489,20 @@ def rename_table( old_name: str, new_name: str ) -> None:
 		
 		conn.commit( )
 
-# ======================================================================================
+# =========================================================================
 # APP SET-UP
-# ======================================================================================
+# =========================================================================
 
+st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON )
 style_subheaders( )
 st.logo( cfg.LOGO, size='large' )
-st.set_page_config( page_title=cfg.APP_TITLE, layout='wide', page_icon=cfg.FAVICON )
 col_left, col_center, col_right = st.columns( [ 1, 2, 1 ], vertical_alignment='top' )
 
-# ======================================================================================
+# ===========================================================================
 # SIDEBAR
-# ======================================================================================
+# ===========================================================================
+
+modes = list( cfg.MODE_MAP.keys( ) )
 with st.sidebar:
 	st.text( 'Configuration' )
 	st.divider( )
@@ -1529,17 +1520,17 @@ with st.sidebar:
 	
 	st.divider( )
 	st.text( 'Mode' )
-	mode = st.sidebar.radio( label='Mode', options=cfg.MODES, label_visibility='collapsed' )
+	mode = st.sidebar.radio( label='Mode', options=modes, label_visibility='collapsed' )
 	if mode:
 		st.session_state[ 'mode' ] = mode
 	else:
 		st.session_state[ 'mode' ] = 'Loaders'
 		
-# ======================================================================================
+# =============================================================================
 # DOCUMENT LOADING MODE
-# ======================================================================================
-if mode == 'Data Loading':
-	st.subheader( '📤   Data Loading' )
+# =============================================================================
+if mode == modes[ 0 ]:
+	st.subheader( f'📤  {modes[ 0 ]}' )
 	st.divider( )
 	
 	if 'loader_clear_request' not in st.session_state:
@@ -1688,11 +1679,11 @@ if mode == 'Data Loading':
 		st.markdown( '### Load Results' )
 		st.json( st.session_state[ 'loader_results' ] )
 
-# ======================================================================================
+# =============================================================================
 # SCRAPING MODE
-# ======================================================================================
-elif mode == 'Data Scraping':
-	st.subheader( '🕷️ Data Scraping' )
+# ==============================================================================
+elif mode == modes[ 1 ]:
+	st.subheader( f'🕷️ { modes[ 1 ] }' )
 	st.divider( )
 	
 	if 'webscrape_clear_request' not in st.session_state:
@@ -1750,7 +1741,6 @@ elif mode == 'Data Scraping':
 			
 			absolute = urljoin( base_url, href )
 			parsed = urlparse( absolute )
-			
 			if parsed.scheme not in ('http', 'https'):
 				return ''
 			
@@ -1775,7 +1765,6 @@ elif mode == 'Data Scraping':
 			soup = BeautifulSoup( html, 'html.parser' )
 			results: list[ str ] = [ ]
 			seen: set[ str ] = set( )
-			
 			for tag in soup.find_all( 'a', href=True ):
 				candidate = _normalize_url( base_url, tag.get( 'href', '' ) )
 				if candidate and candidate not in seen:
@@ -1793,17 +1782,17 @@ elif mode == 'Data Scraping':
 			include_raw_html: bool,
 			selected_methods: list[ str ] ) -> dict[ str, Any ]:
 		page_result: dict[ str, Any ] = \
-			{
-					'url': url,
-					'status_code': None,
-					'encoding': None,
-					'title': '',
-					'plain_text': '',
-					'raw_html': '',
-					'links_discovered': [ ],
-					'data': { },
-					'errors': [ ],
-			}
+		{
+				'url': url,
+				'status_code': None,
+				'encoding': None,
+				'title': '',
+				'plain_text': '',
+				'raw_html': '',
+				'links_discovered': [ ],
+				'data': { },
+				'errors': [ ],
+		}
 		
 		fetcher = WebFetcher( )
 		
@@ -1815,10 +1804,8 @@ elif mode == 'Data Scraping':
 			
 			page_result[ 'status_code' ] = getattr( response, 'status_code', None )
 			page_result[ 'encoding' ] = getattr( response, 'encoding', None )
-			
 			raw_html = getattr( response, 'text', '' ) or ''
 			page_result[ 'links_discovered' ] = _extract_links_from_html( url, raw_html )
-			
 			if include_title:
 				page_result[ 'title' ] = _extract_title_from_html( raw_html )
 			
@@ -1836,25 +1823,24 @@ elif mode == 'Data Scraping':
 			return page_result
 		
 		REGISTRY: dict[ str, tuple[ str, callable ] ] = \
-			{
-					'scrape_headings': ('Headings', fetcher.scrape_headings),
-					'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
-					'scrape_lists': ('Lists', fetcher.scrape_lists),
-					'scrape_tables': ('Tables', fetcher.scrape_tables),
-					'scrape_articles': ('Articles', fetcher.scrape_articles),
-					'scrape_sections': ('Sections', fetcher.scrape_sections),
-					'scrape_divisions': ('Divisions', fetcher.scrape_divisions),
-					'scrape_blockquotes': ('Blockquotes', fetcher.scrape_blockquotes),
-					'scrape_hyperlinks': ('Hyperlinks', fetcher.scrape_hyperlinks),
-					'scrape_images': ('Images', fetcher.scrape_images),
-			}
+		{
+				'scrape_headings': ('Headings', fetcher.scrape_headings),
+				'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
+				'scrape_lists': ('Lists', fetcher.scrape_lists),
+				'scrape_tables': ('Tables', fetcher.scrape_tables),
+				'scrape_articles': ('Articles', fetcher.scrape_articles),
+				'scrape_sections': ('Sections', fetcher.scrape_sections),
+				'scrape_divisions': ('Divisions', fetcher.scrape_divisions),
+				'scrape_blockquotes': ('Blockquotes', fetcher.scrape_blockquotes),
+				'scrape_hyperlinks': ('Hyperlinks', fetcher.scrape_hyperlinks),
+				'scrape_images': ('Images', fetcher.scrape_images),
+		}
 		
 		for method_name in selected_methods:
 			if method_name not in REGISTRY:
 				continue
 			
 			label, method = REGISTRY[ method_name ]
-			
 			try:
 				data = method( url )
 				page_result[ 'data' ][ label ] = _coerce_items( data )
@@ -1927,19 +1913,19 @@ elif mode == 'Data Scraping':
 				enqueued.add( next_url )
 		
 		summary: dict[ str, Any ] = \
-			{
-					'mode': 'recursive' if recursive else 'single-page',
-					'seed_url': normalized_seed,
-					'pages_processed': len( results ),
-					'pages_visited': len( visited ),
-					'pages_skipped': len( skipped_urls ),
-					'recursive_requested': bool( recursive ),
-					'max_depth': int( max_depth ),
-					'max_pages': int( max_pages ),
-					'same_domain_only': bool( same_domain_only ),
-					'visited_urls': list( visited ),
-					'skipped_urls': skipped_urls,
-			}
+		{
+				'mode': 'recursive' if recursive else 'single-page',
+				'seed_url': normalized_seed,
+				'pages_processed': len( results ),
+				'pages_visited': len( visited ),
+				'pages_skipped': len( skipped_urls ),
+				'recursive_requested': bool( recursive ),
+				'max_depth': int( max_depth ),
+				'max_pages': int( max_pages ),
+				'same_domain_only': bool( same_domain_only ),
+				'visited_urls': list( visited ),
+				'skipped_urls': skipped_urls,
+		}
 		
 		return results, summary
 	
@@ -1947,11 +1933,11 @@ elif mode == 'Data Scraping':
 	
 	with col_left:
 		target_url = st.text_input(
-			'Target URL',
+			'Enter Target URL',
 			placeholder='https://example.com',
 			key='webfetcher_url' )
 		
-		st.markdown( '#### Core Output' )
+		st.markdown( '##### Core Output' )
 		
 		include_title = st.checkbox(
 			'Page Title',
@@ -1968,29 +1954,45 @@ elif mode == 'Data Scraping':
 			value=False,
 			key='wf_raw_html' )
 		
-		st.markdown( '#### Structured Extraction' )
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+		
+		st.markdown( '##### Structured Extraction' )
+
+		col1, col2 = st.columns( [ 0.5, 0.5 ] )
 		
 		REGISTRY_LABELS: dict[ str, str ] = \
-			{
-					'scrape_headings': 'Headings',
-					'scrape_paragraphs': 'Paragraphs',
-					'scrape_lists': 'Lists',
-					'scrape_tables': 'Tables',
-					'scrape_articles': 'Articles',
-					'scrape_sections': 'Sections',
-					'scrape_divisions': 'Divisions',
-					'scrape_blockquotes': 'Blockquotes',
-					'scrape_hyperlinks': 'Hyperlinks',
-					'scrape_images': 'Images',
-			}
+		{
+				'scrape_headings': 'Headings',
+				'scrape_paragraphs': 'Paragraphs',
+				'scrape_lists': 'Lists',
+				'scrape_tables': 'Tables',
+				'scrape_articles': 'Articles',
+				'scrape_sections': 'Sections',
+				'scrape_divisions': 'Divisions',
+				'scrape_blockquotes': 'Blockquotes',
+				'scrape_hyperlinks': 'Hyperlinks',
+				'scrape_images': 'Images',
+		}
 		
 		selected_methods: list[ str ] = [ ]
 		
-		for method_name, label in REGISTRY_LABELS.items( ):
-			if st.checkbox( label, key=f'wf_{method_name}' ):
-				selected_methods.append( method_name )
+		_registry_items: list[ tuple[ str, str ] ] = list( REGISTRY_LABELS.items( ) )
+		_col1_items: list[ tuple[ str, str ] ] = _registry_items[ :5 ]
+		_col2_items: list[ tuple[ str, str ] ] = _registry_items[ 5: ]
 		
-		st.markdown( '#### Crawl Controls' )
+		with col1:
+			for method_name, label in _col1_items:
+				if st.checkbox( label, key=f'wf_{method_name}' ):
+					selected_methods.append( method_name )
+		
+		with col2:
+			for method_name, label in _col2_items:
+				if st.checkbox( label, key=f'wf_{method_name}' ):
+					selected_methods.append( method_name )
+		
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+		
+		st.markdown( '##### Crawl Controls' )
 		
 		enable_recursive = st.checkbox(
 			'Recursive Crawl',
@@ -2056,13 +2058,13 @@ elif mode == 'Data Scraping':
 		results = st.session_state.get( 'webscrape_results', [ ] )
 		
 		if summary:
-			st.markdown( '### Summary' )
+			st.subheader( 'Summary' )
 			st.json( summary )
 		
 		if not results:
 			st.info( 'No results.' )
 		else:
-			st.markdown( '### Results' )
+			st.subheader( 'Results' )
 			
 			for idx, page in enumerate( results, start=1 ):
 				title = page.get( 'title', '' ) or page.get( 'url', f'Page {idx}' )
@@ -2082,7 +2084,7 @@ elif mode == 'Data Scraping':
 					
 					plain_text = page.get( 'plain_text', '' )
 					if isinstance( plain_text, str ) and plain_text.strip( ):
-						st.markdown( '#### Basic Text' )
+						st.subheader( 'Basic Text' )
 						st.text_area(
 							label='',
 							value=_truncate_text( plain_text, limit=12000 ),
@@ -2091,7 +2093,7 @@ elif mode == 'Data Scraping':
 					
 					raw_html = page.get( 'raw_html', '' )
 					if isinstance( raw_html, str ) and raw_html.strip( ):
-						st.markdown( '#### Raw HTML' )
+						st.subheader( 'Raw HTML' )
 						st.text_area(
 							label='',
 							value=_truncate_text( raw_html, limit=12000 ),
@@ -2100,13 +2102,13 @@ elif mode == 'Data Scraping':
 					
 					discovered_links = page.get( 'links_discovered', [ ] ) or [ ]
 					if discovered_links:
-						st.markdown( '#### Links Discovered' )
+						st.subheader( 'Links Discovered' )
 						for link_idx, link in enumerate( discovered_links, start=1 ):
 							st.write( f'{link_idx}. {link}' )
 					
 					data = page.get( 'data', { } ) or { }
 					for label, items in data.items( ):
-						st.markdown( f'#### {label}' )
+						st.subheader( f'{label}' )
 						
 						if not items:
 							st.info( 'No results returned.' )
@@ -2117,21 +2119,21 @@ elif mode == 'Data Scraping':
 					
 					errors = page.get( 'errors', [ ] ) or [ ]
 					if errors:
-						st.markdown( '#### Errors' )
+						st.subheader( 'Errors' )
 						for err in errors:
 							st.error( err )
 							
-# ======================================================================================
+# ==============================================================================
 # FETCHING MODE
-# ======================================================================================
-elif mode == 'Data Retrieval':
-	st.subheader( '🏛️  Data Retrieval' )
+# =============================================================================
+elif mode == modes[ 2 ]:
+	st.subheader( f'🏛️  {modes[ 2 ]}' )
 	st.divider( )
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
 	
 	# -------- ArXiv
-	with st.expander( label='ArXiv', expanded=False ):
+	with st.expander( label='ArXiv', expanded=False  ):
 		if 'arxiv_results' not in st.session_state:
 			st.session_state[ 'arxiv_results' ] = [ ]
 		
@@ -2161,8 +2163,7 @@ elif mode == 'Data Retrieval':
 						'What is the ImageBind model?\n'
 						'2401.01234\n'
 						'graph neural networks for molecular property prediction'
-				),
-			)
+				), )
 			
 			c1, c2 = st.columns( 2 )
 			with c1:
@@ -2274,7 +2275,7 @@ elif mode == 'Data Retrieval':
 								st.json( doc.metadata )
 						else:
 							st.write( doc )
-	
+				
 	# -------- Google Drive
 	with st.expander( label='Google Drive', expanded=False ):
 		if 'googledrive_results' not in st.session_state:
@@ -2302,6 +2303,7 @@ elif mode == 'Data Retrieval':
 			gd_query = st.text_area(
 				'Google Drive Query',
 				height=90,
+				help=cfg.GOOGLE_DRIVE,
 				key='googledrive_query',
 				placeholder=(
 						'Examples:\n'
@@ -2493,6 +2495,7 @@ elif mode == 'Data Retrieval':
 				'Wikipedia Query',
 				height=90,
 				key='wikipedia_query',
+				help=cfg.WIKIPEDIA,
 				placeholder=(
 						'Examples:\n'
 						'Alan Turing\n'
@@ -3014,7 +3017,7 @@ elif mode == 'Data Retrieval':
 								st.json( item )
 	
 	# -------- Google Geocoding
-	with st.expander( label='Google Geocoding', expanded=False ):
+	with st.expander( label='Geocoding', expanded=False ):
 		if 'googlegeocoding_results' not in st.session_state:
 			st.session_state[ 'googlegeocoding_results' ] = { }
 		
@@ -3869,6 +3872,8 @@ elif mode == 'Data Retrieval':
 		with col_right:
 			govinfo_output = st.empty( )
 		
+		result = st.session_state.get( 'govinfo_results', { } )
+		
 		if govinfo_submit:
 			try:
 				f = GovData( )
@@ -4582,6 +4587,8 @@ elif mode == 'Data Retrieval':
 		
 		with col_right:
 			ia_output = st.empty( )
+			
+		result = st.session_state.get( 'internetarchive_results', { } )
 		
 		if ia_submit:
 			try:
@@ -4605,120 +4612,120 @@ elif mode == 'Data Retrieval':
 				
 			result = st.session_state.get( 'internetarchive_results', { } )
 		
-			if not result:
-				ia_output.text( 'No results.' )
-			else:
-				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+		if not result:
+			ia_output.text( 'No results.' )
+		else:
+			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+			
+			with col_right:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': mode_value,
+							'url': result.get( 'url', '' ),
+							'params': params,
+					}
+				)
 				
-				with col_right:
-					st.markdown( '#### Request Metadata' )
-					st.json(
-						{
-								'mode': mode_value,
-								'url': result.get( 'url', '' ),
-								'params': params,
-						}
-					)
+				docs: List[ Dict[ str, Any ] ] = [ ]
+				num_found = None
+				
+				if isinstance( data, dict ):
+					response_block = data.get( 'response', { } )
 					
-					docs: List[ Dict[ str, Any ] ] = [ ]
-					num_found = None
-					
-					if isinstance( data, dict ):
-						response_block = data.get( 'response', { } )
-						
-						if isinstance( response_block, dict ):
-							num_found = response_block.get( 'numFound', None )
-							value = response_block.get( 'docs', [ ] )
-							if isinstance( value, list ):
-								docs = [ item for item in value if isinstance( item, dict ) ]
-					
-					if num_found is not None:
-						st.markdown( f'#### Search Results ({num_found})' )
-					else:
-						st.markdown( '#### Search Results' )
-					
-					if docs:
-						for index, item in enumerate( docs, start=1 ):
-							title_value = (
-									item.get( 'title' )
-									or item.get( 'identifier' )
-									or f'Result {index}'
-							)
-							
-							identifier_value = item.get( 'identifier', '' )
-							mediatype_value = item.get( 'mediatype', '' )
-							
-							collection_value = ''
-							collection_raw = item.get( 'collection', '' )
-							if isinstance( collection_raw, list ) and collection_raw:
-								collection_value = ', '.join( [ str( x ) for x in
-								                                collection_raw[ :3 ] ] )
-							elif collection_raw:
-								collection_value = str( collection_raw )
-							
-							date_value = (
-									item.get( 'publicdate' )
-									or item.get( 'date' )
-									or item.get( 'addeddate' )
-									or ''
-							)
-							
-							desc_value = item.get( 'description', '' )
-							if isinstance( desc_value, list ):
-								desc_value = ' '.join( [ str( x ) for x in desc_value[ :2 ] ] )
-							
-							with st.container( border=True ):
-								st.markdown( f'**{index}. {title_value}**' )
-								
-								meta_parts: List[ str ] = [ ]
-								
-								if identifier_value:
-									meta_parts.append( f'Identifier: `{identifier_value}`' )
-								
-								if mediatype_value:
-									meta_parts.append( f'Mediatype: `{mediatype_value}`' )
-								
-								if collection_value:
-									meta_parts.append( f'Collection: `{collection_value}`' )
-								
-								if date_value:
-									meta_parts.append( f'Date: `{date_value}`' )
-								
-								if meta_parts:
-									st.caption( ' | '.join( meta_parts ) )
-								
-								if desc_value:
-									st.write( str( desc_value ) )
-								else:
-									st.caption( 'No description available.' )
-								
-								with st.expander( 'Raw Item', expanded=False ):
-									st.json( item )
-					
-					elif isinstance( data, dict ) and data:
-						st.markdown( '#### Result' )
-						st.json( data )
-					elif isinstance( data, list ) and data:
-						df_ia = pd.DataFrame( data )
-						if not df_ia.empty:
-							st.dataframe( df_ia, use_container_width=True, hide_index=True )
-						else:
-							st.json( data )
-					elif data:
-						st.markdown( '#### Result' )
-						st.text_area(
-							'Output',
-							value=str( data ),
-							height=320
+					if isinstance( response_block, dict ):
+						num_found = response_block.get( 'numFound', None )
+						value = response_block.get( 'docs', [ ] )
+						if isinstance( value, list ):
+							docs = [ item for item in value if isinstance( item, dict ) ]
+				
+				if num_found is not None:
+					st.markdown( f'#### Search Results ({num_found})' )
+				else:
+					st.markdown( '#### Search Results' )
+				
+				if docs:
+					for index, item in enumerate( docs, start=1 ):
+						title_value = (
+								item.get( 'title' )
+								or item.get( 'identifier' )
+								or f'Result {index}'
 						)
+						
+						identifier_value = item.get( 'identifier', '' )
+						mediatype_value = item.get( 'mediatype', '' )
+						
+						collection_value = ''
+						collection_raw = item.get( 'collection', '' )
+						if isinstance( collection_raw, list ) and collection_raw:
+							collection_value = ', '.join( [ str( x ) for x in
+							                                collection_raw[ :3 ] ] )
+						elif collection_raw:
+							collection_value = str( collection_raw )
+						
+						date_value = (
+								item.get( 'publicdate' )
+								or item.get( 'date' )
+								or item.get( 'addeddate' )
+								or ''
+						)
+						
+						desc_value = item.get( 'description', '' )
+						if isinstance( desc_value, list ):
+							desc_value = ' '.join( [ str( x ) for x in desc_value[ :2 ] ] )
+						
+						with st.container( border=True ):
+							st.markdown( f'**{index}. {title_value}**' )
+							
+							meta_parts: List[ str ] = [ ]
+							
+							if identifier_value:
+								meta_parts.append( f'Identifier: `{identifier_value}`' )
+							
+							if mediatype_value:
+								meta_parts.append( f'Mediatype: `{mediatype_value}`' )
+							
+							if collection_value:
+								meta_parts.append( f'Collection: `{collection_value}`' )
+							
+							if date_value:
+								meta_parts.append( f'Date: `{date_value}`' )
+							
+							if meta_parts:
+								st.caption( ' | '.join( meta_parts ) )
+							
+							if desc_value:
+								st.write( str( desc_value ) )
+							else:
+								st.caption( 'No description available.' )
+							
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
+				
+				elif isinstance( data, dict ) and data:
+					st.markdown( '#### Result' )
+					st.json( data )
+				elif isinstance( data, list ) and data:
+					df_ia = pd.DataFrame( data )
+					if not df_ia.empty:
+						st.dataframe( df_ia, use_container_width=True, hide_index=True )
 					else:
-						st.info( 'No results returned.' )
-					
-					with st.expander( 'Raw Result', expanded=False ):
-						st.json( result )
-	
+						st.json( data )
+				elif data:
+					st.markdown( '#### Result' )
+					st.text_area(
+						'Output',
+						value=str( data ),
+						height=320
+					)
+				else:
+					st.info( 'No results returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
+
 	# -------- Grokipedia
 	with st.expander( label='Grokipedia', expanded=False ):
 		if 'grokipedia_results' not in st.session_state:
@@ -5076,969 +5083,11 @@ elif mode == 'Data Retrieval':
 					else:
 						st.info( 'No results returned.' )
 
-# ======================================================================================
-# TEXT GENERATION MODE
-# ======================================================================================
-elif mode == 'Data Generation':
-	st.subheader( '🧠  Generative AI' )
-	st.divider( )
-	
-	# -------- ChatGPT
-	with st.expander( label='ChatGPT', expanded=True ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			chat_prompt = st.text_area( 'Prompt', value='', height=120, key='chat_prompt' )
-			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			p_row4 = st.columns( 2 )
-			p_row5 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				_chat_models = cfg.GPT_MODELS if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS else \
-					[ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1' ]
-				chat_model = _model_selector(
-					key_prefix='chat',
-					label='Model',
-					options=_chat_models,
-					default_model=(
-						'gpt-5-mini' if 'gpt-5-mini' in _chat_models else _chat_models[ 0 ]),
-				)
-			
-			with p_row1[ 1 ]:
-				chat_temperature = st.slider(
-					'Temperature',
-					min_value=0.0,
-					max_value=2.0,
-					value=0.7,
-					step=0.05,
-					key='chat_temperature',
-				)
-			
-			with p_row2[ 0 ]:
-				chat_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=32768,
-					value=2048,
-					step=1,
-					key='chat_max_tokens',
-				)
-			
-			with p_row2[ 1 ]:
-				chat_top_p = st.slider(
-					'Top-P',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='chat_top_p',
-				)
-			
-			with p_row3[ 0 ]:
-				chat_seed = st.number_input(
-					'Seed',
-					min_value=0,
-					max_value=2_147_483_647,
-					value=0,
-					step=1,
-					key='chat_seed',
-				)
-			
-			with p_row3[ 1 ]:
-				chat_json_mode = st.checkbox(
-					'JSON Mode',
-					value=False,
-					key='chat_json_mode',
-				)
-			
-			with p_row4[ 0 ]:
-				chat_reasoning = st.checkbox(
-					'Reasoning',
-					value=False,
-					key='chat_reasoning',
-				)
-			
-			with p_row4[ 1 ]:
-				chat_web_search = st.checkbox(
-					'Web Search',
-					value=False,
-					key='chat_web_search',
-				)
-			
-			with p_row5[ 0 ]:
-				chat_store = st.checkbox(
-					'Store',
-					value=True,
-					key='chat_store',
-				)
-			
-			with p_row5[ 1 ]:
-				chat_stream = st.checkbox(
-					'Stream',
-					value=False,
-					key='chat_stream',
-				)
-			
-			_chat_supports_reasoning = (
-					str( chat_model ).strip( ).lower( ).startswith( 'gpt-5' )
-					or str( chat_model ).strip( ).lower( ).startswith( 'o' )
-			)
-			
-			if _chat_supports_reasoning and chat_reasoning:
-				chat_reasoning_effort = st.selectbox(
-					'Reasoning Effort',
-					options=[ 'minimal', 'low', 'medium', 'high' ],
-					index=1,
-					key='chat_reasoning_effort',
-				)
-			else:
-				chat_reasoning_effort = None
-			
-			chat_system = st.text_area(
-				'System',
-				value='',
-				height=120,
-				key='chat_system',
-			)
-			
-			if chat_web_search:
-				chat_domains = st.text_area(
-					'Preferred Search Domains (one per line or comma-separated)',
-					value='',
-					height=90,
-					key='chat_domains',
-					help='Examples: openai.com, platform.openai.com, arxiv.org',
-				)
-			else:
-				chat_domains = ''
-			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				chat_submit = st.button( 'Submit', key='chat_submit' )
-			with btn_row[ 1 ]:
-				chat_clear = st.button( 'Clear', key='chat_clear' )
-		
-		with col_right:
-			chat_output = st.empty( )
-		
-		# -----------------------------
-		# Clear Button
-		# -----------------------------
-		if chat_clear:
-			st.session_state.update(
-				{
-						'chat_prompt': '',
-						'chat_system': '',
-						'chat_domains': '',
-						'chat_json_mode': False,
-						'chat_reasoning': False,
-						'chat_web_search': False,
-						'chat_store': True,
-						'chat_stream': False,
-						'chat_seed': 0,
-				}
-			)
-			st.rerun( )
-		
-		# -----------------------------
-		# Submit Button
-		# -----------------------------
-		if chat_submit:
-			try:
-				if not str( chat_prompt ).strip( ):
-					raise ValueError( 'Prompt cannot be empty.' )
-				
-				chat_domains_list = [ ]
-				if chat_domains and str( chat_domains ).strip( ):
-					_domain_entries = re.split( r'[\n,;]+', str( chat_domains ) )
-					for _entry in _domain_entries:
-						_value = str( _entry ).strip( ).lower( )
-						if not _value:
-							continue
-						
-						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-							_value = f'https://{_value}'
-						
-						_parsed = urlparse( _value )
-						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-						_domain = re.sub( r':\d+$', '', _domain )
-						_domain = _domain.lstrip( '.' )
-						
-						if _domain.startswith( 'www.' ):
-							_domain = _domain[ 4: ]
-						
-						if _domain and _domain not in chat_domains_list:
-							chat_domains_list.append( _domain )
-				
-				fetcher = Chat( )
-				params = \
-					{
-							'model': chat_model,
-							'temperature': float( chat_temperature ),
-							'max_tokens': int( chat_max_tokens ),
-							'top_p': float( chat_top_p ),
-							'seed': int( chat_seed ) if int( chat_seed ) > 0 else None,
-							'system': chat_system if str( chat_system ).strip( ) else None,
-							'response_format': ('json' if chat_json_mode else None),
-							'reasoning_effort': (
-									chat_reasoning_effort
-									if _chat_supports_reasoning and chat_reasoning and chat_reasoning_effort
-									else None
-							),
-							'web_search': bool( chat_web_search ),
-							'search_domains': chat_domains_list if chat_domains_list else None,
-							'store': bool( chat_store ),
-							'stream': bool( chat_stream ),
-							'parallel_tool_calls': True,
-							'tool_choice': 'auto',
-					}
-				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				result = _invoke_provider( fetcher, chat_prompt, params )
-				_render_output( chat_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# -------- Groq
-	with st.expander( label='Groq', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			groq_prompt = st.text_area(
-				'Prompt',
-				value='',
-				height=120,
-				key='groq_prompt_chat',
-			)
-			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			p_row4 = st.columns( 2 )
-			p_row5 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				_grok_models = cfg.GROK_MODELS if hasattr( cfg, 'GROK_MODELS' ) and cfg.GROK_MODELS else \
-					[ 'grok-4-1-fast-reasoning',
-					  'grok-4-fast-reasoning',
-					  'grok-4',
-					  'grok-code-fast-1',
-					  'grok-3-mini' ]
-				groq_model = _model_selector(
-					key_prefix='groq',
-					label='Model',
-					options=_grok_models,
-					default_model=(
-						'grok-4-fast-reasoning' if 'grok-4-fast-reasoning' in _grok_models else
-						_grok_models[ 0 ]),
-				)
-			
-			with p_row1[ 1 ]:
-				groq_temperature = st.slider(
-					'Temperature',
-					min_value=0.0,
-					max_value=2.0,
-					value=0.7,
-					step=0.05,
-					key='groq_temperature_chat',
-				)
-			
-			with p_row2[ 0 ]:
-				groq_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=32768,
-					value=2048,
-					step=1,
-					key='groq_max_tokens_chat',
-				)
-			
-			with p_row2[ 1 ]:
-				groq_top_p = st.slider(
-					'Top-P',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='groq_top_p_chat',
-				)
-			
-			with p_row3[ 0 ]:
-				groq_seed = st.number_input(
-					'Seed',
-					min_value=0,
-					max_value=2_147_483_647,
-					value=0,
-					step=1,
-					key='groq_seed_chat',
-				)
-			
-			with p_row3[ 1 ]:
-				groq_json_mode = st.checkbox(
-					'JSON Mode',
-					value=False,
-					key='groq_json_mode_chat',
-				)
-			
-			with p_row4[ 0 ]:
-				groq_reasoning = st.checkbox(
-					'Reasoning',
-					value=False,
-					key='groq_reasoning_chat',
-					help='Use for models that support explicit reasoning controls. Grok 4 models reason natively.',
-				)
-			
-			with p_row4[ 1 ]:
-				groq_web_search = st.checkbox(
-					'Web Search',
-					value=False,
-					key='groq_web_search_chat',
-				)
-			
-			with p_row5[ 0 ]:
-				groq_store = st.checkbox(
-					'Store',
-					value=True,
-					key='groq_store_chat',
-				)
-			
-			with p_row5[ 1 ]:
-				groq_stream = st.checkbox(
-					'Stream',
-					value=False,
-					key='groq_stream_chat',
-				)
-			
-			_groq_supports_reasoning_effort = 'grok-3-mini' in str( groq_model ).strip( ).lower( )
-			_groq_is_reasoning_model = (
-					'grok-4' in str( groq_model ).strip( ).lower( )
-					or 'reasoning' in str( groq_model ).strip( ).lower( )
-			)
-			
-			if _groq_supports_reasoning_effort and groq_reasoning:
-				groq_reasoning_effort = st.selectbox(
-					'Reasoning Effort',
-					options=[ 'low', 'high' ],
-					index=0,
-					key='groq_reasoning_effort_chat',
-				)
-			else:
-				groq_reasoning_effort = None
-			
-			groq_system = st.text_area(
-				'System',
-				value='',
-				height=120,
-				key='groq_system_chat',
-			)
-			
-			if not _groq_is_reasoning_model:
-				groq_stop = st.text_area(
-					'Stop Sequences (one per line)',
-					value='',
-					height=90,
-					key='groq_stop_chat',
-				)
-			else:
-				groq_stop = ''
-				st.caption( 'Stop sequences are omitted for Grok reasoning models.' )
-			
-			if groq_web_search:
-				groq_domains = st.text_area(
-					'Allowed Search Domains (one per line or comma-separated)',
-					value='',
-					height=90,
-					key='groq_domains_chat',
-					help='Examples: x.ai, docs.x.ai, arxiv.org',
-				)
-			else:
-				groq_domains = ''
-			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				groq_submit = st.button( 'Submit', key='groq_submit_chat' )
-			with btn_row[ 1 ]:
-				groq_clear = st.button( 'Clear', key='groq_clear_chat' )
-		
-		with col_right:
-			groq_output = st.empty( )
-		
-		if groq_clear:
-			st.session_state.update(
-				{
-						'groq_prompt_chat': '',
-						'groq_system_chat': '',
-						'groq_stop_chat': '',
-						'groq_domains_chat': '',
-						'groq_json_mode_chat': False,
-						'groq_reasoning_chat': False,
-						'groq_web_search_chat': False,
-						'groq_store_chat': True,
-						'groq_stream_chat': False,
-						'groq_seed_chat': 0,
-				}
-			)
-			st.rerun( )
-		
-		if groq_submit:
-			try:
-				if not str( groq_prompt ).strip( ):
-					raise ValueError( 'Prompt cannot be empty.' )
-				
-				groq_domains_list = [ ]
-				if groq_domains and str( groq_domains ).strip( ):
-					_domain_entries = re.split( r'[\n,;]+', str( groq_domains ) )
-					for _entry in _domain_entries:
-						_value = str( _entry ).strip( ).lower( )
-						if not _value:
-							continue
-						
-						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-							_value = f'https://{_value}'
-						
-						_parsed = urlparse( _value )
-						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-						_domain = re.sub( r':\d+$', '', _domain )
-						_domain = _domain.lstrip( '.' )
-						
-						if _domain.startswith( 'www.' ):
-							_domain = _domain[ 4: ]
-						
-						if _domain and _domain not in groq_domains_list:
-							groq_domains_list.append( _domain )
-				
-				stop_lines = [ s.strip( ) for s in (groq_stop or '').splitlines( ) if s.strip( ) ]
-				
-				fetcher = Groq( )
-				params = \
-					{
-							'model': groq_model,
-							'temperature': float( groq_temperature ),
-							'max_tokens': int( groq_max_tokens ),
-							'top_p': float( groq_top_p ),
-							'seed': int( groq_seed ) if int( groq_seed ) > 0 else None,
-							'system': groq_system if str( groq_system ).strip( ) else None,
-							'response_format': ('json' if groq_json_mode else None),
-							'reasoning_effort': (
-									groq_reasoning_effort
-									if _groq_supports_reasoning_effort and groq_reasoning and groq_reasoning_effort
-									else None
-							),
-							'web_search': bool( groq_web_search ),
-							'search_domains': groq_domains_list if groq_domains_list else None,
-							'stop': stop_lines if stop_lines and not _groq_is_reasoning_model else None,
-							'stream': bool( groq_stream ),
-							'store': bool( groq_store ),
-							'parallel_tool_calls': True,
-							'tool_choice': 'auto',
-					}
-				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				result = _invoke_provider( fetcher, groq_prompt, params )
-				_render_output( groq_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# -------- CLAUDE
-	with st.expander( label='Claude', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			claude_prompt = st.text_area(
-				'Prompt',
-				value='',
-				height=120,
-				key='claude_prompt_chat',
-			)
-			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			p_row4 = st.columns( 2 )
-			p_row5 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				_claude_models = (
-						cfg.CLAUDE_MODELS
-						if hasattr( cfg, 'CLAUDE_MODELS' ) and cfg.CLAUDE_MODELS
-						else [
-								'claude-opus-4-6',
-								'claude-sonnet-4-6',
-								'claude-haiku-4-5',
-								'claude-3-5-haiku-latest',
-						]
-				)
-				claude_model = _model_selector(
-					key_prefix='claude',
-					label='Model',
-					options=_claude_models,
-					default_model=('claude-sonnet-4-6' if 'claude-sonnet-4-6' in _claude_models else
-					               _claude_models[ 0 ]),
-				)
-			
-			with p_row1[ 1 ]:
-				claude_temperature = st.slider(
-					'Temperature',
-					min_value=0.0,
-					max_value=1.0,
-					value=0.7,
-					step=0.05,
-					key='claude_temperature_chat',
-				)
-			
-			with p_row2[ 0 ]:
-				claude_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=65536,
-					value=2048,
-					step=1,
-					key='claude_max_tokens_chat',
-				)
-			
-			with p_row2[ 1 ]:
-				claude_top_p = st.slider(
-					'Top-P',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='claude_top_p_chat',
-				)
-			
-			with p_row3[ 0 ]:
-				claude_top_k = st.number_input(
-					'Top-k',
-					min_value=0,
-					max_value=500,
-					value=0,
-					step=1,
-					key='claude_top_k_chat',
-				)
-			
-			with p_row3[ 1 ]:
-				claude_thinking = st.checkbox(
-					'Reasoning',
-					value=False,
-					key='claude_thinking_chat',
-					help='Anthropic exposes this as extended thinking with a token budget.',
-				)
-			
-			with p_row4[ 0 ]:
-				claude_web_search = st.checkbox(
-					'Web Search',
-					value=False,
-					key='claude_web_search_chat',
-				)
-			
-			with p_row4[ 1 ]:
-				claude_stop = st.text_area(
-					'Stop Sequences (one per line)',
-					value='',
-					height=80,
-					key='claude_stop_chat',
-				)
-			
-			with p_row5[ 0 ]:
-				if claude_thinking:
-					claude_thinking_budget = st.number_input(
-						'Thinking Budget',
-						min_value=1024,
-						max_value=64000,
-						value=1024,
-						step=1024,
-						key='claude_thinking_budget_chat',
-					)
-				else:
-					claude_thinking_budget = None
-			
-			with p_row5[ 1 ]:
-				claude_system = st.text_area(
-					'System',
-					value='',
-					height=100,
-					key='claude_system_chat',
-				)
-			
-			if claude_web_search:
-				claude_domains = st.text_area(
-					'Allowed Search Domains (one per line or comma-separated)',
-					value='',
-					height=90,
-					key='claude_domains_chat',
-					help='Examples: docs.anthropic.com, arxiv.org, github.com',
-				)
-				
-				claude_blocked_domains = st.text_area(
-					'Blocked Search Domains (one per line or comma-separated)',
-					value='',
-					height=90,
-					key='claude_blocked_domains_chat',
-					help='Optional denylist for domains you do not want Claude to use.',
-				)
-			else:
-				claude_domains = ''
-				claude_blocked_domains = ''
-			
-			if claude_thinking:
-				st.caption(
-					'When Reasoning is enabled, temperature and top-k are omitted to match Anthropic compatibility rules.'
-				)
-			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				claude_submit = st.button( 'Submit', key='claude_submit_chat' )
-			with btn_row[ 1 ]:
-				claude_clear = st.button( 'Clear', key='claude_clear_chat' )
-		
-		with col_right:
-			claude_output = st.empty( )
-		
-		if claude_clear:
-			st.session_state.update(
-				{
-						'claude_prompt_chat': '',
-						'claude_stop_chat': '',
-						'claude_system_chat': '',
-						'claude_domains_chat': '',
-						'claude_blocked_domains_chat': '',
-						'claude_thinking_chat': False,
-						'claude_web_search_chat': False,
-				}
-			)
-			st.rerun( )
-		
-		if claude_submit:
-			try:
-				if not str( claude_prompt ).strip( ):
-					raise ValueError( 'Prompt cannot be empty.' )
-				
-				claude_domains_list = [ ]
-				if claude_domains and str( claude_domains ).strip( ):
-					_domain_entries = re.split( r'[\n,;]+', str( claude_domains ) )
-					for _entry in _domain_entries:
-						_value = str( _entry ).strip( ).lower( )
-						if not _value:
-							continue
-						
-						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-							_value = f'https://{_value}'
-						
-						_parsed = urlparse( _value )
-						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-						_domain = re.sub( r':\d+$', '', _domain )
-						_domain = _domain.lstrip( '.' )
-						
-						if _domain.startswith( 'www.' ):
-							_domain = _domain[ 4: ]
-						
-						if _domain and _domain not in claude_domains_list:
-							claude_domains_list.append( _domain )
-				
-				claude_blocked_domains_list = [ ]
-				if claude_blocked_domains and str( claude_blocked_domains ).strip( ):
-					_block_entries = re.split( r'[\n,;]+', str( claude_blocked_domains ) )
-					for _entry in _block_entries:
-						_value = str( _entry ).strip( ).lower( )
-						if not _value:
-							continue
-						
-						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-							_value = f'https://{_value}'
-						
-						_parsed = urlparse( _value )
-						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-						_domain = re.sub( r':\d+$', '', _domain )
-						_domain = _domain.lstrip( '.' )
-						
-						if _domain.startswith( 'www.' ):
-							_domain = _domain[ 4: ]
-						
-						if _domain and _domain not in claude_blocked_domains_list:
-							claude_blocked_domains_list.append( _domain )
-				
-				stop_lines = [ s.strip( ) for s in (claude_stop or '').splitlines( ) if s.strip( ) ]
-				
-				fetcher = Claude( )
-				params = \
-					{
-							'model': claude_model,
-							'temperature': float( claude_temperature ),
-							'max_tokens': int( claude_max_tokens ),
-							'top_p': float( claude_top_p ),
-							'top_k': int( claude_top_k ) if int( claude_top_k ) > 0 else None,
-							'stop_sequences': stop_lines if stop_lines else None,
-							'system': claude_system if claude_system.strip( ) else None,
-							'thinking': bool( claude_thinking ),
-							'thinking_budget': int( claude_thinking_budget ) if claude_thinking and claude_thinking_budget else None,
-							'web_search': bool( claude_web_search ),
-							'search_domains': claude_domains_list if claude_domains_list else None,
-							'blocked_domains': claude_blocked_domains_list if claude_blocked_domains_list else None,
-					}
-				
-				if claude_thinking:
-					params.pop( 'temperature', None )
-					params.pop( 'top_k', None )
-				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				result = _invoke_provider( fetcher, claude_prompt, params )
-				_render_output( claude_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# -------- Gemini
-	with st.expander( label='Gemini', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			gemini_prompt = st.text_area(
-				'Prompt',
-				value='',
-				height=180,
-				key='gemini_prompt_chat'
-			)
-			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				gemini_model = _model_selector(
-					key_prefix='gemini',
-					label='Model',
-					options=[
-							'gemini-1.5-pro',
-							'gemini-1.5-flash',
-							'gemini-2.0-flash',
-							'Custom...',
-					],
-					default_model='gemini-1.5-pro',
-				)
-			
-			with p_row1[ 1 ]:
-				gemini_temperature = st.slider(
-					"Temperature",
-					min_value=0.0,
-					max_value=2.0,
-					value=0.7,
-					step=0.05,
-					key='gemini_temperature_chat',
-				)
-			
-			with p_row2[ 0 ]:
-				gemini_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=32768,
-					value=1024,
-					step=1,
-					key='gemini_max_tokens_chat',
-				)
-			
-			with p_row2[ 1 ]:
-				gemini_top_p = st.slider(
-					'Top-p',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='gemini_top_p_chat',
-				)
-			
-			with p_row3[ 0 ]:
-				gemini_top_k = st.number_input(
-					'Top-k',
-					min_value=0,
-					max_value=500,
-					value=0,
-					step=1,
-					key='gemini_top_k_chat',
-				)
-			
-			with p_row3[ 1 ]:
-				gemini_candidate_count = st.number_input(
-					'Candidates',
-					min_value=1,
-					max_value=8,
-					value=1,
-					step=1,
-					key='gemini_candidate_count_chat',
-				)
-			
-			gemini_system = st.text_area(
-				'System',
-				value='',
-				height=100,
-				key='gemini_system_chat',
-			)
-			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				gemini_submit = st.button( 'Submit', key='gemini_submit_chat' )
-			with btn_row[ 1 ]:
-				gemini_clear = st.button( 'Clear', key='gemini_clear_chat' )
-		
-		with col_right:
-			gemini_output = st.empty( )
-			
-		if gemini_clear:
-			st.session_state.update( { 'gemini_prompt_chat': '', 'gemini_system_chat': '', } )
-			st.rerun( )
-		
-		if gemini_submit:
-			try:
-				fetcher = Gemini( )
-				params = \
-				{
-					'model': gemini_model,
-					'temperature': float( gemini_temperature ),
-					'max_tokens': int( gemini_max_tokens ),
-					'top_p': float( gemini_top_p ),
-					'top_k': int( gemini_top_k ) if int( gemini_top_k ) > 0 else None,
-					'candidate_count': int( gemini_candidate_count ),
-					'system': gemini_system if gemini_system.strip( ) else None,
-				}
-				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				
-				result = _invoke_provider( fetcher, gemini_prompt, params )
-				_render_output( gemini_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# -------- Mistral
-	with st.expander( label='Mistral', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			mistral_prompt = st.text_area(
-				'Prompt',
-				value='',
-				height=40,
-				key='mistral_prompt_chat'
-			)
-			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				mistral_model = _model_selector(
-					key_prefix='mistral',
-					label='Model',
-					options=[
-							'mistral-large-latest',
-							'mistral-medium-latest',
-							'mistral-small-latest',
-							'open-mistral-7b',
-							'Custom...',
-					],
-					default_model='mistral-large-latest',
-				)
-			
-			with p_row1[ 1 ]:
-				mistral_temperature = st.slider(
-					'Temperature',
-					min_value=0.0,
-					max_value=2.0,
-					value=0.7,
-					step=0.05,
-					key='mistral_temperature_chat',
-				)
-			
-			with p_row2[ 0 ]:
-				mistral_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=32768,
-					value=1024,
-					step=1,
-					key='mistral_max_tokens_chat',
-				)
-			
-			with p_row2[ 1 ]:
-				mistral_top_p = st.slider(
-					'Top-p',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='mistral_top_p_chat',
-				)
-			
-			with p_row3[ 0 ]:
-				mistral_seed = st.number_input(
-					'Seed',
-					min_value=0,
-					max_value=2_147_483_647,
-					value=0,
-					step=1,
-					key='mistral_seed_chat',
-				)
-			
-			with p_row3[ 1 ]:
-				mistral_safe_mode = st.checkbox(
-					'Safe Mode',
-					value=False,
-					key='mistral_safe_mode_chat'
-				)
-			
-			mistral_system = st.text_area(
-				'System',
-				value='',
-				height=100,
-				key='mistral_system_chat',
-			)
-			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				mistral_submit = st.button( 'Submit', key='mistral_submit_chat' )
-			with btn_row[ 1 ]:
-				mistral_clear = st.button( 'Clear', key='mistral_clear_chat' )
-		
-		with col_right:
-			mistral_output = st.empty( )
-			
-		if mistral_clear:
-			st.session_state.update( {
-					'mistral_prompt_chat': "",
-					'mistral_system_chat': "",
-			} )
-			st.rerun( )
-		
-		if mistral_submit:
-			try:
-				fetcher = Mistral( )
-				params = {
-						'model': mistral_model,
-						'temperature': float( mistral_temperature ),
-						'max_tokens': int( mistral_max_tokens ),
-						'top_p': float( mistral_top_p ),
-						'seed': int( mistral_seed ) if int( mistral_seed ) > 0 else None,
-						'safe_mode': bool( mistral_safe_mode ),
-						'system': mistral_system if mistral_system.strip( ) else None,
-				}
-				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				
-				result = _invoke_provider( fetcher, mistral_prompt, params )
-				_render_output( mistral_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-
-# ======================================================================================
+# ==============================================================================
 # SATELLITE MODE
-# ======================================================================================
-elif mode == 'Geospatial Data':
-	st.subheader( '🚀  Geospatial Information' )
+# ==============================================================================
+elif mode == modes[ 3 ]:
+	st.subheader( f'🚀  {modes[ 3 ]}' )
 	st.divider( )
 	
 	# -------- Google Maps
@@ -9266,10 +8315,1096 @@ elif mode == 'Geospatial Data':
 					st.json( result )
 
 # ==============================================================================
+# TEXT GENERATION MODE
+# ==============================================================================
+elif mode == modes[ 4 ]:
+	st.subheader( f'🧠  {modes[ 4 ]}' )
+	st.divider( )
+	
+	# -------- ChatGPT
+	with st.expander( label='ChatGPT', expanded=True ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			chat_prompt = st.text_area( 'Prompt', value='', height=120, key='chat_prompt' )
+			
+			p_row1 = st.columns( 2 )
+			p_row2 = st.columns( 2 )
+			p_row3 = st.columns( 2 )
+			p_row4 = st.columns( 2 )
+			p_row5 = st.columns( 2 )
+			
+			with p_row1[ 0 ]:
+				_chat_models = cfg.GPT_MODELS if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS else \
+					[ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1' ]
+				chat_model = _model_selector(
+					key_prefix='chat',
+					label='Model',
+					options=_chat_models,
+					default_model=(
+							'gpt-5-mini' if 'gpt-5-mini' in _chat_models else _chat_models[ 0 ]),
+				)
+			
+			with p_row1[ 1 ]:
+				chat_temperature = st.slider(
+					'Temperature',
+					min_value=0.0,
+					max_value=2.0,
+					value=0.7,
+					step=0.05,
+					key='chat_temperature',
+				)
+			
+			with p_row2[ 0 ]:
+				chat_max_tokens = st.number_input(
+					'Max Tokens',
+					min_value=1,
+					max_value=32768,
+					value=2048,
+					step=1,
+					key='chat_max_tokens',
+				)
+			
+			with p_row2[ 1 ]:
+				chat_top_p = st.slider(
+					'Top-P',
+					min_value=0.0,
+					max_value=1.0,
+					value=1.0,
+					step=0.01,
+					key='chat_top_p',
+				)
+			
+			with p_row3[ 0 ]:
+				chat_seed = st.number_input(
+					'Seed',
+					min_value=0,
+					max_value=2_147_483_647,
+					value=0,
+					step=1,
+					key='chat_seed',
+				)
+			
+			with p_row3[ 1 ]:
+				chat_json_mode = st.checkbox(
+					'JSON Mode',
+					value=False,
+					key='chat_json_mode',
+				)
+			
+			with p_row4[ 0 ]:
+				chat_reasoning = st.checkbox(
+					'Reasoning',
+					value=False,
+					key='chat_reasoning',
+				)
+			
+			with p_row4[ 1 ]:
+				chat_web_search = st.checkbox(
+					'Web Search',
+					value=False,
+					key='chat_web_search',
+				)
+			
+			with p_row5[ 0 ]:
+				chat_store = st.checkbox(
+					'Store',
+					value=True,
+					key='chat_store',
+				)
+			
+			with p_row5[ 1 ]:
+				chat_stream = st.checkbox(
+					'Stream',
+					value=False,
+					key='chat_stream',
+				)
+			
+			_chat_supports_reasoning = (
+					str( chat_model ).strip( ).lower( ).startswith( 'gpt-5' )
+					or str( chat_model ).strip( ).lower( ).startswith( 'o' )
+			)
+			
+			if _chat_supports_reasoning and chat_reasoning:
+				chat_reasoning_effort = st.selectbox(
+					'Reasoning Effort',
+					options=[ 'minimal', 'low', 'medium', 'high' ],
+					index=1,
+					key='chat_reasoning_effort',
+				)
+			else:
+				chat_reasoning_effort = None
+			
+			chat_system = st.text_area(
+				'System',
+				value='',
+				height=120,
+				key='chat_system',
+			)
+			
+			if chat_web_search:
+				chat_domains = st.text_area(
+					'Preferred Search Domains (one per line or comma-separated)',
+					value='',
+					height=90,
+					key='chat_domains',
+					help='Examples: openai.com, platform.openai.com, arxiv.org',
+				)
+			else:
+				chat_domains = ''
+			
+			btn_row = st.columns( 2 )
+			with btn_row[ 0 ]:
+				chat_submit = st.button( 'Submit', key='chat_submit' )
+			with btn_row[ 1 ]:
+				chat_clear = st.button( 'Clear', key='chat_clear' )
+		
+		with col_right:
+			chat_output = st.empty( )
+		
+		# -----------------------------
+		# Clear Button
+		# -----------------------------
+		if chat_clear:
+			st.session_state.update(
+				{
+						'chat_prompt': '',
+						'chat_system': '',
+						'chat_domains': '',
+						'chat_json_mode': False,
+						'chat_reasoning': False,
+						'chat_web_search': False,
+						'chat_store': True,
+						'chat_stream': False,
+						'chat_seed': 0,
+				}
+			)
+			st.rerun( )
+		
+		# -----------------------------
+		# Submit Button
+		# -----------------------------
+		if chat_submit:
+			try:
+				if not str( chat_prompt ).strip( ):
+					raise ValueError( 'Prompt cannot be empty.' )
+				
+				chat_domains_list = [ ]
+				if chat_domains and str( chat_domains ).strip( ):
+					_domain_entries = re.split( r'[\n,;]+', str( chat_domains ) )
+					for _entry in _domain_entries:
+						_value = str( _entry ).strip( ).lower( )
+						if not _value:
+							continue
+						
+						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+							_value = f'https://{_value}'
+						
+						_parsed = urlparse( _value )
+						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+						_domain = re.sub( r':\d+$', '', _domain )
+						_domain = _domain.lstrip( '.' )
+						
+						if _domain.startswith( 'www.' ):
+							_domain = _domain[ 4: ]
+						
+						if _domain and _domain not in chat_domains_list:
+							chat_domains_list.append( _domain )
+				
+				fetcher = Chat( )
+				params = \
+					{
+							'model': chat_model,
+							'temperature': float( chat_temperature ),
+							'max_tokens': int( chat_max_tokens ),
+							'top_p': float( chat_top_p ),
+							'seed': int( chat_seed ) if int( chat_seed ) > 0 else None,
+							'system': chat_system if str( chat_system ).strip( ) else None,
+							'response_format': ('json' if chat_json_mode else None),
+							'reasoning_effort': (
+									chat_reasoning_effort
+									if _chat_supports_reasoning and chat_reasoning and chat_reasoning_effort
+									else None
+							),
+							'web_search': bool( chat_web_search ),
+							'search_domains': chat_domains_list if chat_domains_list else None,
+							'store': bool( chat_store ),
+							'stream': bool( chat_stream ),
+							'parallel_tool_calls': True,
+							'tool_choice': 'auto',
+					}
+				
+				params = { k: v for k, v in params.items( ) if v is not None }
+				result = _invoke_provider( fetcher, chat_prompt, params )
+				_render_output( chat_output, result )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	
+	# -------- Groq
+	with st.expander( label='Grok', expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			groq_prompt = st.text_area(
+				'Prompt',
+				value='',
+				height=120,
+				key='groq_prompt_chat',
+			)
+			
+			p_row1 = st.columns( 2 )
+			p_row2 = st.columns( 2 )
+			p_row3 = st.columns( 2 )
+			p_row4 = st.columns( 2 )
+			p_row5 = st.columns( 2 )
+			
+			with p_row1[ 0 ]:
+				_grok_models = cfg.GROK_MODELS if hasattr( cfg, 'GROK_MODELS' ) and cfg.GROK_MODELS else \
+					[ 'grok-4-1-fast-reasoning',
+					  'grok-4-fast-reasoning',
+					  'grok-4',
+					  'grok-code-fast-1',
+					  'grok-3-mini' ]
+				groq_model = _model_selector(
+					key_prefix='groq',
+					label='Model',
+					options=_grok_models,
+					default_model=(
+							'grok-4-fast-reasoning' if 'grok-4-fast-reasoning' in _grok_models else
+							_grok_models[ 0 ]),
+				)
+			
+			with p_row1[ 1 ]:
+				groq_temperature = st.slider(
+					'Temperature',
+					min_value=0.0,
+					max_value=2.0,
+					value=0.7,
+					step=0.05,
+					key='groq_temperature_chat',
+				)
+			
+			with p_row2[ 0 ]:
+				groq_max_tokens = st.number_input(
+					'Max Tokens',
+					min_value=1,
+					max_value=32768,
+					value=2048,
+					step=1,
+					key='groq_max_tokens_chat',
+				)
+			
+			with p_row2[ 1 ]:
+				groq_top_p = st.slider(
+					'Top-P',
+					min_value=0.0,
+					max_value=1.0,
+					value=1.0,
+					step=0.01,
+					key='groq_top_p_chat',
+				)
+			
+			with p_row3[ 0 ]:
+				groq_seed = st.number_input(
+					'Seed',
+					min_value=0,
+					max_value=2_147_483_647,
+					value=0,
+					step=1,
+					key='groq_seed_chat',
+				)
+			
+			with p_row3[ 1 ]:
+				groq_json_mode = st.checkbox(
+					'JSON Mode',
+					value=False,
+					key='groq_json_mode_chat',
+				)
+			
+			with p_row4[ 0 ]:
+				groq_reasoning = st.checkbox(
+					'Reasoning',
+					value=False,
+					key='groq_reasoning_chat',
+					help='Use for models that support explicit reasoning controls. Grok 4 models reason natively.',
+				)
+			
+			with p_row4[ 1 ]:
+				groq_web_search = st.checkbox(
+					'Web Search',
+					value=False,
+					key='groq_web_search_chat',
+				)
+			
+			with p_row5[ 0 ]:
+				groq_store = st.checkbox(
+					'Store',
+					value=True,
+					key='groq_store_chat',
+				)
+			
+			with p_row5[ 1 ]:
+				groq_stream = st.checkbox(
+					'Stream',
+					value=False,
+					key='groq_stream_chat',
+				)
+			
+			_groq_supports_reasoning_effort = 'grok-3-mini' in str( groq_model ).strip( ).lower( )
+			_groq_is_reasoning_model = (
+					'grok-4' in str( groq_model ).strip( ).lower( )
+					or 'reasoning' in str( groq_model ).strip( ).lower( )
+			)
+			
+			if _groq_supports_reasoning_effort and groq_reasoning:
+				groq_reasoning_effort = st.selectbox(
+					'Reasoning Effort',
+					options=[ 'low', 'high' ],
+					index=0,
+					key='groq_reasoning_effort_chat',
+				)
+			else:
+				groq_reasoning_effort = None
+			
+			groq_system = st.text_area(
+				'System',
+				value='',
+				height=120,
+				key='groq_system_chat',
+			)
+			
+			if not _groq_is_reasoning_model:
+				groq_stop = st.text_area(
+					'Stop Sequences (one per line)',
+					value='',
+					height=90,
+					key='groq_stop_chat',
+				)
+			else:
+				groq_stop = ''
+				st.caption( 'Stop sequences are omitted for Grok reasoning models.' )
+			
+			if groq_web_search:
+				groq_domains = st.text_area(
+					'Allowed Search Domains (one per line or comma-separated)',
+					value='',
+					height=90,
+					key='groq_domains_chat',
+					help='Examples: x.ai, docs.x.ai, arxiv.org',
+				)
+			else:
+				groq_domains = ''
+			
+			btn_row = st.columns( 2 )
+			with btn_row[ 0 ]:
+				groq_submit = st.button( 'Submit', key='groq_submit_chat' )
+			with btn_row[ 1 ]:
+				groq_clear = st.button( 'Clear', key='groq_clear_chat' )
+		
+		with col_right:
+			groq_output = st.empty( )
+		
+		if groq_clear:
+			st.session_state.update(
+				{
+						'groq_prompt_chat': '',
+						'groq_system_chat': '',
+						'groq_stop_chat': '',
+						'groq_domains_chat': '',
+						'groq_json_mode_chat': False,
+						'groq_reasoning_chat': False,
+						'groq_web_search_chat': False,
+						'groq_store_chat': True,
+						'groq_stream_chat': False,
+						'groq_seed_chat': 0,
+				}
+			)
+			st.rerun( )
+		
+		if groq_submit:
+			try:
+				if not str( groq_prompt ).strip( ):
+					raise ValueError( 'Prompt cannot be empty.' )
+				
+				groq_domains_list = [ ]
+				if groq_domains and str( groq_domains ).strip( ):
+					_domain_entries = re.split( r'[\n,;]+', str( groq_domains ) )
+					for _entry in _domain_entries:
+						_value = str( _entry ).strip( ).lower( )
+						if not _value:
+							continue
+						
+						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+							_value = f'https://{_value}'
+						
+						_parsed = urlparse( _value )
+						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+						_domain = re.sub( r':\d+$', '', _domain )
+						_domain = _domain.lstrip( '.' )
+						
+						if _domain.startswith( 'www.' ):
+							_domain = _domain[ 4: ]
+						
+						if _domain and _domain not in groq_domains_list:
+							groq_domains_list.append( _domain )
+				
+				stop_lines = [ s.strip( ) for s in (groq_stop or '').splitlines( ) if s.strip( ) ]
+				
+				fetcher = Grok( )
+				params = \
+					{
+							'model': groq_model,
+							'temperature': float( groq_temperature ),
+							'max_tokens': int( groq_max_tokens ),
+							'top_p': float( groq_top_p ),
+							'seed': int( groq_seed ) if int( groq_seed ) > 0 else None,
+							'system': groq_system if str( groq_system ).strip( ) else None,
+							'response_format': ('json' if groq_json_mode else None),
+							'reasoning_effort': (
+									groq_reasoning_effort
+									if _groq_supports_reasoning_effort and groq_reasoning and groq_reasoning_effort
+									else None
+							),
+							'web_search': bool( groq_web_search ),
+							'search_domains': groq_domains_list if groq_domains_list else None,
+							'stop': stop_lines if stop_lines and not _groq_is_reasoning_model else None,
+							'stream': bool( groq_stream ),
+							'store': bool( groq_store ),
+							'parallel_tool_calls': True,
+							'tool_choice': 'auto',
+					}
+				
+				params = { k: v for k, v in params.items( ) if v is not None }
+				result = _invoke_provider( fetcher, groq_prompt, params )
+				_render_output( groq_output, result )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	
+	# -------- CLAUDE
+	with st.expander( label='Claude', expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			claude_prompt = st.text_area(
+				'Prompt',
+				value='',
+				height=120,
+				key='claude_prompt_chat',
+			)
+			
+			p_row1 = st.columns( 2 )
+			p_row2 = st.columns( 2 )
+			p_row3 = st.columns( 2 )
+			p_row4 = st.columns( 2 )
+			p_row5 = st.columns( 2 )
+			
+			with p_row1[ 0 ]:
+				_claude_models = (
+						cfg.CLAUDE_MODELS
+						if hasattr( cfg, 'CLAUDE_MODELS' ) and cfg.CLAUDE_MODELS
+						else [
+								'claude-opus-4-6',
+								'claude-sonnet-4-6',
+								'claude-haiku-4-5',
+								'claude-3-5-haiku-latest',
+						]
+				)
+				claude_model = _model_selector(
+					key_prefix='claude',
+					label='Model',
+					options=_claude_models,
+					default_model=('claude-sonnet-4-6' if 'claude-sonnet-4-6' in _claude_models else
+					               _claude_models[ 0 ]),
+				)
+			
+			with p_row1[ 1 ]:
+				claude_temperature = st.slider(
+					'Temperature',
+					min_value=0.0,
+					max_value=1.0,
+					value=0.7,
+					step=0.05,
+					key='claude_temperature_chat',
+				)
+			
+			with p_row2[ 0 ]:
+				claude_max_tokens = st.number_input(
+					'Max Tokens',
+					min_value=1,
+					max_value=65536,
+					value=2048,
+					step=1,
+					key='claude_max_tokens_chat',
+				)
+			
+			with p_row2[ 1 ]:
+				claude_top_p = st.slider(
+					'Top-P',
+					min_value=0.0,
+					max_value=1.0,
+					value=1.0,
+					step=0.01,
+					key='claude_top_p_chat',
+				)
+			
+			with p_row3[ 0 ]:
+				claude_top_k = st.number_input(
+					'Top-k',
+					min_value=0,
+					max_value=500,
+					value=0,
+					step=1,
+					key='claude_top_k_chat',
+				)
+			
+			with p_row3[ 1 ]:
+				claude_thinking = st.checkbox(
+					'Reasoning',
+					value=False,
+					key='claude_thinking_chat',
+					help='Anthropic exposes this as extended thinking with a token budget.',
+				)
+			
+			with p_row4[ 0 ]:
+				claude_web_search = st.checkbox(
+					'Web Search',
+					value=False,
+					key='claude_web_search_chat',
+				)
+			
+			with p_row4[ 1 ]:
+				claude_stop = st.text_area(
+					'Stop Sequences (one per line)',
+					value='',
+					height=80,
+					key='claude_stop_chat',
+				)
+			
+			with p_row5[ 0 ]:
+				if claude_thinking:
+					claude_thinking_budget = st.number_input(
+						'Thinking Budget',
+						min_value=1024,
+						max_value=64000,
+						value=1024,
+						step=1024,
+						key='claude_thinking_budget_chat',
+					)
+				else:
+					claude_thinking_budget = None
+			
+			with p_row5[ 1 ]:
+				claude_system = st.text_area(
+					'System',
+					value='',
+					height=100,
+					key='claude_system_chat',
+				)
+			
+			if claude_web_search:
+				claude_domains = st.text_area(
+					'Allowed Search Domains (one per line or comma-separated)',
+					value='',
+					height=90,
+					key='claude_domains_chat',
+					help='Examples: docs.anthropic.com, arxiv.org, github.com',
+				)
+				
+				claude_blocked_domains = st.text_area(
+					'Blocked Search Domains (one per line or comma-separated)',
+					value='',
+					height=90,
+					key='claude_blocked_domains_chat',
+					help='Optional denylist for domains you do not want Claude to use.',
+				)
+			else:
+				claude_domains = ''
+				claude_blocked_domains = ''
+			
+			if claude_thinking:
+				st.caption(
+					'When Reasoning is enabled, temperature and top-k are omitted to match Anthropic compatibility rules.'
+				)
+			
+			btn_row = st.columns( 2 )
+			with btn_row[ 0 ]:
+				claude_submit = st.button( 'Submit', key='claude_submit_chat' )
+			with btn_row[ 1 ]:
+				claude_clear = st.button( 'Clear', key='claude_clear_chat' )
+		
+		with col_right:
+			claude_output = st.empty( )
+		
+		if claude_clear:
+			st.session_state.update(
+				{
+						'claude_prompt_chat': '',
+						'claude_stop_chat': '',
+						'claude_system_chat': '',
+						'claude_domains_chat': '',
+						'claude_blocked_domains_chat': '',
+						'claude_thinking_chat': False,
+						'claude_web_search_chat': False,
+				}
+			)
+			st.rerun( )
+		
+		if claude_submit:
+			try:
+				if not str( claude_prompt ).strip( ):
+					raise ValueError( 'Prompt cannot be empty.' )
+				
+				claude_domains_list = [ ]
+				if claude_domains and str( claude_domains ).strip( ):
+					_domain_entries = re.split( r'[\n,;]+', str( claude_domains ) )
+					for _entry in _domain_entries:
+						_value = str( _entry ).strip( ).lower( )
+						if not _value:
+							continue
+						
+						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+							_value = f'https://{_value}'
+						
+						_parsed = urlparse( _value )
+						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+						_domain = re.sub( r':\d+$', '', _domain )
+						_domain = _domain.lstrip( '.' )
+						
+						if _domain.startswith( 'www.' ):
+							_domain = _domain[ 4: ]
+						
+						if _domain and _domain not in claude_domains_list:
+							claude_domains_list.append( _domain )
+				
+				claude_blocked_domains_list = [ ]
+				if claude_blocked_domains and str( claude_blocked_domains ).strip( ):
+					_block_entries = re.split( r'[\n,;]+', str( claude_blocked_domains ) )
+					for _entry in _block_entries:
+						_value = str( _entry ).strip( ).lower( )
+						if not _value:
+							continue
+						
+						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+							_value = f'https://{_value}'
+						
+						_parsed = urlparse( _value )
+						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+						_domain = re.sub( r':\d+$', '', _domain )
+						_domain = _domain.lstrip( '.' )
+						
+						if _domain.startswith( 'www.' ):
+							_domain = _domain[ 4: ]
+						
+						if _domain and _domain not in claude_blocked_domains_list:
+							claude_blocked_domains_list.append( _domain )
+				
+				stop_lines = [ s.strip( ) for s in (claude_stop or '').splitlines( ) if s.strip( ) ]
+				
+				fetcher = Claude( )
+				params = \
+					{
+							'model': claude_model,
+							'temperature': float( claude_temperature ),
+							'max_tokens': int( claude_max_tokens ),
+							'top_p': float( claude_top_p ),
+							'top_k': int( claude_top_k ) if int( claude_top_k ) > 0 else None,
+							'stop_sequences': stop_lines if stop_lines else None,
+							'system': claude_system if claude_system.strip( ) else None,
+							'thinking': bool( claude_thinking ),
+							'thinking_budget': int( claude_thinking_budget ) if claude_thinking and claude_thinking_budget else None,
+							'web_search': bool( claude_web_search ),
+							'search_domains': claude_domains_list if claude_domains_list else None,
+							'blocked_domains': claude_blocked_domains_list if claude_blocked_domains_list else None,
+					}
+				
+				if claude_thinking:
+					params.pop( 'temperature', None )
+					params.pop( 'top_k', None )
+				
+				params = { k: v for k, v in params.items( ) if v is not None }
+				result = _invoke_provider( fetcher, claude_prompt, params )
+				_render_output( claude_output, result )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	
+	# -------- GEMINI
+	with st.expander( label='Gemini', expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			gemini_prompt = st.text_area(
+				'Prompt',
+				value='',
+				height=160,
+				key='gemini_prompt_chat',
+			)
+			
+			p_row1 = st.columns( 2 )
+			p_row2 = st.columns( 2 )
+			p_row3 = st.columns( 2 )
+			p_row4 = st.columns( 2 )
+			p_row5 = st.columns( 2 )
+			
+			with p_row1[ 0 ]:
+				_gemini_models = (
+						cfg.GEMINI_MODELS
+						if hasattr( cfg, 'GEMINI_MODELS' ) and cfg.GEMINI_MODELS
+						else [ 'gemini-2.5-flash', 'gemini-2.5-flash-lite' ]
+				)
+				gemini_model = _model_selector(
+					key_prefix='gemini',
+					label='Model',
+					options=_gemini_models,
+					default_model=('gemini-2.5-flash' if 'gemini-2.5-flash' in _gemini_models else
+					               _gemini_models[ 0 ]),
+				)
+			
+			with p_row1[ 1 ]:
+				gemini_temperature = st.slider(
+					'Temperature',
+					min_value=0.0,
+					max_value=2.0,
+					value=0.7,
+					step=0.05,
+					key='gemini_temperature_chat',
+				)
+			
+			with p_row2[ 0 ]:
+				gemini_max_tokens = st.number_input(
+					'Max Tokens',
+					min_value=1,
+					max_value=32768,
+					value=2048,
+					step=1,
+					key='gemini_max_tokens_chat',
+				)
+			
+			with p_row2[ 1 ]:
+				gemini_top_p = st.slider(
+					'Top-p',
+					min_value=0.0,
+					max_value=1.0,
+					value=1.0,
+					step=0.01,
+					key='gemini_top_p_chat',
+				)
+			
+			with p_row3[ 0 ]:
+				gemini_top_k = st.number_input(
+					'Top-k',
+					min_value=0,
+					max_value=500,
+					value=0,
+					step=1,
+					key='gemini_top_k_chat',
+				)
+			
+			with p_row3[ 1 ]:
+				gemini_candidate_count = st.number_input(
+					'Candidates',
+					min_value=1,
+					max_value=8,
+					value=1,
+					step=1,
+					key='gemini_candidate_count_chat',
+				)
+			
+			with p_row4[ 0 ]:
+				gemini_seed = st.number_input(
+					'Seed',
+					min_value=0,
+					max_value=2_147_483_647,
+					value=0,
+					step=1,
+					key='gemini_seed_chat',
+				)
+			
+			with p_row4[ 1 ]:
+				gemini_json_mode = st.checkbox(
+					'JSON Mode',
+					value=False,
+					key='gemini_json_mode_chat',
+				)
+			
+			with p_row5[ 0 ]:
+				gemini_grounding = st.checkbox(
+					'Grounding',
+					value=False,
+					key='gemini_grounding_chat',
+					help='Enable Google Search grounding for supported Gemini models.',
+				)
+			
+			with p_row5[ 1 ]:
+				gemini_reasoning = st.checkbox(
+					'Reasoning',
+					value=False,
+					key='gemini_reasoning_chat',
+					help='Uses Gemini thinking configuration where supported.',
+				)
+			
+			_gemini_supports_reasoning = str( gemini_model ).strip( ).lower( ).startswith( 'gemini-3' )
+			
+			if _gemini_supports_reasoning and gemini_reasoning:
+				r_row = st.columns( 2 )
+				
+				with r_row[ 0 ]:
+					gemini_thinking_level = st.selectbox(
+						'Thinking Level',
+						options=[ 'minimal', 'low', 'medium', 'high' ],
+						index=1,
+						key='gemini_thinking_level_chat',
+					)
+				
+				with r_row[ 1 ]:
+					gemini_include_thoughts = st.checkbox(
+						'Include Thoughts',
+						value=False,
+						key='gemini_include_thoughts_chat',
+					)
+			else:
+				gemini_thinking_level = None
+				gemini_include_thoughts = False
+			
+			gemini_stop = st.text_area(
+				'Stop Sequences (one per line)',
+				value='',
+				height=80,
+				key='gemini_stop_chat',
+			)
+			
+			gemini_system = st.text_area(
+				'System',
+				value='',
+				height=110,
+				key='gemini_system_chat',
+			)
+			
+			if gemini_grounding:
+				gemini_domains = st.text_area(
+					'Preferred Search Domains (one per line or comma-separated)',
+					value='',
+					height=90,
+					key='gemini_domains_chat',
+					help='Used as preferred source guidance for grounded Gemini responses.',
+				)
+			else:
+				gemini_domains = ''
+			
+			if gemini_reasoning and not _gemini_supports_reasoning:
+				st.caption(
+					'Reasoning controls are only sent for Gemini 3 model names. Older Gemini models run without thinking_config.'
+				)
+			
+			btn_row = st.columns( 2 )
+			with btn_row[ 0 ]:
+				gemini_submit = st.button( 'Submit', key='gemini_submit_chat' )
+			with btn_row[ 1 ]:
+				gemini_clear = st.button( 'Clear', key='gemini_clear_chat' )
+		
+		with col_right:
+			gemini_output = st.empty( )
+		
+		if gemini_clear:
+			st.session_state.update(
+				{
+						'gemini_prompt_chat': '',
+						'gemini_system_chat': '',
+						'gemini_domains_chat': '',
+						'gemini_stop_chat': '',
+						'gemini_json_mode_chat': False,
+						'gemini_grounding_chat': False,
+						'gemini_reasoning_chat': False,
+						'gemini_include_thoughts_chat': False,
+						'gemini_seed_chat': 0,
+				}
+			)
+			st.rerun( )
+		
+		if gemini_submit:
+			try:
+				if not str( gemini_prompt ).strip( ):
+					raise ValueError( 'Prompt cannot be empty.' )
+				
+				gemini_domains_list = [ ]
+				if gemini_domains and str( gemini_domains ).strip( ):
+					_domain_entries = re.split( r'[\n,;]+', str( gemini_domains ) )
+					for _entry in _domain_entries:
+						_value = str( _entry ).strip( ).lower( )
+						if not _value:
+							continue
+						
+						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+							_value = f'https://{_value}'
+						
+						_parsed = urlparse( _value )
+						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+						_domain = re.sub( r':\d+$', '', _domain )
+						_domain = _domain.lstrip( '.' )
+						
+						if _domain.startswith( 'www.' ):
+							_domain = _domain[ 4: ]
+						
+						if _domain and _domain not in gemini_domains_list:
+							gemini_domains_list.append( _domain )
+				
+				stop_lines = [ s.strip( ) for s in (gemini_stop or '').splitlines( ) if s.strip( ) ]
+				
+				fetcher = Gemini( )
+				params = \
+					{
+							'model': gemini_model,
+							'temperature': float( gemini_temperature ),
+							'max_tokens': int( gemini_max_tokens ),
+							'top_p': float( gemini_top_p ),
+							'top_k': int( gemini_top_k ) if int( gemini_top_k ) > 0 else None,
+							'candidate_count': int( gemini_candidate_count ),
+							'seed': int( gemini_seed ) if int( gemini_seed ) > 0 else None,
+							'system': gemini_system if gemini_system.strip( ) else None,
+							'response_format': ('json' if gemini_json_mode else None),
+							'stop_sequences': stop_lines if stop_lines else None,
+							'grounding': bool( gemini_grounding ),
+							'search_domains': gemini_domains_list if gemini_domains_list else None,
+							'reasoning': bool( gemini_reasoning and _gemini_supports_reasoning ),
+							'thinking_level': gemini_thinking_level if _gemini_supports_reasoning and gemini_reasoning else None,
+							'include_thoughts': bool( gemini_include_thoughts ) if _gemini_supports_reasoning and gemini_reasoning else False,
+					}
+				
+				params = { k: v for k, v in params.items( ) if v is not None }
+				result = _invoke_provider( fetcher, gemini_prompt, params )
+				_render_output( gemini_output, result )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+	
+	# -------- Mistral
+	with st.expander( label='Mistral', expanded=False ):
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			mistral_prompt = st.text_area(
+				'Prompt',
+				value='',
+				height=40,
+				key='mistral_prompt_chat'
+			)
+			
+			p_row1 = st.columns( 2 )
+			p_row2 = st.columns( 2 )
+			p_row3 = st.columns( 2 )
+			
+			with p_row1[ 0 ]:
+				mistral_model = _model_selector(
+					key_prefix='mistral',
+					label='Model',
+					options=[
+							'mistral-large-latest',
+							'mistral-medium-latest',
+							'mistral-small-latest',
+							'open-mistral-7b',
+							'Custom...',
+					],
+					default_model='mistral-large-latest',
+				)
+			
+			with p_row1[ 1 ]:
+				mistral_temperature = st.slider(
+					'Temperature',
+					min_value=0.0,
+					max_value=2.0,
+					value=0.7,
+					step=0.05,
+					key='mistral_temperature_chat',
+				)
+			
+			with p_row2[ 0 ]:
+				mistral_max_tokens = st.number_input(
+					'Max Tokens',
+					min_value=1,
+					max_value=32768,
+					value=1024,
+					step=1,
+					key='mistral_max_tokens_chat',
+				)
+			
+			with p_row2[ 1 ]:
+				mistral_top_p = st.slider(
+					'Top-p',
+					min_value=0.0,
+					max_value=1.0,
+					value=1.0,
+					step=0.01,
+					key='mistral_top_p_chat',
+				)
+			
+			with p_row3[ 0 ]:
+				mistral_seed = st.number_input(
+					'Seed',
+					min_value=0,
+					max_value=2_147_483_647,
+					value=0,
+					step=1,
+					key='mistral_seed_chat',
+				)
+			
+			with p_row3[ 1 ]:
+				mistral_safe_mode = st.checkbox(
+					'Safe Mode',
+					value=False,
+					key='mistral_safe_mode_chat'
+				)
+			
+			mistral_system = st.text_area(
+				'System',
+				value='',
+				height=100,
+				key='mistral_system_chat',
+			)
+			
+			btn_row = st.columns( 2 )
+			with btn_row[ 0 ]:
+				mistral_submit = st.button( 'Submit', key='mistral_submit_chat' )
+			with btn_row[ 1 ]:
+				mistral_clear = st.button( 'Clear', key='mistral_clear_chat' )
+		
+		with col_right:
+			mistral_output = st.empty( )
+		
+		if mistral_clear:
+			st.session_state.update( {
+					'mistral_prompt_chat': "",
+					'mistral_system_chat': "",
+			} )
+			st.rerun( )
+		
+		if mistral_submit:
+			try:
+				fetcher = Mistral( )
+				params = {
+						'model': mistral_model,
+						'temperature': float( mistral_temperature ),
+						'max_tokens': int( mistral_max_tokens ),
+						'top_p': float( mistral_top_p ),
+						'seed': int( mistral_seed ) if int( mistral_seed ) > 0 else None,
+						'safe_mode': bool( mistral_safe_mode ),
+						'system': mistral_system if mistral_system.strip( ) else None,
+				}
+				
+				params = { k: v for k, v in params.items( ) if v is not None }
+				
+				result = _invoke_provider( fetcher, mistral_prompt, params )
+				_render_output( mistral_output, result )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+
+# ==============================================================================
 # DATA MANAGEMENT MODE
 # ==============================================================================
-elif mode == 'Data Management':
-	st.subheader( '🏛️ Data Management', help=cfg.DATA_MANAGEMENT )
+elif mode == modes[ 5 ]:
+	st.subheader( f'🏛️ {modes[ 5 ]}', help=cfg.DATA_MANAGEMENT )
 	st.divider( )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:

@@ -100,8 +100,8 @@ MODE_MAP = \
 		'Loading': 'Data Loading',
 		'Scraping': 'Data Scraping',
 		'Retrieval': 'Data Retrieval',
-		'Generation': 'Data Generation',
 		'Geospatial': 'Geospatial Data',
+		'Generation': 'AI Generation',
 		'Management': 'Data Management'
  }
 
@@ -126,35 +126,25 @@ ARXIV = r'''arXiv is a free distribution service and an open-access archive for 
 		scholarly articles in the fields of physics, mathematics, computer science, quantitative
 		biology, quantitative finance, statistics, electrical engineering and systems science, and
 		economics. Materials on this site are not peer-reviewed by arXiv.
-		
-		
-		Documentation here  (https://docs.langchain.com/oss/javascript/integrations/retrievers/arxiv-retriever)
+	
 '''
 
 GOOGLE_DRIVE = r'''Google Drive is a file storage and synchronization service developed by Google
-
-		Documentation here  (https://docs.langchain.com/oss/python/integrations/document_loaders/google_drive)
 '''
 
 WIKIPEDIA = r'''Wikipedia is a free, multilingual online encyclopedia created and maintained by
-			a global community of volunteers through open collaboration. Offering over 55 million
-			articles in over 300 languages.
-			
-			Documentation here (https://wikipedia-api.readthedocs.io/en/latest/wikipediaapi/api.html)
+		a global community of volunteers through open collaboration. Offering over 55 million
+		articles in over 300 languages.
 '''
 
 THENEWS = r'''An API to provide global news from thousands of sources with exceptional
 		response times adding over 1 million articles weekly.
-		
-		Documentation here (https://www.thenewsapi.com/documentation)
 '''
 
 GOOGLE_CSE = r'''The Cse Service is the endpoint that returns the requested searches.
 		You must identify a particular search engine to use in your request
 		(using the cx query parameter) as well as the search query (using the q query parameter).
 		In addition, you should provide a developer key (using the key query parameter).
-		
-		Documentation here (https://developers.google.com/custom-search/v1/cse)
 '''
 
 GOOGLE_WEATHER = r'''The Weather API lets you request real-time, hyperlocal weather data for
