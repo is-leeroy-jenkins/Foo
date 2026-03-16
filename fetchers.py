@@ -51,7 +51,6 @@ import urllib.parse
 from pathlib import Path
 from typing import Any, Dict, Optional, Pattern, List, Tuple
 
-import crawl4ai
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import requests
@@ -81,6 +80,7 @@ from sscws.sscws import SscWs
 import config as cfg
 from boogr import Error
 from core import Result
+import xml.etree.ElementTree as ET
 
 def throw_if( name: str, value: Any ) -> None:
 	'''
@@ -1113,7 +1113,6 @@ class WebCrawler( WebFetcher ):
 			exception.method = 'fetch( self, url: str, time: int=15 ) -> Result'
 			raise exception
 			
-
 	def render_with_playwright( self, url: str, timeout: int=15 ) -> str:
 		'''
 		
@@ -7633,23 +7632,12 @@ class StarChart( Fetcher ):
 		'''
 		try:
 			active_mode = (mode or 'object_chart').strip( ).lower( )
-			
 			if active_mode == 'object_search':
-				return self.search_object(
-					name=query,
-					time=time
-				)
-			
+				return self.search_object( name=query, time=time )
 			if active_mode == 'object_chart':
-				return self.fetch_object_chart(
-					name=query,
-					zoom=zoom,
-					box_color=box_color,
-					show_box=show_box,
-					image_source=image_source if image_source != 'DSS2' else '',
-					time=time
-				)
-			
+				return self.fetch_object_chart( name=query, zoom=zoom, box_color=box_color,
+					show_box=show_box, image_source=image_source if image_source != 'DSS2' else '',
+					time=time )
 			if active_mode == 'coordinate_chart':
 				return self.fetch_coordinate_chart(
 					ra=ra,
@@ -7660,8 +7648,7 @@ class StarChart( Fetcher ):
 					show_grid=show_grid,
 					show_lines=show_lines,
 					show_boundaries=show_boundaries,
-					image_source=image_source if image_source != 'DSS2' else ''
-				)
+					image_source=image_source if image_source != 'DSS2' else '')
 			
 			if active_mode == 'static_chart':
 				return self.fetch_static_chart(
@@ -7731,7 +7718,6 @@ class StarChart( Fetcher ):
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
