@@ -12911,4 +12911,549 @@ class Grokipedia( Fetcher ):
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
 			)
 			raise exception
+
+class GoogleGeocoding( Fetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides access to Google's Geocoding API using the documented web-service
+		endpoints for:
+
+			- Forward geocoding by address
+			- Reverse geocoding by latitude / longitude
+			- Place geocoding by place_id
+
+		Referenced API Requirements:
+		----------------------------
+		Geocoding API:
+			- Endpoint: https://maps.googleapis.com/maps/api/geocode/json
+			- Required authentication: API key
+			- Billing must be enabled
+			- Supported request patterns used here:
+				- address
+				- latlng
+				- place_id
+
+	'''
+	api_key: Optional[ str ]
+	url: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	mode: Optional[ str ]
+	query: Optional[ str ]
+	latitude: Optional[ float ]
+	longitude: Optional[ float ]
+	place_id: Optional[ str ]
+	language: Optional[ str ]
+	region: Optional[ str ]
+	result_type: Optional[ str ]
+	location_type: Optional[ str ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the Google Geocoding fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.api_key = cfg.GOOGLE_API_KEY
+		self.url = 'https://maps.googleapis.com/maps/api/geocode/json'
+		self.params = { }
+		self.mode = 'forward'
+		self.query = ''
+		self.latitude = None
+		self.longitude = None
+		self.place_id = ''
+		self.language = 'en'
+		self.region = ''
+		self.result_type = ''
+		self.location_type = ''
+		self.timeout = 10
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'api_key',
+				'url',
+				'params',
+				'mode',
+				'query',
+				'latitude',
+				'longitude',
+				'place_id',
+				'language',
+				'region',
+				'result_type',
+				'location_type',
+				'timeout',
+				'fetch_forward',
+				'fetch_reverse',
+				'fetch_place',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _resolve_api_key( self, api_key: Optional[ str ] = None ) -> str:
+		'''
+			Purpose:
+			--------
+			Resolve the Google API key.
+
+			Parameters:
+			-----------
+			api_key (Optional[str]):
+				Optional explicit API key override.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( api_key or self.api_key or '' ).strip( )
+			throw_if( 'GOOGLE_API_KEY', value )
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleGeocoding'
+			exception.method = '_resolve_api_key( self, api_key: Optional[ str ]=None ) -> str'
+			raise exception
+	
+	def _request( self, params: Dict[ str, Any ], time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Submit a request to the Google Geocoding API.
+
+			Parameters:
+			-----------
+			params (Dict[str, Any]):
+				Request parameters excluding the key.
+
+			time (int):
+				Request timeout in seconds.
+
+			api_key (Optional[str]):
+				Optional explicit API key override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			request_params = dict( params or { } )
+			request_params[ 'key' ] = self._resolve_api_key( api_key=api_key )
 			
+			self.params = request_params
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			payload = self.response.json( ) or { }
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'status': payload.get( 'status', '' ),
+					'results': payload.get( 'results', [ ] ),
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleGeocoding'
+			exception.method = (
+					'_request( self, params: Dict[ str, Any ], time: int=10, '
+					'api_key: Optional[ str ]=None ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_forward( self, query: str, language: str = 'en',
+			region: str = '', time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Forward geocode an address or place string.
+
+			Parameters:
+			-----------
+			query (str):
+				Human-readable address or place query.
+
+			language (str):
+				Preferred response language.
+
+			region (str):
+				Optional region bias, such as 'us'.
+
+			time (int):
+				Request timeout in seconds.
+
+			api_key (Optional[str]):
+				Optional explicit API key override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'query', query )
+			
+			self.mode = 'forward'
+			self.query = str( query ).strip( )
+			self.language = str( language or 'en' ).strip( )
+			self.region = str( region or '' ).strip( )
+			
+			params = {
+					'address': self.query,
+					'language': self.language
+			}
+			
+			if self.region:
+				params[ 'region' ] = self.region
+			
+			return self._request(
+				params=params,
+				time=int( time ),
+				api_key=api_key
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleGeocoding'
+			exception.method = (
+					'fetch_forward( self, query: str, language: str=en, '
+					'region: str=, time: int=10, api_key: Optional[ str ]=None ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_reverse( self, latitude: float, longitude: float,
+			language: str = 'en', result_type: str = '',
+			location_type: str = '', time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Reverse geocode a latitude / longitude coordinate pair.
+
+			Parameters:
+			-----------
+			latitude (float):
+				Latitude.
+
+			longitude (float):
+				Longitude.
+
+			language (str):
+				Preferred response language.
+
+			result_type (str):
+				Optional pipe-delimited result type filter.
+
+			location_type (str):
+				Optional pipe-delimited location type filter.
+
+			time (int):
+				Request timeout in seconds.
+
+			api_key (Optional[str]):
+				Optional explicit API key override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'reverse'
+			self.latitude = float( latitude )
+			self.longitude = float( longitude )
+			self.language = str( language or 'en' ).strip( )
+			self.result_type = str( result_type or '' ).strip( )
+			self.location_type = str( location_type or '' ).strip( )
+			
+			params = {
+					'latlng': f'{self.latitude},{self.longitude}',
+					'language': self.language
+			}
+			
+			if self.result_type:
+				params[ 'result_type' ] = self.result_type
+			
+			if self.location_type:
+				params[ 'location_type' ] = self.location_type
+			
+			return self._request(
+				params=params,
+				time=int( time ),
+				api_key=api_key
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleGeocoding'
+			exception.method = (
+					'fetch_reverse( self, latitude: float, longitude: float, '
+					'language: str=en, result_type: str=, location_type: str=, '
+					'time: int=10, api_key: Optional[ str ]=None ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_place( self, place_id: str, language: str = 'en',
+			region: str = '', time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Geocode a Google place_id into address details.
+
+			Parameters:
+			-----------
+			place_id (str):
+				Google place ID.
+
+			language (str):
+				Preferred response language.
+
+			region (str):
+				Optional region bias.
+
+			time (int):
+				Request timeout in seconds.
+
+			api_key (Optional[str]):
+				Optional explicit API key override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'place_id', place_id )
+			
+			self.mode = 'place'
+			self.place_id = str( place_id ).strip( )
+			self.language = str( language or 'en' ).strip( )
+			self.region = str( region or '' ).strip( )
+			
+			params = {
+					'place_id': self.place_id,
+					'language': self.language
+			}
+			
+			if self.region:
+				params[ 'region' ] = self.region
+			
+			return self._request(
+				params=params,
+				time=int( time ),
+				api_key=api_key
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleGeocoding'
+			exception.method = (
+					'fetch_place( self, place_id: str, language: str=en, region: str=, '
+					'time: int=10, api_key: Optional[ str ]=None ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'forward', query: str = '',
+			latitude: float = 0.0, longitude: float = 0.0,
+			place_id: str = '', language: str = 'en', region: str = '',
+			result_type: str = '', location_type: str = '', time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for Google Geocoding requests.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- forward
+				- reverse
+				- place
+
+			query (str):
+				Address / place query for forward mode.
+
+			latitude (float):
+				Latitude for reverse mode.
+
+			longitude (float):
+				Longitude for reverse mode.
+
+			place_id (str):
+				Place ID for place mode.
+
+			language (str):
+				Response language.
+
+			region (str):
+				Region bias for forward / place mode.
+
+			result_type (str):
+				Reverse-geocoding result filter.
+
+			location_type (str):
+				Reverse-geocoding location filter.
+
+			time (int):
+				Request timeout in seconds.
+
+			api_key (Optional[str]):
+				Optional explicit API key override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'forward' ).strip( ).lower( )
+			
+			if active_mode == 'forward':
+				return self.fetch_forward(
+					query=query,
+					language=language,
+					region=region,
+					time=time,
+					api_key=api_key
+				)
+			
+			if active_mode == 'reverse':
+				return self.fetch_reverse(
+					latitude=latitude,
+					longitude=longitude,
+					language=language,
+					result_type=result_type,
+					location_type=location_type,
+					time=time,
+					api_key=api_key
+				)
+			
+			if active_mode == 'place':
+				return self.fetch_place(
+					place_id=place_id,
+					language=language,
+					region=region,
+					time=time,
+					api_key=api_key
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'forward', 'reverse', or 'place'." )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleGeocoding'
+			exception.method = (
+					'fetch( self, mode: str=forward, query: str=, latitude: float=0.0, '
+					'longitude: float=0.0, place_id: str=, language: str=en, '
+					'region: str=, result_type: str=, location_type: str=, '
+					'time: int=10, api_key: Optional[ str ]=None ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleGeocoding'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception

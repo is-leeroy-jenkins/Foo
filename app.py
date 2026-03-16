@@ -2591,7 +2591,7 @@ elif mode == 'Data Retrieval':
 					
 					label = f'Document {idx}' if not title else f'Document {idx}: {title}'
 					
-			with st.expander( label, expanded=False ):
+			with st.expander( 'Search Results', expanded=False ):
 				if isinstance( doc, Document ):
 					if doc.metadata:
 						meta_col1, meta_col2 = st.columns( 2 )
@@ -2618,363 +2618,6 @@ elif mode == 'Data Retrieval':
 						st.json( doc.metadata )
 				else:
 					st.write( doc )
-	
-	# -------- The News API
-	with st.expander( label='The News API', expanded=False ):
-		if 'thenews_results' not in st.session_state:
-			st.session_state[ 'thenews_results' ] = { }
-		
-		if 'thenews_clear_request' not in st.session_state:
-			st.session_state[ 'thenews_clear_request' ] = False
-		
-		if st.session_state.get( 'thenews_clear_request', False ):
-			st.session_state[ 'thenews_query' ] = ''
-			st.session_state[ 'thenews_api_key' ] = ''
-			st.session_state[ 'thenews_endpoint' ] = 'all'
-			st.session_state[ 'thenews_language' ] = 'en'
-			st.session_state[ 'thenews_locale' ] = ''
-			st.session_state[ 'thenews_categories' ] = ''
-			st.session_state[ 'thenews_exclude_categories' ] = ''
-			st.session_state[ 'thenews_domains' ] = ''
-			st.session_state[ 'thenews_exclude_domains' ] = ''
-			st.session_state[ 'thenews_source_ids' ] = ''
-			st.session_state[ 'thenews_exclude_source_ids' ] = ''
-			st.session_state[ 'thenews_published_after' ] = ''
-			st.session_state[ 'thenews_published_before' ] = ''
-			st.session_state[ 'thenews_published_on' ] = ''
-			st.session_state[ 'thenews_sort' ] = 'published_at'
-			st.session_state[ 'thenews_limit' ] = 10
-			st.session_state[ 'thenews_page' ] = 1
-			st.session_state[ 'thenews_include_similar' ] = True
-			st.session_state[ 'thenews_headlines_per_category' ] = 6
-			st.session_state[ 'thenews_timeout' ] = 10
-			st.session_state[ 'thenews_results' ] = { }
-			st.session_state[ 'thenews_clear_request' ] = False
-		
-		def _clear_thenews_state( ) -> None:
-			st.session_state[ 'thenews_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			news_endpoint = st.selectbox(
-				'Endpoint',
-				options=[ 'all', 'top', 'headlines', 'sources' ],
-				index=[ 'all', 'top', 'headlines', 'sources' ].index(
-					st.session_state.get( 'thenews_endpoint', 'all' ) ),
-				key='thenews_endpoint',
-				help='Choose the documented The News API endpoint.'
-			)
-			
-			news_query = st.text_area(
-				'Search Query',
-				height=90,
-				key='thenews_query',
-				placeholder=(
-						'Examples:\n'
-						'apple\n'
-						'"Apple Inc"\n'
-						'forex + (usd | gbp) -cad\n'
-						'\n'
-						'Leave blank for "sources".'
-				),
-				disabled=(news_endpoint == 'sources')
-			)
-			
-			news_api_key = st.text_input(
-				'API Key',
-				value='',
-				type='password',
-				key='thenews_api_key',
-				placeholder='Uses THENEWSAPI_API_KEY when left blank.',
-				help='Optional override. Environment variable THENEWSAPI_API_KEY is preferred.'
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				news_language = st.text_input(
-					'Language',
-					value=st.session_state.get( 'thenews_language', 'en' ),
-					key='thenews_language',
-					placeholder='en or en,es'
-				)
-			
-			with c2:
-				news_locale = st.text_input(
-					'Locale',
-					value=st.session_state.get( 'thenews_locale', '' ),
-					key='thenews_locale',
-					placeholder='us,ca',
-					disabled=(news_endpoint not in ('top', 'headlines'))
-				)
-			
-			c3, c4 = st.columns( 2 )
-			
-			with c3:
-				news_categories = st.text_input(
-					'Categories',
-					value=st.session_state.get( 'thenews_categories', '' ),
-					key='thenews_categories',
-					placeholder='business,tech'
-				)
-			
-			with c4:
-				news_exclude_categories = st.text_input(
-					'Exclude Categories',
-					value=st.session_state.get( 'thenews_exclude_categories', '' ),
-					key='thenews_exclude_categories',
-					placeholder='travel'
-				)
-			
-			c5, c6 = st.columns( 2 )
-			
-			with c5:
-				news_domains = st.text_input(
-					'Domains',
-					value=st.session_state.get( 'thenews_domains', '' ),
-					key='thenews_domains',
-					placeholder='cnn.com,bbc.com',
-					disabled=(news_endpoint == 'sources')
-				)
-			
-			with c6:
-				news_exclude_domains = st.text_input(
-					'Exclude Domains',
-					value=st.session_state.get( 'thenews_exclude_domains', '' ),
-					key='thenews_exclude_domains',
-					placeholder='example.com',
-					disabled=(news_endpoint == 'sources')
-				)
-			
-			c7, c8 = st.columns( 2 )
-			
-			with c7:
-				news_source_ids = st.text_input(
-					'Source IDs',
-					value=st.session_state.get( 'thenews_source_ids', '' ),
-					key='thenews_source_ids',
-					placeholder='arstechnica.com-1',
-					disabled=(news_endpoint == 'sources')
-				)
-			
-			with c8:
-				news_exclude_source_ids = st.text_input(
-					'Exclude Source IDs',
-					value=st.session_state.get( 'thenews_exclude_source_ids', '' ),
-					key='thenews_exclude_source_ids',
-					placeholder='foo.com-1',
-					disabled=(news_endpoint == 'sources')
-				)
-			
-			c9, c10 = st.columns( 2 )
-			
-			with c9:
-				news_published_after = st.text_input(
-					'Published After',
-					value=st.session_state.get( 'thenews_published_after', '' ),
-					key='thenews_published_after',
-					placeholder='2026-03-01',
-					disabled=(news_endpoint not in ('all', 'top'))
-				)
-			
-			with c10:
-				news_published_before = st.text_input(
-					'Published Before',
-					value=st.session_state.get( 'thenews_published_before', '' ),
-					key='thenews_published_before',
-					placeholder='2026-03-15',
-					disabled=(news_endpoint not in ('all', 'top'))
-				)
-			
-			c11, c12 = st.columns( 2 )
-			
-			with c11:
-				news_published_on = st.text_input(
-					'Published On',
-					value=st.session_state.get( 'thenews_published_on', '' ),
-					key='thenews_published_on',
-					placeholder='2026-03-15',
-					disabled=(news_endpoint not in ('all', 'top', 'headlines'))
-				)
-			
-			with c12:
-				news_sort = st.selectbox(
-					'Sort',
-					options=[ 'published_at', 'published_on', 'relevance_score' ],
-					index=[ 'published_at', 'published_on', 'relevance_score' ].index(
-						st.session_state.get( 'thenews_sort', 'published_at' ) ),
-					key='thenews_sort',
-					disabled=(news_endpoint not in ('all', 'top'))
-				)
-			
-			c13, c14, c15 = st.columns( 3 )
-			
-			with c13:
-				news_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=50,
-					value=int( st.session_state.get( 'thenews_limit', 10 ) ),
-					step=1,
-					key='thenews_limit',
-					disabled=(news_endpoint == 'sources')
-				)
-			
-			with c14:
-				news_page = st.number_input(
-					'Page',
-					min_value=1,
-					max_value=400,
-					value=int( st.session_state.get( 'thenews_page', 1 ) ),
-					step=1,
-					key='thenews_page'
-				)
-			
-			with c15:
-				news_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=60,
-					value=int( st.session_state.get( 'thenews_timeout', 10 ) ),
-					step=1,
-					key='thenews_timeout'
-				)
-			
-			c16, c17 = st.columns( 2 )
-			
-			with c16:
-				news_include_similar = st.checkbox(
-					'Include Similar',
-					value=st.session_state.get( 'thenews_include_similar', True ),
-					key='thenews_include_similar',
-					disabled=(news_endpoint != 'headlines')
-				)
-			
-			with c17:
-				news_headlines_per_category = st.number_input(
-					'Headlines / Category',
-					min_value=1,
-					max_value=10,
-					value=int( st.session_state.get( 'thenews_headlines_per_category', 6 ) ),
-					step=1,
-					key='thenews_headlines_per_category',
-					disabled=(news_endpoint != 'headlines')
-				)
-			
-			st.caption(
-				'Required key: THENEWSAPI_API_KEY. '
-				'Supported categories: general, science, sports, business, '
-				'health, entertainment, tech, politics, food, travel.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				news_submit = st.button( 'Submit', key='thenews_submit' )
-			
-			with b2:
-				st.button( 'Clear', key='thenews_clear', on_click=_clear_thenews_state )
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if news_submit:
-				try:
-					f = TheNews( )
-					result = f.fetch(
-						endpoint=news_endpoint,
-						query=news_query,
-						language=news_language,
-						categories=news_categories,
-						exclude_categories=news_exclude_categories,
-						locale=news_locale,
-						domains=news_domains,
-						exclude_domains=news_exclude_domains,
-						source_ids=news_source_ids,
-						exclude_source_ids=news_exclude_source_ids,
-						published_after=news_published_after,
-						published_before=news_published_before,
-						published_on=news_published_on,
-						sort=news_sort,
-						limit=int( news_limit ),
-						page=int( news_page ),
-						include_similar=bool( news_include_similar ),
-						headlines_per_category=int( news_headlines_per_category ),
-						time=int( news_timeout ),
-						api_key=(news_api_key or None)
-					)
-					
-					st.session_state[ 'thenews_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'The News API request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'thenews_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta = result.get( 'meta', { } ) if isinstance( result, dict ) else { }
-				data = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if meta:
-					st.markdown( '#### Response Metadata' )
-					st.json( meta )
-				
-				if not data:
-					st.info( 'No results returned.' )
-				else:
-					for idx, item in enumerate( data, start=1 ):
-						if news_endpoint == 'sources':
-							title = item.get( 'domain', f'Source {idx}' )
-							with st.expander( f'Source {idx}: {title}', expanded=False ):
-								ca, cb = st.columns( 2 )
-								with ca:
-									st.markdown( f"**Source ID:** {item.get( 'source_id', '' )}" )
-									st.markdown( f"**Domain:** {item.get( 'domain', '' )}" )
-								with cb:
-									st.markdown( f"**Language:** {item.get( 'language', '' )}" )
-									st.markdown( f"**Locale:** {item.get( 'locale', '' )}" )
-								
-								if item.get( 'categories' ):
-									st.markdown( f"**Categories:** {', '.join( item.get( 'categories', [ ] ) )}" )
-								
-								st.json( item )
-						else:
-							title = item.get( 'title', f'Article {idx}' )
-							with st.expander( f'Article {idx}: {title}', expanded=False ):
-								ca, cb = st.columns( 2 )
-								with ca:
-									st.markdown( f"**Source:** {item.get( 'source', '' )}" )
-									st.markdown( f"**Published:** {item.get( 'published_at', '' )}" )
-									st.markdown( f"**Language:** {item.get( 'language', '' )}" )
-								with cb:
-									st.markdown( f"**Locale:** {item.get( 'locale', '' )}" )
-									st.markdown( f"**URL:** {item.get( 'url', '' )}" )
-									st.markdown( f"**Image URL:** {item.get( 'image_url', '' )}" )
-								
-								if item.get( 'description' ):
-									st.markdown( '**Description:**' )
-									st.write( item.get( 'description', '' ) )
-								
-								if item.get( 'snippet' ):
-									st.markdown( '**Snippet:**' )
-									st.text_area(
-										'',
-										value=item.get( 'snippet', '' ),
-										height=160,
-										key=f'thenews_snippet_{idx}'
-									)
-								
-								if item.get( 'categories' ):
-									st.markdown(
-										f"**Categories:** {', '.join( item.get( 'categories', [ ] ) )}"
-									)
-								
-								st.json( item )
 	
 	# -------- Google Search
 	with st.expander( label='Google Search', expanded=False ):
@@ -3047,8 +2690,7 @@ elif mode == 'Data Retrieval':
 					max_value=91,
 					value=int( st.session_state.get( 'googlesearch_start', 1 ) ),
 					step=1,
-					key='googlesearch_start',
-					help='Start index for paging. Combined paging is limited to the first 100 results.'
+					key='googlesearch_start'
 				)
 			
 			with c3:
@@ -3067,19 +2709,17 @@ elif mode == 'Data Retrieval':
 				google_exact_terms = st.text_input(
 					'Exact Terms',
 					value=st.session_state.get( 'googlesearch_exact_terms', '' ),
-					key='googlesearch_exact_terms',
-					placeholder='federal budget'
+					key='googlesearch_exact_terms'
 				)
 			
 			with c5:
 				google_exclude_terms = st.text_input(
 					'Exclude Terms',
 					value=st.session_state.get( 'googlesearch_exclude_terms', '' ),
-					key='googlesearch_exclude_terms',
-					placeholder='contractor'
+					key='googlesearch_exclude_terms'
 				)
 			
-			c6, c7 = st.columns( 2 )
+			c6, c7, c8 = st.columns( 3 )
 			
 			with c6:
 				google_file_type = st.text_input(
@@ -3094,20 +2734,30 @@ elif mode == 'Data Retrieval':
 					'Date Restrict',
 					value=st.session_state.get( 'googlesearch_date_restrict', '' ),
 					key='googlesearch_date_restrict',
-					placeholder='m1, y1, d7'
+					placeholder='d7, m1, y1'
 				)
 			
-			c8, c9 = st.columns( 2 )
-			
 			with c8:
+				google_safe = st.selectbox(
+					'Safe Search',
+					options=[ 'off', 'active' ],
+					index=[ 'off', 'active' ].index(
+						st.session_state.get( 'googlesearch_safe', 'off' )
+					),
+					key='googlesearch_safe'
+				)
+			
+			c9, c10, c11 = st.columns( 3 )
+			
+			with c9:
 				google_gl = st.text_input(
-					'Country Boost (gl)',
+					'Country (gl)',
 					value=st.session_state.get( 'googlesearch_gl', '' ),
 					key='googlesearch_gl',
 					placeholder='us'
 				)
 			
-			with c9:
+			with c10:
 				google_lr = st.text_input(
 					'Language Restrict (lr)',
 					value=st.session_state.get( 'googlesearch_lr', '' ),
@@ -3115,25 +2765,14 @@ elif mode == 'Data Retrieval':
 					placeholder='lang_en'
 				)
 			
-			c10, c11 = st.columns( 2 )
-			
-			with c10:
-				google_safe = st.selectbox(
-					'Safe Search',
-					options=[ 'off', 'active' ],
-					index=[ 'off', 'active' ].index(
-						st.session_state.get( 'googlesearch_safe', 'off' ) ),
-					key='googlesearch_safe'
-				)
-			
 			with c11:
 				google_search_type = st.selectbox(
 					'Search Type',
 					options=[ '', 'image' ],
 					index=[ '', 'image' ].index(
-						st.session_state.get( 'googlesearch_search_type', '' ) ),
-					key='googlesearch_search_type',
-					help='Leave blank for web search, or choose image.'
+						st.session_state.get( 'googlesearch_search_type', '' )
+					),
+					key='googlesearch_search_type'
 				)
 			
 			c12, c13 = st.columns( 2 )
@@ -3143,7 +2782,7 @@ elif mode == 'Data Retrieval':
 					'Site Search',
 					value=st.session_state.get( 'googlesearch_site_search', '' ),
 					key='googlesearch_site_search',
-					placeholder='epa.gov'
+					placeholder='example.gov'
 				)
 			
 			with c13:
@@ -3151,9 +2790,10 @@ elif mode == 'Data Retrieval':
 					'Site Search Filter',
 					options=[ '', 'i', 'e' ],
 					index=[ '', 'i', 'e' ].index(
-						st.session_state.get( 'googlesearch_site_search_filter', '' ) ),
+						st.session_state.get( 'googlesearch_site_search_filter', '' )
+					),
 					key='googlesearch_site_search_filter',
-					help='i = include only siteSearch, e = exclude siteSearch.'
+					help='i=include, e=exclude'
 				)
 			
 			google_sort = st.text_input(
@@ -3163,8 +2803,6 @@ elif mode == 'Data Retrieval':
 				placeholder='date'
 			)
 			
-			st.markdown( '#### Image Search Filters' )
-			
 			c14, c15 = st.columns( 2 )
 			
 			with c14:
@@ -3173,7 +2811,8 @@ elif mode == 'Data Retrieval':
 					options=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge', 'huge' ],
 					index=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge',
 					        'huge' ].index(
-						st.session_state.get( 'googlesearch_img_size', '' ) ),
+						st.session_state.get( 'googlesearch_img_size', '' )
+					),
 					key='googlesearch_img_size',
 					disabled=(google_search_type != 'image')
 				)
@@ -3183,7 +2822,8 @@ elif mode == 'Data Retrieval':
 					'Image Type',
 					options=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ],
 					index=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ].index(
-						st.session_state.get( 'googlesearch_img_type', '' ) ),
+						st.session_state.get( 'googlesearch_img_type', '' )
+					),
 					key='googlesearch_img_type',
 					disabled=(google_search_type != 'image')
 				)
@@ -3195,7 +2835,8 @@ elif mode == 'Data Retrieval':
 					'Image Color Type',
 					options=[ '', 'color', 'gray', 'mono', 'trans' ],
 					index=[ '', 'color', 'gray', 'mono', 'trans' ].index(
-						st.session_state.get( 'googlesearch_img_color_type', '' ) ),
+						st.session_state.get( 'googlesearch_img_color_type', '' )
+					),
 					key='googlesearch_img_color_type',
 					disabled=(google_search_type != 'image')
 				)
@@ -3207,7 +2848,8 @@ elif mode == 'Data Retrieval':
 					          'pink', 'purple', 'red', 'teal', 'white', 'yellow' ],
 					index=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange',
 					        'pink', 'purple', 'red', 'teal', 'white', 'yellow' ].index(
-						st.session_state.get( 'googlesearch_img_dominant_color', '' ) ),
+						st.session_state.get( 'googlesearch_img_dominant_color', '' )
+					),
 					key='googlesearch_img_dominant_color',
 					disabled=(google_search_type != 'image')
 				)
@@ -3269,7 +2911,8 @@ elif mode == 'Data Retrieval':
 						img_dominant_color=google_img_dominant_color,
 						time=int( google_timeout ),
 						api_key=(google_api_key or None),
-						cse_id=(google_cse_id or None) )
+						cse_id=(google_cse_id or None)
+					)
 					
 					st.session_state[ 'googlesearch_results' ] = result or { }
 					st.rerun( )
@@ -3289,11 +2932,35 @@ elif mode == 'Data Retrieval':
 				
 				if queries or search_info:
 					st.markdown( '#### Search Metadata' )
-					meta_block = {
-							'queries': queries,
-							'searchInformation': search_info,
-					}
-					st.json( meta_block )
+					
+					meta_summary: Dict[ str, Any ] = { }
+					
+					if isinstance( search_info, dict ):
+						for key in [ 'searchTime', 'formattedSearchTime', 'totalResults',
+						             'formattedTotalResults' ]:
+							if key in search_info:
+								meta_summary[ key ] = search_info.get( key )
+					
+					if isinstance( queries, dict ) and 'request' in queries:
+						requests = queries.get( 'request', [ ] )
+						if isinstance( requests, list ) and requests:
+							request_item = requests[ 0 ]
+							if isinstance( request_item, dict ):
+								for key in [ 'searchTerms', 'count', 'startIndex', 'inputEncoding',
+								             'outputEncoding' ]:
+									if key in request_item:
+										meta_summary[ key ] = request_item.get( key )
+					
+					if meta_summary:
+						st.json( meta_summary )
+					
+					with st.expander( 'Raw Search Metadata', expanded=False ):
+						st.json(
+							{
+									'queries': queries,
+									'searchInformation': search_info,
+							}
+						)
 				
 				if not items:
 					st.info( 'No results returned.' )
@@ -3301,33 +2968,319 @@ elif mode == 'Data Retrieval':
 					for idx, item in enumerate( items, start=1 ):
 						title = item.get( 'title', f'Result {idx}' )
 						
-						with st.expander( f'Result {idx}: {title}', expanded=False ):
-							ca, cb = st.columns( 2 )
+						with st.container( border=True ):
+							st.markdown( f'**{idx}. {title}**' )
 							
-							with ca:
-								st.markdown( f"**Link:** {item.get( 'link', '' )}" )
-								st.markdown( f"**Display Link:** {item.get( 'displayLink', '' )}" )
+							link_value = item.get( 'link', '' )
+							display_link = item.get( 'displayLink', '' )
+							snippet_value = item.get( 'snippet', '' )
 							
-							with cb:
-								if 'mime' in item:
-									st.markdown( f"**MIME:** {item.get( 'mime', '' )}" )
-								if 'fileFormat' in item:
-									st.markdown( f"**File Format:** {item.get( 'fileFormat', '' )}" )
+							meta_parts: List[ str ] = [ ]
+							if display_link:
+								meta_parts.append( f'Domain: `{display_link}`' )
 							
-							if item.get( 'snippet' ):
-								st.markdown( '**Snippet:**' )
-								st.text_area(
-									'',
-									value=item.get( 'snippet', '' ),
-									height=180,
-									key=f'googlesearch_snippet_{idx}'
-								)
+							pagemap = item.get( 'pagemap', { } ) if isinstance( item, dict ) else { }
+							if isinstance( pagemap, dict ):
+								if 'metatags' in pagemap:
+									meta_parts.append( 'Has metatags' )
+								if 'cse_image' in pagemap:
+									meta_parts.append( 'Has image' )
 							
-							if item.get( 'pagemap' ):
-								st.markdown( '**Page Map:**' )
-								st.json( item.get( 'pagemap', { } ) )
+							if meta_parts:
+								st.caption( ' | '.join( meta_parts ) )
 							
-							st.json( item )
+							if link_value:
+								st.markdown( f'**Link:** {link_value}' )
+							
+							if snippet_value:
+								st.write( str( snippet_value ) )
+							
+							image_url = ''
+							if isinstance( pagemap, dict ):
+								cse_images = pagemap.get( 'cse_image', [ ] )
+								if isinstance( cse_images, list ) and cse_images:
+									first_img = cse_images[ 0 ]
+									if isinstance( first_img, dict ):
+										image_url = first_img.get( 'src', '' )
+							
+							if image_url and google_search_type == 'image':
+								try:
+									st.image( image_url, use_container_width=True )
+								except Exception:
+									pass
+							
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
+	
+	# -------- Google Geocoding
+	with st.expander( label='Google Geocoding', expanded=False ):
+		if 'googlegeocoding_results' not in st.session_state:
+			st.session_state[ 'googlegeocoding_results' ] = { }
+		
+		if 'googlegeocoding_clear_request' not in st.session_state:
+			st.session_state[ 'googlegeocoding_clear_request' ] = False
+		
+		if st.session_state.get( 'googlegeocoding_clear_request', False ):
+			st.session_state[ 'googlegeocoding_mode' ] = 'forward'
+			st.session_state[ 'googlegeocoding_query' ] = ''
+			st.session_state[ 'googlegeocoding_latitude' ] = 38.8895
+			st.session_state[ 'googlegeocoding_longitude' ] = -77.0353
+			st.session_state[ 'googlegeocoding_place_id' ] = ''
+			st.session_state[ 'googlegeocoding_language' ] = 'en'
+			st.session_state[ 'googlegeocoding_region' ] = ''
+			st.session_state[ 'googlegeocoding_result_type' ] = ''
+			st.session_state[ 'googlegeocoding_location_type' ] = ''
+			st.session_state[ 'googlegeocoding_api_key' ] = ''
+			st.session_state[ 'googlegeocoding_timeout' ] = 10
+			st.session_state[ 'googlegeocoding_results' ] = { }
+			st.session_state[ 'googlegeocoding_clear_request' ] = False
+		
+		def _clear_googlegeocoding_state( ) -> None:
+			st.session_state[ 'googlegeocoding_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			googlegeocoding_mode = st.selectbox(
+				'Mode',
+				options=[ 'forward', 'reverse', 'place' ],
+				index=[ 'forward', 'reverse', 'place' ].index(
+					st.session_state.get( 'googlegeocoding_mode', 'forward' )
+				),
+				key='googlegeocoding_mode',
+				help='forward = address search; reverse = lat/lng to address; place = place_id lookup.'
+			)
+			
+			googlegeocoding_query = st.text_area(
+				'Address Query',
+				height=80,
+				key='googlegeocoding_query',
+				placeholder=(
+						'Examples:\n'
+						'1600 Amphitheatre Parkway, Mountain View, CA\n'
+						'Arlington, VA\n'
+						'10 Downing Street, London'
+				),
+				disabled=(googlegeocoding_mode != 'forward')
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				googlegeocoding_latitude = st.number_input(
+					'Latitude',
+					min_value=-90.0,
+					max_value=90.0,
+					value=float( st.session_state.get( 'googlegeocoding_latitude', 38.8895 ) ),
+					step=0.0001,
+					format='%.6f',
+					key='googlegeocoding_latitude',
+					disabled=(googlegeocoding_mode != 'reverse')
+				)
+			
+			with c2:
+				googlegeocoding_longitude = st.number_input(
+					'Longitude',
+					min_value=-180.0,
+					max_value=180.0,
+					value=float( st.session_state.get( 'googlegeocoding_longitude', -77.0353 ) ),
+					step=0.0001,
+					format='%.6f',
+					key='googlegeocoding_longitude',
+					disabled=(googlegeocoding_mode != 'reverse')
+				)
+			
+			googlegeocoding_place_id = st.text_input(
+				'Place ID',
+				value=st.session_state.get( 'googlegeocoding_place_id', '' ),
+				key='googlegeocoding_place_id',
+				placeholder='ChIJ2eUgeAK6j4ARbn5u_wAGqWA',
+				disabled=(googlegeocoding_mode != 'place')
+			)
+			
+			c3, c4 = st.columns( 2 )
+			
+			with c3:
+				googlegeocoding_language = st.text_input(
+					'Language',
+					value=st.session_state.get( 'googlegeocoding_language', 'en' ),
+					key='googlegeocoding_language',
+					placeholder='en'
+				)
+			
+			with c4:
+				googlegeocoding_region = st.text_input(
+					'Region Bias',
+					value=st.session_state.get( 'googlegeocoding_region', '' ),
+					key='googlegeocoding_region',
+					placeholder='us',
+					disabled=(googlegeocoding_mode == 'reverse')
+				)
+			
+			c5, c6 = st.columns( 2 )
+			
+			with c5:
+				googlegeocoding_result_type = st.text_input(
+					'Result Type',
+					value=st.session_state.get( 'googlegeocoding_result_type', '' ),
+					key='googlegeocoding_result_type',
+					placeholder='street_address|premise',
+					disabled=(googlegeocoding_mode != 'reverse')
+				)
+			
+			with c6:
+				googlegeocoding_location_type = st.text_input(
+					'Location Type',
+					value=st.session_state.get( 'googlegeocoding_location_type', '' ),
+					key='googlegeocoding_location_type',
+					placeholder='ROOFTOP|GEOMETRIC_CENTER',
+					disabled=(googlegeocoding_mode != 'reverse')
+				)
+			
+			c7, c8 = st.columns( 2 )
+			
+			with c7:
+				googlegeocoding_api_key = st.text_input(
+					'API Key',
+					value='',
+					type='password',
+					key='googlegeocoding_api_key',
+					placeholder='Uses GOOGLE_API_KEY when left blank.'
+				)
+			
+			with c8:
+				googlegeocoding_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=60,
+					value=int( st.session_state.get( 'googlegeocoding_timeout', 10 ) ),
+					step=1,
+					key='googlegeocoding_timeout'
+				)
+			
+			st.caption(
+				'Google Geocoding requires billing plus a Google API key. '
+				'Result filters apply to reverse geocoding only.'
+			)
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				googlegeocoding_submit = st.button(
+					'Submit',
+					key='googlegeocoding_submit',
+					use_container_width=True
+				)
+			
+			with b2:
+				st.button(
+					'Clear',
+					key='googlegeocoding_clear',
+					on_click=_clear_googlegeocoding_state,
+					use_container_width=True
+				)
+		
+		with col_right:
+			st.markdown( 'Results' )
+			
+			if googlegeocoding_submit:
+				try:
+					f = GoogleGeocoding( )
+					result = f.fetch(
+						mode=str( googlegeocoding_mode ),
+						query=str( googlegeocoding_query ),
+						latitude=float( googlegeocoding_latitude ),
+						longitude=float( googlegeocoding_longitude ),
+						place_id=str( googlegeocoding_place_id ),
+						language=str( googlegeocoding_language or 'en' ).strip( ),
+						region=str( googlegeocoding_region or '' ).strip( ),
+						result_type=str( googlegeocoding_result_type or '' ).strip( ),
+						location_type=str( googlegeocoding_location_type or '' ).strip( ),
+						time=int( googlegeocoding_timeout ),
+						api_key=(googlegeocoding_api_key or None)
+					)
+					
+					st.session_state[ 'googlegeocoding_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Google Geocoding request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'googlegeocoding_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': result.get( 'mode', '' ),
+							'url': result.get( 'url', '' ),
+							'params': result.get( 'params', { } ),
+							'status': result.get( 'status', '' ),
+					}
+				)
+				
+				results_list = result.get( 'results', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if not results_list:
+					st.info( 'No geocoding results returned.' )
+				else:
+					for idx, item in enumerate( results_list, start=1 ):
+						formatted_address = item.get( 'formatted_address', f'Result {idx}' )
+						place_id_value = item.get( 'place_id', '' )
+						types_value = item.get( 'types', [ ] )
+						
+						geometry = item.get( 'geometry', { } ) if isinstance( item, dict ) else { }
+						location = geometry.get( 'location', { } ) if isinstance( geometry, dict ) else { }
+						
+						with st.container( border=True ):
+							st.markdown( f'**{idx}. {formatted_address}**' )
+							
+							meta_parts: List[ str ] = [ ]
+							
+							if place_id_value:
+								meta_parts.append( f'Place ID: `{place_id_value}`' )
+							
+							if isinstance( types_value, list ) and types_value:
+								meta_parts.append( f"Types: `{', '.join( types_value[ :4 ] )}`" )
+							
+							if meta_parts:
+								st.caption( ' | '.join( meta_parts ) )
+							
+							if isinstance( location, dict ):
+								lat_value = location.get( 'lat', '' )
+								lng_value = location.get( 'lng', '' )
+								if str( lat_value ).strip( ) or str( lng_value ).strip( ):
+									st.write( f'Coordinates: {lat_value}, {lng_value}' )
+							
+							address_components = item.get( 'address_components', [ ] )
+							if isinstance( address_components, list ) and address_components:
+								component_rows: List[ Dict[ str, Any ] ] = [ ]
+								for component in address_components:
+									if isinstance( component, dict ):
+										component_rows.append(
+											{
+													'long_name': component.get( 'long_name', '' ),
+													'short_name': component.get( 'short_name', '' ),
+													'types': ', '.join( component.get( 'types', [ ] ) )
+											}
+										)
+								
+								if component_rows:
+									with st.expander( 'Address Components', expanded=False ):
+										st.dataframe(
+											pd.DataFrame( component_rows ),
+											use_container_width=True,
+											hide_index=True
+										)
+							
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Naval Observatory
 	with st.expander( label='US Naval Observatory', expanded=False ):
@@ -6630,7 +6583,8 @@ elif mode == 'Geospatial Data':
 				'Mode',
 				options=[ 'object_search', 'object_ids', 'region_search' ],
 				index=[ 'object_search', 'object_ids', 'region_search' ].index(
-					st.session_state.get( 'astroquery_mode', 'object_search' ) ),
+					st.session_state.get( 'astroquery_mode', 'object_search' )
+				),
 				key='astroquery_mode'
 			)
 			
@@ -6658,7 +6612,7 @@ elif mode == 'Geospatial Data':
 					key='astroquery_ra',
 					placeholder='13:09:48.09',
 					disabled=(astroquery_mode != 'region_search'),
-					help='Right Ascension of the search center, e.g. 13:09:48.09'
+					help='Right Ascension of the search center, e.g. 13:09:48.09.'
 				)
 			
 			with c2:
@@ -6668,7 +6622,7 @@ elif mode == 'Geospatial Data':
 					key='astroquery_dec',
 					placeholder='-23:22:53.3',
 					disabled=(astroquery_mode != 'region_search'),
-					help='Declination of the search center, e.g. -23:22:53.3'
+					help='Declination of the search center, e.g. -23:22:53.3.'
 				)
 			
 			with c3:
@@ -6690,7 +6644,8 @@ elif mode == 'Geospatial Data':
 					'Radius Unit',
 					options=[ 'deg', 'arcmin', 'arcsec' ],
 					index=[ 'deg', 'arcmin', 'arcsec' ].index(
-						st.session_state.get( 'astroquery_radius_unit', 'deg' ) ),
+						st.session_state.get( 'astroquery_radius_unit', 'deg' )
+					),
 					key='astroquery_radius_unit',
 					disabled=(astroquery_mode != 'region_search')
 				)
@@ -6713,9 +6668,18 @@ elif mode == 'Geospatial Data':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				astroquery_submit = st.button( 'Submit', key='astroquery_submit' )
+				astroquery_submit = st.button(
+					'Submit',
+					key='astroquery_submit',
+					use_container_width=True
+				)
 			with b2:
-				st.button( 'Clear', key='astroquery_clear', on_click=_clear_astroquery_state )
+				st.button(
+					'Clear',
+					key='astroquery_clear',
+					on_click=_clear_astroquery_state,
+					use_container_width=True
+				)
 		
 		with col_right:
 			st.markdown( 'Results' )
@@ -6730,7 +6694,8 @@ elif mode == 'Geospatial Data':
 						dec=astroquery_dec,
 						radius=float( astroquery_radius ),
 						radius_unit=astroquery_radius_unit,
-						row_limit=int( astroquery_row_limit ) )
+						row_limit=int( astroquery_row_limit )
+					)
 					
 					st.session_state[ 'astroquery_results' ] = result or { }
 					st.rerun( )
@@ -6738,9 +6703,9 @@ elif mode == 'Geospatial Data':
 				except Exception as exc:
 					st.error( 'Astro Query request failed.' )
 					st.exception( exc )
-					
+			
 			result = st.session_state.get( 'astroquery_results', { } )
-		
+			
 			if not result:
 				st.text( 'No results.' )
 			else:
@@ -6777,13 +6742,21 @@ elif mode == 'Geospatial Data':
 				else:
 					df_rows = pd.DataFrame( rows )
 					
-					if columns:
+					if not df_rows.empty and columns:
 						ordered_columns = [ c for c in columns if c in df_rows.columns ]
 						if ordered_columns:
 							df_rows = df_rows[ ordered_columns ]
 					
 					st.markdown( f'#### Result Rows ({len( df_rows )})' )
-					st.dataframe( df_rows, use_container_width=True, hide_index=True )
+					
+					if not df_rows.empty:
+						st.dataframe(
+							df_rows,
+							use_container_width=True,
+							hide_index=True
+						)
+					else:
+						st.info( 'No displayable rows were returned.' )
 					
 					with st.expander( 'Row Details', expanded=False ):
 						for idx, row in enumerate( rows, start=1 ):
