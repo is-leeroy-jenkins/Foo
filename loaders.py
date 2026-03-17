@@ -49,6 +49,7 @@ from langchain_community.document_loaders import (
 	Docx2txtLoader,
 	OutlookMessageLoader,
 	PyPDFLoader,
+	TextLoader as LangChainTextLoader,
 	UnstructuredExcelLoader,
 	UnstructuredEmailLoader,
 	UnstructuredMarkdownLoader,
@@ -58,6 +59,7 @@ from langchain_community.document_loaders import (
 	WebBaseLoader,
 	YoutubeLoader
 )
+
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.document_loaders.onedrive import OneDriveLoader
 from langchain_community.document_loaders.parsers import RapidOCRBlobParser
@@ -280,7 +282,155 @@ class Loader( ):
 			exception.method = ('split_documents( self, docs: List[ Document ], chunk: int=1000, '
 			                    'overlap: int=200 ) -> List[ Document ]')
 			raise exception
+
+class TextLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides LangChain's TextLoader functionality to parse plain-text files
+		into Document objects.
+
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path - str
+		pattern - str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+		encoding - str
+
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ] ) -> List[ Document ]
+		load( path: str, encoding: Optional[ str ]=None ) -> List[ Document ]
+		split( ) -> List[ Document ]
+
+	'''
+	loader: Optional[ LangChainTextLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	encoding: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = [ ]
+		self.pattern = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.encoding = None
+	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'encoding',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
+	
+	def load( self, path: str, encoding: Optional[ str ] = None ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load a plain-text file into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): File path to the text file.
+			encoding (Optional[str]): Optional text encoding such as 'utf-8'.
+
+			Returns:
+			--------
+			List[Document]: List of parsed Document objects from the text file.
+
+		'''
+		try:
+			throw_if( 'path', path )
+			self.file_path = self.verify_exists( path )
+			self.encoding = encoding
 			
+			if self.encoding:
+				self.loader = LangChainTextLoader(
+					file_path=self.file_path,
+					encoding=self.encoding )
+			else:
+				self.loader = LangChainTextLoader( file_path=self.file_path )
+			
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'TextLoader'
+			exception.method = (
+					'load( self, path: str, encoding: Optional[ str ]=None ) '
+					'-> List[ Document ]'
+			)
+			raise exception
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded text documents into manageable chunks for downstream LLM
+			processing.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents(
+				self.documents,
+				chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'Foo'
+			exception.cause = 'TextLoader'
+			exception.method = (
+					'split( self, chunk: int=1000, overlap: int=200 ) '
+					'-> List[ Document ]'
+			)
+			raise exception
+		
 class CsvLoader( Loader ):
 	'''
 

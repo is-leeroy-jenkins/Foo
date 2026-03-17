@@ -59,9 +59,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from langchain_core.documents import Document
-from loaders import ( PdfLoader, WordLoader, ExcelLoader, MarkdownLoader,
+from loaders import (PdfLoader, WordLoader, ExcelLoader, MarkdownLoader,
                      HtmlLoader, YouTubeLoader, RecursiveCharacterTextSplitter,
-                      PowerPointLoader )
+                     PowerPointLoader)
 
 from generators import Chat, Claude, Grok, Mistral, Gemini
 from fetchers import (
@@ -493,26 +493,15 @@ def initialize_database( ) -> None:
 			"""
 		)
 		conn.execute(
-		"""
+			"""
             CREATE TABLE IF NOT EXISTS Prompts
             (
-                PromptsId
-                INTEGER
-                NOT
-                NULL
-                PRIMARY
-                KEY
-                AUTOINCREMENT,
-                Caption
-                TEXT,
-                Name
-                TEXT,
-                Text
-                TEXT,
-                Version
-                TEXT,
-                ID
-                TEXT
+                PromptsId INTEGER NOT  NULL PRIMARY KEY AUTOINCREMENT,
+                Caption  TEXT,
+                Name TEXT,
+                Text TEXT,
+                Version TEXT,
+                ID TEXT
             )
 			"""
 		)
@@ -1539,10 +1528,14 @@ if mode == modes[ 0 ]:
 	if 'loader_uploader_nonce' not in st.session_state:
 		st.session_state[ 'loader_uploader_nonce' ] = 0
 	
+	if 'loader_selected_type' not in st.session_state:
+		st.session_state[ 'loader_selected_type' ] = 'Auto'
+	
 	if st.session_state.get( 'loader_clear_request', False ):
 		st.session_state[ 'loader_results' ] = { }
 		st.session_state[ 'loader_documents' ] = [ ]
 		st.session_state[ 'loader_path' ] = ''
+		st.session_state[ 'loader_selected_type' ] = 'Auto'
 		st.session_state[ 'loader_clear_request' ] = False
 	
 	loader_results = st.session_state.get( 'loader_results', { } )
@@ -1554,56 +1547,101 @@ if mode == modes[ 0 ]:
 		st.session_state[ 'loader_clear_request' ] = True
 		st.session_state[ 'loader_uploader_nonce' ] += 1
 	
-	def _load_from_path( file_path: str ) -> tuple[ list[ Document ] | None, dict[ str, Any ] ]:
+	def _get_loader_from_selection( file_path: str, selected_type: str ) -> tuple[
+		Any | None, str ]:
 		path_obj = Path( file_path )
 		suffix = path_obj.suffix.lower( ).lstrip( '.' )
-		out: dict[ str, Any ] = { 'file': str( path_obj ), 'type': suffix }
+		effective_type = selected_type
+		
+		if selected_type == 'Auto':
+			if suffix == 'pdf':
+				effective_type = 'PDF'
+			elif suffix == 'docx':
+				effective_type = 'Word'
+			elif suffix in ('xlsx', 'xls'):
+				effective_type = 'Excel'
+			elif suffix == 'md':
+				effective_type = 'Markdown'
+			elif suffix == 'pptx':
+				effective_type = 'PowerPoint'
+			elif suffix in ('html', 'htm'):
+				effective_type = 'HTML'
+			elif suffix in ('txt', 'text', 'log'):
+				effective_type = 'Text'
+			else:
+				effective_type = 'Unsupported'
+		
+		if effective_type == 'PDF':
+			return PdfLoader( ), effective_type
+		elif effective_type == 'Word':
+			return WordLoader( ), effective_type
+		elif effective_type == 'Excel':
+			return ExcelLoader( ), effective_type
+		elif effective_type == 'Markdown':
+			return MarkdownLoader( ), effective_type
+		elif effective_type == 'PowerPoint':
+			return PowerPointLoader( ), effective_type
+		elif effective_type == 'HTML':
+			return HtmlLoader( ), effective_type
+		elif effective_type == 'Text':
+			return TextLoader( ), effective_type
+		else:
+			return None, effective_type
+	
+	def _load_from_path( file_path: str, selected_type: str ) -> tuple[
+		list[ Document ] | None, dict[ str, Any ] ]:
+		path_obj = Path( file_path )
+		suffix = path_obj.suffix.lower( ).lstrip( '.' )
+		out: dict[ str, Any ] = {
+				'file': str( path_obj ),
+				'type': suffix,
+				'selected_loader': selected_type,
+		}
 		docs: list[ Document ] | None = None
 		
-		if suffix == 'pdf' and do_pdf:
-			ld = PdfLoader( )
-			docs = ld.load( str( path_obj ) )
-		elif suffix == 'docx' and do_word:
-			ld = WordLoader( )
-			docs = ld.load( str( path_obj ) )
-		elif suffix in ('xlsx', 'xls') and do_excel:
-			ld = ExcelLoader( )
-			docs = ld.load( str( path_obj ) )
-		elif suffix == 'md' and do_markdown:
-			ld = MarkdownLoader( )
-			docs = ld.load( str( path_obj ) )
-		elif suffix == 'pptx' and do_powerpoint:
-			ld = PowerPointLoader( )
-			docs = ld.load( str( path_obj ) )
-		else:
-			out[
-				'skipped' ] = 'Checkbox for this file type is not selected or the file type is not implemented.'
+		ld, effective_type = _get_loader_from_selection(
+			file_path=str( path_obj ),
+			selected_type=selected_type )
 		
+		out[ 'resolved_loader' ] = effective_type
+		
+		if ld is None:
+			out[ 'skipped' ] = (
+					'No loader is available for this file type. '
+					'Use Auto or select a compatible loader.'
+			)
+			return docs, out
+		
+		docs = ld.load( str( path_obj ) )
 		return docs, out
 	
 	col_browse, col_text = st.columns( [ 0.7, 0.3 ], border=True )
 	with col_browse:
+		selected_loader_type = st.selectbox(
+			label='Loader Type',
+			options=[
+					'Auto',
+					'PDF',
+					'Word',
+					'Excel',
+					'Markdown',
+					'PowerPoint',
+					'HTML',
+					'Text',
+			],
+			key='loader_selected_type' )
+		
 		uploaded_files = st.file_uploader(
 			'Choose file(s)',
-			type=[ 'pdf', 'docx', 'xlsx', 'xls', 'pptx', 'md' ],
+			type=[ 'pdf', 'docx', 'xlsx', 'xls', 'pptx', 'md', 'html', 'htm', 'txt', 'text',
+			       'log' ],
 			accept_multiple_files=True,
 			key=f"loader_uploaded_files_{st.session_state[ 'loader_uploader_nonce' ]}", )
 		
-		col1, col2, col3, col4, col5, col6 = st.columns( 6 )
-		
-		with col1:
-			do_pdf = st.checkbox( label='PDF', key='pdf_checkbox' )
-		with col2:
-			do_word = st.checkbox( label='Word', key='word_checkbox' )
-		with col3:
-			do_excel = st.checkbox( label='Excel', key='excel_checkbox' )
-		with col4:
-			do_markdown = st.checkbox( label='Markdown', key='markdown_checkbox' )
-		with col5:
-			do_powerpoint = st.checkbox( label='Powerpoint', key='powerpoint_checkbox' )
-		with col6:
-			do_text = st.checkbox( label='Text', key='text_checkbox', disabled=True )
-			st.caption( 'Reserved' )
+		st.caption(
+			'Auto detects the loader from the file extension. '
+			'Use a specific loader only when all selected files share the same format.'
+		)
 	
 	with col_text:
 		loader_text = st.text_area(
@@ -1636,7 +1674,10 @@ if mode == modes[ 0 ]:
 					with open( tmp_path, 'wb' ) as fp:
 						fp.write( f.getbuffer( ) )
 					
-					docs, out = _load_from_path( str( tmp_path ) )
+					docs, out = _load_from_path(
+						file_path=str( tmp_path ),
+						selected_type=selected_loader_type )
+					
 					if isinstance( docs, list ):
 						documents.extend( docs )
 						out[ 'documents_loaded' ] = len( docs )
@@ -1651,7 +1692,10 @@ if mode == modes[ 0 ]:
 				out: dict[ str, Any ] = { 'file': file_path }
 				
 				try:
-					docs, out = _load_from_path( file_path )
+					docs, out = _load_from_path(
+						file_path=file_path,
+						selected_type=selected_loader_type )
+					
 					if isinstance( docs, list ):
 						documents.extend( docs )
 						out[ 'documents_loaded' ] = len( docs )
@@ -1660,15 +1704,16 @@ if mode == modes[ 0 ]:
 				
 				file_outputs.append( out )
 		
+		results[ 'selected_loader' ] = selected_loader_type
 		results[ 'files' ] = file_outputs
 		st.session_state[ 'loader_results' ] = results
 		st.session_state[ 'loader_documents' ] = documents
 		st.rerun( )
 	
-	st.markdown( '----' )
+	st.divider( )
 	
 	if st.session_state.get( 'loader_documents' ):
-		st.markdown( '### Loaded Documents' )
+		st.markdown( '##### Loaded Documents' )
 		for idx, doc in enumerate( st.session_state[ 'loader_documents' ], start=1 ):
 			with st.expander( f'Document {idx}', expanded=False ):
 				st.text_area( '', value=(doc.page_content or ''), height=260 )
@@ -1676,7 +1721,7 @@ if mode == modes[ 0 ]:
 					st.json( doc.metadata )
 	
 	if st.session_state.get( 'loader_results' ):
-		st.markdown( '### Load Results' )
+		st.markdown( '##### Load Results' )
 		st.json( st.session_state[ 'loader_results' ] )
 
 # =============================================================================
