@@ -1645,6 +1645,8 @@ if mode == modes[ 0 ]:
 		loader_text = st.text_area( 'Enter one local file path per line',
 			height=120, key='loader_path' )
 		
+		st.divider( )
+		
 		lb1, lb2 = st.columns( 2 )
 		with lb1:
 			do_load = st.button( 'Load Local Files', key='loader_load_btn', width='stretch' )
@@ -1717,7 +1719,8 @@ if mode == modes[ 0 ]:
 		st.markdown( '##### Local Load Results' )
 		st.json( st.session_state[ 'loader_results' ] )
 	
-	st.divider( )
+	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+	
 	st.markdown( '##### Remote Loaders' )
 	
 	with st.expander( 'Remote Sources', expanded=False ):
