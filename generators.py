@@ -54,7 +54,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Pattern, List, Tuple
 from requests import Response
 from xai_sdk import Client as Xai
-from mistralai.client import Mistral as MistralAI
+from mistralai import Mistral as MistralAI
 import re
 import urllib
 

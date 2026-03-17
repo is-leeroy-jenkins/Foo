@@ -12566,3 +12566,509 @@ class CensusData( Fetcher ):
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
 			)
 			raise exception
+
+class Socrata( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Fetch tabular data from Socrata / SODA-compatible endpoints such as
+		CDC Data API datasets.
+
+		Attribues:
+		-----------
+		api_key - Optional[ str ]
+		base_url - Optional[ str ]
+		domain - Optional[ str ]
+		dataset_id - Optional[ str ]
+		mode - Optional[ str ]
+		select_clause - Optional[ str ]
+		where_clause - Optional[ str ]
+		order_clause - Optional[ str ]
+		group_clause - Optional[ str ]
+		limit_value - Optional[ int ]
+		offset_value - Optional[ int ]
+		params - Optional[ Dict[ str, Any ] ]
+		payload - Optional[ Any ]
+
+		Methods:
+		-----------
+		_resolve_api_key( ) -> Optional[ str ]
+		_normalize_domain( domain: str ) -> str
+		_normalize_dataset_id( dataset_id: str ) -> str
+		fetch_metadata( domain: str, dataset_id: str, time: int=20 )
+			-> Dict[ str, Any ]
+		fetch_rows( domain: str, dataset_id: str, select: str='',
+			where: str='', order: str='', group: str='',
+			limit: int=25, offset: int=0, time: int=20 )
+			-> Dict[ str, Any ]
+		fetch( mode: str='rows', domain: str='data.cdc.gov',
+			dataset_id: str='', select: str='', where: str='',
+			order: str='', group: str='', limit: int=25,
+			offset: int=0, time: int=20 ) -> Dict[ str, Any ]
+
+	'''
+	api_key: Optional[ str ]
+	base_url: Optional[ str ]
+	domain: Optional[ str ]
+	dataset_id: Optional[ str ]
+	mode: Optional[ str ]
+	select_clause: Optional[ str ]
+	where_clause: Optional[ str ]
+	order_clause: Optional[ str ]
+	group_clause: Optional[ str ]
+	limit_value: Optional[ int ]
+	offset_value: Optional[ int ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize the Socrata API wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			None
+
+		'''
+		super( ).__init__( )
+		self.api_key = getattr( cfg, 'SOCRATA_API_KEY', '' )
+		self.base_url = 'https://{domain}/resource/{dataset}.json'
+		self.domain = 'data.cdc.gov'
+		self.dataset_id = ''
+		self.mode = 'rows'
+		self.select_clause = ''
+		self.where_clause = ''
+		self.order_clause = ''
+		self.group_clause = ''
+		self.limit_value = 25
+		self.offset_value = 0
+		self.params = { }
+		self.payload = [ ]
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': cfg.AGENTS,
+		}
+		self.timeout = 20
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			-----------
+			Return ordered Socrata members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			List[str]
+
+		'''
+		return [
+				'api_key',
+				'base_url',
+				'domain',
+				'dataset_id',
+				'mode',
+				'select_clause',
+				'where_clause',
+				'order_clause',
+				'group_clause',
+				'limit_value',
+				'offset_value',
+				'params',
+				'payload',
+				'_resolve_api_key',
+				'_normalize_domain',
+				'_normalize_dataset_id',
+				'fetch_metadata',
+				'fetch_rows',
+				'fetch',
+				'create_schema',
+		]
+	
+	def _resolve_api_key( self ) -> Optional[ str ]:
+		'''
+			Purpose:
+			-----------
+			Resolve the configured Socrata application token.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			Optional[str]
+
+		'''
+		key = str( self.api_key or '' ).strip( )
+		return key if key else None
+	
+	def _normalize_domain( self, domain: str ) -> str:
+		'''
+			Purpose:
+			-----------
+			Normalize the Socrata domain.
+
+			Parameters:
+			-----------
+			domain (str): Domain such as data.cdc.gov.
+
+			Returns:
+			-----------
+			str
+
+		'''
+		try:
+			throw_if( 'domain', domain )
+			value = str( domain ).strip( )
+			value = value.replace( 'https://', '' ).replace( 'http://', '' ).strip( '/' )
+			if not value:
+				raise ValueError( "Argument 'domain' cannot be empty!" )
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Socrata'
+			exception.method = '_normalize_domain( self, domain: str ) -> str'
+			raise exception
+	
+	def _normalize_dataset_id( self, dataset_id: str ) -> str:
+		'''
+			Purpose:
+			-----------
+			Normalize the Socrata dataset identifier.
+
+			Parameters:
+			-----------
+			dataset_id (str): 4x4 dataset identifier.
+
+			Returns:
+			-----------
+			str
+
+		'''
+		try:
+			throw_if( 'dataset_id', dataset_id )
+			value = str( dataset_id ).strip( )
+			value = value.replace( '.json', '' ).strip( '/' )
+			if not value:
+				raise ValueError( "Argument 'dataset_id' cannot be empty!" )
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Socrata'
+			exception.method = '_normalize_dataset_id( self, dataset_id: str ) -> str'
+			raise exception
+	
+	def fetch_metadata( self, domain: str, dataset_id: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch Socrata dataset metadata.
+
+			Parameters:
+			-----------
+			domain (str):
+				Portal domain such as data.cdc.gov.
+
+			dataset_id (str):
+				Dataset identifier such as q8xq-ygsk.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'metadata'
+			self.domain = self._normalize_domain( domain )
+			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.url = f'https://{self.domain}/api/views/{self.dataset_id}.json'
+			self.params = { }
+			
+			api_key = self._resolve_api_key( )
+			if api_key:
+				self.headers[ 'X-App-Token' ] = api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.response.json( ),
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Socrata'
+			exception.method = (
+					'fetch_metadata( self, domain: str, dataset_id: str, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_rows( self, domain: str, dataset_id: str, select: str = '',
+			where: str = '', order: str = '', group: str = '',
+			limit: int = 25, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch Socrata dataset rows using standard SoQL query options.
+
+			Parameters:
+			-----------
+			domain (str):
+				Portal domain such as data.cdc.gov.
+
+			dataset_id (str):
+				Dataset identifier such as q8xq-ygsk.
+
+			select (str):
+				Optional $select clause.
+
+			where (str):
+				Optional $where clause.
+
+			order (str):
+				Optional $order clause.
+
+			group (str):
+				Optional $group clause.
+
+			limit (int):
+				Optional row limit.
+
+			offset (int):
+				Optional offset for pagination.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'rows'
+			self.domain = self._normalize_domain( domain )
+			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.select_clause = str( select or '' ).strip( )
+			self.where_clause = str( where or '' ).strip( )
+			self.order_clause = str( order or '' ).strip( )
+			self.group_clause = str( group or '' ).strip( )
+			self.limit_value = int( limit )
+			self.offset_value = int( offset )
+			
+			self.url = self.base_url.format(
+				domain=self.domain,
+				dataset=self.dataset_id )
+			
+			self.params = {
+					'$limit': self.limit_value,
+					'$offset': self.offset_value,
+			}
+			
+			if self.select_clause:
+				self.params[ '$select' ] = self.select_clause
+			
+			if self.where_clause:
+				self.params[ '$where' ] = self.where_clause
+			
+			if self.order_clause:
+				self.params[ '$order' ] = self.order_clause
+			
+			if self.group_clause:
+				self.params[ '$group' ] = self.group_clause
+			
+			api_key = self._resolve_api_key( )
+			if api_key:
+				self.headers[ 'X-App-Token' ] = api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'count': len( self.payload ) if isinstance( self.payload, list ) else 0,
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Socrata'
+			exception.method = (
+					'fetch_rows( self, domain: str, dataset_id: str, select: str="", '
+					'where: str="", order: str="", group: str="", limit: int=25, '
+					'offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'rows', domain: str = 'data.cdc.gov',
+			dataset_id: str = '', select: str = '', where: str = '',
+			order: str = '', group: str = '', limit: int = 25,
+			offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Dispatch Socrata API operations.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of metadata or rows.
+
+			domain (str):
+				Portal domain.
+
+			dataset_id (str):
+				Dataset identifier.
+
+			select (str):
+				Optional $select clause.
+
+			where (str):
+				Optional $where clause.
+
+			order (str):
+				Optional $order clause.
+
+			group (str):
+				Optional $group clause.
+
+			limit (int):
+				Optional row limit.
+
+			offset (int):
+				Optional row offset.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			active_mode = str( mode or 'rows' ).strip( ).lower( )
+			
+			if active_mode == 'metadata':
+				return self.fetch_metadata(
+					domain=domain,
+					dataset_id=dataset_id,
+					time=int( time ) )
+			
+			if active_mode == 'rows':
+				return self.fetch_rows(
+					domain=domain,
+					dataset_id=dataset_id,
+					select=select,
+					where=where,
+					order=order,
+					group=group,
+					limit=int( limit ),
+					offset=int( offset ),
+					time=int( time ) )
+			
+			raise ValueError( "mode must be one of: 'metadata', 'rows'." )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Socrata'
+			exception.method = (
+					'fetch( self, mode: str="rows", domain: str="data.cdc.gov", '
+					'dataset_id: str="", select: str="", where: str="", order: str="", '
+					'group: str="", limit: int=25, offset: int=0, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			___________
+			function (str): Tool function name.
+			tool (str): Service name.
+			description (str): What the function does.
+			parameters (dict): JSON-schema properties.
+			required (list[str]): Required parameter names.
+
+			Returns:
+			________
+			dict
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			_schema = {
+					'name': func_name,
+					'description': f'{desc} This function uses the {tool_name} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required,
+					}
+			}
+			
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Socrata'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception

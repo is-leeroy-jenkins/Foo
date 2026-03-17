@@ -70,7 +70,8 @@ from fetchers import (
 	GoogleWeather, Grokipedia, OpenWeather, NavalObservatory,
 	GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
 	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
-	GovData, Congress, InternetArchive, StarChart, HistoricalWeather, GoogleGeocoding, CensusData )
+	GovData, Congress, InternetArchive, StarChart, HistoricalWeather, GoogleGeocoding,
+	CensusData, Socrata )
 
 import plotly.graph_objects as px
 import pandas as pd
@@ -8541,9 +8542,13 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
+# ==============================================================================
+# POPULATION MODE
+# ==============================================================================
 elif mode == 'Population':
 	st.subheader( f'‍⚕️ Public Health & Socio-Economic Data' )
 	st.divider( )
+	
 	# -------- U.S. Census Bureau
 	with st.expander( label='U.S. Census Bureau', expanded=False ):
 		if 'census_results' not in st.session_state:
@@ -8764,11 +8769,257 @@ elif mode == 'Population':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
+	
+	# -------- CDC SOCRATA
+	with st.expander( label='CDC SOCRATA', expanded=False ):
+		if 'socrata_results' not in st.session_state:
+			st.session_state[ 'socrata_results' ] = { }
+		
+		if 'socrata_clear_request' not in st.session_state:
+			st.session_state[ 'socrata_clear_request' ] = False
+		
+		if st.session_state.get( 'socrata_clear_request', False ):
+			st.session_state[ 'socrata_mode' ] = 'rows'
+			st.session_state[ 'socrata_domain' ] = 'data.cdc.gov'
+			st.session_state[ 'socrata_dataset_id' ] = 'q8xq-ygsk'
+			st.session_state[ 'socrata_select' ] = ''
+			st.session_state[ 'socrata_where' ] = ''
+			st.session_state[ 'socrata_order' ] = ''
+			st.session_state[ 'socrata_group' ] = ''
+			st.session_state[ 'socrata_limit' ] = 25
+			st.session_state[ 'socrata_offset' ] = 0
+			st.session_state[ 'socrata_timeout' ] = 20
+			st.session_state[ 'socrata_results' ] = { }
+			st.session_state[ 'socrata_clear_request' ] = False
+		
+		def _clear_socrata_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Socrata expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'socrata_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			socrata_mode = st.selectbox(
+				'Mode',
+				options=[ 'rows', 'metadata' ],
+				index=[ 'rows', 'metadata' ].index(
+					st.session_state.get( 'socrata_mode', 'rows' )
+				),
+				key='socrata_mode',
+				help='rows = query dataset rows; metadata = inspect dataset metadata.'
+			)
+			
+			socrata_domain = st.text_input(
+				'Domain',
+				value=st.session_state.get( 'socrata_domain', 'data.cdc.gov' ),
+				key='socrata_domain',
+				placeholder='data.cdc.gov'
+			)
+			
+			socrata_dataset_id = st.text_input(
+				'Dataset ID',
+				value=st.session_state.get( 'socrata_dataset_id', 'q8xq-ygsk' ),
+				key='socrata_dataset_id',
+				placeholder='q8xq-ygsk'
+			)
+			
+			socrata_select = st.text_area(
+				'Select',
+				value=st.session_state.get( 'socrata_select', '' ),
+				height=80,
+				key='socrata_select',
+				placeholder='locationname,datavaluetype,datavalue',
+				disabled=(socrata_mode != 'rows')
+			)
+			
+			socrata_where = st.text_area(
+				'Where',
+				value=st.session_state.get( 'socrata_where', '' ),
+				height=100,
+				key='socrata_where',
+				placeholder="year = '2020'",
+				disabled=(socrata_mode != 'rows')
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				socrata_order = st.text_input(
+					'Order',
+					value=st.session_state.get( 'socrata_order', '' ),
+					key='socrata_order',
+					placeholder='locationname ASC',
+					disabled=(socrata_mode != 'rows')
+				)
+			
+			with c2:
+				socrata_group = st.text_input(
+					'Group',
+					value=st.session_state.get( 'socrata_group', '' ),
+					key='socrata_group',
+					placeholder='locationname',
+					disabled=(socrata_mode != 'rows')
+				)
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				socrata_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=50000,
+					value=int( st.session_state.get( 'socrata_limit', 25 ) ),
+					step=1,
+					key='socrata_limit',
+					disabled=(socrata_mode != 'rows')
+				)
+			
+			with c4:
+				socrata_offset = st.number_input(
+					'Offset',
+					min_value=0,
+					max_value=1000000,
+					value=int( st.session_state.get( 'socrata_offset', 0 ) ),
+					step=1,
+					key='socrata_offset',
+					disabled=(socrata_mode != 'rows')
+				)
+			
+			with c5:
+				socrata_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'socrata_timeout', 20 ) ),
+					step=1,
+					key='socrata_timeout'
+				)
+			
+			st.caption(
+				'Example dataset: q8xq-ygsk on data.cdc.gov. '
+				'Use SoQL clauses for select, where, order, and group.'
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				socrata_submit = st.button(
+					'Submit',
+					key='socrata_submit',
+					use_container_width=True
+				)
+			
+			with b2:
+				st.button(
+					'Clear',
+					key='socrata_clear',
+					on_click=_clear_socrata_state,
+					use_container_width=True
+				)
+		
+		with col_right:
+			result = st.session_state.get( 'socrata_results', { } )
+			
+			if socrata_submit:
+				try:
+					f = Socrata( )
+					result = f.fetch(
+						mode=socrata_mode,
+						domain=str( socrata_domain ),
+						dataset_id=str( socrata_dataset_id ),
+						select=str( socrata_select ),
+						where=str( socrata_where ),
+						order=str( socrata_order ),
+						group=str( socrata_group ),
+						limit=int( socrata_limit ),
+						offset=int( socrata_offset ),
+						time=int( socrata_timeout )
+					)
+					
+					st.session_state[ 'socrata_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Socrata request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': result.get( 'mode', '' ),
+							'url': result.get( 'url', '' ),
+							'params': result.get( 'params', { } ),
+					}
+				)
+				
+				if result.get( 'mode', '' ) == 'metadata':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					metadata_summary = {
+							'Name': payload.get( 'name', '' ) if isinstance( payload, dict ) else '',
+							'Description': payload.get( 'description', '' ) if isinstance( payload, dict ) else '',
+							'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance( payload, dict ) else '',
+							'ViewType': payload.get( 'viewType', '' ) if isinstance( payload, dict ) else '',
+							'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload, dict ) else 0,
+					}
+					st.json( metadata_summary )
+					
+					columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload, dict ) else [ ]
+					if columns_payload:
+						rows: List[ Dict[ str, Any ] ] = [ ]
+						for item in columns_payload:
+							if isinstance( item, dict ):
+								rows.append(
+									{
+											'Name': item.get( 'name', '' ),
+											'FieldName': item.get( 'fieldName', '' ),
+											'DataType': item.get( 'dataTypeName', '' ),
+											'Description': item.get( 'description', '' ),
+									}
+								)
+						
+						if rows:
+							df_columns = pd.DataFrame( rows )
+							st.dataframe(
+								df_columns,
+								use_container_width=True,
+								hide_index=True,
+								height=320
+							)
+				
+				elif result.get( 'mode', '' ) == 'rows':
+					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
+					if isinstance( rows, list ) and rows:
+						df_socrata = pd.DataFrame( rows )
+						st.dataframe(
+							df_socrata,
+							use_container_width=True,
+							hide_index=True,
+							height=320
+						)
+					else:
+						st.info( 'No rows returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 					
 # ==============================================================================
 # TEXT GENERATION MODE
 # ==============================================================================
-
 elif mode == 'Generation':
 	st.subheader( f'🧠  Generative AI' )
 	st.divider( )
