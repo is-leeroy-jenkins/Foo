@@ -2,7 +2,7 @@
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
 
-Foo is a small application designed to give users explicit, hands-on control over how data is loaded, extracted, queried, and explored from a variety of sources. Through a tab-based interface, users can load content from URLs, raw text, and local files; selectively scrape structured elements from web pages; fetch information from external services; interact with conversational analysis tools; and perform location-based workflows such as geocoding and weather lookups. 
+Foo is designed to give users explicit, hands-on control over how data is retrieved, loaded, extracted, queried, and explored from a variety of sources. Through a tab-based interface, users can load content from URLs, raw text, and local files; selectively scrape structured elements from web pages; fetch information from external services; interact with conversational analysis tools; and perform location-based workflows such as geocoding and weather lookups. 
 
 Foo is modular by design, allowing individual capabilities—loaders, scrapers, fetchers, mappers, and databases to operate independently while remaining composable within a single, cohesive workspace.
 

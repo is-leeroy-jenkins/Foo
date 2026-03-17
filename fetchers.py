@@ -63,9 +63,6 @@ from bs4 import BeautifulSoup
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from google import genai
 from grokipedia_api import GrokipediaClient
-from groq import Groq as GroqClient
-from langchain_classic.agents import AgentExecutor, initialize_agent, AgentType
-from langchain_classic.memory import ConversationBufferMemory
 from langchain_community.chat_models import ChatOpenAI
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
 from langchain_core.documents import Document
@@ -13067,6 +13064,2038 @@ class Socrata( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Socrata'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class HealthData( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Fetch tabular data from HealthData.gov datasets using the portal's
+		open-data API surface.
+
+		Attribues:
+		-----------
+		api_key - Optional[ str ]
+		base_url - Optional[ str ]
+		domain - Optional[ str ]
+		dataset_id - Optional[ str ]
+		mode - Optional[ str ]
+		select_clause - Optional[ str ]
+		where_clause - Optional[ str ]
+		order_clause - Optional[ str ]
+		group_clause - Optional[ str ]
+		limit_value - Optional[ int ]
+		offset_value - Optional[ int ]
+		params - Optional[ Dict[ str, Any ] ]
+		payload - Optional[ Any ]
+
+		Methods:
+		-----------
+		_resolve_api_key( ) -> Optional[ str ]
+		_normalize_domain( domain: str ) -> str
+		_normalize_dataset_id( dataset_id: str ) -> str
+		fetch_metadata( domain: str, dataset_id: str, time: int=20 )
+			-> Dict[ str, Any ]
+		fetch_rows( domain: str, dataset_id: str, select: str='',
+			where: str='', order: str='', group: str='',
+			limit: int=25, offset: int=0, time: int=20 )
+			-> Dict[ str, Any ]
+		fetch( mode: str='rows', domain: str='healthdata.gov',
+			dataset_id: str='', select: str='', where: str='',
+			order: str='', group: str='', limit: int=25,
+			offset: int=0, time: int=20 ) -> Dict[ str, Any ]
+
+	'''
+	api_key: Optional[ str ]
+	base_url: Optional[ str ]
+	domain: Optional[ str ]
+	dataset_id: Optional[ str ]
+	mode: Optional[ str ]
+	select_clause: Optional[ str ]
+	where_clause: Optional[ str ]
+	order_clause: Optional[ str ]
+	group_clause: Optional[ str ]
+	limit_value: Optional[ int ]
+	offset_value: Optional[ int ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize the HealthData.gov API wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			None
+
+		'''
+		super( ).__init__( )
+		self.api_key = getattr( cfg, 'HEALTHDATA_API_KEY', '' )
+		self.base_url = 'https://{domain}/resource/{dataset}.json'
+		self.domain = 'healthdata.gov'
+		self.dataset_id = ''
+		self.mode = 'rows'
+		self.select_clause = ''
+		self.where_clause = ''
+		self.order_clause = ''
+		self.group_clause = ''
+		self.limit_value = 25
+		self.offset_value = 0
+		self.params = { }
+		self.payload = [ ]
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': cfg.AGENTS,
+		}
+		self.timeout = 20
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			-----------
+			Return ordered HealthData members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			List[str]
+
+		'''
+		return [
+				'api_key',
+				'base_url',
+				'domain',
+				'dataset_id',
+				'mode',
+				'select_clause',
+				'where_clause',
+				'order_clause',
+				'group_clause',
+				'limit_value',
+				'offset_value',
+				'params',
+				'payload',
+				'_resolve_api_key',
+				'_normalize_domain',
+				'_normalize_dataset_id',
+				'fetch_metadata',
+				'fetch_rows',
+				'fetch',
+				'create_schema',
+		]
+	
+	def _resolve_api_key( self ) -> Optional[ str ]:
+		'''
+			Purpose:
+			-----------
+			Resolve the configured HealthData.gov application token.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			Optional[str]
+
+		'''
+		key = str( self.api_key or '' ).strip( )
+		return key if key else None
+	
+	def _normalize_domain( self, domain: str ) -> str:
+		'''
+			Purpose:
+			-----------
+			Normalize the HealthData.gov domain.
+
+			Parameters:
+			-----------
+			domain (str):
+				Domain such as healthdata.gov.
+
+			Returns:
+			-----------
+			str
+
+		'''
+		try:
+			throw_if( 'domain', domain )
+			value = str( domain ).strip( )
+			value = value.replace( 'https://', '' ).replace( 'http://', '' ).strip( '/' )
+			if not value:
+				raise ValueError( "Argument 'domain' cannot be empty!" )
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HealthData'
+			exception.method = '_normalize_domain( self, domain: str ) -> str'
+			raise exception
+	
+	def _normalize_dataset_id( self, dataset_id: str ) -> str:
+		'''
+			Purpose:
+			-----------
+			Normalize the HealthData.gov dataset identifier.
+
+			Parameters:
+			-----------
+			dataset_id (str):
+				Dataset identifier.
+
+			Returns:
+			-----------
+			str
+
+		'''
+		try:
+			throw_if( 'dataset_id', dataset_id )
+			value = str( dataset_id ).strip( )
+			value = value.replace( '.json', '' ).strip( '/' )
+			if not value:
+				raise ValueError( "Argument 'dataset_id' cannot be empty!" )
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HealthData'
+			exception.method = '_normalize_dataset_id( self, dataset_id: str ) -> str'
+			raise exception
+	
+	def fetch_metadata( self, domain: str, dataset_id: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch HealthData.gov dataset metadata.
+
+			Parameters:
+			-----------
+			domain (str):
+				Portal domain such as healthdata.gov.
+
+			dataset_id (str):
+				Dataset identifier.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'metadata'
+			self.domain = self._normalize_domain( domain )
+			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.url = f'https://{self.domain}/api/views/{self.dataset_id}.json'
+			self.params = { }
+			
+			api_key = self._resolve_api_key( )
+			if api_key:
+				self.headers[ 'X-App-Token' ] = api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.response.json( ),
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HealthData'
+			exception.method = (
+					'fetch_metadata( self, domain: str, dataset_id: str, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_rows( self, domain: str, dataset_id: str, select: str = '',
+			where: str = '', order: str = '', group: str = '',
+			limit: int = 25, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch HealthData.gov dataset rows using standard SoQL query options.
+
+			Parameters:
+			-----------
+			domain (str):
+				Portal domain such as healthdata.gov.
+
+			dataset_id (str):
+				Dataset identifier.
+
+			select (str):
+				Optional $select clause.
+
+			where (str):
+				Optional $where clause.
+
+			order (str):
+				Optional $order clause.
+
+			group (str):
+				Optional $group clause.
+
+			limit (int):
+				Optional row limit.
+
+			offset (int):
+				Optional offset for pagination.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'rows'
+			self.domain = self._normalize_domain( domain )
+			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.select_clause = str( select or '' ).strip( )
+			self.where_clause = str( where or '' ).strip( )
+			self.order_clause = str( order or '' ).strip( )
+			self.group_clause = str( group or '' ).strip( )
+			self.limit_value = int( limit )
+			self.offset_value = int( offset )
+			
+			self.url = self.base_url.format(
+				domain=self.domain,
+				dataset=self.dataset_id )
+			
+			self.params = {
+					'$limit': self.limit_value,
+					'$offset': self.offset_value,
+			}
+			
+			if self.select_clause:
+				self.params[ '$select' ] = self.select_clause
+			
+			if self.where_clause:
+				self.params[ '$where' ] = self.where_clause
+			
+			if self.order_clause:
+				self.params[ '$order' ] = self.order_clause
+			
+			if self.group_clause:
+				self.params[ '$group' ] = self.group_clause
+			
+			api_key = self._resolve_api_key( )
+			if api_key:
+				self.headers[ 'X-App-Token' ] = api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'count': len( self.payload ) if isinstance( self.payload, list ) else 0,
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HealthData'
+			exception.method = (
+					'fetch_rows( self, domain: str, dataset_id: str, select: str="", '
+					'where: str="", order: str="", group: str="", limit: int=25, '
+					'offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'rows', domain: str = 'healthdata.gov',
+			dataset_id: str = '', select: str = '', where: str = '',
+			order: str = '', group: str = '', limit: int = 25,
+			offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Dispatch HealthData.gov API operations.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of metadata or rows.
+
+			domain (str):
+				Portal domain.
+
+			dataset_id (str):
+				Dataset identifier.
+
+			select (str):
+				Optional $select clause.
+
+			where (str):
+				Optional $where clause.
+
+			order (str):
+				Optional $order clause.
+
+			group (str):
+				Optional $group clause.
+
+			limit (int):
+				Optional row limit.
+
+			offset (int):
+				Optional row offset.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			active_mode = str( mode or 'rows' ).strip( ).lower( )
+			
+			if active_mode == 'metadata':
+				return self.fetch_metadata(
+					domain=domain,
+					dataset_id=dataset_id,
+					time=int( time ) )
+			
+			if active_mode == 'rows':
+				return self.fetch_rows(
+					domain=domain,
+					dataset_id=dataset_id,
+					select=select,
+					where=where,
+					order=order,
+					group=group,
+					limit=int( limit ),
+					offset=int( offset ),
+					time=int( time ) )
+			
+			raise ValueError( "mode must be one of: 'metadata', 'rows'." )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HealthData'
+			exception.method = (
+					'fetch( self, mode: str="rows", domain: str="healthdata.gov", '
+					'dataset_id: str="", select: str="", where: str="", order: str="", '
+					'group: str="", limit: int=25, offset: int=0, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			-----------
+			Construct and return a dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				Tool function name.
+
+			tool (str):
+				Service name.
+
+			description (str):
+				Description of what the tool does.
+
+			parameters (dict):
+				JSON-schema properties.
+
+			required (list[str]):
+				Required parameter names.
+
+			Returns:
+			-----------
+			Dict[str, str] | None
+
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			_schema = {
+					'name': func_name,
+					'description': f'{desc} This function uses the {tool_name} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required,
+					}
+			}
+			
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HealthData'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class GlobalHealthData( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Fetch metadata and query results from the World Health Organization
+		Global Health Observatory API surface.
+
+		Attribues:
+		-----------
+		api_key - Optional[ str ]
+		base_url - Optional[ str ]
+		athena_base_url - Optional[ str ]
+		mode - Optional[ str ]
+		query_path - Optional[ str ]
+		params - Optional[ Dict[ str, Any ] ]
+		payload - Optional[ Any ]
+
+		Methods:
+		-----------
+		_resolve_api_key( ) -> Optional[ str ]
+		_normalize_query_path( query_path: str ) -> str
+		fetch_indicator_registry( time: int=20 ) -> Dict[ str, Any ]
+		fetch_athena( query_path: str, fmt: str='json', time: int=20 )
+			-> Dict[ str, Any ]
+		fetch( mode: str='indicator_registry', query_path: str='',
+			fmt: str='json', time: int=20 ) -> Dict[ str, Any ]
+
+	'''
+	api_key: Optional[ str ]
+	base_url: Optional[ str ]
+	athena_base_url: Optional[ str ]
+	mode: Optional[ str ]
+	query_path: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize the WHO Global Health Observatory API wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			None
+
+		'''
+		super( ).__init__( )
+		self.api_key = getattr( cfg, 'WHO_API_KEY', '' )
+		self.base_url = 'https://www.who.int/data/gho'
+		self.athena_base_url = 'https://ghoapi.azureedge.net/api'
+		self.mode = 'indicator_registry'
+		self.query_path = ''
+		self.params = { }
+		self.payload = { }
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': cfg.AGENTS,
+		}
+		self.timeout = 20
+	
+	def __dir__( self ) -> List[ str ]:
+		return [
+				'api_key',
+				'base_url',
+				'athena_base_url',
+				'mode',
+				'query_path',
+				'params',
+				'payload',
+				'_resolve_api_key',
+				'_normalize_query_path',
+				'fetch_indicator_registry',
+				'fetch_athena',
+				'fetch',
+				'create_schema',
+		]
+	
+	def _resolve_api_key( self ) -> Optional[ str ]:
+		key = str( self.api_key or '' ).strip( )
+		return key if key else None
+	
+	def _normalize_query_path( self, query_path: str ) -> str:
+		try:
+			throw_if( 'query_path', query_path )
+			value = str( query_path ).strip( )
+			value = value.lstrip( '/' )
+			if not value:
+				raise ValueError( "Argument 'query_path' cannot be empty!" )
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GlobalHealthData'
+			exception.method = '_normalize_query_path( self, query_path: str ) -> str'
+			raise exception
+	
+	def fetch_indicator_registry( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch the WHO indicator metadata registry landing content.
+
+			Parameters:
+			-----------
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'indicator_registry'
+			self.url = f'{self.base_url}/indicator-metadata-registry'
+			self.params = { }
+			
+			api_key = self._resolve_api_key( )
+			if api_key:
+				self.headers[ 'X-API-Key' ] = api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
+			
+			if 'application/json' in content_type:
+				self.payload = self.response.json( )
+			else:
+				self.payload = {
+						'html': self.response.text,
+				}
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GlobalHealthData'
+			exception.method = (
+					'fetch_indicator_registry( self, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_athena( self, query_path: str, fmt: str = 'json',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Execute a WHO GHO Athena/OData-style query path.
+
+			Parameters:
+			-----------
+			query_path (str):
+				The path segment to append after the base WHO API endpoint.
+
+			fmt (str):
+				Response format hint, typically json or xml.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'athena'
+			self.query_path = self._normalize_query_path( query_path )
+			self.url = f'{self.athena_base_url}/{self.query_path}'
+			self.params = { }
+			
+			if str( fmt or '' ).strip( ):
+				self.params[ '$format' ] = str( fmt ).strip( )
+			
+			api_key = self._resolve_api_key( )
+			if api_key:
+				self.headers[ 'X-API-Key' ] = api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
+			
+			if 'application/json' in content_type:
+				self.payload = self.response.json( )
+			else:
+				self.payload = {
+						'text': self.response.text,
+				}
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GlobalHealthData'
+			exception.method = (
+					'fetch_athena( self, query_path: str, fmt: str="json", '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'indicator_registry', query_path: str = '',
+			fmt: str = 'json', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Dispatch WHO Global Health Observatory API operations.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of indicator_registry or athena.
+
+			query_path (str):
+				Query path for athena mode.
+
+			fmt (str):
+				Response format hint.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			active_mode = str( mode or 'indicator_registry' ).strip( ).lower( )
+			
+			if active_mode == 'indicator_registry':
+				return self.fetch_indicator_registry(
+					time=int( time ) )
+			
+			if active_mode == 'athena':
+				return self.fetch_athena(
+					query_path=query_path,
+					fmt=fmt,
+					time=int( time ) )
+			
+			raise ValueError(
+				"mode must be one of: 'indicator_registry', 'athena'."
+			)
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GlobalHealthData'
+			exception.method = (
+					'fetch( self, mode: str="indicator_registry", query_path: str="", '
+					'fmt: str="json", time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			_schema = {
+					'name': func_name,
+					'description': f'{desc} This function uses the {tool_name} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required,
+					}
+			}
+			
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'GlobalHealthData'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class UnitedNations( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Fetch catalog and SDMX query results from the United Nations UNdata API.
+
+		Attribues:
+		-----------
+		base_url - Optional[ str ]
+		catalog_url - Optional[ str ]
+		mode - Optional[ str ]
+		query_path - Optional[ str ]
+		params - Optional[ Dict[ str, Any ] ]
+		payload - Optional[ Any ]
+
+		Methods:
+		-----------
+		_normalize_query_path( query_path: str ) -> str
+		fetch_datasets( time: int=20 ) -> Dict[ str, Any ]
+		fetch_sdmx_query( query_path: str, time: int=20 ) -> Dict[ str, Any ]
+		fetch( mode: str='datasets', query_path: str='', time: int=20 )
+			-> Dict[ str, Any ]
+		create_schema( self, function: str, tool: str, description: str,
+			parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None
+
+	'''
+	base_url: Optional[ str ]
+	catalog_url: Optional[ str ]
+	mode: Optional[ str ]
+	query_path: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize the United Nations UNdata API wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			None
+
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://data.un.org/WS/rest'
+		self.catalog_url = 'https://data.un.org/datamartinfo.aspx'
+		self.mode = 'datasets'
+		self.query_path = ''
+		self.params = { }
+		self.payload = { }
+		self.headers = {
+				'Accept': 'application/json, text/xml, application/xml, text/html',
+				'User-Agent': cfg.AGENTS,
+		}
+		self.timeout = 20
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			-----------
+			Return ordered UnitedNations members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			List[str]
+
+		'''
+		return [
+				'base_url',
+				'catalog_url',
+				'mode',
+				'query_path',
+				'params',
+				'payload',
+				'_normalize_query_path',
+				'fetch_datasets',
+				'fetch_sdmx_query',
+				'fetch',
+				'create_schema',
+		]
+	
+	def _normalize_query_path( self, query_path: str ) -> str:
+		'''
+			Purpose:
+			-----------
+			Normalize the SDMX query path appended to the UNdata REST endpoint.
+
+			Parameters:
+			-----------
+			query_path (str):
+				Path appended after the UNdata REST base endpoint.
+
+			Returns:
+			-----------
+			str
+
+		'''
+		try:
+			throw_if( 'query_path', query_path )
+			value = str( query_path ).strip( )
+			value = value.lstrip( '/' )
+			if not value:
+				raise ValueError( "Argument 'query_path' cannot be empty!" )
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UnitedNations'
+			exception.method = '_normalize_query_path( self, query_path: str ) -> str'
+			raise exception
+	
+	def fetch_datasets( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch the UNdata dataset catalog landing page.
+
+			Parameters:
+			-----------
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'datasets'
+			self.url = self.catalog_url
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
+			
+			if 'application/json' in content_type:
+				self.payload = self.response.json( )
+			else:
+				self.payload = {
+						'html': self.response.text,
+				}
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UnitedNations'
+			exception.method = (
+					'fetch_datasets( self, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_sdmx_query( self, query_path: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Execute a REST SDMX query against the UNdata API.
+
+			Parameters:
+			-----------
+			query_path (str):
+				Path appended after the UNdata REST base endpoint.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'sdmx_query'
+			self.query_path = self._normalize_query_path( query_path )
+			self.url = f'{self.base_url}/{self.query_path}'
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
+			
+			if 'application/json' in content_type:
+				self.payload = self.response.json( )
+			else:
+				self.payload = {
+						'text': self.response.text,
+				}
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UnitedNations'
+			exception.method = (
+					'fetch_sdmx_query( self, query_path: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'datasets', query_path: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Dispatch United Nations UNdata API operations.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of datasets or sdmx_query.
+
+			query_path (str):
+				Query path for sdmx_query mode.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			active_mode = str( mode or 'datasets' ).strip( ).lower( )
+			
+			if active_mode == 'datasets':
+				return self.fetch_datasets(
+					time=int( time ) )
+			
+			if active_mode == 'sdmx_query':
+				return self.fetch_sdmx_query(
+					query_path=query_path,
+					time=int( time ) )
+			
+			raise ValueError(
+				"mode must be one of: 'datasets', 'sdmx_query'."
+			)
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UnitedNations'
+			exception.method = (
+					'fetch( self, mode: str="datasets", query_path: str="", '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			-----------
+			Construct and return a dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				Tool function name.
+
+			tool (str):
+				Service name.
+
+			description (str):
+				Description of what the tool does.
+
+			parameters (dict):
+				JSON-schema properties.
+
+			required (list[str]):
+				Required parameter names.
+
+			Returns:
+			-----------
+			Dict[str, str] | None
+
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			_schema = {
+					'name': func_name,
+					'description': f'{desc} This function uses the {tool_name} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required,
+					}
+			}
+			
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UnitedNations'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class WorldPopulation( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Fetch catalog and metadata content from the WorldPop API surface.
+
+		Attribues:
+		-----------
+		base_url - Optional[ str ]
+		stac_url - Optional[ str ]
+		mode - Optional[ str ]
+		query_text - Optional[ str ]
+		asset_path - Optional[ str ]
+		params - Optional[ Dict[ str, Any ] ]
+		payload - Optional[ Any ]
+
+		Methods:
+		-----------
+		_normalize_asset_path( asset_path: str ) -> str
+		fetch_catalog( time: int=20 ) -> Dict[ str, Any ]
+		search_catalog( query: str='', page: int=1, page_size: int=25,
+			time: int=20 ) -> Dict[ str, Any ]
+		fetch_raster_metadata( asset_path: str, time: int=20 )
+			-> Dict[ str, Any ]
+		fetch( mode: str='catalog', query: str='', asset_path: str='',
+			page: int=1, page_size: int=25, time: int=20 )
+			-> Dict[ str, Any ]
+		create_schema( self, function: str, tool: str, description: str,
+			parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None
+
+	'''
+	base_url: Optional[ str ]
+	stac_url: Optional[ str ]
+	mode: Optional[ str ]
+	query_text: Optional[ str ]
+	asset_path: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize the WorldPop API wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			None
+
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://api.worldpop.org/v1'
+		self.stac_url = 'https://api.worldpop.org/stac'
+		self.mode = 'catalog'
+		self.query_text = ''
+		self.asset_path = ''
+		self.params = { }
+		self.payload = { }
+		self.headers = {
+				'Accept': 'application/json, text/html',
+				'User-Agent': cfg.AGENTS,
+		}
+		self.timeout = 20
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			-----------
+			Return ordered WorldPopulation members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			List[str]
+
+		'''
+		return [
+				'base_url',
+				'stac_url',
+				'mode',
+				'query_text',
+				'asset_path',
+				'params',
+				'payload',
+				'_normalize_asset_path',
+				'fetch_catalog',
+				'search_catalog',
+				'fetch_raster_metadata',
+				'fetch',
+				'create_schema',
+		]
+	
+	def _normalize_asset_path( self, asset_path: str ) -> str:
+		'''
+			Purpose:
+			-----------
+			Normalize an asset or metadata path appended to the WorldPop API.
+
+			Parameters:
+			-----------
+			asset_path (str):
+				Path appended after the API base endpoint.
+
+			Returns:
+			-----------
+			str
+
+		'''
+		try:
+			throw_if( 'asset_path', asset_path )
+			value = str( asset_path ).strip( )
+			value = value.lstrip( '/' )
+			if not value:
+				raise ValueError( "Argument 'asset_path' cannot be empty!" )
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'WorldPopulation'
+			exception.method = '_normalize_asset_path( self, asset_path: str ) -> str'
+			raise exception
+	
+	def fetch_catalog( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch the WorldPop API catalog or landing payload.
+
+			Parameters:
+			-----------
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'catalog'
+			self.url = self.base_url
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
+			
+			if 'application/json' in content_type:
+				self.payload = self.response.json( )
+			else:
+				self.payload = {
+						'html': self.response.text,
+				}
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'WorldPopulation'
+			exception.method = (
+					'fetch_catalog( self, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def search_catalog( self, query: str = '', page: int = 1, page_size: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Execute a simple WorldPop catalog search request.
+
+			Parameters:
+			-----------
+			query (str):
+				Free-text search query.
+
+			page (int):
+				Page number.
+
+			page_size (int):
+				Requested page size.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'search'
+			self.query_text = str( query or '' ).strip( )
+			self.url = f'{self.base_url}/search'
+			self.params = {
+					'page': int( page ),
+					'page_size': int( page_size ),
+			}
+			
+			if self.query_text:
+				self.params[ 'q' ] = self.query_text
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
+			
+			if 'application/json' in content_type:
+				self.payload = self.response.json( )
+			else:
+				self.payload = {
+						'text': self.response.text,
+				}
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'WorldPopulation'
+			exception.method = (
+					'search_catalog( self, query: str="", page: int=1, '
+					'page_size: int=25, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_raster_metadata( self, asset_path: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch metadata or asset information for a WorldPop raster path.
+
+			Parameters:
+			-----------
+			asset_path (str):
+				Path appended after the API base endpoint.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'raster_metadata'
+			self.asset_path = self._normalize_asset_path( asset_path )
+			self.url = f'{self.base_url}/{self.asset_path}'
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
+			
+			if 'application/json' in content_type:
+				self.payload = self.response.json( )
+			else:
+				self.payload = {
+						'text': self.response.text,
+				}
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'WorldPopulation'
+			exception.method = (
+					'fetch_raster_metadata( self, asset_path: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'catalog', query: str = '',
+			asset_path: str = '', page: int = 1, page_size: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Dispatch WorldPop API operations.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of catalog, search, or raster_metadata.
+
+			query (str):
+				Free-text query for search mode.
+
+			asset_path (str):
+				Asset or metadata path for raster_metadata mode.
+
+			page (int):
+				Page number for search mode.
+
+			page_size (int):
+				Page size for search mode.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			active_mode = str( mode or 'catalog' ).strip( ).lower( )
+			
+			if active_mode == 'catalog':
+				return self.fetch_catalog(
+					time=int( time ) )
+			
+			if active_mode == 'search':
+				return self.search_catalog(
+					query=query,
+					page=int( page ),
+					page_size=int( page_size ),
+					time=int( time ) )
+			
+			if active_mode == 'raster_metadata':
+				return self.fetch_raster_metadata(
+					asset_path=asset_path,
+					time=int( time ) )
+			
+			raise ValueError(
+				"mode must be one of: 'catalog', 'search', 'raster_metadata'."
+			)
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'WorldPopulation'
+			exception.method = (
+					'fetch( self, mode: str="catalog", query: str="", asset_path: str="", '
+					'page: int=1, page_size: int=25, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			-----------
+			Construct and return a dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				Tool function name.
+
+			tool (str):
+				Service name.
+
+			description (str):
+				Description of what the tool does.
+
+			parameters (dict):
+				JSON-schema properties.
+
+			required (list[str]):
+				Required parameter names.
+
+			Returns:
+			-----------
+			Dict[str, str] | None
+
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			_schema = {
+					'name': func_name,
+					'description': f'{desc} This function uses the {tool_name} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required,
+					}
+			}
+			
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'WorldPopulation'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class Wonder( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Submit CDC WONDER XML requests and return the resulting XML payload.
+
+		Attribues:
+		-----------
+		base_url - Optional[ str ]
+		mode - Optional[ str ]
+		dataset_id - Optional[ str ]
+		request_xml - Optional[ str ]
+		params - Optional[ Dict[ str, Any ] ]
+		payload - Optional[ Any ]
+
+		Methods:
+		-----------
+		_normalize_dataset_id( dataset_id: str ) -> str
+		build_template( dataset_id: str='D76' ) -> str
+		fetch_template( dataset_id: str='D76' ) -> Dict[ str, Any ]
+		submit_query( dataset_id: str, request_xml: str, time: int=20 )
+			-> Dict[ str, Any ]
+		fetch( mode: str='metadata_template', dataset_id: str='D76',
+			request_xml: str='', time: int=20 ) -> Dict[ str, Any ]
+		create_schema( self, function: str, tool: str, description: str,
+			parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None
+
+	'''
+	base_url: Optional[ str ]
+	mode: Optional[ str ]
+	dataset_id: Optional[ str ]
+	request_xml: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize the CDC WONDER API wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			None
+
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://wonder.cdc.gov/controller/datarequest'
+		self.mode = 'metadata_template'
+		self.dataset_id = 'D76'
+		self.request_xml = ''
+		self.params = { }
+		self.payload = { }
+		self.headers = {
+				'Accept': 'application/xml, text/xml, text/plain',
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'User-Agent': cfg.AGENTS,
+		}
+		self.timeout = 20
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			-----------
+			Return ordered Wonder members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			List[str]
+
+		'''
+		return [
+				'base_url',
+				'mode',
+				'dataset_id',
+				'request_xml',
+				'params',
+				'payload',
+				'_normalize_dataset_id',
+				'build_template',
+				'fetch_template',
+				'submit_query',
+				'fetch',
+				'create_schema',
+		]
+	
+	def _normalize_dataset_id( self, dataset_id: str ) -> str:
+		'''
+			Purpose:
+			-----------
+			Normalize the CDC WONDER database identifier.
+
+			Parameters:
+			-----------
+			dataset_id (str):
+				Database identifier such as D76.
+
+			Returns:
+			-----------
+			str
+
+		'''
+		try:
+			throw_if( 'dataset_id', dataset_id )
+			value = str( dataset_id ).strip( ).upper( )
+			if not value:
+				raise ValueError( "Argument 'dataset_id' cannot be empty!" )
+			return value
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Wonder'
+			exception.method = '_normalize_dataset_id( self, dataset_id: str ) -> str'
+			raise exception
+	
+	def build_template( self, dataset_id: str = 'D76' ) -> str:
+		'''
+			Purpose:
+			-----------
+			Build a starter XML request document for a CDC WONDER query.
+
+			Parameters:
+			-----------
+			dataset_id (str):
+				Database identifier such as D76.
+
+			Returns:
+			-----------
+			str
+
+		'''
+		try:
+			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			
+			return (
+					f'<request>\n'
+					f'  <request-parameters>\n'
+					f'    <parameter>\n'
+					f'      <name>accept_datause_restrictions</name>\n'
+					f'      <value>true</value>\n'
+					f'    </parameter>\n'
+					f'    <parameter>\n'
+					f'      <name>B_1</name>\n'
+					f'      <value>{self.dataset_id}.V1</value>\n'
+					f'    </parameter>\n'
+					f'    <parameter>\n'
+					f'      <name>M_1</name>\n'
+					f'      <value>{self.dataset_id}.M1</value>\n'
+					f'    </parameter>\n'
+					f'    <parameter>\n'
+					f'      <name>O_show_totals</name>\n'
+					f'      <value>true</value>\n'
+					f'    </parameter>\n'
+					f'  </request-parameters>\n'
+					f'</request>'
+			)
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Wonder'
+			exception.method = 'build_template( self, dataset_id: str="D76" ) -> str'
+			raise exception
+	
+	def fetch_template( self, dataset_id: str = 'D76' ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			-----------
+			Return a local CDC WONDER XML request template.
+
+			Parameters:
+			-----------
+			dataset_id (str):
+				Database identifier such as D76.
+
+			Returns:
+			-----------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = 'metadata_template'
+			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.payload = {
+					'dataset_id': self.dataset_id,
+					'request_xml': self.build_template( dataset_id=self.dataset_id ),
+					'notes': (
+							'CDC WONDER expects POST requests to '
+							'https://wonder.cdc.gov/controller/datarequest/[database ID] '
+							'with a request_xml parameter and acceptance of data-use restrictions.'
+					),
+			}
+			
+			return {
+					'mode': self.mode,
+					'url': f'{self.base_url}/{self.dataset_id}',
+					'params': { 'dataset_id': self.dataset_id },
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Wonder'
+			exception.method = (
+					'fetch_template( self, dataset_id: str="D76" ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def submit_query( self, dataset_id: str, request_xml: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			-----------
+			Submit a CDC WONDER XML query request.
+
+			Parameters:
+			-----------
+			dataset_id (str):
+				Database identifier such as D76.
+
+			request_xml (str):
+				Full XML query document to POST as request_xml.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			-----------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			throw_if( 'dataset_id', dataset_id )
+			throw_if( 'request_xml', request_xml )
+			
+			self.mode = 'query_xml'
+			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.request_xml = str( request_xml ).strip( )
+			self.url = f'{self.base_url}/{self.dataset_id}'
+			
+			self.params = {
+					'request_xml': self.request_xml,
+					'accept_datause_restrictions': 'true',
+			}
+			
+			self.response = requests.post(
+				url=self.url,
+				data=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			self.payload = {
+					'xml': self.response.text,
+			}
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': {
+							'dataset_id': self.dataset_id,
+							'accept_datause_restrictions': 'true',
+					},
+					'data': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Wonder'
+			exception.method = (
+					'submit_query( self, dataset_id: str, request_xml: str, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'metadata_template', dataset_id: str = 'D76',
+			request_xml: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			-----------
+			Dispatch CDC WONDER API operations.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of metadata_template or query_xml.
+
+			dataset_id (str):
+				Database identifier such as D76.
+
+			request_xml (str):
+				Full XML request document for query_xml mode.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			-----------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			active_mode = str( mode or 'metadata_template' ).strip( ).lower( )
+			
+			if active_mode == 'metadata_template':
+				return self.fetch_template(
+					dataset_id=dataset_id )
+			
+			if active_mode == 'query_xml':
+				return self.submit_query(
+					dataset_id=dataset_id,
+					request_xml=request_xml,
+					time=int( time ) )
+			
+			raise ValueError(
+				"mode must be one of: 'metadata_template', 'query_xml'."
+			)
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Wonder'
+			exception.method = (
+					'fetch( self, mode: str="metadata_template", dataset_id: str="D76", '
+					'request_xml: str="", time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			-----------
+			Construct and return a dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				Tool function name.
+
+			tool (str):
+				Service name.
+
+			description (str):
+				Description of what the tool does.
+
+			parameters (dict):
+				JSON-schema properties.
+
+			required (list[str]):
+				Required parameter names.
+
+			Returns:
+			-----------
+			Dict[str, str] | None
+
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			_schema = {
+					'name': func_name,
+					'description': f'{desc} This function uses the {tool_name} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required,
+					}
+			}
+			
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Wonder'
 			exception.method = (
 					'create_schema( self, function: str, tool: str, description: str, '
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
