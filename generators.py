@@ -1707,53 +1707,67 @@ class Mistral( Generator ):
 
 		Purpose:
 		---------
-		Class providing to the Mistral API
+		Class providing access to the Mistral chat-completions API.
 
 		Attribues:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		client - Optional[ MistralAI ]
+		model - Optional[ str ]
+		response - Optional[ Any ]
+		api_key - Optional[ str ]
+		query - Optional[ str ]
+		params - Optional[ Dict[ str, Any ] ]
+		temperature - Optional[ float ]
+		max_tokens - Optional[ int ]
+		top_p - Optional[ float ]
+		messages - Optional[ List[ Dict[ str, Any ] ] ]
+		system_instructions - Optional[ str ]
+		seed - Optional[ int ]
+		safe_prompt - Optional[ bool ]
 
 		Methods:
 		-----------
-		fetch( ) -> Dict[ str, Any ]
+		_extract_text( self, response: Any ) -> str
+		fetch( self, query: str, model: str='mistral-large-latest',
+		       temperature: float=0.7, max_tokens: int=1024, top_p: float=1.0,
+		       seed: int | None=None, safe_mode: bool=False,
+		       system: str | None=None ) -> str | None
+		create_schema( ... ) -> Dict[ str, str ] | None
 
 	'''
 	client: Optional[ MistralAI ]
 	model: Optional[ str ]
-	response: Optional[ Response ]
+	response: Optional[ Any ]
 	api_key: Optional[ str ]
 	query: Optional[ str ]
-	params: Optional[ Dict[ str, str ] ]
+	params: Optional[ Dict[ str, Any ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
 	top_p: Optional[ float ]
-	reasonging_effort: Optional[ float ]
 	messages: Optional[ List[ Dict[ str, Any ] ] ]
+	system_instructions: Optional[ str ]
+	seed: Optional[ int ]
+	safe_prompt: Optional[ bool ]
 	
 	def __init__( self ) -> None:
 		'''
-		
+
 			Purpose:
 			-----------
-			Initialize Grok API.
+			Initialize the Mistral API wrapper.
 
 			Parameters:
 			-----------
-			headers (Optional[Dict[str, str]]): Optional headers for requests.
+			None
 
 			Returns:
 			-----------
 			None
-			
+
 		'''
 		super( ).__init__( )
 		self.api_key = cfg.MISTRAL_API_KEY
-		self.model = 'mistral-medium-lates'
+		self.model = 'mistral-large-latest'
 		self.headers = { }
 		self.client = None
 		self.timeout = None
@@ -1761,7 +1775,15 @@ class Mistral( Generator ):
 		self.params = None
 		self.response = None
 		self.query = None
+		self.temperature = None
+		self.max_tokens = None
+		self.top_p = None
+		self.messages = [ ]
+		self.system_instructions = None
+		self.seed = None
+		self.safe_prompt = False
 		self.agents = cfg.AGENTS
+		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 	
@@ -1770,7 +1792,7 @@ class Mistral( Generator ):
 
 			Purpose:
 			-----------
-			Grok list of members.
+			Return the ordered list of members exposed by this wrapper.
 
 			Parameters:
 			-----------
@@ -1778,52 +1800,166 @@ class Mistral( Generator ):
 
 			Returns:
 			-----------
-			list[str]: Ordered attribute/method names.
+			list[str]
 
 		'''
-		return [ 'content',
-		         'url',
-		         'client',
-		         'timeout',
-		         'headers',
-		         'fetch',
-		         'api_key',
-		         'response',
-		         'cse_id',
-		         'params',
-		         'agents,',
-		         'fetch' ]
+		return [
+				'content',
+				'client',
+				'timeout',
+				'headers',
+				'fetch',
+				'api_key',
+				'response',
+				'params',
+				'agents',
+				'model',
+				'temperature',
+				'max_tokens',
+				'top_p',
+				'messages',
+				'system_instructions',
+				'seed',
+				'safe_prompt',
+				'_extract_text',
+				'create_schema',
+		]
 	
-	def fetch( self, query: str ) -> List[ str ] | None:
+	def _extract_text( self, response: Any ) -> str:
 		'''
 
 			Purpose:
-			-------
-			Sends an API request to Grok given a query as input
+			-----------
+			Extract plain text from a Mistral chat completion response.
 
 			Parameters:
 			-----------
-			url (str): Absolute URL to fetch.
-			time (int): Timeout seconds to use for the request.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
+			response (Any): Raw SDK response object.
 
 			Returns:
-			---------
-			Optional[Result]: Result with url, status, text, html, headers on success.
+			-----------
+			str
 
 		'''
 		try:
-			throw_if( 'query', query )
-			self.query = query
-			self.client = MistralAI( api_key=self.api_key )
-			self.messages = [ { 'role': 'user', 'content': self.query, } ]
-			_response = self.client.chat.complete( model=self.model, messages=self.messages )
-			return _response
+			if response is None:
+				return ''
+			
+			if hasattr( response, 'choices' ) and response.choices:
+				choice = response.choices[ 0 ]
+				
+				if hasattr( choice, 'message' ) and choice.message is not None:
+					message = choice.message
+					
+					if hasattr( message, 'content' ):
+						content = message.content
+						
+						if isinstance( content, str ):
+							return content.strip( )
+						
+						if isinstance( content, list ):
+							parts: List[ str ] = [ ]
+							for item in content:
+								if isinstance( item, str ) and item.strip( ):
+									parts.append( item.strip( ) )
+								elif hasattr( item, 'text' ):
+									text_value = getattr( item, 'text', '' )
+									if text_value:
+										parts.append( str( text_value ).strip( ) )
+							
+							if parts:
+								return '\n'.join( parts ).strip( )
+						
+						return str( content ).strip( )
+			
+			return str( response )
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Mistral'
-			exception.method = 'fetch( self, query: str ) -> List[ str ]'
+			exception.method = '_extract_text( self, response: Any ) -> str'
+			raise exception
+	
+	def fetch( self, query: str, model: str = 'mistral-large-latest', temperature: float = 0.7,
+			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
+			safe_mode: bool = False, system: str | None = None ) -> str | None:
+		'''
+
+			Purpose:
+			-------
+			Send a Mistral chat-completions request for text generation.
+
+			Parameters:
+			-----------
+			query (str): User prompt.
+			model (str): Mistral model name.
+			temperature (float): Sampling temperature.
+			max_tokens (int): Maximum output tokens.
+			top_p (float): Top-p nucleus sampling parameter.
+			seed (int | None): Deterministic random seed when provided.
+			safe_mode (bool): If True, enable Mistral safe prompt injection.
+			system (str | None): Optional system instructions.
+
+			Returns:
+			---------
+			str | None
+
+		'''
+		try:
+			throw_if( 'query', query )
+			throw_if( 'model', model )
+			
+			self.query = str( query ).strip( )
+			self.model = str( model ).strip( )
+			self.temperature = float( temperature )
+			self.max_tokens = int( max_tokens )
+			self.top_p = float( top_p )
+			self.seed = int( seed ) if seed is not None else None
+			self.safe_prompt = bool( safe_mode )
+			self.system_instructions = system if system and str( system ).strip( ) else None
+			self.client = MistralAI( api_key=self.api_key )
+			self.messages = [ ]
+			if self.system_instructions:
+				self.messages.append(
+					{
+							'role': 'system',
+							'content': self.system_instructions,
+					}
+				)
+			
+			self.messages.append(
+				{
+						'role': 'user',
+						'content': self.query,
+				}
+			)
+			
+			self.params = {
+					'model': self.model,
+					'messages': self.messages,
+					'temperature': self.temperature,
+					'max_tokens': self.max_tokens,
+					'top_p': self.top_p,
+					'stream': False,
+					'response_format': { 'type': 'text' },
+					'safe_prompt': self.safe_prompt,
+			}
+			
+			if self.seed is not None and self.seed > 0:
+				self.params[ 'random_seed' ] = self.seed
+			
+			self.response = self.client.chat.complete( **self.params )
+			return self._extract_text( self.response )
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'Mistral'
+			exception.method = (
+					'fetch( self, query: str, model: str="mistral-large-latest", '
+					'temperature: float=0.7, max_tokens: int=1024, top_p: float=1.0, '
+					'seed: int | None=None, safe_mode: bool=False, '
+					'system: str | None=None ) -> str | None'
+			)
 			raise exception
 	
 	def create_schema( self, function: str, tool: str,
@@ -1892,16 +2028,16 @@ class Mistral( Generator ):
 			if required is None:
 				required = list( parameters.keys( ) )
 			_schema = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
 				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
+						'name': func_name,
+						'description': f'{desc} This function uses the {tool_name} service.',
+						'parameters':
+							{
+									'type': 'object',
+									'properties': parameters,
+									'required': required
+							}
 				}
-			}
 			return _schema
 		except Exception as e:
 			exception = Error( e )

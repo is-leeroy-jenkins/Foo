@@ -1517,8 +1517,8 @@ with st.sidebar:
 # =============================================================================
 # DOCUMENT LOADING MODE
 # =============================================================================
-if mode == modes[ 0 ]:
-	st.subheader( f'📤  {modes[ 0 ]}' )
+if mode == 'Loading':
+	st.subheader( f'📤  Data Loading' )
 	st.divider( )
 	
 	if 'loader_clear_request' not in st.session_state:
@@ -1912,8 +1912,8 @@ if mode == modes[ 0 ]:
 # =============================================================================
 # SCRAPING MODE
 # ==============================================================================
-elif mode == modes[ 1 ]:
-	st.subheader( f'🕷️ { modes[ 1 ] }' )
+elif mode == 'Scraping':
+	st.subheader( f'🕷️ Web Scraping' )
 	st.divider( )
 	
 	if 'webscrape_clear_request' not in st.session_state:
@@ -2356,8 +2356,8 @@ elif mode == modes[ 1 ]:
 # ==============================================================================
 # FETCHING MODE
 # =============================================================================
-elif mode == modes[ 2 ]:
-	st.subheader( f'🏛️  {modes[ 2 ]}' )
+elif mode == 'Retrieval':
+	st.subheader( f'🏛️  Data Retrieval' )
 	st.divider( )
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
@@ -5314,10 +5314,10 @@ elif mode == modes[ 2 ]:
 						st.info( 'No results returned.' )
 
 # ==============================================================================
-# SATELLITE MODE
+# GEOSPATIAL MODE
 # ==============================================================================
-elif mode == modes[ 3 ]:
-	st.subheader( f'🚀  {modes[ 3 ]}' )
+elif mode == 'Geospatial':
+	st.subheader( f'🚀 Geospatial Data' )
 	st.divider( )
 	
 	# -------- Google Maps
@@ -5644,11 +5644,351 @@ elif mode == modes[ 3 ]:
 			with st.expander( 'Raw Result', expanded=False ):
 				st.json( result )
 	
+	# -------- Open Weather
+	with st.expander( label='Open Weather', expanded=False ):
+		if 'openweather_results' not in st.session_state:
+			st.session_state[ 'openweather_results' ] = { }
+		
+		if 'openweather_clear_request' not in st.session_state:
+			st.session_state[ 'openweather_clear_request' ] = False
+		
+		if st.session_state.get( 'openweather_clear_request', False ):
+			st.session_state[ 'openweather_location' ] = ''
+			st.session_state[ 'openweather_mode' ] = 'current'
+			st.session_state[ 'openweather_timezone' ] = 'auto'
+			st.session_state[ 'openweather_forecast_days' ] = 7
+			st.session_state[ 'openweather_past_days' ] = 0
+			st.session_state[ 'openweather_count' ] = 10
+			st.session_state[ 'openweather_results' ] = { }
+			st.session_state[ 'openweather_clear_request' ] = False
+		
+		def _clear_openweather_state( ) -> None:
+			'''
+
+				Purpose:
+				--------
+				Flag the Open Weather expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+
+			'''
+			st.session_state[ 'openweather_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			openweather_location = st.text_area(
+				'Location',
+				height=80,
+				key='openweather_location',
+				placeholder=(
+						'Examples:\n'
+						'Arlington, VA\n'
+						'Paris, France\n'
+						'90210'
+				)
+			)
+			
+			openweather_mode = st.selectbox(
+				'Mode',
+				options=[ 'current', 'hourly', 'daily' ],
+				index=[ 'current', 'hourly', 'daily' ].index(
+					st.session_state.get( 'openweather_mode', 'current' )
+				),
+				key='openweather_mode'
+			)
+			
+			cfg_c1, cfg_c2 = st.columns( 2 )
+			
+			with cfg_c1:
+				openweather_forecast_days = st.number_input(
+					'Forecast Days',
+					min_value=1,
+					max_value=16,
+					value=int( st.session_state.get( 'openweather_forecast_days', 7 ) ),
+					step=1,
+					key='openweather_forecast_days',
+					disabled=(openweather_mode == 'current')
+				)
+			
+			with cfg_c2:
+				openweather_past_days = st.number_input(
+					'Past Days',
+					min_value=0,
+					max_value=92,
+					value=int( st.session_state.get( 'openweather_past_days', 0 ) ),
+					step=1,
+					key='openweather_past_days'
+				)
+			
+			meta_c1, meta_c2 = st.columns( 2 )
+			
+			with meta_c1:
+				openweather_timezone = st.text_input(
+					'Timezone',
+					value=st.session_state.get( 'openweather_timezone', 'auto' ),
+					key='openweather_timezone',
+					placeholder='auto'
+				)
+			
+			with meta_c2:
+				openweather_count = st.number_input(
+					'Geocode Matches',
+					min_value=1,
+					max_value=20,
+					value=int( st.session_state.get( 'openweather_count', 10 ) ),
+					step=1,
+					key='openweather_count'
+				)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				openweather_submit = st.button(
+					'Submit',
+					key='openweather_submit'
+				)
+			
+			with btn_c2:
+				openweather_clear = st.button(
+					'Clear',
+					key='openweather_clear',
+					on_click=_clear_openweather_state
+				)
+		
+		with col_right:
+			if openweather_submit:
+				try:
+					f = OpenWeather( )
+					result = f.fetch(
+						location=str( openweather_location ),
+						mode=str( openweather_mode ),
+						zone=str( openweather_timezone or 'auto' ).strip( ),
+						forecast_days=int( openweather_forecast_days ),
+						past_days=int( openweather_past_days ),
+						count=int( openweather_count )
+					)
+					
+					st.session_state[ 'openweather_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Open Weather request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'openweather_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'location' in result:
+						st.markdown( f"**Location:** {result.get( 'location', '' )}" )
+					if 'latitude' in result:
+						st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
+				
+				with meta_c2:
+					if 'longitude' in result:
+						st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
+					if 'timezone' in result:
+						st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				geocoding = result.get( 'geocoding', { } ) or { }
+				if geocoding:
+					st.markdown( '#### Geocoding Result' )
+					st.json( geocoding )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					st.markdown( '#### Request Parameters' )
+					st.json( params )
+				
+				data = result.get( 'data', { } ) or { }
+				if data:
+					st.markdown( '#### Forecast Payload' )
+					st.json( data )
+				
+				message = result.get( 'message', '' )
+				if message:
+					st.info( message )
+	
+	# -------- Historical Weather
+	with st.expander( label='Historical Weather', expanded=False ):
+		if 'historicalweather_results' not in st.session_state:
+			st.session_state[ 'historicalweather_results' ] = { }
+		
+		if 'historicalweather_clear_request' not in st.session_state:
+			st.session_state[ 'historicalweather_clear_request' ] = False
+		
+		if st.session_state.get( 'historicalweather_clear_request', False ):
+			st.session_state[ 'historicalweather_location' ] = ''
+			st.session_state[ 'historicalweather_date' ] = dt.date.today( ) - dt.timedelta( days=1 )
+			st.session_state[ 'historicalweather_timezone' ] = 'auto'
+			st.session_state[ 'historicalweather_count' ] = 10
+			st.session_state[ 'historicalweather_results' ] = { }
+			st.session_state[ 'historicalweather_clear_request' ] = False
+		
+		def _clear_historicalweather_state( ) -> None:
+			'''
+
+				Purpose:
+				--------
+				Flag the Historical Weather expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+
+			'''
+			st.session_state[ 'historicalweather_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			historicalweather_location = st.text_area(
+				'Location',
+				height=80,
+				key='historicalweather_location',
+				placeholder=(
+						'Examples:\n'
+						'Arlington, VA\n'
+						'Tokyo, Japan\n'
+						'90210'
+				)
+			)
+			
+			date_c1, date_c2 = st.columns( 2 )
+			
+			with date_c1:
+				historicalweather_date = st.date_input(
+					'Date',
+					value=st.session_state.get(
+						'historicalweather_date',
+						dt.date.today( ) - dt.timedelta( days=1 )
+					),
+					key='historicalweather_date'
+				)
+			
+			with date_c2:
+				historicalweather_count = st.number_input(
+					'Geocode Matches',
+					min_value=1,
+					max_value=20,
+					value=int( st.session_state.get( 'historicalweather_count', 10 ) ),
+					step=1,
+					key='historicalweather_count'
+				)
+			
+			historicalweather_timezone = st.text_input(
+				'Timezone',
+				value=st.session_state.get( 'historicalweather_timezone', 'auto' ),
+				key='historicalweather_timezone',
+				placeholder='auto'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				historicalweather_submit = st.button(
+					'Submit',
+					key='historicalweather_submit'
+				)
+			
+			with btn_c2:
+				historicalweather_clear = st.button(
+					'Clear',
+					key='historicalweather_clear',
+					on_click=_clear_historicalweather_state
+				)
+		
+		with col_right:
+			if historicalweather_submit:
+				try:
+					f = HistoricalWeather( )
+					result = f.fetch(
+						location=str( historicalweather_location ),
+						date=historicalweather_date,
+						zone=str( historicalweather_timezone or 'auto' ).strip( ),
+						count=int( historicalweather_count )
+					)
+					
+					st.session_state[ 'historicalweather_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Historical Weather request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'historicalweather_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'location' in result:
+						st.markdown( f"**Location:** {result.get( 'location', '' )}" )
+					if 'latitude' in result:
+						st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
+					if 'longitude' in result:
+						st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
+				
+				with meta_c2:
+					if 'date' in result:
+						st.markdown( f"**Date:** {result.get( 'date', '' )}" )
+					if 'timezone' in result:
+						st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				geocoding = result.get( 'geocoding', { } ) or { }
+				if geocoding:
+					st.markdown( '#### Geocoding Result' )
+					st.json( geocoding )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					st.markdown( '#### Request Parameters' )
+					st.json( params )
+				
+				data = result.get( 'data', { } ) or { }
+				if data:
+					st.markdown( '#### Historical Weather Payload' )
+					st.json( data )
+				
+				message = result.get( 'message', '' )
+				if message:
+					st.info( message )
+
+# ==============================================================================
+# ASTRONOMICAL MODE
+# ==============================================================================
+elif mode == 'Astronomy':
+	st.subheader( f'🚀 Astronomical Data' )
+	st.divider( )
+	
 	# -------- Satellite Center
 	with st.expander( label='Satellite Center', expanded=False ):
 		if 'satellitecenter_results' not in st.session_state:
 			st.session_state[ 'satellitecenter_results' ] = { }
-	
+		
 		if 'satellitecenter_clear_request' not in st.session_state:
 			st.session_state[ 'satellitecenter_clear_request' ] = False
 		
@@ -6741,339 +7081,6 @@ elif mode == modes[ 3 ]:
 						key='starmap_html_preview'
 					)
 	
-	# -------- Open Weather
-	with st.expander( label='Open Weather', expanded=False ):
-		if 'openweather_results' not in st.session_state:
-			st.session_state[ 'openweather_results' ] = { }
-		
-		if 'openweather_clear_request' not in st.session_state:
-			st.session_state[ 'openweather_clear_request' ] = False
-		
-		if st.session_state.get( 'openweather_clear_request', False ):
-			st.session_state[ 'openweather_location' ] = ''
-			st.session_state[ 'openweather_mode' ] = 'current'
-			st.session_state[ 'openweather_timezone' ] = 'auto'
-			st.session_state[ 'openweather_forecast_days' ] = 7
-			st.session_state[ 'openweather_past_days' ] = 0
-			st.session_state[ 'openweather_count' ] = 10
-			st.session_state[ 'openweather_results' ] = { }
-			st.session_state[ 'openweather_clear_request' ] = False
-		
-		def _clear_openweather_state( ) -> None:
-			'''
-
-				Purpose:
-				--------
-				Flag the Open Weather expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-
-			'''
-			st.session_state[ 'openweather_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			openweather_location = st.text_area(
-				'Location',
-				height=80,
-				key='openweather_location',
-				placeholder=(
-						'Examples:\n'
-						'Arlington, VA\n'
-						'Paris, France\n'
-						'90210'
-				)
-			)
-			
-			openweather_mode = st.selectbox(
-				'Mode',
-				options=[ 'current', 'hourly', 'daily' ],
-				index=[ 'current', 'hourly', 'daily' ].index(
-					st.session_state.get( 'openweather_mode', 'current' )
-				),
-				key='openweather_mode'
-			)
-			
-			cfg_c1, cfg_c2 = st.columns( 2 )
-			
-			with cfg_c1:
-				openweather_forecast_days = st.number_input(
-					'Forecast Days',
-					min_value=1,
-					max_value=16,
-					value=int( st.session_state.get( 'openweather_forecast_days', 7 ) ),
-					step=1,
-					key='openweather_forecast_days',
-					disabled=(openweather_mode == 'current')
-				)
-			
-			with cfg_c2:
-				openweather_past_days = st.number_input(
-					'Past Days',
-					min_value=0,
-					max_value=92,
-					value=int( st.session_state.get( 'openweather_past_days', 0 ) ),
-					step=1,
-					key='openweather_past_days'
-				)
-			
-			meta_c1, meta_c2 = st.columns( 2 )
-			
-			with meta_c1:
-				openweather_timezone = st.text_input(
-					'Timezone',
-					value=st.session_state.get( 'openweather_timezone', 'auto' ),
-					key='openweather_timezone',
-					placeholder='auto'
-				)
-			
-			with meta_c2:
-				openweather_count = st.number_input(
-					'Geocode Matches',
-					min_value=1,
-					max_value=20,
-					value=int( st.session_state.get( 'openweather_count', 10 ) ),
-					step=1,
-					key='openweather_count'
-				)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				openweather_submit = st.button(
-					'Submit',
-					key='openweather_submit'
-				)
-			
-			with btn_c2:
-				openweather_clear = st.button(
-					'Clear',
-					key='openweather_clear',
-					on_click=_clear_openweather_state
-				)
-		
-		with col_right:
-			if openweather_submit:
-				try:
-					f = OpenWeather( )
-					result = f.fetch(
-						location=str( openweather_location ),
-						mode=str( openweather_mode ),
-						zone=str( openweather_timezone or 'auto' ).strip( ),
-						forecast_days=int( openweather_forecast_days ),
-						past_days=int( openweather_past_days ),
-						count=int( openweather_count )
-					)
-					
-					st.session_state[ 'openweather_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Open Weather request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'openweather_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'location' in result:
-						st.markdown( f"**Location:** {result.get( 'location', '' )}" )
-					if 'latitude' in result:
-						st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
-				
-				with meta_c2:
-					if 'longitude' in result:
-						st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
-					if 'timezone' in result:
-						st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				geocoding = result.get( 'geocoding', { } ) or { }
-				if geocoding:
-					st.markdown( '#### Geocoding Result' )
-					st.json( geocoding )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					st.markdown( '#### Request Parameters' )
-					st.json( params )
-				
-				data = result.get( 'data', { } ) or { }
-				if data:
-					st.markdown( '#### Forecast Payload' )
-					st.json( data )
-				
-				message = result.get( 'message', '' )
-				if message:
-					st.info( message )
-	
-	# -------- Historical Weather
-	with st.expander( label='Historical Weather', expanded=False ):
-		if 'historicalweather_results' not in st.session_state:
-			st.session_state[ 'historicalweather_results' ] = { }
-		
-		if 'historicalweather_clear_request' not in st.session_state:
-			st.session_state[ 'historicalweather_clear_request' ] = False
-		
-		if st.session_state.get( 'historicalweather_clear_request', False ):
-			st.session_state[ 'historicalweather_location' ] = ''
-			st.session_state[ 'historicalweather_date' ] = dt.date.today( ) - dt.timedelta( days=1 )
-			st.session_state[ 'historicalweather_timezone' ] = 'auto'
-			st.session_state[ 'historicalweather_count' ] = 10
-			st.session_state[ 'historicalweather_results' ] = { }
-			st.session_state[ 'historicalweather_clear_request' ] = False
-		
-		def _clear_historicalweather_state( ) -> None:
-			'''
-
-				Purpose:
-				--------
-				Flag the Historical Weather expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-
-			'''
-			st.session_state[ 'historicalweather_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			historicalweather_location = st.text_area(
-				'Location',
-				height=80,
-				key='historicalweather_location',
-				placeholder=(
-						'Examples:\n'
-						'Arlington, VA\n'
-						'Tokyo, Japan\n'
-						'90210'
-				)
-			)
-			
-			date_c1, date_c2 = st.columns( 2 )
-			
-			with date_c1:
-				historicalweather_date = st.date_input(
-					'Date',
-					value=st.session_state.get(
-						'historicalweather_date',
-						dt.date.today( ) - dt.timedelta( days=1 )
-					),
-					key='historicalweather_date'
-				)
-			
-			with date_c2:
-				historicalweather_count = st.number_input(
-					'Geocode Matches',
-					min_value=1,
-					max_value=20,
-					value=int( st.session_state.get( 'historicalweather_count', 10 ) ),
-					step=1,
-					key='historicalweather_count'
-				)
-			
-			historicalweather_timezone = st.text_input(
-				'Timezone',
-				value=st.session_state.get( 'historicalweather_timezone', 'auto' ),
-				key='historicalweather_timezone',
-				placeholder='auto'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				historicalweather_submit = st.button(
-					'Submit',
-					key='historicalweather_submit'
-				)
-			
-			with btn_c2:
-				historicalweather_clear = st.button(
-					'Clear',
-					key='historicalweather_clear',
-					on_click=_clear_historicalweather_state
-				)
-		
-		with col_right:
-			if historicalweather_submit:
-				try:
-					f = HistoricalWeather( )
-					result = f.fetch(
-						location=str( historicalweather_location ),
-						date=historicalweather_date,
-						zone=str( historicalweather_timezone or 'auto' ).strip( ),
-						count=int( historicalweather_count )
-					)
-					
-					st.session_state[ 'historicalweather_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Historical Weather request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'historicalweather_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'location' in result:
-						st.markdown( f"**Location:** {result.get( 'location', '' )}" )
-					if 'latitude' in result:
-						st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
-					if 'longitude' in result:
-						st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
-				
-				with meta_c2:
-					if 'date' in result:
-						st.markdown( f"**Date:** {result.get( 'date', '' )}" )
-					if 'timezone' in result:
-						st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				geocoding = result.get( 'geocoding', { } ) or { }
-				if geocoding:
-					st.markdown( '#### Geocoding Result' )
-					st.json( geocoding )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					st.markdown( '#### Request Parameters' )
-					st.json( params )
-				
-				data = result.get( 'data', { } ) or { }
-				if data:
-					st.markdown( '#### Historical Weather Payload' )
-					st.json( data )
-				
-				message = result.get( 'message', '' )
-				if message:
-					st.info( message )
-	
 	# -------- SIMBAD
 	with st.expander( label='SIMBAD', expanded=False ):
 		if 'simbad_results' not in st.session_state:
@@ -7715,9 +7722,9 @@ elif mode == modes[ 3 ]:
 				except Exception as exc:
 					st.error( 'Space Weather request failed.' )
 					st.exception( exc )
-					
+			
 			result = st.session_state.get( 'satellitecenter_results', { } )
-		
+			
 			if not result:
 				st.text( 'No results.' )
 			else:
@@ -8051,9 +8058,9 @@ elif mode == modes[ 3 ]:
 				except Exception as exc:
 					st.error( 'Star Chart request failed.' )
 					st.exception( exc )
-					
+			
 			result = st.session_state.get( 'starchart_results', { } )
-		
+			
 			if not result:
 				st.text( 'No results.' )
 			else:
@@ -8538,8 +8545,8 @@ elif mode == modes[ 3 ]:
 # TEXT GENERATION MODE
 # ==============================================================================
 
-elif mode == modes[ 4 ]:
-	st.subheader( f'🧠  {modes[ 4 ]}' )
+elif mode == 'Generation':
+	st.subheader( f'🧠  Generative AI' )
 	st.divider( )
 	
 	# -------- ChatGPT
@@ -9624,8 +9631,8 @@ elif mode == modes[ 4 ]:
 # ==============================================================================
 # DATA MANAGEMENT MODE
 # ==============================================================================
-elif mode == modes[ 5 ]:
-	st.subheader( f'🏛️ {modes[ 5 ]}', help=cfg.DATA_MANAGEMENT )
+elif mode == 'Management':
+	st.subheader( f'🏛️ Data Management', help=cfg.DATA_MANAGEMENT )
 	st.divider( )
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:

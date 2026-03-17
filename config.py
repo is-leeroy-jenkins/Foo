@@ -101,6 +101,7 @@ MODE_MAP = \
 		'Scraping': 'Data Scraping',
 		'Retrieval': 'Data Retrieval',
 		'Geospatial': 'Geospatial Data',
+		'Astronomical': 'Astronomical Data',
 		'Generation': 'AI Generation',
 		'Management': 'Data Management'
  }
