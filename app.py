@@ -71,7 +71,8 @@ from fetchers import (
 	GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
 	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
 	GovData, Congress, InternetArchive, StarChart, HistoricalWeather, GoogleGeocoding,
-	CensusData, Socrata, HealthData, GlobalHealthData, UnitedNations, WorldPopulation, Wonder )
+	CensusData, Socrata, HealthData, GlobalHealthData, UnitedNations, WorldPopulation,
+	Wonder, Earthquakes )
 
 import plotly.graph_objects as px
 import pandas as pd
@@ -6194,7 +6195,377 @@ elif mode == 'Geospatial':
 				message = result.get( 'message', '' )
 				if message:
 					st.info( message )
+	
+	# -------- USGS Earthquakes
+	with st.expander( label='USGS Earthquakes', expanded=False ):
+		if 'usgsearthquakes_results' not in st.session_state:
+			st.session_state[ 'usgsearthquakes_results' ] = { }
+		
+		if 'usgsearthquakes_clear_request' not in st.session_state:
+			st.session_state[ 'usgsearthquakes_clear_request' ] = False
+		
+		if st.session_state.get( 'usgsearthquakes_clear_request', False ):
+			st.session_state[ 'usgsearthquakes_mode' ] = 'feed'
+			st.session_state[ 'usgsearthquakes_feed' ] = 'all_day.geojson'
+			st.session_state[
+				'usgsearthquakes_start_date' ] = dt.date.today( ) - dt.timedelta( days=7 )
+			st.session_state[ 'usgsearthquakes_end_date' ] = dt.date.today( )
+			st.session_state[ 'usgsearthquakes_min_magnitude' ] = 1.0
+			st.session_state[ 'usgsearthquakes_max_magnitude' ] = 10.0
+			st.session_state[ 'usgsearthquakes_limit' ] = 25
+			st.session_state[ 'usgsearthquakes_order_by' ] = 'time'
+			st.session_state[ 'usgsearthquakes_event_type' ] = 'earthquake'
+			st.session_state[ 'usgsearthquakes_latitude' ] = ''
+			st.session_state[ 'usgsearthquakes_longitude' ] = ''
+			st.session_state[ 'usgsearthquakes_max_radius_km' ] = ''
+			st.session_state[ 'usgsearthquakes_timeout' ] = 20
+			st.session_state[ 'usgsearthquakes_results' ] = { }
+			st.session_state[ 'usgsearthquakes_clear_request' ] = False
+		
+		def _clear_usgsearthquakes_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the USGS Earthquakes expander state for reset on the next rerun.
 
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'usgsearthquakes_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			usgseq_mode = st.selectbox(
+				'Mode',
+				options=[ 'feed', 'search' ],
+				index=[ 'feed', 'search' ].index(
+					st.session_state.get( 'usgsearthquakes_mode', 'feed' )
+				),
+				key='usgsearthquakes_mode'
+			)
+			
+			usgseq_feed = st.selectbox(
+				'Feed',
+				options=[
+						'all_hour.geojson',
+						'all_day.geojson',
+						'all_week.geojson',
+						'all_month.geojson',
+						'significant_hour.geojson',
+						'significant_day.geojson',
+						'significant_week.geojson',
+						'significant_month.geojson',
+						'4.5_hour.geojson',
+						'4.5_day.geojson',
+						'4.5_week.geojson',
+						'4.5_month.geojson'
+				],
+				index=[
+						'all_hour.geojson',
+						'all_day.geojson',
+						'all_week.geojson',
+						'all_month.geojson',
+						'significant_hour.geojson',
+						'significant_day.geojson',
+						'significant_week.geojson',
+						'significant_month.geojson',
+						'4.5_hour.geojson',
+						'4.5_day.geojson',
+						'4.5_week.geojson',
+						'4.5_month.geojson'
+				].index(
+					st.session_state.get( 'usgsearthquakes_feed', 'all_day.geojson' )
+				),
+				key='usgsearthquakes_feed',
+				disabled=(usgseq_mode != 'feed')
+			)
+			
+			date_c1, date_c2 = st.columns( 2 )
+			
+			with date_c1:
+				usgseq_start_date = st.date_input(
+					'Start Date',
+					value=st.session_state.get(
+						'usgsearthquakes_start_date',
+						dt.date.today( ) - dt.timedelta( days=7 )
+					),
+					key='usgsearthquakes_start_date',
+					disabled=(usgseq_mode != 'search')
+				)
+			
+			with date_c2:
+				usgseq_end_date = st.date_input(
+					'End Date',
+					value=st.session_state.get(
+						'usgsearthquakes_end_date',
+						dt.date.today( )
+					),
+					key='usgsearthquakes_end_date',
+					disabled=(usgseq_mode != 'search')
+				)
+			
+			mag_c1, mag_c2 = st.columns( 2 )
+			
+			with mag_c1:
+				usgseq_min_magnitude = st.number_input(
+					'Min Magnitude',
+					min_value=0.0,
+					max_value=10.0,
+					value=float( st.session_state.get( 'usgsearthquakes_min_magnitude', 1.0 ) ),
+					step=0.1,
+					key='usgsearthquakes_min_magnitude',
+					disabled=(usgseq_mode != 'search')
+				)
+			
+			with mag_c2:
+				usgseq_max_magnitude = st.number_input(
+					'Max Magnitude',
+					min_value=0.0,
+					max_value=10.0,
+					value=float( st.session_state.get( 'usgsearthquakes_max_magnitude', 10.0 ) ),
+					step=0.1,
+					key='usgsearthquakes_max_magnitude',
+					disabled=(usgseq_mode != 'search')
+				)
+			
+			opt_c1, opt_c2 = st.columns( 2 )
+			
+			with opt_c1:
+				usgseq_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=200,
+					value=int( st.session_state.get( 'usgsearthquakes_limit', 25 ) ),
+					step=1,
+					key='usgsearthquakes_limit',
+					disabled=(usgseq_mode != 'search')
+				)
+			
+			with opt_c2:
+				usgseq_order_by = st.selectbox(
+					'Order By',
+					options=[ 'time', 'time-asc', 'magnitude', 'magnitude-asc' ],
+					index=[ 'time', 'time-asc', 'magnitude', 'magnitude-asc' ].index(
+						st.session_state.get( 'usgsearthquakes_order_by', 'time' )
+					),
+					key='usgsearthquakes_order_by',
+					disabled=(usgseq_mode != 'search')
+				)
+			
+			usgseq_event_type = st.text_input(
+				'Event Type',
+				value=st.session_state.get( 'usgsearthquakes_event_type', 'earthquake' ),
+				key='usgsearthquakes_event_type',
+				disabled=(usgseq_mode != 'search')
+			)
+			
+			coord_c1, coord_c2 = st.columns( 2 )
+			
+			with coord_c1:
+				usgseq_latitude = st.text_input(
+					'Latitude (optional)',
+					value=st.session_state.get( 'usgsearthquakes_latitude', '' ),
+					key='usgsearthquakes_latitude',
+					disabled=(usgseq_mode != 'search')
+				)
+			
+			with coord_c2:
+				usgseq_longitude = st.text_input(
+					'Longitude (optional)',
+					value=st.session_state.get( 'usgsearthquakes_longitude', '' ),
+					key='usgsearthquakes_longitude',
+					disabled=(usgseq_mode != 'search')
+				)
+			
+			usgseq_max_radius_km = st.text_input(
+				'Max Radius KM (optional)',
+				value=st.session_state.get( 'usgsearthquakes_max_radius_km', '' ),
+				key='usgsearthquakes_max_radius_km',
+				disabled=(usgseq_mode != 'search')
+			)
+			
+			usgseq_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'usgsearthquakes_timeout', 20 ) ),
+				step=1,
+				key='usgsearthquakes_timeout'
+			)
+			
+			st.caption(
+				'Feed mode is best for quick display. Search mode supports date, '
+				'magnitude, and optional radial filtering.'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				usgseq_submit = st.button(
+					'Submit',
+					key='usgsearthquakes_submit'
+				)
+			
+			with btn_c2:
+				st.button(
+					'Clear',
+					key='usgsearthquakes_clear',
+					on_click=_clear_usgsearthquakes_state
+				)
+		
+		with col_right:
+			if usgseq_submit:
+				try:
+					f = Earthquakes( )
+					
+					latitude_value = None
+					longitude_value = None
+					max_radius_value = None
+					
+					if str( usgseq_latitude or '' ).strip( ):
+						latitude_value = float( usgseq_latitude )
+					
+					if str( usgseq_longitude or '' ).strip( ):
+						longitude_value = float( usgseq_longitude )
+					
+					if str( usgseq_max_radius_km or '' ).strip( ):
+						max_radius_value = float( usgseq_max_radius_km )
+					
+					result = f.fetch(
+						mode=str( usgseq_mode ),
+						feed=str( usgseq_feed ),
+						start_date=str( usgseq_start_date ),
+						end_date=str( usgseq_end_date ),
+						min_magnitude=float( usgseq_min_magnitude ),
+						max_magnitude=float( usgseq_max_magnitude ),
+						limit=int( usgseq_limit ),
+						order_by=str( usgseq_order_by ),
+						event_type=str( usgseq_event_type or 'earthquake' ),
+						latitude=latitude_value,
+						longitude=longitude_value,
+						max_radius_km=max_radius_value,
+						time=int( usgseq_timeout )
+					)
+					
+					st.session_state[ 'usgsearthquakes_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'USGS Earthquakes request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'usgsearthquakes_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'feed' in result:
+						st.markdown( f"**Feed:** {result.get( 'feed', '' )}" )
+					if 'count' in result:
+						st.markdown( f"**Events Returned:** {result.get( 'count', 0 )}" )
+				
+				with meta_c2:
+					if 'title' in result:
+						st.markdown( f"**Title:** {result.get( 'title', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				summary = result.get( 'summary', { } ) or { }
+				if summary:
+					st.markdown( '##### Result Summary' )
+					
+					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+					
+					with sum_c1:
+						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+					
+					with sum_c2:
+						max_mag = summary.get( 'max_magnitude', None )
+						st.metric(
+							'Strongest Magnitude',
+							'' if max_mag is None else str( max_mag )
+						)
+					
+					with sum_c3:
+						strongest_place = str( summary.get( 'strongest_place', '' ) or '' )
+						if strongest_place:
+							st.markdown( f"**Strongest Event:** {strongest_place}" )
+						else:
+							st.markdown( '**Strongest Event:** N/A' )
+					
+					most_recent = str( summary.get( 'most_recent', '' ) or '' )
+					if most_recent:
+						st.caption( f'Most recent event in current result set: {most_recent}' )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					with st.expander( 'Request Parameters', expanded=False ):
+						st.json( params )
+				
+				rows = result.get( 'rows', [ ] ) or [ ]
+				if rows:
+					st.markdown( '##### Events' )
+					df_eq = pd.DataFrame( rows )
+					
+					if not df_eq.empty:
+						st.dataframe( df_eq, use_container_width=True, hide_index=True )
+						
+						top_rows = rows[ : min( 10, len( rows ) ) ]
+						for idx, item in enumerate( top_rows, start=1 ):
+							label = str( item.get( 'Place', '' ) or f'Event {idx}' )
+							magnitude = item.get( 'Magnitude', '' )
+							time_value = str( item.get( 'Time', '' ) or '' )
+							
+							with st.expander(
+									f'Event {idx}: M{magnitude} - {label}',
+									expanded=False
+							):
+								detail_c1, detail_c2 = st.columns( 2 )
+								
+								with detail_c1:
+									st.markdown( f"**Time:** {time_value}" )
+									st.markdown(
+										f"**Depth (km):** {item.get( 'Depth (km)', '' )}"
+									)
+									st.markdown(
+										f"**Latitude:** {item.get( 'Latitude', '' )}"
+									)
+									st.markdown(
+										f"**Longitude:** {item.get( 'Longitude', '' )}"
+									)
+								
+								with detail_c2:
+									st.markdown( f"**Status:** {item.get( 'Status', '' )}" )
+									st.markdown( f"**Alert:** {item.get( 'Alert', '' )}" )
+									st.markdown(
+										f"**Tsunami:** {item.get( 'Tsunami', '' )}"
+									)
+									st.markdown(
+										f"**Felt Reports:** {item.get( 'Felt Reports', '' )}"
+									)
+								
+								url_value = str( item.get( 'URL', '' ) or '' )
+								if url_value:
+									st.markdown( f"**URL:** {url_value}" )
+					else:
+						st.info( 'No displayable earthquake rows were found.' )
+				else:
+					st.info( 'No earthquake events were returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
+					
 # ==============================================================================
 # ASTRONOMICAL MODE
 # ==============================================================================

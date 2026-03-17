@@ -15101,3 +15101,624 @@ class Wonder( Fetcher ):
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
 			)
 			raise exception
+
+class Earthquakes( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to the U.S. Geological Survey (USGS) earthquake feeds and
+		event search API for human-readable geospatial earthquake retrieval.
+
+		Referenced API Requirements:
+		----------------------------
+		USGS GeoJSON Summary Feeds:
+			- Endpoint:
+			  https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/
+			- Examples:
+			  - all_hour.geojson
+			  - all_day.geojson
+			  - all_week.geojson
+			  - all_month.geojson
+			  - significant_day.geojson
+
+		USGS Earthquake Catalog API:
+			- Endpoint:
+			  https://earthquake.usgs.gov/fdsnws/event/1/query
+			- Required parameter used here:
+			  - format=geojson
+			- Optional parameters used here:
+			  - starttime
+			  - endtime
+			  - minmagnitude
+			  - maxmagnitude
+			  - limit
+			  - orderby
+			  - eventtype
+			  - latitude
+			  - longitude
+			  - maxradiuskm
+
+	'''
+	feed_url: Optional[ str ]
+	search_url: Optional[ str ]
+	mode: Optional[ str ]
+	feed: Optional[ str ]
+	start_date: Optional[ str ]
+	end_date: Optional[ str ]
+	min_magnitude: Optional[ float ]
+	max_magnitude: Optional[ float ]
+	limit: Optional[ int ]
+	order_by: Optional[ str ]
+	event_type: Optional[ str ]
+	latitude: Optional[ float ]
+	longitude: Optional[ float ]
+	max_radius_km: Optional[ float ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Dict[ str, Any ] ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the USGS earthquake fetcher with feed and catalog endpoints.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.feed_url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary'
+		self.search_url = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
+		self.mode = 'feed'
+		self.feed = 'all_day.geojson'
+		self.start_date = ''
+		self.end_date = ''
+		self.min_magnitude = None
+		self.max_magnitude = None
+		self.limit = 25
+		self.order_by = 'time'
+		self.event_type = 'earthquake'
+		self.latitude = None
+		self.longitude = None
+		self.max_radius_km = None
+		self.params = { }
+		self.payload = { }
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'feed_url',
+				'search_url',
+				'mode',
+				'feed',
+				'start_date',
+				'end_date',
+				'min_magnitude',
+				'max_magnitude',
+				'limit',
+				'order_by',
+				'event_type',
+				'latitude',
+				'longitude',
+				'max_radius_km',
+				'params',
+				'payload',
+				'timeout',
+				'_shape_feature_rows',
+				'_summarize_features',
+				'fetch_feed',
+				'fetch_search',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _shape_feature_rows( self, features: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize USGS GeoJSON feature records into human-readable tabular rows.
+
+			Parameters:
+			-----------
+			features (List[Dict[str, Any]]):
+				Feature collection returned by the USGS feed or search API.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for feature in features or [ ]:
+				properties = feature.get( 'properties', { } ) or { }
+				geometry = feature.get( 'geometry', { } ) or { }
+				coordinates = geometry.get( 'coordinates', [ ] ) or [ ]
+				
+				longitude = coordinates[ 0 ] if len( coordinates ) > 0 else None
+				latitude = coordinates[ 1 ] if len( coordinates ) > 1 else None
+				depth = coordinates[ 2 ] if len( coordinates ) > 2 else None
+				
+				epoch_ms = properties.get( 'time', None )
+				updated_ms = properties.get( 'updated', None )
+				
+				event_time = None
+				updated_time = None
+				
+				if epoch_ms is not None:
+					try:
+						event_time = dt.datetime.utcfromtimestamp(
+							float( epoch_ms ) / 1000.0
+						).strftime( '%Y-%m-%d %H:%M:%S UTC' )
+					except Exception:
+						event_time = str( epoch_ms )
+				
+				if updated_ms is not None:
+					try:
+						updated_time = dt.datetime.utcfromtimestamp(
+							float( updated_ms ) / 1000.0
+						).strftime( '%Y-%m-%d %H:%M:%S UTC' )
+					except Exception:
+						updated_time = str( updated_ms )
+				
+				rows.append(
+					{
+							'Id': feature.get( 'id', '' ),
+							'Magnitude': properties.get( 'mag', None ),
+							'Place': properties.get( 'place', '' ),
+							'Time': event_time,
+							'Updated': updated_time,
+							'Alert': properties.get( 'alert', '' ),
+							'Status': properties.get( 'status', '' ),
+							'Tsunami': properties.get( 'tsunami', None ),
+							'Felt Reports': properties.get( 'felt', None ),
+							'Depth (km)': depth,
+							'Latitude': latitude,
+							'Longitude': longitude,
+							'Event Type': properties.get( 'type', '' ),
+							'URL': properties.get( 'url', '' )
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = (
+					'_shape_feature_rows( self, features: List[ Dict[ str, Any ] ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_features( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Build a compact summary block from normalized earthquake rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized earthquake rows.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			max_magnitude = None
+			strongest_place = ''
+			most_recent = ''
+			
+			for row in rows or [ ]:
+				magnitude = row.get( 'Magnitude', None )
+				
+				if magnitude is not None:
+					try:
+						if max_magnitude is None or float( magnitude ) > float( max_magnitude ):
+							max_magnitude = float( magnitude )
+							strongest_place = str( row.get( 'Place', '' ) )
+					except Exception:
+						pass
+				
+				if not most_recent and row.get( 'Time', '' ):
+					most_recent = str( row.get( 'Time', '' ) )
+			
+			return {
+					'count': count,
+					'max_magnitude': max_magnitude,
+					'strongest_place': strongest_place,
+					'most_recent': most_recent
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = (
+					'_summarize_features( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_feed( self, feed: str = 'all_day.geojson',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Retrieve one of the USGS real-time GeoJSON summary feeds.
+
+			Parameters:
+			-----------
+			feed (str):
+				Feed filename such as:
+				- all_hour.geojson
+				- all_day.geojson
+				- all_week.geojson
+				- all_month.geojson
+				- significant_day.geojson
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'feed', feed )
+			
+			self.mode = 'feed'
+			self.feed = str( feed ).strip( )
+			self.params = { }
+			self.url = f'{self.feed_url}/{self.feed}'
+			
+			self.response = requests.get(
+				url=self.url,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( ) or { }
+			features = self.payload.get( 'features', [ ] ) or [ ]
+			rows = self._shape_feature_rows( features )
+			
+			return {
+					'mode': self.mode,
+					'feed': self.feed,
+					'url': self.url,
+					'params': self.params,
+					'title': self.payload.get( 'metadata', { } ).get( 'title', '' ),
+					'generated': self.payload.get( 'metadata', { } ).get( 'generated', None ),
+					'count': self.payload.get( 'metadata', { } ).get( 'count', len( rows ) ),
+					'bbox': self.payload.get( 'bbox', [ ] ),
+					'summary': self._summarize_features( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = (
+					'fetch_feed( self, feed: str=all_day.geojson, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_search( self, start_date: str, end_date: str,
+			min_magnitude: float = 1.0, max_magnitude: float = 10.0,
+			limit: int = 25, order_by: str = 'time',
+			event_type: str = 'earthquake', latitude: float | None = None,
+			longitude: float | None = None, max_radius_km: float | None = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Retrieve earthquake events from the USGS catalog search endpoint.
+
+			Parameters:
+			-----------
+			start_date (str):
+				Inclusive start date in YYYY-MM-DD format.
+
+			end_date (str):
+				Inclusive end date in YYYY-MM-DD format.
+
+			min_magnitude (float):
+				Minimum magnitude filter.
+
+			max_magnitude (float):
+				Maximum magnitude filter.
+
+			limit (int):
+				Maximum number of returned events.
+
+			order_by (str):
+				Catalog sort order such as:
+				- time
+				- time-asc
+				- magnitude
+				- magnitude-asc
+
+			event_type (str):
+				Event type filter, usually 'earthquake'.
+
+			latitude (float | None):
+				Optional latitude center for radial searches.
+
+			longitude (float | None):
+				Optional longitude center for radial searches.
+
+			max_radius_km (float | None):
+				Optional radial search distance in kilometers. Only used when both
+				latitude and longitude are supplied.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'start_date', start_date )
+			throw_if( 'end_date', end_date )
+			
+			self.mode = 'search'
+			self.start_date = str( start_date ).strip( )
+			self.end_date = str( end_date ).strip( )
+			self.min_magnitude = float( min_magnitude )
+			self.max_magnitude = float( max_magnitude )
+			self.limit = max( 1, int( limit ) )
+			self.order_by = str( order_by or 'time' ).strip( )
+			self.event_type = str( event_type or 'earthquake' ).strip( )
+			self.latitude = None if latitude is None else float( latitude )
+			self.longitude = None if longitude is None else float( longitude )
+			self.max_radius_km = None if max_radius_km is None else float( max_radius_km )
+			
+			self.params = {
+					'format': 'geojson',
+					'starttime': self.start_date,
+					'endtime': self.end_date,
+					'minmagnitude': self.min_magnitude,
+					'maxmagnitude': self.max_magnitude,
+					'limit': self.limit,
+					'orderby': self.order_by,
+					'eventtype': self.event_type
+			}
+			
+			if self.latitude is not None and self.longitude is not None:
+				self.params[ 'latitude' ] = self.latitude
+				self.params[ 'longitude' ] = self.longitude
+				
+				if self.max_radius_km is not None:
+					self.params[ 'maxradiuskm' ] = self.max_radius_km
+			
+			self.url = self.search_url
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( ) or { }
+			features = self.payload.get( 'features', [ ] ) or [ ]
+			rows = self._shape_feature_rows( features )
+			
+			return {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'title': self.payload.get( 'metadata', { } ).get( 'title', '' ),
+					'generated': self.payload.get( 'metadata', { } ).get( 'generated', None ),
+					'count': self.payload.get( 'metadata', { } ).get( 'count', len( rows ) ),
+					'bbox': self.payload.get( 'bbox', [ ] ),
+					'summary': self._summarize_features( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = (
+					'fetch_search( self, start_date: str, end_date: str, '
+					'min_magnitude: float=1.0, max_magnitude: float=10.0, '
+					'limit: int=25, order_by: str=time, event_type: str=earthquake, '
+					'latitude: float | None=None, longitude: float | None=None, '
+					'max_radius_km: float | None=None, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'feed', feed: str = 'all_day.geojson',
+			start_date: str = '', end_date: str = '', min_magnitude: float = 1.0,
+			max_magnitude: float = 10.0, limit: int = 25, order_by: str = 'time',
+			event_type: str = 'earthquake', latitude: float | None = None,
+			longitude: float | None = None, max_radius_km: float | None = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for USGS earthquake feed and search retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- feed
+				- search
+
+			feed (str):
+				USGS summary feed filename for feed mode.
+
+			start_date (str):
+				Start date for search mode.
+
+			end_date (str):
+				End date for search mode.
+
+			min_magnitude (float):
+				Minimum magnitude filter for search mode.
+
+			max_magnitude (float):
+				Maximum magnitude filter for search mode.
+
+			limit (int):
+				Maximum returned rows for search mode.
+
+			order_by (str):
+				Sort order for search mode.
+
+			event_type (str):
+				Event type for search mode.
+
+			latitude (float | None):
+				Optional latitude center for radial search mode.
+
+			longitude (float | None):
+				Optional longitude center for radial search mode.
+
+			max_radius_km (float | None):
+				Optional radial search distance.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'feed' ).strip( ).lower( )
+			
+			if active_mode == 'feed':
+				return self.fetch_feed(
+					feed=feed,
+					time=int( time )
+				)
+			
+			if active_mode == 'search':
+				return self.fetch_search(
+					start_date=start_date,
+					end_date=end_date,
+					min_magnitude=min_magnitude,
+					max_magnitude=max_magnitude,
+					limit=limit,
+					order_by=order_by,
+					event_type=event_type,
+					latitude=latitude,
+					longitude=longitude,
+					max_radius_km=max_radius_km,
+					time=int( time )
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'feed' or 'search'." )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = (
+					'fetch( self, mode: str=feed, feed: str=all_day.geojson, '
+					'start_date: str=, end_date: str=, min_magnitude: float=1.0, '
+					'max_magnitude: float=10.0, limit: int=25, order_by: str=time, '
+					'event_type: str=earthquake, latitude: float | None=None, '
+					'longitude: float | None=None, max_radius_km: float | None=None, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
