@@ -1711,12 +1711,20 @@ col_left, col_center, col_right = st.columns( [ 1, 2, 1 ], vertical_alignment='t
 # ===========================================================================
 modes = list( cfg.MODE_MAP.keys( ) )
 with st.sidebar:
-	st.text( 'Configuration' )
 	st.divider( )
 	
-	# ---------------------------
-	# API Keys
-	# ---------------------------
+	# ------------- Modes -------------
+	st.text( 'Mode' )
+	mode = st.sidebar.radio( label='Mode', options=modes, label_visibility='collapsed' )
+	if mode:
+		st.session_state[ 'mode' ] = mode
+	else:
+		st.session_state[ 'mode' ] = 'Loaders'
+	
+	st.divider( )
+
+	# ------------- API Keys -------------
+	st.text( 'Configuration' )
 	with st.expander( 'API Keys', expanded=False ):
 		for attr in dir( cfg ):
 			if attr.endswith( '_API_KEY' ) or attr.endswith( '_TOKEN' ):
@@ -1724,15 +1732,8 @@ with st.sidebar:
 				val = st.text_input( attr, value=current, type='password' )
 				if val:
 					os.environ[ attr ] = val
-	
-	st.divider( )
-	st.text( 'Mode' )
-	mode = st.sidebar.radio( label='Mode', options=modes, label_visibility='collapsed' )
-	if mode:
-		st.session_state[ 'mode' ] = mode
-	else:
-		st.session_state[ 'mode' ] = 'Loaders'
-		
+
+
 # =============================================================================
 # DOCUMENT LOADING MODE
 # =============================================================================
