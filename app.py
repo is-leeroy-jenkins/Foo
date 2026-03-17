@@ -2576,7 +2576,7 @@ elif mode == 'Scraping':
 # FETCHING MODE
 # =============================================================================
 elif mode == 'Retrieval':
-	st.subheader( f'🏛️  Data Collections & Public Archives' )
+	st.subheader( f'🏛️ Public Collections & Archives' )
 	st.divider( )
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
