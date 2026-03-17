@@ -60,7 +60,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from langchain_core.documents import Document
 from loaders import (PdfLoader, WordLoader, ExcelLoader, MarkdownLoader,
-                     HtmlLoader, YouTubeLoader, RecursiveCharacterTextSplitter,
+                     HtmlLoader, TextLoader, CsvLoader, OutlookLoader,
+                     YouTubeLoader, RecursiveCharacterTextSplitter,
                      PowerPointLoader)
 
 from generators import Chat, Claude, Grok, Mistral, Gemini
@@ -1568,6 +1569,10 @@ if mode == modes[ 0 ]:
 				effective_type = 'HTML'
 			elif suffix in ('txt', 'text', 'log'):
 				effective_type = 'Text'
+			elif suffix == 'csv':
+				effective_type = 'CSV'
+			elif suffix == 'msg':
+				effective_type = 'Outlook'
 			else:
 				effective_type = 'Unsupported'
 		
@@ -1585,6 +1590,10 @@ if mode == modes[ 0 ]:
 			return HtmlLoader( ), effective_type
 		elif effective_type == 'Text':
 			return TextLoader( ), effective_type
+		elif effective_type == 'CSV':
+			return CsvLoader( ), effective_type
+		elif effective_type == 'Outlook':
+			return OutlookLoader( ), effective_type
 		else:
 			return None, effective_type
 	
@@ -1607,12 +1616,18 @@ if mode == modes[ 0 ]:
 		
 		if ld is None:
 			out[ 'skipped' ] = (
-					'No loader is available for this file type. '
-					'Use Auto or select a compatible loader.'
+					'No compatible local file loader is available for this file type.'
 			)
 			return docs, out
 		
-		docs = ld.load( str( path_obj ) )
+		if effective_type == 'CSV':
+			docs = ld.load(
+				path=str( path_obj ),
+				columns=None,
+				csv_args=None )
+		else:
+			docs = ld.load( str( path_obj ) )
+		
 		return docs, out
 	
 	col_browse, col_text = st.columns( [ 0.7, 0.3 ], border=True )
@@ -1628,25 +1643,40 @@ if mode == modes[ 0 ]:
 					'PowerPoint',
 					'HTML',
 					'Text',
+					'CSV',
+					'Outlook',
 			],
 			key='loader_selected_type' )
 		
 		uploaded_files = st.file_uploader(
 			'Choose file(s)',
-			type=[ 'pdf', 'docx', 'xlsx', 'xls', 'pptx', 'md', 'html', 'htm', 'txt', 'text',
-			       'log' ],
+			type=[
+					'pdf',
+					'docx',
+					'xlsx',
+					'xls',
+					'pptx',
+					'md',
+					'html',
+					'htm',
+					'txt',
+					'text',
+					'log',
+					'csv',
+					'msg',
+			],
 			accept_multiple_files=True,
-			key=f"loader_uploaded_files_{st.session_state[ 'loader_uploader_nonce' ]}", )
+			key=f"loader_uploaded_files_{st.session_state[ 'loader_uploader_nonce' ]}" )
 		
 		st.caption(
-			'Auto detects the loader from the file extension. '
+			'Auto detects the local file loader from the file extension. '
 			'Use a specific loader only when all selected files share the same format.'
 		)
 	
 	with col_text:
 		loader_text = st.text_area(
 			'Enter one local file path per line',
-			height=20,
+			height=120,
 			key='loader_path' )
 	
 	b1, b2 = st.columns( 2 )
@@ -1710,10 +1740,10 @@ if mode == modes[ 0 ]:
 		st.session_state[ 'loader_documents' ] = documents
 		st.rerun( )
 	
-	st.divider( )
+	st.markdown( '----' )
 	
 	if st.session_state.get( 'loader_documents' ):
-		st.markdown( '##### Loaded Documents' )
+		st.markdown( '### Loaded Documents' )
 		for idx, doc in enumerate( st.session_state[ 'loader_documents' ], start=1 ):
 			with st.expander( f'Document {idx}', expanded=False ):
 				st.text_area( '', value=(doc.page_content or ''), height=260 )
@@ -1721,7 +1751,7 @@ if mode == modes[ 0 ]:
 					st.json( doc.metadata )
 	
 	if st.session_state.get( 'loader_results' ):
-		st.markdown( '##### Load Results' )
+		st.markdown( '### Load Results' )
 		st.json( st.session_state[ 'loader_results' ] )
 
 # =============================================================================
