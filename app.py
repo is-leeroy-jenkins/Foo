@@ -1714,7 +1714,7 @@ with st.sidebar:
 	st.divider( )
 	
 	# ------------- Modes -------------
-	st.text( 'Mode' )
+	st.text( '🎮 Mode' )
 	mode = st.sidebar.radio( label='Mode', options=modes, label_visibility='collapsed' )
 	if mode:
 		st.session_state[ 'mode' ] = mode
@@ -1724,7 +1724,7 @@ with st.sidebar:
 	st.divider( )
 
 	# ------------- API Keys -------------
-	st.text( 'Configuration' )
+	st.text( '💻 Configuration' )
 	with st.expander( 'API Keys', expanded=False ):
 		for attr in dir( cfg ):
 			if attr.endswith( '_API_KEY' ) or attr.endswith( '_TOKEN' ):
@@ -7597,7 +7597,7 @@ elif mode == 'Geospatial':
 # ASTRONOMICAL MODE
 # ==============================================================================
 elif mode == 'Astronomical':
-	st.subheader( f'🚀 Physics & Astronomical Data' )
+	st.subheader( f'🌌 Physics & Astronomical Data' )
 	st.divider( )
 	
 	# -------- Satellite Center
