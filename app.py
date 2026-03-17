@@ -1697,110 +1697,133 @@ if mode == modes[ 0 ]:
 						width='stretch' )
 	
 	with top_right:
+	
+		def _clear_remote_loader_state( ) -> None:
+			st.session_state[ 'remote_loader_results' ] = { }
+			st.session_state[ 'remote_web_urls' ] = ''
+			st.session_state[ 'remote_arxiv_query' ] = ''
+			st.session_state[ 'remote_wiki_query' ] = ''
+			st.session_state[ 'remote_youtube_url' ] = ''
+			
 		with st.expander( 'Remote Loaders', expanded=True ):
-			remote_type = st.selectbox(
-				label='Remote Loader',
+			remote_type = st.selectbox( label='Remote Loader',
 				options=[ 'Web', 'ArXiv', 'Wikipedia', 'YouTube' ],
 				key='remote_loader_type' )
 			
 			if remote_type == 'Web':
-				web_urls_text = st.text_area(
-					'Enter one URL per line',
-					height=120,
+				web_urls_text = st.text_area( 'Enter one URL per line', height=120,
 					key='remote_web_urls' )
 				
-				if st.button(
-						'Load Web Pages',
-						key='remote_web_load_btn',
-						width='stretch' ):
-					try:
-						urls = [
-								u.strip( )
-								for u in (web_urls_text or '').splitlines( )
-								if u.strip( )
-						]
-						
-						loader = WebLoader( )
-						docs = loader.load( urls=urls )
-						
-						st.session_state[ 'remote_loader_results' ] = {
-								'type': 'Web',
-								'input': urls,
-								'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
-								'documents': docs or [ ],
-						}
-						st.rerun( )
-					except Exception as exc:
-						st.error( str( exc ) )
+				rb1, rb2 = st.columns( 2 )
+				with rb1:
+					if st.button( 'Load Web Pages',
+							key='remote_web_load_btn',
+							width='stretch' ):
+						try:
+							urls = [
+									u.strip( )
+									for u in (web_urls_text or '').splitlines( )
+									if u.strip( )
+							]
+							
+							loader = WebLoader( )
+							docs = loader.load( urls=urls )
+							
+							st.session_state[ 'remote_loader_results' ] = {
+									'type': 'Web',
+									'input': urls,
+									'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
+									'documents': docs or [ ],
+							}
+							st.rerun( )
+						except Exception as exc:
+							st.error( str( exc ) )
+				
+				with rb2:
+					st.button(
+						'Clear Remote Results',
+						key='remote_web_clear_btn',
+						on_click=_clear_remote_loader_state,
+						width='stretch' )
 			
 			elif remote_type == 'ArXiv':
-				arxiv_query = st.text_input(
-					'Enter an ArXiv query',
-					key='remote_arxiv_query' )
+				arxiv_query = st.text_input( 'Enter an ArXiv query', key='remote_arxiv_query' )
 				
-				if st.button(
-						'Load ArXiv Results',
-						key='remote_arxiv_load_btn',
-						width='stretch' ):
-					try:
-						loader = ArXivLoader( )
-						docs = loader.load( question=str( arxiv_query ) )
+				rb1, rb2 = st.columns( 2 )
+				with rb1:
+					if st.button( 'Load ArXiv Results', key='remote_arxiv_load_btn', width='stretch' ):
+						try:
+							loader = ArXivLoader( )
+							docs = loader.load( question=str( arxiv_query ) )
+							
+							st.session_state[ 'remote_loader_results' ] = {
+									'type': 'ArXiv',
+									'input': arxiv_query,
+									'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
+									'documents': docs or [ ],
+							}
+							st.rerun( )
+						except Exception as exc:
+							st.error( str( exc ) )
+				
+				with rb2:
+					st.button(
+						'Clear Remote Results',
+						key='remote_arxiv_clear_btn',
+						on_click=_clear_remote_loader_state,
+						width='stretch' )
 						
-						st.session_state[ 'remote_loader_results' ] = {
-								'type': 'ArXiv',
-								'input': arxiv_query,
-								'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
-								'documents': docs or [ ],
-						}
-						st.rerun( )
-					except Exception as exc:
-						st.error( str( exc ) )
-			
 			elif remote_type == 'Wikipedia':
-				wiki_query = st.text_input(
-					'Enter a Wikipedia query',
-					key='remote_wiki_query' )
+				wiki_query = st.text_input( 'Enter a Wikipedia query', key='remote_wiki_query' )
 				
-				if st.button(
-						'Load Wikipedia Results',
-						key='remote_wiki_load_btn',
-						width='stretch' ):
-					try:
-						loader = WikiLoader( )
-						docs = loader.load( question=str( wiki_query ) )
-						
-						st.session_state[ 'remote_loader_results' ] = {
-								'type': 'Wikipedia',
-								'input': wiki_query,
-								'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
-								'documents': docs or [ ],
-						}
-						st.rerun( )
-					except Exception as exc:
-						st.error( str( exc ) )
+				rb1, rb2 = st.columns( 2 )
+				with rb1:
+					if st.button( 'Load Wikipedia Results', key='remote_wiki_load_btn', width='stretch' ):
+						try:
+							loader = WikiLoader( )
+							docs = loader.load( question=str( wiki_query ) )
+							
+							st.session_state[ 'remote_loader_results' ] = {
+									'type': 'Wikipedia',
+									'input': wiki_query,
+									'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
+									'documents': docs or [ ],
+							}
+							st.rerun( )
+						except Exception as exc:
+							st.error( str( exc ) )
+				
+				with rb2:
+					st.button(
+						'Clear Remote Results',
+						key='remote_wiki_clear_btn',
+						on_click=_clear_remote_loader_state,
+						width='stretch' )
 			
 			elif remote_type == 'YouTube':
-				youtube_url = st.text_input(
-					'Enter a YouTube URL',
-					key='remote_youtube_url' )
+				youtube_url = st.text_input( 'Enter a YouTube URL', key='remote_youtube_url' )
 				
-				if st.button(
-						'Load YouTube Transcript',
-						key='remote_youtube_load_btn',
-						width='stretch' ):
-					try:
-						loader = YouTubeLoader( )
-						docs = loader.load( youtube_url=str( youtube_url ) )
-						
-						st.session_state[ 'remote_loader_results' ] = {
-								'type': 'YouTube',
-								'input': youtube_url,
-								'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
-								'documents': docs or [ ],
-						}
-						st.rerun( )
-					except Exception as exc:
-						st.error( str( exc ) )
+				rb1, rb2 = st.columns( 2 )
+				with rb1:
+					if st.button( 'Load YouTube Transcript', key='remote_youtube_load_btn',
+							width='stretch' ):
+						try:
+							loader = YouTubeLoader( )
+							docs = loader.load( youtube_url=str( youtube_url ) )
+							
+							st.session_state[ 'remote_loader_results' ] = {
+									'type': 'YouTube',
+									'input': youtube_url,
+									'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
+									'documents': docs or [ ],
+							}
+							st.rerun( )
+						except Exception as exc:
+							st.error( str( exc ) )
+				
+				with rb2:
+					st.button( 'Clear Remote Results', key='remote_youtube_clear_btn',
+						on_click=_clear_remote_loader_state, width='stretch' )
 	
 	if do_load:
 		results: Dict[ str, Any ] = { }
@@ -5625,7 +5648,7 @@ elif mode == modes[ 3 ]:
 	with st.expander( label='Satellite Center', expanded=False ):
 		if 'satellitecenter_results' not in st.session_state:
 			st.session_state[ 'satellitecenter_results' ] = { }
-		
+	
 		if 'satellitecenter_clear_request' not in st.session_state:
 			st.session_state[ 'satellitecenter_clear_request' ] = False
 		
@@ -5643,8 +5666,32 @@ elif mode == modes[ 3 ]:
 		def _clear_satellitecenter_state( ) -> None:
 			st.session_state[ 'satellitecenter_clear_request' ] = True
 		
-		col_left, col_right = st.columns( 2, border=True )
+		def _safe_dataframe( rows: Any ) -> pd.DataFrame:
+			try:
+				if isinstance( rows, pd.DataFrame ):
+					return rows
+				
+				if isinstance( rows, list ):
+					if rows and all( isinstance( x, dict ) for x in rows ):
+						return pd.DataFrame( rows )
+					return pd.DataFrame( { 'Value': [ str( x ) for x in rows ] } )
+				
+				if isinstance( rows, dict ):
+					return pd.json_normalize( rows )
+				
+				return pd.DataFrame( { 'Value': [ str( rows ) ] } )
+			except Exception:
+				return pd.DataFrame( )
 		
+		def _render_satellite_table( title: str, rows: Any ) -> None:
+			df_local = _safe_dataframe( rows )
+			if not df_local.empty:
+				st.markdown( title )
+				st.dataframe( df_local, use_container_width=True, hide_index=True )
+			else:
+				st.info( 'No displayable rows were found.' )
+		
+		col_left, col_right = st.columns( 2, border=True )
 		with col_left:
 			satellite_mode = st.selectbox(
 				'Mode',
@@ -5696,10 +5743,7 @@ elif mode == modes[ 3 ]:
 			with c3:
 				satellite_coordinate_systems = st.text_input(
 					'Coordinate Systems',
-					value=st.session_state.get(
-						'satellitecenter_coordinate_systems',
-						'gse'
-					),
+					value=st.session_state.get( 'satellitecenter_coordinate_systems', 'gse' ),
 					key='satellitecenter_coordinate_systems',
 					placeholder='gse or geo,gsm',
 					disabled=(satellite_mode != 'locations')
@@ -5710,9 +5754,7 @@ elif mode == modes[ 3 ]:
 					'Resolution Factor',
 					min_value=1,
 					max_value=1000,
-					value=int(
-						st.session_state.get( 'satellitecenter_resolution_factor', 1 )
-					),
+					value=int( st.session_state.get( 'satellitecenter_resolution_factor', 1 ) ),
 					step=1,
 					key='satellitecenter_resolution_factor',
 					disabled=(satellite_mode != 'locations')
@@ -5741,6 +5783,7 @@ elif mode == modes[ 3 ]:
 					key='satellitecenter_submit',
 					use_container_width=True
 				)
+			
 			with b2:
 				st.button(
 					'Clear',
@@ -5765,31 +5808,54 @@ elif mode == modes[ 3 ]:
 						time=int( satellite_timeout )
 					)
 					
-					st.session_state[ 'satellitecenter_results' ] = result or { }
+					st.session_state[ 'satellitecenter_results' ] = {
+							'request': {
+									'mode': satellite_mode,
+									'query': satellite_query,
+									'start_time': satellite_start_time,
+									'end_time': satellite_end_time,
+									'coordinate_systems': satellite_coordinate_systems,
+									'resolution_factor': int( satellite_resolution_factor ),
+									'timeout': int( satellite_timeout ),
+							},
+							'data': result or { },
+					}
 					st.rerun( )
 				
 				except Exception as exc:
 					st.error( 'Satellite Center request failed.' )
 					st.exception( exc )
 			
-			result = st.session_state.get( 'satellitecenter_results', { } )
+			result_wrapper = st.session_state.get( 'satellitecenter_results', { } )
 			
-			if not result:
+			if not result_wrapper:
 				st.text( 'No results.' )
 			else:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
+				if (
+						isinstance( result_wrapper, dict )
+						and 'request' in result_wrapper
+						and 'data' in result_wrapper
+				):
+					request_meta = result_wrapper.get( 'request', { } )
+					result = result_wrapper.get( 'data', { } )
+				else:
+					request_meta = {
 							'mode': satellite_mode,
 							'query': satellite_query,
 							'start_time': satellite_start_time,
 							'end_time': satellite_end_time,
 							'coordinate_systems': satellite_coordinate_systems,
 							'resolution_factor': int( satellite_resolution_factor ),
+							'timeout': int( satellite_timeout ),
 					}
-				)
+					result = result_wrapper if isinstance( result_wrapper, dict ) else { }
 				
-				if satellite_mode == 'observatories':
+				render_mode = str( request_meta.get( 'mode', 'observatories' ) )
+				
+				st.markdown( '#### Request Metadata' )
+				st.json( request_meta )
+				
+				if render_mode == 'observatories':
 					items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
@@ -5817,43 +5883,31 @@ elif mode == modes[ 3 ]:
 									}
 								)
 						
-						st.markdown( f'#### Observatories ({len( summary_rows )})' )
-						df_satellite = pd.DataFrame( summary_rows )
-						
-						if not df_satellite.empty:
-							st.dataframe(
-								df_satellite,
-								use_container_width=True,
-								hide_index=True
-							)
-						else:
-							st.info( 'No displayable observatory rows were found.' )
-						
-						with st.expander( 'Observatory Details', expanded=False ):
-							for idx, item in enumerate( items, start=1 ):
-								label = item.get( 'Id', f'Observatory {idx}' )
-								with st.expander(
-										f'Observatory {idx}: {label}',
-										expanded=False
-								):
-									st.json( item )
+						_render_satellite_table(
+							f'#### Observatories ({len( summary_rows )})',
+							summary_rows )
 					else:
-						st.info( 'No observatories returned.' )
+						st.info( 'No observatories were returned.' )
 				
-				elif satellite_mode == 'ground_stations':
-					items = result.get( 'GroundStation', [ ] ) if isinstance( result, dict ) else [ ]
+				elif render_mode == 'ground_stations':
+					items = [ ]
+					
+					if isinstance( result, dict ):
+						items = result.get( 'GroundStation', [ ] )
+						if not items:
+							items = result.get( 'GroundStations', [ ] )
 					
 					if items:
 						summary_rows: List[ Dict[ str, Any ] ] = [ ]
 						
 						for item in items:
 							if isinstance( item, dict ):
+								coords = item.get( 'Location', { } )
 								location_value = ''
-								geo_value = item.get( 'Location', { } )
 								
-								if isinstance( geo_value, dict ):
-									lat_value = geo_value.get( 'Latitude', '' )
-									lon_value = geo_value.get( 'Longitude', '' )
+								if isinstance( coords, dict ):
+									lat_value = coords.get( 'Latitude', '' )
+									lon_value = coords.get( 'Longitude', '' )
 									if str( lat_value ).strip( ) or str( lon_value ).strip( ):
 										location_value = f'{lat_value}, {lon_value}'
 								
@@ -5861,84 +5915,43 @@ elif mode == modes[ 3 ]:
 									{
 											'Id': item.get( 'Id', '' ),
 											'Name': item.get( 'Name', '' ),
-											'Provider': item.get( 'Provider', '' ),
-											'Type': item.get( 'Type', '' ),
+											'Code': item.get( 'Code', '' ),
 											'Location': location_value,
 									}
 								)
 						
-						st.markdown( f'#### Ground Stations ({len( summary_rows )})' )
-						df_satellite = pd.DataFrame( summary_rows )
-						
-						if not df_satellite.empty:
-							st.dataframe(
-								df_satellite,
-								use_container_width=True,
-								hide_index=True
-							)
-						else:
-							st.info( 'No displayable ground-station rows were found.' )
-						
-						with st.expander( 'Ground Station Details', expanded=False ):
-							for idx, item in enumerate( items, start=1 ):
-								label = item.get( 'Id', f'Ground Station {idx}' )
-								with st.expander(
-										f'Ground Station {idx}: {label}',
-										expanded=False
-								):
-									st.json( item )
+						_render_satellite_table(
+							f'#### Ground Stations ({len( summary_rows )})',
+							summary_rows )
 					else:
-						st.info( 'No ground stations returned.' )
+						st.markdown( '#### Ground Stations' )
+						st.json( result )
+				
+				elif render_mode == 'locations':
+					st.markdown( '#### Locations' )
+					
+					if isinstance( result, dict ):
+						if 'Data' in result and isinstance( result.get( 'Data' ), list ):
+							_render_satellite_table( '##### Position Samples', result.get( 'Data', [ ] ) )
+						elif 'Coordinates' in result and isinstance( result.get( 'Coordinates' ), list ):
+							_render_satellite_table(
+								'##### Coordinates',
+								result.get( 'Coordinates', [ ] ) )
+						else:
+							flat_rows: List[ Dict[ str, Any ] ] = [ ]
+							for key, value in result.items( ):
+								if isinstance( value, (str, int, float, bool) ) or value is None:
+									flat_rows.append( { 'Field': key, 'Value': value } )
+							
+							if flat_rows:
+								_render_satellite_table( '##### Summary', flat_rows )
+							else:
+								st.json( result )
+					else:
+						st.write( result )
 				
 				else:
-					data_items = result.get( 'Data', [ ] ) if isinstance( result, dict ) else [ ]
-					
-					if data_items:
-						summary_rows: List[ Dict[ str, Any ] ] = [ ]
-						
-						for item in data_items:
-							if isinstance( item, dict ):
-								coordinates_value = item.get( 'Coordinates', [ ] )
-								point_count = 0
-								
-								if isinstance( coordinates_value, list ):
-									point_count = len( coordinates_value )
-								
-								summary_rows.append(
-									{
-											'Id': item.get( 'Id', '' ),
-											'CoordinateSystem': item.get(
-												'CoordinateSystem',
-												''
-											),
-											'StartTime': item.get( 'StartTime', '' ),
-											'EndTime': item.get( 'EndTime', '' ),
-											'PointCount': point_count,
-									}
-								)
-						
-						st.markdown( f'#### Location Sets ({len( summary_rows )})' )
-						df_satellite = pd.DataFrame( summary_rows )
-						
-						if not df_satellite.empty:
-							st.dataframe(
-								df_satellite,
-								use_container_width=True,
-								hide_index=True
-							)
-						else:
-							st.info( 'No displayable location rows were found.' )
-						
-						with st.expander( 'Location Set Details', expanded=False ):
-							for idx, item in enumerate( data_items, start=1 ):
-								label = item.get( 'Id', f'Trajectory {idx}' )
-								with st.expander(
-										f'Location Set {idx}: {label}',
-										expanded=False
-								):
-									st.json( item )
-					else:
-						st.info( 'No location data returned.' )
+					st.json( result )
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
