@@ -72,7 +72,7 @@ from fetchers import (
 	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
 	GovData, Congress, InternetArchive, StarChart, HistoricalWeather, GoogleGeocoding,
 	CensusData, Socrata, HealthData, GlobalHealthData, UnitedNations, WorldPopulation,
-	Wonder, USGSEarthquakes, USGSWaterData, USGSTheNationalMap )
+	Wonder, USGSEarthquakes, USGSWaterData, USGSTheNationalMap, USGSScienceBase )
 
 import plotly.graph_objects as px
 import pandas as pd
@@ -5536,7 +5536,7 @@ elif mode == 'Retrieval':
 # GEOSPATIAL MODE
 # ==============================================================================
 elif mode == 'Geospatial':
-	st.subheader( f'🌍 Weather & Geospatial Information' )
+	st.subheader( f'🌍 Weather & Geospatial Data' )
 	st.divider( )
 	
 	# -------- Google Maps
@@ -7108,7 +7108,270 @@ elif mode == 'Geospatial':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
+	
+	# -------- USGS ScienceBase
+	with st.expander( label='USGS ScienceBase', expanded=False ):
+		if 'usgssb_results' not in st.session_state:
+			st.session_state[ 'usgssb_results' ] = { }
+		
+		if 'usgssb_clear_request' not in st.session_state:
+			st.session_state[ 'usgssb_clear_request' ] = False
+		
+		if st.session_state.get( 'usgssb_clear_request', False ):
+			st.session_state[ 'usgssb_mode' ] = 'items'
+			st.session_state[ 'usgssb_q' ] = ''
+			st.session_state[ 'usgssb_item_id' ] = ''
+			st.session_state[ 'usgssb_max_items' ] = 25
+			st.session_state[ 'usgssb_offset' ] = 0
+			st.session_state[ 'usgssb_fields' ] = ''
+			st.session_state[ 'usgssb_timeout' ] = 20
+			st.session_state[ 'usgssb_results' ] = { }
+			st.session_state[ 'usgssb_clear_request' ] = False
+		
+		def _clear_usgssb_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the USGS ScienceBase expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'usgssb_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		with col_left:
+			usgssb_mode = st.selectbox(
+				'Mode',
+				options=[ 'items', 'item' ],
+				index=[ 'items', 'item' ].index(
+					st.session_state.get( 'usgssb_mode', 'items' )
+				),
+				key='usgssb_mode'
+			)
+			
+			usgssb_q = st.text_input(
+				'Search Query',
+				value=st.session_state.get( 'usgssb_q', '' ),
+				key='usgssb_q',
+				disabled=(usgssb_mode != 'items'),
+				placeholder='Optional keyword search'
+			)
+			
+			usgssb_item_id = st.text_input(
+				'Item ID',
+				value=st.session_state.get( 'usgssb_item_id', '' ),
+				key='usgssb_item_id',
+				disabled=(usgssb_mode != 'item'),
+				placeholder='ScienceBase item identifier'
+			)
+			
+			page_c1, page_c2 = st.columns( 2 )
+			
+			with page_c1:
+				usgssb_max_items = st.number_input(
+					'Max Items',
+					min_value=1,
+					max_value=500,
+					value=int( st.session_state.get( 'usgssb_max_items', 25 ) ),
+					step=1,
+					key='usgssb_max_items',
+					disabled=(usgssb_mode != 'items')
+				)
+			
+			with page_c2:
+				usgssb_offset = st.number_input(
+					'Offset',
+					min_value=0,
+					max_value=10000,
+					value=int( st.session_state.get( 'usgssb_offset', 0 ) ),
+					step=1,
+					key='usgssb_offset',
+					disabled=(usgssb_mode != 'items')
+				)
+			
+			usgssb_fields = st.text_input(
+				'Fields',
+				value=st.session_state.get( 'usgssb_fields', '' ),
+				key='usgssb_fields',
+				disabled=(usgssb_mode != 'items'),
+				placeholder='Optional fields selector'
+			)
+			
+			usgssb_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'usgssb_timeout', 20 ) ),
+				step=1,
+				key='usgssb_timeout'
+			)
+			
+			st.caption(
+				'Items mode performs catalog discovery. Item mode retrieves a single '
+				'ScienceBase record by identifier.'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				usgssb_submit = st.button(
+					'Submit',
+					key='usgssb_submit'
+				)
+			
+			with btn_c2:
+				st.button(
+					'Clear',
+					key='usgssb_clear',
+					on_click=_clear_usgssb_state
+				)
+		
+		with col_right:
+			if usgssb_submit:
+				try:
+					f = USGSScienceBase( )
+					result = f.fetch(
+						mode=str( usgssb_mode ),
+						q=str( usgssb_q ).strip( ),
+						item_id=str( usgssb_item_id ).strip( ),
+						max_items=int( usgssb_max_items ),
+						offset=int( usgssb_offset ),
+						fields=str( usgssb_fields ).strip( ),
+						time=int( usgssb_timeout )
+					)
 					
+					st.session_state[ 'usgssb_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'USGS ScienceBase request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'usgssb_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					params = result.get( 'params', { } ) or { }
+					if 'q' in params:
+						st.markdown(
+							f"**Search Query:** {params.get( 'q', '' )}"
+						)
+					if 'fields' in params:
+						st.markdown(
+							f"**Fields:** {params.get( 'fields', '' )}"
+						)
+				
+				summary = result.get( 'summary', { } ) or { }
+				if summary:
+					st.markdown( '#### Result Summary' )
+					
+					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+					
+					with sum_c1:
+						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+					
+					with sum_c2:
+						first_title = str( summary.get( 'first_title', '' ) or '' )
+						if first_title:
+							st.markdown( f"**First Result:** {first_title}" )
+						else:
+							st.markdown( '**First Result:** N/A' )
+					
+					with sum_c3:
+						st.metric(
+							'Spatial Records',
+							int( summary.get( 'spatial_count', 0 ) or 0 )
+						)
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					with st.expander( 'Request Parameters', expanded=False ):
+						st.json( params )
+				
+				rows = result.get( 'rows', [ ] ) or [ ]
+				if rows:
+					st.markdown( '#### Results' )
+					df_usgssb = pd.DataFrame( rows )
+					
+					if not df_usgssb.empty:
+						st.dataframe(
+							df_usgssb,
+							use_container_width=True,
+							hide_index=True
+						)
+						
+						top_rows = rows[ : min( 10, len( rows ) ) ]
+						for idx, item in enumerate( top_rows, start=1 ):
+							label = str(
+								item.get( 'Title', '' ) or
+								item.get( 'Id', '' ) or
+								f'Record {idx}'
+							)
+							
+							with st.expander(
+									f'Record {idx}: {label}',
+									expanded=False
+							):
+								left_c, right_c = st.columns( 2 )
+								
+								with left_c:
+									if 'Type' in item:
+										st.markdown(
+											f"**Type:** {item.get( 'Type', '' )}"
+										)
+									if 'Updated' in item:
+										st.markdown(
+											f"**Updated:** {item.get( 'Updated', '' )}"
+										)
+									if 'Has Spatial Metadata' in item:
+										st.markdown(
+											f"**Has Spatial Metadata:** "
+											f"{item.get( 'Has Spatial Metadata', '' )}"
+										)
+								
+								with right_c:
+									if 'File Count' in item:
+										st.markdown(
+											f"**File Count:** {item.get( 'File Count', '' )}"
+										)
+									if 'Web Link Count' in item:
+										st.markdown(
+											f"**Web Link Count:** "
+											f"{item.get( 'Web Link Count', '' )}"
+										)
+									if 'Contact Count' in item:
+										st.markdown(
+											f"**Contact Count:** "
+											f"{item.get( 'Contact Count', '' )}"
+										)
+								
+								if 'Summary' in item and item.get( 'Summary', '' ):
+									st.markdown(
+										f"**Summary:** {item.get( 'Summary', '' )}"
+									)
+					else:
+						st.info( 'No displayable ScienceBase rows were found.' )
+				else:
+					st.info( 'No ScienceBase records were returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 					
 # ==============================================================================
 # ASTRONOMICAL MODE

@@ -17268,3 +17268,622 @@ class USGSTheNationalMap( Fetcher ):
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
 			)
 			raise exception
+
+class USGSScienceBase( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides read-only access to the USGS ScienceBase REST/JSON API for
+		item search and item retrieval.
+
+		Referenced API Requirements:
+		----------------------------
+		Base Endpoint:
+			- https://www.sciencebase.gov/catalog
+
+		Resources used here:
+			- /items
+			- /item/{id}
+
+		Common query concepts:
+			- q
+			- max
+			- offset
+			- fields
+
+	'''
+	base_url: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Dict[ str, Any ] ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the USGS ScienceBase wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://www.sciencebase.gov/catalog'
+		self.mode = 'items'
+		self.params = { }
+		self.payload = { }
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_request',
+				'_coalesce',
+				'_shape_item_rows',
+				'_shape_single_item',
+				'_summarize_rows',
+				'fetch_items',
+				'fetch_item',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _request( self, endpoint: str,
+			params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a ScienceBase endpoint.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path under the ScienceBase base URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			
+			self.url = f'{self.base_url}/{str( endpoint ).strip( )}'
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( ) or { }
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'_request( self, endpoint: str, '
+					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize possible ScienceBase response layouts into a list of items.
+
+			Parameters:
+			-----------
+			payload (Any):
+				Decoded JSON payload returned by the API.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			if isinstance( payload, list ):
+				return [ item for item in payload if isinstance( item, dict ) ]
+			
+			if not isinstance( payload, dict ):
+				return [ ]
+			
+			for key in [ 'items', 'results', 'data' ]:
+				value = payload.get( key, None )
+				if isinstance( value, list ):
+					return [ item for item in value if isinstance( item, dict ) ]
+			
+			if 'id' in payload and isinstance( payload.get( 'id' ), str ):
+				return [ payload ]
+			
+			return [ ]
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = '_coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]'
+			raise exception
+	
+	def _shape_item_rows( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize ScienceBase item records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Item records returned by ScienceBase.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				title = item.get( 'title', '' )
+				item_id = item.get( 'id', '' )
+				item_type = item.get( 'itemType', '' )
+				summary = (
+						item.get( 'summary', None ) or
+						item.get( 'body', None ) or
+						''
+				)
+				
+				if isinstance( summary, str ) and len( summary ) > 300:
+					summary = summary[ :300 ].rstrip( ) + '...'
+				
+				has_spatial = False
+				if item.get( 'spatial', None ) is not None:
+					has_spatial = True
+				if item.get( 'facets', None ):
+					try:
+						for facet in item.get( 'facets', [ ] ) or [ ]:
+							if isinstance( facet, dict ) and facet.get( 'boundingBox', None ) is not None:
+								has_spatial = True
+								break
+					except Exception:
+						pass
+				
+				dates = item.get( 'dates', [ ] ) or [ ]
+				latest_date = ''
+				if isinstance( dates, list ) and dates:
+					first_date = dates[ 0 ]
+					if isinstance( first_date, dict ):
+						latest_date = (
+								first_date.get( 'dateString', None ) or
+								first_date.get( 'date', '' )
+						)
+				
+				rows.append(
+					{
+							'Id': item_id,
+							'Title': title,
+							'Type': item_type,
+							'Updated': (
+									item.get( 'dateUpdated', None ) or
+									item.get( 'lastUpdated', None ) or
+									latest_date
+							),
+							'Has Spatial Metadata': has_spatial,
+							'Summary': summary
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'_shape_item_rows( self, records: '
+					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _shape_single_item( self, item: Dict[ str, Any ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Normalize a single ScienceBase item into a readable detail dictionary.
+
+			Parameters:
+			-----------
+			item (Dict[str, Any]):
+				Single item payload returned by ScienceBase.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			files_value = item.get( 'files', [ ] ) or [ ]
+			file_count = len( files_value ) if isinstance( files_value, list ) else 0
+			
+			web_links = item.get( 'webLinks', [ ] ) or [ ]
+			link_count = len( web_links ) if isinstance( web_links, list ) else 0
+			
+			contacts = item.get( 'contacts', [ ] ) or [ ]
+			contact_count = len( contacts ) if isinstance( contacts, list ) else 0
+			
+			return {
+					'Id': item.get( 'id', '' ),
+					'Title': item.get( 'title', '' ),
+					'Type': item.get( 'itemType', '' ),
+					'Updated': (
+							item.get( 'dateUpdated', None ) or
+							item.get( 'lastUpdated', '' )
+					),
+					'Summary': (
+							item.get( 'summary', None ) or
+							item.get( 'body', '' )
+					),
+					'Has Spatial Metadata': item.get( 'spatial', None ) is not None,
+					'File Count': file_count,
+					'Web Link Count': link_count,
+					'Contact Count': contact_count,
+					'Raw Item': item
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'_shape_single_item( self, item: Dict[ str, Any ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			first_title = ''
+			first_type = ''
+			spatial_count = 0
+			
+			for row in rows or [ ]:
+				if row.get( 'Has Spatial Metadata', False ):
+					spatial_count += 1
+			
+			if rows:
+				first_title = str( rows[ 0 ].get( 'Title', '' ) or '' )
+				first_type = str( rows[ 0 ].get( 'Type', '' ) or '' )
+			
+			return {
+					'count': count,
+					'first_title': first_title,
+					'first_type': first_type,
+					'spatial_count': spatial_count
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_items( self, q: str = '', max_items: int = 25,
+			offset: int = 0, fields: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Search ScienceBase items.
+
+			Parameters:
+			-----------
+			q (str):
+				Optional search query string.
+
+			max_items (int):
+				Maximum number of returned items.
+
+			offset (int):
+				Result offset for paging.
+
+			fields (str):
+				Optional fields selector.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'items'
+			base = self._request(
+				endpoint='items',
+				params={
+						'q': str( q ).strip( ),
+						'max': max( 1, int( max_items ) ),
+						'offset': max( 0, int( offset ) ),
+						'fields': str( fields ).strip( )
+				},
+				time=int( time )
+			) or { }
+			
+			records = self._coalesce( base.get( 'raw', { } ) )
+			rows = self._shape_item_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'fetch_items( self, q: str=, max_items: int=25, offset: int=0, '
+					'fields: str=, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_item( self, item_id: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Retrieve a single ScienceBase item by identifier.
+
+			Parameters:
+			-----------
+			item_id (str):
+				ScienceBase item identifier.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'item_id', item_id )
+			
+			self.mode = 'item'
+			base = self._request(
+				endpoint=f'item/{str( item_id ).strip( )}',
+				params={ },
+				time=int( time )
+			) or { }
+			
+			item = base.get( 'raw', { } ) or { }
+			detail = self._shape_single_item( item )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': {
+							'count': 1,
+							'first_title': detail.get( 'Title', '' ),
+							'first_type': detail.get( 'Type', '' ),
+							'spatial_count': 1 if detail.get( 'Has Spatial Metadata', False ) else 0
+					},
+					'rows': [ detail ],
+					'raw': base.get( 'raw', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'fetch_item( self, item_id: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'items', q: str = '',
+			item_id: str = '', max_items: int = 25, offset: int = 0,
+			fields: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for ScienceBase item search and item retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- items
+				- item
+
+			q (str):
+				Optional search query for items mode.
+
+			item_id (str):
+				Item identifier for item mode.
+
+			max_items (int):
+				Maximum number of items returned in items mode.
+
+			offset (int):
+				Result offset for items mode.
+
+			fields (str):
+				Optional fields selector for items mode.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'items' ).strip( ).lower( )
+			
+			if active_mode == 'items':
+				return self.fetch_items(
+					q=q,
+					max_items=max_items,
+					offset=offset,
+					fields=fields,
+					time=int( time )
+				)
+			
+			if active_mode == 'item':
+				return self.fetch_item(
+					item_id=item_id,
+					time=int( time )
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'items' or 'item'." )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'fetch( self, mode: str=items, q: str=, item_id: str=, '
+					'max_items: int=25, offset: int=0, fields: str=, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
