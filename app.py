@@ -6566,6 +6566,226 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
+	# -------- Earth Observatory
+	with st.expander( label='NASA Earth Observatory', expanded=False ):
+		if 'earthobservatory_results' not in st.session_state:
+			st.session_state[ 'earthobservatory_results' ] = { }
+		
+		if 'earthobservatory_clear_request' not in st.session_state:
+			st.session_state[ 'earthobservatory_clear_request' ] = False
+		
+		if st.session_state.get( 'earthobservatory_clear_request', False ):
+			st.session_state[ 'earthobservatory_mode' ] = 'events'
+			st.session_state[ 'earthobservatory_status' ] = 'open'
+			st.session_state[ 'earthobservatory_category' ] = ''
+			st.session_state[ 'earthobservatory_source' ] = ''
+			st.session_state[ 'earthobservatory_limit' ] = 20
+			st.session_state[ 'earthobservatory_days' ] = 30
+			st.session_state[ 'earthobservatory_start_date' ] = ''
+			st.session_state[ 'earthobservatory_end_date' ] = ''
+			st.session_state[ 'earthobservatory_timeout' ] = 20
+			st.session_state[ 'earthobservatory_results' ] = { }
+			st.session_state[ 'earthobservatory_clear_request' ] = False
+		
+		def _clear_earthobservatory_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Earth Observatory expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'earthobservatory_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			earth_mode = st.selectbox(
+				'Mode',
+				options=[ 'events', 'categories', 'sources', 'layers' ],
+				index=[ 'events', 'categories', 'sources', 'layers' ].index(
+					st.session_state.get( 'earthobservatory_mode', 'events' )
+				),
+				key='earthobservatory_mode',
+				help='Choose the current documented EONET v3 endpoint.'
+			)
+			
+			earth_status = st.selectbox(
+				'Status',
+				options=[ 'open', 'closed', 'all' ],
+				index=[ 'open', 'closed', 'all' ].index(
+					st.session_state.get( 'earthobservatory_status', 'open' )
+				),
+				key='earthobservatory_status',
+				disabled=(earth_mode != 'events')
+			)
+			
+			earth_category = st.text_input(
+				'Category',
+				value=st.session_state.get( 'earthobservatory_category', '' ),
+				key='earthobservatory_category',
+				placeholder='Examples: wildfires, severe storms, volcanoes ',
+				help='Used for events filtering and layers category path.',
+				disabled=(earth_mode not in [ 'events', 'layers' ])
+			)
+			
+			earth_source = st.text_input(
+				'Source',
+				value=st.session_state.get( 'earthobservatory_source', '' ),
+				key='earthobservatory_source',
+				placeholder=(
+						'Examples: InciWeb, InciWeb, EO'
+				),
+				disabled=(earth_mode != 'events')
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				earth_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=500,
+					value=int( st.session_state.get( 'earthobservatory_limit', 20 ) ),
+					step=1,
+					key='earthobservatory_limit',
+					disabled=(earth_mode != 'events')
+				)
+			
+			with c2:
+				earth_days = st.number_input(
+					'Days',
+					min_value=1,
+					max_value=3650,
+					value=int( st.session_state.get( 'earthobservatory_days', 30 ) ),
+					step=1,
+					key='earthobservatory_days',
+					disabled=(earth_mode != 'events')
+				)
+			
+			d1, d2 = st.columns( 2 )
+			
+			with d1:
+				earth_start_date = st.text_input(
+					'Start Date',
+					value=st.session_state.get( 'earthobservatory_start_date', '' ),
+					key='earthobservatory_start_date',
+					placeholder='2026-03-01',
+					disabled=(earth_mode != 'events')
+				)
+			
+			with d2:
+				earth_end_date = st.text_input(
+					'End Date',
+					value=st.session_state.get( 'earthobservatory_end_date', '' ),
+					key='earthobservatory_end_date',
+					placeholder='2026-03-15',
+					disabled=(earth_mode != 'events')
+				)
+			
+			earth_timeout = st.number_input(
+				'Timeout',
+				min_value=1,
+				max_value=120,
+				value=int( st.session_state.get( 'earthobservatory_timeout', 20 ) ),
+				step=1,
+				key='earthobservatory_timeout'
+			)
+			
+			st.caption(
+				'Examples: use events + category=wildfires, status=open; '
+				'use sources to list event source providers; '
+				'use layers + category=wildfires to inspect imagery layers.'
+			)
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				earth_submit = st.button(
+					'Submit',
+					key='earthobservatory_submit'
+				)
+			
+			with b2:
+				st.button(
+					'Clear',
+					key='earthobservatory_clear',
+					on_click=_clear_earthobservatory_state
+				)
+		
+		with col_right:
+			if earth_submit:
+				try:
+					f = EarthObservatory( )
+					result = f.fetch(
+						mode=earth_mode,
+						status=earth_status,
+						category=earth_category,
+						source=earth_source,
+						limit=int( earth_limit ),
+						days=int( earth_days ),
+						start_date=str( earth_start_date ),
+						end_date=str( earth_end_date ),
+						time=int( earth_timeout )
+					)
+					
+					st.session_state[ 'earthobservatory_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Earth Observatory request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'earthobservatory_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					if result.get( 'params', { } ):
+						st.markdown( f"**Parameters:** {len( result.get( 'params', { } ) )}" )
+				
+				if result.get( 'params', { } ):
+					st.markdown( '#### Request Parameters' )
+					st.json( result.get( 'params', { } ) )
+				
+				if result.get( 'events', [ ] ):
+					st.markdown( '#### Events' )
+					df_events = pd.DataFrame( result.get( 'events', [ ] ) )
+					st.dataframe( df_events, use_container_width=True, hide_index=True )
+				
+				if result.get( 'categories', [ ] ):
+					st.markdown( '#### Categories' )
+					df_categories = pd.DataFrame( result.get( 'categories', [ ] ) )
+					st.dataframe( df_categories, use_container_width=True, hide_index=True )
+				
+				if result.get( 'sources', [ ] ):
+					st.markdown( '#### Sources' )
+					df_sources = pd.DataFrame( result.get( 'sources', [ ] ) )
+					st.dataframe( df_sources, use_container_width=True, hide_index=True )
+				
+				if result.get( 'layers', [ ] ):
+					st.markdown( '#### Layers' )
+					df_layers = pd.DataFrame( result.get( 'layers', [ ] ) )
+					st.dataframe( df_layers, use_container_width=True, hide_index=True )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
+	
 	# -------- USGS Water Data
 	with st.expander( label='USGS Water Data', expanded=False ):
 		if 'usgswaterdata_results' not in st.session_state:
@@ -7373,226 +7593,6 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- Earth Observatory
-	with st.expander( label='Earth Observatory', expanded=False ):
-		if 'earthobservatory_results' not in st.session_state:
-			st.session_state[ 'earthobservatory_results' ] = { }
-		
-		if 'earthobservatory_clear_request' not in st.session_state:
-			st.session_state[ 'earthobservatory_clear_request' ] = False
-		
-		if st.session_state.get( 'earthobservatory_clear_request', False ):
-			st.session_state[ 'earthobservatory_mode' ] = 'events'
-			st.session_state[ 'earthobservatory_status' ] = 'open'
-			st.session_state[ 'earthobservatory_category' ] = ''
-			st.session_state[ 'earthobservatory_source' ] = ''
-			st.session_state[ 'earthobservatory_limit' ] = 20
-			st.session_state[ 'earthobservatory_days' ] = 30
-			st.session_state[ 'earthobservatory_start_date' ] = ''
-			st.session_state[ 'earthobservatory_end_date' ] = ''
-			st.session_state[ 'earthobservatory_timeout' ] = 20
-			st.session_state[ 'earthobservatory_results' ] = { }
-			st.session_state[ 'earthobservatory_clear_request' ] = False
-		
-		def _clear_earthobservatory_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Earth Observatory expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'earthobservatory_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			earth_mode = st.selectbox(
-				'Mode',
-				options=[ 'events', 'categories', 'sources', 'layers' ],
-				index=[ 'events', 'categories', 'sources', 'layers' ].index(
-					st.session_state.get( 'earthobservatory_mode', 'events' )
-				),
-				key='earthobservatory_mode',
-				help='Choose the current documented EONET v3 endpoint.'
-			)
-			
-			earth_status = st.selectbox(
-				'Status',
-				options=[ 'open', 'closed', 'all' ],
-				index=[ 'open', 'closed', 'all' ].index(
-					st.session_state.get( 'earthobservatory_status', 'open' )
-				),
-				key='earthobservatory_status',
-				disabled=(earth_mode != 'events')
-			)
-			
-			earth_category = st.text_input(
-				'Category',
-				value=st.session_state.get( 'earthobservatory_category', '' ),
-				key='earthobservatory_category',
-				placeholder='Examples: wildfires, severe storms, volcanoes ',
-				help='Used for events filtering and layers category path.',
-				disabled=(earth_mode not in [ 'events', 'layers' ])
-			)
-			
-			earth_source = st.text_input(
-				'Source',
-				value=st.session_state.get( 'earthobservatory_source', '' ),
-				key='earthobservatory_source',
-				placeholder=(
-						'Examples: InciWeb, InciWeb, EO'
-				),
-				disabled=(earth_mode != 'events')
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				earth_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'earthobservatory_limit', 20 ) ),
-					step=1,
-					key='earthobservatory_limit',
-					disabled=(earth_mode != 'events')
-				)
-			
-			with c2:
-				earth_days = st.number_input(
-					'Days',
-					min_value=1,
-					max_value=3650,
-					value=int( st.session_state.get( 'earthobservatory_days', 30 ) ),
-					step=1,
-					key='earthobservatory_days',
-					disabled=(earth_mode != 'events')
-				)
-			
-			d1, d2 = st.columns( 2 )
-			
-			with d1:
-				earth_start_date = st.text_input(
-					'Start Date',
-					value=st.session_state.get( 'earthobservatory_start_date', '' ),
-					key='earthobservatory_start_date',
-					placeholder='2026-03-01',
-					disabled=(earth_mode != 'events')
-				)
-			
-			with d2:
-				earth_end_date = st.text_input(
-					'End Date',
-					value=st.session_state.get( 'earthobservatory_end_date', '' ),
-					key='earthobservatory_end_date',
-					placeholder='2026-03-15',
-					disabled=(earth_mode != 'events')
-				)
-			
-			earth_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=120,
-				value=int( st.session_state.get( 'earthobservatory_timeout', 20 ) ),
-				step=1,
-				key='earthobservatory_timeout'
-			)
-			
-			st.caption(
-				'Examples: use events + category=wildfires, status=open; '
-				'use sources to list event source providers; '
-				'use layers + category=wildfires to inspect imagery layers.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				earth_submit = st.button(
-					'Submit',
-					key='earthobservatory_submit'
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='earthobservatory_clear',
-					on_click=_clear_earthobservatory_state
-				)
-		
-		with col_right:
-			if earth_submit:
-				try:
-					f = EarthObservatory( )
-					result = f.fetch(
-						mode=earth_mode,
-						status=earth_status,
-						category=earth_category,
-						source=earth_source,
-						limit=int( earth_limit ),
-						days=int( earth_days ),
-						start_date=str( earth_start_date ),
-						end_date=str( earth_end_date ),
-						time=int( earth_timeout )
-					)
-					
-					st.session_state[ 'earthobservatory_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Earth Observatory request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'earthobservatory_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					if result.get( 'params', { } ):
-						st.markdown( f"**Parameters:** {len( result.get( 'params', { } ) )}" )
-				
-				if result.get( 'params', { } ):
-					st.markdown( '#### Request Parameters' )
-					st.json( result.get( 'params', { } ) )
-				
-				if result.get( 'events', [ ] ):
-					st.markdown( '#### Events' )
-					df_events = pd.DataFrame( result.get( 'events', [ ] ) )
-					st.dataframe( df_events, use_container_width=True, hide_index=True )
-				
-				if result.get( 'categories', [ ] ):
-					st.markdown( '#### Categories' )
-					df_categories = pd.DataFrame( result.get( 'categories', [ ] ) )
-					st.dataframe( df_categories, use_container_width=True, hide_index=True )
-				
-				if result.get( 'sources', [ ] ):
-					st.markdown( '#### Sources' )
-					df_sources = pd.DataFrame( result.get( 'sources', [ ] ) )
-					st.dataframe( df_sources, use_container_width=True, hide_index=True )
-				
-				if result.get( 'layers', [ ] ):
-					st.markdown( '#### Layers' )
-					df_layers = pd.DataFrame( result.get( 'layers', [ ] ) )
-					st.dataframe( df_layers, use_container_width=True, hide_index=True )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-
 # ==============================================================================
 # ASTRONOMICAL MODE
 # ==============================================================================
