@@ -2357,7 +2357,7 @@ elif mode == 'Scraping':
 # FETCHING MODE
 # =============================================================================
 elif mode == 'Retrieval':
-	st.subheader( f'🏛️  Data Retrieval' )
+	st.subheader( f'🏛️  Data Collections & Public Archives' )
 	st.divider( )
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
@@ -5317,7 +5317,7 @@ elif mode == 'Retrieval':
 # GEOSPATIAL MODE
 # ==============================================================================
 elif mode == 'Geospatial':
-	st.subheader( f'🚀 Geospatial Data' )
+	st.subheader( f'🌍 Weather & Geospatial Information' )
 	st.divider( )
 	
 	# -------- Google Maps
@@ -5981,7 +5981,7 @@ elif mode == 'Geospatial':
 # ASTRONOMICAL MODE
 # ==============================================================================
 elif mode == 'Astronomical':
-	st.subheader( f'🚀 Astronomical Data' )
+	st.subheader( f'🚀 Physics & Astronomical Data' )
 	st.divider( )
 	
 	# -------- Satellite Center
@@ -8542,7 +8542,7 @@ elif mode == 'Astronomical':
 					st.json( result )
 
 elif mode == 'Population':
-	st.subheader( f'🚀 Health & Population' )
+	st.subheader( f'‍⚕️ Public Health & Socio-Economic Data' )
 	st.divider( )
 	# -------- U.S. Census Bureau
 	with st.expander( label='U.S. Census Bureau', expanded=False ):

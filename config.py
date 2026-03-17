@@ -99,10 +99,10 @@ MODE_MAP = \
 {
 		'Loading': 'Data Loading',
 		'Scraping': 'Data Scraping',
-		'Retrieval': 'Data Retrieval',
-		'Geospatial': 'Weather & Geospatial Data',
+		'Retrieval': 'Data Collections & Public Archives',
+		'Geospatial': 'Weather & Geospatial Information',
 		'Astronomical': 'Physics & Astronomical Data',
-		'Population': 'Health & Population',
+		'Population': 'Health & Population Data',
 		'Generation': 'AI Generation',
 		'Management': 'Data Management'
  }
