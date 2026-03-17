@@ -100,8 +100,9 @@ MODE_MAP = \
 		'Loading': 'Data Loading',
 		'Scraping': 'Data Scraping',
 		'Retrieval': 'Data Retrieval',
-		'Geospatial': 'Geospatial Data',
-		'Astronomical': 'Astronomical Data',
+		'Geospatial': 'Weather & Geospatial Data',
+		'Astronomical': 'Physics & Astronomical Data',
+		'Population': 'Health & Population',
 		'Generation': 'AI Generation',
 		'Management': 'Data Management'
  }

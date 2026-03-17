@@ -70,7 +70,7 @@ from fetchers import (
 	GoogleWeather, Grokipedia, OpenWeather, NavalObservatory,
 	GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
 	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
-	GovData, Congress, InternetArchive, StarChart, HistoricalWeather, GoogleGeocoding )
+	GovData, Congress, InternetArchive, StarChart, HistoricalWeather, GoogleGeocoding, CensusData )
 
 import plotly.graph_objects as px
 import pandas as pd
@@ -5980,7 +5980,7 @@ elif mode == 'Geospatial':
 # ==============================================================================
 # ASTRONOMICAL MODE
 # ==============================================================================
-elif mode == 'Astronomy':
+elif mode == 'Astronomical':
 	st.subheader( f'🚀 Astronomical Data' )
 	st.divider( )
 	
@@ -8541,6 +8541,230 @@ elif mode == 'Astronomy':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
+elif mode == 'Population':
+	st.subheader( f'🚀 Health & Population' )
+	st.divider( )
+	# -------- U.S. Census Bureau
+	with st.expander( label='U.S. Census Bureau', expanded=False ):
+		if 'census_results' not in st.session_state:
+			st.session_state[ 'census_results' ] = { }
+		
+		if 'census_clear_request' not in st.session_state:
+			st.session_state[ 'census_clear_request' ] = False
+		
+		if st.session_state.get( 'census_clear_request', False ):
+			st.session_state[ 'census_mode' ] = 'variables'
+			st.session_state[ 'census_year' ] = '2022'
+			st.session_state[ 'census_dataset' ] = 'acs/acs5'
+			st.session_state[ 'census_fields' ] = 'NAME,B01001_001E'
+			st.session_state[ 'census_for' ] = 'state:*'
+			st.session_state[ 'census_in' ] = ''
+			st.session_state[ 'census_predicates' ] = ''
+			st.session_state[ 'census_timeout' ] = 20
+			st.session_state[ 'census_results' ] = { }
+			st.session_state[ 'census_clear_request' ] = False
+		
+		def _clear_census_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Census expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'census_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			census_mode = st.selectbox(
+				'Mode',
+				options=[ 'variables', 'data' ],
+				index=[ 'variables', 'data' ].index(
+					st.session_state.get( 'census_mode', 'variables' )
+				),
+				key='census_mode',
+				help=(
+						'variables = dataset variable metadata; '
+						'data = tabular Census query using get/for/in.'
+				)
+			)
+			
+			census_year = st.text_input(
+				'Year',
+				value=st.session_state.get( 'census_year', '2022' ),
+				key='census_year',
+				placeholder='2022'
+			)
+			
+			census_dataset = st.text_input(
+				'Dataset',
+				value=st.session_state.get( 'census_dataset', 'acs/acs5' ),
+				key='census_dataset',
+				placeholder='acs/acs5'
+			)
+			
+			census_fields = st.text_area(
+				'Fields (get)',
+				value=st.session_state.get( 'census_fields', 'NAME,B01001_001E' ),
+				height=90,
+				key='census_fields',
+				placeholder='NAME,B01001_001E',
+				disabled=(census_mode != 'data')
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				census_for = st.text_input(
+					'For',
+					value=st.session_state.get( 'census_for', 'state:*' ),
+					key='census_for',
+					placeholder='state:*',
+					disabled=(census_mode != 'data')
+				)
+			
+			with c2:
+				census_in = st.text_input(
+					'In',
+					value=st.session_state.get( 'census_in', '' ),
+					key='census_in',
+					placeholder='state:24',
+					disabled=(census_mode != 'data')
+				)
+			
+			census_predicates = st.text_area(
+				'Predicates',
+				value=st.session_state.get( 'census_predicates', '' ),
+				height=90,
+				key='census_predicates',
+				placeholder='SEX=1\nAGE=15',
+				disabled=(census_mode != 'data'),
+				help='Optional newline-delimited key=value filters.'
+			)
+			
+			census_timeout = st.number_input(
+				'Timeout',
+				min_value=1,
+				max_value=120,
+				value=int( st.session_state.get( 'census_timeout', 20 ) ),
+				step=1,
+				key='census_timeout'
+			)
+			
+			st.caption(
+				'Examples: dataset = acs/acs5, fields = NAME,B01001_001E, '
+				'for = state:*'
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				census_submit = st.button(
+					'Submit',
+					key='census_submit',
+					use_container_width=True
+				)
+			
+			with b2:
+				st.button(
+					'Clear',
+					key='census_clear',
+					on_click=_clear_census_state,
+					use_container_width=True
+				)
+		
+		with col_right:
+			result = st.session_state.get( 'census_results', { } )
+			
+			if census_submit:
+				try:
+					f = CensusData( )
+					result = f.fetch(
+						mode=census_mode,
+						year=str( census_year ),
+						dataset=str( census_dataset ),
+						fields=str( census_fields ),
+						geography_for=str( census_for ),
+						geography_in=str( census_in ),
+						predicates=str( census_predicates ),
+						time=int( census_timeout )
+					)
+					
+					st.session_state[ 'census_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Census request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': result.get( 'mode', '' ),
+							'url': result.get( 'url', '' ),
+							'params': result.get( 'params', { } ),
+					}
+				)
+				
+				if result.get( 'mode', '' ) == 'variables':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					variables = payload.get( 'variables', { } ) if isinstance( payload, dict ) else { }
+					
+					if isinstance( variables, dict ) and variables:
+						rows: List[ Dict[ str, Any ] ] = [ ]
+						for name, meta in variables.items( ):
+							if isinstance( meta, dict ):
+								rows.append(
+									{
+											'Name': name,
+											'Label': meta.get( 'label', '' ),
+											'Concept': meta.get( 'concept', '' ),
+											'PredicateType': meta.get( 'predicateType', '' ),
+											'Group': meta.get( 'group', '' ),
+											'Limit': meta.get( 'limit', '' ),
+									}
+								)
+						
+						if rows:
+							df_variables = pd.DataFrame( rows )
+							st.dataframe(
+								df_variables,
+								use_container_width=True,
+								hide_index=True,
+								height=320
+							)
+						else:
+							st.info( 'No variables returned.' )
+					else:
+						st.info( 'No variables returned.' )
+				
+				elif result.get( 'mode', '' ) == 'data':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					rows = payload.get( 'rows', [ ] ) if isinstance( payload, dict ) else [ ]
+					
+					if rows:
+						df_census = pd.DataFrame( rows )
+						st.dataframe(
+							df_census,
+							use_container_width=True,
+							hide_index=True,
+							height=320
+						)
+					else:
+						st.info( 'No data rows returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
+					
 # ==============================================================================
 # TEXT GENERATION MODE
 # ==============================================================================

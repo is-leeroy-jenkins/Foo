@@ -12017,3 +12017,552 @@ class GoogleGeocoding( Fetcher ):
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
 			)
 			raise exception
+
+class CensusData( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Fetch metadata and tabular results from the U.S. Census Bureau API.
+
+		Attribues:
+		-----------
+		api_key - Optional[ str ]
+		base_url - Optional[ str ]
+		year - Optional[ str ]
+		dataset - Optional[ str ]
+		mode - Optional[ str ]
+		fields - Optional[ List[ str ] ]
+		geography_for - Optional[ str ]
+		geography_in - Optional[ str ]
+		predicates - Optional[ Dict[ str, Any ] ]
+		params - Optional[ Dict[ str, Any ] ]
+		payload - Optional[ Dict[ str, Any ] ]
+
+		Methods:
+		-----------
+		_resolve_api_key( ) -> Optional[ str ]
+		_normalize_fields( fields: str ) -> str
+		_parse_predicates( predicates: str ) -> Dict[ str, Any ]
+		_shape_table( rows: List[ Any ] ) -> Dict[ str, Any ]
+		fetch_variables( year: str, dataset: str, time: int=20 ) -> Dict[ str, Any ]
+		fetch_data( year: str, dataset: str, fields: str, geography_for: str='',
+		            geography_in: str='', predicates: str='', time: int=20 )
+		            -> Dict[ str, Any ]
+		fetch( mode: str='variables', year: str='2022', dataset: str='acs/acs5',
+		       fields: str='NAME,B01001_001E', geography_for: str='state:*',
+		       geography_in: str='', predicates: str='', time: int=20 )
+		       -> Dict[ str, Any ]
+
+	'''
+	api_key: Optional[ str ]
+	base_url: Optional[ str ]
+	year: Optional[ str ]
+	dataset: Optional[ str ]
+	mode: Optional[ str ]
+	fields: Optional[ List[ str ] ]
+	geography_for: Optional[ str ]
+	geography_in: Optional[ str ]
+	predicates: Optional[ Dict[ str, Any ] ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Dict[ str, Any ] ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			-----------
+			Initialize the U.S. Census Bureau API wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			None
+
+		'''
+		super( ).__init__( )
+		self.api_key = getattr( cfg, 'CENSUS_API_KEY', '' )
+		self.base_url = 'https://api.census.gov/data'
+		self.year = None
+		self.dataset = None
+		self.mode = None
+		self.fields = [ ]
+		self.geography_for = None
+		self.geography_in = None
+		self.predicates = { }
+		self.params = { }
+		self.payload = { }
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': cfg.AGENTS,
+		}
+		self.timeout = 20
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			-----------
+			Return ordered CensusData members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			List[str]
+
+		'''
+		return [
+				'api_key',
+				'base_url',
+				'year',
+				'dataset',
+				'mode',
+				'fields',
+				'geography_for',
+				'geography_in',
+				'predicates',
+				'params',
+				'payload',
+				'_resolve_api_key',
+				'_normalize_fields',
+				'_parse_predicates',
+				'_shape_table',
+				'fetch_variables',
+				'fetch_data',
+				'fetch',
+				'create_schema',
+		]
+	
+	def _resolve_api_key( self ) -> Optional[ str ]:
+		'''
+			Purpose:
+			-----------
+			Resolve the configured Census API key.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			Optional[str]
+
+		'''
+		key = str( self.api_key or '' ).strip( )
+		return key if key else None
+	
+	def _normalize_fields( self, fields: str ) -> str:
+		'''
+			Purpose:
+			-----------
+			Normalize the comma-delimited Census get-field string.
+
+			Parameters:
+			-----------
+			fields (str): Comma-delimited field list.
+
+			Returns:
+			-----------
+			str
+
+		'''
+		try:
+			throw_if( 'fields', fields )
+			parts = [ p.strip( ) for p in str( fields ).split( ',' ) if p.strip( ) ]
+			if not parts:
+				raise ValueError( "Argument 'fields' cannot be empty!" )
+			self.fields = parts
+			return ','.join( parts )
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'CensusData'
+			exception.method = '_normalize_fields( self, fields: str ) -> str'
+			raise exception
+	
+	def _parse_predicates( self, predicates: str ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			-----------
+			Parse optional Census predicate text into a parameter dictionary.
+
+			Parameters:
+			-----------
+			predicates (str):
+				Newline-delimited key=value pairs.
+
+			Returns:
+			-----------
+			Dict[str, Any]
+
+		'''
+		try:
+			output: Dict[ str, Any ] = { }
+			text = str( predicates or '' ).strip( )
+			if not text:
+				return output
+			
+			for line in text.splitlines( ):
+				item = str( line ).strip( )
+				if not item:
+					continue
+				
+				if '=' not in item:
+					raise ValueError(
+						"Each predicate line must use the form 'key=value'."
+					)
+				
+				key, value = item.split( '=', 1 )
+				k = str( key ).strip( )
+				v = str( value ).strip( )
+				
+				if not k:
+					raise ValueError( 'Predicate key cannot be empty.' )
+				
+				output[ k ] = v
+			
+			return output
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'CensusData'
+			exception.method = (
+					'_parse_predicates( self, predicates: str ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_table( self, rows: List[ Any ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			-----------
+			Transform Census array-style responses into header/row dictionaries.
+
+			Parameters:
+			-----------
+			rows (List[Any]):
+				Raw Census API response payload.
+
+			Returns:
+			-----------
+			Dict[str, Any]
+
+		'''
+		try:
+			if not isinstance( rows, list ) or not rows:
+				return {
+						'columns': [ ],
+						'rows': [ ],
+						'count': 0,
+				}
+			
+			headers = [ str( h ) for h in rows[ 0 ] ] if isinstance( rows[ 0 ], list ) else [ ]
+			data_rows = rows[ 1: ] if len( rows ) > 1 else [ ]
+			records: List[ Dict[ str, Any ] ] = [ ]
+			
+			for row in data_rows:
+				if isinstance( row, list ) and headers:
+					records.append(
+						{
+								headers[ idx ]: row[ idx ] if idx < len( row ) else ''
+								for idx in range( len( headers ) )
+						}
+					)
+			
+			return {
+					'columns': headers,
+					'rows': records,
+					'count': len( records ),
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'CensusData'
+			exception.method = '_shape_table( self, rows: List[ Any ] ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_variables( self, year: str, dataset: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch the variables metadata for a Census dataset.
+
+			Parameters:
+			-----------
+			year (str):
+				Dataset year such as 2022.
+
+			dataset (str):
+				Dataset path such as acs/acs5 or 2020/dec/dhc.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			throw_if( 'year', year )
+			throw_if( 'dataset', dataset )
+			
+			self.mode = 'variables'
+			self.year = str( year ).strip( )
+			self.dataset = str( dataset ).strip( ).strip( '/' )
+			self.url = f'{self.base_url}/{self.year}/{self.dataset}/variables.json'
+			self.params = { }
+			api_key = self._resolve_api_key( )
+			if api_key:
+				self.params[ 'key' ] = api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.response.json( ),
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'CensusData'
+			exception.method = (
+					'fetch_variables( self, year: str, dataset: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_data( self, year: str, dataset: str, fields: str,
+			geography_for: str = '', geography_in: str = '',
+			predicates: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch tabular Census dataset values.
+
+			Parameters:
+			-----------
+			year (str):
+				Dataset year such as 2022.
+
+			dataset (str):
+				Dataset path such as acs/acs5.
+
+			fields (str):
+				Comma-delimited get variables such as NAME,B01001_001E.
+
+			geography_for (str):
+				Census `for` geography clause, e.g. state:*.
+
+			geography_in (str):
+				Optional Census `in` geography clause.
+
+			predicates (str):
+				Optional newline-delimited key=value predicates.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			throw_if( 'year', year )
+			throw_if( 'dataset', dataset )
+			throw_if( 'fields', fields )
+			
+			self.mode = 'data'
+			self.year = str( year ).strip( )
+			self.dataset = str( dataset ).strip( ).strip( '/' )
+			self.geography_for = str( geography_for or '' ).strip( )
+			self.geography_in = str( geography_in or '' ).strip( )
+			self.predicates = self._parse_predicates( predicates )
+			self.url = f'{self.base_url}/{self.year}/{self.dataset}'
+			self.params = {
+					'get': self._normalize_fields( fields ),
+			}
+			
+			if self.geography_for:
+				self.params[ 'for' ] = self.geography_for
+			
+			if self.geography_in:
+				self.params[ 'in' ] = self.geography_in
+			
+			if self.predicates:
+				self.params.update( self.predicates )
+			
+			api_key = self._resolve_api_key( )
+			if api_key:
+				self.params[ 'key' ] = api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time ) )
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self._shape_table( self.payload ),
+					'raw': self.payload,
+			}
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'CensusData'
+			exception.method = (
+					'fetch_data( self, year: str, dataset: str, fields: str, '
+					'geography_for: str="", geography_in: str="", predicates: str="", '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'variables', year: str = '2022',
+			dataset: str = 'acs/acs5', fields: str = 'NAME,B01001_001E',
+			geography_for: str = 'state:*', geography_in: str = '',
+			predicates: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Dispatch Census API operations.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of variables or data.
+
+			year (str):
+				Dataset year.
+
+			dataset (str):
+				Dataset path.
+
+			fields (str):
+				Comma-delimited data fields for data mode.
+
+			geography_for (str):
+				Census `for` clause for data mode.
+
+			geography_in (str):
+				Optional Census `in` clause for data mode.
+
+			predicates (str):
+				Optional newline-delimited key=value predicates.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.mode = str( mode or 'variables' ).strip( ).lower( )
+			
+			if self.mode == 'variables':
+				return self.fetch_variables(
+					year=year,
+					dataset=dataset,
+					time=int( time ) )
+			
+			if self.mode == 'data':
+				return self.fetch_data(
+					year=year,
+					dataset=dataset,
+					fields=fields,
+					geography_for=geography_for,
+					geography_in=geography_in,
+					predicates=predicates,
+					time=int( time ) )
+			
+			raise ValueError(
+				"mode must be one of: 'variables', 'data'."
+			)
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'CensusData'
+			exception.method = (
+					'fetch( self, mode: str="variables", year: str="2022", '
+					'dataset: str="acs/acs5", fields: str="NAME,B01001_001E", '
+					'geography_for: str="state:*", geography_in: str="", '
+					'predicates: str="", time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""
+			Purpose:
+			________
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			___________
+			function (str): Tool function name.
+			tool (str): Service name.
+			description (str): What the function does.
+			parameters (dict): JSON-schema properties.
+			required (list[str]): Required parameter names.
+
+			Returns:
+			________
+			dict
+
+		"""
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
+			func_name = function.strip( )
+			tool_name = tool.strip( )
+			desc = description.strip( )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			_schema = {
+					'name': func_name,
+					'description': f'{desc} This function uses the {tool_name} service.',
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required,
+					}
+			}
+			
+			return _schema
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'CensusData'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
