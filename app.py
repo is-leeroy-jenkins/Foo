@@ -1614,99 +1614,249 @@ if mode == modes[ 0 ]:
 		out[ 'resolved_loader' ] = effective_type
 		
 		if ld is None:
-			out[ 'skipped' ] = ('No compatible local file loader is available for this file type.')
+			out[ 'skipped' ] = 'No compatible local file loader is available for this file type.'
 			return docs, out
 		
 		if effective_type == 'CSV':
-			docs = ld.load( path=str( path_obj ), columns=None, csv_args=None )
+			docs = ld.load(
+				path=str( path_obj ),
+				columns=None,
+				csv_args=None )
 		else:
 			docs = ld.load( str( path_obj ) )
 		
 		return docs, out
 	
-	st.markdown( '##### Local Loaders' )
+	top_left, top_right = st.columns( [ 1.35, 1.0 ], border=False )
 	
-	col_browse, col_text = st.columns( [ 0.7, 0.3 ], border=True )
-	with col_browse:
-		selected_loader_type = st.selectbox( label='Loader Type',
-			options=[ 'Auto', 'PDF', 'Word', 'Excel', 'Markdown', 'PowerPoint',
-					'HTML', 'Text', 'CSV', 'Outlook', ], key='loader_selected_type' )
-		
-		uploaded_files = st.file_uploader( 'Choose file(s)',
-			type=[ 'pdf', 'docx', 'xlsx', 'xls', 'pptx', 'md',
-					'html', 'htm', 'txt', 'text', 'log', 'csv', 'msg', ],
-			accept_multiple_files=True,
-			key=f'loader_uploaded_files_{ st.session_state[ "loader_uploader_nonce" ] }' )
-		
-		st.caption( 'Auto detects the local loader from the file extension. '
-			'Use a specific loader only when all selected files share the same format.' )
+	with top_left:
+		with st.expander( 'Local Loaders', expanded=True ):
+			col_local, col_actions = st.columns( [ 1.15, 0.85 ], border=True )
+			
+			with col_local:
+				selected_loader_type = st.selectbox(
+					label='Loader Type',
+					options=[
+							'Auto',
+							'PDF',
+							'Word',
+							'Excel',
+							'Markdown',
+							'PowerPoint',
+							'HTML',
+							'Text',
+							'CSV',
+							'Outlook',
+					],
+					key='loader_selected_type' )
+				
+				uploaded_files = st.file_uploader(
+					'Choose file(s)',
+					type=[
+							'pdf',
+							'docx',
+							'xlsx',
+							'xls',
+							'pptx',
+							'md',
+							'html',
+							'htm',
+							'txt',
+							'text',
+							'log',
+							'csv',
+							'msg',
+					],
+					accept_multiple_files=True,
+					key=f'loader_uploaded_files_{st.session_state[ "loader_uploader_nonce" ]}' )
+				
+				st.caption(
+					'Auto detects the local loader from the file extension. '
+					'Use a specific loader only when all selected files share the same format.'
+				)
+			
+			with col_actions:
+				loader_text = st.text_area(
+					'Enter one local file path per line',
+					height=120,
+					key='loader_path' )
+				
+				la1, la2 = st.columns( 2 )
+				
+				with la1:
+					do_load = st.button(
+						'Load Local Files',
+						key='loader_load_btn',
+						width='stretch' )
+				
+				with la2:
+					st.button(
+						'Clear',
+						key='loader_clear_btn',
+						on_click=_clear_loader_state,
+						width='stretch' )
 	
-	with col_text:
-		loader_text = st.text_area( 'Enter one local file path per line',
-			height=120, key='loader_path' )
-		
-		st.divider( )
-		
-		lb1, lb2 = st.columns( 2 )
-		with lb1:
-			do_load = st.button( 'Load Local Files', key='loader_load_btn', width='stretch' )
+	with top_right:
+		with st.expander( 'Remote Loaders', expanded=True ):
+			remote_type = st.selectbox(
+				label='Remote Loader',
+				options=[ 'Web', 'ArXiv', 'Wikipedia', 'YouTube' ],
+				key='remote_loader_type' )
 			
-		if do_load:
-			results: Dict[ str, Any ] = { }
-			documents: list[ Document ] = [ ]
-			file_outputs: list[ dict[ str, Any ] ] = [ ]
-			
-			if uploaded_files:
-				for f in uploaded_files:
-					name = getattr( f, 'name', 'uploaded' )
-					out: dict[ str, Any ] = { 'file': name }
-					
+			if remote_type == 'Web':
+				web_urls_text = st.text_area(
+					'Enter one URL per line',
+					height=120,
+					key='remote_web_urls' )
+				
+				if st.button(
+						'Load Web Pages',
+						key='remote_web_load_btn',
+						width='stretch' ):
 					try:
-						tmp_dir = cfg.BASE_DIR / 'stores' / 'tmp_uploads'
-						tmp_dir.mkdir( parents=True, exist_ok=True )
-						tmp_path = tmp_dir / name
+						urls = [
+								u.strip( )
+								for u in (web_urls_text or '').splitlines( )
+								if u.strip( )
+						]
 						
-						with open( tmp_path, 'wb' ) as fp:
-							fp.write( f.getbuffer( ) )
+						loader = WebLoader( )
+						docs = loader.load( urls=urls )
 						
-						docs, out = _load_local_from_path(
-							file_path=str( tmp_path ),
-							selected_type=selected_loader_type )
-						
-						if isinstance( docs, list ):
-							documents.extend( docs )
-							out[ 'documents_loaded' ] = len( docs )
+						st.session_state[ 'remote_loader_results' ] = {
+								'type': 'Web',
+								'input': urls,
+								'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
+								'documents': docs or [ ],
+						}
+						st.rerun( )
 					except Exception as exc:
-						out[ 'error' ] = str( exc )
-					
-					file_outputs.append( out )
+						st.error( str( exc ) )
 			
-			paths = [ p.strip( ) for p in (loader_text or '').splitlines( ) if p.strip( ) ]
-			if paths:
-				for file_path in paths:
-					out: dict[ str, Any ] = { 'file': file_path }
+			elif remote_type == 'ArXiv':
+				arxiv_query = st.text_input(
+					'Enter an ArXiv query',
+					key='remote_arxiv_query' )
+				
+				if st.button(
+						'Load ArXiv Results',
+						key='remote_arxiv_load_btn',
+						width='stretch' ):
 					try:
-						docs, out = _load_local_from_path(
-							file_path=file_path,
-							selected_type=selected_loader_type )
+						loader = ArXivLoader( )
+						docs = loader.load( question=str( arxiv_query ) )
 						
-						if isinstance( docs, list ):
-							documents.extend( docs )
-							out[ 'documents_loaded' ] = len( docs )
+						st.session_state[ 'remote_loader_results' ] = {
+								'type': 'ArXiv',
+								'input': arxiv_query,
+								'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
+								'documents': docs or [ ],
+						}
+						st.rerun( )
 					except Exception as exc:
-						out[ 'error' ] = str( exc )
-					
-					file_outputs.append( out )
+						st.error( str( exc ) )
 			
-			results[ 'selected_loader' ] = selected_loader_type
-			results[ 'files' ] = file_outputs
-			st.session_state[ 'loader_results' ] = results
-			st.session_state[ 'loader_documents' ] = documents
-			st.rerun( )
+			elif remote_type == 'Wikipedia':
+				wiki_query = st.text_input(
+					'Enter a Wikipedia query',
+					key='remote_wiki_query' )
+				
+				if st.button(
+						'Load Wikipedia Results',
+						key='remote_wiki_load_btn',
+						width='stretch' ):
+					try:
+						loader = WikiLoader( )
+						docs = loader.load( question=str( wiki_query ) )
+						
+						st.session_state[ 'remote_loader_results' ] = {
+								'type': 'Wikipedia',
+								'input': wiki_query,
+								'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
+								'documents': docs or [ ],
+						}
+						st.rerun( )
+					except Exception as exc:
+						st.error( str( exc ) )
+			
+			elif remote_type == 'YouTube':
+				youtube_url = st.text_input(
+					'Enter a YouTube URL',
+					key='remote_youtube_url' )
+				
+				if st.button(
+						'Load YouTube Transcript',
+						key='remote_youtube_load_btn',
+						width='stretch' ):
+					try:
+						loader = YouTubeLoader( )
+						docs = loader.load( youtube_url=str( youtube_url ) )
+						
+						st.session_state[ 'remote_loader_results' ] = {
+								'type': 'YouTube',
+								'input': youtube_url,
+								'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
+								'documents': docs or [ ],
+						}
+						st.rerun( )
+					except Exception as exc:
+						st.error( str( exc ) )
+	
+	if do_load:
+		results: Dict[ str, Any ] = { }
+		documents: list[ Document ] = [ ]
+		file_outputs: list[ dict[ str, Any ] ] = [ ]
 		
-		with lb2:
-			st.button( 'Clear', key='loader_clear_btn', on_click=_clear_loader_state, width='stretch' )
+		if uploaded_files:
+			for f in uploaded_files:
+				name = getattr( f, 'name', 'uploaded' )
+				out: dict[ str, Any ] = { 'file': name }
+				
+				try:
+					tmp_dir = cfg.BASE_DIR / 'stores' / 'tmp_uploads'
+					tmp_dir.mkdir( parents=True, exist_ok=True )
+					tmp_path = tmp_dir / name
+					
+					with open( tmp_path, 'wb' ) as fp:
+						fp.write( f.getbuffer( ) )
+					
+					docs, out = _load_local_from_path(
+						file_path=str( tmp_path ),
+						selected_type=selected_loader_type )
+					
+					if isinstance( docs, list ):
+						documents.extend( docs )
+						out[ 'documents_loaded' ] = len( docs )
+				except Exception as exc:
+					out[ 'error' ] = str( exc )
+				
+				file_outputs.append( out )
 		
+		paths = [ p.strip( ) for p in (loader_text or '').splitlines( ) if p.strip( ) ]
+		if paths:
+			for file_path in paths:
+				out: dict[ str, Any ] = { 'file': file_path }
+				try:
+					docs, out = _load_local_from_path(
+						file_path=file_path,
+						selected_type=selected_loader_type )
+					
+					if isinstance( docs, list ):
+						documents.extend( docs )
+						out[ 'documents_loaded' ] = len( docs )
+				except Exception as exc:
+					out[ 'error' ] = str( exc )
+				
+				file_outputs.append( out )
+		
+		results[ 'selected_loader' ] = selected_loader_type
+		results[ 'files' ] = file_outputs
+		st.session_state[ 'loader_results' ] = results
+		st.session_state[ 'loader_documents' ] = documents
+		st.rerun( )
+	
+	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+	
 	if st.session_state.get( 'loader_documents' ):
 		st.markdown( '##### Loaded Documents' )
 		for idx, doc in enumerate( st.session_state[ 'loader_documents' ], start=1 ):
@@ -1718,75 +1868,6 @@ if mode == modes[ 0 ]:
 	if st.session_state.get( 'loader_results' ):
 		st.markdown( '##### Local Load Results' )
 		st.json( st.session_state[ 'loader_results' ] )
-	
-	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-	
-	st.markdown( '##### Remote Loaders' )
-	
-	with st.expander( 'Remote Sources', expanded=False ):
-		remote_type = st.selectbox( label='Remote Loader',
-			options=[ 'Web', 'ArXiv', 'Wikipedia', ], key='remote_loader_type' )
-		
-		if remote_type == 'Web':
-			web_urls_text = st.text_area( 'Enter one URL per line', height=120,
-				key='remote_web_urls' )
-			
-			if st.button( 'Load Web Pages', key='remote_web_load_btn' ):
-				try:
-					urls = [
-							u.strip( )
-							for u in (web_urls_text or '').splitlines( )
-							if u.strip( )
-					]
-					
-					loader = WebLoader( )
-					docs = loader.load( urls=urls )
-					
-					st.session_state[ 'remote_loader_results' ] = {
-							'type': 'Web',
-							'input': urls,
-							'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
-							'documents': docs or [ ],
-					}
-					st.rerun( )
-				except Exception as exc:
-					st.error( str( exc ) )
-		
-		elif remote_type == 'ArXiv':
-			arxiv_query = st.text_input( 'Enter an ArXiv query', key='remote_arxiv_query' )
-			
-			if st.button( 'Load ArXiv Results', key='remote_arxiv_load_btn' ):
-				try:
-					loader = ArXivLoader( )
-					docs = loader.load( question=str( arxiv_query ) )
-					
-					st.session_state[ 'remote_loader_results' ] = {
-							'type': 'ArXiv',
-							'input': arxiv_query,
-							'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
-							'documents': docs or [ ],
-					}
-					st.rerun( )
-				except Exception as exc:
-					st.error( str( exc ) )
-		
-		elif remote_type == 'Wikipedia':
-			wiki_query = st.text_input( 'Enter a Wikipedia query', key='remote_wiki_query' )
-			
-			if st.button( 'Load Wikipedia Results', key='remote_wiki_load_btn' ):
-				try:
-					loader = WikiLoader( )
-					docs = loader.load( query=str( wiki_query ) )
-					
-					st.session_state[ 'remote_loader_results' ] = {
-							'type': 'Wikipedia',
-							'input': wiki_query,
-							'documents_loaded': len( docs ) if isinstance( docs, list ) else 0,
-							'documents': docs or [ ],
-					}
-					st.rerun( )
-				except Exception as exc:
-					st.error( str( exc ) )
 	
 	remote_results = st.session_state.get( 'remote_loader_results', { } )
 	if remote_results:
@@ -1800,7 +1881,7 @@ if mode == modes[ 0 ]:
 		)
 		
 		for idx, doc in enumerate( remote_results.get( 'documents', [ ] ), start=1 ):
-			with st.expander( f"Remote Document {idx}", expanded=False ):
+			with st.expander( f'Remote Document {idx}', expanded=False ):
 				st.text_area( '', value=(doc.page_content or ''), height=260 )
 				if getattr( doc, 'metadata', None ):
 					st.json( doc.metadata )
