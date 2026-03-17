@@ -72,7 +72,7 @@ from fetchers import (
 	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
 	GovData, Congress, InternetArchive, StarChart, HistoricalWeather, GoogleGeocoding,
 	CensusData, Socrata, HealthData, GlobalHealthData, UnitedNations, WorldPopulation,
-	Wonder, Earthquakes )
+	Wonder, USGSEarthquakes, USGSWaterData, USGSTheNationalMap )
 
 import plotly.graph_objects as px
 import pandas as pd
@@ -6422,7 +6422,7 @@ elif mode == 'Geospatial':
 		with col_right:
 			if usgseq_submit:
 				try:
-					f = Earthquakes( )
+					f = USGSEarthquakes( )
 					
 					latitude_value = None
 					longitude_value = None
@@ -6565,6 +6565,550 @@ elif mode == 'Geospatial':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
+	
+	# -------- USGS Water Data
+	with st.expander( label='USGS Water Data', expanded=False ):
+		if 'usgswaterdata_results' not in st.session_state:
+			st.session_state[ 'usgswaterdata_results' ] = { }
+		
+		if 'usgswaterdata_clear_request' not in st.session_state:
+			st.session_state[ 'usgswaterdata_clear_request' ] = False
+		
+		if st.session_state.get( 'usgswaterdata_clear_request', False ):
+			st.session_state[ 'usgswaterdata_mode' ] = 'monitoring-locations'
+			st.session_state[ 'usgswaterdata_monitoring_location_id' ] = ''
+			st.session_state[ 'usgswaterdata_state_code' ] = ''
+			st.session_state[ 'usgswaterdata_county_code' ] = ''
+			st.session_state[ 'usgswaterdata_site_type' ] = ''
+			st.session_state[ 'usgswaterdata_parameter_code' ] = ''
+			st.session_state[ 'usgswaterdata_limit' ] = 25
+			st.session_state[ 'usgswaterdata_timeout' ] = 20
+			st.session_state[ 'usgswaterdata_results' ] = { }
+			st.session_state[ 'usgswaterdata_clear_request' ] = False
+		
+		def _clear_usgswaterdata_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the USGS Water Data expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'usgswaterdata_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			usgswd_mode = st.selectbox(
+				'Mode',
+				options=[
+						'monitoring-locations',
+						'time-series-metadata',
+						'latest-continuous',
+						'latest-daily'
+				],
+				index=[
+						'monitoring-locations',
+						'time-series-metadata',
+						'latest-continuous',
+						'latest-daily'
+				].index(
+					st.session_state.get(
+						'usgswaterdata_mode',
+						'monitoring-locations'
+					)
+				),
+				key='usgswaterdata_mode'
+			)
+			
+			usgswd_monitoring_location_id = st.text_input(
+				'Monitoring Location ID',
+				value=st.session_state.get(
+					'usgswaterdata_monitoring_location_id',
+					''
+				),
+				key='usgswaterdata_monitoring_location_id',
+				placeholder='Example: USGS-01491000'
+			)
+			
+			meta_c1, meta_c2 = st.columns( 2 )
+			
+			with meta_c1:
+				usgswd_state_code = st.text_input(
+					'State Code',
+					value=st.session_state.get( 'usgswaterdata_state_code', '' ),
+					key='usgswaterdata_state_code',
+					disabled=(usgswd_mode != 'monitoring-locations'),
+					placeholder='Example: VA'
+				)
+			
+			with meta_c2:
+				usgswd_county_code = st.text_input(
+					'County Code',
+					value=st.session_state.get( 'usgswaterdata_county_code', '' ),
+					key='usgswaterdata_county_code',
+					disabled=(usgswd_mode != 'monitoring-locations'),
+					placeholder='Optional'
+				)
+			
+			usgswd_site_type = st.text_input(
+				'Site Type',
+				value=st.session_state.get( 'usgswaterdata_site_type', '' ),
+				key='usgswaterdata_site_type',
+				disabled=(usgswd_mode != 'monitoring-locations'),
+				placeholder='Examples: ST, LK, GW'
+			)
+			
+			usgswd_parameter_code = st.text_input(
+				'Parameter Code',
+				value=st.session_state.get( 'usgswaterdata_parameter_code', '' ),
+				key='usgswaterdata_parameter_code',
+				disabled=(usgswd_mode == 'monitoring-locations'),
+				placeholder='Example: 00060'
+			)
+			
+			usgswd_limit = st.number_input(
+				'Limit',
+				min_value=1,
+				max_value=200,
+				value=int( st.session_state.get( 'usgswaterdata_limit', 25 ) ),
+				step=1,
+				key='usgswaterdata_limit'
+			)
+			
+			usgswd_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'usgswaterdata_timeout', 20 ) ),
+				step=1,
+				key='usgswaterdata_timeout'
+			)
+			
+			st.caption(
+				'Monitoring Locations supports site discovery. The other modes '
+				'focus on parameter metadata and latest reported values.'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				usgswd_submit = st.button(
+					'Submit',
+					key='usgswaterdata_submit'
+				)
+			
+			with btn_c2:
+				st.button(
+					'Clear',
+					key='usgswaterdata_clear',
+					on_click=_clear_usgswaterdata_state
+				)
+		
+		with col_right:
+			if usgswd_submit:
+				try:
+					f = USGSWaterData( )
+					result = f.fetch(
+						mode=str( usgswd_mode ),
+						monitoring_location_id=str(
+							usgswd_monitoring_location_id
+						).strip( ),
+						state_code=str( usgswd_state_code ).strip( ),
+						county_code=str( usgswd_county_code ).strip( ),
+						site_type=str( usgswd_site_type ).strip( ),
+						parameter_code=str( usgswd_parameter_code ).strip( ),
+						limit=int( usgswd_limit ),
+						time=int( usgswd_timeout )
+					)
+					
+					st.session_state[ 'usgswaterdata_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'USGS Water Data request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'usgswaterdata_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					params = result.get( 'params', { } ) or { }
+					if 'monitoring_location_id' in params:
+						st.markdown(
+							f"**Monitoring Location ID:** "
+							f"{params.get( 'monitoring_location_id', '' )}"
+						)
+					if 'parameter_code' in params:
+						st.markdown(
+							f"**Parameter Code:** {params.get( 'parameter_code', '' )}"
+						)
+				
+				summary = result.get( 'summary', { } ) or { }
+				if summary:
+					st.markdown( '#### Result Summary' )
+					
+					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+					
+					with sum_c1:
+						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+					
+					with sum_c2:
+						first_site = str( summary.get( 'first_site', '' ) or '' )
+						if first_site:
+							st.markdown( f"**First Site:** {first_site}" )
+						else:
+							st.markdown( '**First Site:** N/A' )
+					
+					with sum_c3:
+						first_parameter = str(
+							summary.get( 'first_parameter', '' ) or ''
+						)
+						first_value = str( summary.get( 'first_value', '' ) or '' )
+						
+						if first_parameter and first_value:
+							st.markdown(
+								f"**Sample Value:** {first_parameter} = {first_value}"
+							)
+						elif first_parameter:
+							st.markdown(
+								f"**Sample Parameter:** {first_parameter}"
+							)
+						else:
+							st.markdown( '**Sample Value:** N/A' )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					with st.expander( 'Request Parameters', expanded=False ):
+						st.json( params )
+				
+				rows = result.get( 'rows', [ ] ) or [ ]
+				if rows:
+					st.markdown( '#### Results' )
+					df_usgswd = pd.DataFrame( rows )
+					
+					if not df_usgswd.empty:
+						st.dataframe(
+							df_usgswd,
+							use_container_width=True,
+							hide_index=True
+						)
+						
+						top_rows = rows[ : min( 10, len( rows ) ) ]
+						for idx, item in enumerate( top_rows, start=1 ):
+							label = str(
+								item.get( 'Name', '' ) or
+								item.get( 'Monitoring Location ID', '' ) or
+								f'Record {idx}'
+							)
+							
+							with st.expander(
+									f'Record {idx}: {label}',
+									expanded=False
+							):
+								st.json( item )
+					else:
+						st.info( 'No displayable USGS Water Data rows were found.' )
+				else:
+					st.info( 'No water data records were returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
+	
+	# -------- USGS The National Map
+	with st.expander( label='USGS The National Map', expanded=False ):
+		if 'usgstnm_results' not in st.session_state:
+			st.session_state[ 'usgstnm_results' ] = { }
+		
+		if 'usgstnm_clear_request' not in st.session_state:
+			st.session_state[ 'usgstnm_clear_request' ] = False
+		
+		if st.session_state.get( 'usgstnm_clear_request', False ):
+			st.session_state[ 'usgstnm_mode' ] = 'products'
+			st.session_state[ 'usgstnm_dataset' ] = ''
+			st.session_state[ 'usgstnm_q' ] = ''
+			st.session_state[ 'usgstnm_bbox' ] = ''
+			st.session_state[ 'usgstnm_prod_formats' ] = ''
+			st.session_state[ 'usgstnm_max_items' ] = 25
+			st.session_state[ 'usgstnm_offset' ] = 0
+			st.session_state[ 'usgstnm_timeout' ] = 20
+			st.session_state[ 'usgstnm_results' ] = { }
+			st.session_state[ 'usgstnm_clear_request' ] = False
+		
+		def _clear_usgstnm_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the USGS The National Map expander state for reset on the next
+				rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'usgstnm_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			usgstnm_mode = st.selectbox(
+				'Mode',
+				options=[ 'products', 'datasets' ],
+				index=[ 'products', 'datasets' ].index(
+					st.session_state.get( 'usgstnm_mode', 'products' )
+				),
+				key='usgstnm_mode'
+			)
+			
+			usgstnm_dataset = st.text_input(
+				'Dataset',
+				value=st.session_state.get( 'usgstnm_dataset', '' ),
+				key='usgstnm_dataset',
+				disabled=(usgstnm_mode != 'products'),
+				placeholder='Example: Digital Elevation Model (DEM) 1 meter'
+			)
+			
+			usgstnm_q = st.text_input(
+				'Search Text',
+				value=st.session_state.get( 'usgstnm_q', '' ),
+				key='usgstnm_q',
+				disabled=(usgstnm_mode != 'products'),
+				placeholder='Optional keyword search'
+			)
+			
+			usgstnm_bbox = st.text_input(
+				'Bounding Box',
+				value=st.session_state.get( 'usgstnm_bbox', '' ),
+				key='usgstnm_bbox',
+				disabled=(usgstnm_mode != 'products'),
+				placeholder='minx,miny,maxx,maxy'
+			)
+			
+			usgstnm_prod_formats = st.text_input(
+				'Product Formats',
+				value=st.session_state.get( 'usgstnm_prod_formats', '' ),
+				key='usgstnm_prod_formats',
+				disabled=(usgstnm_mode != 'products'),
+				placeholder='Examples: GeoTIFF, IMG, LAS, LAZ'
+			)
+			
+			page_c1, page_c2 = st.columns( 2 )
+			
+			with page_c1:
+				usgstnm_max_items = st.number_input(
+					'Max Items',
+					min_value=1,
+					max_value=500,
+					value=int( st.session_state.get( 'usgstnm_max_items', 25 ) ),
+					step=1,
+					key='usgstnm_max_items',
+					disabled=(usgstnm_mode != 'products')
+				)
+			
+			with page_c2:
+				usgstnm_offset = st.number_input(
+					'Offset',
+					min_value=0,
+					max_value=10000,
+					value=int( st.session_state.get( 'usgstnm_offset', 0 ) ),
+					step=1,
+					key='usgstnm_offset',
+					disabled=(usgstnm_mode != 'products')
+				)
+			
+			usgstnm_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'usgstnm_timeout', 20 ) ),
+				step=1,
+				key='usgstnm_timeout'
+			)
+			
+			st.caption(
+				'Products mode searches downloadable TNM records. Datasets mode '
+				'returns the dataset catalog for discovery.'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				usgstnm_submit = st.button(
+					'Submit',
+					key='usgstnm_submit'
+				)
+			
+			with btn_c2:
+				st.button(
+					'Clear',
+					key='usgstnm_clear',
+					on_click=_clear_usgstnm_state
+				)
+		
+		with col_right:
+			if usgstnm_submit:
+				try:
+					f = USGSTheNationalMap( )
+					result = f.fetch(
+						mode=str( usgstnm_mode ),
+						dataset=str( usgstnm_dataset ).strip( ),
+						q=str( usgstnm_q ).strip( ),
+						bbox=str( usgstnm_bbox ).strip( ),
+						prod_formats=str( usgstnm_prod_formats ).strip( ),
+						max_items=int( usgstnm_max_items ),
+						offset=int( usgstnm_offset ),
+						time=int( usgstnm_timeout )
+					)
+					
+					st.session_state[ 'usgstnm_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'USGS The National Map request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'usgstnm_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					params = result.get( 'params', { } ) or { }
+					if 'datasets' in params:
+						st.markdown(
+							f"**Dataset Filter:** {params.get( 'datasets', '' )}"
+						)
+					if 'bbox' in params:
+						st.markdown(
+							f"**Bounding Box:** {params.get( 'bbox', '' )}"
+						)
+				
+				summary = result.get( 'summary', { } ) or { }
+				if summary:
+					st.markdown( '#### Result Summary' )
+					
+					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+					
+					with sum_c1:
+						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+					
+					with sum_c2:
+						first_title = str( summary.get( 'first_title', '' ) or '' )
+						if first_title:
+							st.markdown( f"**First Result:** {first_title}" )
+						else:
+							st.markdown( '**First Result:** N/A' )
+					
+					with sum_c3:
+						first_dataset = str( summary.get( 'first_dataset', '' ) or '' )
+						if first_dataset:
+							st.markdown( f"**Dataset:** {first_dataset}" )
+						else:
+							st.markdown( '**Dataset:** N/A' )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					with st.expander( 'Request Parameters', expanded=False ):
+						st.json( params )
+				
+				rows = result.get( 'rows', [ ] ) or [ ]
+				if rows:
+					st.markdown( '#### Results' )
+					df_usgstnm = pd.DataFrame( rows )
+					
+					if not df_usgstnm.empty:
+						st.dataframe(
+							df_usgstnm,
+							use_container_width=True,
+							hide_index=True
+						)
+						
+						top_rows = rows[ : min( 10, len( rows ) ) ]
+						for idx, item in enumerate( top_rows, start=1 ):
+							label = str(
+								item.get( 'Title', '' ) or
+								item.get( 'Name', '' ) or
+								f'Record {idx}'
+							)
+							
+							with st.expander(
+									f'Record {idx}: {label}',
+									expanded=False
+							):
+								left_c, right_c = st.columns( 2 )
+								
+								with left_c:
+									if 'Dataset' in item:
+										st.markdown(
+											f"**Dataset:** {item.get( 'Dataset', '' )}"
+										)
+									if 'Format' in item:
+										st.markdown(
+											f"**Format:** {item.get( 'Format', '' )}"
+										)
+									if 'Publication Date' in item:
+										st.markdown(
+											f"**Publication Date:** "
+											f"{item.get( 'Publication Date', '' )}"
+										)
+								
+								with right_c:
+									if 'Bounding Box' in item:
+										st.markdown(
+											f"**Bounding Box:** "
+											f"{item.get( 'Bounding Box', '' )}"
+										)
+									if 'Download URL' in item:
+										st.markdown(
+											f"**Download URL:** "
+											f"{item.get( 'Download URL', '' )}"
+										)
+									if 'Metadata URL' in item:
+										st.markdown(
+											f"**Metadata URL:** "
+											f"{item.get( 'Metadata URL', '' )}"
+										)
+								
+								if 'Description' in item and item.get( 'Description', '' ):
+									st.markdown(
+										f"**Description:** {item.get( 'Description', '' )}"
+									)
+					else:
+						st.info( 'No displayable TNM rows were found.' )
+				else:
+					st.info( 'No TNM records were returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
+					
 					
 # ==============================================================================
 # ASTRONOMICAL MODE
@@ -9350,7 +9894,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- CDC SOCRATA
-	with st.expander( label='CDC SOCRATA', expanded=False ):
+	with st.expander( label='CDC Socrata', expanded=False ):
 		if 'socrata_results' not in st.session_state:
 			st.session_state[ 'socrata_results' ] = { }
 		
@@ -9585,7 +10129,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- US Health Data
-	with st.expander( label='US Health Data', expanded=False ):
+	with st.expander( label='U.S. Health Data', expanded=False ):
 		if 'healthdata_results' not in st.session_state:
 			st.session_state[ 'healthdata_results' ] = { }
 		
@@ -10346,7 +10890,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- CDC WONDER
-	with st.expander( label='CDC WONDER', expanded=False ):
+	with st.expander( label='CDC Wonder', expanded=False ):
 		if 'wonder_results' not in st.session_state:
 			st.session_state[ 'wonder_results' ] = { }
 		

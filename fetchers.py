@@ -47,6 +47,7 @@ import base64
 import datetime as dt
 import io
 import re
+import os
 import urllib.parse
 from pathlib import Path
 from typing import Any, Dict, Optional, Pattern, List, Tuple
@@ -15102,7 +15103,7 @@ class Wonder( Fetcher ):
 			)
 			raise exception
 
-class Earthquakes( Fetcher ):
+class USGSEarthquakes( Fetcher ):
 	'''
 		Purpose:
 		--------
@@ -15717,6 +15718,1551 @@ class Earthquakes( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSEarthquakes'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class USGSWaterData( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to the modern USGS Water Data APIs for monitoring
+		locations, time-series metadata, latest continuous values, and latest
+		daily values.
+
+		Referenced API Requirements:
+		----------------------------
+		Base Endpoint:
+			- https://api.waterdata.usgs.gov/ogcapi/v0
+
+		Collections used here:
+			- monitoring-locations
+			- time-series-metadata
+			- latest-continuous
+			- latest-daily
+
+		Optional Authentication:
+			- X-Api-Key header
+			- API keys increase rate limits but are not required for basic use
+
+	'''
+	base_url: Optional[ str ]
+	mode: Optional[ str ]
+	api_key: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Dict[ str, Any ] ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the USGS Water Data wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://api.waterdata.usgs.gov/ogcapi/v0'
+		self.mode = 'monitoring-locations'
+		self.api_key = self._resolve_api_key( )
+		self.params = { }
+		self.payload = { }
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+		
+		if self.api_key:
+			self.headers[ 'X-Api-Key' ] = self.api_key
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'mode',
+				'api_key',
+				'params',
+				'payload',
+				'timeout',
+				'_resolve_api_key',
+				'_coalesce',
+				'_request',
+				'_shape_monitoring_locations',
+				'_shape_time_series_metadata',
+				'_shape_latest_values',
+				'_summarize_rows',
+				'fetch_monitoring_locations',
+				'fetch_time_series_metadata',
+				'fetch_latest_continuous',
+				'fetch_latest_daily',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _resolve_api_key( self ) -> Optional[ str ]:
+		'''
+			Purpose:
+			--------
+			Resolve an API key for the USGS Water Data APIs.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			Optional[str]
+		'''
+		try:
+			candidates: List[ Optional[ str ] ] = [
+					os.getenv( 'USGS_WATERDATA_API_KEY' ),
+					os.getenv( 'DATA_GOV_API_KEY' ),
+					os.getenv( 'GOVINFO_API_KEY' )
+			]
+			
+			for candidate in candidates:
+				if candidate is not None and str( candidate ).strip( ):
+					return str( candidate ).strip( )
+			
+			return None
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = '_resolve_api_key( self ) -> Optional[ str ]'
+			raise exception
+	
+	def _coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize several possible USGS Water Data response layouts into a list
+			of record dictionaries.
+
+			Parameters:
+			-----------
+			payload (Any):
+				Decoded JSON payload returned by the API.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			if isinstance( payload, list ):
+				return [ item for item in payload if isinstance( item, dict ) ]
+			
+			if not isinstance( payload, dict ):
+				return [ ]
+			
+			for key in [ 'features', 'value', 'items', 'data' ]:
+				value = payload.get( key, None )
+				if isinstance( value, list ):
+					return [ item for item in value if isinstance( item, dict ) ]
+			
+			return [ ]
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = '_coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]'
+			raise exception
+	
+	def _request( self, collection: str,
+			params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a USGS Water Data collection endpoint.
+
+			Parameters:
+			-----------
+			collection (str):
+				Collection name under the OGC API base path.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'collection', collection )
+			
+			self.url = f'{self.base_url}/collections/{str( collection ).strip( )}'
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( ) or { }
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'_request( self, collection: str, '
+					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_monitoring_locations( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize monitoring-location records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Monitoring location records.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				properties = item.get( 'properties', { } ) or item
+				geometry = item.get( 'geometry', { } ) or { }
+				coordinates = geometry.get( 'coordinates', [ ] ) or [ ]
+				
+				longitude = coordinates[
+					0 ] if len( coordinates ) > 0 else properties.get( 'longitude', None )
+				latitude = coordinates[
+					1 ] if len( coordinates ) > 1 else properties.get( 'latitude', None )
+				
+				identifier = (
+						properties.get( 'monitoring_location_id', None ) or
+						properties.get( 'monitoringLocationIdentifier', None ) or
+						properties.get( 'site_no', None ) or
+						properties.get( 'siteNumber', None ) or
+						item.get( 'id', '' )
+				)
+				
+				name = (
+						properties.get( 'monitoring_location_name', None ) or
+						properties.get( 'monitoringLocationName', None ) or
+						properties.get( 'site_name', None ) or
+						properties.get( 'siteName', '' )
+				)
+				
+				state = (
+						properties.get( 'state', None ) or
+						properties.get( 'state_code', None ) or
+						properties.get( 'stateCode', '' )
+				)
+				
+				county = (
+						properties.get( 'county', None ) or
+						properties.get( 'county_name', None ) or
+						properties.get( 'countyName', '' )
+				)
+				
+				site_type = (
+						properties.get( 'site_type', None ) or
+						properties.get( 'siteType', '' )
+				)
+				
+				huc = (
+						properties.get( 'huc', None ) or
+						properties.get( 'huc_cd', None ) or
+						properties.get( 'hucCode', '' )
+				)
+				
+				rows.append(
+					{
+							'Monitoring Location ID': identifier,
+							'Name': name,
+							'Site Type': site_type,
+							'State': state,
+							'County': county,
+							'HUC': huc,
+							'Latitude': latitude,
+							'Longitude': longitude
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'_shape_monitoring_locations( self, records: '
+					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _shape_time_series_metadata( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize time-series metadata records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Time-series metadata records.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				properties = item.get( 'properties', { } ) or item
+				
+				rows.append(
+					{
+							'Monitoring Location ID': (
+									properties.get( 'monitoring_location_id', None ) or
+									properties.get( 'monitoringLocationIdentifier', None ) or
+									properties.get( 'site_no', '' )
+							),
+							'Parameter Code': (
+									properties.get( 'parameter_code', None ) or
+									properties.get( 'parameterCode', '' )
+							),
+							'Parameter Name': (
+									properties.get( 'parameter_name', None ) or
+									properties.get( 'parameterName', '' )
+							),
+							'Statistic ID': (
+									properties.get( 'statistic_id', None ) or
+									properties.get( 'statisticId', '' )
+							),
+							'Statistic Name': (
+									properties.get( 'statistic_name', None ) or
+									properties.get( 'statisticName', '' )
+							),
+							'Unit': (
+									properties.get( 'unit_of_measure', None ) or
+									properties.get( 'unitOfMeasure', '' )
+							),
+							'Begin Time': (
+									properties.get( 'begin_time', None ) or
+									properties.get( 'beginTime', '' )
+							),
+							'End Time': (
+									properties.get( 'end_time', None ) or
+									properties.get( 'endTime', '' )
+							)
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'_shape_time_series_metadata( self, records: '
+					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _shape_latest_values( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize latest continuous or daily value records into a readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Value records.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				properties = item.get( 'properties', { } ) or item
+				
+				rows.append(
+					{
+							'Monitoring Location ID': (
+									properties.get( 'monitoring_location_id', None ) or
+									properties.get( 'monitoringLocationIdentifier', None ) or
+									properties.get( 'site_no', '' )
+							),
+							'Name': (
+									properties.get( 'monitoring_location_name', None ) or
+									properties.get( 'monitoringLocationName', None ) or
+									properties.get( 'site_name', '' )
+							),
+							'Parameter Code': (
+									properties.get( 'parameter_code', None ) or
+									properties.get( 'parameterCode', '' )
+							),
+							'Parameter Name': (
+									properties.get( 'parameter_name', None ) or
+									properties.get( 'parameterName', '' )
+							),
+							'Statistic ID': (
+									properties.get( 'statistic_id', None ) or
+									properties.get( 'statisticId', '' )
+							),
+							'Value': (
+									properties.get( 'result_value', None ) or
+									properties.get( 'value', None ) or
+									properties.get( 'primary_value', '' )
+							),
+							'Unit': (
+									properties.get( 'unit_of_measure', None ) or
+									properties.get( 'unitOfMeasure', '' )
+							),
+							'Time': (
+									properties.get( 'time', None ) or
+									properties.get( 'result_time', None ) or
+									properties.get( 'resultTime', '' )
+							),
+							'Approval Status': (
+									properties.get( 'approval_status', None ) or
+									properties.get( 'approvalStatus', '' )
+							)
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'_shape_latest_values( self, records: '
+					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			first_site = ''
+			first_parameter = ''
+			first_value = ''
+			
+			if rows:
+				first_site = str(
+					rows[ 0 ].get( 'Name', '' ) or
+					rows[ 0 ].get( 'Monitoring Location ID', '' ) or ''
+				)
+				first_parameter = str( rows[ 0 ].get( 'Parameter Name', '' ) or '' )
+				first_value = str( rows[ 0 ].get( 'Value', '' ) or '' )
+			
+			return {
+					'count': count,
+					'first_site': first_site,
+					'first_parameter': first_parameter,
+					'first_value': first_value
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_monitoring_locations( self, monitoring_location_id: str = '',
+			state_code: str = '', county_code: str = '', site_type: str = '',
+			limit: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch monitoring locations.
+
+			Parameters:
+			-----------
+			monitoring_location_id (str):
+				Optional monitoring location identifier such as USGS-01491000.
+
+			state_code (str):
+				Optional state filter.
+
+			county_code (str):
+				Optional county filter.
+
+			site_type (str):
+				Optional site type filter.
+
+			limit (int):
+				Maximum rows requested.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'monitoring-locations'
+			base = self._request(
+				collection='monitoring-locations',
+				params={
+						'monitoring_location_id': str( monitoring_location_id ).strip( ),
+						'state_code': str( state_code ).strip( ),
+						'county_code': str( county_code ).strip( ),
+						'site_type': str( site_type ).strip( ),
+						'limit': max( 1, int( limit ) )
+				},
+				time=int( time )
+			) or { }
+			
+			records = self._coalesce( base.get( 'raw', { } ) )
+			rows = self._shape_monitoring_locations( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'fetch_monitoring_locations( self, monitoring_location_id: str=, '
+					'state_code: str=, county_code: str=, site_type: str=, '
+					'limit: int=25, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_time_series_metadata( self, monitoring_location_id: str = '',
+			parameter_code: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch time-series metadata for a monitoring location and optional
+			parameter code.
+
+			Parameters:
+			-----------
+			monitoring_location_id (str):
+				Optional monitoring location identifier.
+
+			parameter_code (str):
+				Optional USGS parameter code.
+
+			limit (int):
+				Maximum rows requested.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'time-series-metadata'
+			base = self._request(
+				collection='time-series-metadata',
+				params={
+						'monitoring_location_id': str( monitoring_location_id ).strip( ),
+						'parameter_code': str( parameter_code ).strip( ),
+						'limit': max( 1, int( limit ) )
+				},
+				time=int( time )
+			) or { }
+			
+			records = self._coalesce( base.get( 'raw', { } ) )
+			rows = self._shape_time_series_metadata( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'fetch_time_series_metadata( self, monitoring_location_id: str=, '
+					'parameter_code: str=, limit: int=25, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_latest_continuous( self, monitoring_location_id: str = '',
+			parameter_code: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch the latest continuous values for a monitoring location.
+
+			Parameters:
+			-----------
+			monitoring_location_id (str):
+				Optional monitoring location identifier.
+
+			parameter_code (str):
+				Optional USGS parameter code.
+
+			limit (int):
+				Maximum rows requested.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'latest-continuous'
+			base = self._request(
+				collection='latest-continuous',
+				params={
+						'monitoring_location_id': str( monitoring_location_id ).strip( ),
+						'parameter_code': str( parameter_code ).strip( ),
+						'limit': max( 1, int( limit ) )
+				},
+				time=int( time )
+			) or { }
+			
+			records = self._coalesce( base.get( 'raw', { } ) )
+			rows = self._shape_latest_values( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'fetch_latest_continuous( self, monitoring_location_id: str=, '
+					'parameter_code: str=, limit: int=25, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_latest_daily( self, monitoring_location_id: str = '',
+			parameter_code: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch the latest daily values for a monitoring location.
+
+			Parameters:
+			-----------
+			monitoring_location_id (str):
+				Optional monitoring location identifier.
+
+			parameter_code (str):
+				Optional USGS parameter code.
+
+			limit (int):
+				Maximum rows requested.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'latest-daily'
+			base = self._request(
+				collection='latest-daily',
+				params={
+						'monitoring_location_id': str( monitoring_location_id ).strip( ),
+						'parameter_code': str( parameter_code ).strip( ),
+						'limit': max( 1, int( limit ) )
+				},
+				time=int( time )
+			) or { }
+			
+			records = self._coalesce( base.get( 'raw', { } ) )
+			rows = self._shape_latest_values( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'fetch_latest_daily( self, monitoring_location_id: str=, '
+					'parameter_code: str=, limit: int=25, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'monitoring-locations',
+			monitoring_location_id: str = '', state_code: str = '',
+			county_code: str = '', site_type: str = '',
+			parameter_code: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for USGS Water Data retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- monitoring-locations
+				- time-series-metadata
+				- latest-continuous
+				- latest-daily
+
+			monitoring_location_id (str):
+				Optional monitoring location identifier.
+
+			state_code (str):
+				Optional state filter for monitoring locations.
+
+			county_code (str):
+				Optional county filter for monitoring locations.
+
+			site_type (str):
+				Optional site type filter for monitoring locations.
+
+			parameter_code (str):
+				Optional USGS parameter code.
+
+			limit (int):
+				Maximum rows requested.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'monitoring-locations' ).strip( ).lower( )
+			
+			if active_mode == 'monitoring-locations':
+				return self.fetch_monitoring_locations(
+					monitoring_location_id=monitoring_location_id,
+					state_code=state_code,
+					county_code=county_code,
+					site_type=site_type,
+					limit=limit,
+					time=int( time )
+				)
+			
+			if active_mode == 'time-series-metadata':
+				return self.fetch_time_series_metadata(
+					monitoring_location_id=monitoring_location_id,
+					parameter_code=parameter_code,
+					limit=limit,
+					time=int( time )
+				)
+			
+			if active_mode == 'latest-continuous':
+				return self.fetch_latest_continuous(
+					monitoring_location_id=monitoring_location_id,
+					parameter_code=parameter_code,
+					limit=limit,
+					time=int( time )
+				)
+			
+			if active_mode == 'latest-daily':
+				return self.fetch_latest_daily(
+					monitoring_location_id=monitoring_location_id,
+					parameter_code=parameter_code,
+					limit=limit,
+					time=int( time )
+				)
+			
+			raise ValueError(
+				"Unsupported mode. Use 'monitoring-locations', "
+				"'time-series-metadata', 'latest-continuous', or 'latest-daily'."
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'fetch( self, mode: str=monitoring-locations, '
+					'monitoring_location_id: str=, state_code: str=, '
+					'county_code: str=, site_type: str=, parameter_code: str=, '
+					'limit: int=25, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class USGSTheNationalMap( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to the USGS The National Map (TNM) TNMAccess API for
+		dataset discovery and downloadable product search.
+
+		Referenced API Requirements:
+		----------------------------
+		Base Endpoint:
+			- https://tnmaccess.nationalmap.gov/api/v1
+
+		Resources used here:
+			- /datasets
+			- /products
+
+		Common product query concepts:
+			- datasets
+			- q
+			- bbox
+			- prodFormats
+			- max
+			- offset
+
+	'''
+	base_url: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Dict[ str, Any ] ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the USGS The National Map wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://tnmaccess.nationalmap.gov/api/v1'
+		self.mode = 'products'
+		self.params = { }
+		self.payload = { }
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_request',
+				'_coalesce',
+				'_shape_dataset_rows',
+				'_shape_product_rows',
+				'_summarize_rows',
+				'fetch_datasets',
+				'fetch_products',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _request( self, endpoint: str,
+			params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a TNMAccess endpoint.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path under the TNMAccess base URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			
+			self.url = f'{self.base_url}/{str( endpoint ).strip( )}'
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( ) or { }
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = (
+					'_request( self, endpoint: str, '
+					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize possible TNMAccess response layouts into a list of records.
+
+			Parameters:
+			-----------
+			payload (Any):
+				Decoded JSON payload returned by the API.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			if isinstance( payload, list ):
+				return [ item for item in payload if isinstance( item, dict ) ]
+			
+			if not isinstance( payload, dict ):
+				return [ ]
+			
+			for key in [ 'items', 'datasets', 'data', 'results' ]:
+				value = payload.get( key, None )
+				if isinstance( value, list ):
+					return [ item for item in value if isinstance( item, dict ) ]
+			
+			return [ ]
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = '_coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]'
+			raise exception
+	
+	def _shape_dataset_rows( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize TNM dataset records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Dataset records returned by TNMAccess.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				rows.append(
+					{
+							'Id': item.get( 'id', '' ),
+							'Dataset': (
+									item.get( 'sbDatasetTag', None ) or
+									item.get( 'dataset', None ) or
+									item.get( 'tag', '' )
+							),
+							'Name': (
+									item.get( 'sbDatasetName', None ) or
+									item.get( 'name', '' )
+							),
+							'Category': item.get( 'category', '' ),
+							'Type': item.get( 'type', '' ),
+							'Description': (
+									item.get( 'description', None ) or
+									item.get( 'summary', '' )
+							)
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = (
+					'_shape_dataset_rows( self, records: '
+					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _shape_product_rows( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize TNM product records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Product records returned by TNMAccess.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				download_url = (
+						item.get( 'downloadURL', None ) or
+						item.get( 'downloadUrl', None ) or
+						item.get( 'url', '' )
+				)
+				
+				meta_url = (
+						item.get( 'metaUrl', None ) or
+						item.get( 'metadataURL', None ) or
+						item.get( 'metadataUrl', '' )
+				)
+				
+				formats = item.get( 'format', None )
+				if isinstance( formats, list ):
+					formats = ', '.join( [ str( value ) for value in formats ] )
+				
+				rows.append(
+					{
+							'Id': (
+									item.get( 'sourceId', None ) or
+									item.get( 'id', '' )
+							),
+							'Title': (
+									item.get( 'title', None ) or
+									item.get( 'name', '' )
+							),
+							'Dataset': (
+									item.get( 'sbDatasetTag', None ) or
+									item.get( 'dataset', '' )
+							),
+							'Format': (
+									formats or
+									item.get( 'format', '' )
+							),
+							'Publication Date': (
+									item.get( 'publicationDate', None ) or
+									item.get( 'lastUpdated', '' )
+							),
+							'Bounding Box': (
+									item.get( 'boundingBox', None ) or
+									item.get( 'bbox', '' )
+							),
+							'Download URL': download_url,
+							'Metadata URL': meta_url
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = (
+					'_shape_product_rows( self, records: '
+					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			first_title = ''
+			first_dataset = ''
+			
+			if rows:
+				first_title = str(
+					rows[ 0 ].get( 'Title', '' ) or
+					rows[ 0 ].get( 'Name', '' ) or ''
+				)
+				first_dataset = str( rows[ 0 ].get( 'Dataset', '' ) or '' )
+			
+			return {
+					'count': count,
+					'first_title': first_title,
+					'first_dataset': first_dataset
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_datasets( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch dataset metadata from TNMAccess.
+
+			Parameters:
+			-----------
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'datasets'
+			base = self._request(
+				endpoint='datasets',
+				params={ },
+				time=int( time )
+			) or { }
+			
+			records = self._coalesce( base.get( 'raw', { } ) )
+			rows = self._shape_dataset_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = 'fetch_datasets( self, time: int=20 ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_products( self, dataset: str = '', q: str = '',
+			bbox: str = '', prod_formats: str = '', max_items: int = 25,
+			offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch downloadable product records from TNMAccess.
+
+			Parameters:
+			-----------
+			dataset (str):
+				Optional TNM dataset filter.
+
+			q (str):
+				Optional free-text search string.
+
+			bbox (str):
+				Optional bounding box in minx,miny,maxx,maxy format.
+
+			prod_formats (str):
+				Optional product format filter such as GeoTIFF, IMG, LAS, or LAZ.
+
+			max_items (int):
+				Maximum number of returned products.
+
+			offset (int):
+				Result offset for paging.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'products'
+			base = self._request(
+				endpoint='products',
+				params={
+						'datasets': str( dataset ).strip( ),
+						'q': str( q ).strip( ),
+						'bbox': str( bbox ).strip( ),
+						'prodFormats': str( prod_formats ).strip( ),
+						'max': max( 1, int( max_items ) ),
+						'offset': max( 0, int( offset ) )
+				},
+				time=int( time )
+			) or { }
+			
+			records = self._coalesce( base.get( 'raw', { } ) )
+			rows = self._shape_product_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', { } )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = (
+					'fetch_products( self, dataset: str=, q: str=, bbox: str=, '
+					'prod_formats: str=, max_items: int=25, offset: int=0, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'products', dataset: str = '',
+			q: str = '', bbox: str = '', prod_formats: str = '',
+			max_items: int = 25, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for TNMAccess dataset and product retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- datasets
+				- products
+
+			dataset (str):
+				Optional TNM dataset filter for product search.
+
+			q (str):
+				Optional free-text search string for product search.
+
+			bbox (str):
+				Optional bounding box string for product search.
+
+			prod_formats (str):
+				Optional format filter for product search.
+
+			max_items (int):
+				Maximum returned products.
+
+			offset (int):
+				Result offset for paging.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'products' ).strip( ).lower( )
+			
+			if active_mode == 'datasets':
+				return self.fetch_datasets(
+					time=int( time )
+				)
+			
+			if active_mode == 'products':
+				return self.fetch_products(
+					dataset=dataset,
+					q=q,
+					bbox=bbox,
+					prod_formats=prod_formats,
+					max_items=max_items,
+					offset=offset,
+					time=int( time )
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'datasets' or 'products'." )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = (
+					'fetch( self, mode: str=products, dataset: str=, q: str=, '
+					'bbox: str=, prod_formats: str=, max_items: int=25, '
+					'offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
 			exception.method = (
 					'create_schema( self, function: str, tool: str, description: str, '
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
