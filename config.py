@@ -101,8 +101,9 @@ MODE_MAP = \
 		'Scraping': 'Data Scraping',
 		'Retrieval': 'Data Collections & Public Archives',
 		'Geospatial': 'Weather & Geospatial Information',
-		'Astronomical': 'Physics & Astronomical Data',
 		'Population': 'Health & Population Data',
+		'Environmental': 'Environmental Information',
+		'Astronomical': 'Physics & Astronomical Data',
 		'Generation': 'AI Generation',
 		'Management': 'Data Management'
  }
@@ -128,15 +129,28 @@ ARXIV = r'''arXiv is a free distribution service and an open-access archive for 
 		scholarly articles in the fields of physics, mathematics, computer science, quantitative
 		biology, quantitative finance, statistics, electrical engineering and systems science, and
 		economics. Materials on this site are not peer-reviewed by arXiv.
-	
+		
+		https://docs.langchain.com/oss/python/integrations/retrievers/arxiv
 '''
 
 GOOGLE_DRIVE = r'''Google Drive is a file storage and synchronization service developed by Google
+		
+		https://docs.langchain.com/oss/python/integrations/retrievers/google_drive
 '''
 
-WIKIPEDIA = r'''Wikipedia is a free, multilingual online encyclopedia created and maintained by
-		a global community of volunteers through open collaboration. Offering over 55 million
-		articles in over 300 languages.
+WIKIPEDIA = r'''A multilingual free online encyclopedia written and maintained by a community of
+		volunteers, known as Wikipedians, through open collaboration and using a wiki-based editing
+		system called MediaWiki. Wikipedia is the largest and most-read reference work in history.
+		
+		https://docs.langchain.com/oss/python/integrations/retrievers/wikipedia
+'''
+
+PUBMED = r'''The National Center for Biotechnology Information, National Library of Medicine
+		comprises more than 35 million citations for biomedical literature from MEDLINE,
+		life science journals, and online books. Citations may include links to full text content
+		from PubMed Central and publisher web sites.
+		
+		https://docs.langchain.com/oss/python/integrations/retrievers/pubmed
 '''
 
 THENEWS = r'''An API to provide global news from thousands of sources with exceptional

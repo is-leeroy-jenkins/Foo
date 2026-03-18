@@ -68,7 +68,6 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
 from langchain_core.documents import Document
 from langchain_core.tools import Tool
-from langchain_googledrive.retrievers import GoogleDriveRetriever
 from playwright.sync_api import sync_playwright
 from owslib.wms import WebMapService
 from requests import Response
@@ -17882,6 +17881,3631 @@ class USGSScienceBase( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class AirNow( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to the AirNow API for current observations and forecasts by
+		Zip code or latitude/longitude, returning human-readable normalized rows.
+
+		Referenced API Requirements:
+		----------------------------
+		AirNow Web Services support:
+			- Current observations by Zip code
+			- Current observations by latitude/longitude
+			- Forecasts by Zip code
+			- Forecasts by latitude/longitude
+
+		Optional Authentication:
+			- API key required by AirNow web services
+
+	'''
+	base_url: Optional[ str ]
+	api_key: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the AirNow fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://www.airnowapi.org/aq'
+		self.api_key = self._resolve_api_key( )
+		self.mode = 'current-zip'
+		self.params = { }
+		self.payload = [ ]
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'api_key',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_resolve_api_key',
+				'_request',
+				'_shape_rows',
+				'_summarize_rows',
+				'fetch_current_zip',
+				'fetch_current_latlon',
+				'fetch_forecast_zip',
+				'fetch_forecast_latlon',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _resolve_api_key( self ) -> Optional[ str ]:
+		'''
+			Purpose:
+			--------
+			Resolve the AirNow API key from environment variables.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			Optional[str]
+		'''
+		try:
+			candidates: List[ Optional[ str ] ] = [
+					os.getenv( 'AIRNOW_API_KEY' ),
+					os.getenv( 'EPA_AIRNOW_API_KEY' )
+			]
+			
+			for candidate in candidates:
+				if candidate is not None and str( candidate ).strip( ):
+					return str( candidate ).strip( )
+			
+			return None
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = '_resolve_api_key( self ) -> Optional[ str ]'
+			raise exception
+	
+	def _request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to an AirNow endpoint.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path under the AirNow base URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			
+			if self.api_key is None or not str( self.api_key ).strip( ):
+				raise ValueError(
+					'AirNow API key not found. Set AIRNOW_API_KEY or EPA_AIRNOW_API_KEY.'
+				)
+			
+			self.url = f'{self.base_url}/{str( endpoint ).strip( )}'
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				self.params[ key ] = value
+			
+			self.params[ 'format' ] = 'application/json'
+			self.params[ 'API_KEY' ] = self.api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = (
+					'_request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ]=None, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize AirNow records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				AirNow records returned by the API.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				rows.append(
+					{
+							'Date Observed': item.get( 'DateObserved', '' ),
+							'Hour Observed': item.get( 'HourObserved', '' ),
+							'Local Time Zone': item.get( 'LocalTimeZone', '' ),
+							'Reporting Area': item.get( 'ReportingArea', '' ),
+							'State Code': item.get( 'StateCode', '' ),
+							'Latitude': item.get( 'Latitude', None ),
+							'Longitude': item.get( 'Longitude', None ),
+							'Parameter Name': item.get( 'ParameterName', '' ),
+							'AQI': item.get( 'AQI', None ),
+							'Category': (
+									(item.get( 'Category', { } ) or { }).get( 'Name', '' )
+									if isinstance( item.get( 'Category', { } ), dict )
+									else ''
+							),
+							'Action Day': item.get( 'ActionDay', '' ),
+							'Discussion': item.get( 'Discussion', '' )
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = (
+					'_shape_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized AirNow rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized AirNow row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			max_aqi = None
+			dominant_parameter = ''
+			top_category = ''
+			reporting_area = ''
+			
+			for row in rows or [ ]:
+				if not reporting_area and row.get( 'Reporting Area', '' ):
+					reporting_area = str( row.get( 'Reporting Area', '' ) )
+				
+				aqi_value = row.get( 'AQI', None )
+				try:
+					if aqi_value is not None:
+						if max_aqi is None or float( aqi_value ) > float( max_aqi ):
+							max_aqi = float( aqi_value )
+							dominant_parameter = str( row.get( 'Parameter Name', '' ) or '' )
+							top_category = str( row.get( 'Category', '' ) or '' )
+				except Exception:
+					pass
+			
+			return {
+					'count': count,
+					'max_aqi': max_aqi,
+					'dominant_parameter': dominant_parameter,
+					'top_category': top_category,
+					'reporting_area': reporting_area
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_current_zip( self, zip_code: str, distance: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch current AQI observations by Zip code.
+
+			Parameters:
+			-----------
+			zip_code (str):
+				U.S. Zip code.
+
+			distance (int):
+				Radius distance in miles.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'zip_code', zip_code )
+			
+			self.mode = 'current-zip'
+			base = self._request(
+				endpoint='observation/zipCode/current/',
+				params={
+						'zipCode': str( zip_code ).strip( ),
+						'distance': max( 0, int( distance ) )
+				},
+				time=int( time )
+			) or { }
+			
+			records = base.get( 'raw', [ ] ) or [ ]
+			rows = self._shape_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', [ ] )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = (
+					'fetch_current_zip( self, zip_code: str, distance: int=25, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_current_latlon( self, latitude: float, longitude: float,
+			distance: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch current AQI observations by latitude and longitude.
+
+			Parameters:
+			-----------
+			latitude (float):
+				Latitude of the query point.
+
+			longitude (float):
+				Longitude of the query point.
+
+			distance (int):
+				Radius distance in miles.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'current-latlon'
+			base = self._request(
+				endpoint='observation/latLong/current/',
+				params={
+						'latitude': float( latitude ),
+						'longitude': float( longitude ),
+						'distance': max( 0, int( distance ) )
+				},
+				time=int( time )
+			) or { }
+			
+			records = base.get( 'raw', [ ] ) or [ ]
+			rows = self._shape_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', [ ] )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = (
+					'fetch_current_latlon( self, latitude: float, longitude: float, '
+					'distance: int=25, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_forecast_zip( self, zip_code: str, date: str,
+			distance: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch AQI forecasts by Zip code.
+
+			Parameters:
+			-----------
+			zip_code (str):
+				U.S. Zip code.
+
+			date (str):
+				Forecast date in YYYY-MM-DD format.
+
+			distance (int):
+				Radius distance in miles.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'zip_code', zip_code )
+			throw_if( 'date', date )
+			
+			self.mode = 'forecast-zip'
+			base = self._request(
+				endpoint='forecast/zipCode/',
+				params={
+						'zipCode': str( zip_code ).strip( ),
+						'date': str( date ).strip( ),
+						'distance': max( 0, int( distance ) )
+				},
+				time=int( time )
+			) or { }
+			
+			records = base.get( 'raw', [ ] ) or [ ]
+			rows = self._shape_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', [ ] )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = (
+					'fetch_forecast_zip( self, zip_code: str, date: str, distance: int=25, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_forecast_latlon( self, latitude: float, longitude: float,
+			date: str, distance: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch AQI forecasts by latitude and longitude.
+
+			Parameters:
+			-----------
+			latitude (float):
+				Latitude of the query point.
+
+			longitude (float):
+				Longitude of the query point.
+
+			date (str):
+				Forecast date in YYYY-MM-DD format.
+
+			distance (int):
+				Radius distance in miles.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'date', date )
+			
+			self.mode = 'forecast-latlon'
+			base = self._request(
+				endpoint='forecast/latLong/',
+				params={
+						'latitude': float( latitude ),
+						'longitude': float( longitude ),
+						'date': str( date ).strip( ),
+						'distance': max( 0, int( distance ) )
+				},
+				time=int( time )
+			) or { }
+			
+			records = base.get( 'raw', [ ] ) or [ ]
+			rows = self._shape_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', [ ] )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = (
+					'fetch_forecast_latlon( self, latitude: float, longitude: float, '
+					'date: str, distance: int=25, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'current-zip', zip_code: str = '',
+			latitude: float | None = None, longitude: float | None = None,
+			date: str = '', distance: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for AirNow observation and forecast retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- current-zip
+				- current-latlon
+				- forecast-zip
+				- forecast-latlon
+
+			zip_code (str):
+				Optional U.S. Zip code.
+
+			latitude (float | None):
+				Optional latitude.
+
+			longitude (float | None):
+				Optional longitude.
+
+			date (str):
+				Optional forecast date in YYYY-MM-DD format.
+
+			distance (int):
+				Radius distance in miles.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'current-zip' ).strip( ).lower( )
+			
+			if active_mode == 'current-zip':
+				return self.fetch_current_zip(
+					zip_code=zip_code,
+					distance=distance,
+					time=int( time )
+				)
+			
+			if active_mode == 'current-latlon':
+				return self.fetch_current_latlon(
+					latitude=float( latitude ),
+					longitude=float( longitude ),
+					distance=distance,
+					time=int( time )
+				)
+			
+			if active_mode == 'forecast-zip':
+				return self.fetch_forecast_zip(
+					zip_code=zip_code,
+					date=date,
+					distance=distance,
+					time=int( time )
+				)
+			
+			if active_mode == 'forecast-latlon':
+				return self.fetch_forecast_latlon(
+					latitude=float( latitude ),
+					longitude=float( longitude ),
+					date=date,
+					distance=distance,
+					time=int( time )
+				)
+			
+			raise ValueError(
+				"Unsupported mode. Use 'current-zip', 'current-latlon', "
+				"'forecast-zip', or 'forecast-latlon'."
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = (
+					'fetch( self, mode: str=current-zip, zip_code: str=, '
+					'latitude: float | None=None, longitude: float | None=None, '
+					'date: str=, distance: int=25, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'AirNow'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class ClimateData( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to NOAA NCEI climate data search and retrieval services for
+		dataset discovery and subsetted climate data extraction.
+
+		Referenced API Requirements:
+		----------------------------
+		NOAA NCEI Access Data Service:
+			- Endpoint:
+			  https://www.ncei.noaa.gov/access/services/data/v1
+			- Common parameters:
+			  - dataset
+			  - startDate
+			  - endDate
+			  - stations
+			  - dataTypes
+			  - format
+
+		NOAA NCEI Access Search Service:
+			- Endpoint:
+			  https://www.ncei.noaa.gov/access/services/search/v1/datasets
+			- Common parameters:
+			  - keyword
+			  - startDate
+			  - endDate
+			  - offset
+			  - limit
+
+	'''
+	data_url: Optional[ str ]
+	search_url: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the NOAA climate data fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.data_url = 'https://www.ncei.noaa.gov/access/services/data/v1'
+		self.search_url = 'https://www.ncei.noaa.gov/access/services/search/v1'
+		self.mode = 'datasets'
+		self.params = { }
+		self.payload = [ ]
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'data_url',
+				'search_url',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_request',
+				'_shape_dataset_rows',
+				'_shape_data_rows',
+				'_summarize_rows',
+				'fetch_datasets',
+				'fetch_data',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _request( self, url: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a NOAA NCEI endpoint.
+
+			Parameters:
+			-----------
+			url (str):
+				Target endpoint URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'url', url )
+			
+			self.url = str( url ).strip( )
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = (
+					'_request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_dataset_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize NOAA dataset search records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Dataset discovery records returned by the search service.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				rows.append(
+					{
+							'Id': item.get( 'id', '' ),
+							'Dataset': (
+									item.get( 'dataset', None ) or
+									item.get( 'name', '' )
+							),
+							'Title': (
+									item.get( 'title', None ) or
+									item.get( 'name', '' )
+							),
+							'Description': (
+									item.get( 'description', None ) or
+									item.get( 'summary', '' )
+							),
+							'Start Date': item.get( 'startDate', '' ),
+							'End Date': item.get( 'endDate', '' )
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = (
+					'_shape_dataset_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _shape_data_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize NOAA climate data records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Climate data records returned by the data service.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				row: Dict[ str, Any ] = { }
+				
+				for key, value in item.items( ):
+					friendly_key = str( key ).replace( '_', ' ' ).title( )
+					row[ friendly_key ] = value
+				
+				rows.append( row )
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = (
+					'_shape_data_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			first_title = ''
+			first_dataset = ''
+			
+			if rows:
+				first_title = str(
+					rows[ 0 ].get( 'Title', '' ) or
+					rows[ 0 ].get( 'Station', '' ) or
+					rows[ 0 ].get( 'Date', '' ) or ''
+				)
+				first_dataset = str(
+					rows[ 0 ].get( 'Dataset', '' ) or
+					rows[ 0 ].get( 'Datatype', '' ) or ''
+				)
+			
+			return {
+					'count': count,
+					'first_title': first_title,
+					'first_dataset': first_dataset
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_datasets( self, keyword: str = '', start_date: str = '',
+			end_date: str = '', limit: int = 25, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch discoverable NOAA climate datasets.
+
+			Parameters:
+			-----------
+			keyword (str):
+				Optional dataset keyword search string.
+
+			start_date (str):
+				Optional ISO date lower bound.
+
+			end_date (str):
+				Optional ISO date upper bound.
+
+			limit (int):
+				Maximum returned datasets.
+
+			offset (int):
+				Result offset.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'datasets'
+			base = self._request(
+				url=f'{self.search_url}/datasets',
+				params={
+						'keyword': str( keyword ).strip( ),
+						'startDate': str( start_date ).strip( ),
+						'endDate': str( end_date ).strip( ),
+						'limit': max( 1, int( limit ) ),
+						'offset': max( 0, int( offset ) )
+				},
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			records = payload.get( 'results', [ ] ) if isinstance( payload, dict ) else [ ]
+			rows = self._shape_dataset_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = (
+					'fetch_datasets( self, keyword: str=, start_date: str=, end_date: str=, '
+					'limit: int=25, offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_data( self, dataset: str, start_date: str, end_date: str,
+			stations: str = '', data_types: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch subsetted NOAA climate data records.
+
+			Parameters:
+			-----------
+			dataset (str):
+				NCEI dataset identifier, such as daily-summaries.
+
+			start_date (str):
+				ISO start date.
+
+			end_date (str):
+				ISO end date.
+
+			stations (str):
+				Optional comma-separated station identifiers.
+
+			data_types (str):
+				Optional comma-separated datatype identifiers.
+
+			limit (int):
+				Maximum returned rows.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'dataset', dataset )
+			throw_if( 'start_date', start_date )
+			throw_if( 'end_date', end_date )
+			
+			self.mode = 'data'
+			base = self._request(
+				url=self.data_url,
+				params={
+						'dataset': str( dataset ).strip( ),
+						'startDate': str( start_date ).strip( ),
+						'endDate': str( end_date ).strip( ),
+						'stations': str( stations ).strip( ),
+						'dataTypes': str( data_types ).strip( ),
+						'format': 'json',
+						'limit': max( 1, int( limit ) )
+				},
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', [ ] ) or [ ]
+			rows = self._shape_data_rows( payload if isinstance( payload, list ) else [ ] )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = (
+					'fetch_data( self, dataset: str, start_date: str, end_date: str, '
+					'stations: str=, data_types: str=, limit: int=25, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'datasets', keyword: str = '', dataset: str = '',
+			start_date: str = '', end_date: str = '', stations: str = '',
+			data_types: str = '', limit: int = 25, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for NOAA climate dataset discovery and data retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- datasets
+				- data
+
+			keyword (str):
+				Optional dataset search keyword.
+
+			dataset (str):
+				Dataset identifier for data mode.
+
+			start_date (str):
+				Optional start date.
+
+			end_date (str):
+				Optional end date.
+
+			stations (str):
+				Optional comma-separated station identifiers.
+
+			data_types (str):
+				Optional comma-separated datatype identifiers.
+
+			limit (int):
+				Maximum returned rows.
+
+			offset (int):
+				Result offset for datasets mode.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'datasets' ).strip( ).lower( )
+			
+			if active_mode == 'datasets':
+				return self.fetch_datasets(
+					keyword=keyword,
+					start_date=start_date,
+					end_date=end_date,
+					limit=limit,
+					offset=offset,
+					time=int( time )
+				)
+			
+			if active_mode == 'data':
+				return self.fetch_data(
+					dataset=dataset,
+					start_date=start_date,
+					end_date=end_date,
+					stations=stations,
+					data_types=data_types,
+					limit=limit,
+					time=int( time )
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'datasets' or 'data'." )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = (
+					'fetch( self, mode: str=datasets, keyword: str=, dataset: str=, '
+					'start_date: str=, end_date: str=, stations: str=, data_types: str=, '
+					'limit: int=25, offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class EoNet( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to NASA EONET Version 3 for event discovery and category
+		discovery, returning human-readable normalized rows.
+
+		Referenced API Requirements:
+		----------------------------
+		EONET Version 3 Base Endpoint:
+			- https://eonet.gsfc.nasa.gov/api/v3
+
+		Resources used here:
+			- /events
+			- /events/geojson
+			- /categories
+
+		Common event filters:
+			- source
+			- category
+			- status
+			- limit
+			- days
+			- start
+			- end
+			- bbox
+
+	'''
+	base_url: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the NASA EONET fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://eonet.gsfc.nasa.gov/api/v3'
+		self.mode = 'events'
+		self.params = { }
+		self.payload = { }
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_request',
+				'_shape_event_rows',
+				'_shape_category_rows',
+				'_summarize_rows',
+				'fetch_events',
+				'fetch_categories',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _request( self, endpoint: str,
+			params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to an EONET endpoint.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path under the EONET base URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			
+			self.url = f'{self.base_url}/{str( endpoint ).strip( )}'
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = (
+					'_request( self, endpoint: str, '
+					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_event_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize EONET event records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Event records returned by EONET.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				categories = item.get( 'categories', [ ] ) or [ ]
+				sources = item.get( 'sources', [ ] ) or [ ]
+				geometry = item.get( 'geometry', [ ] ) or [ ]
+				
+				category_titles = ', '.join(
+					[
+							str( category.get( 'title', '' ) )
+							for category in categories
+							if isinstance( category, dict )
+					]
+				)
+				
+				source_titles = ', '.join(
+					[
+							str(
+								source.get( 'id', '' ) or
+								source.get( 'title', '' )
+							)
+							for source in sources
+							if isinstance( source, dict )
+					]
+				)
+				
+				last_geometry_date = ''
+				if geometry:
+					last_geometry = geometry[ -1 ]
+					if isinstance( last_geometry, dict ):
+						last_geometry_date = str( last_geometry.get( 'date', '' ) or '' )
+				
+				status = 'open'
+				if item.get( 'closed', None ) is not None:
+					status = 'closed'
+				
+				rows.append(
+					{
+							'Id': item.get( 'id', '' ),
+							'Title': item.get( 'title', '' ),
+							'Status': status,
+							'Closed': item.get( 'closed', None ),
+							'Categories': category_titles,
+							'Sources': source_titles,
+							'Geometry Count': len( geometry ),
+							'Last Geometry Date': last_geometry_date,
+							'Link': item.get( 'link', '' ),
+							'Description': item.get( 'description', '' )
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = (
+					'_shape_event_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _shape_category_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize EONET category records into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Category records returned by EONET.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				rows.append(
+					{
+							'Id': item.get( 'id', '' ),
+							'Title': item.get( 'title', '' ),
+							'Description': item.get( 'description', '' ),
+							'Link': item.get( 'link', '' )
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = (
+					'_shape_category_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized EONET rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			open_count = 0
+			first_title = ''
+			first_categories = ''
+			
+			for row in rows or [ ]:
+				if str( row.get( 'Status', '' ) ).lower( ) == 'open':
+					open_count += 1
+			
+			if rows:
+				first_title = str( rows[ 0 ].get( 'Title', '' ) or '' )
+				first_categories = str( rows[ 0 ].get( 'Categories', '' ) or '' )
+			
+			return {
+					'count': count,
+					'open_count': open_count,
+					'first_title': first_title,
+					'first_categories': first_categories
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_events( self, source: str = '', category: str = '',
+			status: str = 'open', limit: int = 25, days: int = 30,
+			start_date: str = '', end_date: str = '', bbox: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch EONET events.
+
+			Parameters:
+			-----------
+			source (str):
+				Optional source identifier or comma-separated source identifiers.
+
+			category (str):
+				Optional category identifier or comma-separated category identifiers.
+
+			status (str):
+				Event status filter:
+				- open
+				- closed
+				- all
+
+			limit (int):
+				Maximum returned events.
+
+			days (int):
+				Number of prior days including today.
+
+			start_date (str):
+				Optional ISO start date.
+
+			end_date (str):
+				Optional ISO end date.
+
+			bbox (str):
+				Optional bounding box in:
+				min_lon,max_lat,max_lon,min_lat
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'events'
+			base = self._request(
+				endpoint='events',
+				params={
+						'source': str( source ).strip( ),
+						'category': str( category ).strip( ),
+						'status': str( status ).strip( ),
+						'limit': max( 1, int( limit ) ),
+						'days': max( 1, int( days ) ),
+						'start': str( start_date ).strip( ),
+						'end': str( end_date ).strip( ),
+						'bbox': str( bbox ).strip( )
+				},
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			records = payload.get( 'events', [ ] ) if isinstance( payload, dict ) else [ ]
+			rows = self._shape_event_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = (
+					'fetch_events( self, source: str=, category: str=, status: str=open, '
+					'limit: int=25, days: int=30, start_date: str=, end_date: str=, '
+					'bbox: str=, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_categories( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch EONET categories.
+
+			Parameters:
+			-----------
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'categories'
+			base = self._request(
+				endpoint='categories',
+				params={ },
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			records = payload.get( 'categories', [ ] ) if isinstance( payload, dict ) else [ ]
+			rows = self._shape_category_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = 'fetch_categories( self, time: int=20 ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch( self, mode: str = 'events', source: str = '', category: str = '',
+			status: str = 'open', limit: int = 25, days: int = 30,
+			start_date: str = '', end_date: str = '', bbox: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for EONET event and category retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- events
+				- categories
+
+			source (str):
+				Optional event source filter.
+
+			category (str):
+				Optional event category filter.
+
+			status (str):
+				Optional event status filter.
+
+			limit (int):
+				Maximum returned events.
+
+			days (int):
+				Number of prior days including today.
+
+			start_date (str):
+				Optional ISO start date.
+
+			end_date (str):
+				Optional ISO end date.
+
+			bbox (str):
+				Optional bounding box string.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'events' ).strip( ).lower( )
+			
+			if active_mode == 'events':
+				return self.fetch_events(
+					source=source,
+					category=category,
+					status=status,
+					limit=limit,
+					days=days,
+					start_date=start_date,
+					end_date=end_date,
+					bbox=bbox,
+					time=int( time )
+				)
+			
+			if active_mode == 'categories':
+				return self.fetch_categories(
+					time=int( time )
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'events' or 'categories'." )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = (
+					'fetch( self, mode: str=events, source: str=, category: str=, '
+					'status: str=open, limit: int=25, days: int=30, start_date: str=, '
+					'end_date: str=, bbox: str=, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class EnviroFacts( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to selected EPA Envirofacts Data Service API tables using
+		a constrained, human-readable wrapper for common environmental queries.
+
+		Referenced API Requirements:
+		----------------------------
+		Envirofacts Data Service API:
+			- Base:
+			  https://enviro.epa.gov/enviro/efservice
+
+		Supported first-pass tables in this wrapper:
+			- TRI_FACILITY
+			- TRI_RELEASE
+			- EF_W_EMISSIONS_SOURCE_GHG
+
+		Common query concepts:
+			- table selection
+			- row limiting
+			- optional state filtering
+			- optional facility-name prefix filtering
+			- JSON output
+
+	'''
+	base_url: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the Envirofacts fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://enviro.epa.gov/enviro/efservice'
+		self.mode = 'table'
+		self.params = { }
+		self.payload = [ ]
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_resolve_table_path',
+				'_request',
+				'_shape_rows',
+				'_summarize_rows',
+				'fetch_table',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _resolve_table_path( self, table_name: str,
+			state_code: str = '', facility_name: str = '',
+			limit: int = 25 ) -> str:
+		'''
+			Purpose:
+			--------
+			Construct a constrained Envirofacts REST path for a supported table.
+
+			Parameters:
+			-----------
+			table_name (str):
+				Supported table name.
+
+			state_code (str):
+				Optional state code filter.
+
+			facility_name (str):
+				Optional facility name prefix filter.
+
+			limit (int):
+				Maximum number of returned rows.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'table_name', table_name )
+			
+			table_value = str( table_name ).strip( ).upper( )
+			state_value = str( state_code ).strip( ).upper( )
+			facility_value = str( facility_name ).strip( ).upper( )
+			row_limit = max( 1, int( limit ) )
+			
+			base_path = f'{table_value}'
+			segments: List[ str ] = [ ]
+			
+			if table_value in [ 'TRI_FACILITY', 'TRI_RELEASE' ]:
+				if state_value:
+					segments.append( f'STATE_ABBR/{state_value}' )
+				
+				if facility_value:
+					segments.append( f'FACILITY_NAME/BEGINNING/{facility_value}' )
+			
+			if table_value == 'EF_W_EMISSIONS_SOURCE_GHG':
+				if state_value:
+					segments.append( f'STATE/{state_value}' )
+				
+				if facility_value:
+					segments.append( f'FACILITY_NAME/BEGINNING/{facility_value}' )
+			
+			path = base_path
+			
+			if segments:
+				path = f'{path}/' + '/'.join( segments )
+			
+			path = f'{path}/rows/0:{row_limit}/JSON'
+			return path
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = (
+					'_resolve_table_path( self, table_name: str, state_code: str=, '
+					'facility_name: str=, limit: int=25 ) -> str'
+			)
+			raise exception
+	
+	def _request( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to an Envirofacts endpoint.
+
+			Parameters:
+			-----------
+			url (str):
+				Fully qualified request URL.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'url', url )
+			
+			self.url = str( url ).strip( )
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = (
+					'_request( self, url: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize Envirofacts rows into a human-readable table by title-casing
+			column names and preserving the original values.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				Envirofacts records returned by the service.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				row: Dict[ str, Any ] = { }
+				
+				for key, value in item.items( ):
+					friendly_key = str( key ).replace( '_', ' ' ).title( )
+					row[ friendly_key ] = value
+				
+				rows.append( row )
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = (
+					'_shape_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized Envirofacts rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			first_facility = ''
+			first_state = ''
+			
+			if rows:
+				first_facility = str(
+					rows[ 0 ].get( 'Facility Name', '' ) or
+					rows[ 0 ].get( 'Primary Name', '' ) or
+					rows[ 0 ].get( 'Name', '' ) or ''
+				)
+				
+				first_state = str(
+					rows[ 0 ].get( 'State', '' ) or
+					rows[ 0 ].get( 'State Abbr', '' ) or ''
+				)
+			
+			return {
+					'count': count,
+					'first_facility': first_facility,
+					'first_state': first_state
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_table( self, table_name: str, state_code: str = '',
+			facility_name: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch a constrained set of rows from a supported Envirofacts table.
+
+			Parameters:
+			-----------
+			table_name (str):
+				Supported table name:
+				- TRI_FACILITY
+				- TRI_RELEASE
+				- EF_W_EMISSIONS_SOURCE_GHG
+
+			state_code (str):
+				Optional state filter.
+
+			facility_name (str):
+				Optional facility-name prefix filter.
+
+			limit (int):
+				Maximum returned rows.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'table_name', table_name )
+			
+			table_value = str( table_name ).strip( ).upper( )
+			supported_tables: List[ str ] = [
+					'TRI_FACILITY',
+					'TRI_RELEASE',
+					'EF_W_EMISSIONS_SOURCE_GHG'
+			]
+			
+			if table_value not in supported_tables:
+				raise ValueError(
+					'Unsupported Envirofacts table. Use TRI_FACILITY, TRI_RELEASE, '
+					'or EF_W_EMISSIONS_SOURCE_GHG.'
+				)
+			
+			self.mode = 'table'
+			path = self._resolve_table_path(
+				table_name=table_value,
+				state_code=state_code,
+				facility_name=facility_name,
+				limit=int( limit )
+			)
+			
+			base = self._request(
+				url=f'{self.base_url}/{path}',
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', [ ] ) or [ ]
+			records = payload if isinstance( payload, list ) else [ ]
+			rows = self._shape_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'table_name': table_value,
+					'url': base.get( 'url', '' ),
+					'params': {
+							'table_name': table_value,
+							'state_code': str( state_code ).strip( ).upper( ),
+							'facility_name': str( facility_name ).strip( ),
+							'limit': max( 1, int( limit ) )
+					},
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = (
+					'fetch_table( self, table_name: str, state_code: str=, '
+					'facility_name: str=, limit: int=25, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, table_name: str = 'TRI_FACILITY', state_code: str = '',
+			facility_name: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for the constrained Envirofacts table wrapper.
+
+			Parameters:
+			-----------
+			table_name (str):
+				Supported table name.
+
+			state_code (str):
+				Optional state filter.
+
+			facility_name (str):
+				Optional facility-name prefix filter.
+
+			limit (int):
+				Maximum returned rows.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			return self.fetch_table(
+				table_name=table_name,
+				state_code=state_code,
+				facility_name=facility_name,
+				limit=limit,
+				time=int( time )
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = (
+					'fetch( self, table_name: str=TRI_FACILITY, state_code: str=, '
+					'facility_name: str=, limit: int=25, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class TidesAndCurrents( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to NOAA CO-OPS Tides and Currents APIs for station metadata,
+		water-level observations, and tide predictions.
+
+		Referenced API Requirements:
+		----------------------------
+		NOAA CO-OPS Data API:
+			- https://api.tidesandcurrents.noaa.gov/api/prod/datagetter
+
+		NOAA CO-OPS Metadata API:
+			- https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi
+
+		Common Data API parameters:
+			- product
+			- station
+			- begin_date
+			- end_date
+			- datum
+			- units
+			- time_zone
+			- format
+
+	'''
+	data_url: Optional[ str ]
+	metadata_url: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the NOAA Tides and Currents fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.data_url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
+		self.metadata_url = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi'
+		self.mode = 'water-level'
+		self.params = { }
+		self.payload = { }
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'data_url',
+				'metadata_url',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_request',
+				'_shape_station_rows',
+				'_shape_data_rows',
+				'_summarize_rows',
+				'fetch_station',
+				'fetch_water_level',
+				'fetch_tide_predictions',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _request( self, url: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a NOAA CO-OPS endpoint.
+
+			Parameters:
+			-----------
+			url (str):
+				Target endpoint URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'url', url )
+			
+			self.url = str( url ).strip( )
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'_request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_station_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize station metadata into a human-readable table.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any]):
+				Station metadata payload.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			station = payload.get( 'stations', None )
+			
+			if isinstance( station, list ) and station:
+				station = station[ 0 ]
+			
+			if not isinstance( station, dict ):
+				station = payload
+			
+			row: Dict[ str, Any ] = {
+					'Station Id': station.get( 'id', '' ),
+					'Name': station.get( 'name', '' ),
+					'State': station.get( 'state', '' ),
+					'Latitude': station.get( 'lat', '' ),
+					'Longitude': station.get( 'lng', '' ),
+					'Time Zone': station.get( 'timezone', '' ),
+					'Great Lakes': station.get( 'greatlakes', '' ),
+					'Shef Id': station.get( 'shefcode', '' ),
+					'Details Link': station.get( 'self', '' )
+			}
+			
+			return [ row ]
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'_shape_station_rows( self, payload: Dict[ str, Any ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _shape_data_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize NOAA CO-OPS data payloads into a human-readable table.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any]):
+				Data API payload.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			records = payload.get( 'data', None )
+			
+			if records is None:
+				records = payload.get( 'predictions', [ ] )
+			
+			for item in records or [ ]:
+				row: Dict[ str, Any ] = { }
+				
+				for key, value in item.items( ):
+					friendly_key = str( key ).replace( '_', ' ' ).title( )
+					row[ friendly_key ] = value
+				
+				rows.append( row )
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'_shape_data_rows( self, payload: Dict[ str, Any ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			first_time = ''
+			first_value = ''
+			first_station = ''
+			
+			if rows:
+				first_time = str(
+					rows[ 0 ].get( 'T', '' ) or
+					rows[ 0 ].get( 'Time', '' ) or ''
+				)
+				first_value = str(
+					rows[ 0 ].get( 'V', '' ) or
+					rows[ 0 ].get( 'Value', '' ) or
+					rows[ 0 ].get( 'Type', '' ) or ''
+				)
+				first_station = str(
+					rows[ 0 ].get( 'Name', '' ) or
+					rows[ 0 ].get( 'Station Id', '' ) or ''
+				)
+			
+			return {
+					'count': count,
+					'first_time': first_time,
+					'first_value': first_value,
+					'first_station': first_station
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_station( self, station_id: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch station metadata.
+
+			Parameters:
+			-----------
+			station_id (str):
+				NOAA station identifier.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'station_id', station_id )
+			
+			self.mode = 'station'
+			base = self._request(
+				url=f'{self.metadata_url}/stations/{str( station_id ).strip( )}.json',
+				params={ },
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			rows = self._shape_station_rows( payload )
+			
+			return {
+					'mode': self.mode,
+					'station_id': str( station_id ).strip( ),
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'fetch_station( self, station_id: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_water_level( self, station_id: str, begin_date: str, end_date: str,
+			datum: str = 'MLLW', units: str = 'metric',
+			time_zone: str = 'gmt', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch water-level observations.
+
+			Parameters:
+			-----------
+			station_id (str):
+				NOAA station identifier.
+
+			begin_date (str):
+				Begin date in YYYYMMDD format.
+
+			end_date (str):
+				End date in YYYYMMDD format.
+
+			datum (str):
+				Datum such as MLLW.
+
+			units (str):
+				english or metric.
+
+			time_zone (str):
+				gmt, lst, or lst_ldt.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'station_id', station_id )
+			throw_if( 'begin_date', begin_date )
+			throw_if( 'end_date', end_date )
+			
+			self.mode = 'water-level'
+			base = self._request(
+				url=self.data_url,
+				params={
+						'product': 'water_level',
+						'application': 'Foo',
+						'station': str( station_id ).strip( ),
+						'begin_date': str( begin_date ).strip( ),
+						'end_date': str( end_date ).strip( ),
+						'datum': str( datum ).strip( ),
+						'units': str( units ).strip( ),
+						'time_zone': str( time_zone ).strip( ),
+						'format': 'json'
+				},
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			rows = self._shape_data_rows( payload )
+			
+			return {
+					'mode': self.mode,
+					'station_id': str( station_id ).strip( ),
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'fetch_water_level( self, station_id: str, begin_date: str, '
+					'end_date: str, datum: str=MLLW, units: str=metric, '
+					'time_zone: str=gmt, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_tide_predictions( self, station_id: str, begin_date: str,
+			end_date: str, datum: str = 'MLLW', units: str = 'metric',
+			time_zone: str = 'gmt', interval: str = 'hilo',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch tide predictions.
+
+			Parameters:
+			-----------
+			station_id (str):
+				NOAA station identifier.
+
+			begin_date (str):
+				Begin date in YYYYMMDD format.
+
+			end_date (str):
+				End date in YYYYMMDD format.
+
+			datum (str):
+				Datum such as MLLW.
+
+			units (str):
+				english or metric.
+
+			time_zone (str):
+				gmt, lst, or lst_ldt.
+
+			interval (str):
+				Prediction interval such as hilo or h.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'station_id', station_id )
+			throw_if( 'begin_date', begin_date )
+			throw_if( 'end_date', end_date )
+			
+			self.mode = 'tide-predictions'
+			base = self._request(
+				url=self.data_url,
+				params={
+						'product': 'predictions',
+						'application': 'Foo',
+						'station': str( station_id ).strip( ),
+						'begin_date': str( begin_date ).strip( ),
+						'end_date': str( end_date ).strip( ),
+						'datum': str( datum ).strip( ),
+						'units': str( units ).strip( ),
+						'time_zone': str( time_zone ).strip( ),
+						'interval': str( interval ).strip( ),
+						'format': 'json'
+				},
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			rows = self._shape_data_rows( payload )
+			
+			return {
+					'mode': self.mode,
+					'station_id': str( station_id ).strip( ),
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'fetch_tide_predictions( self, station_id: str, begin_date: str, '
+					'end_date: str, datum: str=MLLW, units: str=metric, '
+					'time_zone: str=gmt, interval: str=hilo, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'water-level', station_id: str = '',
+			begin_date: str = '', end_date: str = '', datum: str = 'MLLW',
+			units: str = 'metric', time_zone: str = 'gmt',
+			interval: str = 'hilo', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for NOAA Tides and Currents retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- station
+				- water-level
+				- tide-predictions
+
+			station_id (str):
+				NOAA station identifier.
+
+			begin_date (str):
+				Begin date in YYYYMMDD format.
+
+			end_date (str):
+				End date in YYYYMMDD format.
+
+			datum (str):
+				Datum.
+
+			units (str):
+				english or metric.
+
+			time_zone (str):
+				gmt, lst, or lst_ldt.
+
+			interval (str):
+				Prediction interval.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'water-level' ).strip( ).lower( )
+			
+			if active_mode == 'station':
+				return self.fetch_station(
+					station_id=station_id,
+					time=int( time )
+				)
+			
+			if active_mode == 'water-level':
+				return self.fetch_water_level(
+					station_id=station_id,
+					begin_date=begin_date,
+					end_date=end_date,
+					datum=datum,
+					units=units,
+					time_zone=time_zone,
+					time=int( time )
+				)
+			
+			if active_mode == 'tide-predictions':
+				return self.fetch_tide_predictions(
+					station_id=station_id,
+					begin_date=begin_date,
+					end_date=end_date,
+					datum=datum,
+					units=units,
+					time_zone=time_zone,
+					interval=interval,
+					time=int( time )
+				)
+			
+			raise ValueError(
+				"Unsupported mode. Use 'station', 'water-level', or "
+				"'tide-predictions'."
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'fetch( self, mode: str=water-level, station_id: str=, '
+					'begin_date: str=, end_date: str=, datum: str=MLLW, '
+					'units: str=metric, time_zone: str=gmt, interval: str=hilo, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class UvIndex( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to the EPA UV Index web services for daily and hourly UV
+		forecast retrieval by ZIP code or by city and state.
+
+		Referenced API Requirements:
+		----------------------------
+		EPA Envirofacts UV Index Web Services:
+			- Hourly by ZIP
+			- Hourly by City/State
+			- Daily by ZIP
+			- Daily by City/State
+
+		Base Endpoint:
+			- https://enviro.epa.gov/enviro/efservice
+
+	'''
+	base_url: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the EPA UV Index fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://enviro.epa.gov/enviro/efservice'
+		self.mode = 'daily-zip'
+		self.params = { }
+		self.payload = [ ]
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_request',
+				'_shape_rows',
+				'_summarize_rows',
+				'fetch_daily_zip',
+				'fetch_daily_city_state',
+				'fetch_hourly_zip',
+				'fetch_hourly_city_state',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _request( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a UV Index endpoint.
+
+			Parameters:
+			-----------
+			url (str):
+				Fully qualified request URL.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'url', url )
+			
+			self.url = str( url ).strip( )
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'_request( self, url: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize UV Index rows into a human-readable table.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				UV Index records returned by the EPA web services.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				row: Dict[ str, Any ] = { }
+				
+				for key, value in item.items( ):
+					friendly_key = str( key ).replace( '_', ' ' ).title( )
+					row[ friendly_key ] = value
+				
+				rows.append( row )
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'_shape_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized UV Index rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			max_uv = None
+			first_location = ''
+			first_alert = ''
+			
+			for row in rows or [ ]:
+				if not first_location:
+					first_location = str(
+						row.get( 'City', '' ) or
+						row.get( 'Zip', '' ) or ''
+					)
+				
+				if not first_alert:
+					first_alert = str( row.get( 'Uv Alert', '' ) or '' )
+				
+				uv_value = row.get( 'Uv Value', None )
+				try:
+					if uv_value is not None:
+						if max_uv is None or float( uv_value ) > float( max_uv ):
+							max_uv = float( uv_value )
+				except Exception:
+					pass
+			
+			return {
+					'count': count,
+					'max_uv': max_uv,
+					'first_location': first_location,
+					'first_alert': first_alert
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_daily_zip( self, zip_code: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch daily UV forecast and alert by ZIP code.
+
+			Parameters:
+			-----------
+			zip_code (str):
+				U.S. ZIP code.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'zip_code', zip_code )
+			
+			self.mode = 'daily-zip'
+			base = self._request(
+				url=f'{self.base_url}/getEnvirofactsUVDAILY/ZIP/{str( zip_code ).strip( )}/JSON',
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', [ ] ) or [ ]
+			records = payload if isinstance( payload, list ) else [ ]
+			rows = self._shape_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': { 'zip_code': str( zip_code ).strip( ) },
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'fetch_daily_zip( self, zip_code: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_daily_city_state( self, city: str, state: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch daily UV forecast and alert by city and state.
+
+			Parameters:
+			-----------
+			city (str):
+				U.S. city name.
+
+			state (str):
+				U.S. state abbreviation.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'city', city )
+			throw_if( 'state', state )
+			
+			self.mode = 'daily-city-state'
+			base = self._request(
+				url=(
+						f'{self.base_url}/getEnvirofactsUVDAILY/CITY/'
+						f'{str( city ).strip( )}/STATE/{str( state ).strip( )}/JSON'
+				),
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', [ ] ) or [ ]
+			records = payload if isinstance( payload, list ) else [ ]
+			rows = self._shape_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': {
+							'city': str( city ).strip( ),
+							'state': str( state ).strip( ).upper( )
+					},
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'fetch_daily_city_state( self, city: str, state: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_hourly_zip( self, zip_code: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch hourly UV forecast by ZIP code.
+
+			Parameters:
+			-----------
+			zip_code (str):
+				U.S. ZIP code.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'zip_code', zip_code )
+			
+			self.mode = 'hourly-zip'
+			base = self._request(
+				url=f'{self.base_url}/getEnvirofactsUVHOURLY/ZIP/{str( zip_code ).strip( )}/JSON',
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', [ ] ) or [ ]
+			records = payload if isinstance( payload, list ) else [ ]
+			rows = self._shape_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': { 'zip_code': str( zip_code ).strip( ) },
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'fetch_hourly_zip( self, zip_code: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_hourly_city_state( self, city: str, state: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch hourly UV forecast by city and state.
+
+			Parameters:
+			-----------
+			city (str):
+				U.S. city name.
+
+			state (str):
+				U.S. state abbreviation.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'city', city )
+			throw_if( 'state', state )
+			
+			self.mode = 'hourly-city-state'
+			base = self._request(
+				url=(
+						f'{self.base_url}/getEnvirofactsUVHOURLY/CITY/'
+						f'{str( city ).strip( )}/STATE/{str( state ).strip( )}/JSON'
+				),
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', [ ] ) or [ ]
+			records = payload if isinstance( payload, list ) else [ ]
+			rows = self._shape_rows( records )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': {
+							'city': str( city ).strip( ),
+							'state': str( state ).strip( ).upper( )
+					},
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'fetch_hourly_city_state( self, city: str, state: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'daily-zip', zip_code: str = '',
+			city: str = '', state: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for UV Index forecast retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- daily-zip
+				- daily-city-state
+				- hourly-zip
+				- hourly-city-state
+
+			zip_code (str):
+				Optional U.S. ZIP code.
+
+			city (str):
+				Optional city name.
+
+			state (str):
+				Optional state abbreviation.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'daily-zip' ).strip( ).lower( )
+			
+			if active_mode == 'daily-zip':
+				return self.fetch_daily_zip(
+					zip_code=zip_code,
+					time=int( time )
+				)
+			
+			if active_mode == 'daily-city-state':
+				return self.fetch_daily_city_state(
+					city=city,
+					state=state,
+					time=int( time )
+				)
+			
+			if active_mode == 'hourly-zip':
+				return self.fetch_hourly_zip(
+					zip_code=zip_code,
+					time=int( time )
+				)
+			
+			if active_mode == 'hourly-city-state':
+				return self.fetch_hourly_city_state(
+					city=city,
+					state=state,
+					time=int( time )
+				)
+			
+			raise ValueError(
+				"Unsupported mode. Use 'daily-zip', 'daily-city-state', "
+				"'hourly-zip', or 'hourly-city-state'."
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'fetch( self, mode: str=daily-zip, zip_code: str=, city: str=, '
+					'state: str=, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
 			exception.method = (
 					'create_schema( self, function: str, tool: str, description: str, '
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
