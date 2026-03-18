@@ -57,7 +57,7 @@ from langchain_community.document_loaders import (
 	UnstructuredHTMLLoader,
 	WikipediaLoader,
 	WebBaseLoader,
-	YoutubeLoader
+	YoutubeLoader, JSONLoader, GithubFileLoader
 )
 
 from langchain_community.document_loaders.csv_loader import CSVLoader
@@ -2930,4 +2930,299 @@ class EmailLoader( Loader ):
 			exception.cause = 'EmailLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
-			
+
+class JsonLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides the UnstructuredHTMLLoader's functionality to parse HTML files into Document objects.
+
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str,
+		resolve_paths( self, pattern: str ) -> List[ str ],
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
+		load( path: str, mode: str ) -> List[ Document ]
+		split( ) -> List[ Document ]
+
+	'''
+	loader: Optional[ JSONLoader ]
+	file_path: str | None
+	jq: Optional[ str ]
+	is_text: Optional[ bool ]
+	is_lines: Optional[ bool ]
+	documents: List[ Document ] | None
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.pattern = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.is_text = None
+		self.is_lines = None
+		self.jq = '.messages[].content'
+	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
+	
+	def load( self, filepath: str, is_text: bool = True, is_lines: bool = False ) -> List[
+		                                                                                 Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load an HTML file and convert its contents into LangChain Document objects.
+
+			Parameters:
+			-----------
+			path (str): Path to the HTML (.html or .htm) file.
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'filepath', filepath )
+			self.file_path = self.verify_exists( filepath )
+			self.is_text = is_text
+			self.is_lines = is_lines
+			self.loader = JSONLoader( file_path=self.file_path, jq_schema=self.jq,
+				text_content=self.is_text, json_lines=self.is_lines )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'chonky'
+			exception.cause = 'JsonLoader'
+			exception.method = 'load( self, path: str ) -> List[ Document ]'
+			raise exception
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded HTML documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			if self.documents is None:
+				raise ValueError( 'No documents loaded!' )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'chonky'
+			exception.cause = 'JsonLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			raise exception
+
+class GithubLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides the functionality to laod github files in to langchain documents
+
+		Attributes:
+		-----------
+		documents - List[ Document ]
+		file_path -  str
+		pattern -  str
+		expanded - List[ str ]
+		candidates - List[ str ]
+		resolved - List[ str ]
+		splitter - RecursiveCharacterTextSplitter
+		chunk_size - int
+		overlap_amount - int
+
+		Methods:
+		--------
+		verify_exists( self, path: str ) -> str;
+		resolve_paths( self, pattern: str ) -> List[ str ];
+		split_documents( self, docs: List[ Document ]  ) -> List[ Document ];
+		load( path: str, mode: str ) -> List[ Document ];
+		split( ) -> List[ Document ];
+
+	'''
+	loader: Optional[ GithubFileLoader ]
+	file_path: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	query: Optional[ str ]
+	max_documents: Optional[ int ]
+	max_characters: Optional[ int ]
+	include_all: Optional[ bool ]
+	query: Optional[ str ]
+	repo: Optional[ str ]
+	branch: Optional[ str ]
+	access_token: Optional[ str ]
+	github_url: Optional[ str ]
+	file_filter: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.file_path = None
+		self.documents = None
+		self.query = None
+		self.chunk_size = None
+		self.overlap_amount = None
+		self.loader = None
+		self.max_documents = None
+		self.max_characters = None
+		self.include_all = None
+		self.github_url = None
+		self.repo = None
+		self.branch = None
+		self.file_filter = None
+	
+	def __dir__( self ):
+		'''
+
+			Returns:
+			--------
+			A list of all available members.
+
+
+		'''
+		return [ 'loader',
+		         'documents',
+		         'splitter',
+		         'pattern',
+		         'file_path',
+		         'expanded',
+		         'candidates',
+		         'resolved',
+		         'chunk_size',
+		         'overlap_amount',
+		         'max_documents',
+		         'max_characters',
+		         'include_all',
+		         'repo',
+		         'branch',
+		         'file_filter',
+		         'verify_exists',
+		         'resolve_paths',
+		         'split_documents',
+		         'load',
+		         'split', ]
+	
+	def load( self, url: str, repo: str, branch: str, filetype: str = '.md' ) -> List[
+		                                                                             Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load filtered contents of Github repo/branch into LangChain Document objects.
+
+			Parameters:
+			-----------
+			url (str):
+			repo (str):
+			branch (str):
+			filetype (str):
+
+			Returns:
+			--------
+			List[Document]: List of Document objects parsed from HTML content.
+
+		'''
+		try:
+			throw_if( 'url', url )
+			self.github_url = url
+			self.repo = repo
+			self.branch = branch
+			self.pattern = filetype
+			self.file_filter = lambda file_path: file_path.endswith( self.pattern )
+			self.loader = GithubFileLoader( repo=self.repo, branch=self.branch,
+				github_api_url=self.github_url, file_filter=self.file_filter )
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'chonky'
+			exception.cause = 'GithubLoader'
+			exception.method = 'load( self, **kwargs  ) -> List[ Document ]'
+			raise exception
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Wikipedia search documents into manageable text chunks.
+
+			Parameters:
+			-----------
+			chunk_size (int): Max characters per chunk.
+			chunk_overlap (int): Overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document]: Chunked list of LangChain Document objects.
+
+		'''
+		try:
+			if self.documents is None:
+				raise ValueError( 'No documents loaded!' )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'chonky'
+			exception.cause = 'GithubLoader'
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
+			raise exception

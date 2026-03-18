@@ -108,6 +108,18 @@ MODE_MAP = \
 		'Management': 'Data Management'
  }
 
+CHUNKABLE_LOADERS = {
+		'TextLoader': [ 'chars', 'tokens' ],
+		'CsvLoader': [ 'chars' ],
+		'PdfLoader': [ 'chars' ],
+		'ExcelLoader': [ 'chars' ],
+		'WordLoader': [ 'chars' ],
+		'MarkdownLoader': [ 'chars' ],
+		'HtmlLoader': [ 'chars' ],
+		'JsonLoader': [ 'chars' ],
+		'PowerPointLoader': [ 'chars' ],
+}
+
 GPT_MODELS = [ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano',
                'gpt-5.1', 'gpt-5.2', 'gpt-4.1' ]
 
