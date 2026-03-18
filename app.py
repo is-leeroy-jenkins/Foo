@@ -9135,6 +9135,808 @@ elif mode == 'Environmental':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
+	# -------- PurpleAir
+	with st.expander( label='Purple Air', expanded=False ):
+		if 'purpleair_results' not in st.session_state:
+			st.session_state[ 'purpleair_results' ] = { }
+		
+		if 'purpleair_clear_request' not in st.session_state:
+			st.session_state[ 'purpleair_clear_request' ] = False
+		
+		if st.session_state.get( 'purpleair_clear_request', False ):
+			st.session_state[ 'purpleair_mode' ] = 'sensors'
+			st.session_state[ 'purpleair_sensor_index' ] = ''
+			st.session_state[ 'purpleair_nwlng' ] = ''
+			st.session_state[ 'purpleair_nwlat' ] = ''
+			st.session_state[ 'purpleair_selng' ] = ''
+			st.session_state[ 'purpleair_selat' ] = ''
+			st.session_state[ 'purpleair_location_type' ] = 0
+			st.session_state[ 'purpleair_max_age' ] = 0
+			st.session_state[ 'purpleair_modified_since' ] = 0
+			st.session_state[ 'purpleair_timeout' ] = 20
+			st.session_state[ 'purpleair_results' ] = { }
+			st.session_state[ 'purpleair_clear_request' ] = False
+		
+		def _clear_purpleair_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the PurpleAir expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'purpleair_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			purpleair_mode = st.selectbox(
+				'Mode',
+				options=[ 'sensors', 'sensor' ],
+				index=[ 'sensors', 'sensor' ].index(
+					st.session_state.get( 'purpleair_mode', 'sensors' )
+				),
+				key='purpleair_mode'
+			)
+			
+			purpleair_sensor_index = st.text_input(
+				'Sensor Index',
+				value=st.session_state.get( 'purpleair_sensor_index', '' ),
+				key='purpleair_sensor_index',
+				disabled=(purpleair_mode != 'sensor'),
+				placeholder='Example: 78307'
+			)
+			
+			bbox_c1, bbox_c2 = st.columns( 2 )
+			
+			with bbox_c1:
+				purpleair_nwlng = st.text_input(
+					'NW Longitude',
+					value=st.session_state.get( 'purpleair_nwlng', '' ),
+					key='purpleair_nwlng',
+					disabled=(purpleair_mode != 'sensors')
+				)
+			
+			with bbox_c2:
+				purpleair_nwlat = st.text_input(
+					'NW Latitude',
+					value=st.session_state.get( 'purpleair_nwlat', '' ),
+					key='purpleair_nwlat',
+					disabled=(purpleair_mode != 'sensors')
+				)
+			
+			bbox_c3, bbox_c4 = st.columns( 2 )
+			
+			with bbox_c3:
+				purpleair_selng = st.text_input(
+					'SE Longitude',
+					value=st.session_state.get( 'purpleair_selng', '' ),
+					key='purpleair_selng',
+					disabled=(purpleair_mode != 'sensors')
+				)
+			
+			with bbox_c4:
+				purpleair_selat = st.text_input(
+					'SE Latitude',
+					value=st.session_state.get( 'purpleair_selat', '' ),
+					key='purpleair_selat',
+					disabled=(purpleair_mode != 'sensors')
+				)
+			
+			opt_c1, opt_c2 = st.columns( 2 )
+			
+			with opt_c1:
+				purpleair_location_type = st.number_input(
+					'Location Type',
+					min_value=0,
+					max_value=10,
+					value=int( st.session_state.get( 'purpleair_location_type', 0 ) ),
+					step=1,
+					key='purpleair_location_type',
+					disabled=(purpleair_mode != 'sensors')
+				)
+			
+			with opt_c2:
+				purpleair_max_age = st.number_input(
+					'Max Age',
+					min_value=0,
+					max_value=1000000,
+					value=int( st.session_state.get( 'purpleair_max_age', 0 ) ),
+					step=1,
+					key='purpleair_max_age',
+					disabled=(purpleair_mode != 'sensors')
+				)
+			
+			purpleair_modified_since = st.number_input(
+				'Modified Since',
+				min_value=0,
+				max_value=2147483647,
+				value=int( st.session_state.get( 'purpleair_modified_since', 0 ) ),
+				step=1,
+				key='purpleair_modified_since',
+				disabled=(purpleair_mode != 'sensors')
+			)
+			
+			purpleair_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'purpleair_timeout', 20 ) ),
+				step=1,
+				key='purpleair_timeout'
+			)
+			
+			st.caption(
+				'PurpleAir requires an API key and uses a points system. This wrapper '
+				'uses narrow field selection to keep calls focused and readable.'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				purpleair_submit = st.button(
+					'Submit',
+					key='purpleair_submit'
+				)
+			
+			with btn_c2:
+				st.button(
+					'Clear',
+					key='purpleair_clear',
+					on_click=_clear_purpleair_state
+				)
+		
+		with col_right:
+			if purpleair_submit:
+				try:
+					f = PurpleAir( )
+					result = f.fetch(
+						mode=str( purpleair_mode ),
+						sensor_index=None if not str( purpleair_sensor_index ).strip( ) else int( purpleair_sensor_index ),
+						nwlng=None if not str( purpleair_nwlng ).strip( ) else float( purpleair_nwlng ),
+						nwlat=None if not str( purpleair_nwlat ).strip( ) else float( purpleair_nwlat ),
+						selng=None if not str( purpleair_selng ).strip( ) else float( purpleair_selng ),
+						selat=None if not str( purpleair_selat ).strip( ) else float( purpleair_selat ),
+						location_type=int( purpleair_location_type ),
+						max_age=int( purpleair_max_age ),
+						modified_since=int( purpleair_modified_since ),
+						time=int( purpleair_timeout )
+					)
+					
+					st.session_state[ 'purpleair_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'PurpleAir request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'purpleair_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					params = result.get( 'params', { } ) or { }
+					if 'sensor_index' in params:
+						st.markdown(
+							f"**Sensor Index:** {params.get( 'sensor_index', '' )}"
+						)
+					if 'fields' in params:
+						st.markdown(
+							f"**Fields:** {params.get( 'fields', '' )}"
+						)
+				
+				summary = result.get( 'summary', { } ) or { }
+				if summary:
+					st.markdown( '#### Result Summary' )
+					
+					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+					
+					with sum_c1:
+						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+					
+					with sum_c2:
+						max_pm25 = summary.get( 'max_pm25', None )
+						st.metric(
+							'Peak PM2.5',
+							'' if max_pm25 is None else str( max_pm25 )
+						)
+					
+					with sum_c3:
+						first_name = str( summary.get( 'first_name', '' ) or '' )
+						if first_name:
+							st.markdown( f"**First Sensor:** {first_name}" )
+						else:
+							st.markdown( '**First Sensor:** N/A' )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					with st.expander( 'Request Parameters', expanded=False ):
+						st.json( params )
+				
+				rows = result.get( 'rows', [ ] ) or [ ]
+				if rows:
+					st.markdown( '#### PurpleAir Results' )
+					df_purpleair = pd.DataFrame( rows )
+					
+					if not df_purpleair.empty:
+						st.dataframe(
+							df_purpleair,
+							use_container_width=True,
+							hide_index=True
+						)
+						
+						top_rows = rows[ : min( 10, len( rows ) ) ]
+						for idx, item in enumerate( top_rows, start=1 ):
+							label = str(
+								item.get( 'Name', '' ) or
+								item.get( 'Sensor Index', '' ) or
+								f'Record {idx}'
+							)
+							
+							with st.expander(
+									f'Record {idx}: {label}',
+									expanded=False
+							):
+								st.json( item )
+					else:
+						st.info( 'No displayable PurpleAir rows were found.' )
+				else:
+					st.info( 'No PurpleAir records were returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
+	
+	# -------- OpenAQ
+	with st.expander( label='Open Air Quality', expanded=False ):
+		if 'openaq_results' not in st.session_state:
+			st.session_state[ 'openaq_results' ] = { }
+		
+		if 'openaq_clear_request' not in st.session_state:
+			st.session_state[ 'openaq_clear_request' ] = False
+		
+		if st.session_state.get( 'openaq_clear_request', False ):
+			st.session_state[ 'openaq_mode' ] = 'locations'
+			st.session_state[ 'openaq_location_id' ] = ''
+			st.session_state[ 'openaq_country_id' ] = ''
+			st.session_state[ 'openaq_coordinates' ] = ''
+			st.session_state[ 'openaq_radius' ] = 25000
+			st.session_state[ 'openaq_providers_id' ] = ''
+			st.session_state[ 'openaq_parameters_id' ] = ''
+			st.session_state[ 'openaq_limit' ] = 25
+			st.session_state[ 'openaq_page' ] = 1
+			st.session_state[ 'openaq_timeout' ] = 20
+			st.session_state[ 'openaq_results' ] = { }
+			st.session_state[ 'openaq_clear_request' ] = False
+		
+		def _clear_openaq_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the OpenAQ expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'openaq_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			openaq_mode = st.selectbox(
+				'Mode',
+				options=[ 'locations', 'latest' ],
+				index=[ 'locations', 'latest' ].index(
+					st.session_state.get( 'openaq_mode', 'locations' )
+				),
+				key='openaq_mode'
+			)
+			
+			openaq_location_id = st.text_input(
+				'Location ID',
+				value=st.session_state.get( 'openaq_location_id', '' ),
+				key='openaq_location_id',
+				disabled=(openaq_mode != 'latest'),
+				placeholder='Example: 8118'
+			)
+			
+			openaq_country_id = st.text_input(
+				'Country ID',
+				value=st.session_state.get( 'openaq_country_id', '' ),
+				key='openaq_country_id',
+				disabled=(openaq_mode != 'locations'),
+				placeholder='Optional numeric country ID'
+			)
+			
+			openaq_coordinates = st.text_input(
+				'Coordinates',
+				value=st.session_state.get( 'openaq_coordinates', '' ),
+				key='openaq_coordinates',
+				disabled=(openaq_mode != 'locations'),
+				placeholder='latitude,longitude'
+			)
+			
+			openaq_radius = st.number_input(
+				'Radius (meters)',
+				min_value=1,
+				max_value=500000,
+				value=int( st.session_state.get( 'openaq_radius', 25000 ) ),
+				step=1,
+				key='openaq_radius',
+				disabled=(openaq_mode != 'locations')
+			)
+			
+			filter_c1, filter_c2 = st.columns( 2 )
+			
+			with filter_c1:
+				openaq_providers_id = st.text_input(
+					'Providers ID',
+					value=st.session_state.get( 'openaq_providers_id', '' ),
+					key='openaq_providers_id',
+					disabled=(openaq_mode != 'locations'),
+					placeholder='Optional provider ID'
+				)
+			
+			with filter_c2:
+				openaq_parameters_id = st.text_input(
+					'Parameters ID',
+					value=st.session_state.get( 'openaq_parameters_id', '' ),
+					key='openaq_parameters_id',
+					disabled=(openaq_mode != 'locations'),
+					placeholder='Optional parameter ID'
+				)
+			
+			page_c1, page_c2 = st.columns( 2 )
+			
+			with page_c1:
+				openaq_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=500,
+					value=int( st.session_state.get( 'openaq_limit', 25 ) ),
+					step=1,
+					key='openaq_limit',
+					disabled=(openaq_mode != 'locations')
+				)
+			
+			with page_c2:
+				openaq_page = st.number_input(
+					'Page',
+					min_value=1,
+					max_value=10000,
+					value=int( st.session_state.get( 'openaq_page', 1 ) ),
+					step=1,
+					key='openaq_page',
+					disabled=(openaq_mode != 'locations')
+				)
+			
+			openaq_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'openaq_timeout', 20 ) ),
+				step=1,
+				key='openaq_timeout'
+			)
+			
+			st.caption(
+				'OpenAQ v3 requires an API key. Locations mode supports discovery. '
+				'Latest mode retrieves the latest measurements for one location.'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				openaq_submit = st.button(
+					'Submit',
+					key='openaq_submit'
+				)
+			
+			with btn_c2:
+				st.button(
+					'Clear',
+					key='openaq_clear',
+					on_click=_clear_openaq_state
+				)
+		
+		with col_right:
+			if openaq_submit:
+				try:
+					f = OpenAQ( )
+					result = f.fetch(
+						mode=str( openaq_mode ),
+						location_id=None if not str( openaq_location_id ).strip( ) else int( openaq_location_id ),
+						country_id=None if not str( openaq_country_id ).strip( ) else int( openaq_country_id ),
+						coordinates=str( openaq_coordinates ).strip( ),
+						radius=int( openaq_radius ),
+						providers_id=str( openaq_providers_id ).strip( ),
+						parameters_id=str( openaq_parameters_id ).strip( ),
+						limit=int( openaq_limit ),
+						page=int( openaq_page ),
+						time=int( openaq_timeout )
+					)
+					
+					st.session_state[ 'openaq_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'OpenAQ request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'openaq_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					params = result.get( 'params', { } ) or { }
+					if 'location_id' in params:
+						st.markdown(
+							f"**Location ID:** {params.get( 'location_id', '' )}"
+						)
+					if 'country_id' in params:
+						st.markdown(
+							f"**Country ID:** {params.get( 'country_id', '' )}"
+						)
+				
+				summary = result.get( 'summary', { } ) or { }
+				if summary:
+					st.markdown( '#### Result Summary' )
+					
+					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+					
+					with sum_c1:
+						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+					
+					with sum_c2:
+						first_name = str( summary.get( 'first_name', '' ) or '' )
+						if first_name:
+							st.markdown( f"**First Result:** {first_name}" )
+						else:
+							st.markdown( '**First Result:** N/A' )
+					
+					with sum_c3:
+						first_parameter = str(
+							summary.get( 'first_parameter', '' ) or ''
+						)
+						if first_parameter:
+							st.markdown( f"**First Parameter:** {first_parameter}" )
+						else:
+							st.markdown( '**First Parameter:** N/A' )
+					
+					first_country = str( summary.get( 'first_country', '' ) or '' )
+					if first_country:
+						st.markdown( f"**Country:** {first_country}" )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					with st.expander( 'Request Parameters', expanded=False ):
+						st.json( params )
+				
+				rows = result.get( 'rows', [ ] ) or [ ]
+				if rows:
+					st.markdown( '#### OpenAQ Results' )
+					df_openaq = pd.DataFrame( rows )
+					
+					if not df_openaq.empty:
+						st.dataframe(
+							df_openaq,
+							use_container_width=True,
+							hide_index=True
+						)
+						
+						top_rows = rows[ : min( 10, len( rows ) ) ]
+						for idx, item in enumerate( top_rows, start=1 ):
+							label = str(
+								item.get( 'Name', '' ) or
+								item.get( 'Location Id', '' ) or
+								item.get( 'Parameter', '' ) or
+								f'Record {idx}'
+							)
+							
+							with st.expander(
+									f'Record {idx}: {label}',
+									expanded=False
+							):
+								st.json( item )
+					else:
+						st.info( 'No displayable OpenAQ rows were found.' )
+				else:
+					st.info( 'No OpenAQ records were returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
+	
+	# -------- NASA FIRMS
+	with st.expander( label='NASA FIRMS', expanded=False ):
+		if 'firms_results' not in st.session_state:
+			st.session_state[ 'firms_results' ] = { }
+		
+		if 'firms_clear_request' not in st.session_state:
+			st.session_state[ 'firms_clear_request' ] = False
+		
+		if st.session_state.get( 'firms_clear_request', False ):
+			st.session_state[ 'firms_mode' ] = 'area'
+			st.session_state[ 'firms_source' ] = 'VIIRS_SNPP_NRT'
+			st.session_state[ 'firms_area_coordinates' ] = 'world'
+			st.session_state[ 'firms_day_range' ] = 1
+			st.session_state[ 'firms_date' ] = ''
+			st.session_state[ 'firms_sensor' ] = 'ALL'
+			st.session_state[ 'firms_timeout' ] = 20
+			st.session_state[ 'firms_results' ] = { }
+			st.session_state[ 'firms_clear_request' ] = False
+		
+		def _clear_firms_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the NASA FIRMS expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'firms_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			firms_mode = st.selectbox(
+				'Mode',
+				options=[ 'area', 'data-availability' ],
+				index=[ 'area', 'data-availability' ].index(
+					st.session_state.get( 'firms_mode', 'area' )
+				),
+				key='firms_mode'
+			)
+			
+			firms_source = st.selectbox(
+				'Source',
+				options=[
+						'LANDSAT_NRT',
+						'MODIS_NRT',
+						'MODIS_SP',
+						'VIIRS_NOAA20_NRT',
+						'VIIRS_NOAA20_SP',
+						'VIIRS_NOAA21_NRT',
+						'VIIRS_SNPP_NRT',
+						'VIIRS_SNPP_SP'
+				],
+				index=[
+						'LANDSAT_NRT',
+						'MODIS_NRT',
+						'MODIS_SP',
+						'VIIRS_NOAA20_NRT',
+						'VIIRS_NOAA20_SP',
+						'VIIRS_NOAA21_NRT',
+						'VIIRS_SNPP_NRT',
+						'VIIRS_SNPP_SP'
+				].index(
+					st.session_state.get( 'firms_source', 'VIIRS_SNPP_NRT' )
+				),
+				key='firms_source',
+				disabled=(firms_mode != 'area')
+			)
+			
+			firms_area_coordinates = st.text_input(
+				'Area Coordinates',
+				value=st.session_state.get( 'firms_area_coordinates', 'world' ),
+				key='firms_area_coordinates',
+				disabled=(firms_mode != 'area'),
+				placeholder='west,south,east,north or world'
+			)
+			
+			firms_day_range = st.number_input(
+				'Day Range',
+				min_value=1,
+				max_value=5,
+				value=int( st.session_state.get( 'firms_day_range', 1 ) ),
+				step=1,
+				key='firms_day_range',
+				disabled=(firms_mode != 'area')
+			)
+			
+			firms_date = st.text_input(
+				'Date',
+				value=st.session_state.get( 'firms_date', '' ),
+				key='firms_date',
+				disabled=(firms_mode != 'area'),
+				placeholder='Optional YYYY-MM-DD'
+			)
+			
+			firms_sensor = st.selectbox(
+				'Sensor',
+				options=[
+						'ALL',
+						'LANDSAT_NRT',
+						'MODIS_NRT',
+						'MODIS_SP',
+						'VIIRS_NOAA20_NRT',
+						'VIIRS_NOAA20_SP',
+						'VIIRS_NOAA21_NRT',
+						'VIIRS_SNPP_NRT',
+						'VIIRS_SNPP_SP'
+				],
+				index=[
+						'ALL',
+						'LANDSAT_NRT',
+						'MODIS_NRT',
+						'MODIS_SP',
+						'VIIRS_NOAA20_NRT',
+						'VIIRS_NOAA20_SP',
+						'VIIRS_NOAA21_NRT',
+						'VIIRS_SNPP_NRT',
+						'VIIRS_SNPP_SP'
+				].index(
+					st.session_state.get( 'firms_sensor', 'ALL' )
+				),
+				key='firms_sensor',
+				disabled=(firms_mode != 'data-availability')
+			)
+			
+			firms_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'firms_timeout', 20 ) ),
+				step=1,
+				key='firms_timeout'
+			)
+			
+			st.caption(
+				'FIRMS requires a MAP_KEY. Area mode retrieves fire detections for a '
+				'bounding box or world. Data-availability mode reports available dates.'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				firms_submit = st.button(
+					'Submit',
+					key='firms_submit'
+				)
+			
+			with btn_c2:
+				st.button(
+					'Clear',
+					key='firms_clear',
+					on_click=_clear_firms_state
+				)
+		
+		with col_right:
+			if firms_submit:
+				try:
+					f = Firms( )
+					result = f.fetch(
+						mode=str( firms_mode ),
+						source=str( firms_source ).strip( ),
+						area_coordinates=str( firms_area_coordinates ).strip( ),
+						day_range=int( firms_day_range ),
+						date=str( firms_date ).strip( ),
+						sensor=str( firms_sensor ).strip( ),
+						time=int( firms_timeout )
+					)
+					
+					st.session_state[ 'firms_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'NASA FIRMS request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'firms_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					params = result.get( 'params', { } ) or { }
+					if 'source' in params:
+						st.markdown( f"**Source:** {params.get( 'source', '' )}" )
+					if 'sensor' in params:
+						st.markdown( f"**Sensor:** {params.get( 'sensor', '' )}" )
+				
+				summary = result.get( 'summary', { } ) or { }
+				if summary:
+					st.markdown( '#### Result Summary' )
+					
+					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+					
+					with sum_c1:
+						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+					
+					with sum_c2:
+						first_date = str( summary.get( 'first_date', '' ) or '' )
+						if first_date:
+							st.markdown( f"**First Date:** {first_date}" )
+						else:
+							st.markdown( '**First Date:** N/A' )
+					
+					with sum_c3:
+						first_lat = str( summary.get( 'first_lat', '' ) or '' )
+						first_lon = str( summary.get( 'first_lon', '' ) or '' )
+						if first_lat and first_lon:
+							st.markdown( f"**First Point:** {first_lat}, {first_lon}" )
+						else:
+							st.markdown( '**First Point:** N/A' )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					with st.expander( 'Request Parameters', expanded=False ):
+						st.json( params )
+				
+				rows = result.get( 'rows', [ ] ) or [ ]
+				if rows:
+					st.markdown( '#### FIRMS Results' )
+					df_firms = pd.DataFrame( rows )
+					
+					if not df_firms.empty:
+						st.dataframe(
+							df_firms,
+							use_container_width=True,
+							hide_index=True
+						)
+						
+						top_rows = rows[ : min( 10, len( rows ) ) ]
+						for idx, item in enumerate( top_rows, start=1 ):
+							label = str(
+								item.get( 'Acq Date', '' ) or
+								item.get( 'Date', '' ) or
+								f'Record {idx}'
+							)
+							
+							with st.expander(
+									f'Record {idx}: {label}',
+									expanded=False
+							):
+								st.json( item )
+					else:
+						st.info( 'No displayable FIRMS rows were found.' )
+				else:
+					st.info( 'No FIRMS records were returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.text( str( result.get( 'raw', '' ) ) )
+					
 # ==============================================================================
 # ASTRONOMICAL MODE
 # ==============================================================================

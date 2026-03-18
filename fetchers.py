@@ -21511,3 +21511,1808 @@ class UvIndex( Fetcher ):
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
 			)
 			raise exception
+
+class PurpleAir( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to the PurpleAir API for bounding-box sensor discovery and
+		single-sensor detail retrieval using explicit field selection to reduce
+		point consumption and improve readability.
+
+		Referenced API Requirements:
+		----------------------------
+		PurpleAir API Base Endpoint:
+			- https://api.purpleair.com/v1
+
+		Resources used here:
+			- /sensors
+			- /sensors/{sensor_index}
+
+		Common query concepts:
+			- X-API-Key header
+			- fields
+			- location_type
+			- nwlng
+			- nwlat
+			- selng
+			- selat
+			- max_age
+			- modified_since
+
+	'''
+	base_url: Optional[ str ]
+	api_key: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the PurpleAir fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://api.purpleair.com/v1'
+		self.api_key = self._resolve_api_key( )
+		self.mode = 'sensors'
+		self.params = { }
+		self.payload = { }
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+		
+		if self.api_key:
+			self.headers[ 'X-API-Key' ] = self.api_key
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'api_key',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_resolve_api_key',
+				'_request',
+				'_shape_sensor_list_rows',
+				'_shape_sensor_detail_rows',
+				'_summarize_rows',
+				'fetch_sensors',
+				'fetch_sensor',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _resolve_api_key( self ) -> Optional[ str ]:
+		'''
+			Purpose:
+			--------
+			Resolve the PurpleAir API key from environment variables.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			Optional[str]
+		'''
+		try:
+			candidates: List[ Optional[ str ] ] = [
+					os.getenv( 'PURPLEAIR_API_KEY' ),
+					os.getenv( 'PURPLE_AIR_API_KEY' )
+			]
+			
+			for candidate in candidates:
+				if candidate is not None and str( candidate ).strip( ):
+					return str( candidate ).strip( )
+			
+			return None
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = '_resolve_api_key( self ) -> Optional[ str ]'
+			raise exception
+	
+	def _request( self, endpoint: str,
+			params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a PurpleAir endpoint.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path under the PurpleAir base URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			
+			if self.api_key is None or not str( self.api_key ).strip( ):
+				raise ValueError(
+					'PurpleAir API key not found. Set PURPLEAIR_API_KEY or '
+					'PURPLE_AIR_API_KEY.'
+				)
+			
+			self.url = f'{self.base_url}/{str( endpoint ).strip( )}'
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'_request( self, endpoint: str, '
+					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_sensor_list_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize PurpleAir sensor-list payloads into a human-readable table.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any]):
+				Sensor-list payload returned by PurpleAir.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			fields = payload.get( 'fields', [ ] ) or [ ]
+			data = payload.get( 'data', [ ] ) or [ ]
+			
+			for record in data:
+				row_map: Dict[ str, Any ] = { }
+				
+				if isinstance( record, list ):
+					for index, field_name in enumerate( fields ):
+						if index < len( record ):
+							row_map[ str( field_name ) ] = record[ index ]
+				elif isinstance( record, dict ):
+					row_map = record
+				
+				rows.append(
+					{
+							'Sensor Index': row_map.get( 'sensor_index', '' ),
+							'Name': row_map.get( 'name', '' ),
+							'PM2.5': row_map.get( 'pm2.5', None ),
+							'Temperature': row_map.get( 'temperature', None ),
+							'Humidity': row_map.get( 'humidity', None ),
+							'Latitude': row_map.get( 'latitude', None ),
+							'Longitude': row_map.get( 'longitude', None ),
+							'Last Seen': row_map.get( 'last_seen', None ),
+							'Location Type': row_map.get( 'location_type', None )
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'_shape_sensor_list_rows( self, payload: Dict[ str, Any ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _shape_sensor_detail_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize PurpleAir single-sensor detail payload into a readable row.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any]):
+				Single-sensor payload returned by PurpleAir.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			sensor = payload.get( 'sensor', { } ) or { }
+			
+			row: Dict[ str, Any ] = {
+					'Sensor Index': sensor.get( 'sensor_index', '' ),
+					'Name': sensor.get( 'name', '' ),
+					'Model': sensor.get( 'model', '' ),
+					'Hardware': sensor.get( 'hardware', '' ),
+					'PM2.5 Cf 1 A': sensor.get( 'pm2.5_cf_1_a', None ),
+					'PM2.5 Cf 1 B': sensor.get( 'pm2.5_cf_1_b', None ),
+					'Temperature': sensor.get( 'temperature', None ),
+					'Humidity': sensor.get( 'humidity', None ),
+					'Pressure': sensor.get( 'pressure', None ),
+					'Latitude': sensor.get( 'latitude', None ),
+					'Longitude': sensor.get( 'longitude', None ),
+					'Last Seen': sensor.get( 'last_seen', None ),
+					'Firmware Version': sensor.get( 'firmware_version', '' ),
+					'RSSI': sensor.get( 'rssi', None )
+			}
+			
+			return [ row ]
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'_shape_sensor_detail_rows( self, payload: Dict[ str, Any ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized PurpleAir rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			max_pm25 = None
+			first_name = ''
+			
+			for row in rows or [ ]:
+				if not first_name:
+					first_name = str( row.get( 'Name', '' ) or row.get( 'Sensor Index', '' ) or '' )
+				
+				pm25_value = row.get( 'PM2.5', None )
+				if pm25_value is None:
+					pm25_value = row.get( 'PM2.5 Cf 1 A', None )
+				
+				try:
+					if pm25_value is not None:
+						if max_pm25 is None or float( pm25_value ) > float( max_pm25 ):
+							max_pm25 = float( pm25_value )
+				except Exception:
+					pass
+			
+			return {
+					'count': count,
+					'max_pm25': max_pm25,
+					'first_name': first_name
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_sensors( self, nwlng: float, nwlat: float, selng: float, selat: float,
+			location_type: int = 0, max_age: int = 0, modified_since: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch PurpleAir sensors within a bounding box.
+
+			Parameters:
+			-----------
+			nwlng (float):
+				Northwest longitude.
+
+			nwlat (float):
+				Northwest latitude.
+
+			selng (float):
+				Southeast longitude.
+
+			selat (float):
+				Southeast latitude.
+
+			location_type (int):
+				PurpleAir location type. Public outdoor sensors are commonly 0.
+
+			max_age (int):
+				Maximum sensor age filter in minutes. 0 keeps current behavior broad.
+
+			modified_since (int):
+				UNIX timestamp filter. 0 disables the filter.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'sensors'
+			base = self._request(
+				endpoint='sensors',
+				params={
+						'fields': 'name,pm2.5,temperature,humidity,latitude,longitude,last_seen,location_type',
+						'location_type': int( location_type ),
+						'nwlng': float( nwlng ),
+						'nwlat': float( nwlat ),
+						'selng': float( selng ),
+						'selat': float( selat ),
+						'max_age': int( max_age ),
+						'modified_since': int( modified_since )
+				},
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			rows = self._shape_sensor_list_rows( payload )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'fetch_sensors( self, nwlng: float, nwlat: float, selng: float, '
+					'selat: float, location_type: int=0, max_age: int=0, '
+					'modified_since: int=0, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_sensor( self, sensor_index: int,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch a single PurpleAir sensor detail record.
+
+			Parameters:
+			-----------
+			sensor_index (int):
+				PurpleAir sensor index.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'sensor'
+			base = self._request(
+				endpoint=f'sensors/{int( sensor_index )}',
+				params={
+						'fields': (
+								'name,model,hardware,pm2.5_cf_1_a,pm2.5_cf_1_b,temperature,'
+								'humidity,pressure,latitude,longitude,last_seen,'
+								'firmware_version,rssi'
+						)
+				},
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			rows = self._shape_sensor_detail_rows( payload )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': {
+							'sensor_index': int( sensor_index ),
+							'fields': base.get( 'params', { } ).get( 'fields', '' )
+					},
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'fetch_sensor( self, sensor_index: int, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'sensors', sensor_index: int | None = None,
+			nwlng: float | None = None, nwlat: float | None = None,
+			selng: float | None = None, selat: float | None = None,
+			location_type: int = 0, max_age: int = 0, modified_since: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for PurpleAir sensor discovery and sensor detail
+			retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- sensors
+				- sensor
+
+			sensor_index (int | None):
+				PurpleAir sensor index for single-sensor mode.
+
+			nwlng (float | None):
+				Northwest longitude.
+
+			nwlat (float | None):
+				Northwest latitude.
+
+			selng (float | None):
+				Southeast longitude.
+
+			selat (float | None):
+				Southeast latitude.
+
+			location_type (int):
+				PurpleAir location type.
+
+			max_age (int):
+				Maximum age filter.
+
+			modified_since (int):
+				UNIX timestamp filter.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'sensors' ).strip( ).lower( )
+			
+			if active_mode == 'sensors':
+				return self.fetch_sensors(
+					nwlng=float( nwlng ),
+					nwlat=float( nwlat ),
+					selng=float( selng ),
+					selat=float( selat ),
+					location_type=int( location_type ),
+					max_age=int( max_age ),
+					modified_since=int( modified_since ),
+					time=int( time )
+				)
+			
+			if active_mode == 'sensor':
+				return self.fetch_sensor(
+					sensor_index=int( sensor_index ),
+					time=int( time )
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'sensors' or 'sensor'." )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'fetch( self, mode: str=sensors, sensor_index: int | None=None, '
+					'nwlng: float | None=None, nwlat: float | None=None, '
+					'selng: float | None=None, selat: float | None=None, '
+					'location_type: int=0, max_age: int=0, modified_since: int=0, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class OpenAQ( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to the OpenAQ v3 API for location discovery and latest
+		measurement retrieval using authenticated requests and human-readable
+		normalized output.
+
+		Referenced API Requirements:
+		----------------------------
+		OpenAQ API Base Endpoint:
+			- https://api.openaq.org/v3
+
+		Resources used here:
+			- /locations
+			- /locations/{id}/latest
+
+		Common query concepts:
+			- X-API-Key header
+			- country_id
+			- coordinates
+			- radius
+			- providers_id
+			- parameters_id
+			- limit
+			- page
+
+	'''
+	base_url: Optional[ str ]
+	api_key: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the OpenAQ fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://api.openaq.org/v3'
+		self.api_key = self._resolve_api_key( )
+		self.mode = 'locations'
+		self.params = { }
+		self.payload = { }
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
+		
+		if self.api_key:
+			self.headers[ 'X-API-Key' ] = self.api_key
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'api_key',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_resolve_api_key',
+				'_request',
+				'_shape_location_rows',
+				'_shape_latest_rows',
+				'_summarize_rows',
+				'fetch_locations',
+				'fetch_latest',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _resolve_api_key( self ) -> Optional[ str ]:
+		'''
+			Purpose:
+			--------
+			Resolve the OpenAQ API key from environment variables.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			Optional[str]
+		'''
+		try:
+			candidates: List[ Optional[ str ] ] = [
+					os.getenv( 'OPENAQ_API_KEY' ),
+					os.getenv( 'OPEN_AQ_API_KEY' )
+			]
+			
+			for candidate in candidates:
+				if candidate is not None and str( candidate ).strip( ):
+					return str( candidate ).strip( )
+			
+			return None
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = '_resolve_api_key( self ) -> Optional[ str ]'
+			raise exception
+	
+	def _request( self, endpoint: str,
+			params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to an OpenAQ endpoint.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path under the OpenAQ base URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			
+			if self.api_key is None or not str( self.api_key ).strip( ):
+				raise ValueError(
+					'OpenAQ API key not found. Set OPENAQ_API_KEY or OPEN_AQ_API_KEY.'
+				)
+			
+			self.url = f'{self.base_url}/{str( endpoint ).strip( )}'
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'_request( self, endpoint: str, '
+					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _shape_location_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize OpenAQ location payloads into a human-readable table.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any]):
+				Location payload returned by OpenAQ.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			results = payload.get( 'results', [ ] ) or [ ]
+			
+			for item in results:
+				country = item.get( 'country', { } ) or { }
+				provider = item.get( 'provider', { } ) or { }
+				owner = item.get( 'owner', { } ) or { }
+				coordinates = item.get( 'coordinates', { } ) or { }
+				
+				rows.append(
+					{
+							'Location Id': item.get( 'id', '' ),
+							'Name': item.get( 'name', '' ),
+							'Locality': item.get( 'locality', '' ),
+							'Country': country.get( 'name', '' ),
+							'Country Code': country.get( 'code', '' ),
+							'Provider': provider.get( 'name', '' ),
+							'Owner': owner.get( 'name', '' ),
+							'Latitude': coordinates.get( 'latitude', None ),
+							'Longitude': coordinates.get( 'longitude', None ),
+							'Time Zone': item.get( 'timezone', '' ),
+							'Is Mobile': item.get( 'isMobile', None ),
+							'Is Monitor': item.get( 'isMonitor', None )
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'_shape_location_rows( self, payload: Dict[ str, Any ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _shape_latest_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize OpenAQ latest-measurement payloads into a human-readable table.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any]):
+				Latest-measurement payload returned by OpenAQ.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			results = payload.get( 'results', [ ] ) or [ ]
+			
+			for item in results:
+				parameter = item.get( 'parameter', { } ) or { }
+				datetime_local = item.get( 'datetime', { } ) or { }
+				
+				rows.append(
+					{
+							'Parameter': (
+									parameter.get( 'displayName', None ) or
+									parameter.get( 'name', '' )
+							),
+							'Parameter Name': parameter.get( 'name', '' ),
+							'Units': parameter.get( 'units', '' ),
+							'Value': item.get( 'value', None ),
+							'Date Time UTC': (
+									(item.get( 'datetime', { } ) or { }).get( 'utc', '' )
+									if isinstance( item.get( 'datetime', { } ), dict )
+									else ''
+							),
+							'Date Time Local': datetime_local.get( 'local', '' ),
+							'Sensor Id': (
+									(item.get( 'sensorsId', [ ] ) or [ None ])[ 0 ]
+									if isinstance( item.get( 'sensorsId', [ ] ), list )
+									   and len( item.get( 'sensorsId', [ ] ) ) > 0
+									else None
+							)
+					}
+				)
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'_shape_latest_rows( self, payload: Dict[ str, Any ] ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized OpenAQ rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			first_name = ''
+			first_country = ''
+			first_parameter = ''
+			
+			if rows:
+				first_name = str(
+					rows[ 0 ].get( 'Name', '' ) or
+					rows[ 0 ].get( 'Location Id', '' ) or ''
+				)
+				first_country = str( rows[ 0 ].get( 'Country', '' ) or '' )
+				first_parameter = str(
+					rows[ 0 ].get( 'Parameter', '' ) or
+					rows[ 0 ].get( 'Parameter Name', '' ) or ''
+				)
+			
+			return {
+					'count': count,
+					'first_name': first_name,
+					'first_country': first_country,
+					'first_parameter': first_parameter
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_locations( self, country_id: int | None = None,
+			coordinates: str = '', radius: int = 25000,
+			providers_id: str = '', parameters_id: str = '',
+			limit: int = 25, page: int = 1,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch OpenAQ locations.
+
+			Parameters:
+			-----------
+			country_id (int | None):
+				Optional OpenAQ country identifier.
+
+			coordinates (str):
+				Optional latitude,longitude string for geospatial filtering.
+
+			radius (int):
+				Optional radius in meters when coordinates are supplied.
+
+			providers_id (str):
+				Optional provider ID filter.
+
+			parameters_id (str):
+				Optional parameter ID filter.
+
+			limit (int):
+				Maximum returned locations.
+
+			page (int):
+				Result page number.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'locations'
+			base = self._request(
+				endpoint='locations',
+				params={
+						'country_id': None if country_id is None else int( country_id ),
+						'coordinates': str( coordinates ).strip( ),
+						'radius': int( radius ),
+						'providers_id': str( providers_id ).strip( ),
+						'parameters_id': str( parameters_id ).strip( ),
+						'limit': max( 1, int( limit ) ),
+						'page': max( 1, int( page ) )
+				},
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			rows = self._shape_location_rows( payload )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': base.get( 'params', { } ),
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'fetch_locations( self, country_id: int | None=None, coordinates: str=, '
+					'radius: int=25000, providers_id: str=, parameters_id: str=, '
+					'limit: int=25, page: int=1, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_latest( self, location_id: int,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch latest measurements for a single OpenAQ location.
+
+			Parameters:
+			-----------
+			location_id (int):
+				OpenAQ location identifier.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'latest'
+			base = self._request(
+				endpoint=f'locations/{int( location_id )}/latest',
+				params={ },
+				time=int( time )
+			) or { }
+			
+			payload = base.get( 'raw', { } ) or { }
+			rows = self._shape_latest_rows( payload )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': { 'location_id': int( location_id ) },
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'fetch_latest( self, location_id: int, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'locations', location_id: int | None = None,
+			country_id: int | None = None, coordinates: str = '',
+			radius: int = 25000, providers_id: str = '',
+			parameters_id: str = '', limit: int = 25, page: int = 1,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for OpenAQ location discovery and latest measurement
+			retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- locations
+				- latest
+
+			location_id (int | None):
+				OpenAQ location identifier for latest mode.
+
+			country_id (int | None):
+				Optional OpenAQ country identifier.
+
+			coordinates (str):
+				Optional latitude,longitude string.
+
+			radius (int):
+				Geospatial radius in meters.
+
+			providers_id (str):
+				Optional provider ID filter.
+
+			parameters_id (str):
+				Optional parameter ID filter.
+
+			limit (int):
+				Maximum returned locations.
+
+			page (int):
+				Result page number.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'locations' ).strip( ).lower( )
+			
+			if active_mode == 'locations':
+				return self.fetch_locations(
+					country_id=country_id,
+					coordinates=coordinates,
+					radius=radius,
+					providers_id=providers_id,
+					parameters_id=parameters_id,
+					limit=limit,
+					page=page,
+					time=int( time )
+				)
+			
+			if active_mode == 'latest':
+				return self.fetch_latest(
+					location_id=int( location_id ),
+					time=int( time )
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'locations' or 'latest'." )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'fetch( self, mode: str=locations, location_id: int | None=None, '
+					'country_id: int | None=None, coordinates: str=, radius: int=25000, '
+					'providers_id: str=, parameters_id: str=, limit: int=25, '
+					'page: int=1, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class Firms( Fetcher ):
+	'''
+		Purpose:
+		--------
+		Provides access to NASA FIRMS area fire-detection and data-availability
+		services using a MAP_KEY and human-readable normalized output.
+
+		Referenced API Requirements:
+		----------------------------
+		NASA FIRMS API Base Endpoint:
+			- https://firms.modaps.eosdis.nasa.gov/api
+
+		Resources used here:
+			- /area/csv/[MAP_KEY]/[SOURCE]/[AREA_COORDINATES]/[DAY_RANGE]
+			- /area/csv/[MAP_KEY]/[SOURCE]/[AREA_COORDINATES]/[DAY_RANGE]/[DATE]
+			- /data_availability/csv/[MAP_KEY]/[SENSOR]
+
+		Common query concepts:
+			- MAP_KEY
+			- SOURCE or SENSOR
+			- AREA_COORDINATES as west,south,east,north or world
+			- DAY_RANGE from 1 to 5
+			- Optional DATE in YYYY-MM-DD format
+
+	'''
+	base_url: Optional[ str ]
+	map_key: Optional[ str ]
+	mode: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	timeout: Optional[ int ]
+	agents: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the NASA FIRMS fetcher.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
+		super( ).__init__( )
+		self.base_url = 'https://firms.modaps.eosdis.nasa.gov/api'
+		self.map_key = self._resolve_map_key( )
+		self.mode = 'area'
+		self.params = { }
+		self.payload = ''
+		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'text/csv',
+				'User-Agent': self.agents
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'base_url',
+				'map_key',
+				'mode',
+				'params',
+				'payload',
+				'timeout',
+				'_resolve_map_key',
+				'_request_csv',
+				'_csv_to_rows',
+				'_summarize_rows',
+				'fetch_area',
+				'fetch_data_availability',
+				'fetch',
+				'create_schema'
+		]
+	
+	def _resolve_map_key( self ) -> Optional[ str ]:
+		'''
+			Purpose:
+			--------
+			Resolve the NASA FIRMS MAP_KEY from environment variables.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			Optional[str]
+		'''
+		try:
+			candidates: List[ Optional[ str ] ] = [
+					os.getenv( 'FIRMS_MAP_KEY' ),
+					os.getenv( 'NASA_FIRMS_MAP_KEY' )
+			]
+			
+			for candidate in candidates:
+				if candidate is not None and str( candidate ).strip( ):
+					return str( candidate ).strip( )
+			
+			return None
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = '_resolve_map_key( self ) -> Optional[ str ]'
+			raise exception
+	
+	def _request_csv( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a FIRMS CSV endpoint.
+
+			Parameters:
+			-----------
+			url (str):
+				Fully qualified request URL.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'url', url )
+			
+			if self.map_key is None or not str( self.map_key ).strip( ):
+				raise ValueError(
+					'FIRMS MAP_KEY not found. Set FIRMS_MAP_KEY or '
+					'NASA_FIRMS_MAP_KEY.'
+				)
+			
+			self.url = str( url ).strip( )
+			self.params = { }
+			
+			self.response = requests.get(
+				url=self.url,
+				headers=self.headers,
+				timeout=int( time )
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.text
+			
+			return {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = (
+					'_request_csv( self, url: str, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def _csv_to_rows( self, csv_text: str ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Convert FIRMS CSV text into normalized row dictionaries.
+
+			Parameters:
+			-----------
+			csv_text (str):
+				CSV response text.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			if csv_text is None or not str( csv_text ).strip( ):
+				return [ ]
+			
+			df_csv = pd.read_csv( io.StringIO( str( csv_text ) ) )
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for _, item in df_csv.iterrows( ):
+				row: Dict[ str, Any ] = { }
+				
+				for key in df_csv.columns:
+					friendly_key = str( key ).replace( '_', ' ' ).title( )
+					row[ friendly_key ] = item[ key ]
+				
+				rows.append( row )
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = (
+					'_csv_to_rows( self, csv_text: str ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized FIRMS rows.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized row dictionaries.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			count = len( rows or [ ] )
+			first_date = ''
+			first_lat = ''
+			first_lon = ''
+			
+			if rows:
+				first_date = str(
+					rows[ 0 ].get( 'Acq Date', '' ) or
+					rows[ 0 ].get( 'Date', '' ) or ''
+				)
+				first_lat = str( rows[ 0 ].get( 'Latitude', '' ) or '' )
+				first_lon = str( rows[ 0 ].get( 'Longitude', '' ) or '' )
+			
+			return {
+					'count': count,
+					'first_date': first_date,
+					'first_lat': first_lat,
+					'first_lon': first_lon
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = (
+					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_area( self, source: str, area_coordinates: str = 'world',
+			day_range: int = 1, date: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch FIRMS fire detections for an area.
+
+			Parameters:
+			-----------
+			source (str):
+				FIRMS source, such as:
+				- LANDSAT_NRT
+				- MODIS_NRT
+				- MODIS_SP
+				- VIIRS_NOAA20_NRT
+				- VIIRS_NOAA20_SP
+				- VIIRS_NOAA21_NRT
+				- VIIRS_SNPP_NRT
+				- VIIRS_SNPP_SP
+
+			area_coordinates (str):
+				Bounding box as west,south,east,north, or world.
+
+			day_range (int):
+				Number of days from 1 to 5.
+
+			date (str):
+				Optional YYYY-MM-DD start date. If omitted, most recent data is used.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'source', source )
+			
+			self.mode = 'area'
+			source_value = str( source ).strip( ).upper( )
+			area_value = str( area_coordinates ).strip( )
+			range_value = max( 1, min( 5, int( day_range ) ) )
+			
+			url = (
+					f'{self.base_url}/area/csv/{self.map_key}/{source_value}/'
+					f'{area_value}/{range_value}'
+			)
+			
+			if str( date ).strip( ):
+				url = f'{url}/{str( date ).strip( )}'
+			
+			base = self._request_csv(
+				url=url,
+				time=int( time )
+			) or { }
+			
+			rows = self._csv_to_rows( str( base.get( 'raw', '' ) or '' ) )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': {
+							'source': source_value,
+							'area_coordinates': area_value,
+							'day_range': range_value,
+							'date': str( date ).strip( )
+					},
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', '' )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = (
+					'fetch_area( self, source: str, area_coordinates: str=world, '
+					'day_range: int=1, date: str=, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch_data_availability( self, sensor: str = 'ALL',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch FIRMS data-availability rows for a sensor family.
+
+			Parameters:
+			-----------
+			sensor (str):
+				Sensor family such as ALL, LANDSAT_NRT, MODIS_NRT, MODIS_SP,
+				VIIRS_NOAA20_NRT, VIIRS_NOAA20_SP, VIIRS_NOAA21_NRT,
+				VIIRS_SNPP_NRT, or VIIRS_SNPP_SP.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'data-availability'
+			sensor_value = str( sensor ).strip( ).upper( )
+			
+			base = self._request_csv(
+				url=f'{self.base_url}/data_availability/csv/{self.map_key}/{sensor_value}',
+				time=int( time )
+			) or { }
+			
+			rows = self._csv_to_rows( str( base.get( 'raw', '' ) or '' ) )
+			
+			return {
+					'mode': self.mode,
+					'url': base.get( 'url', '' ),
+					'params': {
+							'sensor': sensor_value
+					},
+					'summary': self._summarize_rows( rows ),
+					'rows': rows,
+					'raw': base.get( 'raw', '' )
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = (
+					'fetch_data_availability( self, sensor: str=ALL, time: int=20 ) '
+					'-> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'area', source: str = '',
+			area_coordinates: str = 'world', day_range: int = 1, date: str = '',
+			sensor: str = 'ALL', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Unified dispatcher for FIRMS area and data-availability retrieval.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- area
+				- data-availability
+
+			source (str):
+				FIRMS source for area mode.
+
+			area_coordinates (str):
+				Bounding box string or world.
+
+			day_range (int):
+				Number of days from 1 to 5.
+
+			date (str):
+				Optional start date for area mode.
+
+			sensor (str):
+				Sensor family for data-availability mode.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			active_mode = str( mode or 'area' ).strip( ).lower( )
+			
+			if active_mode == 'area':
+				return self.fetch_area(
+					source=source,
+					area_coordinates=area_coordinates,
+					day_range=day_range,
+					date=date,
+					time=int( time )
+				)
+			
+			if active_mode == 'data-availability':
+				return self.fetch_data_availability(
+					sensor=sensor,
+					time=int( time )
+				)
+			
+			raise ValueError( "Unsupported mode. Use 'area' or 'data-availability'." )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = (
+					'fetch( self, mode: str=area, source: str=, '
+					'area_coordinates: str=world, day_range: int=1, date: str=, '
+					'sensor: str=ALL, time: int=20 ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a fully dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				A dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
