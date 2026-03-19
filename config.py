@@ -77,6 +77,8 @@ WEATHERAPI_API_KEY = os.getenv( 'WEATHERAPI_API_KEY' )
 XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
 O365_CLIENT_ID = os.getenv( 'O365_CLIENT_ID ' )
 O365_CLIENT_SECRET = os.getenv( 'O365_CLIENT_SECRET ' )
+OPENSKY_API_CLIENT_ID = os.getenv( 'OPENSKY_API_CLIENT_ID' )
+OPENSKY_API_CREDENTIALS = os.getenv( 'OPENSKY_API_CREDENTIALS' )
 
 # ---------------- CONSTANTS -----------------------
 APP_TITLE = 'Foo'
@@ -514,6 +516,9 @@ OPEN_SCIENCE = r'''NASA’s Open Science Data Repository (OSDR) enables the reus
 		outcomes for human space exploration.
 		
 		Documentation here (https://science.nasa.gov/biological-physical/data/osdr/)
+'''
+
+OPEN_SKI = r'''
 '''
 
 GROK = r'''
