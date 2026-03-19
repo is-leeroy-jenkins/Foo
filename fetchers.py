@@ -23096,8 +23096,7 @@ class Firms( Fetcher ):
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			return {
-					'name': function.strip( ),
+			return { 'name': function.strip( ),
 					'description': (
 							f"{description.strip( )} This function uses the "
 							f"{tool.strip( )} service."
