@@ -246,11 +246,23 @@ PUBMED = r'''The National Center for Biotechnology Information, National Library
 		life science journals, and online books. Citations may include links to full text content
 		from PubMed Central and publisher web sites.
 		
+		Key Features and Components:
+		MEDLINE: The largest component, containing curated journal citations indexed with
+		MeSH (Medical Subject Headings). PubMed Central (PMC): A  full-text archive of biomedical
+		and life sciences journal literature, including peer-reviewed articles and preprints.
+		Bookshelf: An archive of books, reports, and documents related to health and life sciences.
+		Accessibility: PubMed does not host full text directly for all items but provides
+		links to full-text articles through PMC or publisher websites
+		
 		https://docs.langchain.com/oss/python/integrations/retrievers/pubmed
 '''
 
-THENEWS = r'''An API to provide global news from thousands of sources with exceptional
-		response times adding over 1 million articles weekly.
+THENEWS = r'''News Aggregators: Creating "one-stop-shop" apps or websites that compile headlines
+		from multiple sources into a single feed. Market Intelligence: Tracking competitors,
+		industry trends, and "sales triggers" (like mergers or funding rounds) to inform business
+		decisions. Financial Analysis: Monitoring stock market news and economic shifts to assist
+		in trading and risk management. Media Monitoring: Tracking brand mentions and public
+		sentiment across the web to manage PR and customer feedback
 		
 		https://www.thenewsapi.com/documentation
 '''
@@ -466,13 +478,30 @@ NASA_EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EON
 				prepare for and manage events that affect communities in their paths.
 				Version 3 API for events, categories, sources, and layers.
 		
-				This class is aligned to the current documented EONET v3 API and supports:
+				The EONET v3 API and supports:
 				- events
 				- categories
 				- sources
 				- layers
 				
 				https://eonet.gsfc.nasa.gov/docs/v3
+'''
+
+UN_DATA = r'''The UNdata API provides programmatic access to the United Nations' global statistical
+		database, allowing developers and researchers to query and retrieve data directly for use
+		in applications, websites, or local processing.
+		
+		The core UNdata API provides access to the broader UNdata platform, which contains over 60
+		million data points from across the UN system.
+
+		Protocol: Uses both REST and SOAP web services.
+		Standards: Built on the SDMX (Statistical Data and Metadata eXchange) standard,
+		specifically powered by Eurostat's SDMX Reference Infrastructure.
+		
+		Usage: Requires an SDMX Query (an XML document) to define parameters, which can be created
+		using tools like the SDMX Browser.
+		
+		https://data.un.org/Host.aspx?Content=API
 '''
 
 NASA_EONET = r'''
