@@ -460,7 +460,7 @@ HISTORICAL_WEATHER = r'''Provides historical weather retrieval by location name 
 		https://open-meteo.com/en/docs
 '''
 
-EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EONET) allows users to access imagery,
+NASA_EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EONET) allows users to access imagery,
 				often in near real-time (NRT), of natural events such as dust storms, forest fires, and
 				tropical cyclones—empowering people all across the planet to locate, track, and potentially
 				prepare for and manage events that affect communities in their paths.
@@ -474,6 +474,14 @@ EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EONET) a
 				
 				https://eonet.gsfc.nasa.gov/docs/v3
 '''
+
+NASA_EONET = r'''
+'''
+
+NASA_FIRMS = r'''
+'''
+
+
 
 SPACE_WEATHER = r'''NASA DONKI (Space Weather Database Of Notifications, Knowledge, Information) is
 		is a comprehensive on-line tool for space weather forecasters, scientists, and the general
@@ -518,7 +526,7 @@ OPEN_SCIENCE = r'''NASA’s Open Science Data Repository (OSDR) enables the reus
 		Documentation here (https://science.nasa.gov/biological-physical/data/osdr/)
 '''
 
-OPEN_SKI = r'''The OpenSky Network consists of a multitude of sensors connected to the Internet by
+OPEN_SKY = r'''The OpenSky Network consists of a multitude of sensors connected to the Internet by
 		volunteers, industrial supporters, and academic/governmental organizations. All collected
 		raw data is archived in a large historical database. The database is primarily used by
 		researchers from different areas to analyze and improve air traffic control technologies
@@ -528,6 +536,24 @@ OPEN_SKI = r'''The OpenSky Network consists of a multitude of sensors connected 
 		
 		https://openskynetwork.github.io/opensky-api/python.html
 '''
+
+USGS_EARTHQUAKES = r'''
+'''
+
+USGS_WATER = r'''
+'''
+
+NOAA_TIDES_CURRENTS = r'''
+'''
+
+USGS_NATIONAL_MAP = r'''
+'''
+
+USGS_SCIENCE_BASE = r'''
+'''
+
+
+
 
 GROK = r'''
 '''
