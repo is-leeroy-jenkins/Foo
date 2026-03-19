@@ -481,7 +481,11 @@ NASA_EONET = r'''
 NASA_FIRMS = r'''
 '''
 
+EPA_ENVIROFACTS = r'''
+'''
 
+EPA_UV_INDEX = r'''
+'''
 
 SPACE_WEATHER = r'''NASA DONKI (Space Weather Database Of Notifications, Knowledge, Information) is
 		is a comprehensive on-line tool for space weather forecasters, scientists, and the general
@@ -518,7 +522,7 @@ SKY_MAP = r'''Provides static and link-based star chart generation using the SKY
 		https://docs.gammapy.org/2.0.1/api-reference/maps.html
 '''
 
-OPEN_SCIENCE = r'''NASA’s Open Science Data Repository (OSDR) enables the reuse of comprehensive,
+NASA_OPEN_SCIENCE_DATA = r'''NASA’s Open Science Data Repository (OSDR) enables the reuse of comprehensive,
 		multi-modal space life science data—including omics, physiological, phenotypic, behavioral,
 		and environmental telemetry—to advance basic and applied research as well as operational
 		outcomes for human space exploration.
@@ -545,6 +549,10 @@ USGS_WATER = r'''
 
 NOAA_TIDES_CURRENTS = r'''
 '''
+
+NOAA_CLIMATE_DATA = r'''
+'''
+
 
 USGS_NATIONAL_MAP = r'''
 '''

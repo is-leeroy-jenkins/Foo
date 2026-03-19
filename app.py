@@ -15878,8 +15878,8 @@ elif mode == 'Population':
 				
 				_render_fallback_raw( result )
 
-	# -------- PubMed Search Loader
-	with st.expander( label='Pub Med', icon='🧬', expanded=False ):
+	# -------  PubMed Loader
+	with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
 		query = st.text_input( 'PubMed Query', key='pubmed_query' )
 		max_docs = st.number_input(
 			'Max Documents',
@@ -15895,7 +15895,7 @@ elif mode == 'Population':
 		clear_pubmed = col_clear.button( 'Clear', key='pubmed_clear' )
 		
 		can_save = (
-				st.session_state.get( 'active_loader' ) == 'PubMedSearchLoader'
+				st.session_state.get( 'active_loader' ) == 'PubMedDocLoader'
 				and isinstance( st.session_state.get( 'raw_text' ), str )
 				and st.session_state.get( 'raw_text' ).strip( )
 		)
@@ -15912,34 +15912,40 @@ elif mode == 'Population':
 			col_save.button( 'Save', key='pubmed_save_disabled', disabled=True )
 		
 		if clear_pubmed:
-			remaining = _clear_loader_documents( 'PubMedSearchLoader' )
+			remaining = _clear_loader_documents( 'PubMedDocLoader' )
 			st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
 		
-		if load_pubmed and query.strip( ):
-			try:
-				loader = PubMedSearchLoader( query=query.strip( ), load_max_docs=int( max_docs ) )
-				documents = loader.load( ) or [ ]
-				count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
-				st.success( f'Loaded {count} PubMed document(s).' )
-			except Exception as e:
-				st.error( str( e ) )
-		
-		# ------- Open City Data Loader
-		with st.expander( label='Open City Data Loader', icon='🏙️', expanded=False ):
-			city_id = st.text_input( 'City ID', value='data.sfgov.org', key='open_city_id' )
-			dataset_id = st.text_input( 'Dataset ID', key='open_city_dataset_id' )
+		if load_pubmed:
+			if not query or not query.strip( ):
+				st.info( 'Enter a PubMed query.' )
+			else:
+				try:
+					loader = PubMedDocLoader(
+						query=query.strip( ),
+						load_max_docs=int( max_docs )
+					)
+					documents = loader.load( ) or [ ]
+					count = _promote_loader_documents( documents, 'PubMedDocLoader' )
+					st.success( f'Loaded {count} PubMed document(s).' )
+				except Exception as e:
+					st.error( str( e ) )
+					
+		# -------- Open City Loader
+		with st.expander( label='Open City', icon='🏙️', expanded=False ):
+			city_id = st.text_input( 'City ID', value='data.sfgov.org', key='opencity_id' )
+			dataset_id = st.text_input( 'Dataset ID', key='opencity_dataset_id' )
 			limit = st.number_input(
 				'Limit',
 				min_value=1,
 				max_value=5000,
 				value=100,
 				step=10,
-				key='open_city_limit'
+				key='opencity_limit'
 			)
 			
 			col_load, col_clear, col_save = st.columns( 3 )
-			load_open_city = col_load.button( 'Load', key='open_city_load' )
-			clear_open_city = col_clear.button( 'Clear', key='open_city_clear' )
+			load_open_city = col_load.button( 'Load', key='opencity_load' )
+			clear_open_city = col_clear.button( 'Clear', key='opencity_clear' )
 			
 			can_save = (
 					st.session_state.get( 'active_loader' ) == 'OpenCityLoader'
@@ -15953,60 +15959,54 @@ elif mode == 'Population':
 					data=st.session_state.get( 'raw_text' ),
 					file_name='open_city_loader_output.txt',
 					mime='text/plain',
-					key='open_city_save'
+					key='opencity_dl_btn'
 				)
 			else:
-				col_save.button( 'Save', key='open_city_save_disabled', disabled=True )
+				col_save.button( 'Save', key='opencity_save_btn', disabled=True )
 			
 			if clear_open_city:
-				clear_if_active( 'OpenCityLoader' )
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ '_loader_status' ] = 'Open City Data Loader state cleared.'
-				st.rerun( )
+				remaining = _clear_loader_documents( 'OpenCityLoader' )
+				st.info( f'Open City Data Loader state cleared. Remaining documents: {remaining}.' )
 			
-			if load_open_city and city_id and dataset_id:
-				loader = OpenCityLoader( )
-				documents = loader.load(
-					city_id=city_id,
-					dataset_id=dataset_id,
-					limit=int( limit )
-				) or [ ]
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = '\n\n'.join(
-					d.page_content for d in documents
-					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-					and d.page_content.strip( )
-				)
-				st.session_state.processed_text = None
-				st.session_state.tokens = None
-				st.session_state.vocabulary = None
-				st.session_state.token_counts = None
-				st.session_state.active_loader = 'OpenCityLoader'
-				st.session_state[ '_loader_status' ] = (
-						f'Loaded {len( documents )} Open City document(s).'
-				)
-				st.rerun( )
-	
-	# -------- Open City Loader
-	with st.expander( label='Open City', icon='🏙️', expanded=False ):
-		city_id = st.text_input( 'City ID', value='data.sfgov.org', key='opencity_id' )
-		dataset_id = st.text_input( 'Dataset ID', key='opencity_dataset_id' )
+			if load_open_city and city_id.strip( ) and dataset_id.strip( ):
+				try:
+					loader = OpenCityLoader(
+						city_id=city_id.strip( ),
+						dataset_id=dataset_id.strip( ),
+						limit=int( limit )
+					)
+					
+					documents = loader.load( ) or [ ]
+					count = _promote_loader_documents( documents, 'OpenCityLoader' )
+					st.success( f'Loaded {count} Open City document(s).' )
+				except Exception as e:
+					st.error( str( e ) )
+
+	# -------------------------- Open City Data Loader
+	with st.expander( label='Open City Search', icon='🏙️', expanded=False ):
+		city_id = st.text_input(
+			'City ID',
+			value='data.sfgov.org',
+			key='opencity_id' )
+		
+		dataset_id = st.text_input(
+			'Dataset ID',
+			key='opencity_dataset_id')
+		
 		limit = st.number_input(
 			'Limit',
 			min_value=1,
 			max_value=5000,
 			value=100,
 			step=10,
-			key='opencity_limit'
-		)
+			key='opencity_limit' )
 		
 		col_load, col_clear, col_save = st.columns( 3 )
-		load_open_city = col_load.button( 'Load', key='opencity_load' )
-		clear_open_city = col_clear.button( 'Clear', key='opencity_clear' )
+		load_open_city = col_load.button( 'Load', key='open_city_load' )
+		clear_open_city = col_clear.button( 'Clear', key='opencity_clear_btn' )
 		
 		can_save = (
-				st.session_state.get( 'active_loader' ) == 'OpenCityLoader'
+				st.session_state.get( 'active_loader' ) == 'OpenCityDocLoader'
 				and isinstance( st.session_state.get( 'raw_text' ), str )
 				and st.session_state.get( 'raw_text' ).strip( )
 		)
@@ -16023,23 +16023,27 @@ elif mode == 'Population':
 			col_save.button( 'Save', key='opencity_save_btn', disabled=True )
 		
 		if clear_open_city:
-			remaining = _clear_loader_documents( 'OpenCityLoader' )
+			remaining = _clear_loader_documents( 'OpenCityDocLoader' )
 			st.info( f'Open City Data Loader state cleared. Remaining documents: {remaining}.' )
 		
-		if load_open_city and city_id.strip( ) and dataset_id.strip( ):
-			try:
-				loader = OpenCityLoader(
-					city_id=city_id.strip( ),
-					dataset_id=dataset_id.strip( ),
-					limit=int( limit )
-				)
+		if load_open_city:
+			if not city_id or not city_id.strip( ):
+				st.info( 'Enter a City ID.' )
+			elif not dataset_id or not dataset_id.strip( ):
+				st.info( 'Enter a Dataset ID.' )
+			else:
+				try:
+					loader = OpenCityDocLoader(
+						city_id=city_id.strip( ),
+						dataset_id=dataset_id.strip( ),
+						limit=int( limit )
+					)
+					documents = loader.load( ) or [ ]
+					count = _promote_loader_documents( documents, 'OpenCityDocLoader' )
+					st.success( f'Loaded {count} Open City document(s).' )
+				except Exception as e:
+					st.error( str( e ) )
 				
-				documents = loader.load( ) or [ ]
-				count = _promote_loader_documents( documents, 'OpenCityLoader' )
-				st.success( f'Loaded {count} Open City document(s).' )
-			except Exception as e:
-				st.error( str( e ) )
-			
 # ==============================================================================
 # TEXT GENERATION MODE
 # ==============================================================================
