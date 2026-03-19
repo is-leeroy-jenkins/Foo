@@ -9635,7 +9635,7 @@ elif mode == 'Geospatial':
 					st.json( result )
 	
 	# -------- Open Sky
-	with st.expander( label='OpenSky', icon='✈️', expanded=False ):
+	with st.expander( label='Open Sky', icon='✈️', expanded=False ):
 		mode = st.selectbox( 'Mode',
 			options=[
 					'states_bbox',
