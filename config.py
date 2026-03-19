@@ -518,7 +518,15 @@ OPEN_SCIENCE = r'''NASA’s Open Science Data Repository (OSDR) enables the reus
 		Documentation here (https://science.nasa.gov/biological-physical/data/osdr/)
 '''
 
-OPEN_SKI = r'''
+OPEN_SKI = r'''The OpenSky Network consists of a multitude of sensors connected to the Internet by
+		volunteers, industrial supporters, and academic/governmental organizations. All collected
+		raw data is archived in a large historical database. The database is primarily used by
+		researchers from different areas to analyze and improve air traffic control technologies
+		and processes. The main technologies behind the OpenSky Network are the Automatic Dependent
+		Surveillance-Broadcast (ADS-B) and Mode S. These technologies provide detailed (live) aircraft
+		information over the publicly accessible 1090 MHz radio frequency channel.
+		
+		https://openskynetwork.github.io/opensky-api/python.html
 '''
 
 GROK = r'''

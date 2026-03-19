@@ -50,6 +50,7 @@ import re
 import os
 import urllib.parse
 from pathlib import Path
+import pandas as pd
 from typing import Any, Dict, Optional, Pattern, List, Tuple
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
@@ -23115,5 +23116,571 @@ class Firms( Fetcher ):
 			exception.method = (
 					'create_schema( self, function: str, tool: str, description: str, '
 					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
+			raise exception
+
+class OpenSky( Fetcher ):
+	'''
+
+		Purpose:
+		--------
+		Provides access to the OpenSky Network REST API for geospatial aircraft
+		state vectors, airport arrivals/departures, flights by aircraft, and
+		aircraft tracks.
+
+		Supported modes:
+		----------------
+		- states_bbox
+		- flights_aircraft
+		- arrivals_airport
+		- departures_airport
+		- track_aircraft
+
+	'''
+	token_url: Optional[ str ]
+	base_url: Optional[ str ]
+	client_id: Optional[ str ]
+	client_secret: Optional[ str ]
+	access_token: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.timeout = 20
+		self.base_url = 'https://opensky-network.org/api'
+		self.token_url = (
+				'https://auth.opensky-network.org/auth/realms/opensky-network/'
+				'protocol/openid-connect/token'
+		)
+		self.client_id = None
+		self.client_secret = None
+		self.access_token = None
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': cfg.AGENTS,
+		}
+	
+	def __dir__( self ) -> List[ str ]:
+		return [
+				'timeout',
+				'headers',
+				'response',
+				'url',
+				'result',
+				'query',
+				'token_url',
+				'base_url',
+				'client_id',
+				'client_secret',
+				'access_token',
+				'fetch',
+				'get_token',
+				'request',
+				'normalize_states',
+				'normalize_flights',
+				'normalize_track',
+		]
+	
+	@property
+	def mode_options( self ) -> List[ str ]:
+		return [
+				'states_bbox',
+				'flights_aircraft',
+				'arrivals_airport',
+				'departures_airport',
+				'track_aircraft',
+		]
+	
+	def get_token( self, client_id: str, client_secret: str ) -> str:
+		'''
+
+			Purpose:
+			--------
+			Request a bearer token from the OpenSky authentication server.
+
+			Parameters:
+			-----------
+			client_id (str):
+				OpenSky OAuth client id.
+
+			client_secret (str):
+				OpenSky OAuth client secret.
+
+			Returns:
+			--------
+			str:
+				Access token.
+
+		'''
+		try:
+			throw_if( 'client_id', client_id )
+			throw_if( 'client_secret', client_secret )
+			
+			self.client_id = client_id.strip( )
+			self.client_secret = client_secret.strip( )
+			
+			response = requests.post(
+				self.token_url,
+				headers={ 'Content-Type': 'application/x-www-form-urlencoded' },
+				data={
+						'grant_type': 'client_credentials',
+						'client_id': self.client_id,
+						'client_secret': self.client_secret,
+				},
+				timeout=self.timeout,
+			)
+			response.raise_for_status( )
+			
+			payload = response.json( )
+			token = payload.get( 'access_token' )
+			if not token:
+				raise ValueError( 'OpenSky token response did not include access_token.' )
+			
+			self.access_token = token
+			return token
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'get_token( self, client_id: str, client_secret: str ) -> str'
+			raise exception
+	
+	def request( self, endpoint: str, params: Dict[ str, Any ],
+			client_id: str | None = None,
+			client_secret: str | None = None ) -> Any:
+		'''
+
+			Purpose:
+			--------
+			Send a GET request to an OpenSky API endpoint.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path beginning with '/'.
+
+			params (Dict[str, Any]):
+				Query-string parameters.
+
+			client_id (str | None):
+				Optional OAuth client id.
+
+			client_secret (str | None):
+				Optional OAuth client secret.
+
+			Returns:
+			--------
+			Any:
+				Parsed JSON payload.
+
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			self.url = f'{self.base_url}{endpoint}'
+			
+			request_headers = dict( self.headers or { } )
+			if client_id and client_secret:
+				token = self.get_token( client_id, client_secret )
+				request_headers[ 'Authorization' ] = f'Bearer {token}'
+			
+			clean_params = {
+					k: v for k, v in (params or { }).items( )
+					if v is not None and v != ''
+			}
+			
+			self.response = requests.get(
+				self.url,
+				params=clean_params,
+				headers=request_headers,
+				timeout=self.timeout,
+			)
+			
+			if self.response.status_code == 404:
+				return [ ] if '/flights/' in endpoint else { }
+			
+			self.response.raise_for_status( )
+			return self.response.json( )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'request( self, endpoint: str, params: Dict[ str, Any ], '
+					'client_id: str | None=None, client_secret: str | None=None ) -> Any'
+			)
+			raise exception
+	
+	def normalize_states( self, payload: Dict[ str, Any ] | None ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Normalize OpenSky state-vector payload into a human-readable structure.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any] | None):
+				Raw OpenSky states payload.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			if not payload:
+				return {
+						'mode': 'states_bbox',
+						'count': 0,
+						'time': None,
+						'items': [ ],
+				}
+			
+			rows = payload.get( 'states' ) or [ ]
+			items: List[ Dict[ str, Any ] ] = [ ]
+			
+			for row in rows:
+				item = {
+						'icao24': row[ 0 ],
+						'callsign': (row[ 1 ] or '').strip( ) if len( row ) > 1 else '',
+						'origin_country': row[ 2 ] if len( row ) > 2 else None,
+						'time_position': row[ 3 ] if len( row ) > 3 else None,
+						'last_contact': row[ 4 ] if len( row ) > 4 else None,
+						'longitude': row[ 5 ] if len( row ) > 5 else None,
+						'latitude': row[ 6 ] if len( row ) > 6 else None,
+						'baro_altitude_m': row[ 7 ] if len( row ) > 7 else None,
+						'on_ground': row[ 8 ] if len( row ) > 8 else None,
+						'velocity_mps': row[ 9 ] if len( row ) > 9 else None,
+						'true_track_deg': row[ 10 ] if len( row ) > 10 else None,
+						'vertical_rate_mps': row[ 11 ] if len( row ) > 11 else None,
+						'geo_altitude_m': row[ 13 ] if len( row ) > 13 else None,
+						'squawk': row[ 14 ] if len( row ) > 14 else None,
+						'position_source': row[ 16 ] if len( row ) > 16 else None,
+						'category': row[ 17 ] if len( row ) > 17 else None,
+				}
+				items.append( item )
+			
+			return {
+					'mode': 'states_bbox',
+					'time': payload.get( 'time' ),
+					'count': len( items ),
+					'items': items,
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'normalize_states( self, payload: Dict[ str, Any ] | None )'
+			raise exception
+	
+	def normalize_flights( self, payload: List[ Dict[ str, Any ] ] | None,
+			mode: str ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Normalize OpenSky flight-list payload into a human-readable structure.
+
+			Parameters:
+			-----------
+			payload (List[Dict[str, Any]] | None):
+				Raw flight rows.
+
+			mode (str):
+				Current fetch mode.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			rows = payload or [ ]
+			items: List[ Dict[ str, Any ] ] = [ ]
+			
+			for row in rows:
+				items.append(
+					{
+							'icao24': row.get( 'icao24' ),
+							'callsign': (row.get( 'callsign' ) or '').strip( ),
+							'first_seen': row.get( 'firstSeen' ),
+							'last_seen': row.get( 'lastSeen' ),
+							'est_departure_airport': row.get( 'estDepartureAirport' ),
+							'est_arrival_airport': row.get( 'estArrivalAirport' ),
+							'est_departure_airport_horiz_distance_m':
+								row.get( 'estDepartureAirportHorizDistance' ),
+							'est_departure_airport_vert_distance_m':
+								row.get( 'estDepartureAirportVertDistance' ),
+							'est_arrival_airport_horiz_distance_m':
+								row.get( 'estArrivalAirportHorizDistance' ),
+							'est_arrival_airport_vert_distance_m':
+								row.get( 'estArrivalAirportVertDistance' ),
+							'departure_airport_candidates_count':
+								row.get( 'departureAirportCandidatesCount' ),
+							'arrival_airport_candidates_count':
+								row.get( 'arrivalAirportCandidatesCount' ),
+					}
+				)
+			
+			return {
+					'mode': mode,
+					'count': len( items ),
+					'items': items,
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'normalize_flights( self, payload: List[ Dict[ str, Any ] ] | None, '
+					'mode: str )'
+			)
+			raise exception
+	
+	def normalize_track( self, payload: Dict[ str, Any ] | None ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Normalize OpenSky track payload into a human-readable structure.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any] | None):
+				Raw track payload.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			if not payload:
+				return {
+						'mode': 'track_aircraft',
+						'icao24': None,
+						'callsign': None,
+						'start_time': None,
+						'end_time': None,
+						'count': 0,
+						'items': [ ],
+				}
+			
+			path = payload.get( 'path' ) or [ ]
+			items: List[ Dict[ str, Any ] ] = [ ]
+			for row in path:
+				items.append(
+					{
+							'time': row[ 0 ] if len( row ) > 0 else None,
+							'latitude': row[ 1 ] if len( row ) > 1 else None,
+							'longitude': row[ 2 ] if len( row ) > 2 else None,
+							'baro_altitude_m': row[ 3 ] if len( row ) > 3 else None,
+							'true_track_deg': row[ 4 ] if len( row ) > 4 else None,
+							'on_ground': row[ 5 ] if len( row ) > 5 else None,
+					}
+				)
+			
+			return {
+					'mode': 'track_aircraft',
+					'icao24': payload.get( 'icao24' ),
+					'callsign': payload.get( 'callsign' ) or payload.get( 'calllsign' ),
+					'start_time': payload.get( 'startTime' ),
+					'end_time': payload.get( 'endTime' ),
+					'count': len( items ),
+					'items': items,
+			}
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'normalize_track( self, payload: Dict[ str, Any ] | None )'
+			raise exception
+	
+	def fetch( self,
+			mode: str = 'states_bbox',
+			icao24: str = '',
+			airport: str = '',
+			begin: int | None = None,
+			end: int | None = None,
+			time_value: int | None = None,
+			lamin: float | None = None,
+			lomin: float | None = None,
+			lamax: float | None = None,
+			lomax: float | None = None,
+			extended: bool = False,
+			client_id: str | None = None,
+			client_secret: str | None = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+
+			Purpose:
+			--------
+			Query OpenSky for state vectors, flights, airport arrivals/departures,
+			or aircraft tracks.
+
+			Parameters:
+			-----------
+			mode (str):
+				One of:
+				- states_bbox
+				- flights_aircraft
+				- arrivals_airport
+				- departures_airport
+				- track_aircraft
+
+			icao24 (str):
+				Aircraft ICAO24 hex id for aircraft/track modes.
+
+			airport (str):
+				Airport ICAO code for arrivals/departures modes.
+
+			begin (int | None):
+				Unix start time for flight/airport modes.
+
+			end (int | None):
+				Unix end time for flight/airport modes.
+
+			time_value (int | None):
+				Optional Unix timestamp for states or track mode. Use 0 for live track.
+
+			lamin (float | None):
+				Lower latitude bound.
+
+			lomin (float | None):
+				Lower longitude bound.
+
+			lamax (float | None):
+				Upper latitude bound.
+
+			lomax (float | None):
+				Upper longitude bound.
+
+			extended (bool):
+				If True, request category information for states mode.
+
+			client_id (str | None):
+				Optional OAuth client id.
+
+			client_secret (str | None):
+				Optional OAuth client secret.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+
+		'''
+		try:
+			self.timeout = int( time )
+			active_mode = (mode or 'states_bbox').strip( ).lower( )
+			
+			if active_mode == 'states_bbox':
+				params: Dict[ str, Any ] = { }
+				if time_value is not None:
+					params[ 'time' ] = int( time_value )
+				if icao24 and icao24.strip( ):
+					params[ 'icao24' ] = icao24.strip( ).lower( )
+				if lamin is not None and lomin is not None and lamax is not None and lomax is not None:
+					params[ 'lamin' ] = float( lamin )
+					params[ 'lomin' ] = float( lomin )
+					params[ 'lamax' ] = float( lamax )
+					params[ 'lomax' ] = float( lomax )
+				if extended:
+					params[ 'extended' ] = 1
+				
+				payload = self.request(
+					'/states/all',
+					params=params,
+					client_id=client_id,
+					client_secret=client_secret,
+				)
+				return self.normalize_states( payload )
+			
+			if active_mode == 'flights_aircraft':
+				throw_if( 'icao24', icao24 )
+				throw_if( 'begin', begin )
+				throw_if( 'end', end )
+				
+				payload = self.request(
+					'/flights/aircraft',
+					params={
+							'icao24': icao24.strip( ).lower( ),
+							'begin': int( begin ),
+							'end': int( end ),
+					},
+					client_id=client_id,
+					client_secret=client_secret,
+				)
+				return self.normalize_flights( payload, active_mode )
+			
+			if active_mode == 'arrivals_airport':
+				throw_if( 'airport', airport )
+				throw_if( 'begin', begin )
+				throw_if( 'end', end )
+				
+				payload = self.request(
+					'/flights/arrival',
+					params={
+							'airport': airport.strip( ).upper( ),
+							'begin': int( begin ),
+							'end': int( end ),
+					},
+					client_id=client_id,
+					client_secret=client_secret,
+				)
+				return self.normalize_flights( payload, active_mode )
+			
+			if active_mode == 'departures_airport':
+				throw_if( 'airport', airport )
+				throw_if( 'begin', begin )
+				throw_if( 'end', end )
+				
+				payload = self.request(
+					'/flights/departure',
+					params={
+							'airport': airport.strip( ).upper( ),
+							'begin': int( begin ),
+							'end': int( end ),
+					},
+					client_id=client_id,
+					client_secret=client_secret,
+				)
+				return self.normalize_flights( payload, active_mode )
+			
+			if active_mode == 'track_aircraft':
+				throw_if( 'icao24', icao24 )
+				payload = self.request(
+					'/tracks/all',
+					params={
+							'icao24': icao24.strip( ).lower( ),
+							'time': int( time_value or 0 ),
+					},
+					client_id=client_id,
+					client_secret=client_secret,
+				)
+				return self.normalize_track( payload )
+			
+			raise ValueError(
+				"Unsupported mode. Use 'states_bbox', 'flights_aircraft', "
+				"'arrivals_airport', 'departures_airport', or 'track_aircraft'."
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'fetch( self, mode: str=states_bbox, icao24: str=, airport: str=, '
+					'begin: int | None=None, end: int | None=None, time_value: int | None=None, '
+					'lamin: float | None=None, lomin: float | None=None, '
+					'lamax: float | None=None, lomax: float | None=None, '
+					'extended: bool=False, client_id: str | None=None, '
+					'client_secret: str | None=None, time: int=20 ) -> Dict[ str, Any ]'
 			)
 			raise exception
