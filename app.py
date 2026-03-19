@@ -7905,7 +7905,7 @@ elif mode == 'Geospatial':
 				st.json( result )
 	
 	# -------- Open Weather
-	with st.expander( abel='Open Weather', icon='🌦️', expanded=False ):
+	with st.expander( label='Open Weather', icon='🌦️', expanded=False ):
 		if 'openweather_results' not in st.session_state:
 			st.session_state[ 'openweather_results' ] = { }
 		
