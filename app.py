@@ -84,7 +84,7 @@ from loaders import (
 	AwsFileLoader,
 	OneDriveDocLoader,
 	GoogleCloudFileLoader,
-	GoogleSpeechToTextAudioLoader,
+	GoogleSpeechToTextLoader,
 	GoogleBucketLoader,
 	AwsBucketLoader
 )
@@ -4808,276 +4808,6 @@ elif mode == 'Retrieval':
 							with st.expander( 'Raw Item', expanded=False ):
 								st.json( item )
 	
-	# -------- Google Geocoding
-	with st.expander( label='Geocoding', icon='📍',expanded=False ):
-		if 'googlegeocoding_results' not in st.session_state:
-			st.session_state[ 'googlegeocoding_results' ] = { }
-		
-		if 'googlegeocoding_clear_request' not in st.session_state:
-			st.session_state[ 'googlegeocoding_clear_request' ] = False
-		
-		if st.session_state.get( 'googlegeocoding_clear_request', False ):
-			st.session_state[ 'googlegeocoding_mode' ] = 'forward'
-			st.session_state[ 'googlegeocoding_query' ] = ''
-			st.session_state[ 'googlegeocoding_latitude' ] = 38.8895
-			st.session_state[ 'googlegeocoding_longitude' ] = -77.0353
-			st.session_state[ 'googlegeocoding_place_id' ] = ''
-			st.session_state[ 'googlegeocoding_language' ] = 'en'
-			st.session_state[ 'googlegeocoding_region' ] = ''
-			st.session_state[ 'googlegeocoding_result_type' ] = ''
-			st.session_state[ 'googlegeocoding_location_type' ] = ''
-			st.session_state[ 'googlegeocoding_api_key' ] = ''
-			st.session_state[ 'googlegeocoding_timeout' ] = 10
-			st.session_state[ 'googlegeocoding_results' ] = { }
-			st.session_state[ 'googlegeocoding_clear_request' ] = False
-		
-		def _clear_googlegeocoding_state( ) -> None:
-			st.session_state[ 'googlegeocoding_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			googlegeocoding_mode = st.selectbox(
-				'Mode',
-				options=[ 'forward', 'reverse', 'place' ],
-				index=[ 'forward', 'reverse', 'place' ].index(
-					st.session_state.get( 'googlegeocoding_mode', 'forward' )
-				),
-				key='googlegeocoding_mode',
-				help='forward = address search; reverse = lat/lng to address; place = place_id lookup.'
-			)
-			
-			googlegeocoding_query = st.text_area(
-				'Address Query',
-				height=80,
-				key='googlegeocoding_query',
-				placeholder=(
-						'Examples:\n'
-						'1600 Amphitheatre Parkway, Mountain View, CA\n'
-						'Arlington, VA\n'
-						'10 Downing Street, London'
-				),
-				disabled=(googlegeocoding_mode != 'forward')
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				googlegeocoding_latitude = st.number_input(
-					'Latitude',
-					min_value=-90.0,
-					max_value=90.0,
-					value=float( st.session_state.get( 'googlegeocoding_latitude', 38.8895 ) ),
-					step=0.0001,
-					format='%.6f',
-					key='googlegeocoding_latitude',
-					disabled=(googlegeocoding_mode != 'reverse')
-				)
-			
-			with c2:
-				googlegeocoding_longitude = st.number_input(
-					'Longitude',
-					min_value=-180.0,
-					max_value=180.0,
-					value=float( st.session_state.get( 'googlegeocoding_longitude', -77.0353 ) ),
-					step=0.0001,
-					format='%.6f',
-					key='googlegeocoding_longitude',
-					disabled=(googlegeocoding_mode != 'reverse')
-				)
-			
-			googlegeocoding_place_id = st.text_input(
-				'Place ID',
-				value=st.session_state.get( 'googlegeocoding_place_id', '' ),
-				key='googlegeocoding_place_id',
-				placeholder='ChIJ2eUgeAK6j4ARbn5u_wAGqWA',
-				disabled=(googlegeocoding_mode != 'place')
-			)
-			
-			c3, c4 = st.columns( 2 )
-			
-			with c3:
-				googlegeocoding_language = st.text_input(
-					'Language',
-					value=st.session_state.get( 'googlegeocoding_language', 'en' ),
-					key='googlegeocoding_language',
-					placeholder='en'
-				)
-			
-			with c4:
-				googlegeocoding_region = st.text_input(
-					'Region Bias',
-					value=st.session_state.get( 'googlegeocoding_region', '' ),
-					key='googlegeocoding_region',
-					placeholder='us',
-					disabled=(googlegeocoding_mode == 'reverse')
-				)
-			
-			c5, c6 = st.columns( 2 )
-			
-			with c5:
-				googlegeocoding_result_type = st.text_input(
-					'Result Type',
-					value=st.session_state.get( 'googlegeocoding_result_type', '' ),
-					key='googlegeocoding_result_type',
-					placeholder='street_address|premise',
-					disabled=(googlegeocoding_mode != 'reverse')
-				)
-			
-			with c6:
-				googlegeocoding_location_type = st.text_input(
-					'Location Type',
-					value=st.session_state.get( 'googlegeocoding_location_type', '' ),
-					key='googlegeocoding_location_type',
-					placeholder='ROOFTOP|GEOMETRIC_CENTER',
-					disabled=(googlegeocoding_mode != 'reverse')
-				)
-			
-			c7, c8 = st.columns( 2 )
-			
-			with c7:
-				googlegeocoding_api_key = st.text_input(
-					'API Key',
-					value='',
-					type='password',
-					key='googlegeocoding_api_key',
-					placeholder='Uses GOOGLE_API_KEY when left blank.'
-				)
-			
-			with c8:
-				googlegeocoding_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=60,
-					value=int( st.session_state.get( 'googlegeocoding_timeout', 10 ) ),
-					step=1,
-					key='googlegeocoding_timeout'
-				)
-			
-			st.caption(
-				'Google Geocoding requires billing plus a Google API key. '
-				'Result filters apply to reverse geocoding only.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				googlegeocoding_submit = st.button(
-					'Submit',
-					key='googlegeocoding_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='googlegeocoding_clear',
-					on_click=_clear_googlegeocoding_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if googlegeocoding_submit:
-				try:
-					f = GoogleGeocoding( )
-					result = f.fetch(
-						mode=str( googlegeocoding_mode ),
-						query=str( googlegeocoding_query ),
-						latitude=float( googlegeocoding_latitude ),
-						longitude=float( googlegeocoding_longitude ),
-						place_id=str( googlegeocoding_place_id ),
-						language=str( googlegeocoding_language or 'en' ).strip( ),
-						region=str( googlegeocoding_region or '' ).strip( ),
-						result_type=str( googlegeocoding_result_type or '' ).strip( ),
-						location_type=str( googlegeocoding_location_type or '' ).strip( ),
-						time=int( googlegeocoding_timeout ),
-						api_key=(googlegeocoding_api_key or None)
-					)
-					
-					st.session_state[ 'googlegeocoding_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Google Geocoding request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'googlegeocoding_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': result.get( 'mode', '' ),
-							'url': result.get( 'url', '' ),
-							'params': result.get( 'params', { } ),
-							'status': result.get( 'status', '' ),
-					}
-				)
-				
-				results_list = result.get( 'results', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if not results_list:
-					st.info( 'No geocoding results returned.' )
-				else:
-					for idx, item in enumerate( results_list, start=1 ):
-						formatted_address = item.get( 'formatted_address', f'Result {idx}' )
-						place_id_value = item.get( 'place_id', '' )
-						types_value = item.get( 'types', [ ] )
-						
-						geometry = item.get( 'geometry', { } ) if isinstance( item, dict ) else { }
-						location = geometry.get( 'location', { } ) if isinstance( geometry, dict ) else { }
-						
-						with st.container( border=True ):
-							st.markdown( f'**{idx}. {formatted_address}**' )
-							
-							meta_parts: List[ str ] = [ ]
-							
-							if place_id_value:
-								meta_parts.append( f'Place ID: `{place_id_value}`' )
-							
-							if isinstance( types_value, list ) and types_value:
-								meta_parts.append( f"Types: `{', '.join( types_value[ :4 ] )}`" )
-							
-							if meta_parts:
-								st.caption( ' | '.join( meta_parts ) )
-							
-							if isinstance( location, dict ):
-								lat_value = location.get( 'lat', '' )
-								lng_value = location.get( 'lng', '' )
-								if str( lat_value ).strip( ) or str( lng_value ).strip( ):
-									st.write( f'Coordinates: {lat_value}, {lng_value}' )
-							
-							address_components = item.get( 'address_components', [ ] )
-							if isinstance( address_components, list ) and address_components:
-								component_rows: List[ Dict[ str, Any ] ] = [ ]
-								for component in address_components:
-									if isinstance( component, dict ):
-										component_rows.append(
-											{
-													'long_name': component.get( 'long_name', '' ),
-													'short_name': component.get( 'short_name', '' ),
-													'types': ', '.join( component.get( 'types', [ ] ) )
-											}
-										)
-								
-								if component_rows:
-									with st.expander( 'Address Components', expanded=False ):
-										st.dataframe(
-											pd.DataFrame( component_rows ),
-											use_container_width=True,
-											hide_index=True
-										)
-							
-							with st.expander( 'Raw Item', expanded=False ):
-								st.json( item )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
 	# -------- Open Science
 	with st.expander( label='Open Science', icon='🧪', expanded=False ):
 		if 'openscience_results' not in st.session_state:
@@ -6656,666 +6386,1117 @@ elif mode == 'Retrieval':
 					else:
 						st.info( 'No results returned.' )
 	
-	# ------- Jupyter Notebook Loader
+	# -------- Jupyter Notebook
 	with st.expander( label='Jupyter Notebook', icon='🪐', expanded=False ):
-		notebook_file = st.file_uploader(
-			'Upload Notebook',
-			type=[ 'ipynb' ],
-			key='notebook_upload'
-		)
-		include_outputs = st.checkbox( 'Include Outputs', value=True, key='notebook_outputs' )
-		max_output_length = st.number_input(
-			'Max Output Length',
-			min_value=1,
-			max_value=20000,
-			value=100,
-			step=10,
-			key='notebook_max_output_length'
-		)
-		remove_newline = st.checkbox(
-			'Remove Newlines',
-			value=False,
-			key='notebook_remove_newline'
-		)
-		include_traceback = st.checkbox(
-			'Include Traceback',
-			value=False,
-			key='notebook_traceback'
-		)
+		if 'jupyter_notebook_results' not in st.session_state:
+			st.session_state[ 'jupyter_notebook_results' ] = { }
 		
-		col_load, col_clear, col_save = st.columns( 3 )
-		load_notebook = col_load.button( 'Load', key='notebook_load' )
-		clear_notebook = col_clear.button( 'Clear', key='notebook_clear' )
+		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
 		
-		can_save = (
-				st.session_state.get( 'active_loader' ) == 'JupyterNotebookLoader'
-				and isinstance( st.session_state.get( 'raw_text' ), str )
-				and st.session_state.get( 'raw_text' ).strip( )
-		)
-		
-		if can_save:
-			col_save.download_button(
-				'Save',
-				data=st.session_state.get( 'raw_text' ),
-				file_name='notebook_loader_output.txt',
-				mime='text/plain',
-				key='notebook_save'
+		with col_left:
+			notebook_file = st.file_uploader(
+				'Upload Notebook',
+				type=[ 'ipynb' ],
+				key='jupyter_notebook_upload'
 			)
-		else:
-			col_save.button( 'Save', key='notebook_save_disabled', disabled=True )
-		
-		if clear_notebook:
-			remaining = _clear_loader_documents( 'JupyterNotebookLoader' )
-			st.info( f'Jupyter Notebook Loader state cleared. Remaining documents: {remaining}.' )
-		
-		if load_notebook and notebook_file:
-			try:
-				with tempfile.TemporaryDirectory( ) as tmp:
-					path = os.path.join( tmp, notebook_file.name )
-					with open( path, 'wb' ) as f:
-						f.write( notebook_file.read( ) )
-					
-					loader = JupyterNotebookLoader(
-						path,
-						include_outputs=include_outputs,
-						max_output_length=int( max_output_length ),
-						remove_newline=remove_newline,
-						traceback=include_traceback
-					)
-					documents = loader.load( ) or [ ]
+			
+			include_outputs = st.checkbox(
+				'Include Outputs',
+				value=True,
+				key='jupyter_notebook_include_outputs'
+			)
+			
+			max_output_length = st.number_input(
+				'Max Output Length',
+				min_value=1,
+				max_value=20000,
+				value=100,
+				step=10,
+				key='jupyter_notebook_max_output_length'
+			)
+			
+			remove_newline = st.checkbox(
+				'Remove Newline',
+				value=False,
+				key='jupyter_notebook_remove_newline'
+			)
+			
+			include_traceback = st.checkbox(
+				'Traceback',
+				value=False,
+				key='jupyter_notebook_traceback'
+			)
+			
+			b1, b2, b3 = st.columns( 3 )
+			
+			with b1:
+				jupyter_submit = st.button(
+					'Submit',
+					key='jupyter_notebook_submit',
+					use_container_width=True
+				)
+			
+			with b2:
+				jupyter_clear = st.button(
+					'Clear',
+					key='jupyter_notebook_clear',
+					use_container_width=True
+				)
+			
+			with b3:
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'JupyterNotebookLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
 				
-				count = _promote_loader_documents( documents, 'JupyterNotebookLoader' )
-				st.success( f'Loaded {count} notebook document(s).' )
-			except Exception as e:
-				st.error( str( e ) )
+				if can_save:
+					st.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='jupyter_notebook_loader_output.txt',
+						mime='text/plain',
+						key='jupyter_notebook_save',
+						use_container_width=True
+					)
+				else:
+					st.button(
+						'Save',
+						key='jupyter_notebook_save_disabled',
+						disabled=True,
+						use_container_width=True
+					)
 		
-		# --------  Google Cloud Storage File Loader
-		with st.expander( label='Google Cloud File Loader', icon='☁️', expanded=False ):
-			project_name = st.text_input( 'Project Name', key='gcs_project_name' )
-			bucket = st.text_input( 'Bucket', key='gcs_bucket' )
-			blob = st.text_input( 'Blob', key='gcs_blob' )
+		with col_right:
+			if jupyter_clear:
+				st.session_state[ 'jupyter_notebook_results' ] = { }
+				remaining = _clear_loader_documents( 'JupyterNotebookLoader' )
+				st.info(
+					f'Jupyter Notebook Loader state cleared. Remaining documents: {remaining}.'
+				)
 			
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_gcs = col_load.button( 'Load', key='gcs_load' )
-			clear_gcs = col_clear.button( 'Clear', key='gcs_clear' )
+			if jupyter_submit:
+				if not notebook_file:
+					st.info( 'Upload a notebook file.' )
+				else:
+					try:
+						with tempfile.TemporaryDirectory( ) as tmp:
+							path = os.path.join( tmp, notebook_file.name )
+							with open( path, 'wb' ) as f:
+								f.write( notebook_file.read( ) )
+							
+							loader = JupyterNotebookLoader( )
+							documents = loader.load(
+								path=path,
+								include_outputs=include_outputs,
+								max_output_length=int( max_output_length ),
+								remove_newline=remove_newline,
+								traceback=include_traceback
+							) or [ ]
+						
+						count = _promote_loader_documents(
+							documents,
+							'JupyterNotebookLoader'
+						)
+						
+						items: list[ dict[ str, Any ] ] = [ ]
+						for i, doc in enumerate( documents, start=1 ):
+							metadata = (
+									doc.metadata
+									if isinstance( getattr( doc, 'metadata', { } ), dict )
+									else { }
+							)
+							content = str( getattr( doc, 'page_content', '' ) or '' )
+							items.append(
+								{
+										'Index': i,
+										'Source': metadata.get( 'source', '' ),
+										'Preview': content[ :200 ],
+										'Content': content,
+										'Metadata': metadata,
+								}
+							)
+						
+						st.session_state[ 'jupyter_notebook_results' ] = {
+								'mode': 'jupyter_notebook',
+								'include_outputs': include_outputs,
+								'max_output_length': int( max_output_length ),
+								'remove_newline': remove_newline,
+								'traceback': include_traceback,
+								'count': count,
+								'items': items,
+						}
+						
+						st.success( f'Loaded {count} notebook document(s).' )
+					
+					except Exception as exc:
+						st.error( 'Jupyter Notebook request failed.' )
+						st.exception( exc )
 			
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'GoogleCloudStorageFileLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
+			result = st.session_state.get( 'jupyter_notebook_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv(
+					'#### Summary',
+					{
+							'Mode': result.get( 'mode', '' ),
+							'IncludeOutputs': result.get( 'include_outputs', False ),
+							'MaxOutputLength': result.get( 'max_output_length', 0 ),
+							'RemoveNewline': result.get( 'remove_newline', False ),
+							'Traceback': result.get( 'traceback', False ),
+							'Returned': result.get( 'count', 0 ),
+					}
+				)
+				
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+							{
+									'Index': item.get( 'Index', '' ),
+									'Source': item.get( 'Source', '' ),
+									'Preview': item.get( 'Preview', '' ),
+							}
+							for item in items
+					]
+					
+					st.markdown( '#### Results' )
+					st.dataframe( table_rows, use_container_width=True, hide_index=True )
+					
+					first = items[ 0 ]
+					st.markdown( '#### First Notebook Preview' )
+					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+				else:
+					st.info( 'No notebook documents returned.' )
+				
+				_render_fallback_raw( result )
+
+	# -------- Google Cloud File
+	with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
+		if 'google_cloud_file_results' not in st.session_state:
+			st.session_state[ 'google_cloud_file_results' ] = { }
+		
+		col_left, col_right = st.columns( [ 0.50, 0.50 ], border=True )
+		
+		with col_left:
+			project_name = st.text_input(
+				'Project Name',
+				key='google_cloud_file_project_name'
 			)
 			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='gcs_loader_output.txt',
-					mime='text/plain',
-					key='gcs_save'
-				)
-			else:
-				col_save.button( 'Save', key='gcs_save_disabled', disabled=True )
+			bucket = st.text_input(
+				'Bucket',
+				key='google_cloud_file_bucket'
+			)
 			
-			if clear_gcs:
-				clear_if_active( 'GoogleCloudStorageFileLoader' )
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ '_loader_status' ] = 'Google Cloud Storage File Loader state cleared.'
-				st.rerun( )
+			blob = st.text_input(
+				'Blob',
+				key='google_cloud_file_blob',
+				help='The exact object name in the Google Cloud Storage bucket.'
+			)
 			
-			if load_gcs and project_name and bucket and blob:
-				loader = GoogleCloudStorageFileLoader( )
-				documents = loader.load(
-					project_name=project_name,
-					bucket=bucket,
-					blob=blob
-				) or [ ]
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = '\n\n'.join(
-					d.page_content for d in documents
-					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-					and d.page_content.strip( )
+			b1, b2, b3 = st.columns( 3 )
+			
+			with b1:
+				google_cloud_file_submit = st.button(
+					'Submit',
+					key='google_cloud_file_submit',
+					use_container_width=True
 				)
-				st.session_state.processed_text = None
-				st.session_state.tokens = None
-				st.session_state.vocabulary = None
-				st.session_state.token_counts = None
-				st.session_state.active_loader = 'GoogleCloudStorageFileLoader'
-				st.session_state[ '_loader_status' ] = (
-						f'Loaded {len( documents )} GCS document(s).'
+			
+			with b2:
+				google_cloud_file_clear = st.button(
+					'Clear',
+					key='google_cloud_file_clear',
+					use_container_width=True
 				)
-				st.rerun( )
+			
+			with b3:
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'GoogleCloudStorageFileLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
+				
+				if can_save:
+					st.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='google_cloud_file_loader_output.txt',
+						mime='text/plain',
+						key='google_cloud_file_save',
+						use_container_width=True
+					)
+				else:
+					st.button(
+						'Save',
+						key='google_cloud_file_save_disabled',
+						disabled=True,
+						use_container_width=True
+					)
 		
-		# --------  Microsoft OneDrive Loader
-		with st.expander( label='OneDrive Loader', icon='🪟', expanded=False ):
-			drive_id = st.text_input( 'Drive ID', key='onedrive_drive_id' )
-			folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_folder_path' )
+		with col_right:
+			if google_cloud_file_clear:
+				st.session_state[ 'google_cloud_file_results' ] = { }
+				remaining = _clear_loader_documents( 'GoogleCloudStorageFileLoader' )
+				st.info(
+					f'Google Cloud File Loader state cleared. Remaining documents: {remaining}.'
+				)
+			
+			if google_cloud_file_submit:
+				if not project_name or not project_name.strip( ):
+					st.info( 'Enter a Project Name.' )
+				elif not bucket or not bucket.strip( ):
+					st.info( 'Enter a Bucket.' )
+				elif not blob or not blob.strip( ):
+					st.info( 'Enter a Blob.' )
+				else:
+					try:
+						loader = GoogleCloudStorageFileLoader( )
+						documents = loader.load(
+							project_name=project_name.strip( ),
+							bucket=bucket.strip( ),
+							blob=blob.strip( )
+						) or [ ]
+						
+						count = _promote_loader_documents(
+							documents,
+							'GoogleCloudStorageFileLoader'
+						)
+						
+						items: list[ dict[ str, Any ] ] = [ ]
+						for i, doc in enumerate( documents, start=1 ):
+							metadata = (
+									doc.metadata
+									if isinstance( getattr( doc, 'metadata', { } ), dict )
+									else { }
+							)
+							content = str( getattr( doc, 'page_content', '' ) or '' )
+							items.append(
+								{
+										'Index': i,
+										'Source': metadata.get( 'source', '' ),
+										'Blob': blob.strip( ),
+										'Preview': content[ :200 ],
+										'Content': content,
+										'Metadata': metadata,
+								}
+							)
+						
+						st.session_state[ 'google_cloud_file_results' ] = {
+								'mode': 'google_cloud_file',
+								'project_name': project_name.strip( ),
+								'bucket': bucket.strip( ),
+								'blob': blob.strip( ),
+								'count': count,
+								'items': items,
+						}
+						
+						st.success( f'Loaded {count} Google Cloud file document(s).' )
+					
+					except Exception as exc:
+						st.error( 'Google Cloud File request failed.' )
+						st.exception( exc )
+			
+			result = st.session_state.get( 'google_cloud_file_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv(
+					'#### Summary',
+					{
+							'Mode': result.get( 'mode', '' ),
+							'ProjectName': result.get( 'project_name', '' ),
+							'Bucket': result.get( 'bucket', '' ),
+							'Blob': result.get( 'blob', '' ),
+							'Returned': result.get( 'count', 0 ),
+					}
+				)
+				
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+							{
+									'Index': item.get( 'Index', '' ),
+									'Source': item.get( 'Source', '' ),
+									'Blob': item.get( 'Blob', '' ),
+									'Preview': item.get( 'Preview', '' ),
+							}
+							for item in items
+					]
+					
+					st.markdown( '#### Results' )
+					st.dataframe( table_rows, use_container_width=True, hide_index=True )
+					
+					first = items[ 0 ]
+					st.markdown( '#### First File Preview' )
+					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+				else:
+					st.info( 'No Google Cloud file documents returned.' )
+				
+			_render_fallback_raw( result )
+
+	# -------- AWS S3 File
+	with st.expander( label='AWS S3 File', icon='📗', expanded=False ):
+		if 'aws_file_results' not in st.session_state:
+			st.session_state[ 'aws_file_results' ] = { }
+		
+		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+		
+		with col_left:
+			bucket = st.text_input(
+				'Bucket',
+				key='aws_file_bucket'
+			)
+			
+			key_name = st.text_input(
+				'Key',
+				key='aws_file_key',
+				help='The exact S3 object key to load.'
+			)
+			
+			region_name = st.text_input(
+				'Region (Optional)',
+				key='aws_file_region_name'
+			)
+			
+			aws_access_key_id = st.text_input(
+				'AWS Access Key ID (Optional)',
+				type='password',
+				key='aws_file_access_key'
+			)
+			
+			aws_secret_access_key = st.text_input(
+				'AWS Secret Access Key (Optional)',
+				type='password',
+				key='aws_file_secret_key'
+			)
+			
+			aws_session_token = st.text_input(
+				'AWS Session Token (Optional)',
+				type='password',
+				key='aws_file_session_token'
+			)
+			
+			b1, b2, b3 = st.columns( 3 )
+			
+			with b1:
+				aws_file_submit = st.button(
+					'Submit',
+					key='aws_file_submit',
+					use_container_width=True
+				)
+			
+			with b2:
+				aws_file_clear = st.button(
+					'Clear',
+					key='aws_file_clear',
+					use_container_width=True
+				)
+			
+			with b3:
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'AwsFileLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
+				
+				if can_save:
+					st.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='aws_s3_file_loader_output.txt',
+						mime='text/plain',
+						key='aws_file_save',
+						use_container_width=True
+					)
+				else:
+					st.button(
+						'Save',
+						key='aws_file_save_disabled',
+						disabled=True,
+						use_container_width=True
+					)
+		
+		with col_right:
+			if aws_file_clear:
+				st.session_state[ 'aws_file_results' ] = { }
+				remaining = _clear_loader_documents( 'AwsFileLoader' )
+				st.info( f'AWS S3 File Loader state cleared. Remaining documents: {remaining}.' )
+			
+			if aws_file_submit:
+				if not bucket or not bucket.strip( ):
+					st.info( 'Enter a Bucket.' )
+				elif not key_name or not key_name.strip( ):
+					st.info( 'Enter a Key.' )
+				else:
+					try:
+						loader = AwsFileLoader( )
+						documents = loader.load(
+							bucket=bucket.strip( ),
+							key=key_name.strip( ),
+							aws_access_key_id=aws_access_key_id.strip( ) or None,
+							aws_secret_access_key=aws_secret_access_key.strip( ) or None,
+							aws_session_token=aws_session_token.strip( ) or None,
+							region_name=region_name.strip( ) or None
+						) or [ ]
+						
+						count = _promote_loader_documents( documents, 'AwsFileLoader' )
+						
+						items: list[ dict[ str, Any ] ] = [ ]
+						for i, doc in enumerate( documents, start=1 ):
+							metadata = (
+									doc.metadata
+									if isinstance( getattr( doc, 'metadata', { } ), dict )
+									else { }
+							)
+							content = str( getattr( doc, 'page_content', '' ) or '' )
+							items.append(
+								{
+										'Index': i,
+										'Source': metadata.get( 'source', '' ),
+										'Bucket': bucket.strip( ),
+										'Key': key_name.strip( ),
+										'Preview': content[ :200 ],
+										'Content': content,
+										'Metadata': metadata,
+								}
+							)
+						
+						st.session_state[ 'aws_file_results' ] = {
+								'mode': 'aws_s3_file',
+								'bucket': bucket.strip( ),
+								'key': key_name.strip( ),
+								'region_name': region_name.strip( ) or '',
+								'count': count,
+								'items': items,
+						}
+						
+						st.success( f'Loaded {count} AWS S3 file document(s).' )
+					
+					except Exception as exc:
+						st.error( 'AWS S3 File request failed.' )
+						st.exception( exc )
+			
+			result = st.session_state.get( 'aws_file_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv(
+					'#### Summary',
+					{
+							'Mode': result.get( 'mode', '' ),
+							'Bucket': result.get( 'bucket', '' ),
+							'Key': result.get( 'key', '' ),
+							'Region': result.get( 'region_name', '' ),
+							'Returned': result.get( 'count', 0 ),
+					}
+				)
+				
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+							{
+									'Index': item.get( 'Index', '' ),
+									'Source': item.get( 'Source', '' ),
+									'Bucket': item.get( 'Bucket', '' ),
+									'Key': item.get( 'Key', '' ),
+									'Preview': item.get( 'Preview', '' ),
+							}
+							for item in items
+					]
+					
+					st.markdown( '##### Results' )
+					st.dataframe( table_rows, use_container_width=True, hide_index=True )
+					
+					first = items[ 0 ]
+					st.markdown( '##### First File Preview' )
+					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+				else:
+					st.info( 'No AWS S3 file documents returned.' )
+				
+				_render_fallback_raw( result )
+				
+	# -------- OneDrive
+	with st.expander( label='OneDrive', icon='💻', expanded=False ):
+		if 'onedrive_results' not in st.session_state:
+			st.session_state[ 'onedrive_results' ] = { }
+		
+		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+		
+		with col_left:
+			drive_id = st.text_input(
+				'Drive ID',
+				key='onedrive_drive_id'
+			)
+			
+			folder_path = st.text_input(
+				'Folder Path (Optional)',
+				key='onedrive_folder_path',
+				help='Example: Documents/clients'
+			)
+			
+			object_ids_text = st.text_area(
+				'Object IDs (Optional)',
+				key='onedrive_object_ids',
+				help='Optional comma-separated OneDrive object IDs. Leave blank to load by folder path.'
+			)
+			
 			auth_with_token = st.checkbox(
 				'Authenticate With Cached Token',
 				value=True,
 				key='onedrive_auth_with_token'
 			)
 			
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_onedrive = col_load.button( 'Load', key='onedrive_load' )
-			clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear' )
+			b1, b2, b3 = st.columns( 3 )
 			
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'MicrosoftOneDriveFileLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='onedrive_loader_output.txt',
-					mime='text/plain',
-					key='onedrive_save'
+			with b1:
+				onedrive_submit = st.button(
+					'Submit',
+					key='onedrive_submit',
+					use_container_width=True
 				)
-			else:
-				col_save.button( 'Save', key='onedrive_save_disabled', disabled=True )
 			
-			if clear_onedrive:
-				clear_if_active( 'MicrosoftOneDriveFileLoader' )
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ '_loader_status' ] = 'Microsoft OneDrive Loader state cleared.'
-				st.rerun( )
+			with b2:
+				onedrive_clear = st.button(
+					'Clear',
+					key='onedrive_clear',
+					use_container_width=True
+				)
 			
-			if load_onedrive and drive_id:
-				loader = MicrosoftOneDriveFileLoader( )
-				documents = loader.load(
-					drive_id=drive_id,
-					folder_path=folder_path.strip( ) if folder_path else None,
-					auth_with_token=auth_with_token
-				) or [ ]
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = '\n\n'.join(
-					d.page_content for d in documents
-					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-					and d.page_content.strip( )
+			with b3:
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'OneDriveDocLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
 				)
-				st.session_state.processed_text = None
-				st.session_state.tokens = None
-				st.session_state.vocabulary = None
-				st.session_state.token_counts = None
-				st.session_state.active_loader = 'MicrosoftOneDriveFileLoader'
-				st.session_state[ '_loader_status' ] = (
-						f'Loaded {len( documents )} OneDrive document(s).'
-				)
-				st.rerun( )
+				
+				if can_save:
+					st.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='onedrive_loader_output.txt',
+						mime='text/plain',
+						key='onedrive_save',
+						use_container_width=True
+					)
+				else:
+					st.button(
+						'Save',
+						key='onedrive_save_disabled',
+						disabled=True,
+						use_container_width=True
+					)
 		
-		# --------- AWS S3 File Loader
-		with st.expander( label='AWS File Loader', icon='🪣', expanded=False ):
-			bucket = st.text_input( 'Bucket', key='s3_bucket' )
-			key_name = st.text_input( 'Key', key='s3_key' )
-			region_name = st.text_input( 'Region (Optional)', key='s3_region_name' )
-			aws_access_key_id = st.text_input(
-				'AWS Access Key ID (Optional)',
-				type='password',
-				key='s3_access_key'
-			)
-			aws_secret_access_key = st.text_input(
-				'AWS Secret Access Key (Optional)',
-				type='password',
-				key='s3_secret_key'
-			)
-			aws_session_token = st.text_input(
-				'AWS Session Token (Optional)',
-				type='password',
-				key='s3_session_token'
-			)
+		with col_right:
+			if onedrive_clear:
+				st.session_state[ 'onedrive_results' ] = { }
+				remaining = _clear_loader_documents( 'OneDriveDocLoader' )
+				st.info( f'OneDrive Loader state cleared. Remaining documents: {remaining}.' )
 			
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_s3 = col_load.button( 'Load', key='s3_load' )
-			clear_s3 = col_clear.button( 'Clear', key='s3_clear' )
+			if onedrive_submit:
+				if not drive_id or not drive_id.strip( ):
+					st.info( 'Enter a Drive ID.' )
+				else:
+					try:
+						object_ids: List[ str ] | None = None
+						if object_ids_text and object_ids_text.strip( ):
+							object_ids = [
+									item.strip( ) for item in object_ids_text.split( ',' )
+									if item and item.strip( )
+							]
+						
+						loader = OneDriveDocLoader( )
+						documents = loader.load(
+							drive_id=drive_id.strip( ),
+							folder_path=folder_path.strip( ) or None,
+							object_ids=object_ids,
+							auth_with_token=auth_with_token
+						) or [ ]
+						
+						count = _promote_loader_documents(
+							documents,
+							'OneDriveDocLoader'
+						)
+						
+						items: list[ dict[ str, Any ] ] = [ ]
+						for i, doc in enumerate( documents, start=1 ):
+							metadata = (
+									doc.metadata
+									if isinstance( getattr( doc, 'metadata', { } ), dict )
+									else { }
+							)
+							content = str( getattr( doc, 'page_content', '' ) or '' )
+							items.append(
+								{
+										'Index': i,
+										'Source': metadata.get( 'source', '' ),
+										'DriveId': drive_id.strip( ),
+										'Preview': content[ :200 ],
+										'Content': content,
+										'Metadata': metadata,
+								}
+							)
+						
+						st.session_state[ 'onedrive_results' ] = {
+								'mode': 'onedrive',
+								'drive_id': drive_id.strip( ),
+								'folder_path': folder_path.strip( ) or '',
+								'object_ids_count': len( object_ids or [ ] ),
+								'auth_with_token': auth_with_token,
+								'count': count,
+								'items': items,
+						}
+						
+						st.success( f'Loaded {count} OneDrive document(s).' )
+					
+					except Exception as exc:
+						st.error( 'OneDrive request failed.' )
+						st.exception( exc )
 			
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'AwsS3FileLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
+			result = st.session_state.get( 'onedrive_results', { } )
 			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='s3_loader_output.txt',
-					mime='text/plain',
-					key='s3_save'
-				)
+			if not result:
+				st.text( 'No results.' )
 			else:
-				col_save.button( 'Save', key='s3_save_disabled', disabled=True )
-			
-			if clear_s3:
-				clear_if_active( 'AwsS3FileLoader' )
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ '_loader_status' ] = 'AWS S3 File Loader state cleared.'
-				st.rerun( )
-			
-			if load_s3 and bucket and key_name:
-				loader = AwsS3FileLoader( )
-				documents = loader.load(
-					bucket=bucket,
-					key=key_name,
-					aws_access_key_id=aws_access_key_id.strip( ) or None,
-					aws_secret_access_key=aws_secret_access_key.strip( ) or None,
-					aws_session_token=aws_session_token.strip( ) or None,
-					region_name=region_name.strip( ) or None
-				) or [ ]
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = '\n\n'.join(
-					d.page_content for d in documents
-					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-					and d.page_content.strip( )
+				_render_summary_kv(
+					'#### Summary',
+					{
+							'Mode': result.get( 'mode', '' ),
+							'DriveId': result.get( 'drive_id', '' ),
+							'FolderPath': result.get( 'folder_path', '' ),
+							'ObjectIds': result.get( 'object_ids_count', 0 ),
+							'AuthWithToken': result.get( 'auth_with_token', False ),
+							'Returned': result.get( 'count', 0 ),
+					}
 				)
-				st.session_state.processed_text = None
-				st.session_state.tokens = None
-				st.session_state.vocabulary = None
-				st.session_state.token_counts = None
-				st.session_state.active_loader = 'AwsS3FileLoader'
-				st.session_state[ '_loader_status' ] = f'Loaded {len( documents )} S3 document(s).'
-				st.rerun( )
+				
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+							{
+									'Index': item.get( 'Index', '' ),
+									'Source': item.get( 'Source', '' ),
+									'DriveId': item.get( 'DriveId', '' ),
+									'Preview': item.get( 'Preview', '' ),
+							}
+							for item in items
+					]
+					
+					st.markdown( '##### Results' )
+					st.dataframe( table_rows, use_container_width=True, hide_index=True )
+					
+					first = items[ 0 ]
+					st.markdown( '#### First File Preview' )
+					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+				else:
+					st.info( 'No OneDrive documents returned.' )
+				
+				_render_fallback_raw( result )
+				
+	# -------- Google Speech-to-Text
+	with st.expander( label='Google Speech-to-Text', icon='🗣️', expanded=False ):
+		if 'google_speech_to_text_results' not in st.session_state:
+			st.session_state[ 'google_speech_to_text_results' ] = { }
 		
-		# -------- Google Speech-to-Text Loader
-		with st.expander( label='Google Speech-to-Text', icon='🎙️', expanded=False ):
-			project_id = st.text_input( 'Project ID', key='gstt_project_id' )
+		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+		
+		with col_left:
+			project_id = st.text_input(
+				'Project ID',
+				key='google_speech_to_text_project_id'
+			)
+			
 			audio_file = st.file_uploader(
 				'Upload Audio File',
 				type=[ 'wav', 'flac', 'mp3', 'm4a', 'ogg' ],
-				key='gstt_audio_upload'
+				key='google_speech_to_text_audio_upload'
 			)
+			
 			gcs_audio_uri = st.text_input(
 				'GCS Audio URI (Optional)',
 				placeholder='gs://bucket/path/audio.flac',
-				key='gstt_gcs_uri'
+				key='google_speech_to_text_gcs_uri',
+				help='Use either a local upload or a gs:// URI.'
 			)
+			
 			language_code = st.text_input(
 				'Language Code (Optional)',
 				value='en-US',
-				key='gstt_language_code'
+				key='google_speech_to_text_language_code'
 			)
 			
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_gstt = col_load.button( 'Load', key='gstt_load' )
-			clear_gstt = col_clear.button( 'Clear', key='gstt_clear' )
+			b1, b2, b3 = st.columns( 3 )
 			
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'GoogleSpeechToTextAudioLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='google_speech_to_text_output.txt',
-					mime='text/plain',
-					key='gstt_save'
+			with b1:
+				google_speech_submit = st.button(
+					'Submit',
+					key='google_speech_to_text_submit',
+					use_container_width=True
 				)
-			else:
-				col_save.button( 'Save', key='gstt_save_disabled', disabled=True )
 			
-			if clear_gstt:
-				clear_if_active( 'GoogleSpeechToTextAudioLoader' )
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ '_loader_status' ] = 'Google Speech-to-Text Loader state cleared.'
-				st.rerun( )
+			with b2:
+				google_speech_clear = st.button(
+					'Clear',
+					key='google_speech_to_text_clear',
+					use_container_width=True
+				)
 			
-			if load_gstt and project_id and (audio_file or gcs_audio_uri.strip( )):
-				config: Dict[ str, Any ] | None = None
-				if language_code.strip( ):
-					config = { 'language_code': language_code.strip( ) }
-				
-				if gcs_audio_uri.strip( ):
-					file_path = gcs_audio_uri.strip( )
-					loader = GoogleSpeechToTextAudioLoader( )
-					documents = loader.load(
-						project_id=project_id,
-						file_path=file_path,
-						config=config
-					) or [ ]
-				else:
-					with tempfile.TemporaryDirectory( ) as tmp:
-						path = os.path.join( tmp, audio_file.name )
-						with open( path, 'wb' ) as f:
-							f.write( audio_file.read( ) )
-						
-						loader = GoogleSpeechToTextAudioLoader( )
-						documents = loader.load(
-							project_id=project_id,
-							file_path=path,
-							config=config
-						) or [ ]
-				
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = '\n\n'.join(
-					d.page_content for d in documents
-					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-					and d.page_content.strip( )
+			with b3:
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'GoogleSpeechToTextLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
 				)
-				st.session_state.processed_text = None
-				st.session_state.tokens = None
-				st.session_state.vocabulary = None
-				st.session_state.token_counts = None
-				st.session_state.active_loader = 'GoogleSpeechToTextAudioLoader'
-				st.session_state[ '_loader_status' ] = (
-						f'Loaded {len( documents )} transcript document(s).'
-				)
-				st.rerun( )
-	
-	# ------- Google Cloud File Loader
-	with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
-		project_name = st.text_input( 'Project Name', key='gc_project_name' )
-		bucket = st.text_input( 'Bucket', key='gc_bucket' )
-		blob = st.text_input( 'Blob', key='gc_blob' )
-		
-		col_load, col_clear, col_save = st.columns( 3 )
-		load_gcs = col_load.button( 'Load', key='gcf_load' )
-		clear_gcs = col_clear.button( 'Clear', key='gcf_clear' )
-		
-		can_save = (
-				st.session_state.get( 'active_loader' ) == 'GoogleCloudFileLoader'
-				and isinstance( st.session_state.get( 'raw_text' ), str )
-				and st.session_state.get( 'raw_text' ).strip( )
-		)
-		
-		if can_save:
-			col_save.download_button(
-				'Save',
-				data=st.session_state.get( 'raw_text' ),
-				file_name='gcf_loader_output.txt',
-				mime='text/plain',
-				key='gcs_save'
-			)
-		else:
-			col_save.button( 'Save', key='gcf_save_disabled', disabled=True )
-		
-		if clear_gcs:
-			remaining = _clear_loader_documents( 'GoogleCloudFileLoader' )
-			st.info( f'Google Cloud Storage File Loader state cleared. Remaining documents: {remaining}.' )
-		
-		if load_gcs and project_name.strip( ) and bucket.strip( ) and blob.strip( ):
-			try:
-				loader = GoogleCloudFileLoader(
-					project_name=project_name.strip( ),
-					bucket=bucket.strip( ),
-					blob=blob.strip( )
-				)
-				documents = loader.load( ) or [ ]
-				count = _promote_loader_documents( documents, 'GoogleCloudFileLoader' )
-				st.success( f'Loaded {count} Google Cloud Storage document(s).' )
-			except Exception as e:
-				st.error( str( e ) )
-	
-	# -------- AWS File Loader
-	with st.expander( label='AWS S3 File', icon='🪣',expanded=False ):
-		bucket = st.text_input( 'Bucket', key='aws_bucket' )
-		key_name = st.text_input( 'Key', key='aws_key' )
-		region_name = st.text_input( 'Region (Optional)', key='aws_region_name' )
-		aws_access_key_id = st.text_input(
-			'AWS Access Key ID (Optional)',
-			type='password',
-			key='aws_access_key'
-		)
-		aws_secret_access_key = st.text_input(
-			'AWS Secret Access Key (Optional)',
-			type='password',
-			key='aws_secret_key'
-		)
-		aws_session_token = st.text_input(
-			'AWS Session Token (Optional)',
-			type='password',
-			key='aws_session_token'
-		)
-		
-		col_load, col_clear, col_save = st.columns( 3 )
-		load_s3 = col_load.button( 'Load', key='aws_load' )
-		clear_s3 = col_clear.button( 'Clear', key='aws_clear' )
-		
-		can_save = (
-				st.session_state.get( 'active_loader' ) == 'AwsFileLoader'
-				and isinstance( st.session_state.get( 'raw_text' ), str )
-				and st.session_state.get( 'raw_text' ).strip( )
-		)
-		
-		if can_save:
-			col_save.download_button(
-				'Save',
-				data=st.session_state.get( 'raw_text' ),
-				file_name='s3_loader_output.txt',
-				mime='text/plain',
-				key='aws_save'
-			)
-		else:
-			col_save.button( 'Save', key='aws_save_disabled', disabled=True )
-		
-		if clear_s3:
-			remaining = _clear_loader_documents( 'AwsFileLoader' )
-			st.info( f'AWS S3 File Loader state cleared. Remaining documents: {remaining}.' )
-		
-		if load_s3 and bucket.strip( ) and key_name.strip( ):
-			try:
-				kwargs: Dict[ str, Any ] = {
-						'bucket': bucket.strip( ),
-						'key': key_name.strip( ),
-				}
-				if aws_access_key_id.strip( ):
-					kwargs[ 'aws_access_key_id' ] = aws_access_key_id.strip( )
-				if aws_secret_access_key.strip( ):
-					kwargs[ 'aws_secret_access_key' ] = aws_secret_access_key.strip( )
-				if aws_session_token.strip( ):
-					kwargs[ 'aws_session_token' ] = aws_session_token.strip( )
-				if region_name.strip( ):
-					kwargs[ 'region_name' ] = region_name.strip( )
 				
-				loader = AwsFileLoader( **kwargs )
-				documents = loader.load( ) or [ ]
-				count = _promote_loader_documents( documents, 'AwsFileLoader' )
-				st.success( f'Loaded {count} S3 document(s).' )
-			except Exception as e:
-				st.error( str( e ) )
-				
-	# ------ OneDrive Loader
-	with st.expander( label='OneDrive', icon='💻', expanded=False ):
-		drive_id = st.text_input( 'Drive ID', key='onedrive_id' )
-		folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_dirpath' )
-		auth_with_token = st.checkbox(
-			'Authenticate With Cached Token',
-			value=True,
-			key='onedrive_token'
-		)
-		
-		col_load, col_clear, col_save = st.columns( 3 )
-		load_onedrive = col_load.button( 'Load', key='onedrive_load_btn' )
-		clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear_btn' )
-		
-		can_save = (
-				st.session_state.get( 'active_loader' ) == 'OneDriveDocLoader'
-				and isinstance( st.session_state.get( 'raw_text' ), str )
-				and st.session_state.get( 'raw_text' ).strip( )
-		)
-		
-		if can_save:
-			col_save.download_button(
-				'Save',
-				data=st.session_state.get( 'raw_text' ),
-				file_name='onedrive_loader_output.txt',
-				mime='text/plain',
-				key='onedrive_save'
-			)
-		else:
-			col_save.button( 'Save', key='onedrive_save_btn', disabled=True )
-		
-		if clear_onedrive:
-			remaining = _clear_loader_documents( 'OneDriveDocLoader' )
-			st.info( f'Microsoft OneDrive Loader state cleared. Remaining documents: {remaining}.' )
-		
-		if load_onedrive and drive_id.strip( ):
-			try:
-				kwargs: Dict[ str, Any ] = {
-						'drive_id': drive_id.strip( ),
-						'auth_with_token': auth_with_token,
-				}
-				if folder_path.strip( ):
-					kwargs[ 'folder_path' ] = folder_path.strip( )
-				
-				loader = OneDriveDocLoader( **kwargs )
-				documents = loader.load( ) or [ ]
-				count = _promote_loader_documents( documents, 'OneDriveDocLoader' )
-				st.success( f'Loaded {count} OneDrive document(s).' )
-			except Exception as e:
-				st.error( str( e ) )
-	
-	# ------- Google Speech-to-Text Loader
-	with st.expander( label='Google Speech-to-Text', icon='🗣️', expanded=False ):
-		project_id = st.text_input( 'Project ID', key='gcp_project_id' )
-		audio_file = st.file_uploader(
-			'Upload Audio File',
-			type=[ 'wav', 'flac', 'mp3', 'm4a', 'ogg' ],
-			key='gcp_gstt_upload'
-		)
-		gcs_audio_uri = st.text_input(
-			'GCS Audio URI (Optional)',
-			placeholder='gs://bucket/path/audio.flac',
-			key='gcp_stt_uri'
-		)
-		language_code = st.text_input(
-			'Language Code (Optional)',
-			value='en-US',
-			key='gcp_stt_language_code'
-		)
-		
-		col_load, col_clear, col_save = st.columns( 3 )
-		load_gstt = col_load.button( 'Load', key='gcp_stt_load' )
-		clear_gstt = col_clear.button( 'Clear', key='gcp_stt_clear' )
-		
-		can_save = (
-				st.session_state.get( 'active_loader' ) == 'GoogleSpeechToTextAudioLoader'
-				and isinstance( st.session_state.get( 'raw_text' ), str )
-				and st.session_state.get( 'raw_text' ).strip( )
-		)
-		
-		if can_save:
-			col_save.download_button(
-				'Save',
-				data=st.session_state.get( 'raw_text' ),
-				file_name='google_speech_to_text_output.txt',
-				mime='text/plain',
-				key='gcp_gstt_dl_btn'
-			)
-		else:
-			col_save.button( 'Save', key='gcp_gstt_save_btn', disabled=True )
-		
-		if clear_gstt:
-			remaining = _clear_loader_documents( 'GoogleSpeechToTextAudioLoader' )
-			st.info( f'Google Speech-to-Text Loader state cleared. Remaining documents: {remaining}.' )
-		
-		if load_gstt and project_id.strip( ) and (audio_file or gcs_audio_uri.strip( )):
-			try:
-				config: Dict[ str, Any ] | None = None
-				if language_code.strip( ):
-					config = { 'language_code': language_code.strip( ) }
-				
-				if gcs_audio_uri.strip( ):
-					file_path = gcs_audio_uri.strip( )
-					loader = GoogleSpeechToTextAudioLoader(
-						project_id=project_id.strip( ),
-						file_path=file_path,
-						config=config
+				if can_save:
+					st.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='google_speech_to_text_loader_output.txt',
+						mime='text/plain',
+						key='google_speech_to_text_save',
+						use_container_width=True
 					)
-					documents = loader.load( ) or [ ]
 				else:
-					with tempfile.TemporaryDirectory( ) as tmp:
-						path = os.path.join( tmp, audio_file.name )
-						with open( path, 'wb' ) as f:
-							f.write( audio_file.read( ) )
+					st.button(
+						'Save',
+						key='google_speech_to_text_save_disabled',
+						disabled=True,
+						use_container_width=True
+					)
+		
+		with col_right:
+			if google_speech_clear:
+				st.session_state[ 'google_speech_to_text_results' ] = { }
+				remaining = _clear_loader_documents( 'GoogleSpeechToTextLoader' )
+				st.info(
+					f'Google Speech-to-Text Loader state cleared. Remaining documents: {remaining}.'
+				)
+			
+			if google_speech_submit:
+				if not project_id or not project_id.strip( ):
+					st.info( 'Enter a Project ID.' )
+				elif not audio_file and not gcs_audio_uri.strip( ):
+					st.info( 'Upload an audio file or enter a GCS Audio URI.' )
+				else:
+					try:
+						config: Dict[ str, Any ] | None = None
+						if language_code.strip( ):
+							config = { 'language_code': language_code.strip( ) }
 						
-						loader = LangChainSpeechToTextLoader(
-							project_id=project_id.strip( ),
-							file_path=path,
-							config=config
-						)
-						documents = loader.load( ) or [ ]
+						if gcs_audio_uri.strip( ):
+							file_path = gcs_audio_uri.strip( )
+							loader = GoogleSpeechToTextLoader( )
+							documents = loader.load(
+								project_id=project_id.strip( ),
+								file_path=file_path,
+								config=config
+							) or [ ]
+						else:
+							with tempfile.TemporaryDirectory( ) as tmp:
+								path = os.path.join( tmp, audio_file.name )
+								with open( path, 'wb' ) as f:
+									f.write( audio_file.read( ) )
+								
+								loader = GoogleSpeechToTextLoader( )
+								documents = loader.load(
+									project_id=project_id.strip( ),
+									file_path=path,
+									config=config
+								) or [ ]
+						
+						count = _promote_loader_documents( documents, 'GoogleSpeechToTextLoader' )
+						
+						items: list[ dict[ str, Any ] ] = [ ]
+						for i, doc in enumerate( documents, start=1 ):
+							metadata = (
+									doc.metadata
+									if isinstance( getattr( doc, 'metadata', { } ), dict )
+									else { }
+							)
+							content = str( getattr( doc, 'page_content', '' ) or '' )
+							items.append(
+								{
+										'Index': i,
+										'Source': metadata.get( 'source', '' ),
+										'LanguageCode': language_code.strip( ),
+										'Preview': content[ :200 ],
+										'Content': content,
+										'Metadata': metadata,
+								}
+							)
+						
+						st.session_state[ 'google_speech_to_text_results' ] = {
+								'mode': 'google_speech_to_text',
+								'project_id': project_id.strip( ),
+								'file_path': gcs_audio_uri.strip( ) or audio_file.name,
+								'language_code': language_code.strip( ),
+								'count': count,
+								'items': items,
+						}
+						
+						st.success( f'Loaded {count} transcript document(s).' )
+					
+					except Exception as exc:
+						st.error( 'Google Speech-to-Text request failed.' )
+						st.exception( exc )
+			
+			result = st.session_state.get( 'google_speech_to_text_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv(
+					'#### Summary',
+					{
+							'Mode': result.get( 'mode', '' ),
+							'ProjectId': result.get( 'project_id', '' ),
+							'FilePath': result.get( 'file_path', '' ),
+							'LanguageCode': result.get( 'language_code', '' ),
+							'Returned': result.get( 'count', 0 ),
+					}
+				)
 				
-				count = _promote_loader_documents( documents, 'GoogleSpeechToTextLoader' )
-				st.success( f'Loaded {count} transcript document(s).' )
-			except Exception as e:
-				st.error( str( e ) )
-
-	# -------- Amazon Bucket
-	with st.expander( label='AWS S3 Bucket', icon='📦', expanded=False ):
-		bucket_name = st.text_input( 'Bucket', key='aws_bucket_name' )
-		prefix = st.text_input( 'Prefix (Optional)', key='aws_bucket_prefix' )
-		region_name = st.text_input( 'Region (Optional)', key='aws_bucket_region_name' )
-		endpoint_url = st.text_input( 'Endpoint URL (Optional)', key='aws_bucket_endpoint_url' )
-		aws_access_key_id = st.text_input(
-			'AWS Access Key ID (Optional)',
-			type='password',
-			key='aws_bucket_access_key'
-		)
-		aws_secret_access_key = st.text_input(
-			'AWS Secret Access Key (Optional)',
-			type='password',
-			key='aws_bucket_secret_key'
-		)
-		aws_session_token = st.text_input(
-			'AWS Session Token (Optional)',
-			type='password',
-			key='aws_bucket_session_token'
-		)
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+							{
+									'Index': item.get( 'Index', '' ),
+									'Source': item.get( 'Source', '' ),
+									'LanguageCode': item.get( 'LanguageCode', '' ),
+									'Preview': item.get( 'Preview', '' ),
+							}
+							for item in items
+					]
+					
+					st.markdown( '##### Results' )
+					st.dataframe( table_rows, use_container_width=True, hide_index=True )
+					
+					first = items[ 0 ]
+					st.markdown( '##### Transcript Preview' )
+					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+				else:
+					st.info( 'No transcript documents returned.' )
+				
+				_render_fallback_raw( result )
+				
+	# -------- AWS S3 Bucket
+	with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
+		if 'aws_bucket_results' not in st.session_state:
+			st.session_state[ 'aws_bucket_results' ] = { }
 		
-		col_load, col_clear, col_save = st.columns( 3 )
-		load_amazon_bucket = col_load.button( 'Load', key='aws_bucket_load' )
-		clear_amazon_bucket = col_clear.button( 'Clear', key='aws_bucket_clear' )
+		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
 		
-		can_save = (
-				st.session_state.get( 'active_loader' ) == 'AwsBucketLoader'
-				and isinstance( st.session_state.get( 'raw_text' ), str )
-				and st.session_state.get( 'raw_text' ).strip( )
-		)
-		
-		if can_save:
-			col_save.download_button(
-				'Save',
-				data=st.session_state.get( 'raw_text' ),
-				file_name='amazon_bucket_loader_output.txt',
-				mime='text/plain',
-				key='aws_bucket_dl_btn'
+		with col_left:
+			bucket_name = st.text_input(
+				'Bucket',
+				key='aws_bucket_name'
 			)
-		else:
-			col_save.button( 'Save', key='aws_bucket_save_btn', disabled=True )
+			
+			prefix = st.text_input(
+				'Prefix (Optional)',
+				key='aws_bucket_prefix',
+				help='Optional folder / key prefix inside the bucket.'
+			)
+			
+			region_name = st.text_input(
+				'Region (Optional)',
+				key='aws_bucket_region_name'
+			)
+			
+			endpoint_url = st.text_input(
+				'Endpoint URL (Optional)',
+				key='aws_bucket_endpoint_url',
+				help='Optional S3-compatible endpoint URL.'
+			)
+			
+			aws_access_key_id = st.text_input(
+				'AWS Access Key ID (Optional)',
+				type='password',
+				key='aws_bucket_access_key'
+			)
+			
+			aws_secret_access_key = st.text_input(
+				'AWS Secret Access Key (Optional)',
+				type='password',
+				key='aws_bucket_secret_key'
+			)
+			
+			aws_session_token = st.text_input(
+				'AWS Session Token (Optional)',
+				type='password',
+				key='aws_bucket_session_token'
+			)
+			
+			b1, b2, b3 = st.columns( 3 )
+			
+			with b1:
+				aws_bucket_submit = st.button(
+					'Submit',
+					key='aws_bucket_submit',
+					use_container_width=True
+				)
+			
+			with b2:
+				aws_bucket_clear = st.button(
+					'Clear',
+					key='aws_bucket_clear',
+					use_container_width=True
+				)
+			
+			with b3:
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'AmazonBucketLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
+				
+				if can_save:
+					st.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='aws_s3_bucket_loader_output.txt',
+						mime='text/plain',
+						key='aws_bucket_save',
+						use_container_width=True
+					)
+				else:
+					st.button(
+						'Save',
+						key='aws_bucket_save_disabled',
+						disabled=True,
+						use_container_width=True
+					)
 		
-		if clear_amazon_bucket:
-			remaining = _clear_loader_documents( 'AwsBucketLoader' )
-			st.info( f'Amazon Bucket Loader state cleared. Remaining documents: {remaining}.' )
-		
-		if load_amazon_bucket and bucket_name.strip( ):
-			try:
-				loader = AwsBucketLoader( )
-				documents = loader.load(
-					bucket=bucket_name.strip( ),
-					prefix=prefix.strip( ) or None,
-					aws_access_key_id=aws_access_key_id.strip( ) or None,
-					aws_secret_access_key=aws_secret_access_key.strip( ) or None,
-					aws_session_token=aws_session_token.strip( ) or None,
-					region_name=region_name.strip( ) or None,
-					endpoint_url=endpoint_url.strip( ) or None
-				) or [ ]
-				count = _promote_loader_documents( documents, 'AwsBucketLoader' )
-				st.success( f'Loaded {count} Amazon bucket document(s).' )
-			except Exception as e:
-				st.error( str( e ) )
-	
+		with col_right:
+			if aws_bucket_clear:
+				st.session_state[ 'aws_bucket_results' ] = { }
+				remaining = _clear_loader_documents( 'AmazonBucketLoader' )
+				st.info( f'AWS S3 Bucket Loader state cleared. Remaining documents: {remaining}.' )
+			
+			if aws_bucket_submit:
+				if not bucket_name or not bucket_name.strip( ):
+					st.info( 'Enter a Bucket.' )
+				else:
+					try:
+						loader = AmazonBucketLoader( )
+						documents = loader.load(
+							bucket=bucket_name.strip( ),
+							prefix=prefix.strip( ) or None,
+							aws_access_key_id=aws_access_key_id.strip( ) or None,
+							aws_secret_access_key=aws_secret_access_key.strip( ) or None,
+							aws_session_token=aws_session_token.strip( ) or None,
+							region_name=region_name.strip( ) or None,
+							endpoint_url=endpoint_url.strip( ) or None
+						) or [ ]
+						
+						count = _promote_loader_documents(
+							documents,
+							'AmazonBucketLoader'
+						)
+						
+						items: list[ dict[ str, Any ] ] = [ ]
+						for i, doc in enumerate( documents, start=1 ):
+							metadata = (
+									doc.metadata
+									if isinstance( getattr( doc, 'metadata', { } ), dict )
+									else { }
+							)
+							content = str( getattr( doc, 'page_content', '' ) or '' )
+							items.append(
+								{
+										'Index': i,
+										'Source': metadata.get( 'source', '' ),
+										'Bucket': bucket_name.strip( ),
+										'Prefix': prefix.strip( ) or '',
+										'Preview': content[ :200 ],
+										'Content': content,
+										'Metadata': metadata,
+								}
+							)
+						
+						st.session_state[ 'aws_bucket_results' ] = {
+								'mode': 'aws_s3_bucket',
+								'bucket': bucket_name.strip( ),
+								'prefix': prefix.strip( ) or '',
+								'region_name': region_name.strip( ) or '',
+								'endpoint_url': endpoint_url.strip( ) or '',
+								'count': count,
+								'items': items,
+						}
+						
+						st.success( f'Loaded {count} AWS S3 bucket document(s).' )
+					
+					except Exception as exc:
+						st.error( 'AWS S3 Bucket request failed.' )
+						st.exception( exc )
+			
+			result = st.session_state.get( 'aws_bucket_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv(
+					'#### Summary',
+					{
+							'Mode': result.get( 'mode', '' ),
+							'Bucket': result.get( 'bucket', '' ),
+							'Prefix': result.get( 'prefix', '' ),
+							'Region': result.get( 'region_name', '' ),
+							'EndpointUrl': result.get( 'endpoint_url', '' ),
+							'Returned': result.get( 'count', 0 ),
+					}
+				)
+				
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+							{
+									'Index': item.get( 'Index', '' ),
+									'Source': item.get( 'Source', '' ),
+									'Bucket': item.get( 'Bucket', '' ),
+									'Prefix': item.get( 'Prefix', '' ),
+									'Preview': item.get( 'Preview', '' ),
+							}
+							for item in items
+					]
+					
+					st.markdown( '#### Results' )
+					st.dataframe( table_rows, use_container_width=True, hide_index=True )
+					
+					first = items[ 0 ]
+					st.markdown( '#### First File Preview' )
+					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+				else:
+					st.info( 'No AWS S3 bucket documents returned.' )
+				
+				_render_fallback_raw( result )
+				
 	# -------- Google Bucket Loader
 	with st.expander( label='Google Cloud Bucket', icon='🧊', expanded=False ):
 		project_name = st.text_input( 'Project Name', key='gcp_bucket_project_name' )
 		bucket_name = st.text_input( 'Bucket', key='gcp_bucket_name' )
+		prefix = st.text_input(
+			'Prefix (Optional)',
+			key='gcp_bucket_prefix',
+			help='Optional folder / object prefix filter inside the bucket.'
+		)
+		continue_on_failure = st.checkbox(
+			'Continue On Failure',
+			value=False,
+			key='gcp_bucket_continue_on_failure',
+			help='Skip objects that fail to load instead of aborting the whole request.'
+		)
 		
 		col_load, col_clear, col_save = st.columns( 3 )
 		load_google_bucket = col_load.button( 'Load', key='gcp_bucket_load' )
@@ -7342,24 +7523,301 @@ elif mode == 'Retrieval':
 			remaining = _clear_loader_documents( 'GoogleBucketLoader' )
 			st.info( f'Google Bucket Loader state cleared. Remaining documents: {remaining}.' )
 		
-		if load_google_bucket and project_name.strip( ) and bucket_name.strip( ):
-			try:
-				loader = GoogleBucketLoader( )
-				documents = loader.load(
-					project_name=project_name.strip( ),
-					bucket=bucket_name.strip( )
-				) or [ ]
-				count = _promote_loader_documents( documents, 'GoogleBucketLoader' )
-				st.success( f'Loaded {count} Google bucket document(s).' )
-			except Exception as e:
-				st.error( str( e ) )
-			
+		if load_google_bucket:
+			if not project_name or not project_name.strip( ):
+				st.info( 'Enter a Project Name.' )
+			elif not bucket_name or not bucket_name.strip( ):
+				st.info( 'Enter a Bucket.' )
+			else:
+				try:
+					loader = GoogleBucketLoader( )
+					documents = loader.load(
+						project_name=project_name.strip( ),
+						bucket=bucket_name.strip( ),
+						prefix=prefix.strip( ) or None,
+						continue_on_failure=continue_on_failure
+					) or [ ]
+					count = _promote_loader_documents( documents, 'GoogleBucketLoader' )
+					st.success( f'Loaded {count} Google bucket document(s).' )
+				except Exception as e:
+					st.error( str( e ) )
+
 # ==============================================================================
 # GEOSPATIAL MODE
 # ==============================================================================
 elif mode == 'Geospatial':
 	st.subheader( f'📡 Weather & Geospatial Data' )
 	st.divider( )
+	
+	# -------- Google Geocoding
+	with st.expander( label='Geocoding', icon='📍', expanded=False ):
+		if 'googlegeocoding_results' not in st.session_state:
+			st.session_state[ 'googlegeocoding_results' ] = { }
+		
+		if 'googlegeocoding_clear_request' not in st.session_state:
+			st.session_state[ 'googlegeocoding_clear_request' ] = False
+		
+		if st.session_state.get( 'googlegeocoding_clear_request', False ):
+			st.session_state[ 'googlegeocoding_mode' ] = 'forward'
+			st.session_state[ 'googlegeocoding_query' ] = ''
+			st.session_state[ 'googlegeocoding_latitude' ] = 38.8895
+			st.session_state[ 'googlegeocoding_longitude' ] = -77.0353
+			st.session_state[ 'googlegeocoding_place_id' ] = ''
+			st.session_state[ 'googlegeocoding_language' ] = 'en'
+			st.session_state[ 'googlegeocoding_region' ] = ''
+			st.session_state[ 'googlegeocoding_result_type' ] = ''
+			st.session_state[ 'googlegeocoding_location_type' ] = ''
+			st.session_state[ 'googlegeocoding_api_key' ] = ''
+			st.session_state[ 'googlegeocoding_timeout' ] = 10
+			st.session_state[ 'googlegeocoding_results' ] = { }
+			st.session_state[ 'googlegeocoding_clear_request' ] = False
+		
+		def _clear_googlegeocoding_state( ) -> None:
+			st.session_state[ 'googlegeocoding_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			googlegeocoding_mode = st.selectbox(
+				'Mode',
+				options=[ 'forward', 'reverse', 'place' ],
+				index=[ 'forward', 'reverse', 'place' ].index(
+					st.session_state.get( 'googlegeocoding_mode', 'forward' )
+				),
+				key='googlegeocoding_mode',
+				help='forward = address search; reverse = lat/lng to address; place = place_id lookup.'
+			)
+			
+			googlegeocoding_query = st.text_area(
+				'Address Query',
+				height=80,
+				key='googlegeocoding_query',
+				placeholder=(
+						'Examples:\n'
+						'1600 Amphitheatre Parkway, Mountain View, CA\n'
+						'Arlington, VA\n'
+						'10 Downing Street, London'
+				),
+				disabled=(googlegeocoding_mode != 'forward')
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				googlegeocoding_latitude = st.number_input(
+					'Latitude',
+					min_value=-90.0,
+					max_value=90.0,
+					value=float( st.session_state.get( 'googlegeocoding_latitude', 38.8895 ) ),
+					step=0.0001,
+					format='%.6f',
+					key='googlegeocoding_latitude',
+					disabled=(googlegeocoding_mode != 'reverse')
+				)
+			
+			with c2:
+				googlegeocoding_longitude = st.number_input(
+					'Longitude',
+					min_value=-180.0,
+					max_value=180.0,
+					value=float( st.session_state.get( 'googlegeocoding_longitude', -77.0353 ) ),
+					step=0.0001,
+					format='%.6f',
+					key='googlegeocoding_longitude',
+					disabled=(googlegeocoding_mode != 'reverse')
+				)
+			
+			googlegeocoding_place_id = st.text_input(
+				'Place ID',
+				value=st.session_state.get( 'googlegeocoding_place_id', '' ),
+				key='googlegeocoding_place_id',
+				placeholder='ChIJ2eUgeAK6j4ARbn5u_wAGqWA',
+				disabled=(googlegeocoding_mode != 'place')
+			)
+			
+			c3, c4 = st.columns( 2 )
+			
+			with c3:
+				googlegeocoding_language = st.text_input(
+					'Language',
+					value=st.session_state.get( 'googlegeocoding_language', 'en' ),
+					key='googlegeocoding_language',
+					placeholder='en'
+				)
+			
+			with c4:
+				googlegeocoding_region = st.text_input(
+					'Region Bias',
+					value=st.session_state.get( 'googlegeocoding_region', '' ),
+					key='googlegeocoding_region',
+					placeholder='us',
+					disabled=(googlegeocoding_mode == 'reverse')
+				)
+			
+			c5, c6 = st.columns( 2 )
+			
+			with c5:
+				googlegeocoding_result_type = st.text_input(
+					'Result Type',
+					value=st.session_state.get( 'googlegeocoding_result_type', '' ),
+					key='googlegeocoding_result_type',
+					placeholder='street_address|premise',
+					disabled=(googlegeocoding_mode != 'reverse')
+				)
+			
+			with c6:
+				googlegeocoding_location_type = st.text_input(
+					'Location Type',
+					value=st.session_state.get( 'googlegeocoding_location_type', '' ),
+					key='googlegeocoding_location_type',
+					placeholder='ROOFTOP|GEOMETRIC_CENTER',
+					disabled=(googlegeocoding_mode != 'reverse')
+				)
+			
+			c7, c8 = st.columns( 2 )
+			
+			with c7:
+				googlegeocoding_api_key = st.text_input(
+					'API Key',
+					value='',
+					type='password',
+					key='googlegeocoding_api_key',
+					placeholder='Uses GOOGLE_API_KEY when left blank.'
+				)
+			
+			with c8:
+				googlegeocoding_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=60,
+					value=int( st.session_state.get( 'googlegeocoding_timeout', 10 ) ),
+					step=1,
+					key='googlegeocoding_timeout'
+				)
+			
+			st.caption(
+				'Google Geocoding requires billing plus a Google API key. '
+				'Result filters apply to reverse geocoding only.'
+			)
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				googlegeocoding_submit = st.button(
+					'Submit',
+					key='googlegeocoding_submit',
+					use_container_width=True
+				)
+			
+			with b2:
+				st.button(
+					'Clear',
+					key='googlegeocoding_clear',
+					on_click=_clear_googlegeocoding_state,
+					use_container_width=True
+				)
+		
+		with col_right:
+			st.markdown( 'Results' )
+			
+			if googlegeocoding_submit:
+				try:
+					f = GoogleGeocoding( )
+					result = f.fetch(
+						mode=str( googlegeocoding_mode ),
+						query=str( googlegeocoding_query ),
+						latitude=float( googlegeocoding_latitude ),
+						longitude=float( googlegeocoding_longitude ),
+						place_id=str( googlegeocoding_place_id ),
+						language=str( googlegeocoding_language or 'en' ).strip( ),
+						region=str( googlegeocoding_region or '' ).strip( ),
+						result_type=str( googlegeocoding_result_type or '' ).strip( ),
+						location_type=str( googlegeocoding_location_type or '' ).strip( ),
+						time=int( googlegeocoding_timeout ),
+						api_key=(googlegeocoding_api_key or None)
+					)
+					
+					st.session_state[ 'googlegeocoding_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Google Geocoding request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'googlegeocoding_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': result.get( 'mode', '' ),
+							'url': result.get( 'url', '' ),
+							'params': result.get( 'params', { } ),
+							'status': result.get( 'status', '' ),
+					}
+				)
+				
+				results_list = result.get( 'results', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if not results_list:
+					st.info( 'No geocoding results returned.' )
+				else:
+					for idx, item in enumerate( results_list, start=1 ):
+						formatted_address = item.get( 'formatted_address', f'Result {idx}' )
+						place_id_value = item.get( 'place_id', '' )
+						types_value = item.get( 'types', [ ] )
+						
+						geometry = item.get( 'geometry', { } ) if isinstance( item, dict ) else { }
+						location = geometry.get( 'location', { } ) if isinstance( geometry, dict ) else { }
+						
+						with st.container( border=True ):
+							st.markdown( f'**{idx}. {formatted_address}**' )
+							
+							meta_parts: List[ str ] = [ ]
+							
+							if place_id_value:
+								meta_parts.append( f'Place ID: `{place_id_value}`' )
+							
+							if isinstance( types_value, list ) and types_value:
+								meta_parts.append( f"Types: `{', '.join( types_value[ :4 ] )}`" )
+							
+							if meta_parts:
+								st.caption( ' | '.join( meta_parts ) )
+							
+							if isinstance( location, dict ):
+								lat_value = location.get( 'lat', '' )
+								lng_value = location.get( 'lng', '' )
+								if str( lat_value ).strip( ) or str( lng_value ).strip( ):
+									st.write( f'Coordinates: {lat_value}, {lng_value}' )
+							
+							address_components = item.get( 'address_components', [ ] )
+							if isinstance( address_components, list ) and address_components:
+								component_rows: List[ Dict[ str, Any ] ] = [ ]
+								for component in address_components:
+									if isinstance( component, dict ):
+										component_rows.append(
+											{
+													'long_name': component.get( 'long_name', '' ),
+													'short_name': component.get( 'short_name', '' ),
+													'types': ', '.join( component.get( 'types', [ ] ) )
+											}
+										)
+								
+								if component_rows:
+									with st.expander( 'Address Components', expanded=False ):
+										st.dataframe(
+											pd.DataFrame( component_rows ),
+											use_container_width=True,
+											hide_index=True
+										)
+							
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Google Maps
 	with st.expander( label='Google Maps', icon='🗺️', expanded=False ):
@@ -15883,7 +16341,7 @@ elif mode == 'Population':
 		if 'pubmed_results' not in st.session_state:
 			st.session_state[ 'pubmed_results' ] = { }
 		
-		col_left, col_right = st.columns( [ 0.38, 0.62 ] )
+		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
 		
 		with col_left:
 			query = st.text_input(
@@ -16046,11 +16504,11 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 				
 	# -------- Open City
-	with st.expander( label='Open City', icon='🏙️', expanded=False ):
+	with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
 		if 'open_city_results' not in st.session_state:
 			st.session_state[ 'open_city_results' ] = { }
 		
-		col_left, col_right = st.columns( [ 0.38, 0.62 ] )
+		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
 		
 		with col_left:
 			city_id = st.text_input(
