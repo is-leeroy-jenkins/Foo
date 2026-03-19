@@ -7274,31 +7274,31 @@ elif mode == 'Retrieval':
 	
 	# -------- AWS File Loader
 	with st.expander( label='AWS S3 File', icon='🪣', expanded=False ):
-		bucket = st.text_input( 'Bucket', key='s3_bucket' )
-		key_name = st.text_input( 'Key', key='s3_key' )
-		region_name = st.text_input( 'Region (Optional)', key='s3_region_name' )
+		bucket = st.text_input( 'Bucket', key='aws_bucket' )
+		key_name = st.text_input( 'Key', key='aws_key' )
+		region_name = st.text_input( 'Region (Optional)', key='aws_region_name' )
 		aws_access_key_id = st.text_input(
 			'AWS Access Key ID (Optional)',
 			type='password',
-			key='s3_access_key'
+			key='aws_access_key'
 		)
 		aws_secret_access_key = st.text_input(
 			'AWS Secret Access Key (Optional)',
 			type='password',
-			key='s3_secret_key'
+			key='aws_secret_key'
 		)
 		aws_session_token = st.text_input(
 			'AWS Session Token (Optional)',
 			type='password',
-			key='s3_session_token'
+			key='aws_session_token'
 		)
 		
 		col_load, col_clear, col_save = st.columns( 3 )
-		load_s3 = col_load.button( 'Load', key='s3_load' )
-		clear_s3 = col_clear.button( 'Clear', key='s3_clear' )
+		load_s3 = col_load.button( 'Load', key='aws_load' )
+		clear_s3 = col_clear.button( 'Clear', key='aws_clear' )
 		
 		can_save = (
-				st.session_state.get( 'active_loader' ) == 'AwsS3FileLoader'
+				st.session_state.get( 'active_loader' ) == 'AwsFileLoader'
 				and isinstance( st.session_state.get( 'raw_text' ), str )
 				and st.session_state.get( 'raw_text' ).strip( )
 		)
@@ -7309,10 +7309,10 @@ elif mode == 'Retrieval':
 				data=st.session_state.get( 'raw_text' ),
 				file_name='s3_loader_output.txt',
 				mime='text/plain',
-				key='s3_save'
+				key='aws_save'
 			)
 		else:
-			col_save.button( 'Save', key='s3_save_disabled', disabled=True )
+			col_save.button( 'Save', key='aws_save_disabled', disabled=True )
 		
 		if clear_s3:
 			remaining = _clear_loader_documents( 'AwsFileLoader' )
@@ -7342,17 +7342,17 @@ elif mode == 'Retrieval':
 				
 	# ------ OneDrive Loader
 	with st.expander( label='OneDrive', icon='🪟', expanded=False ):
-		drive_id = st.text_input( 'Drive ID', key='onedrive_drive_id' )
-		folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_folder_path' )
+		drive_id = st.text_input( 'Drive ID', key='onedrive_id' )
+		folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_dirpath' )
 		auth_with_token = st.checkbox(
 			'Authenticate With Cached Token',
 			value=True,
-			key='onedrive_auth_with_token'
+			key='onedrive_token'
 		)
 		
 		col_load, col_clear, col_save = st.columns( 3 )
-		load_onedrive = col_load.button( 'Load', key='onedrive_load' )
-		clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear' )
+		load_onedrive = col_load.button( 'Load', key='onedrive_load_btn' )
+		clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear_btn' )
 		
 		can_save = (
 				st.session_state.get( 'active_loader' ) == 'OneDriveDocLoader'
@@ -7369,7 +7369,7 @@ elif mode == 'Retrieval':
 				key='onedrive_save'
 			)
 		else:
-			col_save.button( 'Save', key='onedrive_save_disabled', disabled=True )
+			col_save.button( 'Save', key='onedrive_save_btn', disabled=True )
 		
 		if clear_onedrive:
 			remaining = _clear_loader_documents( 'OneDriveDocLoader' )
@@ -7393,26 +7393,26 @@ elif mode == 'Retrieval':
 	
 	# ------- Google Speech-to-Text Loader
 	with st.expander( label='Google Speech-to-Text', icon='🎙️', expanded=False ):
-		project_id = st.text_input( 'Project ID', key='gstt_project_id' )
+		project_id = st.text_input( 'Project ID', key='gcp_project_id' )
 		audio_file = st.file_uploader(
 			'Upload Audio File',
 			type=[ 'wav', 'flac', 'mp3', 'm4a', 'ogg' ],
-			key='gstt_audio_upload'
+			key='gcp_gstt_upload'
 		)
 		gcs_audio_uri = st.text_input(
 			'GCS Audio URI (Optional)',
 			placeholder='gs://bucket/path/audio.flac',
-			key='gstt_gcs_uri'
+			key='gcp_stt_uri'
 		)
 		language_code = st.text_input(
 			'Language Code (Optional)',
 			value='en-US',
-			key='gstt_language_code'
+			key='gcp_stt_language_code'
 		)
 		
 		col_load, col_clear, col_save = st.columns( 3 )
-		load_gstt = col_load.button( 'Load', key='gstt_load' )
-		clear_gstt = col_clear.button( 'Clear', key='gstt_clear' )
+		load_gstt = col_load.button( 'Load', key='gcp_stt_load' )
+		clear_gstt = col_clear.button( 'Clear', key='gcp_stt_clear' )
 		
 		can_save = (
 				st.session_state.get( 'active_loader' ) == 'GoogleSpeechToTextAudioLoader'
@@ -7426,10 +7426,10 @@ elif mode == 'Retrieval':
 				data=st.session_state.get( 'raw_text' ),
 				file_name='google_speech_to_text_output.txt',
 				mime='text/plain',
-				key='gstt_save'
+				key='gcp_gstt_dl_btn'
 			)
 		else:
-			col_save.button( 'Save', key='gstt_save_disabled', disabled=True )
+			col_save.button( 'Save', key='gcp_gstt_save_btn', disabled=True )
 		
 		if clear_gstt:
 			remaining = _clear_loader_documents( 'GoogleSpeechToTextAudioLoader' )
@@ -7469,29 +7469,29 @@ elif mode == 'Retrieval':
 
 	# -------- Amazon Bucket
 	with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
-		bucket_name = st.text_input( 'Bucket', key='s3_directory_bucket' )
-		prefix = st.text_input( 'Prefix (Optional)', key='s3_directory_prefix' )
-		region_name = st.text_input( 'Region (Optional)', key='s3_directory_region_name' )
-		endpoint_url = st.text_input( 'Endpoint URL (Optional)', key='s3_directory_endpoint_url' )
+		bucket_name = st.text_input( 'Bucket', key='aws_bucket_name' )
+		prefix = st.text_input( 'Prefix (Optional)', key='aws_bucket_prefix' )
+		region_name = st.text_input( 'Region (Optional)', key='aws_bucket_region_name' )
+		endpoint_url = st.text_input( 'Endpoint URL (Optional)', key='aws_bucket_endpoint_url' )
 		aws_access_key_id = st.text_input(
 			'AWS Access Key ID (Optional)',
 			type='password',
-			key='s3_directory_access_key'
+			key='aws_bucket_access_key'
 		)
 		aws_secret_access_key = st.text_input(
 			'AWS Secret Access Key (Optional)',
 			type='password',
-			key='s3_directory_secret_key'
+			key='aws_bucket_secret_key'
 		)
 		aws_session_token = st.text_input(
 			'AWS Session Token (Optional)',
 			type='password',
-			key='s3_directory_session_token'
+			key='aws_bucket_session_token'
 		)
 		
 		col_load, col_clear, col_save = st.columns( 3 )
-		load_amazon_bucket = col_load.button( 'Load', key='s3_directory_load' )
-		clear_amazon_bucket = col_clear.button( 'Clear', key='s3_directory_clear' )
+		load_amazon_bucket = col_load.button( 'Load', key='aws_bucket_load' )
+		clear_amazon_bucket = col_clear.button( 'Clear', key='aws_bucket_clear' )
 		
 		can_save = (
 				st.session_state.get( 'active_loader' ) == 'AwsBucketLoader'
@@ -7505,10 +7505,10 @@ elif mode == 'Retrieval':
 				data=st.session_state.get( 'raw_text' ),
 				file_name='amazon_bucket_loader_output.txt',
 				mime='text/plain',
-				key='s3_directory_save'
+				key='aws_bucket_dl_btn'
 			)
 		else:
-			col_save.button( 'Save', key='s3_directory_save_disabled', disabled=True )
+			col_save.button( 'Save', key='aws_bucket_save_btn', disabled=True )
 		
 		if clear_amazon_bucket:
 			remaining = _clear_loader_documents( 'AwsBucketLoader' )
