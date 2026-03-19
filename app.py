@@ -15982,16 +15982,16 @@ elif mode == 'Population':
 				except Exception as e:
 					st.error( str( e ) )
 
-	# -------------------------- Open City Data Loader
+	# ------- Open City Data Loader
 	with st.expander( label='Open City Search', icon='🏙️', expanded=False ):
 		city_id = st.text_input(
 			'City ID',
 			value='data.sfgov.org',
-			key='opencity_id' )
+			key='oc_city_id' )
 		
 		dataset_id = st.text_input(
 			'Dataset ID',
-			key='opencity_dataset_id')
+			key='oc_dataset_id')
 		
 		limit = st.number_input(
 			'Limit',
@@ -15999,11 +15999,11 @@ elif mode == 'Population':
 			max_value=5000,
 			value=100,
 			step=10,
-			key='opencity_limit' )
+			key='oc_limit' )
 		
 		col_load, col_clear, col_save = st.columns( 3 )
-		load_open_city = col_load.button( 'Load', key='open_city_load' )
-		clear_open_city = col_clear.button( 'Clear', key='opencity_clear_btn' )
+		load_open_city = col_load.button( 'Load', key='oc_load_btn' )
+		clear_open_city = col_clear.button( 'Clear', key='oc_clear_btn' )
 		
 		can_save = (
 				st.session_state.get( 'active_loader' ) == 'OpenCityDocLoader'
@@ -16017,10 +16017,10 @@ elif mode == 'Population':
 				data=st.session_state.get( 'raw_text' ),
 				file_name='open_city_loader_output.txt',
 				mime='text/plain',
-				key='opencity_dl_btn'
+				key='oc_dl_btn'
 			)
 		else:
-			col_save.button( 'Save', key='opencity_save_btn', disabled=True )
+			col_save.button( 'Save', key='oc_save_btn', disabled=True )
 		
 		if clear_open_city:
 			remaining = _clear_loader_documents( 'OpenCityDocLoader' )
