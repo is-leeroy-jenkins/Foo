@@ -175,7 +175,7 @@ class WebExtractor( Extractor):
 		         'scrape_lists',
 		         'scrape_paragraphse', ]
 	
-	def scrape( self, url: str, time: int = 10 ) -> Result | None:
+	def scrape( self, url: str, time: int=10 ) -> Result | None:
 		'''
 
 			Purpose:

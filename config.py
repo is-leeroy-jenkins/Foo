@@ -43,7 +43,6 @@
   '''
 import os
 from pathlib import Path
-from typing import Optional, List, Dict
 
 # ------ ENVIRONMENT API KEYS  -------------------
 ACCESS_DRIVER = r'DRIVER={ Microsoft Access Driver (*.mdb, *.accdb) };DBQ='
@@ -78,6 +77,8 @@ NEWS_API_KEY = os.getenv( 'NEWSAPI_API_KEY' )
 THENEWS_API_KEY = os.getenv( 'THENEWSAPI_API_KEY' )
 WEATHERAPI_API_KEY = os.getenv( 'WEATHERAPI_API_KEY' )
 XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
+O365_CLIENT_ID = os.getenv( 'O365_CLIENT_ID ' )
+O365_CLIENT_SECRET = os.getenv( 'O365_CLIENT_ID ' )
 
 # ---------------- CONSTANTS -----------------------
 APP_TITLE = 'Foo'
@@ -120,6 +121,87 @@ CHUNKABLE_LOADERS = {
 		'PowerPointLoader': [ 'chars' ],
 }
 
+REQUIRED_CORPORA = [
+		'brown',
+		'gutenberg',
+		'reuters',
+		'webtext',
+		'inaugural',
+		'state_union',
+		'punkt',
+		'stopwords',
+]
+
+SESSION_STATE_DEFAULTS = {
+		# ------------ Ingestion
+		'documents': None,
+		'raw_documents': None,
+		'active_loader': None,
+		# ------------ Input
+		'raw_text': None,
+		'raw_tokens': None,
+		'raw_text_view': None,
+		# Processing
+		'parser': None,
+		'processed_text': None,
+		'processed_text_view': None,
+		# ------------ Performance
+		'start_time': None,
+		'end_time': None,
+		'total_time': None,
+		# ------------ Tokenization / Vocabulary
+		'tokens': None,
+		'vocabulary': None,
+		'token_counts': None,
+		'df_synsets': None,
+		# ------------ SQLite / Excel
+		'active_table': None,
+		# ------------ Chunking
+		'lines': None,
+		'chunks': None,
+		'chunk_modes': None,
+		'chunked_documents': None,
+		# ------------ Embeddings
+		'embedder': None,
+		'embeddings': None,
+		'embedding_provider': None,
+		'embedding_model': None,
+		'embedding_source': None,
+		'embedding_documents': None,
+		'df_embedding_input': None,
+		'df_embedding_output': None,
+		# ------------ Retrieval / Search
+		'search_results': None,
+		# ------------ DataFrames
+		'df_frequency': None,
+		'df_tables': None,
+		'df_schema': None,
+		'df_preview': None,
+		'df_count': None,
+		'df_chunks': None,
+		# ------------ Data
+		'data_connection': None,
+		# ------------ Sidebar / API Keys
+		'api_keys': {
+				'openai_api_key': None,
+				'groq_api_key': None,
+				'google_api_key': None,
+				'pinecone_api_key': None,
+				'google_credentials_path_api_key': None,
+		},
+		# ------------ XML Loader (explicit contract)
+		'xml_loader': None,
+		'xml_documents': None,
+		'xml_split_documents': None,
+		'xml_tree_loaded': None,
+		'xml_namespaces': None,
+		'xml_xpath_results': None,
+		# ------------ WordNet Caches
+		'wordnet_synsets_sig': None,
+		'df_wordnet_synsets': None,
+		'df_wordnet_lemmas': None,
+}
+# ----------------- Models
 GPT_MODELS = [ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano',
                'gpt-5.1', 'gpt-5.2', 'gpt-4.1' ]
 

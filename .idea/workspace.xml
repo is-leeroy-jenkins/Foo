@@ -8,7 +8,10 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fetchers.py" beforeDir="false" afterPath="$PROJECT_DIR$/fetchers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/loaders.py" beforeDir="false" afterPath="$PROJECT_DIR$/loaders.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scrapers.py" beforeDir="false" afterPath="$PROJECT_DIR$/scrapers.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,7 +88,7 @@
       <workItem from="1773761707265" duration="7311000" />
       <workItem from="1773772605991" duration="16318000" />
       <workItem from="1773841242650" duration="100000" />
-      <workItem from="1773863280485" duration="2249000" />
+      <workItem from="1773863280485" duration="21488000" />
     </task>
     <task id="LOCAL-00001" summary="update">
       <option name="closed" value="true" />
@@ -191,7 +194,15 @@
       <option name="project" value="LOCAL" />
       <updated>1773839004455</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="update">
+      <option name="closed" value="true" />
+      <created>1773872157861</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1773872157861</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -200,16 +211,5 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="update" />
     <option name="LAST_COMMIT_MESSAGE" value="update" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/loaders.py</url>
-          <line>43</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

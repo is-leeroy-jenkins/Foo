@@ -41,6 +41,7 @@
 	******************************************************************************************
 '''
 from __future__ import annotations
+import altair
 import inspect
 from astroquery.simbad import Simbad
 import base64
@@ -48,7 +49,7 @@ import base64
 from bs4 import BeautifulSoup
 
 import config as cfg
-from collections import deque
+from collections import deque, Counter
 import datetime as dt
 import html as html_lib
 import json
@@ -56,15 +57,35 @@ import numpy as np
 import os
 import re
 import time
+import types
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from langchain_core.documents import Document
 from lxml import etree
-from loaders import (PdfLoader, WordLoader, ExcelLoader, MarkdownLoader,
-                     HtmlLoader, TextLoader, CsvLoader, OutlookLoader,
-                     WebLoader, ArXivLoader, WikiLoader, YouTubeLoader,
-                     RecursiveCharacterTextSplitter, PowerPointLoader)
+from loaders import (
+	TextLoader,
+	CsvLoader,
+	PdfLoader,
+	ExcelLoader,
+	WordLoader,
+	MarkdownLoader,
+	HtmlLoader,
+	JsonLoader,
+	PowerPointLoader,
+	WikiLoader,
+	GithubLoader,
+	WebLoader,
+	ArXivLoader,
+	XmlLoader,
+	PubMedDocLoader,
+	OpenCityDocLoader,
+	JupyterNotebookLoader,
+	AwsS3FileLoader,
+	OneDriveDocLoader,
+	GoogleCloudFileLoader,
+	GoogleSpeechToTextLoader
+)
 
 from generators import Chat, Claude, Grok, Mistral, Gemini
 from fetchers import (
@@ -78,6 +99,10 @@ from fetchers import (
 	OpenAQ, Firms, CensusData, Socrata, HealthData, GlobalHealthData,
 	UnitedNations, WorldPopulation, Wonder)
 
+import nltk
+from nltk import sent_tokenize
+from nltk.corpus import stopwords, wordnet, words
+from nltk.tokenize import word_tokenize
 import plotly.graph_objects as px
 import pandas as pd
 from pandas import DataFrame
@@ -87,6 +112,13 @@ import sqlite3
 from sqlite3 import Connection
 from urllib.parse import urljoin, urlparse
 
+try:
+	import textstat
+	
+	TEXTSTAT_AVAILABLE = True
+except ImportError:
+	TEXTSTAT_AVAILABLE = False
+	
 # =====================================================================
 # SESSION STATE
 # =====================================================================
@@ -158,15 +190,30 @@ if 'messages' not in st.session_state:
 if 'loader_results' not in st.session_state:
 	st.session_state[ 'loader_results' ] = { }
 
-if 'loader_documents' not in st.session_state:
-	st.session_state[ 'loader_documents' ] = [ ]
+if 'documents' not in st.session_state:
+	st.session_state[ 'documents' ] = None
+
+if 'tokens' not in st.session_state:
+	st.session_state[ 'tokens' ] = None
+
+if 'vocabulary' not in st.session_state:
+	st.session_state[ 'vocabulary' ] = None
+
+if 'raw_text' not in st.session_state:
+	st.session_state[ 'raw_text' ] = ''
+
+if 'processed_text' not in st.session_state:
+	st.session_state[ 'processed_text' ] = ''
+
+if 'token_counts' not in st.session_state:
+	st.session_state[ 'token_counts' ] = None
 
 if 'loader_path' not in st.session_state:
 	st.session_state[ 'loader_path' ] = ''
-	
+
 if 'loader_text' not in st.session_state:
 	st.session_state[ 'loader_text' ] = ''
-	
+
 if 'loader_files' not in st.session_state:
 	st.session_state[ 'loader_files' ] = ''
 
@@ -174,8 +221,13 @@ if 'loader_files' not in st.session_state:
 
 if 'target_url' not in st.session_state:
 	st.session_state[ 'target_url' ] = ''
-	
-	
+
+for corpus in cfg.REQUIRED_CORPORA:
+	try:
+		nltk.data.find( f'corpora/{corpus}' )
+	except LookupError:
+		nltk.download( corpus )
+		
 # =====================================================================
 # UTILITITES
 # =====================================================================
@@ -664,6 +716,31 @@ def normalize( obj ):
 			return str( obj )
 	return str( obj )
 
+def metric_with_tooltip( label: str, value: str, tooltip: str ):
+	"""
+		Renders a metric with a hover tooltip using a two-column layout.
+		Left column = the metric itself
+		Right column = hoverable ℹ️ icon
+	"""
+	col_metric, col_info = st.columns( [ 0.5, 0.5 ] )
+	
+	with col_metric:
+		st.metric( label, value )
+	
+	with col_info:
+		if label not in [ 'Characters', 'Tokens', 'Unique Tokens', 'Avg Length' ]:
+			st.markdown(
+				f"""
+	            <span style="
+	                cursor: help;
+	                font-size: 0.85rem;
+	                color:#888;
+	                vertical-align: super;
+	            " title="{tooltip}">ℹ️ </span>
+	            """,
+				unsafe_allow_html=True,
+			)
+			
 # ----------  Database Utilities --------------
 
 def initialize_database( ) -> None:
@@ -1702,6 +1779,36 @@ def rename_table( old_name: str, new_name: str ) -> None:
 		
 		conn.commit( )
 
+def clear_if_active( loader_name: str ) -> None:
+	if st.session_state.active_loader == loader_name:
+		st.session_state.documents = None
+		st.session_state.active_loader = None
+		st.session_state.tokens = None
+		st.session_state.vocabulary = None
+		st.session_state.token_counts = None
+		st.session_state.chunks = None
+		st.session_state.chunk_modes = None
+		st.session_state.chunked_documents = None
+		st.session_state.embeddings = None
+		st.session_state.active_table = None
+		st.session_state.df_frequency = None
+		st.session_state.df_tables = None
+		st.session_state.df_schema = None
+		st.session_state.df_preview = None
+		st.session_state.df_count = None
+		st.session_state.df_chunks = None
+		st.session_state.lines = None
+
+for key, default in cfg.SESSION_STATE_DEFAULTS.items( ):
+	if key not in st.session_state:
+		st.session_state[ key ] = default
+
+for corpus in cfg.REQUIRED_CORPORA:
+	try:
+		nltk.data.find( f'corpora/{corpus}' )
+	except LookupError:
+		nltk.download( corpus )
+		
 # =========================================================================
 # APP SET-UP
 # =========================================================================
@@ -1743,6 +1850,8 @@ with st.sidebar:
 if mode == 'Loading':
 	st.subheader( f'📤  Data Loading' )
 	st.divider( )
+	metrics_container = st.container( )
+	tokens = st.session_state.get( 'tokens' )
 	
 	def render_metrics_panel( ):
 		raw_text = st.session_state.get( 'raw_text' )
@@ -1916,8 +2025,7 @@ if mode == 'Loading':
 				return None
 			text = "\n\n".join(
 				d.page_content for d in docs
-				if
-				hasattr( d, "page_content" ) and isinstance( d.page_content, str ) and d.page_content.strip( )
+				if hasattr( d, "page_content" ) and isinstance( d.page_content, str ) and d.page_content.strip( )
 			)
 			return text if text.strip( ) else None
 		
@@ -6694,6 +6802,372 @@ elif mode == 'Retrieval':
 						)
 					else:
 						st.info( 'No results returned.' )
+
+	# -------------------------- Jupyter Notebook Loader
+	with st.expander( label='Jupyter Notebook Loader', icon='📓', expanded=False ):
+		notebook_file = st.file_uploader(
+			'Upload Notebook',
+			type=[ 'ipynb' ],
+			key='notebook_upload'
+		)
+		include_outputs = st.checkbox( 'Include Outputs', value=True, key='notebook_outputs' )
+		max_output_length = st.number_input(
+			'Max Output Length',
+			min_value=1,
+			max_value=20000,
+			value=100,
+			step=10,
+			key='notebook_max_output_length'
+		)
+		remove_newline = st.checkbox(
+			'Remove Newlines',
+			value=False,
+			key='notebook_remove_newline'
+		)
+		include_traceback = st.checkbox(
+			'Include Traceback',
+			value=False,
+			key='notebook_traceback'
+		)
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_notebook = col_load.button( 'Load', key='notebook_load' )
+		clear_notebook = col_clear.button( 'Clear', key='notebook_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'JupyterNotebookLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='notebook_loader_output.txt',
+				mime='text/plain',
+				key='notebook_save'
+			)
+		else:
+			col_save.button( 'Save', key='notebook_save_disabled', disabled=True )
+		
+		if clear_notebook:
+			clear_if_active( 'JupyterNotebookLoader' )
+			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+			st.session_state[ '_loader_status' ] = 'Jupyter Notebook Loader state cleared.'
+			st.rerun( )
+		
+		if load_notebook and notebook_file:
+			with tempfile.TemporaryDirectory( ) as tmp:
+				path = os.path.join( tmp, notebook_file.name )
+				with open( path, 'wb' ) as f:
+					f.write( notebook_file.read( ) )
+				
+				loader = JupyterNotebookLoader( )
+				documents = loader.load(
+					path=path,
+					include_outputs=include_outputs,
+					max_output_length=int( max_output_length ),
+					remove_newline=remove_newline,
+					traceback=include_traceback
+				) or [ ]
+			
+			st.session_state.documents = documents
+			st.session_state.raw_documents = list( documents )
+			st.session_state.raw_text = '\n\n'.join(
+				d.page_content for d in documents
+				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+				and d.page_content.strip( )
+			)
+			st.session_state.processed_text = None
+			st.session_state.tokens = None
+			st.session_state.vocabulary = None
+			st.session_state.token_counts = None
+			st.session_state.active_loader = 'JupyterNotebookLoader'
+			st.session_state[ '_loader_status' ] = (
+					f'Loaded {len( documents )} notebook document(s).'
+			)
+			st.rerun( )
+	
+	# -------------------------- Google Cloud Storage File Loader
+	with st.expander( label='Google Cloud Storage Loader', icon='☁️', expanded=False ):
+		project_name = st.text_input( 'Project Name', key='gcs_project_name' )
+		bucket = st.text_input( 'Bucket', key='gcs_bucket' )
+		blob = st.text_input( 'Blob', key='gcs_blob' )
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_gcs = col_load.button( 'Load', key='gcs_load' )
+		clear_gcs = col_clear.button( 'Clear', key='gcs_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'GoogleCloudStorageFileLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='gcs_loader_output.txt',
+				mime='text/plain',
+				key='gcs_save'
+			)
+		else:
+			col_save.button( 'Save', key='gcs_save_disabled', disabled=True )
+		
+		if clear_gcs:
+			clear_if_active( 'GoogleCloudStorageFileLoader' )
+			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+			st.session_state[ '_loader_status' ] = 'Google Cloud Storage File Loader state cleared.'
+			st.rerun( )
+		
+		if load_gcs and project_name and bucket and blob:
+			loader = GoogleCloudStorageFileLoader( )
+			documents = loader.load(
+				project_name=project_name,
+				bucket=bucket,
+				blob=blob
+			) or [ ]
+			st.session_state.documents = documents
+			st.session_state.raw_documents = list( documents )
+			st.session_state.raw_text = '\n\n'.join(
+				d.page_content for d in documents
+				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+				and d.page_content.strip( )
+			)
+			st.session_state.processed_text = None
+			st.session_state.tokens = None
+			st.session_state.vocabulary = None
+			st.session_state.token_counts = None
+			st.session_state.active_loader = 'GoogleCloudStorageFileLoader'
+			st.session_state[ '_loader_status' ] = (
+					f'Loaded {len( documents )} GCS document(s).'
+			)
+			st.rerun( )
+	
+	# -------------------------- Microsoft OneDrive Loader
+	with st.expander( label='OneDrive Loader', icon='🪟', expanded=False ):
+		drive_id = st.text_input( 'Drive ID', key='onedrive_drive_id' )
+		folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_folder_path' )
+		auth_with_token = st.checkbox(
+			'Authenticate With Cached Token',
+			value=True,
+			key='onedrive_auth_with_token'
+		)
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_onedrive = col_load.button( 'Load', key='onedrive_load' )
+		clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'MicrosoftOneDriveFileLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='onedrive_loader_output.txt',
+				mime='text/plain',
+				key='onedrive_save'
+			)
+		else:
+			col_save.button( 'Save', key='onedrive_save_disabled', disabled=True )
+		
+		if clear_onedrive:
+			clear_if_active( 'MicrosoftOneDriveFileLoader' )
+			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+			st.session_state[ '_loader_status' ] = 'Microsoft OneDrive Loader state cleared.'
+			st.rerun( )
+		
+		if load_onedrive and drive_id:
+			loader = MicrosoftOneDriveFileLoader( )
+			documents = loader.load(
+				drive_id=drive_id,
+				folder_path=folder_path.strip( ) if folder_path else None,
+				auth_with_token=auth_with_token
+			) or [ ]
+			st.session_state.documents = documents
+			st.session_state.raw_documents = list( documents )
+			st.session_state.raw_text = '\n\n'.join(
+				d.page_content for d in documents
+				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+				and d.page_content.strip( )
+			)
+			st.session_state.processed_text = None
+			st.session_state.tokens = None
+			st.session_state.vocabulary = None
+			st.session_state.token_counts = None
+			st.session_state.active_loader = 'MicrosoftOneDriveFileLoader'
+			st.session_state[ '_loader_status' ] = (
+					f'Loaded {len( documents )} OneDrive document(s).'
+			)
+			st.rerun( )
+	
+	# -------------------------- AWS S3 File Loader
+	with st.expander( label='AWS S3 Loader', icon='🪣', expanded=False ):
+		bucket = st.text_input( 'Bucket', key='s3_bucket' )
+		key_name = st.text_input( 'Key', key='s3_key' )
+		region_name = st.text_input( 'Region (Optional)', key='s3_region_name' )
+		aws_access_key_id = st.text_input(
+			'AWS Access Key ID (Optional)',
+			type='password',
+			key='s3_access_key'
+		)
+		aws_secret_access_key = st.text_input(
+			'AWS Secret Access Key (Optional)',
+			type='password',
+			key='s3_secret_key'
+		)
+		aws_session_token = st.text_input(
+			'AWS Session Token (Optional)',
+			type='password',
+			key='s3_session_token'
+		)
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_s3 = col_load.button( 'Load', key='s3_load' )
+		clear_s3 = col_clear.button( 'Clear', key='s3_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'AwsS3FileLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='s3_loader_output.txt',
+				mime='text/plain',
+				key='s3_save'
+			)
+		else:
+			col_save.button( 'Save', key='s3_save_disabled', disabled=True )
+		
+		if clear_s3:
+			clear_if_active( 'AwsS3FileLoader' )
+			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+			st.session_state[ '_loader_status' ] = 'AWS S3 File Loader state cleared.'
+			st.rerun( )
+		
+		if load_s3 and bucket and key_name:
+			loader = AwsS3FileLoader( )
+			documents = loader.load(
+				bucket=bucket,
+				key=key_name,
+				aws_access_key_id=aws_access_key_id.strip( ) or None,
+				aws_secret_access_key=aws_secret_access_key.strip( ) or None,
+				aws_session_token=aws_session_token.strip( ) or None,
+				region_name=region_name.strip( ) or None
+			) or [ ]
+			st.session_state.documents = documents
+			st.session_state.raw_documents = list( documents )
+			st.session_state.raw_text = '\n\n'.join(
+				d.page_content for d in documents
+				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+				and d.page_content.strip( )
+			)
+			st.session_state.processed_text = None
+			st.session_state.tokens = None
+			st.session_state.vocabulary = None
+			st.session_state.token_counts = None
+			st.session_state.active_loader = 'AwsS3FileLoader'
+			st.session_state[ '_loader_status' ] = f'Loaded {len( documents )} S3 document(s).'
+			st.rerun( )
+	
+	# -------------------------- Google Speech-to-Text Loader
+	with st.expander( label='Google Speech-to-Text Loader', icon='🎙️', expanded=False ):
+		project_id = st.text_input( 'Project ID', key='gstt_project_id' )
+		audio_file = st.file_uploader(
+			'Upload Audio File',
+			type=[ 'wav', 'flac', 'mp3', 'm4a', 'ogg' ],
+			key='gstt_audio_upload'
+		)
+		gcs_audio_uri = st.text_input(
+			'GCS Audio URI (Optional)',
+			placeholder='gs://bucket/path/audio.flac',
+			key='gstt_gcs_uri'
+		)
+		language_code = st.text_input(
+			'Language Code (Optional)',
+			value='en-US',
+			key='gstt_language_code'
+		)
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_gstt = col_load.button( 'Load', key='gstt_load' )
+		clear_gstt = col_clear.button( 'Clear', key='gstt_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'GoogleSpeechToTextAudioLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='google_speech_to_text_output.txt',
+				mime='text/plain',
+				key='gstt_save'
+			)
+		else:
+			col_save.button( 'Save', key='gstt_save_disabled', disabled=True )
+		
+		if clear_gstt:
+			clear_if_active( 'GoogleSpeechToTextAudioLoader' )
+			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+			st.session_state[ '_loader_status' ] = 'Google Speech-to-Text Loader state cleared.'
+			st.rerun( )
+		
+		if load_gstt and project_id and (audio_file or gcs_audio_uri.strip( )):
+			config: Dict[ str, Any ] | None = None
+			if language_code.strip( ):
+				config = { 'language_code': language_code.strip( ) }
+			
+			if gcs_audio_uri.strip( ):
+				file_path = gcs_audio_uri.strip( )
+				loader = GoogleSpeechToTextAudioLoader( )
+				documents = loader.load(
+					project_id=project_id,
+					file_path=file_path,
+					config=config
+				) or [ ]
+			else:
+				with tempfile.TemporaryDirectory( ) as tmp:
+					path = os.path.join( tmp, audio_file.name )
+					with open( path, 'wb' ) as f:
+						f.write( audio_file.read( ) )
+					
+					loader = GoogleSpeechToTextAudioLoader( )
+					documents = loader.load(
+						project_id=project_id,
+						file_path=path,
+						config=config
+					) or [ ]
+			
+			st.session_state.documents = documents
+			st.session_state.raw_documents = list( documents )
+			st.session_state.raw_text = '\n\n'.join(
+				d.page_content for d in documents
+				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+				and d.page_content.strip( )
+			)
+			st.session_state.processed_text = None
+			st.session_state.tokens = None
+			st.session_state.vocabulary = None
+			st.session_state.token_counts = None
+			st.session_state.active_loader = 'GoogleSpeechToTextAudioLoader'
+			st.session_state[ '_loader_status' ] = (
+					f'Loaded {len( documents )} transcript document(s).'
+			)
+			st.rerun( )
 
 # ==============================================================================
 # GEOSPATIAL MODE
@@ -14823,6 +15297,127 @@ elif mode == 'Population':
 						st.info( 'No XML response returned.' )
 				
 				_render_fallback_raw( result )
+
+	# -------------------------- PubMed Loader
+	with st.expander( label='PubMed Loader', icon='🧬', expanded=False ):
+		query = st.text_input( 'PubMed Query', key='pubmed_query' )
+		max_docs = st.number_input(
+			'Max Documents',
+			min_value=1,
+			max_value=100,
+			value=5,
+			step=1,
+			key='pubmed_max_docs'
+		)
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_pubmed = col_load.button( 'Load', key='pubmed_load' )
+		clear_pubmed = col_clear.button( 'Clear', key='pubmed_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'PubMedSearchLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='pubmed_loader_output.txt',
+				mime='text/plain',
+				key='pubmed_save'
+			)
+		else:
+			col_save.button( 'Save', key='pubmed_save_disabled', disabled=True )
+		
+		if clear_pubmed:
+			clear_if_active( 'PubMedSearchLoader' )
+			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+			st.session_state[ '_loader_status' ] = 'PubMed Loader state cleared.'
+			st.rerun( )
+		
+		if load_pubmed and query:
+			loader = PubMedSearchLoader( )
+			documents = loader.load( query=query, max_docs=int( max_docs ) ) or [ ]
+			st.session_state.documents = documents
+			st.session_state.raw_documents = list( documents )
+			st.session_state.raw_text = '\n\n'.join(
+				d.page_content for d in documents
+				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+				and d.page_content.strip( )
+			)
+			st.session_state.processed_text = None
+			st.session_state.tokens = None
+			st.session_state.vocabulary = None
+			st.session_state.token_counts = None
+			st.session_state.active_loader = 'PubMedSearchLoader'
+			st.session_state[ '_loader_status' ] = f'Loaded {len( documents )} PubMed document(s).'
+			st.rerun( )
+	
+	# -------------------------- Open City Data Loader
+	with st.expander( label='Open City Data Loader', icon='🏙️', expanded=False ):
+		city_id = st.text_input( 'City ID', value='data.sfgov.org', key='open_city_id' )
+		dataset_id = st.text_input( 'Dataset ID', key='open_city_dataset_id' )
+		limit = st.number_input(
+			'Limit',
+			min_value=1,
+			max_value=5000,
+			value=100,
+			step=10,
+			key='open_city_limit'
+		)
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_open_city = col_load.button( 'Load', key='open_city_load' )
+		clear_open_city = col_clear.button( 'Clear', key='open_city_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'OpenCityLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='open_city_loader_output.txt',
+				mime='text/plain',
+				key='open_city_save'
+			)
+		else:
+			col_save.button( 'Save', key='open_city_save_disabled', disabled=True )
+		
+		if clear_open_city:
+			clear_if_active( 'OpenCityLoader' )
+			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+			st.session_state[ '_loader_status' ] = 'Open City Data Loader state cleared.'
+			st.rerun( )
+		
+		if load_open_city and city_id and dataset_id:
+			loader = OpenCityLoader( )
+			documents = loader.load(
+				city_id=city_id,
+				dataset_id=dataset_id,
+				limit=int( limit )
+			) or [ ]
+			st.session_state.documents = documents
+			st.session_state.raw_documents = list( documents )
+			st.session_state.raw_text = '\n\n'.join(
+				d.page_content for d in documents
+				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+				and d.page_content.strip( )
+			)
+			st.session_state.processed_text = None
+			st.session_state.tokens = None
+			st.session_state.vocabulary = None
+			st.session_state.token_counts = None
+			st.session_state.active_loader = 'OpenCityLoader'
+			st.session_state[ '_loader_status' ] = (
+					f'Loaded {len( documents )} Open City document(s).'
+			)
+			st.rerun( )
 				
 # ==============================================================================
 # TEXT GENERATION MODE
