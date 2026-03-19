@@ -5078,225 +5078,6 @@ elif mode == 'Retrieval':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- Naval Observatory
-	with st.expander( label='US Naval Observatory', icon='⚓', expanded=False ):
-		if 'navalobservatory_results' not in st.session_state:
-			st.session_state[ 'navalobservatory_results' ] = { }
-		
-		if 'navalobservatory_clear_request' not in st.session_state:
-			st.session_state[ 'navalobservatory_clear_request' ] = False
-		
-		if st.session_state.get( 'navalobservatory_clear_request', False ):
-			st.session_state[ 'navalobservatory_date' ] = dt.date.today( )
-			st.session_state[ 'navalobservatory_time' ] = dt.time( 12, 0 )
-			st.session_state[ 'navalobservatory_latitude' ] = 38.9072
-			st.session_state[ 'navalobservatory_longitude' ] = -77.0369
-			st.session_state[ 'navalobservatory_location_label' ] = ''
-			st.session_state[ 'navalobservatory_timeout' ] = 20
-			st.session_state[ 'navalobservatory_results' ] = { }
-			st.session_state[ 'navalobservatory_clear_request' ] = False
-		
-		def _clear_navalobservatory_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Naval Observatory expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'navalobservatory_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			naval_date = st.date_input(
-				'Date',
-				value=st.session_state.get(
-					'navalobservatory_date',
-					dt.date.today( )
-				),
-				key='navalobservatory_date',
-				help='USNO date parameter in YYYY-MM-DD format.'
-			)
-			
-			naval_time = st.time_input(
-				'Time (UTC)',
-				value=st.session_state.get(
-					'navalobservatory_time',
-					dt.time( 12, 0 )
-				),
-				key='navalobservatory_time',
-				help='USNO time parameter in 24-hour format.'
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				naval_latitude = st.number_input(
-					'Latitude',
-					min_value=-90.0,
-					max_value=90.0,
-					value=float(
-						st.session_state.get( 'navalobservatory_latitude', 38.9072 )
-					),
-					step=0.0001,
-					format='%.6f',
-					key='navalobservatory_latitude',
-					help='Decimal degrees. North positive.'
-				)
-			
-			with c2:
-				naval_longitude = st.number_input(
-					'Longitude',
-					min_value=-180.0,
-					max_value=180.0,
-					value=float(
-						st.session_state.get( 'navalobservatory_longitude', -77.0369 )
-					),
-					step=0.0001,
-					format='%.6f',
-					key='navalobservatory_longitude',
-					help='Decimal degrees. East positive, west negative.'
-				)
-			
-			naval_location_label = st.text_input(
-				'Location Label',
-				value=st.session_state.get( 'navalobservatory_location_label', '' ),
-				key='navalobservatory_location_label',
-				placeholder='Example: Washington, DC'
-			)
-			
-			naval_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'navalobservatory_timeout', 20 ) ),
-				step=1,
-				key='navalobservatory_timeout'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				naval_submit = st.button(
-					'Submit',
-					key='navalobservatory_submit',
-					use_container_width=True
-				)
-			with b2:
-				naval_clear = st.button(
-					'Clear',
-					key='navalobservatory_clear',
-					on_click=_clear_navalobservatory_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			naval_output = st.empty( )
-		
-		if naval_submit:
-			try:
-				f = NavalObservatory( )
-				
-				result = f.fetch(
-					mode='celnav',
-					date_value=naval_date.strftime( '%Y-%m-%d' ),
-					time_value=naval_time.strftime( '%H:%M:%S' ),
-					latitude=float( naval_latitude ),
-					longitude=float( naval_longitude ),
-					location_label=naval_location_label,
-					time=int( naval_timeout )
-				)
-				
-				st.session_state[ 'navalobservatory_results' ] = result or { }
-				st.rerun( )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-				
-		result = st.session_state.get( 'navalobservatory_results', { } )
-		
-		if not result:
-			naval_output.text( 'No results.' )
-		else:
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
-			
-			with col_right:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': result.get( 'mode', '' ),
-							'url': result.get( 'url', '' ),
-							'params': params,
-							'location_label': result.get( 'location_label', '' ),
-					}
-				)
-				
-				if not data:
-					st.info( 'No results returned.' )
-				else:
-					st.markdown( '#### Observation Summary' )
-					
-					c1, c2 = st.columns( 2 )
-					
-					with c1:
-						if params.get( 'date', '' ):
-							st.markdown( f"**Date:** {params.get( 'date', '' )}" )
-						if params.get( 'time', '' ):
-							st.markdown( f"**Time:** {params.get( 'time', '' )}" )
-						if result.get( 'location_label', '' ):
-							st.markdown(
-								f"**Location Label:** {result.get( 'location_label', '' )}"
-							)
-					
-					with c2:
-						if params.get( 'coords', '' ):
-							st.markdown( f"**Coordinates:** {params.get( 'coords', '' )}" )
-					
-					bodies: List[ Dict[ str, Any ] ] = [ ]
-					
-					if isinstance( data, dict ):
-						for key in [ 'data', 'bodies', 'results', 'celestialBodies',
-						             'celestial_bodies' ]:
-							value = data.get( key, None )
-							if isinstance( value, list ):
-								bodies = [ item for item in value if isinstance( item, dict ) ]
-								break
-					
-					if bodies:
-						st.markdown( '#### Celestial Bodies' )
-						df_bodies = pd.DataFrame( bodies )
-						if not df_bodies.empty:
-							st.dataframe( df_bodies, use_container_width=True, hide_index=True )
-						else:
-							st.info( 'No displayable celestial body rows were found.' )
-					else:
-						top_fields = { }
-						
-						if isinstance( data, dict ):
-							for key in [
-									'gha', 'dec', 'hc', 'zn', 'altitude', 'azimuth',
-									'sunrise', 'sunset', 'moonrise', 'moonset'
-							]:
-								if key in data:
-									top_fields[ key ] = data.get( key )
-						
-						if top_fields:
-							st.markdown( '#### Key Values' )
-							st.json( top_fields )
-						else:
-							st.markdown( '#### Result' )
-							st.json( data )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
 	# -------- Open Science
 	with st.expander( label='Open Science', icon='🧪', expanded=False ):
 		if 'openscience_results' not in st.session_state:
@@ -8827,271 +8608,6 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- USGS Water Data
-	with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
-		if 'usgswaterdata_results' not in st.session_state:
-			st.session_state[ 'usgswaterdata_results' ] = { }
-		
-		if 'usgswaterdata_clear_request' not in st.session_state:
-			st.session_state[ 'usgswaterdata_clear_request' ] = False
-		
-		if st.session_state.get( 'usgswaterdata_clear_request', False ):
-			st.session_state[ 'usgswaterdata_mode' ] = 'monitoring-locations'
-			st.session_state[ 'usgswaterdata_monitoring_location_id' ] = ''
-			st.session_state[ 'usgswaterdata_state_code' ] = ''
-			st.session_state[ 'usgswaterdata_county_code' ] = ''
-			st.session_state[ 'usgswaterdata_site_type' ] = ''
-			st.session_state[ 'usgswaterdata_parameter_code' ] = ''
-			st.session_state[ 'usgswaterdata_limit' ] = 25
-			st.session_state[ 'usgswaterdata_timeout' ] = 20
-			st.session_state[ 'usgswaterdata_results' ] = { }
-			st.session_state[ 'usgswaterdata_clear_request' ] = False
-		
-		def _clear_usgswaterdata_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the USGS Water Data expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'usgswaterdata_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			usgswd_mode = st.selectbox(
-				'Mode',
-				options=[
-						'monitoring-locations',
-						'time-series-metadata',
-						'latest-continuous',
-						'latest-daily'
-				],
-				index=[
-						'monitoring-locations',
-						'time-series-metadata',
-						'latest-continuous',
-						'latest-daily'
-				].index(
-					st.session_state.get(
-						'usgswaterdata_mode',
-						'monitoring-locations'
-					)
-				),
-				key='usgswaterdata_mode'
-			)
-			
-			usgswd_monitoring_location_id = st.text_input(
-				'Monitoring Location ID',
-				value=st.session_state.get(
-					'usgswaterdata_monitoring_location_id',
-					''
-				),
-				key='usgswaterdata_monitoring_location_id',
-				placeholder='Example: USGS-01491000'
-			)
-			
-			meta_c1, meta_c2 = st.columns( 2 )
-			
-			with meta_c1:
-				usgswd_state_code = st.text_input(
-					'State Code',
-					value=st.session_state.get( 'usgswaterdata_state_code', '' ),
-					key='usgswaterdata_state_code',
-					disabled=(usgswd_mode != 'monitoring-locations'),
-					placeholder='Example: VA'
-				)
-			
-			with meta_c2:
-				usgswd_county_code = st.text_input(
-					'County Code',
-					value=st.session_state.get( 'usgswaterdata_county_code', '' ),
-					key='usgswaterdata_county_code',
-					disabled=(usgswd_mode != 'monitoring-locations'),
-					placeholder='Optional'
-				)
-			
-			usgswd_site_type = st.text_input(
-				'Site Type',
-				value=st.session_state.get( 'usgswaterdata_site_type', '' ),
-				key='usgswaterdata_site_type',
-				disabled=(usgswd_mode != 'monitoring-locations'),
-				placeholder='Examples: ST, LK, GW'
-			)
-			
-			usgswd_parameter_code = st.text_input(
-				'Parameter Code',
-				value=st.session_state.get( 'usgswaterdata_parameter_code', '' ),
-				key='usgswaterdata_parameter_code',
-				disabled=(usgswd_mode == 'monitoring-locations'),
-				placeholder='Example: 00060'
-			)
-			
-			usgswd_limit = st.number_input(
-				'Limit',
-				min_value=1,
-				max_value=200,
-				value=int( st.session_state.get( 'usgswaterdata_limit', 25 ) ),
-				step=1,
-				key='usgswaterdata_limit'
-			)
-			
-			usgswd_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'usgswaterdata_timeout', 20 ) ),
-				step=1,
-				key='usgswaterdata_timeout'
-			)
-			
-			st.caption(
-				'Monitoring Locations supports site discovery. The other modes '
-				'focus on parameter metadata and latest reported values.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				usgswd_submit = st.button(
-					'Submit',
-					key='usgswaterdata_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='usgswaterdata_clear',
-					on_click=_clear_usgswaterdata_state
-				)
-		
-		with col_right:
-			if usgswd_submit:
-				try:
-					f = USGSWaterData( )
-					result = f.fetch(
-						mode=str( usgswd_mode ),
-						monitoring_location_id=str(
-							usgswd_monitoring_location_id
-						).strip( ),
-						state_code=str( usgswd_state_code ).strip( ),
-						county_code=str( usgswd_county_code ).strip( ),
-						site_type=str( usgswd_site_type ).strip( ),
-						parameter_code=str( usgswd_parameter_code ).strip( ),
-						limit=int( usgswd_limit ),
-						time=int( usgswd_timeout )
-					)
-					
-					st.session_state[ 'usgswaterdata_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'USGS Water Data request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'usgswaterdata_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					params = result.get( 'params', { } ) or { }
-					if 'monitoring_location_id' in params:
-						st.markdown(
-							f"**Monitoring Location ID:** "
-							f"{params.get( 'monitoring_location_id', '' )}"
-						)
-					if 'parameter_code' in params:
-						st.markdown(
-							f"**Parameter Code:** {params.get( 'parameter_code', '' )}"
-						)
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						first_site = str( summary.get( 'first_site', '' ) or '' )
-						if first_site:
-							st.markdown( f"**First Site:** {first_site}" )
-						else:
-							st.markdown( '**First Site:** N/A' )
-					
-					with sum_c3:
-						first_parameter = str(
-							summary.get( 'first_parameter', '' ) or ''
-						)
-						first_value = str( summary.get( 'first_value', '' ) or '' )
-						
-						if first_parameter and first_value:
-							st.markdown(
-								f"**Sample Value:** {first_parameter} = {first_value}"
-							)
-						elif first_parameter:
-							st.markdown(
-								f"**Sample Parameter:** {first_parameter}"
-							)
-						else:
-							st.markdown( '**Sample Value:** N/A' )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### Results' )
-					df_usgswd = pd.DataFrame( rows )
-					
-					if not df_usgswd.empty:
-						st.dataframe(
-							df_usgswd,
-							use_container_width=True,
-							hide_index=True
-						)
-						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Name', '' ) or
-								item.get( 'Monitoring Location ID', '' ) or
-								f'Record {idx}'
-							)
-							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								st.json( item )
-					else:
-						st.info( 'No displayable USGS Water Data rows were found.' )
-				else:
-					st.info( 'No water data records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
 	# -------- USGS The National Map
 	with st.expander( label='The National Map', icon='🗺️', expanded=False ):
 		if 'usgstnm_results' not in st.session_state:
@@ -12151,13 +11667,497 @@ elif mode == 'Environmental':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.text( str( result.get( 'raw', '' ) ) )
+	
+	# -------- USGS Water Data
+	with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
+		if 'usgswaterdata_results' not in st.session_state:
+			st.session_state[ 'usgswaterdata_results' ] = { }
+		
+		if 'usgswaterdata_clear_request' not in st.session_state:
+			st.session_state[ 'usgswaterdata_clear_request' ] = False
+		
+		if st.session_state.get( 'usgswaterdata_clear_request', False ):
+			st.session_state[ 'usgswaterdata_mode' ] = 'monitoring-locations'
+			st.session_state[ 'usgswaterdata_monitoring_location_id' ] = ''
+			st.session_state[ 'usgswaterdata_state_code' ] = ''
+			st.session_state[ 'usgswaterdata_county_code' ] = ''
+			st.session_state[ 'usgswaterdata_site_type' ] = ''
+			st.session_state[ 'usgswaterdata_parameter_code' ] = ''
+			st.session_state[ 'usgswaterdata_limit' ] = 25
+			st.session_state[ 'usgswaterdata_timeout' ] = 20
+			st.session_state[ 'usgswaterdata_results' ] = { }
+			st.session_state[ 'usgswaterdata_clear_request' ] = False
+		
+		def _clear_usgswaterdata_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the USGS Water Data expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'usgswaterdata_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			usgswd_mode = st.selectbox(
+				'Mode',
+				options=[
+						'monitoring-locations',
+						'time-series-metadata',
+						'latest-continuous',
+						'latest-daily'
+				],
+				index=[
+						'monitoring-locations',
+						'time-series-metadata',
+						'latest-continuous',
+						'latest-daily'
+				].index(
+					st.session_state.get(
+						'usgswaterdata_mode',
+						'monitoring-locations'
+					)
+				),
+				key='usgswaterdata_mode'
+			)
+			
+			usgswd_monitoring_location_id = st.text_input(
+				'Monitoring Location ID',
+				value=st.session_state.get(
+					'usgswaterdata_monitoring_location_id',
+					''
+				),
+				key='usgswaterdata_monitoring_location_id',
+				placeholder='Example: USGS-01491000'
+			)
+			
+			meta_c1, meta_c2 = st.columns( 2 )
+			
+			with meta_c1:
+				usgswd_state_code = st.text_input(
+					'State Code',
+					value=st.session_state.get( 'usgswaterdata_state_code', '' ),
+					key='usgswaterdata_state_code',
+					disabled=(usgswd_mode != 'monitoring-locations'),
+					placeholder='Example: VA'
+				)
+			
+			with meta_c2:
+				usgswd_county_code = st.text_input(
+					'County Code',
+					value=st.session_state.get( 'usgswaterdata_county_code', '' ),
+					key='usgswaterdata_county_code',
+					disabled=(usgswd_mode != 'monitoring-locations'),
+					placeholder='Optional'
+				)
+			
+			usgswd_site_type = st.text_input(
+				'Site Type',
+				value=st.session_state.get( 'usgswaterdata_site_type', '' ),
+				key='usgswaterdata_site_type',
+				disabled=(usgswd_mode != 'monitoring-locations'),
+				placeholder='Examples: ST, LK, GW'
+			)
+			
+			usgswd_parameter_code = st.text_input(
+				'Parameter Code',
+				value=st.session_state.get( 'usgswaterdata_parameter_code', '' ),
+				key='usgswaterdata_parameter_code',
+				disabled=(usgswd_mode == 'monitoring-locations'),
+				placeholder='Example: 00060'
+			)
+			
+			usgswd_limit = st.number_input(
+				'Limit',
+				min_value=1,
+				max_value=200,
+				value=int( st.session_state.get( 'usgswaterdata_limit', 25 ) ),
+				step=1,
+				key='usgswaterdata_limit'
+			)
+			
+			usgswd_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'usgswaterdata_timeout', 20 ) ),
+				step=1,
+				key='usgswaterdata_timeout'
+			)
+			
+			st.caption(
+				'Monitoring Locations supports site discovery. The other modes '
+				'focus on parameter metadata and latest reported values.'
+			)
+			
+			btn_c1, btn_c2 = st.columns( 2 )
+			
+			with btn_c1:
+				usgswd_submit = st.button(
+					'Submit',
+					key='usgswaterdata_submit'
+				)
+			
+			with btn_c2:
+				st.button(
+					'Clear',
+					key='usgswaterdata_clear',
+					on_click=_clear_usgswaterdata_state
+				)
+		
+		with col_right:
+			if usgswd_submit:
+				try:
+					f = USGSWaterData( )
+					result = f.fetch(
+						mode=str( usgswd_mode ),
+						monitoring_location_id=str(
+							usgswd_monitoring_location_id
+						).strip( ),
+						state_code=str( usgswd_state_code ).strip( ),
+						county_code=str( usgswd_county_code ).strip( ),
+						site_type=str( usgswd_site_type ).strip( ),
+						parameter_code=str( usgswd_parameter_code ).strip( ),
+						limit=int( usgswd_limit ),
+						time=int( usgswd_timeout )
+					)
 					
+					st.session_state[ 'usgswaterdata_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'USGS Water Data request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'usgswaterdata_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					if 'mode' in result:
+						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+					if 'url' in result:
+						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				
+				with meta_c2:
+					params = result.get( 'params', { } ) or { }
+					if 'monitoring_location_id' in params:
+						st.markdown(
+							f"**Monitoring Location ID:** "
+							f"{params.get( 'monitoring_location_id', '' )}"
+						)
+					if 'parameter_code' in params:
+						st.markdown(
+							f"**Parameter Code:** {params.get( 'parameter_code', '' )}"
+						)
+				
+				summary = result.get( 'summary', { } ) or { }
+				if summary:
+					st.markdown( '#### Result Summary' )
+					
+					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+					
+					with sum_c1:
+						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+					
+					with sum_c2:
+						first_site = str( summary.get( 'first_site', '' ) or '' )
+						if first_site:
+							st.markdown( f"**First Site:** {first_site}" )
+						else:
+							st.markdown( '**First Site:** N/A' )
+					
+					with sum_c3:
+						first_parameter = str(
+							summary.get( 'first_parameter', '' ) or ''
+						)
+						first_value = str( summary.get( 'first_value', '' ) or '' )
+						
+						if first_parameter and first_value:
+							st.markdown(
+								f"**Sample Value:** {first_parameter} = {first_value}"
+							)
+						elif first_parameter:
+							st.markdown(
+								f"**Sample Parameter:** {first_parameter}"
+							)
+						else:
+							st.markdown( '**Sample Value:** N/A' )
+				
+				params = result.get( 'params', { } ) or { }
+				if params:
+					with st.expander( 'Request Parameters', expanded=False ):
+						st.json( params )
+				
+				rows = result.get( 'rows', [ ] ) or [ ]
+				if rows:
+					st.markdown( '#### Results' )
+					df_usgswd = pd.DataFrame( rows )
+					
+					if not df_usgswd.empty:
+						st.dataframe(
+							df_usgswd,
+							use_container_width=True,
+							hide_index=True
+						)
+						
+						top_rows = rows[ : min( 10, len( rows ) ) ]
+						for idx, item in enumerate( top_rows, start=1 ):
+							label = str(
+								item.get( 'Name', '' ) or
+								item.get( 'Monitoring Location ID', '' ) or
+								f'Record {idx}'
+							)
+							
+							with st.expander(
+									f'Record {idx}: {label}',
+									expanded=False
+							):
+								st.json( item )
+					else:
+						st.info( 'No displayable USGS Water Data rows were found.' )
+				else:
+					st.info( 'No water data records were returned.' )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
+
 # ==============================================================================
 # ASTRONOMICAL MODE
 # ==============================================================================
 elif mode == 'Astronomical':
 	st.subheader( f'🌌 Physics & Astronomical Data' )
 	st.divider( )
+	
+	# -------- Naval Observatory
+	with st.expander( label='US Naval Observatory', icon='⚓', expanded=False ):
+		if 'navalobservatory_results' not in st.session_state:
+			st.session_state[ 'navalobservatory_results' ] = { }
+		
+		if 'navalobservatory_clear_request' not in st.session_state:
+			st.session_state[ 'navalobservatory_clear_request' ] = False
+		
+		if st.session_state.get( 'navalobservatory_clear_request', False ):
+			st.session_state[ 'navalobservatory_date' ] = dt.date.today( )
+			st.session_state[ 'navalobservatory_time' ] = dt.time( 12, 0 )
+			st.session_state[ 'navalobservatory_latitude' ] = 38.9072
+			st.session_state[ 'navalobservatory_longitude' ] = -77.0369
+			st.session_state[ 'navalobservatory_location_label' ] = ''
+			st.session_state[ 'navalobservatory_timeout' ] = 20
+			st.session_state[ 'navalobservatory_results' ] = { }
+			st.session_state[ 'navalobservatory_clear_request' ] = False
+		
+		def _clear_navalobservatory_state( ) -> None:
+			'''
+				Purpose:
+				--------
+				Flag the Naval Observatory expander state for reset on the next rerun.
+
+				Parameters:
+				-----------
+				None
+
+				Returns:
+				--------
+				None
+			'''
+			st.session_state[ 'navalobservatory_clear_request' ] = True
+		
+		col_left, col_right = st.columns( 2, border=True )
+		
+		with col_left:
+			naval_date = st.date_input(
+				'Date',
+				value=st.session_state.get(
+					'navalobservatory_date',
+					dt.date.today( )
+				),
+				key='navalobservatory_date',
+				help='USNO date parameter in YYYY-MM-DD format.'
+			)
+			
+			naval_time = st.time_input(
+				'Time (UTC)',
+				value=st.session_state.get(
+					'navalobservatory_time',
+					dt.time( 12, 0 )
+				),
+				key='navalobservatory_time',
+				help='USNO time parameter in 24-hour format.'
+			)
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				naval_latitude = st.number_input(
+					'Latitude',
+					min_value=-90.0,
+					max_value=90.0,
+					value=float(
+						st.session_state.get( 'navalobservatory_latitude', 38.9072 )
+					),
+					step=0.0001,
+					format='%.6f',
+					key='navalobservatory_latitude',
+					help='Decimal degrees. North positive.'
+				)
+			
+			with c2:
+				naval_longitude = st.number_input(
+					'Longitude',
+					min_value=-180.0,
+					max_value=180.0,
+					value=float(
+						st.session_state.get( 'navalobservatory_longitude', -77.0369 )
+					),
+					step=0.0001,
+					format='%.6f',
+					key='navalobservatory_longitude',
+					help='Decimal degrees. East positive, west negative.'
+				)
+			
+			naval_location_label = st.text_input(
+				'Location Label',
+				value=st.session_state.get( 'navalobservatory_location_label', '' ),
+				key='navalobservatory_location_label',
+				placeholder='Example: Washington, DC'
+			)
+			
+			naval_timeout = st.number_input(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=120,
+				value=int( st.session_state.get( 'navalobservatory_timeout', 20 ) ),
+				step=1,
+				key='navalobservatory_timeout'
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				naval_submit = st.button(
+					'Submit',
+					key='navalobservatory_submit',
+					use_container_width=True
+				)
+			with b2:
+				naval_clear = st.button(
+					'Clear',
+					key='navalobservatory_clear',
+					on_click=_clear_navalobservatory_state,
+					use_container_width=True
+				)
+		
+		with col_right:
+			naval_output = st.empty( )
+		
+		if naval_submit:
+			try:
+				f = NavalObservatory( )
+				
+				result = f.fetch(
+					mode='celnav',
+					date_value=naval_date.strftime( '%Y-%m-%d' ),
+					time_value=naval_time.strftime( '%H:%M:%S' ),
+					latitude=float( naval_latitude ),
+					longitude=float( naval_longitude ),
+					location_label=naval_location_label,
+					time=int( naval_timeout )
+				)
+				
+				st.session_state[ 'navalobservatory_results' ] = result or { }
+				st.rerun( )
+			
+			except Exception as exc:
+				st.error( str( exc ) )
+		
+		result = st.session_state.get( 'navalobservatory_results', { } )
+		
+		if not result:
+			naval_output.text( 'No results.' )
+		else:
+			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+			
+			with col_right:
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{
+							'mode': result.get( 'mode', '' ),
+							'url': result.get( 'url', '' ),
+							'params': params,
+							'location_label': result.get( 'location_label', '' ),
+					}
+				)
+				
+				if not data:
+					st.info( 'No results returned.' )
+				else:
+					st.markdown( '#### Observation Summary' )
+					
+					c1, c2 = st.columns( 2 )
+					
+					with c1:
+						if params.get( 'date', '' ):
+							st.markdown( f"**Date:** {params.get( 'date', '' )}" )
+						if params.get( 'time', '' ):
+							st.markdown( f"**Time:** {params.get( 'time', '' )}" )
+						if result.get( 'location_label', '' ):
+							st.markdown(
+								f"**Location Label:** {result.get( 'location_label', '' )}"
+							)
+					
+					with c2:
+						if params.get( 'coords', '' ):
+							st.markdown( f"**Coordinates:** {params.get( 'coords', '' )}" )
+					
+					bodies: List[ Dict[ str, Any ] ] = [ ]
+					
+					if isinstance( data, dict ):
+						for key in [ 'data', 'bodies', 'results', 'celestialBodies',
+						             'celestial_bodies' ]:
+							value = data.get( key, None )
+							if isinstance( value, list ):
+								bodies = [ item for item in value if isinstance( item, dict ) ]
+								break
+					
+					if bodies:
+						st.markdown( '#### Celestial Bodies' )
+						df_bodies = pd.DataFrame( bodies )
+						if not df_bodies.empty:
+							st.dataframe( df_bodies, use_container_width=True, hide_index=True )
+						else:
+							st.info( 'No displayable celestial body rows were found.' )
+					else:
+						top_fields = { }
+						
+						if isinstance( data, dict ):
+							for key in [
+									'gha', 'dec', 'hc', 'zn', 'altitude', 'azimuth',
+									'sunrise', 'sunset', 'moonrise', 'moonset'
+							]:
+								if key in data:
+									top_fields[ key ] = data.get( key )
+						
+						if top_fields:
+							st.markdown( '#### Key Values' )
+							st.json( top_fields )
+						else:
+							st.markdown( '#### Result' )
+							st.json( data )
+				
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 	
 	# -------- Satellite Center
 	with st.expander( label='Satellite Center', icon='🛰️', expanded=False ):
@@ -16045,7 +16045,6 @@ elif mode == 'Population':
 				
 				_render_fallback_raw( result )
 				
-	
 	# -------- Open City
 	with st.expander( label='Open City', icon='🏙️', expanded=False ):
 		if 'open_city_results' not in st.session_state:
