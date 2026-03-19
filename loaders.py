@@ -4322,7 +4322,7 @@ class GoogleBucketLoader( Loader ):
 			)
 			raise exception
 
-class AmazonBucketLoader( Loader ):
+class AwsBucketLoader( Loader ):
 	'''
 
 		Purpose:

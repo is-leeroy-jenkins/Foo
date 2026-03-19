@@ -79,12 +79,14 @@ from loaders import (
 	ArXivLoader,
 	XmlLoader,
 	PubMedSearchLoader,
-	OpenCityDocLoader,
+	OpenCityLoader,
 	JupyterNotebookLoader,
 	AwsFileLoader,
 	OneDriveDocLoader,
 	GoogleCloudFileLoader,
-	GoogleSpeechToTextAudioLoader
+	GoogleSpeechToTextAudioLoader,
+	GoogleBucketLoader,
+	AwsBucketLoader
 )
 
 from generators import Chat, Claude, Grok, Mistral, Gemini
@@ -7228,13 +7230,13 @@ elif mode == 'Retrieval':
 	
 	# ------- Google Cloud File Loader
 	with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
-		project_name = st.text_input( 'Project Name', key='gcs_project_name' )
-		bucket = st.text_input( 'Bucket', key='gcs_bucket' )
-		blob = st.text_input( 'Blob', key='gcs_blob' )
+		project_name = st.text_input( 'Project Name', key='gc_project_name' )
+		bucket = st.text_input( 'Bucket', key='gc_bucket' )
+		blob = st.text_input( 'Blob', key='gc_blob' )
 		
 		col_load, col_clear, col_save = st.columns( 3 )
-		load_gcs = col_load.button( 'Load', key='gcs_load' )
-		clear_gcs = col_clear.button( 'Clear', key='gcs_clear' )
+		load_gcs = col_load.button( 'Load', key='gcf_load' )
+		clear_gcs = col_clear.button( 'Clear', key='gcf_clear' )
 		
 		can_save = (
 				st.session_state.get( 'active_loader' ) == 'GoogleCloudFileLoader'
@@ -7246,12 +7248,12 @@ elif mode == 'Retrieval':
 			col_save.download_button(
 				'Save',
 				data=st.session_state.get( 'raw_text' ),
-				file_name='gcs_loader_output.txt',
+				file_name='gcf_loader_output.txt',
 				mime='text/plain',
 				key='gcs_save'
 			)
 		else:
-			col_save.button( 'Save', key='gcs_save_disabled', disabled=True )
+			col_save.button( 'Save', key='gcf_save_disabled', disabled=True )
 		
 		if clear_gcs:
 			remaining = _clear_loader_documents( 'GoogleCloudFileLoader' )
@@ -7441,7 +7443,7 @@ elif mode == 'Retrieval':
 				
 				if gcs_audio_uri.strip( ):
 					file_path = gcs_audio_uri.strip( )
-					loader = LangChainSpeechToTextLoader(
+					loader = GoogleSpeechToTextAudioLoader(
 						project_id=project_id.strip( ),
 						file_path=file_path,
 						config=config
@@ -7492,7 +7494,7 @@ elif mode == 'Retrieval':
 		clear_amazon_bucket = col_clear.button( 'Clear', key='s3_directory_clear' )
 		
 		can_save = (
-				st.session_state.get( 'active_loader' ) == 'AmazonBucketLoader'
+				st.session_state.get( 'active_loader' ) == 'AwsBucketLoader'
 				and isinstance( st.session_state.get( 'raw_text' ), str )
 				and st.session_state.get( 'raw_text' ).strip( )
 		)
@@ -7509,12 +7511,12 @@ elif mode == 'Retrieval':
 			col_save.button( 'Save', key='s3_directory_save_disabled', disabled=True )
 		
 		if clear_amazon_bucket:
-			remaining = _clear_loader_documents( 'AmazonBucketLoader' )
+			remaining = _clear_loader_documents( 'AwsBucketLoader' )
 			st.info( f'Amazon Bucket Loader state cleared. Remaining documents: {remaining}.' )
 		
 		if load_amazon_bucket and bucket_name.strip( ):
 			try:
-				loader = AmazonBucketLoader( )
+				loader = AwsBucketLoader( )
 				documents = loader.load(
 					bucket=bucket_name.strip( ),
 					prefix=prefix.strip( ) or None,
@@ -7524,7 +7526,7 @@ elif mode == 'Retrieval':
 					region_name=region_name.strip( ) or None,
 					endpoint_url=endpoint_url.strip( ) or None
 				) or [ ]
-				count = _promote_loader_documents( documents, 'AmazonBucketLoader' )
+				count = _promote_loader_documents( documents, 'AwsBucketLoader' )
 				st.success( f'Loaded {count} Amazon bucket document(s).' )
 			except Exception as e:
 				st.error( str( e ) )
