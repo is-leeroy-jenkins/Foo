@@ -7533,12 +7533,12 @@ elif mode == 'Retrieval':
 	
 	# -------- Google Bucket Loader
 	with st.expander( label='Google Cloud Bucket', icon='🪣', expanded=False ):
-		project_name = st.text_input( 'Project Name', key='gcs_bucket_project_name' )
-		bucket_name = st.text_input( 'Bucket', key='gcs_bucket_name' )
+		project_name = st.text_input( 'Project Name', key='gcp_bucket_project_name' )
+		bucket_name = st.text_input( 'Bucket', key='gcp_bucket_name' )
 		
 		col_load, col_clear, col_save = st.columns( 3 )
-		load_google_bucket = col_load.button( 'Load', key='gcs_bucket_load' )
-		clear_google_bucket = col_clear.button( 'Clear', key='gcs_bucket_clear' )
+		load_google_bucket = col_load.button( 'Load', key='gcp_bucket_load' )
+		clear_google_bucket = col_clear.button( 'Clear', key='gcp_bucket_clear' )
 		
 		can_save = (
 				st.session_state.get( 'active_loader' ) == 'GoogleBucketLoader'
@@ -7552,10 +7552,10 @@ elif mode == 'Retrieval':
 				data=st.session_state.get( 'raw_text' ),
 				file_name='google_bucket_loader_output.txt',
 				mime='text/plain',
-				key='gcs_bucket_save'
+				key='gcp_bucket_dl_btn'
 			)
 		else:
-			col_save.button( 'Save', key='gcs_bucket_save_disabled', disabled=True )
+			col_save.button( 'Save', key='gcp_bucket_save_btn', disabled=True )
 		
 		if clear_google_bucket:
 			remaining = _clear_loader_documents( 'GoogleBucketLoader' )
