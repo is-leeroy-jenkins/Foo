@@ -3925,7 +3925,7 @@ elif mode == 'Retrieval':
 	st.session_state.setdefault( "arxiv_results", [ ] )
 	
 	# -------- ArXiv
-	with st.expander( label='ArXiv', expanded=False  ):
+	with st.expander( label='ArXiv', icon='📘', expanded=False  ):
 		if 'arxiv_results' not in st.session_state:
 			st.session_state[ 'arxiv_results' ] = [ ]
 		
@@ -4069,7 +4069,7 @@ elif mode == 'Retrieval':
 							st.write( doc )
 				
 	# -------- Google Drive
-	with st.expander( label='Google Drive', expanded=False ):
+	with st.expander( label='Google Drive', icon='🚗',expanded=False ):
 		if 'googledrive_results' not in st.session_state:
 			st.session_state[ 'googledrive_results' ] = [ ]
 		
@@ -4262,7 +4262,7 @@ elif mode == 'Retrieval':
 							st.write( doc )
 	
 	# -------- Wikipedia
-	with st.expander( label='Wikipedia', expanded=False ):
+	with st.expander( label='Wikipedia', icon='📖',expanded=False ):
 		if 'wikipedia_results' not in st.session_state:
 			st.session_state[ 'wikipedia_results' ] = [ ]
 		
@@ -4416,7 +4416,7 @@ elif mode == 'Retrieval':
 							st.write( doc )
 	
 	# -------- Google Search
-	with st.expander( label='Google Search', expanded=False ):
+	with st.expander( label='Google Search', icon='🔍', expanded=False ):
 		if 'googlesearch_results' not in st.session_state:
 			st.session_state[ 'googlesearch_results' ] = { }
 		
@@ -4809,7 +4809,7 @@ elif mode == 'Retrieval':
 								st.json( item )
 	
 	# -------- Google Geocoding
-	with st.expander( label='Geocoding', expanded=False ):
+	with st.expander( label='Geocoding', icon='📍',expanded=False ):
 		if 'googlegeocoding_results' not in st.session_state:
 			st.session_state[ 'googlegeocoding_results' ] = { }
 		
@@ -5079,7 +5079,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 	
 	# -------- Naval Observatory
-	with st.expander( label='US Naval Observatory', expanded=False ):
+	with st.expander( label='US Naval Observatory', icon='🔭',expanded=False ):
 		if 'navalobservatory_results' not in st.session_state:
 			st.session_state[ 'navalobservatory_results' ] = { }
 		
@@ -5298,7 +5298,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 	
 	# -------- Open Science
-	with st.expander( label='Open Science', expanded=False ):
+	with st.expander( label='Open Science', icon='🧪', expanded=False ):
 		if 'openscience_results' not in st.session_state:
 			st.session_state[ 'openscience_results' ] = { }
 		
@@ -5500,7 +5500,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 	
 	# -------- Gov Info
-	with st.expander( label='Gov Info', expanded=False ):
+	with st.expander( label='Gov Info', icon='🏛️', expanded=False ):
 		if 'govinfo_results' not in st.session_state:
 			st.session_state[ 'govinfo_results' ] = { }
 		
@@ -5831,7 +5831,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 	
 	# -------- Congress
-	with st.expander( label='US Congress', expanded=False ):
+	with st.expander( label='US Congress', icon='🔨', expanded=False ):
 		if 'congress_results' not in st.session_state:
 			st.session_state[ 'congress_results' ] = { }
 		
@@ -6238,7 +6238,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 	
 	# -------- Internet Archive
-	with st.expander( label='Internet Archive', expanded=False ):
+	with st.expander( label='Internet Archive', icon='🗄️', expanded=False ):
 		if 'internetarchive_results' not in st.session_state:
 			st.session_state[ 'internetarchive_results' ] = { }
 		
@@ -6519,7 +6519,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 
 	# -------- Grokipedia
-	with st.expander( label='Grokipedia', expanded=False ):
+	with st.expander( label='Grokipedia', icon='🧠', expanded=False ):
 		if 'grokipedia_results' not in st.session_state:
 			st.session_state[ 'grokipedia_results' ] = { }
 		
@@ -7273,7 +7273,7 @@ elif mode == 'Retrieval':
 				st.error( str( e ) )
 	
 	# -------- AWS File Loader
-	with st.expander( label='AWS S3 File', icon='🪣', expanded=False ):
+	with st.expander( label='AWS S3 File', icon='🪣',expanded=False ):
 		bucket = st.text_input( 'Bucket', key='aws_bucket' )
 		key_name = st.text_input( 'Key', key='aws_key' )
 		region_name = st.text_input( 'Region (Optional)', key='aws_region_name' )
@@ -7341,7 +7341,7 @@ elif mode == 'Retrieval':
 				st.error( str( e ) )
 				
 	# ------ OneDrive Loader
-	with st.expander( label='OneDrive', icon='🪟', expanded=False ):
+	with st.expander( label='OneDrive', icon='💻', expanded=False ):
 		drive_id = st.text_input( 'Drive ID', key='onedrive_id' )
 		folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_dirpath' )
 		auth_with_token = st.checkbox(
@@ -7581,7 +7581,7 @@ elif mode == 'Geospatial':
 	st.divider( )
 	
 	# -------- Google Maps
-	with st.expander( label='Google Maps', expanded=False ):
+	with st.expander( label='Google Maps', icon='🗺️', expanded=False ):
 		col_left, col_right = st.columns( 2, border=True )
 		
 		with col_left:
@@ -7614,7 +7614,7 @@ elif mode == 'Geospatial':
 					st.error( exc )
 	
 	# -------- Google Weather
-	with st.expander( label='Google Weather', expanded=False ):
+	with st.expander( label='Google Weather', icon='🌤️', expanded=False ):
 		if 'googleweather_results' not in st.session_state:
 			st.session_state[ 'googleweather_results' ] = { }
 		
@@ -7905,7 +7905,7 @@ elif mode == 'Geospatial':
 				st.json( result )
 	
 	# -------- Open Weather
-	with st.expander( label='Open Weather', expanded=False ):
+	with st.expander( abel='Open Weather', icon='🌦️', expanded=False ):
 		if 'openweather_results' not in st.session_state:
 			st.session_state[ 'openweather_results' ] = { }
 		
@@ -8085,7 +8085,7 @@ elif mode == 'Geospatial':
 					st.info( message )
 	
 	# -------- Historical Weather
-	with st.expander( label='Historical Weather', expanded=False ):
+	with st.expander( label='Historical Weather', icon='📈', expanded=False ):
 		if 'historicalweather_results' not in st.session_state:
 			st.session_state[ 'historicalweather_results' ] = { }
 		
@@ -8238,7 +8238,7 @@ elif mode == 'Geospatial':
 					st.info( message )
 	
 	# -------- USGS Earthquakes
-	with st.expander( label='USGS Earthquakes', expanded=False ):
+	with st.expander( label='USGS Earthquakes', icon='🌎', expanded=False ):
 		if 'usgsearthquakes_results' not in st.session_state:
 			st.session_state[ 'usgsearthquakes_results' ] = { }
 		
@@ -8608,7 +8608,7 @@ elif mode == 'Geospatial':
 					st.json( result )
 	
 	# -------- Earth Observatory
-	with st.expander( label='NASA Earth Observatory', expanded=False ):
+	with st.expander( label='NASA Earth Observatory', icon='🛰️', expanded=False ):
 		if 'earthobservatory_results' not in st.session_state:
 			st.session_state[ 'earthobservatory_results' ] = { }
 		
@@ -8828,7 +8828,7 @@ elif mode == 'Geospatial':
 					st.json( result )
 	
 	# -------- USGS Water Data
-	with st.expander( label='USGS Water Data', expanded=False ):
+	with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
 		if 'usgswaterdata_results' not in st.session_state:
 			st.session_state[ 'usgswaterdata_results' ] = { }
 		
@@ -9093,7 +9093,7 @@ elif mode == 'Geospatial':
 					st.json( result )
 	
 	# -------- USGS The National Map
-	with st.expander( label='The National Map', expanded=False ):
+	with st.expander( label='The National Map', icon='🗺️', expanded=False ):
 		if 'usgstnm_results' not in st.session_state:
 			st.session_state[ 'usgstnm_results' ] = { }
 		
@@ -9371,7 +9371,7 @@ elif mode == 'Geospatial':
 					st.json( result )
 	
 	# -------- USGS ScienceBase
-	with st.expander( label='USGS Science Base', expanded=False ):
+	with st.expander( label='USGS Science Base', icon='🔬', expanded=False ):
 		if 'usgssb_results' not in st.session_state:
 			st.session_state[ 'usgssb_results' ] = { }
 		
@@ -9642,7 +9642,7 @@ elif mode == 'Environmental':
 	st.divider( )
 	
 	# -------- AirNow
-	with st.expander( label='Air Now', expanded=False ):
+	with st.expander( label='Air Now', icon='🌫️', expanded=False ):
 		if 'airnow_results' not in st.session_state:
 			st.session_state[ 'airnow_results' ] = { }
 		
@@ -9930,7 +9930,7 @@ elif mode == 'Environmental':
 					st.json( result )
 	
 	# -------- NOAA Climate Data
-	with st.expander( label='NOAA Climate Data', expanded=False ):
+	with st.expander( label='NOAA Climate Data', icon='🌡️', expanded=False ):
 		if 'climatedata_results' not in st.session_state:
 			st.session_state[ 'climatedata_results' ] = { }
 		
@@ -10193,7 +10193,7 @@ elif mode == 'Environmental':
 					st.json( result )
 	
 	# -------- NASA EONET
-	with st.expander( label='NASA EONET', expanded=False ):
+	with st.expander( label='NASA EONET', icon='🔥',expanded=False ):
 		if 'eonet_results' not in st.session_state:
 			st.session_state[ 'eonet_results' ] = { }
 		
@@ -10489,7 +10489,7 @@ elif mode == 'Environmental':
 					st.json( result )
 	
 	# -------- EPA Envirofacts
-	with st.expander( label='EPA Envirofacts', expanded=False ):
+	with st.expander( label='EPA Envirofacts', icon='♻️', expanded=False ):
 		if 'envirofacts_results' not in st.session_state:
 			st.session_state[ 'envirofacts_results' ] = { }
 		
@@ -10694,7 +10694,7 @@ elif mode == 'Environmental':
 					st.json( result )
 	
 	# -------- NOAA Tides & Currents
-	with st.expander( label='NOAA Tides & Currents', expanded=False ):
+	with st.expander( label='NOAA Tides & Currents', icon='🌊', expanded=False ):
 		if 'tidesandcurrents_results' not in st.session_state:
 			st.session_state[ 'tidesandcurrents_results' ] = { }
 		
@@ -10956,7 +10956,7 @@ elif mode == 'Environmental':
 					st.json( result )
 	
 	# -------- EPA UV Index
-	with st.expander( label='EPA UV Index', expanded=False ):
+	with st.expander( label='EPA UV Index', icon='☀️', expanded=False ):
 		if 'uvindex_results' not in st.session_state:
 			st.session_state[ 'uvindex_results' ] = { }
 		
@@ -11175,7 +11175,7 @@ elif mode == 'Environmental':
 					st.json( result )
 	
 	# -------- PurpleAir
-	with st.expander( label='Purple Air', expanded=False ):
+	with st.expander( label='Purple Air', icon='🟣', expanded=False ):
 		if 'purpleair_results' not in st.session_state:
 			st.session_state[ 'purpleair_results' ] = { }
 		
@@ -11441,7 +11441,7 @@ elif mode == 'Environmental':
 					st.json( result )
 	
 	# -------- OpenAQ
-	with st.expander( label='Open Air Quality', expanded=False ):
+	with st.expander( label='Open Air Quality', icon='🌬️', expanded=False ):
 		if 'openaq_results' not in st.session_state:
 			st.session_state[ 'openaq_results' ] = { }
 		
@@ -11714,7 +11714,7 @@ elif mode == 'Environmental':
 					st.json( result )
 	
 	# -------- NASA FIRMS
-	with st.expander( label='NASA FIRMS', expanded=False ):
+	with st.expander( label='NASA FIRMS', icon='🔥', expanded=False ):
 		if 'firms_results' not in st.session_state:
 			st.session_state[ 'firms_results' ] = { }
 		
@@ -11984,7 +11984,7 @@ elif mode == 'Astronomical':
 	st.divider( )
 	
 	# -------- Satellite Center
-	with st.expander( label='Satellite Center', expanded=False ):
+	with st.expander( label='Satellite Center', icon='🛰️', expanded=False ):
 		if 'satellitecenter_results' not in st.session_state:
 			st.session_state[ 'satellitecenter_results' ] = { }
 		
@@ -12296,7 +12296,7 @@ elif mode == 'Astronomical':
 					st.json( result )
 	
 	# -------- Astro Catalog
-	with st.expander( label='Astro Catalog', expanded=False ):
+	with st.expander( label='Astro Catalog', icon='✨', expanded=False ):
 		if 'astrocatalog_results' not in st.session_state:
 			st.session_state[ 'astrocatalog_results' ] = { }
 		
@@ -12616,7 +12616,7 @@ elif mode == 'Astronomical':
 						)
 	
 	# -------- Astro Query
-	with st.expander( label='Astro Query', expanded=False ):
+	with st.expander( label='Astro Query', icon='🔭', expanded=False ):
 		if 'astroquery_results' not in st.session_state:
 			st.session_state[ 'astroquery_results' ] = { }
 		
@@ -12829,7 +12829,7 @@ elif mode == 'Astronomical':
 					st.json( result )
 	
 	# -------- Star Map
-	with st.expander( label='Star Map', expanded=False ):
+	with st.expander( label='Star Map', icon='⭐',expanded=False ):
 		if 'starmap_results' not in st.session_state:
 			st.session_state[ 'starmap_results' ] = { }
 		
@@ -13081,7 +13081,7 @@ elif mode == 'Astronomical':
 					)
 	
 	# -------- SIMBAD
-	with st.expander( label='SIMBAD', expanded=False ):
+	with st.expander( label='SIMBAD', icon='🌌', expanded=False ):
 		if 'simbad_results' not in st.session_state:
 			st.session_state[ 'simbad_results' ] = { }
 		
@@ -13287,7 +13287,7 @@ elif mode == 'Astronomical':
 					st.json( result )
 	
 	# -------- Space Weather
-	with st.expander( label='Space Weather', expanded=False ):
+	with st.expander( label='Space Weather', icon='☄️', expanded=False ):
 		if 'spaceweather_results' not in st.session_state:
 			st.session_state[ 'spaceweather_results' ] = { }
 		
@@ -13580,7 +13580,7 @@ elif mode == 'Astronomical':
 					st.json( result )
 	
 	# -------- Star Chart
-	with st.expander( label='Star Chart', expanded=False ):
+	with st.expander( label='Star Chart', icon='🪐', expanded=False ):
 		if 'starchart_results' not in st.session_state:
 			st.session_state[ 'starchart_results' ] = { }
 		
@@ -13944,7 +13944,7 @@ elif mode == 'Astronomical':
 					st.json( result )
 	
 	# -------- Nearby Objects
-	with st.expander( label='Near Earth Objects', expanded=False ):
+	with st.expander( label='Near Earth Objects', icon='☄️', expanded=False ):
 		if 'nearbyobjects_results' not in st.session_state:
 			st.session_state[ 'nearbyobjects_results' ] = { }
 		
@@ -14328,7 +14328,7 @@ elif mode == 'Population':
 	st.divider( )
 	
 	# -------- U.S. Census Bureau
-	with st.expander( label='U.S. Census Bureau', expanded=False ):
+	with st.expander( label='U.S. Census Bureau', icon='📊', expanded=False ):
 		if 'census_results' not in st.session_state:
 			st.session_state[ 'census_results' ] = { }
 		
@@ -14540,7 +14540,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- CDC SOCRATA
-	with st.expander( label='CDC Socrata', expanded=False ):
+	with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
 		if 'socrata_results' not in st.session_state:
 			st.session_state[ 'socrata_results' ] = { }
 		
@@ -14775,7 +14775,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- US Health Data
-	with st.expander( label='U.S. Health', expanded=False ):
+	with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
 		if 'healthdata_results' not in st.session_state:
 			st.session_state[ 'healthdata_results' ] = { }
 		
@@ -15010,7 +15010,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- WHO Global Health
-	with st.expander( label='WHO Global', expanded=False ):
+	with st.expander( label='WHO Global', icon='🌍', expanded=False ):
 		if 'who_results' not in st.session_state:
 			st.session_state[ 'who_results' ] = { }
 		
@@ -15181,7 +15181,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- United Nations Data
-	with st.expander( label='United Nations', expanded=False ):
+	with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
 		if 'un_results' not in st.session_state:
 			st.session_state[ 'un_results' ] = { }
 		
@@ -15330,7 +15330,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- World Population
-	with st.expander( label='World Population', expanded=False ):
+	with st.expander( label='World Population', icon='👥', expanded=False ):
 		if 'worldpop_results' not in st.session_state:
 			st.session_state[ 'worldpop_results' ] = { }
 		
@@ -15536,7 +15536,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- CDC WONDER
-	with st.expander( label='CDC Wonder', expanded=False ):
+	with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
 		if 'wonder_results' not in st.session_state:
 			st.session_state[ 'wonder_results' ] = { }
 		
