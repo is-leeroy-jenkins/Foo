@@ -61,18 +61,13 @@ from langchain_community.document_loaders import (
 	GithubFileLoader,
 	UnstructuredXMLLoader,
 	RecursiveUrlLoader,
-	PubMedLoader as PubMedDocLoader,
-	OpenCityDataLoader as OpenCityDocLoader,
-	NotebookLoader as JupyterNotebookLoader,
-	S3FileLoader as AwsS3FileLoader
+	PubMedLoader,
+	OpenCityDataLoader,
+	NotebookLoader,
+	S3FileLoader
 )
-from langchain_community.document_loaders.onedrive import (
-	OneDriveLoader as OneDriveDocLoader,
-)
-from langchain_google_community import (
-	GCSFileLoader as GoogleCloudFileLoader,
-	SpeechToTextLoader as GoogleSpeechToTextLoader,
-)
+
+from langchain_google_community import ( GCSFileLoader, SpeechToTextLoader )
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.document_loaders.onedrive import OneDriveLoader
 from langchain_community.document_loaders.parsers import RapidOCRBlobParser
@@ -81,6 +76,8 @@ from langchain_core.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 from langchain_google_community import GoogleDriveLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import S3DirectoryLoader
+from langchain_google_community import GCSDirectoryLoader
 
 from lxml import etree
 
@@ -183,7 +180,7 @@ class Loader( ):
 			return self.file_path
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'Loader'
 			exception.method = 'verify_exists( self, path: str ) -> str'
 			raise exception
@@ -220,7 +217,7 @@ class Loader( ):
 			return sorted( set( self.resolved ) )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'Loader'
 			exception.method = 'resolve_paths( self, pattern: str ) -> List[ str ]'
 			raise exception
@@ -255,7 +252,7 @@ class Loader( ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'CSV'
 			exception.method = 'load_documents( self, **kwargs )'
 			raise exception
@@ -288,7 +285,7 @@ class Loader( ):
 			return self.splitter.split_documents( documents=self.documents )
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'Loader'
 			exception.method = ('split_documents( self, docs: List[ Document ], chunk: int=1000, '
 			                    'overlap: int=200 ) -> List[ Document ]')
@@ -397,7 +394,7 @@ class TextLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'TextLoader'
 			exception.method = (
 					'load( self, path: str, encoding: Optional[ str ]=None ) '
@@ -434,7 +431,7 @@ class TextLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'TextLoader'
 			exception.method = (
 					'split( self, chunk: int=1000, overlap: int=200 ) '
@@ -447,81 +444,53 @@ class CsvLoader( Loader ):
 
 		Purpose:
 		--------
-		Provides CSVLoader functionality to parse CSV files into Document objects.
-
-
-		Attributes:
-		----------
-		documents - List[ Document ]
-		file_path -  str
-		pattern -  str
-		expanded - List[ str ]
-		candidates - List[ str ]
-		resolved - List[ str ]
-		splitter - RecursiveCharacterTextSplitter
-		chunk_size - int
-		overlap_amount - int
-		csv_args: Dict[ str, Any ]
-		columns - List[ str ]
-
-		Methods:
-		-------
-		verify_exists( self, path: str ) -> str,
-		resolve_paths( self, pattern: str ) -> List[ str ],
-		split_documents( self, docs: List[ Document ]  ) -> List[ Document ]
-		load( self, path: str, encoding: Optional[ str ]=None,
+		Wrap LangChain's CSVLoader to load CSV files into LangChain Document objects.
 
 	'''
 	loader: Optional[ CSVLoader ]
-	documents: Optional[ List[ Document ] ]
-	splitter: Optional[ RecursiveCharacterTextSplitter ]
 	file_path: Optional[ str ]
-	quote_char: Optional[ str ]
+	documents: Optional[ List[ Document ] ]
+	encoding: Optional[ str ]
 	csv_args: Optional[ Dict[ str, Any ] ]
-	columns: Optional[ List[ str ] ]
+	source_column: Optional[ str ]
+	delimiter: Optional[ str ]
+	quotechar: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		super( ).__init__( )
-		self.file_path = None
-		self.columns = None
-		self.csv_args = None
-		self.documents = None
-		self.quote_char = '"'
-		self.pattern = ","
-		self.chunk_size = None
-		self.overlap_amount = None
 		self.loader = None
+		self.file_path = None
+		self.documents = [ ]
+		self.encoding = None
+		self.csv_args = None
+		self.source_column = None
+		self.delimiter = None
+		self.quotechar = None
 	
-	def __dir__( self ):
-		'''
-
-			Returns:
-			--------
-			A list of all available members.
-
-
-		'''
-		return [ 'loader',
-		         'documents',
-		         'splitter',
-		         'pattern',
-		         'delimiter'
-		         'file_path',
-		         'expanded',
-		         'candidates',
-		         'resolved',
-		         'chunk_size',
-		         'overlap_amount',
-		         'verify_exists',
-		         'resolve_paths',
-		         'split_documents',
-		         'load',
-		         'split',
-		         'csv_args',
-		         'columns' ]
+	def __dir__( self ) -> List[ str ]:
+		return [
+				'loader',
+				'file_path',
+				'documents',
+				'encoding',
+				'csv_args',
+				'source_column',
+				'delimiter',
+				'quotechar',
+				'chunk_size',
+				'overlap_amount',
+				'load',
+				'split',
+				'split_documents',
+		]
 	
-	def load( self, filepath: str, columns: Optional[ List[ str ] ] = None,
-			delimiter: str = "\n\n", quotechar: str = '"' ) -> List[ Document ] | None:
+	def load(
+			self,
+			path: str,
+			encoding: Optional[ str ] = 'utf-8',
+			source_column: Optional[ str ] = None,
+			delimiter: str = ',',
+			quotechar: str = '"' ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -531,63 +500,81 @@ class CsvLoader( Loader ):
 			Parameters:
 			-----------
 			path (str): Path to the CSV file.
-			encoding (Optional[str]): File encoding (e.g., 'utf-8') if known.
-			csv_args (Optional[Dict[str, Any]]): Additional CSV parsing arguments.
-			source_column (Optional[str]): Column name used for source attribution.
+			encoding (Optional[str]): File encoding.
+			source_column (Optional[str]): Optional source column name.
+			delimiter (str): CSV delimiter.
+			quotechar (str): CSV quote character.
 
 			Returns:
 			--------
-			List[Document]: List of LangChain Document objects parsed from the CSV.
+			List[Document] | None: Loaded Document objects.
 
 		'''
 		try:
-			self.file_path = self.verify_exists( filepath )
-			self.columns = columns
-			self.pattern = delimiter
-			self.quote_char = quotechar
-			self.csv_args = { 'delimiter': self.pattern, 'fieldnames': self.columns,
-			                  'quotechar': self.quote_char }
-			self.loader = CSVLoader( file_path=self.file_path, csv_args=self.csv_args,
-				content_columns=self.columns )
+			throw_if( 'path', path )
+			self.file_path = self.verify_exists( path )
+			self.encoding = encoding
+			self.source_column = source_column
+			self.delimiter = delimiter
+			self.quotechar = quotechar
+			self.csv_args = {
+					'delimiter': self.delimiter,
+					'quotechar': self.quotechar,
+			}
+			self.loader = CSVLoader(
+				file_path=self.file_path,
+				source_column=self.source_column,
+				csv_args=self.csv_args,
+				encoding=self.encoding
+			)
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'Foo'
 			exception.cause = 'CsvLoader'
-			exception.method = 'loader( )'
+			exception.method = (
+					'load( self, path: str, encoding: Optional[ str ]="utf-8", '
+					'source_column: Optional[ str ]=None, delimiter: str=",", '
+					'quotechar: str=\'"\' ) -> List[ Document ] | None'
+			)
 			raise exception
 	
-	def split( self, size: int = 1000, amount: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
 			--------
-			Split loaded CSV documents into smaller text chunks.
+			Split loaded CSV documents into smaller chunks.
 
 			Parameters:
 			-----------
-			chunk_size (int): Maximum number of characters per chunk.
-			chunk_overlap (int): Number of overlapping characters between chunks.
+			chunk (int): Maximum number of characters per chunk.
+			overlap (int): Number of overlapping characters between chunks.
 
 			Returns:
 			--------
-			List[Document]: List of split Document chunks.
+			List[Document] | None: Chunked Document objects.
 
 		'''
 		try:
-			if self.documents is None:
-				raise ValueError( 'No documents loaded!' )
-			self.chunk_size = size
-			self.overlap_amount = amount
-			_documents = self.split_documents( docs=self.documents, chunk=self.chunk_size,
-				overlap=self.overlap_amount )
-			return _documents
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents(
+				self.documents,
+				chunk=self.chunk_size,
+				overlap=self.overlap_amount
+			)
+			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'Foo'
 			exception.cause = 'CsvLoader'
-			exception.method = 'split( self, size: int=1000, amount: int=200 ) -> List[ Document ]'
+			exception.method = (
+					'split( self, chunk: int=1000, overlap: int=200 ) '
+					'-> List[ Document ] | None'
+			)
 			raise exception
 
 class WebLoader( Loader ):
@@ -717,8 +704,7 @@ class WebLoader( Loader ):
 		         'recursive',
 		         'prevent_outside', ]
 	
-	def _same_domain_only( self, docs: List[ Document ], source_url: str ) -> \
-			List[ Document ] | None:
+	def _same_domain_only( self, docs: List[ Document ], source_url: str ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -762,7 +748,7 @@ class WebLoader( Loader ):
 			return _results
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'WebLoader'
 			exception.method = ('_same_domain_only( self, docs: List[ Document ], '
 			                    'source_url: str ) -> List[ Document ]')
@@ -821,7 +807,7 @@ class WebLoader( Loader ):
 				return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'WebLoader'
 			exception.method = 'load( self, urls: str | List[ str ] ) -> List[ Document ]'
 			raise exception
@@ -872,7 +858,7 @@ class WebLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'WebLoader'
 			exception.method = ('load_recursive( self, url: str, depth: int=2, '
 			                    'max_time: int=10, ignore: bool=True ) -> List[ Document ]')
@@ -919,7 +905,7 @@ class WebLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'WebLoader'
 			exception.method = ('load_pages( self, urls: List[ str ], depth: int=2, '
 			                    'timeout: int=10, ignore: bool=True, '
@@ -958,7 +944,7 @@ class WebLoader( Loader ):
 			return _documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'WebLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -1060,43 +1046,45 @@ class PdfReader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'PdfLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
-			
 	
-	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
 		'''
-
-
 			Purpose:
 			--------
-			Split loaded PDF documents into smaller chunks for efficient processing.
-
+			Split loaded PDF documents into smaller chunks.
+	
 			Parameters:
 			-----------
-			chunk_size (int): Max characters allowed per chunk.
-			chunk_overlap (int): Characters that overlap between consecutive chunks.
-
+			chunk (int): Maximum number of characters per chunk.
+			overlap (int): Number of overlapping characters between chunks.
+	
 			Returns:
 			--------
-			List[Document]: Chunked list of Document objects.
-
-
+			List[Document] | None: Chunked Document objects.
+	
 		'''
 		try:
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
-				overlap=self.overlap_amount )
-			return self.docs
+			self.documents = self.split_documents(
+				self.documents,
+				chunk=self.chunk_size,
+				overlap=self.overlap_amount
+			)
+			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'Foo'
-			exception.cause = 'PdfLoader'
-			exception.method = 'split( self, chunk: int=1000 , overlap: int=200 ) -> List[ Document ]'
+			exception.cause = 'PdfReader'
+			exception.method = (
+					'split( self, chunk: int=1000, overlap: int=200 ) '
+					'-> List[ Document ] | None'
+			)
 			raise exception
 			
 class PdfLoader( PdfReader ):
@@ -1252,7 +1240,7 @@ class PdfLoader( PdfReader ):
 				return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'PdfLoader'
 			exception.method = 'load( self, path: str, mode: str=single, extract: str=plain ) -> List[ Document ]'
 			raise exception
@@ -1371,7 +1359,7 @@ class ExcelLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'ExcelLoader'
 			exception.method = 'load( self, **kwargs ) -> List[ Document ]'
 			raise exception
@@ -1405,7 +1393,7 @@ class ExcelLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'ExcelLoader'
 			exception.method = 'split( self,  **kwargs  ) -> List[ Document ]'
 			raise exception
@@ -1505,7 +1493,7 @@ class WordLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'WordLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -1539,7 +1527,7 @@ class WordLoader( Loader ):
 			return _splits
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'WordLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -1636,7 +1624,7 @@ class MarkdownLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'MarkdownLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ] '
 			raise exception
@@ -1668,7 +1656,7 @@ class MarkdownLoader( Loader ):
 			return _documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'MarkdownLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -1763,7 +1751,7 @@ class HtmlLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'HTML'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -1795,7 +1783,7 @@ class HtmlLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'HtmlLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -1902,7 +1890,7 @@ class ArXivLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'ArxivLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -1934,7 +1922,7 @@ class ArXivLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'ArxivLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -2042,7 +2030,7 @@ class WikiLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'WikiLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2074,7 +2062,7 @@ class WikiLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'WikiLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -2178,7 +2166,7 @@ class OutlookLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'OutlookLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2210,7 +2198,7 @@ class OutlookLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'OutlookLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -2335,7 +2323,7 @@ class SpfxLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'SpfxLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2367,7 +2355,7 @@ class SpfxLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'SpfxLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2399,7 +2387,7 @@ class SpfxLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'SpfxLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -2502,7 +2490,7 @@ class PowerPointLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'PowerPointLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2533,7 +2521,7 @@ class PowerPointLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'PowerPointLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2565,12 +2553,12 @@ class PowerPointLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'PowerPointLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
 			
-class OneDriveLoader( Loader ):
+class OneDriveDocLoader( Loader ):
 	'''
 
 		Purpose:
@@ -2672,7 +2660,7 @@ class OneDriveLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'WikiLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2703,7 +2691,7 @@ class OneDriveLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'WikiLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2735,12 +2723,12 @@ class OneDriveLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'WikiLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
 			
-class GoogleStorageLoader( Loader ):
+class GoogleCloudFileLoader( Loader ):
 	'''
 
 		Purpose:
@@ -2769,7 +2757,7 @@ class GoogleStorageLoader( Loader ):
 		split( ) -> List[ Document ];
 
 	'''
-	loader: Optional[ GoogleDriveLoader ]
+	loader: Optional[ GCSFileLoader ]
 	file_path: Optional[ str ]
 	documents: Optional[ List[ Document ] ]
 	query: Optional[ str ]
@@ -2841,13 +2829,13 @@ class GoogleStorageLoader( Loader ):
 			throw_if( 'recursive', recursive )
 			self.document_id = id
 			self.is_recursive = recursive
-			self.loader = GoogleDriveLoader( document_ids=[ self.document_id ],
+			self.loader = GCSFileLoader( document_ids=[ self.document_id ],
 				recursive=self.is_recursive )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'GoogleDriveLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2873,12 +2861,12 @@ class GoogleStorageLoader( Loader ):
 			throw_if( 'id', id )
 			self.folder_id = id
 			self.is_recursive = recursive
-			self.loader = GoogleDriveLoader( folder_id=self.folder_id, recursive=self.is_recursive )
+			self.loader = GCSFileLoader( folder_id=self.folder_id, recursive=self.is_recursive )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'GoogleDriveLoader'
 			exception.method = 'load_folder( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -2910,7 +2898,7 @@ class GoogleStorageLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'GoogleDriveLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -3020,7 +3008,7 @@ class EmailLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'EmailLoader'
 			exception.method = ('load( self, path: str, mode: str=elements, '
 			                    'include_headers: bool=True ) -> List[ Document ]')
@@ -3054,7 +3042,7 @@ class EmailLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'EmailLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -3159,7 +3147,7 @@ class JsonLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'JsonLoader'
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
@@ -3191,7 +3179,7 @@ class JsonLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'JsonLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -3318,7 +3306,7 @@ class GithubLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'GithubLoader'
 			exception.method = 'load( self, **kwargs  ) -> List[ Document ]'
 			raise exception
@@ -3350,7 +3338,7 @@ class GithubLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'chonky'
+			exception.module = 'loaders'
 			exception.cause = 'GithubLoader'
 			exception.method = 'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ]'
 			raise exception
@@ -3602,7 +3590,7 @@ class PubMedSearchLoader( Loader ):
 		Provides PubMed loading functionality for biomedical literature search results.
 
 	'''
-	loader: Optional[ PubMedDocLoader ]
+	loader: Optional[ PubMedLoader ]
 	documents: Optional[ List[ Document ] ]
 	query: Optional[ str ]
 	max_docs: Optional[ int ]
@@ -3648,12 +3636,12 @@ class PubMedSearchLoader( Loader ):
 			throw_if( 'query', query )
 			self.query = query
 			self.max_docs = max_docs
-			self.loader = PubMedDocLoader( query=self.query, load_max_docs=self.max_docs )
+			self.loader = PubMedLoader( query=self.query, load_max_docs=self.max_docs )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'PubMedSearchLoader'
 			exception.method = (
 					'load( self, query: str, max_docs: int=5 ) -> List[ Document ] | None'
@@ -3673,7 +3661,7 @@ class PubMedSearchLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'PubMedSearchLoader'
 			exception.method = (
 					'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None'
@@ -3688,7 +3676,7 @@ class OpenCityLoader( Loader ):
 		Provides Open City Data loading functionality backed by Socrata.
 
 	'''
-	loader: Optional[ OpenCityDocLoader ]
+	loader: Optional[ OpenCityDataLoader ]
 	documents: Optional[ List[ Document ] ]
 	city_id: Optional[ str ]
 	dataset_id: Optional[ str ]
@@ -3740,7 +3728,7 @@ class OpenCityLoader( Loader ):
 			self.city_id = city_id
 			self.dataset_id = dataset_id
 			self.limit = limit
-			self.loader = OpenCityDocLoader(
+			self.loader = OpenCityDataLoader(
 				city_id=self.city_id,
 				dataset_id=self.dataset_id,
 				limit=self.limit
@@ -3749,7 +3737,7 @@ class OpenCityLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'OpenCityLoader'
 			exception.method = (
 					'load( self, city_id: str, dataset_id: str, limit: int=100 ) '
@@ -3770,7 +3758,7 @@ class OpenCityLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'OpenCityLoader'
 			exception.method = (
 					'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None'
@@ -3785,7 +3773,7 @@ class JupyterNotebookLoader( Loader ):
 		Provides Jupyter Notebook loading functionality for .ipynb files.
 
 	'''
-	loader: Optional[ JupyterNotebookLoader ]
+	loader: Optional[ NotebookLoader ]
 	documents: Optional[ List[ Document ] ]
 	file_path: Optional[ str ]
 	include_outputs: Optional[ bool ]
@@ -3819,13 +3807,8 @@ class JupyterNotebookLoader( Loader ):
 				'split_documents',
 		]
 	
-	def load(
-			self,
-			path: str,
-			include_outputs: bool = False,
-			max_output_length: int = 10,
-			remove_newline: bool = False,
-			traceback: bool = False ) -> List[ Document ] | None:
+	def load( self, path: str, include_outputs: bool = False, max_output_length: int = 10,
+			remove_newline: bool = False, traceback: bool = False ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -3852,7 +3835,7 @@ class JupyterNotebookLoader( Loader ):
 			self.max_output_length = max_output_length
 			self.remove_newline = remove_newline
 			self.traceback = traceback
-			self.loader = JupyterNotebookLoader(
+			self.loader = NotebookLoader(
 				self.file_path,
 				include_outputs=self.include_outputs,
 				max_output_length=self.max_output_length,
@@ -3863,7 +3846,7 @@ class JupyterNotebookLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'JupyterNotebookLoader'
 			exception.method = (
 					'load( self, path: str, include_outputs: bool=False, '
@@ -3885,7 +3868,7 @@ class JupyterNotebookLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'JupyterNotebookLoader'
 			exception.method = (
 					'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None'
@@ -3900,7 +3883,7 @@ class GoogleCloudStorageFileLoader( Loader ):
 		Provides Google Cloud Storage file loading functionality.
 
 	'''
-	loader: Optional[ GoogleCloudFileLoader ]
+	loader: Optional[ GCSFileLoader ]
 	documents: Optional[ List[ Document ] ]
 	project_name: Optional[ str ]
 	bucket: Optional[ str ]
@@ -3953,7 +3936,7 @@ class GoogleCloudStorageFileLoader( Loader ):
 			self.project_name = project_name
 			self.bucket = bucket
 			self.blob = blob
-			self.loader = GoogleCloudFileLoader(
+			self.loader = GCSFileLoader(
 				project_name=self.project_name,
 				bucket=self.bucket,
 				blob=self.blob
@@ -3962,7 +3945,7 @@ class GoogleCloudStorageFileLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'GoogleCloudStorageFileLoader'
 			exception.method = (
 					'load( self, project_name: str, bucket: str, blob: str ) '
@@ -3983,122 +3966,14 @@ class GoogleCloudStorageFileLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'GoogleCloudStorageFileLoader'
 			exception.method = (
 					'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None'
 			)
 			raise exception
 
-class MicrosoftOneDriveFileLoader( Loader ):
-	'''
-
-		Purpose:
-		--------
-		Provides Microsoft OneDrive loading functionality for drives and folders.
-
-	'''
-	loader: Optional[ OneDriveDocLoader ]
-	documents: Optional[ List[ Document ] ]
-	drive_id: Optional[ str ]
-	folder_path: Optional[ str ]
-	auth_with_token: Optional[ bool ]
-	
-	def __init__( self ) -> None:
-		super( ).__init__( )
-		self.loader = None
-		self.documents = None
-		self.drive_id = None
-		self.folder_path = None
-		self.auth_with_token = None
-	
-	def __dir__( self ) -> List[ str ]:
-		return [
-				'loader',
-				'documents',
-				'drive_id',
-				'folder_path',
-				'auth_with_token',
-				'chunk_size',
-				'overlap_amount',
-				'load',
-				'split',
-				'split_documents',
-		]
-	
-	def load(
-			self,
-			drive_id: str,
-			folder_path: Optional[ str ] = None,
-			auth_with_token: bool = True ) -> List[ Document ] | None:
-		'''
-
-			Purpose:
-			--------
-			Load documents from Microsoft OneDrive.
-
-			Parameters:
-			-----------
-			drive_id (str): OneDrive drive ID.
-			folder_path (Optional[str]): Optional folder path to scope the load.
-			auth_with_token (bool): Reuse cached token when True.
-
-			Returns:
-			--------
-			List[Document] | None: Loaded OneDrive documents.
-
-		'''
-		try:
-			throw_if( 'drive_id', drive_id )
-			self.drive_id = drive_id
-			self.folder_path = folder_path
-			self.auth_with_token = auth_with_token
-			
-			if self.folder_path:
-				self.loader = OneDriveDocLoader(
-					drive_id=self.drive_id,
-					folder_path=self.folder_path,
-					auth_with_token=self.auth_with_token
-				)
-			else:
-				self.loader = OneDriveDocLoader(
-					drive_id=self.drive_id,
-					auth_with_token=self.auth_with_token
-				)
-			
-			self.documents = self.loader.load( )
-			return self.documents
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'MicrosoftOneDriveFileLoader'
-			exception.method = (
-					'load( self, drive_id: str, folder_path: Optional[ str ]=None, '
-					'auth_with_token: bool=True ) -> List[ Document ] | None'
-			)
-			raise exception
-	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
-		try:
-			throw_if( 'documents', self.documents )
-			self.chunk_size = chunk
-			self.overlap_amount = overlap
-			self.documents = self.split_documents(
-				self.documents,
-				chunk=self.chunk_size,
-				overlap=self.overlap_amount
-			)
-			return self.documents
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'MicrosoftOneDriveFileLoader'
-			exception.method = (
-					'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None'
-			)
-			raise exception
-
-class AwsS3FileLoader( Loader ):
+class AwsFileLoader( Loader ):
 	'''
 
 		Purpose:
@@ -4106,7 +3981,7 @@ class AwsS3FileLoader( Loader ):
 		Provides AWS S3 file loading functionality.
 
 	'''
-	loader: Optional[ AwsS3FileLoader ]
+	loader: Optional[ S3FileLoader ]
 	documents: Optional[ List[ Document ] ]
 	bucket: Optional[ str ]
 	key: Optional[ str ]
@@ -4191,13 +4066,13 @@ class AwsS3FileLoader( Loader ):
 			if self.region_name:
 				kwargs[ 'region_name' ] = self.region_name
 			
-			self.loader = AwsS3FileLoader( self.bucket, self.key, **kwargs )
+			self.loader = S3FileLoader( self.bucket, self.key, **kwargs )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'AwsS3FileLoader'
+			exception.module = 'loaders'
+			exception.cause = 'AwsFileLoader'
 			exception.method = (
 					'load( self, bucket: str, key: str, aws_access_key_id: Optional[ str ]=None, '
 					'aws_secret_access_key: Optional[ str ]=None, '
@@ -4219,8 +4094,8 @@ class AwsS3FileLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = 'AwsS3FileLoader'
+			exception.module = 'loaders'
+			exception.cause = 'AwsFileLoader'
 			exception.method = (
 					'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None'
 			)
@@ -4234,7 +4109,7 @@ class GoogleSpeechToTextAudioLoader( Loader ):
 		Provides Google Speech-to-Text loading functionality for audio transcription.
 
 	'''
-	loader: Optional[ GoogleSpeechToTextLoader ]
+	loader: Optional[ SpeechToTextLoader ]
 	documents: Optional[ List[ Document ] ]
 	project_id: Optional[ str ]
 	file_path: Optional[ str ]
@@ -4293,13 +4168,13 @@ class GoogleSpeechToTextAudioLoader( Loader ):
 			self.config = config
 			
 			if self.config:
-				self.loader = GoogleSpeechToTextLoader(
+				self.loader = SpeechToTextLoader(
 					project_id=self.project_id,
 					file_path=self.file_path,
 					config=self.config
 				)
 			else:
-				self.loader = GoogleSpeechToTextLoader(
+				self.loader = SpeechToTextLoader(
 					project_id=self.project_id,
 					file_path=self.file_path
 				)
@@ -4308,7 +4183,7 @@ class GoogleSpeechToTextAudioLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'GoogleSpeechToTextAudioLoader'
 			exception.method = (
 					'load( self, project_id: str, file_path: str, '
@@ -4329,9 +4204,283 @@ class GoogleSpeechToTextAudioLoader( Loader ):
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'Foo'
+			exception.module = 'loaders'
 			exception.cause = 'GoogleSpeechToTextAudioLoader'
 			exception.method = (
 					'split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None'
+			)
+			raise exception
+
+class GoogleBucketLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides Google Cloud Storage bucket loading functionality using
+		LangChain's GCSDirectoryLoader.
+
+	'''
+	loader: Optional[ GCSDirectoryLoader ]
+	documents: Optional[ List[ Document ] ]
+	project_name: Optional[ str ]
+	bucket: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.loader = None
+		self.documents = None
+		self.project_name = None
+		self.bucket = None
+	
+	def __dir__( self ) -> List[ str ]:
+		return [
+				'loader',
+				'documents',
+				'project_name',
+				'bucket',
+				'chunk_size',
+				'overlap_amount',
+				'load',
+				'split',
+				'split_documents',
+		]
+	
+	def load( self, project_name: str, bucket: str ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load all supported objects from a Google Cloud Storage bucket into
+			LangChain Document objects.
+
+			Parameters:
+			-----------
+			project_name (str): Google Cloud project name or project ID.
+			bucket (str): Google Cloud Storage bucket name.
+
+			Returns:
+			--------
+			List[Document] | None: Loaded bucket documents.
+
+		'''
+		try:
+			throw_if( 'project_name', project_name )
+			throw_if( 'bucket', bucket )
+			self.project_name = project_name
+			self.bucket = bucket
+			self.loader = GCSDirectoryLoader(
+				project_name=self.project_name,
+				bucket=self.bucket
+			)
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'loaders'
+			exception.cause = 'GoogleBucketLoader'
+			exception.method = (
+					'load( self, project_name: str, bucket: str ) '
+					'-> List[ Document ] | None'
+			)
+			raise exception
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded Google Cloud Storage bucket documents into smaller
+			chunks for downstream processing.
+
+			Parameters:
+			-----------
+			chunk (int): Maximum number of characters per chunk.
+			overlap (int): Number of overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document] | None: Chunked Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents(
+				self.documents,
+				chunk=self.chunk_size,
+				overlap=self.overlap_amount
+			)
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'loaders'
+			exception.cause = 'GoogleBucketLoader'
+			exception.method = (
+					'split( self, chunk: int=1000, overlap: int=200 ) '
+					'-> List[ Document ] | None'
+			)
+			raise exception
+
+class AmazonBucketLoader( Loader ):
+	'''
+
+		Purpose:
+		--------
+		Provides AWS S3 bucket/directory loading functionality using
+		LangChain's S3DirectoryLoader.
+
+	'''
+	loader: Optional[ S3DirectoryLoader ]
+	documents: Optional[ List[ Document ] ]
+	bucket: Optional[ str ]
+	prefix: Optional[ str ]
+	aws_access_key_id: Optional[ str ]
+	aws_secret_access_key: Optional[ str ]
+	aws_session_token: Optional[ str ]
+	region_name: Optional[ str ]
+	endpoint_url: Optional[ str ]
+	
+	def __init__( self ) -> None:
+		super( ).__init__( )
+		self.loader = None
+		self.documents = None
+		self.bucket = None
+		self.prefix = None
+		self.aws_access_key_id = None
+		self.aws_secret_access_key = None
+		self.aws_session_token = None
+		self.region_name = None
+		self.endpoint_url = None
+	
+	def __dir__( self ) -> List[ str ]:
+		return [
+				'loader',
+				'documents',
+				'bucket',
+				'prefix',
+				'aws_access_key_id',
+				'aws_secret_access_key',
+				'aws_session_token',
+				'region_name',
+				'endpoint_url',
+				'chunk_size',
+				'overlap_amount',
+				'load',
+				'split',
+				'split_documents',
+		]
+	
+	def load(
+			self,
+			bucket: str,
+			prefix: Optional[ str ] = None,
+			aws_access_key_id: Optional[ str ] = None,
+			aws_secret_access_key: Optional[ str ] = None,
+			aws_session_token: Optional[ str ] = None,
+			region_name: Optional[ str ] = None,
+			endpoint_url: Optional[ str ] = None ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Load all supported objects from an AWS S3 bucket or bucket prefix
+			into LangChain Document objects.
+
+			Parameters:
+			-----------
+			bucket (str): AWS S3 bucket name.
+			prefix (Optional[str]): Optional key prefix used to restrict loaded
+				objects to a virtual folder or subtree.
+			aws_access_key_id (Optional[str]): Optional AWS access key ID.
+			aws_secret_access_key (Optional[str]): Optional AWS secret access key.
+			aws_session_token (Optional[str]): Optional AWS session token.
+			region_name (Optional[str]): Optional AWS region name.
+			endpoint_url (Optional[str]): Optional custom S3-compatible endpoint.
+
+			Returns:
+			--------
+			List[Document] | None: Loaded bucket documents.
+
+		'''
+		try:
+			throw_if( 'bucket', bucket )
+			self.bucket = bucket
+			self.prefix = prefix
+			self.aws_access_key_id = aws_access_key_id
+			self.aws_secret_access_key = aws_secret_access_key
+			self.aws_session_token = aws_session_token
+			self.region_name = region_name
+			self.endpoint_url = endpoint_url
+			
+			kwargs: Dict[ str, Any ] = { }
+			if self.prefix:
+				kwargs[ 'prefix' ] = self.prefix
+			if self.aws_access_key_id:
+				kwargs[ 'aws_access_key_id' ] = self.aws_access_key_id
+			if self.aws_secret_access_key:
+				kwargs[ 'aws_secret_access_key' ] = self.aws_secret_access_key
+			if self.aws_session_token:
+				kwargs[ 'aws_session_token' ] = self.aws_session_token
+			if self.region_name:
+				kwargs[ 'region_name' ] = self.region_name
+			if self.endpoint_url:
+				kwargs[ 'endpoint_url' ] = self.endpoint_url
+			
+			self.loader = S3DirectoryLoader(
+				self.bucket,
+				**kwargs
+			)
+			self.documents = self.loader.load( )
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'loaders'
+			exception.cause = 'AmazonBucketLoader'
+			exception.method = (
+					'load( self, bucket: str, prefix: Optional[ str ]=None, '
+					'aws_access_key_id: Optional[ str ]=None, '
+					'aws_secret_access_key: Optional[ str ]=None, '
+					'aws_session_token: Optional[ str ]=None, '
+					'region_name: Optional[ str ]=None, '
+					'endpoint_url: Optional[ str ]=None ) -> List[ Document ] | None'
+			)
+			raise exception
+	
+	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		'''
+
+			Purpose:
+			--------
+			Split loaded AWS S3 bucket documents into smaller chunks for
+			downstream processing.
+
+			Parameters:
+			-----------
+			chunk (int): Maximum number of characters per chunk.
+			overlap (int): Number of overlapping characters between chunks.
+
+			Returns:
+			--------
+			List[Document] | None: Chunked Document objects.
+
+		'''
+		try:
+			throw_if( 'documents', self.documents )
+			self.chunk_size = chunk
+			self.overlap_amount = overlap
+			self.documents = self.split_documents(
+				self.documents,
+				chunk=self.chunk_size,
+				overlap=self.overlap_amount
+			)
+			return self.documents
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'loaders'
+			exception.cause = 'AmazonBucketLoader'
+			exception.method = (
+					'split( self, chunk: int=1000, overlap: int=200 ) '
+					'-> List[ Document ] | None'
 			)
 			raise exception

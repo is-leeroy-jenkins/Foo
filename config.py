@@ -53,16 +53,14 @@ GEOCODING_API_KEY = os.getenv( 'GEOCODING_API_KEY' )
 GEMINI_API_KEY = os.getenv( 'GEMINI_API_KEY' )
 GOOGLE_API_KEY = os.getenv( 'GOOGLE_API_KEY' )
 GOOGLE_CSE_ID = os.getenv( 'GOOGLE_CSE_ID' )
-GOOGLE_CLOUD_PROJECT = os.getenv( 'GOOGLE_CLOUD_PROJECT' )
-GOVINFO_API_KEY = os.getenv( 'GOVINFO_API_KEY' )
+GOOGLE_CLOUD_PROJECT_ID = os.getenv( 'GOOGLE_CLOUD_PROJECT_ID' )
 GOOGLE_CLOUD_LOCATION = os.getenv( 'GOOGLE_CLOUD_LOCATION' )
+GOVINFO_API_KEY = os.getenv( 'GOVINFO_API_KEY' )
 GOOGLE_GENAI_USE_VERTEXAI = os.getenv( 'GOOGLE_GENAI_USE_VERTEXAI' )
-GOOGLE_PROJECT_ID = os.getenv( 'GOOGLE_PROJECT_ID' )
 GOOGLE_WEATHER_API_KEY = os.getenv( 'GOOGLE_WEATHER_API_KEY' )
-GOOGLE_ACCOUNT_FILE = os.getenv( 'GOOGLE_ACCOUNT_FILE' )
+GOOGLE_ACCOUNT_FILE = os.getenv( 'GOOGLE_ACCOUNT_CREDENTIALS' )
 GOOGLE_DRIVE_TOKEN_PATH = os.getenv( 'GOOGLE_DRIVE_TOKEN_PATH' )
 GOOGLE_DRIVE_FOLDER_ID = os.getenv( 'GOOGLE_DRIVE_FOLDER_ID' )
-GROQ_API_KEY = os.getenv( 'GROQ_API_KEY' )
 HUGGINGFACE_API_KEY = os.getenv( 'HUGGINGFACE_API_KEY' )
 IPINFO_API_KEY = os.getenv( 'IPINFO_API_KEY' )
 OPENAI_API_KEY = os.getenv( 'OPENAI_API_KEY' )
@@ -78,7 +76,7 @@ THENEWS_API_KEY = os.getenv( 'THENEWSAPI_API_KEY' )
 WEATHERAPI_API_KEY = os.getenv( 'WEATHERAPI_API_KEY' )
 XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
 O365_CLIENT_ID = os.getenv( 'O365_CLIENT_ID ' )
-O365_CLIENT_SECRET = os.getenv( 'O365_CLIENT_ID ' )
+O365_CLIENT_SECRET = os.getenv( 'O365_CLIENT_SECRET ' )
 
 # ---------------- CONSTANTS -----------------------
 APP_TITLE = 'Foo'
@@ -201,7 +199,9 @@ SESSION_STATE_DEFAULTS = {
 		'df_wordnet_synsets': None,
 		'df_wordnet_lemmas': None,
 }
+
 # ----------------- Models
+
 GPT_MODELS = [ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano',
                'gpt-5.1', 'gpt-5.2', 'gpt-4.1' ]
 
@@ -249,12 +249,16 @@ PUBMED = r'''The National Center for Biotechnology Information, National Library
 
 THENEWS = r'''An API to provide global news from thousands of sources with exceptional
 		response times adding over 1 million articles weekly.
+		
+		https://www.thenewsapi.com/documentation
 '''
 
 GOOGLE_CSE = r'''The Cse Service is the endpoint that returns the requested searches.
 		You must identify a particular search engine to use in your request
 		(using the cx query parameter) as well as the search query (using the q query parameter).
 		In addition, you should provide a developer key (using the key query parameter).
+		
+		https://developers.google.com/custom-search/v1/reference/rest
 '''
 
 GOOGLE_WEATHER = r'''The Weather API lets you request real-time, hyperlocal weather data for
@@ -268,10 +272,10 @@ GOOGLE_WEATHER = r'''The Weather API lets you request real-time, hyperlocal weat
 		Daily forecast: Up to 10 days of forecasted conditions for all elements.
 		Hourly history: Up to 24 hours of cached past conditions for all elements
 		
-		Documentation here (https://developers.google.com/maps/documentation/weather/overview)
+		https://developers.google.com/maps/documentation/weather/overview
 '''
 
-USNO = r'''Provides access to APIs from the US Naval Observatory's Celestial Navigation Data for
+US_NAVAL_OBSERVATORY = r'''Provides access to APIs from the US Naval Observatory's Celestial Navigation Data for
 		Assumed Position and Time:  this data service provides all the astronomical information
 		necessary to plot navigational lines of position from observations of the altitudes of
 		celestial bodies. Simply fill in the form below and click on the "Get Data" button at
@@ -291,7 +295,7 @@ USNO = r'''Provides access to APIs from the US Naval Observatory's Celestial Nav
 		since all data is computed specifically for the exact position you provide without
 		any table lookup.
 
-		Documentation here (https://aa.usno.navy.mil/data/api)
+		https://aa.usno.navy.mil/data/api
 '''
 
 OPEN_SCIENCE = r'''Provides access to APIs from NASA's Open Science Data Repostitory (OSDR).
@@ -311,7 +315,7 @@ OPEN_SCIENCE = r'''Provides access to APIs from NASA's Open Science Data Reposti
 		the Argonne National Laboratory's (ANL);
 		Metagenomics Rapid Annotations using Subsystems Technology (MG-RAST).
 		
-		Documentation here (https://science.nasa.gov/biological-physical/data/osdr/)
+		https://science.nasa.gov/biological-physical/data/osdr/
 '''
 
 GOV_INFO = r'''The GovInfo Link Service provides services for developers and webmasters to access
@@ -323,13 +327,13 @@ GOV_INFO = r'''The GovInfo Link Service provides services for developers and web
 		after each collection name, and the available queries are listed below each collection.
 		More information about each query is provided on the individual collection page.
 		
-		Documentation here (https://www.govinfo.gov/link-docs/)
+		https://www.govinfo.gov/link-docs/
 '''
 
 CONGRESS = r'''Submit queries against the Congressional Research Service's (CRS) Appropriation
 		Status Table.
 		
-		Documentation here (https://api.congress.gov/)
+		https://api.congress.gov/
 '''
 
 INTERNET_ARCHIVE = r'''The Internet Archive, a 501(c)(3) non-profit, is building a digital library
@@ -337,7 +341,7 @@ INTERNET_ARCHIVE = r'''The Internet Archive, a 501(c)(3) non-profit, is building
 		we provide free access to researchers, historians, scholars, people with print disabilities,
 		and the general public. Our mission is to provide Universal Access to All Knowledge.
 		
-		Documentation here (https://help.archive.org/help/search-a-basic-guide/)
+		https://help.archive.org/help/search-a-basic-guide/
 '''
 
 THE_SATELLITE_CENTER = r'''Provides access to APIs from NASA's Satellite Situation Center Web (SSCWeb) service
@@ -354,7 +358,7 @@ THE_SATELLITE_CENTER = r'''Provides access to APIs from NASA's Satellite Situati
 		coordinated observations of multiple spacecraft with ground-based investigations) and to
 		subsequent multi-mission data analysis.
 		
-		Documentation here (https://sscweb.gsfc.nasa.gov/index.html)
+		https://sscweb.gsfc.nasa.gov/index.html
 '''
 
 NEAR_BY_OBJECTS = r'''Provides access to APIs from JPL’s SSD (Solar System Dynamics) and CNEOS
@@ -362,7 +366,7 @@ NEAR_BY_OBJECTS = r'''Provides access to APIs from JPL’s SSD (Solar System Dyn
 		This service provides an interface to machine-readable data (JSON-format) related to SSD
 		and CNEOS.
 		
-		Documentation here (https://ssd-api.jpl.nasa.gov/doc/)
+		https://ssd-api.jpl.nasa.gov/doc/
 '''
 
 ASTRONOMY_CATALOG = r'''Access to the Open Astronomy Catalog API (OACAPI) offers a lightweight,
@@ -383,7 +387,7 @@ ASTRONOMY_CATALOG = r'''Access to the Open Astronomy Catalog API (OACAPI) offers
 		or they can be more powerful for certain filter attributes
 		(examples being ra and dec for performing cone searches).
 		
-		Documnetation here (https://astrocats.space/)
+		https://astrocats.space/
 '''
 
 ASTRO_QUERY = r'''Access to the astropy package that contains key functionality and common tools needed for
@@ -391,7 +395,7 @@ ASTRO_QUERY = r'''Access to the astropy package that contains key functionality 
 		which aims to enable the community to develop a robust ecosystem of affiliated packages
 		covering a broad range of needs for astronomical research, data processing, and data analysis.
 		
-		Documentation here (https://github.com/astropy/astroquery)
+		https://github.com/astropy/astroquery
 '''
 
 OPEN_WEATHER = r'''
@@ -422,6 +426,8 @@ OPEN_WEATHER = r'''
 				- temperature_unit
 				- wind_speed_unit
 				- precipitation_unit
+				
+		https://open-meteo.com/en/docs
 '''
 
 HISTORICAL_WEATHER = r'''Provides historical weather retrieval by location name and date using the
@@ -448,7 +454,8 @@ HISTORICAL_WEATHER = r'''Provides historical weather retrieval by location name 
 				- temperature_unit
 				- wind_speed_unit
 				- precipitation_unit
-
+		
+		https://open-meteo.com/en/docs
 '''
 
 EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EONET) allows users to access imagery,
@@ -463,7 +470,7 @@ EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EONET) a
 				- sources
 				- layers
 				
-				Documentation here (https://eonet.gsfc.nasa.gov/docs/v3)
+				https://eonet.gsfc.nasa.gov/docs/v3
 '''
 
 SPACE_WEATHER = r'''NASA DONKI (Space Weather Database Of Notifications, Knowledge, Information) is
@@ -474,14 +481,14 @@ SPACE_WEATHER = r'''NASA DONKI (Space Weather Database Of Notifications, Knowled
 		science research, intelligent linkages, relationships, cause-and-effects between space weather
 		activities and comprehensive webservice API access to information stored in DONKI.
 		
-		Documentation here (https://api.nasa.gov/)
+		https://api.nasa.gov/
 '''
 
 NEAR_BY_OBJECTS = r''''SSD (Solar System Dynamics) and CNEOS (Center for Near-Earth Object Studies)
 		API (Application Program Interface) service. This service provides an interface to
 		machine-readable data (JSON-format) related to SSD and CNEOS.
 		
-		Documentation here (https://ssd-api.jpl.nasa.gov/)
+		https://ssd-api.jpl.nasa.gov/
 '''
 
 SKY_MAP = r'''Provides static and link-based star chart generation using the SKY-MAP.ORG
@@ -498,6 +505,7 @@ SKY_MAP = r'''Provides static and link-based star chart generation using the SKY
 		Image Generator:
 			- Endpoint: https://server2.sky-map.org/map
 
+		https://docs.gammapy.org/2.0.1/api-reference/maps.html
 '''
 
 OPEN_SCIENCE = r'''NASA’s Open Science Data Repository (OSDR) enables the reuse of comprehensive,

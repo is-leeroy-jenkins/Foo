@@ -78,13 +78,13 @@ from loaders import (
 	WebLoader,
 	ArXivLoader,
 	XmlLoader,
-	PubMedDocLoader,
+	PubMedSearchLoader,
 	OpenCityDocLoader,
 	JupyterNotebookLoader,
-	AwsS3FileLoader,
+	AwsFileLoader,
 	OneDriveDocLoader,
 	GoogleCloudFileLoader,
-	GoogleSpeechToTextLoader
+	GoogleSpeechToTextAudioLoader
 )
 
 from generators import Chat, Claude, Grok, Mistral, Gemini
@@ -118,9 +118,9 @@ try:
 	TEXTSTAT_AVAILABLE = True
 except ImportError:
 	TEXTSTAT_AVAILABLE = False
-	
+
 # =====================================================================
-# SESSION STATE
+# SESSION STATE DEFINITIONS
 # =====================================================================
 
 if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
@@ -227,7 +227,7 @@ for corpus in cfg.REQUIRED_CORPORA:
 		nltk.data.find( f'corpora/{corpus}' )
 	except LookupError:
 		nltk.download( corpus )
-		
+	
 # =====================================================================
 # UTILITITES
 # =====================================================================
@@ -1799,6 +1799,76 @@ def clear_if_active( loader_name: str ) -> None:
 		st.session_state.df_chunks = None
 		st.session_state.lines = None
 
+# -------- Expander Utilities
+
+def _promote_loader_documents( documents: List[ Document ] | None, active_loader: str ) -> int:
+	'''
+		Purpose:
+		--------
+		Promote loaded LangChain documents into the shared Loading-mode session state
+		using one consistent contract across all loader expanders.
+
+		Parameters:
+		-----------
+		documents (List[Document] | None):
+			LangChain documents returned by a loader.
+
+		active_loader (str):
+			Canonical loader name to store in session state.
+
+		Returns:
+		--------
+		int:
+			Count of promoted documents.
+
+	'''
+	docs: List[ Document ] = list( documents or [ ] )
+	
+	st.session_state.documents = docs
+	st.session_state.raw_documents = list( docs )
+	st.session_state.raw_text = '\n\n'.join(
+		doc.page_content for doc in docs
+		if hasattr( doc, 'page_content' )
+		and isinstance( doc.page_content, str )
+		and doc.page_content.strip( )
+	)
+	st.session_state.processed_text = ''
+	st.session_state.tokens = None
+	st.session_state.vocabulary = None
+	st.session_state.token_counts = None
+	st.session_state.active_loader = active_loader
+	return len( docs )
+
+def _clear_loader_documents( loader_name: str ) -> int:
+	'''
+		Purpose:
+		--------
+		Clear the active loader state and rebuild shared text/cache state consistently.
+
+		Parameters:
+		-----------
+		loader_name (str):
+			Canonical loader name.
+
+		Returns:
+		--------
+		int:
+			Remaining document count after the clear operation.
+
+	'''
+	clear_if_active( loader_name )
+	st.session_state.raw_text = _rebuild_raw_text_from_documents( ) or ''
+	st.session_state.processed_text = ''
+	st.session_state.tokens = None
+	st.session_state.vocabulary = None
+	st.session_state.token_counts = None
+	
+	remaining = st.session_state.get( 'documents' ) or [ ]
+	return len( remaining )
+
+# =========================================================================
+# SESSION-STATE INITIALIZATION
+# =========================================================================
 for key, default in cfg.SESSION_STATE_DEFAULTS.items( ):
 	if key not in st.session_state:
 		st.session_state[ key ] = default
@@ -5759,7 +5829,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 	
 	# -------- Congress
-	with st.expander( label='Congress', expanded=False ):
+	with st.expander( label='US Congress', expanded=False ):
 		if 'congress_results' not in st.session_state:
 			st.session_state[ 'congress_results' ] = { }
 		
@@ -6802,9 +6872,9 @@ elif mode == 'Retrieval':
 						)
 					else:
 						st.info( 'No results returned.' )
-
-	# -------------------------- Jupyter Notebook Loader
-	with st.expander( label='Jupyter Notebook Loader', icon='📓', expanded=False ):
+	
+	# ------- Jupyter Notebook Loader
+	with st.expander( label='Jupyter Notebook', icon='📓', expanded=False ):
 		notebook_file = st.file_uploader(
 			'Upload Notebook',
 			type=[ 'ipynb' ],
@@ -6852,45 +6922,312 @@ elif mode == 'Retrieval':
 			col_save.button( 'Save', key='notebook_save_disabled', disabled=True )
 		
 		if clear_notebook:
-			clear_if_active( 'JupyterNotebookLoader' )
-			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-			st.session_state[ '_loader_status' ] = 'Jupyter Notebook Loader state cleared.'
-			st.rerun( )
+			remaining = _clear_loader_documents( 'JupyterNotebookLoader' )
+			st.info( f'Jupyter Notebook Loader state cleared. Remaining documents: {remaining}.' )
 		
 		if load_notebook and notebook_file:
-			with tempfile.TemporaryDirectory( ) as tmp:
-				path = os.path.join( tmp, notebook_file.name )
-				with open( path, 'wb' ) as f:
-					f.write( notebook_file.read( ) )
+			try:
+				with tempfile.TemporaryDirectory( ) as tmp:
+					path = os.path.join( tmp, notebook_file.name )
+					with open( path, 'wb' ) as f:
+						f.write( notebook_file.read( ) )
+					
+					loader = JupyterNotebookLoader(
+						path,
+						include_outputs=include_outputs,
+						max_output_length=int( max_output_length ),
+						remove_newline=remove_newline,
+						traceback=include_traceback
+					)
+					documents = loader.load( ) or [ ]
 				
-				loader = JupyterNotebookLoader( )
-				documents = loader.load(
-					path=path,
-					include_outputs=include_outputs,
-					max_output_length=int( max_output_length ),
-					remove_newline=remove_newline,
-					traceback=include_traceback
-				) or [ ]
+				count = _promote_loader_documents( documents, 'JupyterNotebookLoader' )
+				st.success( f'Loaded {count} notebook document(s).' )
+			except Exception as e:
+				st.error( str( e ) )
+		
+		# --------  Google Cloud Storage File Loader
+		with st.expander( label='Google Cloud File Loader', icon='☁️', expanded=False ):
+			project_name = st.text_input( 'Project Name', key='gcs_project_name' )
+			bucket = st.text_input( 'Bucket', key='gcs_bucket' )
+			blob = st.text_input( 'Blob', key='gcs_blob' )
 			
-			st.session_state.documents = documents
-			st.session_state.raw_documents = list( documents )
-			st.session_state.raw_text = '\n\n'.join(
-				d.page_content for d in documents
-				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-				and d.page_content.strip( )
+			col_load, col_clear, col_save = st.columns( 3 )
+			load_gcs = col_load.button( 'Load', key='gcs_load' )
+			clear_gcs = col_clear.button( 'Clear', key='gcs_clear' )
+			
+			can_save = (
+					st.session_state.get( 'active_loader' ) == 'GoogleCloudStorageFileLoader'
+					and isinstance( st.session_state.get( 'raw_text' ), str )
+					and st.session_state.get( 'raw_text' ).strip( )
 			)
-			st.session_state.processed_text = None
-			st.session_state.tokens = None
-			st.session_state.vocabulary = None
-			st.session_state.token_counts = None
-			st.session_state.active_loader = 'JupyterNotebookLoader'
-			st.session_state[ '_loader_status' ] = (
-					f'Loaded {len( documents )} notebook document(s).'
+			
+			if can_save:
+				col_save.download_button(
+					'Save',
+					data=st.session_state.get( 'raw_text' ),
+					file_name='gcs_loader_output.txt',
+					mime='text/plain',
+					key='gcs_save'
+				)
+			else:
+				col_save.button( 'Save', key='gcs_save_disabled', disabled=True )
+			
+			if clear_gcs:
+				clear_if_active( 'GoogleCloudStorageFileLoader' )
+				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+				st.session_state[ '_loader_status' ] = 'Google Cloud Storage File Loader state cleared.'
+				st.rerun( )
+			
+			if load_gcs and project_name and bucket and blob:
+				loader = GoogleCloudStorageFileLoader( )
+				documents = loader.load(
+					project_name=project_name,
+					bucket=bucket,
+					blob=blob
+				) or [ ]
+				st.session_state.documents = documents
+				st.session_state.raw_documents = list( documents )
+				st.session_state.raw_text = '\n\n'.join(
+					d.page_content for d in documents
+					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+					and d.page_content.strip( )
+				)
+				st.session_state.processed_text = None
+				st.session_state.tokens = None
+				st.session_state.vocabulary = None
+				st.session_state.token_counts = None
+				st.session_state.active_loader = 'GoogleCloudStorageFileLoader'
+				st.session_state[ '_loader_status' ] = (
+						f'Loaded {len( documents )} GCS document(s).'
+				)
+				st.rerun( )
+		
+		# --------  Microsoft OneDrive Loader
+		with st.expander( label='OneDrive Loader', icon='🪟', expanded=False ):
+			drive_id = st.text_input( 'Drive ID', key='onedrive_drive_id' )
+			folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_folder_path' )
+			auth_with_token = st.checkbox(
+				'Authenticate With Cached Token',
+				value=True,
+				key='onedrive_auth_with_token'
 			)
-			st.rerun( )
+			
+			col_load, col_clear, col_save = st.columns( 3 )
+			load_onedrive = col_load.button( 'Load', key='onedrive_load' )
+			clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear' )
+			
+			can_save = (
+					st.session_state.get( 'active_loader' ) == 'MicrosoftOneDriveFileLoader'
+					and isinstance( st.session_state.get( 'raw_text' ), str )
+					and st.session_state.get( 'raw_text' ).strip( )
+			)
+			
+			if can_save:
+				col_save.download_button(
+					'Save',
+					data=st.session_state.get( 'raw_text' ),
+					file_name='onedrive_loader_output.txt',
+					mime='text/plain',
+					key='onedrive_save'
+				)
+			else:
+				col_save.button( 'Save', key='onedrive_save_disabled', disabled=True )
+			
+			if clear_onedrive:
+				clear_if_active( 'MicrosoftOneDriveFileLoader' )
+				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+				st.session_state[ '_loader_status' ] = 'Microsoft OneDrive Loader state cleared.'
+				st.rerun( )
+			
+			if load_onedrive and drive_id:
+				loader = MicrosoftOneDriveFileLoader( )
+				documents = loader.load(
+					drive_id=drive_id,
+					folder_path=folder_path.strip( ) if folder_path else None,
+					auth_with_token=auth_with_token
+				) or [ ]
+				st.session_state.documents = documents
+				st.session_state.raw_documents = list( documents )
+				st.session_state.raw_text = '\n\n'.join(
+					d.page_content for d in documents
+					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+					and d.page_content.strip( )
+				)
+				st.session_state.processed_text = None
+				st.session_state.tokens = None
+				st.session_state.vocabulary = None
+				st.session_state.token_counts = None
+				st.session_state.active_loader = 'MicrosoftOneDriveFileLoader'
+				st.session_state[ '_loader_status' ] = (
+						f'Loaded {len( documents )} OneDrive document(s).'
+				)
+				st.rerun( )
+		
+		# --------- AWS S3 File Loader
+		with st.expander( label='AWS File Loader', icon='🪣', expanded=False ):
+			bucket = st.text_input( 'Bucket', key='s3_bucket' )
+			key_name = st.text_input( 'Key', key='s3_key' )
+			region_name = st.text_input( 'Region (Optional)', key='s3_region_name' )
+			aws_access_key_id = st.text_input(
+				'AWS Access Key ID (Optional)',
+				type='password',
+				key='s3_access_key'
+			)
+			aws_secret_access_key = st.text_input(
+				'AWS Secret Access Key (Optional)',
+				type='password',
+				key='s3_secret_key'
+			)
+			aws_session_token = st.text_input(
+				'AWS Session Token (Optional)',
+				type='password',
+				key='s3_session_token'
+			)
+			
+			col_load, col_clear, col_save = st.columns( 3 )
+			load_s3 = col_load.button( 'Load', key='s3_load' )
+			clear_s3 = col_clear.button( 'Clear', key='s3_clear' )
+			
+			can_save = (
+					st.session_state.get( 'active_loader' ) == 'AwsS3FileLoader'
+					and isinstance( st.session_state.get( 'raw_text' ), str )
+					and st.session_state.get( 'raw_text' ).strip( )
+			)
+			
+			if can_save:
+				col_save.download_button(
+					'Save',
+					data=st.session_state.get( 'raw_text' ),
+					file_name='s3_loader_output.txt',
+					mime='text/plain',
+					key='s3_save'
+				)
+			else:
+				col_save.button( 'Save', key='s3_save_disabled', disabled=True )
+			
+			if clear_s3:
+				clear_if_active( 'AwsS3FileLoader' )
+				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+				st.session_state[ '_loader_status' ] = 'AWS S3 File Loader state cleared.'
+				st.rerun( )
+			
+			if load_s3 and bucket and key_name:
+				loader = AwsS3FileLoader( )
+				documents = loader.load(
+					bucket=bucket,
+					key=key_name,
+					aws_access_key_id=aws_access_key_id.strip( ) or None,
+					aws_secret_access_key=aws_secret_access_key.strip( ) or None,
+					aws_session_token=aws_session_token.strip( ) or None,
+					region_name=region_name.strip( ) or None
+				) or [ ]
+				st.session_state.documents = documents
+				st.session_state.raw_documents = list( documents )
+				st.session_state.raw_text = '\n\n'.join(
+					d.page_content for d in documents
+					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+					and d.page_content.strip( )
+				)
+				st.session_state.processed_text = None
+				st.session_state.tokens = None
+				st.session_state.vocabulary = None
+				st.session_state.token_counts = None
+				st.session_state.active_loader = 'AwsS3FileLoader'
+				st.session_state[ '_loader_status' ] = f'Loaded {len( documents )} S3 document(s).'
+				st.rerun( )
+		
+		# -------- Google Speech-to-Text Loader
+		with st.expander( label='Google Speech-to-Text', icon='🎙️', expanded=False ):
+			project_id = st.text_input( 'Project ID', key='gstt_project_id' )
+			audio_file = st.file_uploader(
+				'Upload Audio File',
+				type=[ 'wav', 'flac', 'mp3', 'm4a', 'ogg' ],
+				key='gstt_audio_upload'
+			)
+			gcs_audio_uri = st.text_input(
+				'GCS Audio URI (Optional)',
+				placeholder='gs://bucket/path/audio.flac',
+				key='gstt_gcs_uri'
+			)
+			language_code = st.text_input(
+				'Language Code (Optional)',
+				value='en-US',
+				key='gstt_language_code'
+			)
+			
+			col_load, col_clear, col_save = st.columns( 3 )
+			load_gstt = col_load.button( 'Load', key='gstt_load' )
+			clear_gstt = col_clear.button( 'Clear', key='gstt_clear' )
+			
+			can_save = (
+					st.session_state.get( 'active_loader' ) == 'GoogleSpeechToTextAudioLoader'
+					and isinstance( st.session_state.get( 'raw_text' ), str )
+					and st.session_state.get( 'raw_text' ).strip( )
+			)
+			
+			if can_save:
+				col_save.download_button(
+					'Save',
+					data=st.session_state.get( 'raw_text' ),
+					file_name='google_speech_to_text_output.txt',
+					mime='text/plain',
+					key='gstt_save'
+				)
+			else:
+				col_save.button( 'Save', key='gstt_save_disabled', disabled=True )
+			
+			if clear_gstt:
+				clear_if_active( 'GoogleSpeechToTextAudioLoader' )
+				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+				st.session_state[ '_loader_status' ] = 'Google Speech-to-Text Loader state cleared.'
+				st.rerun( )
+			
+			if load_gstt and project_id and (audio_file or gcs_audio_uri.strip( )):
+				config: Dict[ str, Any ] | None = None
+				if language_code.strip( ):
+					config = { 'language_code': language_code.strip( ) }
+				
+				if gcs_audio_uri.strip( ):
+					file_path = gcs_audio_uri.strip( )
+					loader = GoogleSpeechToTextAudioLoader( )
+					documents = loader.load(
+						project_id=project_id,
+						file_path=file_path,
+						config=config
+					) or [ ]
+				else:
+					with tempfile.TemporaryDirectory( ) as tmp:
+						path = os.path.join( tmp, audio_file.name )
+						with open( path, 'wb' ) as f:
+							f.write( audio_file.read( ) )
+						
+						loader = GoogleSpeechToTextAudioLoader( )
+						documents = loader.load(
+							project_id=project_id,
+							file_path=path,
+							config=config
+						) or [ ]
+				
+				st.session_state.documents = documents
+				st.session_state.raw_documents = list( documents )
+				st.session_state.raw_text = '\n\n'.join(
+					d.page_content for d in documents
+					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+					and d.page_content.strip( )
+				)
+				st.session_state.processed_text = None
+				st.session_state.tokens = None
+				st.session_state.vocabulary = None
+				st.session_state.token_counts = None
+				st.session_state.active_loader = 'GoogleSpeechToTextAudioLoader'
+				st.session_state[ '_loader_status' ] = (
+						f'Loaded {len( documents )} transcript document(s).'
+				)
+				st.rerun( )
 	
-	# -------------------------- Google Cloud Storage File Loader
-	with st.expander( label='Google Cloud Storage Loader', icon='☁️', expanded=False ):
+	# ------- Google Cloud File Loader
+	with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
 		project_name = st.text_input( 'Project Name', key='gcs_project_name' )
 		bucket = st.text_input( 'Bucket', key='gcs_bucket' )
 		blob = st.text_input( 'Blob', key='gcs_blob' )
@@ -6900,7 +7237,7 @@ elif mode == 'Retrieval':
 		clear_gcs = col_clear.button( 'Clear', key='gcs_clear' )
 		
 		can_save = (
-				st.session_state.get( 'active_loader' ) == 'GoogleCloudStorageFileLoader'
+				st.session_state.get( 'active_loader' ) == 'GoogleCloudFileLoader'
 				and isinstance( st.session_state.get( 'raw_text' ), str )
 				and st.session_state.get( 'raw_text' ).strip( )
 		)
@@ -6917,98 +7254,24 @@ elif mode == 'Retrieval':
 			col_save.button( 'Save', key='gcs_save_disabled', disabled=True )
 		
 		if clear_gcs:
-			clear_if_active( 'GoogleCloudStorageFileLoader' )
-			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-			st.session_state[ '_loader_status' ] = 'Google Cloud Storage File Loader state cleared.'
-			st.rerun( )
+			remaining = _clear_loader_documents( 'GoogleCloudFileLoader' )
+			st.info( f'Google Cloud Storage File Loader state cleared. Remaining documents: {remaining}.' )
 		
-		if load_gcs and project_name and bucket and blob:
-			loader = GoogleCloudStorageFileLoader( )
-			documents = loader.load(
-				project_name=project_name,
-				bucket=bucket,
-				blob=blob
-			) or [ ]
-			st.session_state.documents = documents
-			st.session_state.raw_documents = list( documents )
-			st.session_state.raw_text = '\n\n'.join(
-				d.page_content for d in documents
-				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-				and d.page_content.strip( )
-			)
-			st.session_state.processed_text = None
-			st.session_state.tokens = None
-			st.session_state.vocabulary = None
-			st.session_state.token_counts = None
-			st.session_state.active_loader = 'GoogleCloudStorageFileLoader'
-			st.session_state[ '_loader_status' ] = (
-					f'Loaded {len( documents )} GCS document(s).'
-			)
-			st.rerun( )
+		if load_gcs and project_name.strip( ) and bucket.strip( ) and blob.strip( ):
+			try:
+				loader = GoogleCloudFileLoader(
+					project_name=project_name.strip( ),
+					bucket=bucket.strip( ),
+					blob=blob.strip( )
+				)
+				documents = loader.load( ) or [ ]
+				count = _promote_loader_documents( documents, 'GoogleCloudFileLoader' )
+				st.success( f'Loaded {count} Google Cloud Storage document(s).' )
+			except Exception as e:
+				st.error( str( e ) )
 	
-	# -------------------------- Microsoft OneDrive Loader
-	with st.expander( label='OneDrive Loader', icon='🪟', expanded=False ):
-		drive_id = st.text_input( 'Drive ID', key='onedrive_drive_id' )
-		folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_folder_path' )
-		auth_with_token = st.checkbox(
-			'Authenticate With Cached Token',
-			value=True,
-			key='onedrive_auth_with_token'
-		)
-		
-		col_load, col_clear, col_save = st.columns( 3 )
-		load_onedrive = col_load.button( 'Load', key='onedrive_load' )
-		clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear' )
-		
-		can_save = (
-				st.session_state.get( 'active_loader' ) == 'MicrosoftOneDriveFileLoader'
-				and isinstance( st.session_state.get( 'raw_text' ), str )
-				and st.session_state.get( 'raw_text' ).strip( )
-		)
-		
-		if can_save:
-			col_save.download_button(
-				'Save',
-				data=st.session_state.get( 'raw_text' ),
-				file_name='onedrive_loader_output.txt',
-				mime='text/plain',
-				key='onedrive_save'
-			)
-		else:
-			col_save.button( 'Save', key='onedrive_save_disabled', disabled=True )
-		
-		if clear_onedrive:
-			clear_if_active( 'MicrosoftOneDriveFileLoader' )
-			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-			st.session_state[ '_loader_status' ] = 'Microsoft OneDrive Loader state cleared.'
-			st.rerun( )
-		
-		if load_onedrive and drive_id:
-			loader = MicrosoftOneDriveFileLoader( )
-			documents = loader.load(
-				drive_id=drive_id,
-				folder_path=folder_path.strip( ) if folder_path else None,
-				auth_with_token=auth_with_token
-			) or [ ]
-			st.session_state.documents = documents
-			st.session_state.raw_documents = list( documents )
-			st.session_state.raw_text = '\n\n'.join(
-				d.page_content for d in documents
-				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-				and d.page_content.strip( )
-			)
-			st.session_state.processed_text = None
-			st.session_state.tokens = None
-			st.session_state.vocabulary = None
-			st.session_state.token_counts = None
-			st.session_state.active_loader = 'MicrosoftOneDriveFileLoader'
-			st.session_state[ '_loader_status' ] = (
-					f'Loaded {len( documents )} OneDrive document(s).'
-			)
-			st.rerun( )
-	
-	# -------------------------- AWS S3 File Loader
-	with st.expander( label='AWS S3 Loader', icon='🪣', expanded=False ):
+	# -------- AWS File Loader
+	with st.expander( label='AWS S3 File', icon='🪣', expanded=False ):
 		bucket = st.text_input( 'Bucket', key='s3_bucket' )
 		key_name = st.text_input( 'Key', key='s3_key' )
 		region_name = st.text_input( 'Region (Optional)', key='s3_region_name' )
@@ -7050,38 +7313,84 @@ elif mode == 'Retrieval':
 			col_save.button( 'Save', key='s3_save_disabled', disabled=True )
 		
 		if clear_s3:
-			clear_if_active( 'AwsS3FileLoader' )
-			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-			st.session_state[ '_loader_status' ] = 'AWS S3 File Loader state cleared.'
-			st.rerun( )
+			remaining = _clear_loader_documents( 'AwsFileLoader' )
+			st.info( f'AWS S3 File Loader state cleared. Remaining documents: {remaining}.' )
 		
-		if load_s3 and bucket and key_name:
-			loader = AwsS3FileLoader( )
-			documents = loader.load(
-				bucket=bucket,
-				key=key_name,
-				aws_access_key_id=aws_access_key_id.strip( ) or None,
-				aws_secret_access_key=aws_secret_access_key.strip( ) or None,
-				aws_session_token=aws_session_token.strip( ) or None,
-				region_name=region_name.strip( ) or None
-			) or [ ]
-			st.session_state.documents = documents
-			st.session_state.raw_documents = list( documents )
-			st.session_state.raw_text = '\n\n'.join(
-				d.page_content for d in documents
-				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-				and d.page_content.strip( )
+		if load_s3 and bucket.strip( ) and key_name.strip( ):
+			try:
+				kwargs: Dict[ str, Any ] = {
+						'bucket': bucket.strip( ),
+						'key': key_name.strip( ),
+				}
+				if aws_access_key_id.strip( ):
+					kwargs[ 'aws_access_key_id' ] = aws_access_key_id.strip( )
+				if aws_secret_access_key.strip( ):
+					kwargs[ 'aws_secret_access_key' ] = aws_secret_access_key.strip( )
+				if aws_session_token.strip( ):
+					kwargs[ 'aws_session_token' ] = aws_session_token.strip( )
+				if region_name.strip( ):
+					kwargs[ 'region_name' ] = region_name.strip( )
+				
+				loader = AwsFileLoader( **kwargs )
+				documents = loader.load( ) or [ ]
+				count = _promote_loader_documents( documents, 'AwsFileLoader' )
+				st.success( f'Loaded {count} S3 document(s).' )
+			except Exception as e:
+				st.error( str( e ) )
+				
+	# ------ OneDrive Loader
+	with st.expander( label='OneDrive', icon='🪟', expanded=False ):
+		drive_id = st.text_input( 'Drive ID', key='onedrive_drive_id' )
+		folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_folder_path' )
+		auth_with_token = st.checkbox(
+			'Authenticate With Cached Token',
+			value=True,
+			key='onedrive_auth_with_token'
+		)
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_onedrive = col_load.button( 'Load', key='onedrive_load' )
+		clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'OneDriveDocLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='onedrive_loader_output.txt',
+				mime='text/plain',
+				key='onedrive_save'
 			)
-			st.session_state.processed_text = None
-			st.session_state.tokens = None
-			st.session_state.vocabulary = None
-			st.session_state.token_counts = None
-			st.session_state.active_loader = 'AwsS3FileLoader'
-			st.session_state[ '_loader_status' ] = f'Loaded {len( documents )} S3 document(s).'
-			st.rerun( )
+		else:
+			col_save.button( 'Save', key='onedrive_save_disabled', disabled=True )
+		
+		if clear_onedrive:
+			remaining = _clear_loader_documents( 'OneDriveDocLoader' )
+			st.info( f'Microsoft OneDrive Loader state cleared. Remaining documents: {remaining}.' )
+		
+		if load_onedrive and drive_id.strip( ):
+			try:
+				kwargs: Dict[ str, Any ] = {
+						'drive_id': drive_id.strip( ),
+						'auth_with_token': auth_with_token,
+				}
+				if folder_path.strip( ):
+					kwargs[ 'folder_path' ] = folder_path.strip( )
+				
+				loader = OneDriveDocLoader( **kwargs )
+				documents = loader.load( ) or [ ]
+				count = _promote_loader_documents( documents, 'OneDriveDocLoader' )
+				st.success( f'Loaded {count} OneDrive document(s).' )
+			except Exception as e:
+				st.error( str( e ) )
 	
-	# -------------------------- Google Speech-to-Text Loader
-	with st.expander( label='Google Speech-to-Text Loader', icon='🎙️', expanded=False ):
+	# ------- Google Speech-to-Text Loader
+	with st.expander( label='Google Speech-to-Text', icon='🎙️', expanded=False ):
 		project_id = st.text_input( 'Project ID', key='gstt_project_id' )
 		audio_file = st.file_uploader(
 			'Upload Audio File',
@@ -7121,54 +7430,147 @@ elif mode == 'Retrieval':
 			col_save.button( 'Save', key='gstt_save_disabled', disabled=True )
 		
 		if clear_gstt:
-			clear_if_active( 'GoogleSpeechToTextAudioLoader' )
-			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-			st.session_state[ '_loader_status' ] = 'Google Speech-to-Text Loader state cleared.'
-			st.rerun( )
+			remaining = _clear_loader_documents( 'GoogleSpeechToTextAudioLoader' )
+			st.info( f'Google Speech-to-Text Loader state cleared. Remaining documents: {remaining}.' )
 		
-		if load_gstt and project_id and (audio_file or gcs_audio_uri.strip( )):
-			config: Dict[ str, Any ] | None = None
-			if language_code.strip( ):
-				config = { 'language_code': language_code.strip( ) }
-			
-			if gcs_audio_uri.strip( ):
-				file_path = gcs_audio_uri.strip( )
-				loader = GoogleSpeechToTextAudioLoader( )
-				documents = loader.load(
-					project_id=project_id,
-					file_path=file_path,
-					config=config
-				) or [ ]
-			else:
-				with tempfile.TemporaryDirectory( ) as tmp:
-					path = os.path.join( tmp, audio_file.name )
-					with open( path, 'wb' ) as f:
-						f.write( audio_file.read( ) )
-					
-					loader = GoogleSpeechToTextAudioLoader( )
-					documents = loader.load(
-						project_id=project_id,
-						file_path=path,
+		if load_gstt and project_id.strip( ) and (audio_file or gcs_audio_uri.strip( )):
+			try:
+				config: Dict[ str, Any ] | None = None
+				if language_code.strip( ):
+					config = { 'language_code': language_code.strip( ) }
+				
+				if gcs_audio_uri.strip( ):
+					file_path = gcs_audio_uri.strip( )
+					loader = LangChainSpeechToTextLoader(
+						project_id=project_id.strip( ),
+						file_path=file_path,
 						config=config
-					) or [ ]
-			
-			st.session_state.documents = documents
-			st.session_state.raw_documents = list( documents )
-			st.session_state.raw_text = '\n\n'.join(
-				d.page_content for d in documents
-				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-				and d.page_content.strip( )
-			)
-			st.session_state.processed_text = None
-			st.session_state.tokens = None
-			st.session_state.vocabulary = None
-			st.session_state.token_counts = None
-			st.session_state.active_loader = 'GoogleSpeechToTextAudioLoader'
-			st.session_state[ '_loader_status' ] = (
-					f'Loaded {len( documents )} transcript document(s).'
-			)
-			st.rerun( )
+					)
+					documents = loader.load( ) or [ ]
+				else:
+					with tempfile.TemporaryDirectory( ) as tmp:
+						path = os.path.join( tmp, audio_file.name )
+						with open( path, 'wb' ) as f:
+							f.write( audio_file.read( ) )
+						
+						loader = LangChainSpeechToTextLoader(
+							project_id=project_id.strip( ),
+							file_path=path,
+							config=config
+						)
+						documents = loader.load( ) or [ ]
+				
+				count = _promote_loader_documents( documents, 'GoogleSpeechToTextLoader' )
+				st.success( f'Loaded {count} transcript document(s).' )
+			except Exception as e:
+				st.error( str( e ) )
 
+	# -------- Amazon Bucket
+	with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
+		bucket_name = st.text_input( 'Bucket', key='s3_directory_bucket' )
+		prefix = st.text_input( 'Prefix (Optional)', key='s3_directory_prefix' )
+		region_name = st.text_input( 'Region (Optional)', key='s3_directory_region_name' )
+		endpoint_url = st.text_input( 'Endpoint URL (Optional)', key='s3_directory_endpoint_url' )
+		aws_access_key_id = st.text_input(
+			'AWS Access Key ID (Optional)',
+			type='password',
+			key='s3_directory_access_key'
+		)
+		aws_secret_access_key = st.text_input(
+			'AWS Secret Access Key (Optional)',
+			type='password',
+			key='s3_directory_secret_key'
+		)
+		aws_session_token = st.text_input(
+			'AWS Session Token (Optional)',
+			type='password',
+			key='s3_directory_session_token'
+		)
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_amazon_bucket = col_load.button( 'Load', key='s3_directory_load' )
+		clear_amazon_bucket = col_clear.button( 'Clear', key='s3_directory_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'AmazonBucketLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='amazon_bucket_loader_output.txt',
+				mime='text/plain',
+				key='s3_directory_save'
+			)
+		else:
+			col_save.button( 'Save', key='s3_directory_save_disabled', disabled=True )
+		
+		if clear_amazon_bucket:
+			remaining = _clear_loader_documents( 'AmazonBucketLoader' )
+			st.info( f'Amazon Bucket Loader state cleared. Remaining documents: {remaining}.' )
+		
+		if load_amazon_bucket and bucket_name.strip( ):
+			try:
+				loader = AmazonBucketLoader( )
+				documents = loader.load(
+					bucket=bucket_name.strip( ),
+					prefix=prefix.strip( ) or None,
+					aws_access_key_id=aws_access_key_id.strip( ) or None,
+					aws_secret_access_key=aws_secret_access_key.strip( ) or None,
+					aws_session_token=aws_session_token.strip( ) or None,
+					region_name=region_name.strip( ) or None,
+					endpoint_url=endpoint_url.strip( ) or None
+				) or [ ]
+				count = _promote_loader_documents( documents, 'AmazonBucketLoader' )
+				st.success( f'Loaded {count} Amazon bucket document(s).' )
+			except Exception as e:
+				st.error( str( e ) )
+	
+	# -------- Google Bucket Loader
+	with st.expander( label='Google Cloud Bucket', icon='🪣', expanded=False ):
+		project_name = st.text_input( 'Project Name', key='gcs_bucket_project_name' )
+		bucket_name = st.text_input( 'Bucket', key='gcs_bucket_name' )
+		
+		col_load, col_clear, col_save = st.columns( 3 )
+		load_google_bucket = col_load.button( 'Load', key='gcs_bucket_load' )
+		clear_google_bucket = col_clear.button( 'Clear', key='gcs_bucket_clear' )
+		
+		can_save = (
+				st.session_state.get( 'active_loader' ) == 'GoogleBucketLoader'
+				and isinstance( st.session_state.get( 'raw_text' ), str )
+				and st.session_state.get( 'raw_text' ).strip( )
+		)
+		
+		if can_save:
+			col_save.download_button(
+				'Save',
+				data=st.session_state.get( 'raw_text' ),
+				file_name='google_bucket_loader_output.txt',
+				mime='text/plain',
+				key='gcs_bucket_save'
+			)
+		else:
+			col_save.button( 'Save', key='gcs_bucket_save_disabled', disabled=True )
+		
+		if clear_google_bucket:
+			remaining = _clear_loader_documents( 'GoogleBucketLoader' )
+			st.info( f'Google Bucket Loader state cleared. Remaining documents: {remaining}.' )
+		
+		if load_google_bucket and project_name.strip( ) and bucket_name.strip( ):
+			try:
+				loader = GoogleBucketLoader( )
+				documents = loader.load(
+					project_name=project_name.strip( ),
+					bucket=bucket_name.strip( )
+				) or [ ]
+				count = _promote_loader_documents( documents, 'GoogleBucketLoader' )
+				st.success( f'Loaded {count} Google bucket document(s).' )
+			except Exception as e:
+				st.error( str( e ) )
+			
 # ==============================================================================
 # GEOSPATIAL MODE
 # ==============================================================================
@@ -14371,7 +14773,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- US Health Data
-	with st.expander( label='U.S. Health Data', expanded=False ):
+	with st.expander( label='U.S. Health', expanded=False ):
 		if 'healthdata_results' not in st.session_state:
 			st.session_state[ 'healthdata_results' ] = { }
 		
@@ -14606,7 +15008,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- WHO Global Health
-	with st.expander( label='WHO Global Health', expanded=False ):
+	with st.expander( label='WHO Global', expanded=False ):
 		if 'who_results' not in st.session_state:
 			st.session_state[ 'who_results' ] = { }
 		
@@ -14777,7 +15179,7 @@ elif mode == 'Population':
 				_render_fallback_raw( result )
 	
 	# -------- United Nations Data
-	with st.expander( label='United Nations Data', expanded=False ):
+	with st.expander( label='United Nations', expanded=False ):
 		if 'un_results' not in st.session_state:
 			st.session_state[ 'un_results' ] = { }
 		
@@ -15298,8 +15700,8 @@ elif mode == 'Population':
 				
 				_render_fallback_raw( result )
 
-	# -------------------------- PubMed Loader
-	with st.expander( label='PubMed Loader', icon='🧬', expanded=False ):
+	# -------- PubMed Search Loader
+	with st.expander( label='Pub Med', icon='🧬', expanded=False ):
 		query = st.text_input( 'PubMed Query', key='pubmed_query' )
 		max_docs = st.number_input(
 			'Max Documents',
@@ -15332,31 +15734,84 @@ elif mode == 'Population':
 			col_save.button( 'Save', key='pubmed_save_disabled', disabled=True )
 		
 		if clear_pubmed:
-			clear_if_active( 'PubMedSearchLoader' )
-			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-			st.session_state[ '_loader_status' ] = 'PubMed Loader state cleared.'
-			st.rerun( )
+			remaining = _clear_loader_documents( 'PubMedSearchLoader' )
+			st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
 		
-		if load_pubmed and query:
-			loader = PubMedSearchLoader( )
-			documents = loader.load( query=query, max_docs=int( max_docs ) ) or [ ]
-			st.session_state.documents = documents
-			st.session_state.raw_documents = list( documents )
-			st.session_state.raw_text = '\n\n'.join(
-				d.page_content for d in documents
-				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-				and d.page_content.strip( )
+		if load_pubmed and query.strip( ):
+			try:
+				loader = PubMedSearchLoader( query=query.strip( ), load_max_docs=int( max_docs ) )
+				documents = loader.load( ) or [ ]
+				count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
+				st.success( f'Loaded {count} PubMed document(s).' )
+			except Exception as e:
+				st.error( str( e ) )
+		
+		# ------- Open City Data Loader
+		with st.expander( label='Open City Data Loader', icon='🏙️', expanded=False ):
+			city_id = st.text_input( 'City ID', value='data.sfgov.org', key='open_city_id' )
+			dataset_id = st.text_input( 'Dataset ID', key='open_city_dataset_id' )
+			limit = st.number_input(
+				'Limit',
+				min_value=1,
+				max_value=5000,
+				value=100,
+				step=10,
+				key='open_city_limit'
 			)
-			st.session_state.processed_text = None
-			st.session_state.tokens = None
-			st.session_state.vocabulary = None
-			st.session_state.token_counts = None
-			st.session_state.active_loader = 'PubMedSearchLoader'
-			st.session_state[ '_loader_status' ] = f'Loaded {len( documents )} PubMed document(s).'
-			st.rerun( )
+			
+			col_load, col_clear, col_save = st.columns( 3 )
+			load_open_city = col_load.button( 'Load', key='open_city_load' )
+			clear_open_city = col_clear.button( 'Clear', key='open_city_clear' )
+			
+			can_save = (
+					st.session_state.get( 'active_loader' ) == 'OpenCityLoader'
+					and isinstance( st.session_state.get( 'raw_text' ), str )
+					and st.session_state.get( 'raw_text' ).strip( )
+			)
+			
+			if can_save:
+				col_save.download_button(
+					'Save',
+					data=st.session_state.get( 'raw_text' ),
+					file_name='open_city_loader_output.txt',
+					mime='text/plain',
+					key='open_city_save'
+				)
+			else:
+				col_save.button( 'Save', key='open_city_save_disabled', disabled=True )
+			
+			if clear_open_city:
+				clear_if_active( 'OpenCityLoader' )
+				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+				st.session_state[ '_loader_status' ] = 'Open City Data Loader state cleared.'
+				st.rerun( )
+			
+			if load_open_city and city_id and dataset_id:
+				loader = OpenCityLoader( )
+				documents = loader.load(
+					city_id=city_id,
+					dataset_id=dataset_id,
+					limit=int( limit )
+				) or [ ]
+				st.session_state.documents = documents
+				st.session_state.raw_documents = list( documents )
+				st.session_state.raw_text = '\n\n'.join(
+					d.page_content for d in documents
+					if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
+					and d.page_content.strip( )
+				)
+				st.session_state.processed_text = None
+				st.session_state.tokens = None
+				st.session_state.vocabulary = None
+				st.session_state.token_counts = None
+				st.session_state.active_loader = 'OpenCityLoader'
+				st.session_state[ '_loader_status' ] = (
+						f'Loaded {len( documents )} Open City document(s).'
+				)
+				st.rerun( )
 	
-	# -------------------------- Open City Data Loader
-	with st.expander( label='Open City Data Loader', icon='🏙️', expanded=False ):
+	# -------- Open City Loader
+	with st.expander( label='Open City', icon='🏙️', expanded=False ):
 		city_id = st.text_input( 'City ID', value='data.sfgov.org', key='open_city_id' )
 		dataset_id = st.text_input( 'Dataset ID', key='open_city_dataset_id' )
 		limit = st.number_input(
@@ -15390,35 +15845,23 @@ elif mode == 'Population':
 			col_save.button( 'Save', key='open_city_save_disabled', disabled=True )
 		
 		if clear_open_city:
-			clear_if_active( 'OpenCityLoader' )
-			st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-			st.session_state[ '_loader_status' ] = 'Open City Data Loader state cleared.'
-			st.rerun( )
+			remaining = _clear_loader_documents( 'OpenCityLoader' )
+			st.info( f'Open City Data Loader state cleared. Remaining documents: {remaining}.' )
 		
-		if load_open_city and city_id and dataset_id:
-			loader = OpenCityLoader( )
-			documents = loader.load(
-				city_id=city_id,
-				dataset_id=dataset_id,
-				limit=int( limit )
-			) or [ ]
-			st.session_state.documents = documents
-			st.session_state.raw_documents = list( documents )
-			st.session_state.raw_text = '\n\n'.join(
-				d.page_content for d in documents
-				if hasattr( d, 'page_content' ) and isinstance( d.page_content, str )
-				and d.page_content.strip( )
-			)
-			st.session_state.processed_text = None
-			st.session_state.tokens = None
-			st.session_state.vocabulary = None
-			st.session_state.token_counts = None
-			st.session_state.active_loader = 'OpenCityLoader'
-			st.session_state[ '_loader_status' ] = (
-					f'Loaded {len( documents )} Open City document(s).'
-			)
-			st.rerun( )
+		if load_open_city and city_id.strip( ) and dataset_id.strip( ):
+			try:
+				loader = OpenCityLoader(
+					city_id=city_id.strip( ),
+					dataset_id=dataset_id.strip( ),
+					limit=int( limit )
+				)
 				
+				documents = loader.load( ) or [ ]
+				count = _promote_loader_documents( documents, 'OpenCityLoader' )
+				st.success( f'Loaded {count} Open City document(s).' )
+			except Exception as e:
+				st.error( str( e ) )
+			
 # ==============================================================================
 # TEXT GENERATION MODE
 # ==============================================================================
