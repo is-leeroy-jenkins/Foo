@@ -4069,7 +4069,7 @@ elif mode == 'Retrieval':
 							st.write( doc )
 				
 	# -------- Google Drive
-	with st.expander( label='Google Drive', icon='🚗',expanded=False ):
+	with st.expander( label='Google Drive', icon='🛡️',expanded=False ):
 		if 'googledrive_results' not in st.session_state:
 			st.session_state[ 'googledrive_results' ] = [ ]
 		
@@ -5079,7 +5079,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 	
 	# -------- Naval Observatory
-	with st.expander( label='US Naval Observatory', icon='🔭',expanded=False ):
+	with st.expander( label='US Naval Observatory', icon='⚓', expanded=False ):
 		if 'navalobservatory_results' not in st.session_state:
 			st.session_state[ 'navalobservatory_results' ] = { }
 		
@@ -5831,7 +5831,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 	
 	# -------- Congress
-	with st.expander( label='US Congress', icon='🔨', expanded=False ):
+	with st.expander( label='US Congress', icon='⚖️', expanded=False ):
 		if 'congress_results' not in st.session_state:
 			st.session_state[ 'congress_results' ] = { }
 		
@@ -6238,7 +6238,7 @@ elif mode == 'Retrieval':
 					st.json( result )
 	
 	# -------- Internet Archive
-	with st.expander( label='Internet Archive', icon='🗄️', expanded=False ):
+	with st.expander( label='Internet Archive', icon='🌐', expanded=False ):
 		if 'internetarchive_results' not in st.session_state:
 			st.session_state[ 'internetarchive_results' ] = { }
 		
@@ -6876,7 +6876,7 @@ elif mode == 'Retrieval':
 						st.info( 'No results returned.' )
 	
 	# ------- Jupyter Notebook Loader
-	with st.expander( label='Jupyter Notebook', icon='📓', expanded=False ):
+	with st.expander( label='Jupyter Notebook', icon='🪐', expanded=False ):
 		notebook_file = st.file_uploader(
 			'Upload Notebook',
 			type=[ 'ipynb' ],
@@ -7392,7 +7392,7 @@ elif mode == 'Retrieval':
 				st.error( str( e ) )
 	
 	# ------- Google Speech-to-Text Loader
-	with st.expander( label='Google Speech-to-Text', icon='🎙️', expanded=False ):
+	with st.expander( label='Google Speech-to-Text', icon='🗣️', expanded=False ):
 		project_id = st.text_input( 'Project ID', key='gcp_project_id' )
 		audio_file = st.file_uploader(
 			'Upload Audio File',
@@ -7468,7 +7468,7 @@ elif mode == 'Retrieval':
 				st.error( str( e ) )
 
 	# -------- Amazon Bucket
-	with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
+	with st.expander( label='AWS S3 Bucket', icon='📦', expanded=False ):
 		bucket_name = st.text_input( 'Bucket', key='aws_bucket_name' )
 		prefix = st.text_input( 'Prefix (Optional)', key='aws_bucket_prefix' )
 		region_name = st.text_input( 'Region (Optional)', key='aws_bucket_region_name' )
@@ -7532,7 +7532,7 @@ elif mode == 'Retrieval':
 				st.error( str( e ) )
 	
 	# -------- Google Bucket Loader
-	with st.expander( label='Google Cloud Bucket', icon='🪣', expanded=False ):
+	with st.expander( label='Google Cloud Bucket', icon='🧊', expanded=False ):
 		project_name = st.text_input( 'Project Name', key='gcp_bucket_project_name' )
 		bucket_name = st.text_input( 'Bucket', key='gcp_bucket_name' )
 		
