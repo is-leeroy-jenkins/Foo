@@ -3980,7 +3980,7 @@ class GoogleSpeechToTextLoader( Loader ):
 					'-> List[ Document ] | None'
 			)
 			raise exception
-		
+
 class GoogleBucketLoader( Loader ):
 	'''
 
@@ -4021,11 +4021,7 @@ class GoogleBucketLoader( Loader ):
 				'split_documents',
 		]
 	
-	def load(
-			self,
-			project_name: str,
-			bucket: str,
-			prefix: Optional[ str ] = None,
+	def load( self, project_name: str, bucket: str, prefix: Optional[ str ] = None,
 			continue_on_failure: bool = False ) -> List[ Document ] | None:
 		'''
 
@@ -4036,26 +4032,31 @@ class GoogleBucketLoader( Loader ):
 
 			Parameters:
 			-----------
-			project_name (str): Google Cloud project name or project ID.
-			bucket (str): Google Cloud Storage bucket name.
-			prefix (Optional[str]): Optional object prefix / folder filter.
-			continue_on_failure (bool): Continue when a single object fails
-				to load.
+			project_name (str):
+				Google Cloud project name or project ID.
+
+			bucket (str):
+				Google Cloud Storage bucket name.
+
+			prefix (Optional[str]):
+				Optional object prefix / folder filter.
+
+			continue_on_failure (bool):
+				Continue when a single object fails to load.
 
 			Returns:
 			--------
-			List[Document] | None: Loaded bucket documents.
+			List[Document] | None:
+				Loaded bucket documents.
 
 		'''
 		try:
 			throw_if( 'project_name', project_name )
 			throw_if( 'bucket', bucket )
-			
 			self.project_name = project_name
 			self.bucket = bucket
 			self.prefix = prefix
 			self.continue_on_failure = continue_on_failure
-			
 			kwargs: Dict[ str, Any ] = {
 					'project_name': self.project_name,
 					'bucket': self.bucket,
@@ -4090,12 +4091,16 @@ class GoogleBucketLoader( Loader ):
 
 			Parameters:
 			-----------
-			chunk (int): Maximum number of characters per chunk.
-			overlap (int): Number of overlapping characters between chunks.
+			chunk (int):
+				Maximum number of characters per chunk.
+
+			overlap (int):
+				Number of overlapping characters between chunks.
 
 			Returns:
 			--------
-			List[Document] | None: Chunked Document objects.
+			List[Document] | None:
+				Chunked Document objects.
 
 		'''
 		try:

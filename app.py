@@ -7481,66 +7481,181 @@ elif mode == 'Retrieval':
 					st.info( 'No AWS S3 bucket documents returned.' )
 				
 				_render_fallback_raw( result )
-				
-	# -------- Google Bucket Loader
+
+	# -------- Google Cloud Bucket
 	with st.expander( label='Google Cloud Bucket', icon='🧊', expanded=False ):
-		project_name = st.text_input( 'Project Name', key='gcp_bucket_project_name' )
-		bucket_name = st.text_input( 'Bucket', key='gcp_bucket_name' )
-		prefix = st.text_input(
-			'Prefix (Optional)',
-			key='gcp_bucket_prefix',
-			help='Optional folder / object prefix filter inside the bucket.'
-		)
-		continue_on_failure = st.checkbox(
-			'Continue On Failure',
-			value=False,
-			key='gcp_bucket_continue_on_failure',
-			help='Skip objects that fail to load instead of aborting the whole request.'
-		)
+		if 'google_bucket_results' not in st.session_state:
+			st.session_state[ 'google_bucket_results' ] = { }
 		
-		col_load, col_clear, col_save = st.columns( 3 )
-		load_google_bucket = col_load.button( 'Load', key='gcp_bucket_load' )
-		clear_google_bucket = col_clear.button( 'Clear', key='gcp_bucket_clear' )
+		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
 		
-		can_save = (
-				st.session_state.get( 'active_loader' ) == 'GoogleBucketLoader'
-				and isinstance( st.session_state.get( 'raw_text' ), str )
-				and st.session_state.get( 'raw_text' ).strip( )
-		)
-		
-		if can_save:
-			col_save.download_button(
-				'Save',
-				data=st.session_state.get( 'raw_text' ),
-				file_name='google_bucket_loader_output.txt',
-				mime='text/plain',
-				key='gcp_bucket_dl_btn'
+		with col_left:
+			project_name = st.text_input(
+				'Project Name',
+				key='google_bucket_project_name'
 			)
-		else:
-			col_save.button( 'Save', key='gcp_bucket_save_btn', disabled=True )
+			
+			bucket_name = st.text_input(
+				'Bucket',
+				key='google_bucket_name'
+			)
+			
+			prefix = st.text_input(
+				'Prefix (Optional)',
+				key='google_bucket_prefix',
+				help='Optional folder / object prefix filter inside the bucket.'
+			)
+			
+			continue_on_failure = st.checkbox(
+				'Continue On Failure',
+				value=False,
+				key='google_bucket_continue_on_failure',
+				help='Skip objects that fail to load instead of aborting the whole request.'
+			)
+			
+			b1, b2, b3 = st.columns( 3 )
+			
+			with b1:
+				google_bucket_submit = st.button(
+					'Submit',
+					key='google_bucket_submit',
+					use_container_width=True
+				)
+			
+			with b2:
+				google_bucket_clear = st.button(
+					'Clear',
+					key='google_bucket_clear',
+					use_container_width=True
+				)
+			
+			with b3:
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'GoogleBucketLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
+				
+				if can_save:
+					st.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='google_bucket_loader_output.txt',
+						mime='text/plain',
+						key='google_bucket_save',
+						use_container_width=True
+					)
+				else:
+					st.button(
+						'Save',
+						key='google_bucket_save_disabled',
+						disabled=True,
+						use_container_width=True
+					)
 		
-		if clear_google_bucket:
-			remaining = _clear_loader_documents( 'GoogleBucketLoader' )
-			st.info( f'Google Bucket Loader state cleared. Remaining documents: {remaining}.' )
-		
-		if load_google_bucket:
-			if not project_name or not project_name.strip( ):
-				st.info( 'Enter a Project Name.' )
-			elif not bucket_name or not bucket_name.strip( ):
-				st.info( 'Enter a Bucket.' )
+		with col_right:
+			if google_bucket_clear:
+				st.session_state[ 'google_bucket_results' ] = { }
+				remaining = _clear_loader_documents( 'GoogleBucketLoader' )
+				st.info( f'Google Bucket Loader state cleared. Remaining documents: {remaining}.' )
+			
+			if google_bucket_submit:
+				if not project_name or not project_name.strip( ):
+					st.info( 'Enter a Project Name.' )
+				elif not bucket_name or not bucket_name.strip( ):
+					st.info( 'Enter a Bucket.' )
+				else:
+					try:
+						loader = GoogleBucketLoader( )
+						documents = loader.load(
+							project_name=project_name.strip( ),
+							bucket=bucket_name.strip( ),
+							prefix=prefix.strip( ) or None,
+							continue_on_failure=continue_on_failure
+						) or [ ]
+						
+						count = _promote_loader_documents(
+							documents,
+							'GoogleBucketLoader'
+						)
+						
+						items: list[ dict[ str, Any ] ] = [ ]
+						for i, doc in enumerate( documents, start=1 ):
+							metadata = (
+									doc.metadata
+									if isinstance( getattr( doc, 'metadata', { } ), dict )
+									else { }
+							)
+							content = str( getattr( doc, 'page_content', '' ) or '' )
+							items.append(
+								{
+										'Index': i,
+										'Source': metadata.get( 'source', '' ),
+										'Bucket': bucket_name.strip( ),
+										'Prefix': prefix.strip( ) or '',
+										'Preview': content[ :200 ],
+										'Content': content,
+										'Metadata': metadata,
+								}
+							)
+						
+						st.session_state[ 'google_bucket_results' ] = {
+								'mode': 'google_cloud_bucket',
+								'project_name': project_name.strip( ),
+								'bucket': bucket_name.strip( ),
+								'prefix': prefix.strip( ) or '',
+								'continue_on_failure': continue_on_failure,
+								'count': count,
+								'items': items,
+						}
+						
+						st.success( f'Loaded {count} Google bucket document(s).' )
+					
+					except Exception as exc:
+						st.error( 'Google Cloud Bucket request failed.' )
+						st.exception( exc )
+			
+			result = st.session_state.get( 'google_bucket_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
 			else:
-				try:
-					loader = GoogleBucketLoader( )
-					documents = loader.load(
-						project_name=project_name.strip( ),
-						bucket=bucket_name.strip( ),
-						prefix=prefix.strip( ) or None,
-						continue_on_failure=continue_on_failure
-					) or [ ]
-					count = _promote_loader_documents( documents, 'GoogleBucketLoader' )
-					st.success( f'Loaded {count} Google bucket document(s).' )
-				except Exception as e:
-					st.error( str( e ) )
+				_render_summary_kv(
+					'#### Summary',
+					{
+							'Mode': result.get( 'mode', '' ),
+							'ProjectName': result.get( 'project_name', '' ),
+							'Bucket': result.get( 'bucket', '' ),
+							'Prefix': result.get( 'prefix', '' ),
+							'ContinueOnFailure': result.get( 'continue_on_failure', False ),
+							'Returned': result.get( 'count', 0 ),
+					}
+				)
+				
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+							{
+									'Index': item.get( 'Index', '' ),
+									'Source': item.get( 'Source', '' ),
+									'Bucket': item.get( 'Bucket', '' ),
+									'Prefix': item.get( 'Prefix', '' ),
+									'Preview': item.get( 'Preview', '' ),
+							}
+							for item in items
+					]
+					
+					st.markdown( '#### Results' )
+					st.dataframe( table_rows, use_container_width=True, hide_index=True )
+					
+					first = items[ 0 ]
+					st.markdown( '#### First File Preview' )
+					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+				else:
+					st.info( 'No Google Cloud bucket documents returned.' )
+				
+				_render_fallback_raw( result )
 
 # ==============================================================================
 # GEOSPATIAL MODE
@@ -9610,39 +9725,61 @@ elif mode == 'Geospatial':
 	
 	# -------- Open Sky
 	with st.expander( label='Open Sky', icon='✈️', expanded=False ):
-		mode = st.selectbox( 'Mode',
-			options=[
-					'states_bbox',
-					'flights_aircraft',
-					'arrivals_airport',
-					'departures_airport',
-					'track_aircraft',
-			],
-			key='opensky_mode',
-			help=(
-					'states_bbox = live aircraft inside a bounding box; '
-					'flights_aircraft = flights for one aircraft in a time window; '
-					'arrivals_airport / departures_airport = airport traffic; '
-					'track_aircraft = trajectory waypoints for one aircraft.'
-			)
-		)
-	
-		st.markdown( '#### Query Parameters' )
-		col1, col2 = st.columns( 2 )
+		def _clear_opensky_state( ) -> None:
+			st.session_state[ 'opensky_results' ] = { }
+			st.session_state[ 'opensky_mode' ] = 'states_bbox'
+			st.session_state[ 'opensky_icao24' ] = ''
+			st.session_state[ 'opensky_airport' ] = ''
+			st.session_state[ 'opensky_begin' ] = 0
+			st.session_state[ 'opensky_end' ] = 0
+			st.session_state[ 'opensky_time_value' ] = 0
+			st.session_state[ 'opensky_lamin' ] = 39.0
+			st.session_state[ 'opensky_lomin' ] = -77.5
+			st.session_state[ 'opensky_lamax' ] = 40.5
+			st.session_state[ 'opensky_lomax' ] = -75.0
+			st.session_state[ 'opensky_extended' ] = False
+			st.session_state[ 'opensky_client_id' ] = ''
+			st.session_state[ 'opensky_client_secret' ] = ''
+			st.session_state[ 'opensky_timeout' ] = 20
+			
+		if 'opensky_results' not in st.session_state:
+			st.session_state[ 'opensky_results' ] = { }
 		
-		with col1:
+		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+		
+		with col_left:
+			mode = st.selectbox(
+				'Mode',
+				options=[
+						'states_bbox',
+						'flights_aircraft',
+						'arrivals_airport',
+						'departures_airport',
+						'track_aircraft',
+				],
+				key='opensky_mode',
+				help=(
+						'states_bbox = live aircraft inside a bounding box; '
+						'flights_aircraft = flights for one aircraft; '
+						'arrivals_airport / departures_airport = airport traffic; '
+						'track_aircraft = trajectory waypoints for one aircraft.'
+				)
+			)
+			
 			icao24 = st.text_input(
 				'ICAO24 (Aircraft Hex ID)',
 				value='',
 				key='opensky_icao24',
 				help='Required for flights_aircraft and track_aircraft.'
 			)
+			
 			airport = st.text_input(
 				'Airport ICAO',
 				value='',
 				key='opensky_airport',
 				help='Required for arrivals_airport and departures_airport.'
 			)
+			
 			begin = st.number_input(
 				'Begin (Unix Time)',
 				min_value=0,
@@ -9651,6 +9788,7 @@ elif mode == 'Geospatial':
 				key='opensky_begin',
 				help='Required for aircraft and airport history queries.'
 			)
+			
 			end = st.number_input(
 				'End (Unix Time)',
 				min_value=0,
@@ -9659,8 +9797,7 @@ elif mode == 'Geospatial':
 				key='opensky_end',
 				help='Required for aircraft and airport history queries.'
 			)
-		
-		with col2:
+			
 			time_value = st.number_input(
 				'Time (Unix Time / 0 for Live Track)',
 				min_value=0,
@@ -9669,120 +9806,143 @@ elif mode == 'Geospatial':
 				key='opensky_time_value',
 				help='Optional for states_bbox; used by track_aircraft.'
 			)
+			
 			lamin = st.number_input( 'Min Latitude', value=39.0, key='opensky_lamin' )
 			lomin = st.number_input( 'Min Longitude', value=-77.5, key='opensky_lomin' )
 			lamax = st.number_input( 'Max Latitude', value=40.5, key='opensky_lamax' )
 			lomax = st.number_input( 'Max Longitude', value=-75.0, key='opensky_lomax' )
+			
 			extended = st.checkbox(
 				'Extended Aircraft Categories',
 				value=False,
 				key='opensky_extended',
 				help='Only applies to states_bbox.'
 			)
-		
-		with st.expander( 'Authentication (Optional)', expanded=False ):
+			
 			client_id = st.text_input(
-				'Client ID',
+				'Client ID (Optional)',
 				value='',
-				key='opensky_client_id',
-				help='Optional OAuth client id for authenticated OpenSky requests.'
+				key='opensky_client_id'
 			)
+			
 			client_secret = st.text_input(
-				'Client Secret',
+				'Client Secret (Optional)',
 				value='',
 				type='password',
-				key='opensky_client_secret',
-				help='Optional OAuth client secret.'
+				key='opensky_client_secret'
 			)
+			
+			timeout = st.slider(
+				'Timeout (seconds)',
+				min_value=5,
+				max_value=60,
+				value=20,
+				step=1,
+				key='opensky_timeout'
+			)
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				opensky_submit = st.button(
+					'Submit',
+					key='opensky_submit',
+					use_container_width=True
+				)
+			with b2:
+				st.button(
+					'Clear',
+					key='opensky_clear',
+					on_click=_clear_opensky_state,
+					use_container_width=True
+				)
 		
-		timeout = st.slider(
-			'Timeout (seconds)',
-			min_value=5,
-			max_value=60,
-			value=20,
-			step=1,
-			key='opensky_timeout'
-		)
-		
-		run_opensky = st.button( 'Run OpenSky', key='run_opensky' )
-		
-		if run_opensky:
-			try:
-				client = OpenSky( )
-				result = client.fetch(
-					mode=mode,
-					icao24=icao24,
-					airport=airport,
-					begin=int( begin ) if begin else None,
-					end=int( end ) if end else None,
-					time_value=int( time_value ) if time_value is not None else None,
-					lamin=float( lamin ) if lamin is not None else None,
-					lomin=float( lomin ) if lomin is not None else None,
-					lamax=float( lamax ) if lamax is not None else None,
-					lomax=float( lomax ) if lomax is not None else None,
-					extended=extended,
-					client_id=client_id.strip( ) or None,
-					client_secret=client_secret.strip( ) or None,
-					time=int( timeout ),
+		with col_right:
+			if opensky_submit:
+				try:
+					client = OpenSky( )
+					result = client.fetch(
+						mode=mode,
+						icao24=icao24,
+						airport=airport,
+						begin=int( begin ) if begin else None,
+						end=int( end ) if end else None,
+						time_value=int( time_value ) if time_value is not None else None,
+						lamin=float( lamin ) if lamin is not None else None,
+						lomin=float( lomin ) if lomin is not None else None,
+						lamax=float( lamax ) if lamax is not None else None,
+						lomax=float( lomax ) if lomax is not None else None,
+						extended=extended,
+						client_id=client_id.strip( ) or None,
+						client_secret=client_secret.strip( ) or None,
+						time=int( timeout ),
+					)
+					st.session_state[ 'opensky_results' ] = result or { }
+				except Exception as exc:
+					st.error( 'OpenSky request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'opensky_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv(
+					'#### Summary',
+					{
+							'Mode': result.get( 'mode', '' ),
+							'Returned': int( result.get( 'count', 0 ) or 0 ),
+							'Time': result.get( 'time', '' ) or result.get( 'start_time', '' ),
+							'ICAO24': result.get( 'icao24', '' ),
+							'Callsign': result.get( 'callsign', '' ),
+					}
 				)
 				
-				if not result:
-					st.info( 'No OpenSky data was returned.' )
-				else:
-					count = int( result.get( 'count', 0 ) or 0 )
-					st.success( f'OpenSky returned {count} record(s) for mode: {mode}.' )
-					
-					if mode == 'states_bbox':
-						items = result.get( 'items', [ ] )
-						if items:
-							st.markdown( '#### Live State Vectors' )
-							st.dataframe( items, width='stretch', hide_index=True )
-							
-							map_rows = [
-									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-									for x in items
-									if
-									x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
-							]
-							if map_rows:
-								st.markdown( '#### Aircraft Positions' )
-								st.map( map_rows )
-						else:
-							st.info( 'No aircraft state vectors matched the requested filter.' )
-					
-					elif mode in ('flights_aircraft', 'arrivals_airport', 'departures_airport'):
-						items = result.get( 'items', [ ] )
-						if items:
-							st.markdown( '#### Flights' )
-							st.dataframe( items, width='stretch', hide_index=True )
-						else:
-							st.info( 'No flight rows were returned for that query window.' )
-					
-					elif mode == 'track_aircraft':
-						items = result.get( 'items', [ ] )
-						meta_c1, meta_c2, meta_c3 = st.columns( 3 )
-						meta_c1.metric( 'ICAO24', result.get( 'icao24' ) or '' )
-						meta_c2.metric( 'Callsign', result.get( 'callsign' ) or '' )
-						meta_c3.metric( 'Waypoints', len( items ) )
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if result.get( 'mode' ) == 'states_bbox':
+					if items:
+						st.markdown( '#### Live State Vectors' )
+						st.dataframe( items, use_container_width=True, hide_index=True )
 						
-						if items:
-							st.markdown( '#### Track Waypoints' )
-							st.dataframe( items, width='stretch', hide_index=True )
-							
-							map_rows = [
-									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-									for x in items
-									if
-									x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
-							]
-							if map_rows:
-								st.markdown( '#### Track Map' )
-								st.map( map_rows )
-						else:
-							st.info( 'No track waypoints were returned for that aircraft/time.' )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
+						map_rows = [
+								{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+								for x in items
+								if x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
+						]
+						if map_rows:
+							st.markdown( '#### Aircraft Positions' )
+							st.map( map_rows )
+					else:
+						st.info( 'No aircraft state vectors matched the requested filter.' )
+				
+				elif result.get( 'mode' ) in (
+							'flights_aircraft',
+							'arrivals_airport',
+							'departures_airport'
+				):
+					if items:
+						st.markdown( '#### Flights' )
+						st.dataframe( items, use_container_width=True, hide_index=True )
+					else:
+						st.info( 'No flight rows were returned for that query window.' )
+				
+				elif result.get( 'mode' ) == 'track_aircraft':
+					if items:
+						st.markdown( '#### Track Waypoints' )
+						st.dataframe( items, use_container_width=True, hide_index=True )
+						
+						map_rows = [
+								{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+								for x in items
+								if x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
+						]
+						if map_rows:
+							st.markdown( '#### Track Map' )
+							st.map( map_rows )
+					else:
+						st.info( 'No track waypoints were returned for that aircraft/time.' )
+				
+				_render_fallback_raw( result )
 			
 # ==============================================================================
 # ENVIRONMENTAL MODE
@@ -16375,28 +16535,17 @@ elif mode == 'Population':
 				)
 			
 			with b3:
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'PubMedSearchLoader'
+				can_save = ( st.session_state.get( 'active_loader' ) == 'PubMedSearchLoader'
 						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( )
-				)
+						and st.session_state.get( 'raw_text' ).strip( ) )
 				
 				if can_save:
-					st.download_button(
-						'Save',
-						data=st.session_state.get( 'raw_text' ),
-						file_name='pubmed_loader_output.txt',
-						mime='text/plain',
-						key='pubmed_save',
-						use_container_width=True
-					)
+					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+						file_name='pubmed_loader_output.txt', mime='text/plain',
+						key='pubmed_save', use_container_width=True )
 				else:
-					st.button(
-						'Save',
-						key='pubmed_save_disabled',
-						disabled=True,
-						use_container_width=True
-					)
+					st.button( 'Save', key='pubmed_save_disabled', disabled=True,
+						use_container_width=True )
 		
 		with col_right:
 			if pubmed_clear:
@@ -16410,10 +16559,8 @@ elif mode == 'Population':
 				else:
 					try:
 						loader = PubMedSearchLoader( )
-						documents = loader.load(
-							query=query.strip( ),
-							max_docs=int( max_docs )
-						) or [ ]
+						documents = loader.load( query=query.strip( ),
+							max_docs=int( max_docs ) ) or [ ]
 						
 						count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
 						
