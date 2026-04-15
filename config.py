@@ -106,7 +106,7 @@ MODE_MAP = \
 		'Environmental': 'Environmental Information',
 		'Astronomical': 'Physics & Astronomical Data',
 		'Generation': 'AI Generation',
-		'Management': 'Data Management'
+		'Data Management': 'Data Management'
  }
 
 CHUNKABLE_LOADERS = {
