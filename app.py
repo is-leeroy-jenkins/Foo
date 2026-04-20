@@ -4097,8 +4097,7 @@ elif mode == 'Retrieval':
 				height=90,
 				help=cfg.GOOGLE_DRIVE,
 				key='googledrive_query',
-				placeholder=(
-						'Examples:\n'
+				placeholder=( 'Examples:\n'
 						'machine learning\n'
 						'budget execution\n'
 						'FY 2026 operating plan\n'
@@ -4119,17 +4118,11 @@ elif mode == 'Retrieval':
 				)
 			
 			with c2:
-				gd_results_limit = st.number_input(
-					'Max Docs',
-					min_value=1,
-					max_value=100,
+				gd_results_limit = st.number_input( 'Max Docs', min_value=1, max_value=100,
 					value=int( st.session_state.get( 'googledrive_results_limit', 10 ) ),
-					step=1,
-					key='googledrive_results_limit',
-				)
+					step=1, key='googledrive_results_limit', )
 			
 			c3, c4 = st.columns( 2 )
-			
 			with c3:
 				gd_template = st.selectbox(
 					'Template',
@@ -4145,8 +4138,7 @@ elif mode == 'Retrieval':
 					],
 					index=1,
 					key='googledrive_template',
-					help='Select the Drive retrieval strategy.'
-				)
+					help='Select the Drive retrieval strategy.' )
 			
 			with c4:
 				gd_mode = st.selectbox(
@@ -4179,17 +4171,12 @@ elif mode == 'Retrieval':
 						'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 				],
 				index=0,
-				key='googledrive_mime_type',
-				help='Optional MIME type restriction.'
-			)
+				key='googledrive_mime_type', help='Optional MIME type restriction.' )
 			
-			st.caption(
-				'Expected auth: GOOGLE_ACCOUNT_FILE for credentials JSON. '
-				'Optional: GOOGLE_DRIVE_TOKEN_PATH for token persistence.'
-			)
+			st.caption( 'Expected auth: GOOGLE_ACCOUNT_FILE for credentials JSON. '
+				'Optional: GOOGLE_DRIVE_TOKEN_PATH for token persistence.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				gd_submit = st.button( 'Submit', key='googledrive_submit' )
 			
@@ -4199,16 +4186,10 @@ elif mode == 'Retrieval':
 			if gd_submit:
 				try:
 					from fetchers import GoogleDrive
-					
 					fetcher = GoogleDrive( )
-					docs = fetcher.fetch(
-						question=gd_query,
-						folder_id=gd_folder_id or 'root',
-						results=int( gd_results_limit ),
-						template=gd_template,
-						mime_type=gd_mime_type or None,
-						mode=gd_mode,
-					)
+					docs = fetcher.fetch( question=gd_query, folder_id=gd_folder_id or 'root',
+						results=int( gd_results_limit ), template=gd_template,
+						mime_type=gd_mime_type or None, mode=gd_mode, )
 					
 					st.session_state[ 'googledrive_results' ] = docs or [ ]
 					st.rerun( )
