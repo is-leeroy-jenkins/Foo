@@ -156,9 +156,6 @@ class Loader( ):
 	
 	def verify_exists( self, path: str ) -> str | None:
 		'''
-
-			Purpose:
-			--------
 			Ensure the given file path exists.
 
 			Parameters:
@@ -187,9 +184,6 @@ class Loader( ):
 			
 	def resolve_paths( self, pattern: str ) -> List[ str ] | None:
 		'''
-
-			Purpose:
-			--------
 			Normalize a string glob pattern or a list of paths to a list of real file paths.
 
 			Parameters:
@@ -225,9 +219,6 @@ class Loader( ):
 	def load_documents( self, path: str, encoding: Optional[ str ], csv_args: Optional[ Dict[ str, Any ] ],
 			source_column: Optional[ str ] ) -> List[ Document ] | None:
 		'''
-
-			Purpose:
-			--------
 			Load files into LangChain Document objects.
 
 			Parameters:
@@ -259,9 +250,6 @@ class Loader( ):
 			
 	def split_documents( self, docs: List[ Document ], chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
-
-			Purpose:
-			--------
 			Split long Document objects into smaller chunks for better token management.
 
 			Parameters:
@@ -363,9 +351,6 @@ class TextLoader( Loader ):
 	
 	def load( self, path: str, encoding: Optional[ str ] = None ) -> List[ Document ] | None:
 		'''
-
-			Purpose:
-			--------
 			Load a plain-text file into LangChain Document objects.
 
 			Parameters:
@@ -404,9 +389,6 @@ class TextLoader( Loader ):
 	
 	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
 		'''
-
-			Purpose:
-			--------
 			Split loaded text documents into manageable chunks for downstream LLM
 			processing.
 
@@ -583,7 +565,7 @@ class WebLoader( Loader ):
 		Purpose:
 		--------
 		Functionality to load all text from HTML webpages into
-		a document format that we can use downstream.
+		a document format that can be used downstream.
 
 		Attributes:
 		----------
@@ -1790,11 +1772,10 @@ class HtmlLoader( Loader ):
 	
 class ArXivLoader( Loader ):
 	'''
-
 		Purpose:
-		--------
+		---------
 		Provides the Arxiv loading functionality
-		to parse video research papers into Document objects.
+		to parse research papers into Document objects.
 		
 		Attributes:
 		-----------
@@ -1867,17 +1848,12 @@ class ArXivLoader( Loader ):
 	
 	def load( self, question: str ) -> List[ Document ] | None:
 		'''
-
-			Purpose:
-			--------
 			Load an video file and convert its contents into LangChain Document objects.
 
-			Parameters:
-			-----------
+			:arg:
 			path (str): Path to the HTML (.html or .htm) file.
 
-			Returns:
-			--------
+			:returns:
 			List[Document]: List of Document objects parsed from HTML content.
 
 		'''
@@ -1898,10 +1874,7 @@ class ArXivLoader( Loader ):
 	
 	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
-
-			Purpose:
-			--------
-			Split loaded Youtube Transcript documents into manageable text chunks.
+			Split loaded ArXiv documents into manageable text chunks.
 
 			Parameters:
 			-----------
@@ -1909,7 +1882,7 @@ class ArXivLoader( Loader ):
 			chunk_overlap (int): Overlapping characters between chunks.
 
 			Returns:
-			--------
+			---------
 			List[Document]: Chunked list of LangChain Document objects.
 
 		'''

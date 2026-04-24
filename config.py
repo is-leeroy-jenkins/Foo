@@ -225,36 +225,23 @@ ARXIV = r'''arXiv is a free distribution service and an open-access archive for 
 		scholarly articles in the fields of physics, mathematics, computer science, quantitative
 		biology, quantitative finance, statistics, electrical engineering and systems science, and
 		economics. Materials on this site are not peer-reviewed by arXiv.
-		
-		https://docs.langchain.com/oss/python/integrations/retrievers/arxiv
 '''
 
-GOOGLE_DRIVE = r'''Google Drive is a file storage and synchronization service developed by Google
-		
-		https://docs.langchain.com/oss/python/integrations/retrievers/google_drive
+GOOGLE_DRIVE = r'''Google Drive is a secure, cloud-based storage service by Google that allows users
+		to store, synchronize, and share files across computers, phones, and tablets. Offering 15GB
+		of free storage, it acts as a centralized hub for documents, photos, and videos, enabling
+		real-time collaboration with Google Workspace apps like Docs, Sheets, and Slides.
 '''
 
-WIKIPEDIA = r'''A multilingual free online encyclopedia written and maintained by a community of
+WIKIPEDIA= r'''A multilingual free online encyclopedia written and maintained by a community of
 		volunteers, known as Wikipedians, through open collaboration and using a wiki-based editing
 		system called MediaWiki. Wikipedia is the largest and most-read reference work in history.
-		
-		https://docs.langchain.com/oss/python/integrations/retrievers/wikipedia
 '''
 
 PUBMED = r'''The National Center for Biotechnology Information, National Library of Medicine
 		comprises more than 35 million citations for biomedical literature from MEDLINE,
 		life science journals, and online books. Citations may include links to full text content
 		from PubMed Central and publisher web sites.
-		
-		Key Features and Components:
-		MEDLINE: The largest component, containing curated journal citations indexed with
-		MeSH (Medical Subject Headings). PubMed Central (PMC): A  full-text archive of biomedical
-		and life sciences journal literature, including peer-reviewed articles and preprints.
-		Bookshelf: An archive of books, reports, and documents related to health and life sciences.
-		Accessibility: PubMed does not host full text directly for all items but provides
-		links to full-text articles through PMC or publisher websites
-		
-		https://docs.langchain.com/oss/python/integrations/retrievers/pubmed
 '''
 
 THENEWS = r'''News Aggregators: Creating "one-stop-shop" apps or websites that compile headlines
@@ -263,53 +250,23 @@ THENEWS = r'''News Aggregators: Creating "one-stop-shop" apps or websites that c
 		decisions. Financial Analysis: Monitoring stock market news and economic shifts to assist
 		in trading and risk management. Media Monitoring: Tracking brand mentions and public
 		sentiment across the web to manage PR and customer feedback
-		
-		https://www.thenewsapi.com/documentation
 '''
 
 GOOGLE_CSE = r'''The Cse Service is the endpoint that returns the requested searches.
 		You must identify a particular search engine to use in your request
 		(using the cx query parameter) as well as the search query (using the q query parameter).
 		In addition, you should provide a developer key (using the key query parameter).
-		
-		https://developers.google.com/custom-search/v1/reference/rest
 '''
 
 GOOGLE_WEATHER = r'''The Weather API lets you request real-time, hyperlocal weather data for
 		locations around the world. Weather information includes temperature, precipitation,
 		humidity, and more.
-
-		For a location at a given latitude and longitude, the API provides endpoints that let you query:
-
-		Current conditions: The current weather conditions.
-		Hourly forecast: Up to 240 hours of forecasted conditions for all elements.
-		Daily forecast: Up to 10 days of forecasted conditions for all elements.
-		Hourly history: Up to 24 hours of cached past conditions for all elements
-		
-		https://developers.google.com/maps/documentation/weather/overview
 '''
 
 US_NAVAL_OBSERVATORY = r'''Provides access to APIs from the US Naval Observatory's Celestial Navigation Data for
 		Assumed Position and Time:  this data service provides all the astronomical information
 		necessary to plot navigational lines of position from observations of the altitudes of
-		celestial bodies. Simply fill in the form below and click on the "Get Data" button at
-		the end of the form.
-
-		The output table gives both almanac data and altitude corrections for each celestial body
-		that is above the horizon at the place and time that you specify. Sea-level observations
-		are assumed. The almanac data consist of Greenwich hour angle (GHA), declination (Dec),
-		computed altitude (Hc), and computed azimuth (Zn). The altitude corrections consist of
-		atmospheric refraction (Refr), semidiameter (SD), parallax in altitude (PA), and the sum of
-		the altitude corrections (Sum = Refr + SD + PA). The SD and PA values are zero for stars.
-		The SD values are non-zero only for the Sun and Moon; for all other objects, it is assumed
-		that the center of light is observed.
-
-		The assumed position that you enter below can be your best estimate of your actual
-		location (e.g., your DR position); there is no need to round the coordinate values,
-		since all data is computed specifically for the exact position you provide without
-		any table lookup.
-
-		https://aa.usno.navy.mil/data/api
+		celestial bodies.
 '''
 
 OPEN_SCIENCE = r'''Provides access to APIs from NASA's Open Science Data Repostitory (OSDR).
@@ -318,44 +275,25 @@ OPEN_SCIENCE = r'''Provides access to APIs from NASA's Open Science Data Reposti
 		The API provides a choice of standard web output formats,
 		either JavaScript Object Notation (JSON) or Hyper Text Markup Language (HTML),
 		of query results.
-		
-		The Data File API returns metadata on data files associated with dataset(s),
-		including the location of these files for download via https. The Metadata API returns
-		entire sets of metadata for input study dataset accession numbers. The Search API can be
-		used to search dataset metadata by keywords and/or metadata. It can also be used to provide
-		search of three other omics databases: the National Institutes of Health (NIH) /
-		National Center for Biotechnology Information's (NCBI) Gene Expression Omnibus (GEO);
-		the European Bioinformatics Institute's (EBI) Proteomics Identification (PRIDE);
-		the Argonne National Laboratory's (ANL);
-		Metagenomics Rapid Annotations using Subsystems Technology (MG-RAST).
-		
-		https://science.nasa.gov/biological-physical/data/osdr/
 '''
 
 GOV_INFO = r'''The GovInfo Link Service provides services for developers and webmasters to access
         content and metadata on GovInfo. Current and planned services include a link service,
-        list service, and search service.
-        
-		The link service is used to create embedded links to content and metadata on GovInfo and is
-		currently enabled for the collections below. The collection code is listed in parenthesis
-		after each collection name, and the available queries are listed below each collection.
-		More information about each query is provided on the individual collection page.
-		
-		https://www.govinfo.gov/link-docs/
+        list service, and search service. The link service is used to create embedded links to
+        content and metadata on GovInfo and is currently enabled for the collections below.
+        The collection code is listed in parenthesis after each collection name, and the available
+        queries are listed below each collection. More information about each query is provided on
+        the individual collection page.
 '''
 
 CONGRESS = r'''Submit queries against the Congressional Research Service's (CRS) Appropriation
 		Status Table.
-		
-		https://api.congress.gov/
 '''
 
 INTERNET_ARCHIVE = r'''The Internet Archive, a 501(c)(3) non-profit, is building a digital library
 		of Internet sites and other cultural artifacts in digital form. Like a paper library,
 		we provide free access to researchers, historians, scholars, people with print disabilities,
 		and the general public. Our mission is to provide Universal Access to All Knowledge.
-		
-		https://help.archive.org/help/search-a-basic-guide/
 '''
 
 THE_SATELLITE_CENTER = r'''Provides access to APIs from NASA's Satellite Situation Center Web (SSCWeb) service
@@ -363,113 +301,35 @@ THE_SATELLITE_CENTER = r'''Provides access to APIs from NASA's Satellite Situati
 		National Space Science Data Center (NSSDC) to support a range of NASA science programs
 		and to fulfill key international NASA responsibilities including those of NSSDC and the
 		World Data Center-A for Rockets and Satellites.
-		
-		The software and associated database of SSCWeb together form a system to cast geocentric
-		spacecraft location information into a framework of (empirical) geophysical regions and
-		mappings of spacecraft locations along lines of the Earth's magnetic field.
-		
-		This capability is one key to mission science planning (both single missions and
-		coordinated observations of multiple spacecraft with ground-based investigations) and to
-		subsequent multi-mission data analysis.
-		
-		https://sscweb.gsfc.nasa.gov/index.html
 '''
 
 NEAR_BY_OBJECTS = r'''Provides access to APIs from JPL’s SSD (Solar System Dynamics) and CNEOS
 		(Center for Near-Earth Object Studies) API (Application Program Interface) service.
 		This service provides an interface to machine-readable data (JSON-format) related to SSD
 		and CNEOS.
-		
-		https://ssd-api.jpl.nasa.gov/doc/
 '''
 
-ASTRONOMY_CATALOG = r'''Access to the Open Astronomy Catalog API (OACAPI) offers a lightweight,
-		simple way to access data available via the api.
-		
-		The pattern for the API is one of the domains listed above followed by
-		
-			/OBJECT/QUANTITY/ATTRIBUTE?ARGUMENT1=VALUE1&ARGUMENT2=VALUE2&...
-		
-		where OBJECT is set to a transient's name, QUANTITY is set to a desired
-		quantity to retrieve (e.g. redshift), ATTRIBUTE is a property of that quantity,
-		and the ARGUMENT variables allow to user to filter data based upon various
-		attribute values. The ARGUMENT variables can either be used to guarantee that
-		a certain attribute appears in the returned results (e.g. adding &time&e_magnitude to
-		the query will guarantee that each returned item has a time and e_magnitude attribute),
-		or used to filter via a simple equality such as telescope=HST
-		(which would only return QUANTITY objects where the telescope attribute equals "HST"),
-		or they can be more powerful for certain filter attributes
-		(examples being ra and dec for performing cone searches).
-		
-		https://astrocats.space/
+ASTRONOMY_CATALOG = r'''The Open Astronomy Catalog (OAC) API is a RESTful interface designed for
+		programmatic access to open-access astronomical data, specifically focusing on transient events.
 '''
 
 ASTRO_QUERY = r'''Access to the astropy package that contains key functionality and common tools needed for
 		performing astronomy and astrophysics with Python. It is at the core of the Astropy Project,
 		which aims to enable the community to develop a robust ecosystem of affiliated packages
 		covering a broad range of needs for astronomical research, data processing, and data analysis.
-		
-		https://github.com/astropy/astroquery
 '''
 
 OPEN_WEATHER = r'''
 		Provides forecast weather retrieval by location name using the Open-Meteo
-		Geocoding API and Open-Meteo Forecast API.
-
-		This class is forecast-only by design and intentionally excludes archive /
-		historical date-based retrieval so it does not overlap with the separate
-		HistoricalWeather class.
-
-		Referenced API Requirements:
-		----------------------------
-		Geocoding API:
-			- Endpoint: https://geocoding-api.open-meteo.com/v1/search
-			- Required parameter: name
-			- Optional parameter: count
-
-		Forecast API:
-			- Endpoint: https://api.open-meteo.com/v1/forecast
-			- Required parameters: latitude, longitude
-			- Optional parameters used here:
-				- current
-				- hourly
-				- daily
-				- timezone
-				- forecast_days
-				- past_days
-				- temperature_unit
-				- wind_speed_unit
-				- precipitation_unit
-				
-		https://open-meteo.com/en/docs
+		Geocoding API and Open-Meteo Forecast API. This class is forecast-only by design and
+		intentionally excludes archive / historical date-based retrieval so it does not overlap
+		with the separate Historical Weather class.
 '''
 
 HISTORICAL_WEATHER = r'''Provides historical weather retrieval by location name and date using the
-		Open-Meteo Geocoding API and Open-Meteo Historical Weather API.
-
-		This class is intentionally designed around the actual user-facing need in
-		the Foo fetcher expander: enter a location and a date, resolve that location
-		to coordinates, then retrieve historical weather for that date.
-
-		Referenced API Requirements:
-		----------------------------
-		Geocoding API:
-			- Endpoint: https://geocoding-api.open-meteo.com/v1/search
-			- Required parameter: name
-			- Optional parameter: count
-
-		Historical Weather API:
-			- Endpoint: https://archive-api.open-meteo.com/v1/archive
-			- Required parameters: latitude, longitude, start_date, end_date
-			- Optional parameters used here:
-				- timezone
-				- daily
-				- hourly
-				- temperature_unit
-				- wind_speed_unit
-				- precipitation_unit
-		
-		https://open-meteo.com/en/docs
+		Open-Meteo Geocoding API and Open-Meteo Historical Weather API. This class is intentionally
+		designed around the actual user-facing need in the Foo fetcher expander: enter a location
+		and a date, resolve that location to coordinates, then retrieve historical weather for that date.
 '''
 
 NASA_EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EONET) allows users to access imagery,
@@ -477,43 +337,39 @@ NASA_EARTH_OBSERVATORY = r'''NASA Earth Observatory's Natural Event Tracker (EON
 				tropical cyclones—empowering people all across the planet to locate, track, and potentially
 				prepare for and manage events that affect communities in their paths.
 				Version 3 API for events, categories, sources, and layers.
-		
-				The EONET v3 API and supports:
-				- events
-				- categories
-				- sources
-				- layers
-				
-				https://eonet.gsfc.nasa.gov/docs/v3
 '''
 
 UN_DATA = r'''The UNdata API provides programmatic access to the United Nations' global statistical
 		database, allowing developers and researchers to query and retrieve data directly for use
-		in applications, websites, or local processing.
-		
-		The core UNdata API provides access to the broader UNdata platform, which contains over 60
-		million data points from across the UN system.
+		in applications, websites, or local processing. The core UNdata API provides access to the
+		broader UNdata platform, which contains over 60 million data points from across the UN system.
 
-		Protocol: Uses both REST and SOAP web services.
-		Standards: Built on the SDMX (Statistical Data and Metadata eXchange) standard,
-		specifically powered by Eurostat's SDMX Reference Infrastructure.
-		
-		Usage: Requires an SDMX Query (an XML document) to define parameters, which can be created
-		using tools like the SDMX Browser.
-		
-		https://data.un.org/Host.aspx?Content=API
 '''
 
-NASA_EONET = r'''
+NASA_EONET = r'''NASA Earth Observatory's Natural Event Tracker (EONET) allows users to access imagery,
+		often in near real-time (NRT), of natural events such as dust storms, forest fires, and tropical
+		cyclones—empowering people all across the planet to locate, track, and potentially prepare for
+		and manage events that affect communities in their paths. The EONET application programming
+		interface (API) provides customization of features including curation and direct links to
+		image sources.
 '''
 
-NASA_FIRMS = r'''
+NASA_FIRMS = r'''ASA’s Fire Information for Resource Management System (FIRMS) provides near
+		real-time, satellite-derived active fire and hotspot data (within 3 hours of observation)
+		to monitor wildfires. Using sensors from MODIS and VIIRS, it offers global coverage through
+		an interactive map, email alerts, and GIS data. It is designed for firefighters, scientists,
+		and natural resource managers
 '''
 
-EPA_ENVIROFACTS = r'''
+EPA_ENVIROFACTS = r'''The Envirofacts Data Warehouse contains information from select EPA Environmental
+		program office databases and provides access about environmental activities that may affect air,
+		water, and land anywhere in the United States.
 '''
 
-EPA_UV_INDEX = r'''
+EPA_UV_INDEX = r'''The EPA UV Index predicts daily solar UV radiation intensity on a 1–11+ scale,
+		helping to gauge sun-safe precautions. Developed with the National Weather Service, it factors
+		in ozone, clouds, and elevation to forecast noon intensity. A UV Alert is issued if the
+		index is 6+ and unusually high.
 '''
 
 SPACE_WEATHER = r'''NASA DONKI (Space Weather Database Of Notifications, Knowledge, Information) is
@@ -523,40 +379,21 @@ SPACE_WEATHER = r'''NASA DONKI (Space Weather Database Of Notifications, Knowled
 		comprehensive knowledge-base search functionality to support anomaly resolution and space
 		science research, intelligent linkages, relationships, cause-and-effects between space weather
 		activities and comprehensive webservice API access to information stored in DONKI.
-		
-		https://api.nasa.gov/
 '''
 
 NEAR_BY_OBJECTS = r''''SSD (Solar System Dynamics) and CNEOS (Center for Near-Earth Object Studies)
 		API (Application Program Interface) service. This service provides an interface to
 		machine-readable data (JSON-format) related to SSD and CNEOS.
-		
-		https://ssd-api.jpl.nasa.gov/
 '''
 
 SKY_MAP = r'''Provides static and link-based star chart generation using the SKY-MAP.ORG
 		XML API, Site Linker, and Image Generator interfaces.
-		
-		Referenced API Requirements:
-		----------------------------
-		XML Search:
-			- Endpoint: https://server1.sky-map.org/search
-
-		Site Linker:
-			- Endpoint: https://www.sky-map.org/
-
-		Image Generator:
-			- Endpoint: https://server2.sky-map.org/map
-
-		https://docs.gammapy.org/2.0.1/api-reference/maps.html
 '''
 
-NASA_OPEN_SCIENCE_DATA = r'''NASA’s Open Science Data Repository (OSDR) enables the reuse of comprehensive,
+NASA_OPEN_SCIENCE = r'''NASA’s Open Science Data Repository (OSDR) enables the reuse of comprehensive,
 		multi-modal space life science data—including omics, physiological, phenotypic, behavioral,
 		and environmental telemetry—to advance basic and applied research as well as operational
 		outcomes for human space exploration.
-		
-		Documentation here (https://science.nasa.gov/biological-physical/data/osdr/)
 '''
 
 OPEN_SKY = r'''The OpenSky Network consists of a multitude of sensors connected to the Internet by
@@ -566,46 +403,212 @@ OPEN_SKY = r'''The OpenSky Network consists of a multitude of sensors connected 
 		and processes. The main technologies behind the OpenSky Network are the Automatic Dependent
 		Surveillance-Broadcast (ADS-B) and Mode S. These technologies provide detailed (live) aircraft
 		information over the publicly accessible 1090 MHz radio frequency channel.
-		
-		https://openskynetwork.github.io/opensky-api/python.html
 '''
 
-USGS_EARTHQUAKES = r'''
+USGS_EARTHQUAKES = r'''The USGS Earthquake Hazards Program monitors, reports, and researches global
+		seismic activity to reduce losses and save lives. It operates the National Earthquake
+		Information Center (NEIC) and Advanced National Seismic System (ANSS) to detect magnitude,
+		location, and impacts, providing data for public safety, engineering, and hazard assessments
 '''
 
-USGS_WATER = r'''
+USGS_WATER = r'''The USGS Water Resources Mission Area monitors, assesses, and conducts research on
+		the nation's water, providing data on streamflow, groundwater, water quality, and water use.
+		With over 1.9 million sites across all 50 states, they provide real-time information crucial
+		for water management, safety, and economic, environmental, and recreational decisions
 '''
 
-NOAA_TIDES_CURRENTS = r'''
+NOAA_TIDES_CURRENTS = r'''NOAA Tides & Currents, managed by the Center for Operational Oceanographic
+		Products and Services (CO-OPS), is the authoritative U.S. source for water level, tidal, and
+		oceanographic data. It offers real-time monitoring and predictions for over 3,000 stations,
+		crucial for navigation, safety, and coastal resilience.
 '''
 
-NOAA_CLIMATE_DATA = r'''
+NOAA_CLIMATE_DATA = r'''NOAA climate data is provided primarily through the National Centers for
+		Environmental Information (NCEI), serving as the world's largest archive of atmospheric,
+		coastal, and geophysical data. It offers free access to historical weather records, 30-year
+		Climate Normals, and datasets on temperature, precipitation, and storms. Data is accessible
+		via the NCEI Climate Data Online (CDO) portal and NOAA Climate.gov maps and tools
 '''
-
 
 USGS_NATIONAL_MAP = r'''
 '''
 
-USGS_SCIENCE_BASE = r'''
+USGS_SCIENCE = r'''USGS ScienceBase is a collaborative digital repository and information
+		management platform used by the U.S. Geological Survey (USGS) to catalog, manage, and
+		release scientific data. It serves as a central hub for natural science data, offering tools
+		for data stewardship, discovery, and access via a searchable, open-source catalog. It is
+		heavily used for releasing public data products and hosting project-specific information.
 '''
 
-
-
-
-GROK = r'''
+GROKIPEDIA = r'''Grokipedia is an AI-powered online encyclopedia launched in October 2025 by xAI,
+		the artificial intelligence company founded by Elon Musk. It is designed as a direct, "truth-seeking"
+		competitor to Wikipedia, which Musk has frequently criticized as being biased.
 '''
 
-CHATGPT = r'''
+SOCRATA = r'''Socrata is a cloud-based Data-as-a-Service (DaaS) platform  that specializes in data
+		publishing and visualization for government organizations. It provides tools for open data
+		portals, performance management, and data integration to make public data accessible.
 '''
 
-GEMINI = r'''
+HEALTH_DATA = r'''A Health Data API is a digital interface that allows different software systems—
+		such as electronic health record (EHR) platforms, patient portals, and wearable devices—
+		to communicate and exchange medical information securely. These APIs are essential for
+		"interoperability," enabling a unified view of a patient’s health history across multiple
+		providers and services.
 '''
 
-MISTRAL = r'''
+GLOBAL_HEALTH = r'''The Global Health Observatory (GHO) API is the World Health Organization
+		(WHO) primary gateway for accessing global health statistics programmatically. It allows
+		researchers and developers to retrieve data on over 1,000 health indicators across 194 Member States.
 '''
 
-CLAUDE = r'''
+CENSUS_DATA = r'''The Census Bureau's Application Programming Interface (API) is a free data service
+		that allows developers and researchers to programmatically access over 1,600 datasets
+		containing raw statistical data on the U.S. population and economy
 '''
+
+WORLD_POPULATION = r'''World Population APIs provide programmatic access to demographic data,
+		including total population, age, sex, and density, often broken down by region and time.
+'''
+
+WONDER = r'''The CDC WONDER API (Wide-ranging Online Data for Epidemiologic Research) is a web
+		service provided by the Centers for Disease Control and Prevention that allows for automated,
+		programmatic access to public health data. It enables developers and researchers to query
+		various CDC WONDER online databases and retrieve data directly into their own applications,
+		widgets, or analytical workflows.
+'''
+
+AIR_NOW = r'''AirNow is the official U.S. government website and app providing real-time,
+		local air quality data and forecasts using the color-coded Air Quality Index (AQI).
+		It covers ozone and particle pollution ( and  ) via a partnership of the EPA, NOAA, and
+		local agencies, offering a "Fire and Smoke Map" to monitor smoke impacts
+'''
+
+PURPLE_AIR = r'''PurpleAir provides low-cost, real-time air quality monitors and a public,
+		crowdsourced map to measure, visualize, and share hyper-local,, particulate matter data.
+		Using laser counters, these sensors empower communities to track pollution, particularly
+		during wildfire events. Data is accessible via the PurpleAir Map and is used by researchers,
+		public agencies, and individuals worldwide.
+'''
+
+OPEN_AQ = r'''OpenAQ is a non-profit organization that aggregates, harmonizes, and shares open-source,
+		global air quality data to fight "air inequality". It provides real-time and historical
+		data—primarily on PM2.5, PM10, and other pollutants—from over 48,000 locations across 150 c
+		ountries. The platform empowers researchers, journalists, and communities to access, analyze,
+		and use air quality data through an open API, fostering collaboration to improve public
+		health and policy
+'''
+
+# ------- AI DEFINITIONS --------------------------
+
+GROK_AI = r'''Grok is a generative artificial intelligence chatbot developed by xAI, an AI company
+		founded by Elon Musk in 2023. It is designed to be a "maximum truth-seeking" AI with a
+		"rebellious streak" and a sense of humor, intended to compete directly with other AI systems
+		like OpenAI's ChatGPT and Google's Gemini
+'''
+
+CHATGPT_AI = r'''ChatGPT is an AI-powered conversational chatbot developed by OpenAI, designed to
+		understand and generate human-like text, code, and images. Based on Generative Pre-trained
+		Transformer (GPT) technology, it is trained on massive datasets to answer questions, write
+		content, and summarize information. It is accessible via web and mobile apps, with free and
+		paid "Plus" subscriptions.
+'''
+
+GEMINI_AI = r'''Google Gemini is a conversational generative AI chatbot and virtual assistant developed
+		by Google, formerly known as Bard. Powered by advanced Large Language Models (LLMs), it acts
+		as a personal, proactive assistant that integrates across Google apps (Gmail, Docs, Drive)
+		to generate text, images, and code
+'''
+
+MISTRAL_AI = r'''Mistral AI is a prominent French artificial intelligence startup founded in April 2023
+		by former researchers from Meta and Google DeepMind. Based in Paris, the company has rapidly
+		become a leading European AI firm, focusing on creating efficient, open-weight large language
+		models (LLMs) that rival established US-based tech giants like OpenAI and Anthropic. As of
+		late 2025, the company is valued at over €11.7 billion (approx. $14 billion).
+'''
+
+CLAUDE_AI = r'''Claude is an advanced AI assistant developed by Anthropic, designed to be helpful, safe,
+		and honest. Known for high-quality coding, summarizing, and reasoning abilities, Claude features a
+		large context window (up to 200,000 tokens) and models like Opus, Sonnet, and Haiku. It is used for
+		tasks like analyzing data, drafting content, and conversational AI.
+'''
+
+# -------- LOADER DEFINITIONS -------------------
+
+TEXT_LOADER = r'''Provides LangChain's TextLoader functionality to parse plain-text files
+		into Document objects.
+'''
+
+NLTK_LOADER = r'''The Natural Language Toolkit (NLTK) is a comprehensive, open-source Python library
+		used for symbolic and statistical Natural Language Processing (NLP). Developed originally at
+		the University of Pennsylvania by Steven Bird and Edward Loper, it has become a standard tool
+		in academia for teaching and research in computational linguistics.
+'''
+
+HTML_LOADER = r'''Provides Langchain's UnstructuredHTMLLoader's functionality to parse HTML files
+		into Document objects.
+'''
+
+WEB_CRAWLER = r'''Web fetching with optional Playwright-backed page rendering.
+'''
+
+WEB_LOADER = r'''Functionality to load all text from HTML webpages into
+		a document format that can be used downstream.
+'''
+
+GITHUB_LOADER = r'''The LangChain GitHub Loader is a suite of integrations designed to ingest data
+		from GitHub repositories into a format compatible with Large Language Models (LLMs).
+		These loaders are primarily used in Retrieval-Augmented Generation (RAG) pipelines to
+		allow AI agents to "chat" with codebases, analyze issues, or summarize pull requests.
+'''
+
+WIKIPEDIA_LOADER = r'''The LangChain Wikipedia Loader (WikipediaLoader) is a component designed to
+        fetch and convert Wikipedia pages into a standardized Document format for use in LLM applications
+'''
+
+ARXIV_LOADER = r'''arXiv is a free distribution service and an open-access archive for nearly 2.4 million
+		scholarly articles in the fields of physics, mathematics, computer science, quantitative
+		biology, quantitative finance, statistics, electrical engineering and systems science, and
+		economics. Materials on this site are not peer-reviewed by arXiv.
+'''
+
+PDF_LOADER = r'''Public, SDK-oriented PDF loader with: Page-aware metadata, Two-stage chunking,
+		Configurable chunk profiles, Table isolation, Optional OCR fallback
+'''
+
+EXCEL_LOADER = r'''Provides LangChain's UnstructuredExcelLoader functionality
+		to parse Excel spreadsheets into documents.
+'''
+
+POWERPOINT_LOADER = r'''The UnstructuredPowerPointLoader (within LangChain) is a tool for parsing
+		Microsoft PowerPoint (.ppt/.pptx) files to extract text and metadata, enabling AI applications
+		to read and process presentations. It supports loading documents in "single" (full text) or
+		"elements" (chunked by title/narrative) modes, ideal for Retrieval Augmented Generation (RAG) tasks
+'''
+
+JSON_LOADER = r'''The LangChain JSONLoader is a specialized document loader used to transform JSON
+		and JSON Lines data into standardized LangChain Document objects. It is a critical component
+		for building applications like Retrieval-Augmented Generation (RAG) that need to process structured data
+'''
+
+MARKDOWN_LOADER = r'''LangChain's Markdown document loaders are specialized tools used to convert
+		Markdown files into standardized LangChain Document objects. These objects are then used
+		for downstream tasks like Retrieval Augmented Generation (RAG), embedding generation,
+		or semantic chunking.
+'''
+
+XML_LOADER = r'''The UnstructuredXMLLoader in LangChain is a specialized tool designed to load and
+		parse XML files into standardized LangChain Document objects. It leverages the Unstructured.io
+		library to extract text content and preserve document structure for use in downstream LLM
+		applications like RAG
+'''
+
+CSV_LOADER = r'''The LangChain CSVLoader is a standard utility within the langchain-community package
+		designed to transform structured CSV data into a list of standardized Document objects.
+		This process is the foundational step for integrating tabular data into LLM-powered workflows,
+		such as Retrieval Augmented Generation (RAG).
+'''
+
 
 # -------- GENERATION PARAMETER DEFINITIONS -------------------
 

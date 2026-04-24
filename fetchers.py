@@ -206,27 +206,39 @@ class Fetcher:
 			
 class WebFetcher( Fetcher ):
 	'''
-		
-		Purpose:
-		---------
-		Concrete synchronous fetcher using `requests` and minimal HTML→text
-		extraction.
 
-		Attribues:
+		Purpose:
+		--------
+		Fetches web pages with requests and extracts common HTML content structures.
+
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		soup,
+		agents,
+		url,
+		html,
+		re_tag,
+		re_ws,
+		response,
 
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		html_to_text(...): Performs the html_to_text operation for this fetcher.
+		scrape_paragraphs(...): Performs the scrape_paragraphs operation for this fetcher.
+		scrape_lists(...): Performs the scrape_lists operation for this fetcher.
+		scrape_tables(...): Performs the scrape_tables operation for this fetcher.
+		scrape_articles(...): Performs the scrape_articles operation for this fetcher.
+		scrape_headings(...): Performs the scrape_headings operation for this fetcher.
+		scrape_divisions(...): Performs the scrape_divisions operation for this fetcher.
+		scrape_sections(...): Performs the scrape_sections operation for this fetcher.
+		scrape_blockquotes(...): Performs the scrape_blockquotes operation for this fetcher.
+		scrape_hyperlinks(...): Performs the scrape_hyperlinks operation for this fetcher.
+		scrape_images(...): Performs the scrape_images operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
-		
 	'''
 	soup: Optional[ BeautifulSoup ]
 	agents: Optional[ str ]
@@ -800,28 +812,23 @@ class WebFetcher( Fetcher ):
 			
 class WebCrawler( WebFetcher ):
 	'''
-		
-		Purpose:
-		-------
-		A crawler that attempts `crawl4ai` first (if installed) and falls back to
-		Playwright headful rendering only when required. Designed to be used when
-		pages require JS to render content.
 
-		Attribues:
+		Purpose:
+		--------
+		Extends web fetching with optional Playwright-backed page rendering.
+
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		use_playwright,
+		browser_context,
 
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		render_with_playwright(...): Performs the render_with_playwright operation for this fetcher.
 
-		
 	'''
 	use_playwright: Optional[ bool ]
 	browser_context: Optional[ Any ]
@@ -949,8 +956,21 @@ class ArXiv( Fetcher ):
 
 		Purpose:
 		--------
-		Provides ArXiv retrieval functionality and converts returned entries into
-		LangChain Document objects.
+		Fetches ArXiv documents through the LangChain ArxivRetriever.
+
+		Attributes:
+		-----------
+		fetcher,
+		documents,
+		max_documents,
+		full_documents,
+		include_metadata,
+		query,
+
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
 
 	'''
 	fetcher: Optional[ ArxivRetriever ]
@@ -960,7 +980,7 @@ class ArXiv( Fetcher ):
 	include_metadata: Optional[ bool ]
 	query: Optional[ str ]
 	
-	def __init__( self, max_documents: int = 5, full_documents: bool = False,
+	def __init__( self, max_documents: int=5, full_documents: bool = False,
 			include_metadata: bool = False ) -> None:
 		super( ).__init__( )
 		self.fetcher = None
@@ -1032,12 +1052,30 @@ class ArXiv( Fetcher ):
 
 class GoogleDrive( Fetcher ):
 	'''
-	
+
 		Purpose:
 		--------
-		Provides Google Drive retrieval functionality and converts returned
-		items into LangChain Document objects.
-	
+		Fetches Google Drive documents through the LangChain GoogleDriveRetriever.
+
+		Attributes:
+		-----------
+		fetcher,
+		documents,
+		num_results,
+		folder_id,
+		template,
+		query,
+		mime_type,
+		mode,
+
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		mime_options(...): Performs the mime_options operation for this fetcher.
+		template_options(...): Performs the template_options operation for this fetcher.
+		mode_options(...): Performs the mode_options operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+
 	'''
 	fetcher: Optional[ GoogleDriveRetriever ]
 	documents: Optional[ List[ Document ] ]
@@ -1131,9 +1169,9 @@ class GoogleDrive( Fetcher ):
 		'''
 		return [ 'documents', 'snippets' ]
 	
-	def fetch( self, question: str, folder_id: str = 'root', results: int = 10,
-			template: str = 'gdrive-query', mime_type: str | None = None,
-			mode: str = 'documents' ) -> List[ Document ] | None:
+	def fetch( self, question: str, folder_id: str='root', results: int=10,
+			template: str='gdrive-query', mime_type: str=None,
+			mode: str='documents' ) -> List[ Document ] | None:
 		'''
 		
 			Purpose:
@@ -1220,8 +1258,21 @@ class Wikipedia( Fetcher ):
 
 		Purpose:
 		--------
-		Provides Wikipedia retrieval functionality and converts returned entries
-		into LangChain Document objects.
+		Fetches Wikipedia documents through the LangChain WikipediaRetriever.
+
+		Attributes:
+		-----------
+		fetcher,
+		documents,
+		max_documents,
+		include_metadata,
+		language,
+		query,
+
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
 
 	'''
 	fetcher: Optional[ WikipediaRetriever ]
@@ -1231,7 +1282,7 @@ class Wikipedia( Fetcher ):
 	language: Optional[ str ]
 	query: Optional[ str ]
 	
-	def __init__( self, language: str = 'en', max_documents: int = 5,
+	def __init__( self, language: str='en', max_documents: int=5,
 			include_metadata: bool = False ) -> None:
 		super( ).__init__( )
 		self.fetcher = None
@@ -1241,13 +1292,10 @@ class Wikipedia( Fetcher ):
 		self.max_documents = max( 1, min( int( max_documents ), 300 ) )
 		self.include_metadata = bool( include_metadata )
 	
-	def fetch( self, question: str, language: str | None = None,
+	def fetch( self, question: str, language: str=None,
 			max_documents: int | None = None,
 			include_metadata: bool | None = None ) -> List[ Document ] | None:
 		'''
-
-			Purpose:
-			--------
 			Query Wikipedia through LangChain's WikipediaRetriever and return
 			LangChain Document objects.
 
@@ -1362,14 +1410,14 @@ class TheNews( Fetcher ):
 				'fetch',
 		]
 	
-	def fetch( self, endpoint: str = 'all', query: str = '', language: str = 'en',
-			categories: str = '', exclude_categories: str = '', locale: str = '',
-			domains: str = '', exclude_domains: str = '', source_ids: str = '',
-			exclude_source_ids: str = '', published_after: str = '', published_before: str = '',
-			published_on: str = '', sort: str = 'published_at',
-			limit: int = 10, page: int = 1, include_similar: bool = True,
-			headlines_per_category: int = 6, time: int = 10,
-			api_key: str | None = None ) -> Dict[ str, Any ] | None:
+	def fetch( self, endpoint: str='all', query: str='', language: str='en',
+			categories: str='', exclude_categories: str='', locale: str='',
+			domains: str='', exclude_domains: str='', source_ids: str='',
+			exclude_source_ids: str='', published_after: str='', published_before: str='',
+			published_on: str='', sort: str='published_at',
+			limit: int=10, page: int=1, include_similar: bool = True,
+			headlines_per_category: int=6, time: int=10,
+			api_key: str=None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -1558,9 +1606,28 @@ class GoogleSearch( Fetcher ):
 	'''
 
 		Purpose:
-		---------
-		Class providing structured access to the Google Custom Search JSON API.
-
+		--------
+		Fetches Google Custom Search results.
+	
+		Attributes:
+		-----------
+		keywords,
+		url,
+		re_tag,
+		re_ws,
+		response,
+		api_key,
+		cse_id,
+		params,
+		results,
+		start,
+	
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+	
 	'''
 	keywords: Optional[ str ]
 	url: Optional[ str ]
@@ -1625,13 +1692,13 @@ class GoogleSearch( Fetcher ):
 				'start',
 		]
 	
-	def fetch( self, keywords: str, results: int = 10,
-			start: int = 1, exact_terms: str = '', exclude_terms: str = '',
-			file_type: str = '', date_restrict: str = '', gl: str = '', lr: str = '',
-			safe: str = 'off', search_type: str = '', site_search: str = '', site_search_filter: str = '',
-			sort: str = '', img_size: str = '', img_type: str = '', img_color_type: str = '',
-			img_dominant_color: str = '', time: int = 10, api_key: str | None = None,
-			cse_id: str | None = None ) -> Dict[ str, Any ] | None:
+	def fetch( self, keywords: str, results: int=10,
+			start: int=1, exact_terms: str='', exclude_terms: str='',
+			file_type: str='', date_restrict: str='', gl: str='', lr: str='',
+			safe: str='off', search_type: str='', site_search: str='', site_search_filter: str='',
+			sort: str='', img_size: str='', img_type: str='', img_color_type: str='',
+			img_dominant_color: str='', time: int=10, api_key: str=None,
+			cse_id: str=None ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -1692,19 +1759,14 @@ class GoogleSearch( Fetcher ):
 		'''
 		try:
 			throw_if( 'keywords', keywords )
-			
 			active_key = (api_key or self.api_key or '').strip( )
 			active_cse = (cse_id or self.cse_id or '').strip( )
 			
 			if not active_key:
-				raise ValueError(
-					'Google API key is required. Set GOOGLE_API_KEY or enter one in the UI.'
-				)
+				raise ValueError( 'Google API key is required. Set GOOGLE_API_KEY.' )
 			
 			if not active_cse:
-				raise ValueError(
-					'Google CSE ID is required. Set GOOGLE_CSE_ID or enter one in the UI.'
-				)
+				raise ValueError( 'Google CSE ID is required. Set GOOGLE_CSE_ID .' )
 			
 			self.timeout = int( time )
 			self.keywords = keywords.strip( )
@@ -1763,10 +1825,7 @@ class GoogleSearch( Fetcher ):
 				if img_dominant_color and img_dominant_color.strip( ):
 					self.params[ 'imgDominantColor' ] = img_dominant_color.strip( )
 			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
+			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
 				timeout=self.timeout )
 			
 			self.response.raise_for_status( )
@@ -1776,15 +1835,7 @@ class GoogleSearch( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleSearch'
-			exception.method = (
-					'fetch( self, keywords: str, results: int=10, start: int=1, '
-					'exact_terms: str=, exclude_terms: str=, file_type: str=, '
-					'date_restrict: str=, gl: str=, lr: str=, safe: str=off, '
-					'search_type: str=, site_search: str=, site_search_filter: str=, '
-					'sort: str=, img_size: str=, img_type: str=, '
-					'img_color_type: str=, img_dominant_color: str=, time: int=10, '
-					'api_key: str | None=None, cse_id: str | None=None ) -> Dict[ str, Any ]'
-			)
+			exception.method = ( 'fetch( self, keywords: str, results: int=10 ) -> Dict[ str, Any ]')
 			raise exception
 			
 class GoogleMaps( Fetcher ):
@@ -1792,23 +1843,30 @@ class GoogleMaps( Fetcher ):
 
 		Purpose:
 		--------
-		Provides the google drive loading functionality
-		to parse items on googke drive into Document objects.
+		Provides Google Maps geocoding, validation, and directions requests.
 
-		Attribues:
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
+		file_path,
+		headers,
+		num_results,
+		api_key,
+		mode,
+		latitude,
+		longitude,
+		coordinates,
+		address,
+		directions,
+		params,
 
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		geocode_location(...): Performs the geocode_location operation for this fetcher.
+		geocode_coordinates(...): Performs the geocode_coordinates operation for this fetcher.
+		validate_address(...): Performs the validate_address operation for this fetcher.
+		request_directions(...): Performs the request_directions operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	file_path: Optional[ str ]
@@ -1942,10 +2000,7 @@ class GoogleMaps( Fetcher ):
 			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
 			payload = \
 			{
-				'address':
-				{
-					'addressLines': address,
-				}
+				'address': { 'addressLines': address, }
 			}
 			
 			self.params = \
@@ -2092,17 +2147,41 @@ class GoogleMaps( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
+			exception.method = 'create_schema( self, *params ) -> Dict[ str, str ]'
 			raise exception
 
 class GoogleWeather( Fetcher ):
 	'''
-	
+
 		Purpose:
 		--------
-		Provides structured access to the Google Maps Platform Weather API.
-	
+		Provides Google Weather current, forecast, and alert requests.
+
+		Attributes:
+		-----------
+		gmaps,
+		headers,
+		api_key,
+		mode,
+		latitude,
+		longitude,
+		coordinates,
+		address,
+		params,
+		response,
+		result,
+
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		resolve_coordinates(...): Performs the resolve_coordinates operation for this fetcher.
+		request(...): Performs the request operation for this fetcher.
+		fetch_current(...): Performs the fetch_current operation for this fetcher.
+		fetch_hourly_forecast(...): Performs the fetch_hourly_forecast operation for this fetcher.
+		fetch_daily_forecast(...): Performs the fetch_daily_forecast operation for this fetcher.
+		fetch_alerts(...): Performs the fetch_alerts operation for this fetcher.
+
 	'''
 	gmaps: Optional[ GoogleMaps ]
 	headers: Optional[ Dict[ str, Any ] ]
@@ -2141,24 +2220,21 @@ class GoogleWeather( Fetcher ):
 			self.headers[ 'Accept' ] = 'application/json'
 	
 	def __dir__( self ) -> List[ str ]:
-		return [
-				'api_key',
-				'url',
-				'timeout',
-				'headers',
-				'fetch_current',
-				'fetch_hourly_forecast',
-				'fetch_daily_forecast',
-				'fetch_alerts',
-		]
+		return [ 'api_key', 'url', 'timeout', 'headers', 'fetch_current',
+				'fetch_hourly_forecast', 'fetch_daily_forecast', 'fetch_alerts', ]
 	
-	def _resolve_coordinates( self, address: str ) -> Tuple[ float, float ]:
+	def resolve_coordinates( self, address: str ) -> Tuple[ float, float ]:
 		'''
 		
 			Purpose:
 			--------
 			Resolve a user-supplied address into latitude and longitude by using
 			the existing GoogleMaps helper.
+			
+			
+			Parameters:
+			-----------
+			str: address
 		
 			Returns:
 			--------
@@ -2177,15 +2253,21 @@ class GoogleWeather( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = '_resolve_coordinates( self, address: str ) -> Tuple[ float, float ]'
+			exception.method = 'resolve_coordinates( self, address: str ) -> Tuple[ float, float ]'
 			raise exception
 	
-	def _request( self, path: str, params: Dict[ str, Any ], time: int = 10 ) -> Dict[ str, Any ] | None:
+	def request( self, path: str, params: Dict[ str, Any ], time: int=10 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
 			--------
 			Send a GET request to a Google Weather API endpoint and return JSON.
+			
+			
+			Parameters:
+			-----------
+			
+			
 		
 			Returns:
 			--------
@@ -2200,13 +2282,9 @@ class GoogleWeather( Fetcher ):
 			self.timeout = int( time )
 			request_params = dict( params or { } )
 			request_params[ 'key' ] = active_key
-			
 			request_url = f'{self.url}/{path}'
-			self.response = requests.get(
-				url=request_url,
-				params=request_params,
-				headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get( url=request_url, params=request_params,
+				headers=self.headers, timeout=self.timeout )
 			
 			self.response.raise_for_status( )
 			self.result = self.response.json( )
@@ -2216,16 +2294,21 @@ class GoogleWeather( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = '_request( self, path: str, params: Dict[ str, Any ], time: int=10 ) -> Dict[ str, Any ]'
+			exception.method = 'request( self, *params ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch_current( self, address: str, units_system: str = 'METRIC',
-			language_code: str = 'en', time: int = 10 ) -> Dict[ str, Any ] | None:
+	def fetch_current( self, address: str, units_system: str='METRIC',
+			language_code: str='en', time: int=10 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
 			--------
 			Retrieve current weather conditions for an address.
+			
+			
+			Parameters:
+			-----------
+			
 		
 			Returns:
 			--------
@@ -2233,73 +2316,61 @@ class GoogleWeather( Fetcher ):
 		
 		'''
 		try:
-			lat, lng = self._resolve_coordinates( address )
-			params = {
-					'location.latitude': lat,
-					'location.longitude': lng,
-					'unitsSystem': units_system,
-					'languageCode': language_code,
-			}
-			return self._request(
-				path='currentConditions:lookup',
-				params=params,
-				time=time )
-		
+			lat, lng = self.resolve_coordinates( address )
+			params = { 'location.latitude': lat, 'location.longitude': lng,
+			           'unitsSystem': units_system, 'languageCode': language_code, }
+			return self.request( path='currentConditions:lookup', params=params, time=time )
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = (
-					'fetch_current( self, address: str, units_system: str=METRIC, '
-					'language_code: str=en, time: int=10 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_current( self, *params ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch_hourly_forecast( self, address: str, hours: int = 24, units_system: str = 'METRIC',
-			language_code: str = 'en', time: int = 10 ) -> Dict[ str, Any ] | None:
+	def fetch_hourly_forecast( self, address: str, hours: int=24, units_system: str='METRIC',
+			language_code: str='en', time: int=10 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
 			--------
 			Retrieve hourly weather forecast for an address.
+			
+			
+			Parameters:
+			-----------
 		
+			
 			Returns:
 			--------
 			Dict[str, Any] | None
 		
 		'''
 		try:
-			lat, lng = self._resolve_coordinates( address )
-			params = {
-					'location.latitude': lat,
-					'location.longitude': lng,
-					'hours': max( 1, min( int( hours ), 240 ) ),
-					'unitsSystem': units_system,
-					'languageCode': language_code,
-			}
-			return self._request(
-				path='forecast/hours:lookup',
-				params=params,
-				time=time )
-		
+			lat, lng = self.resolve_coordinates( address )
+			params = { 'location.latitude': lat, 'location.longitude': lng,
+					'hours': max( 1, min( int( hours ), 240 ) ), 'unitsSystem': units_system,
+					'languageCode': language_code, }
+			return self.request( path='forecast/hours:lookup', params=params, time=time )
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = (
-					'fetch_hourly_forecast( self, address: str, hours: int=24, '
-					'units_system: str=METRIC, language_code: str=en, time: int=10 ) '
-					'-> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_hourly_forecast( self, **params ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch_daily_forecast( self, address: str, days: int = 5, units_system: str = 'METRIC',
-			language_code: str = 'en', time: int = 10 ) -> Dict[ str, Any ] | None:
+	def fetch_daily_forecast( self, address: str, days: int=5, units_system: str='METRIC',
+			language_code: str='en', time: int=10 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
 			--------
 			Retrieve daily weather forecast for an address.
+			
+			
+			Parameters:
+			-----------
+			
+			
 		
 			Returns:
 			--------
@@ -2307,37 +2378,30 @@ class GoogleWeather( Fetcher ):
 		
 		'''
 		try:
-			lat, lng = self._resolve_coordinates( address )
-			params = {
-					'location.latitude': lat,
-					'location.longitude': lng,
-					'days': max( 1, min( int( days ), 10 ) ),
-					'unitsSystem': units_system,
-					'languageCode': language_code,
-			}
-			return self._request(
-				path='forecast/days:lookup',
-				params=params,
-				time=time )
-		
+			lat, lng = self.resolve_coordinates( address )
+			params = { 'location.latitude': lat, 'location.longitude': lng,
+			           'days': max( 1, min( int( days ), 10 ) ), 'unitsSystem': units_system,
+			           'languageCode': language_code, }
+			return self.request( path='forecast/days:lookup', params=params, time=time )
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = (
-					'fetch_daily_forecast( self, address: str, days: int=5, '
-					'units_system: str=METRIC, language_code: str=en, time: int=10 ) '
-					'-> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_daily_forecast( self, **params-> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch_alerts( self, address: str, language_code: str = 'en',
-			time: int = 10 ) -> Dict[ str, Any ] | None:
+	def fetch_alerts( self, address: str, language_code: str='en',
+			time: int=10 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
 			--------
 			Retrieve public weather alerts for an address.
+			
+			
+			Parameters:
+			-----------
+		
 		
 			Returns:
 			--------
@@ -2345,25 +2409,15 @@ class GoogleWeather( Fetcher ):
 		
 		'''
 		try:
-			lat, lng = self._resolve_coordinates( address )
-			params = {
-					'location.latitude': lat,
-					'location.longitude': lng,
-					'languageCode': language_code,
-			}
-			return self._request(
-				path='publicAlerts:lookup',
-				params=params,
-				time=time )
-		
+			lat, lng = self.resolve_coordinates( address )
+			params = { 'location.latitude': lat, 'location.longitude': lng, 
+			           'languageCode': language_code, }
+			return self.request( path='publicAlerts:lookup', params=params, time=time ) 
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = (
-					'fetch_alerts( self, address: str, language_code: str=en, '
-					'time: int=10 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_alerts( self, *params ) -> Dict[ str, Any ]'
 			raise exception
 
 class NavalObservatory( Fetcher ):
@@ -2371,22 +2425,30 @@ class NavalObservatory( Fetcher ):
 
 		Purpose:
 		--------
-		Provides access to the U.S. Naval Observatory Astronomical Applications
-		API for Celestial Navigation Data for Assumed Position and Time.
+		Fetches celestial-navigation data from the U.S. Naval Observatory API.
 
-		The current documented endpoint is:
-
-			https://aa.usno.navy.mil/api/celnav
-
-		with required parameters:
-
-			- date
-			- time
-			- coords
-
-		References:
+		Attributes:
 		-----------
-		https://aa.usno.navy.mil/data/api
+		base_url,
+		url,
+		params,
+		date_value,
+		time_value,
+		latitude,
+		longitude,
+		location_label,
+		agents,
+
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		validate_date(...): Performs the validate_date operation for this fetcher.
+		validate_time(...): Performs the validate_time operation for this fetcher.
+		validate_coordinates(...): Performs the validate_coordinates operation for this fetcher.
+		fetch_celnav(...): Performs the fetch_celnav operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	base_url: Optional[ str ]
@@ -2456,7 +2518,7 @@ class NavalObservatory( Fetcher ):
 				'create_schema'
 		]
 	
-	def _validate_date( self, date_value: str ) -> str:
+	def validate_date( self, date_value: str ) -> str:
 		'''
 			Purpose:
 			--------
@@ -2482,10 +2544,10 @@ class NavalObservatory( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
-			exception.method = '_validate_date( self, date_value: str ) -> str'
+			exception.method = 'validate_date( self, date_value: str ) -> str'
 			raise exception
 	
-	def _validate_time( self, time_value: str ) -> str:
+	def validate_time( self, time_value: str ) -> str:
 		'''
 			Purpose:
 			--------
@@ -2503,18 +2565,13 @@ class NavalObservatory( Fetcher ):
 		try:
 			value = str( time_value ).strip( )
 			throw_if( 'time_value', value )
-			
-			pattern = (
-					r'^(?:[01]\d|2[0-3]):[0-5]\d'
+			pattern = ( r'^(?:[01]\d|2[0-3]):[0-5]\d'
 					r'(?:'
 					r':[0-5]\d(?:\.\d{1,6})?'
-					r')?$'
-			)
+					r')?$' )
 			
 			if not re.fullmatch( pattern, value ):
-				raise ValueError(
-					"Invalid time format. Use HH:MM, HH:MM:SS, or HH:MM:SS.S"
-				)
+				raise ValueError( "Invalid time format. Use HH:MM, HH:MM:SS, or HH:MM:SS.S" )
 			
 			return value
 		
@@ -2522,10 +2579,10 @@ class NavalObservatory( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
-			exception.method = '_validate_time( self, time_value: str ) -> str'
+			exception.method = 'validate_time( self, time_value: str ) -> str'
 			raise exception
 	
-	def _validate_coordinates( self, latitude: float, longitude: float ) -> tuple[ float, float ]:
+	def validate_coordinates( self, latitude: float, longitude: float ) -> tuple[ float, float ]:
 		'''
 			Purpose:
 			--------
@@ -2559,16 +2616,14 @@ class NavalObservatory( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
-			exception.method = (
-					'_validate_coordinates( self, latitude: float, '
-					'longitude: float ) -> tuple[ float, float ]'
-			)
+			exception.method = 'validate_coordinates( self, *params ) -> tuple[ float, float ]'
 			raise exception
 	
 	def fetch_celnav( self, date_value: str, time_value: str, latitude: float,
-			longitude: float, location_label: str = '',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			longitude: float, location_label: str='',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
+		
 			Purpose:
 			--------
 			Fetch celestial navigation data for an assumed position and time.
@@ -2596,55 +2651,39 @@ class NavalObservatory( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
+			
 		'''
 		try:
-			self.date_value = self._validate_date( date_value )
-			self.time_value = self._validate_time( time_value )
-			self.latitude, self.longitude = self._validate_coordinates(
+			self.date_value = self.validate_date( date_value )
+			self.time_value = self.validate_time( time_value )
+			self.latitude, self.longitude = self.validate_coordinates(
 				latitude=latitude,
 				longitude=longitude
 			)
 			self.location_label = str( location_label or '' ).strip( )
 			
 			self.url = f'{self.base_url}/celnav'
-			self.params = {
-					'date': self.date_value,
-					'time': self.time_value,
-					'coords': f'{self.latitude},{self.longitude}'
-			}
+			self.params = { 'date': self.date_value, 'time': self.time_value,
+					'coords': f'{self.latitude},{self.longitude}' }
 			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
-			)
+			self.response = requests.get( url=self.url, params=self.params,
+				headers=self.headers, timeout=int( time ) )
 			self.response.raise_for_status( )
-			
 			payload = self.response.json( ) or { }
 			
-			return {
-					'mode': 'celnav',
-					'url': self.url,
-					'params': self.params,
-					'location_label': self.location_label,
-					'data': payload
-			}
+			return { 'mode': 'celnav', 'url': self.url, 'params': self.params,
+					'location_label': self.location_label, 'data': payload }
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
-			exception.method = (
-					'fetch_celnav( self, date_value: str, time_value: str, '
-					'latitude: float, longitude: float, location_label: str=, '
-					'time: int=20 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_celnav( self, *params ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch( self, mode: str = 'celnav', date_value: str = '',
-			time_value: str = '', latitude: float = 0.0, longitude: float = 0.0,
-			location_label: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='celnav', date_value: str='',
+			time_value: str='', latitude: float = 0.0, longitude: float = 0.0,
+			location_label: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -2680,32 +2719,20 @@ class NavalObservatory( Fetcher ):
 		'''
 		try:
 			active_mode = str( mode or 'celnav' ).strip( ).lower( )
-			
 			if active_mode == 'celnav':
-				return self.fetch_celnav(
-					date_value=date_value,
-					time_value=time_value,
-					latitude=latitude,
-					longitude=longitude,
-					location_label=location_label,
-					time=time
-				)
+				return self.fetch_celnav( date_value=date_value, time_value=time_value,
+					latitude=latitude, longitude=longitude, location_label=location_label,
+					time=time )
 			
 			raise ValueError( "Unsupported mode. Use 'celnav'." )
-		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
-			exception.method = (
-					'fetch( self, mode: str=celnav, date_value: str=, time_value: str=, '
-					'latitude: float=0.0, longitude: float=0.0, location_label: str=, '
-					'time: int=20 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch( self, *params ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict,
+	def create_schema( self, function: str, tool: str, description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		'''
 			Purpose:
@@ -2759,20 +2786,34 @@ class NavalObservatory( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'NavalObservatory'
-			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
-			)
+			exception.method = 'create_schema( self, *params ) -> Dict[ str, str ]'
 			raise exception
 
 class SatelliteCenter( Fetcher ):
 	'''
-
+	
 		Purpose:
 		--------
-		Provides access to NASA SSCWeb / Satellite Situation Center data for
-		observatories, ground stations, and location trajectories.
-
+		Fetches satellite observatory, ground-station, and location data from SSC Web Services.
+	
+		Attributes:
+		-----------
+		ssc,
+		url,
+		params,
+		observatories,
+		ground_stations,
+		timeout,
+	
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		fetch_observatories(...): Performs the fetch_observatories operation for this fetcher.
+		fetch_ground_stations(...): Performs the fetch_ground_stations operation for this fetcher.
+		fetch_locations(...): Performs the fetch_locations operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+	
 	'''
 	ssc: Optional[ SscWs ]
 	url: Optional[ str ]
@@ -2815,7 +2856,7 @@ class SatelliteCenter( Fetcher ):
 			Purpose:
 			--------
 			Get descriptions of the observatories available from SSC.
-
+			
 			Returns:
 			--------
 			Dict[str, Any] | None
@@ -2858,8 +2899,8 @@ class SatelliteCenter( Fetcher ):
 			raise exception
 	
 	def fetch_locations( self, observatories: str, start_time: str, end_time: str,
-			coordinate_systems: str = 'gse', resolution_factor: int = 1,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			coordinate_systems: str='gse', resolution_factor: int=1,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		"""
 
 			Purpose:
@@ -2891,28 +2932,18 @@ class SatelliteCenter( Fetcher ):
 			throw_if( 'observatories', observatories )
 			throw_if( 'start_time', start_time )
 			throw_if( 'end_time', end_time )
-			
 			self.timeout = int( time )
-			
 			obs = observatories.strip( )
 			time_range = f'{start_time.strip( )},{end_time.strip( )}'
 			coords = (coordinate_systems or 'gse').strip( )
 			
-			request_url = (
-					f'{self.url}/locations/'
+			request_url = ( f'{self.url}/locations/'
 					f'{obs}/'
 					f'{time_range}/'
-					f'{coords}/'
-			)
+					f'{coords}/' )
 			
-			self.params = {
-					'resolutionFactor': max( 1, int( resolution_factor ) )
-			}
-			
-			self.response = requests.get(
-				url=request_url,
-				params=self.params,
-				headers=self.headers,
+			self.params = { 'resolutionFactor': max( 1, int( resolution_factor ) ) }
+			self.response = requests.get( url=request_url, params=self.params, headers=self.headers,
 				timeout=self.timeout )
 			
 			self.response.raise_for_status( )
@@ -2922,16 +2953,11 @@ class SatelliteCenter( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'SatelliteCenter'
-			exception.method = (
-					'fetch_locations( self, observatories: str, start_time: str, '
-					'end_time: str, coordinate_systems: str=gse, '
-					'resolution_factor: int=1, time: int=20 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_locations( self, *params ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch( self, mode: str = 'observatories', query: str = '', start_time: str = '',
-			end_time: str = '', coordinate_systems: str = 'gse', resolution_factor: int = 1,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='observatories', query: str='', start_time: str='', end_time: str='',
+			coordinate_systems: str='gse', resolution_factor: int=1, time: int=20 ) -> Dict[ str, Any ] | None:
 		"""
 
 			Purpose:
@@ -2945,7 +2971,6 @@ class SatelliteCenter( Fetcher ):
 		"""
 		try:
 			active_mode = (mode or 'observatories').strip( ).lower( )
-			
 			if active_mode == 'observatories':
 				return self.fetch_observatories( )
 			
@@ -3163,9 +3188,9 @@ class EarthObservatory( Fetcher ):
 				'create_schema'
 		]
 	
-	def fetch_events( self, status: str = 'open', category: str = '',
-			source: str = '', limit: int = 20, days: int = 30,
-			start_date: str = '', end_date: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_events( self, status: str='open', category: str='',
+			source: str='', limit: int=20, days: int=30,
+			start_date: str='', end_date: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -3261,7 +3286,7 @@ class EarthObservatory( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_categories( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_categories( self, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -3307,7 +3332,7 @@ class EarthObservatory( Fetcher ):
 			exception.method = 'fetch_categories( self, time: int=20 ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch_sources( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_sources( self, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -3353,7 +3378,7 @@ class EarthObservatory( Fetcher ):
 			exception.method = 'fetch_sources( self, time: int=20 ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch_layers( self, category: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_layers( self, category: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -3412,10 +3437,10 @@ class EarthObservatory( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'events', status: str = 'open',
-			category: str = '', source: str = '', limit: int = 20,
-			days: int = 30, start_date: str = '', end_date: str = '',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='events', status: str='open',
+			category: str='', source: str='', limit: int=20,
+			days: int=30, start_date: str='', end_date: str='',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -3556,31 +3581,34 @@ class GlobalImagery( Fetcher ):
 
 		Purpose:
 		--------
-		Provides access to APIs from NASA's Global Imagery Browse Services (GIBS) that is
-		designed to deliver global, full-resolution satellite imagery to users in a highly
-		responsive manner, enabling visual discovery of scientific phenomena, supporting timely
-		decision-making for natural hazards, educating the next generation of scientists,
-		and making imagery of the planet more accessible to the media and public.
-		
-		GIBS provides quick access to over 1,000 satellite imagery products, covering every part
-		of the world. Most imagery is updated daily - available within a few hours after satellite
-		observation, and some products span almost 30 years
-
-		Attribues:
+		Fetches and renders global imagery and WMS map service data.
+	
+		Attributes:
 		-----------
-		timeout - int
-		headers - Dict[ str, Any ]
-		response - requests.Response
-		url - str
-		result - core.Result
-		query - string
-
+		file_path,
+		api_key,
+		url,
+		latitude,
+		longitude,
+		coordinates,
+		calendar_date,
+		julian_date,
+		sidereal_time,
+		utc_time,
+		local_time,
+		params,
+		era,
+		year,
+		month,
+		day,
+	
 		Methods:
-		-----------
-		fetch( ) -> Dict[ str, Any ]
-		
-
-
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		fetch_map_services(...): Performs the fetch_map_services operation for this fetcher.
+		fetch_mercator_map(...): Performs the fetch_mercator_map operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
+	
 	'''
 	file_path: Optional[ str ]
 	api_key: Optional[ str ]
@@ -3619,6 +3647,22 @@ class GlobalImagery( Fetcher ):
 		self.era = None
 	
 	def fetch_map_services( self ):
+		'''
+
+			Purpose:
+			--------
+			Fetch a representative NASA GIBS Web Map Service image using the configured
+			global imagery endpoint and default corrected reflectance layer.
+		
+			Parameters:
+			-----------
+			None
+		
+			Returns:
+			--------
+			Any | None: The fetched map image object or None when the request fails.
+		
+		'''
 		try:
 			wms = WebMapService( 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?',
 				version='1.1.1' )
@@ -3642,6 +3686,23 @@ class GlobalImagery( Fetcher ):
 			
 	
 	def fetch_mercator_map( self , ccrs=None ):
+		'''
+
+			Purpose:
+			--------
+			Fetch a NASA GIBS Mercator map image and render it through the provided
+			Cartopy coordinate reference system module.
+		
+			Parameters:
+			-----------
+			ccrs (Any | None): Optional Cartopy coordinate reference system module used
+			to project and render the returned map image.
+		
+			Returns:
+			--------
+			Any | None: The rendered map result or None when the request fails.
+		
+		'''
 		try:
 			proj3857 = 'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?\
 			version=1.3.0&service=WMS&\
@@ -3671,93 +3732,7 @@ class GlobalImagery( Fetcher ):
 			exception.cause = 'GlobalImagery'
 			exception.method = 'fetch_sidereal( self, date: str ) -> float'
 			raise exception
-			
 		
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
-			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
-
-			Parameters:
-			___________
-			function (str):
-			The function name exposed to the LLM.
-
-			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
-
-			description (str):
-			Precise explanation of what the function does.
-
-			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
-
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
-
-			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
-		try:
-			throw_if( 'function', function )
-			throw_if( 'tool', tool )
-			throw_if( 'description', description )
-			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema  = \
-			{
-				'name': func_name,
-				'description': f'{desc} This function uses the {tool_name} service.',
-				'parameters':
-				{
-					'type': 'object',
-					'properties': parameters,
-					'required': required
-				}
-			}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = ''
-			exception.method = ( 'create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]' )
-			raise exception
-
 class NearbyObjects( Fetcher ):
 	'''
 
@@ -3966,9 +3941,9 @@ class NearbyObjects( Fetcher ):
 		]
 	
 	def fetch_close_approaches( self, start_date: str, end_date: str,
-			dist_max: str = '10LD', body: str = 'Earth',
-			sort: str = 'date', limit: int = 20,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			dist_max: str='10LD', body: str='Earth',
+			sort: str='date', limit: int=20,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4056,10 +4031,10 @@ class NearbyObjects( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_object_lookup( self, query: str, query_type: str = 'sstr',
+	def fetch_object_lookup( self, query: str, query_type: str='sstr',
 			include_physical: bool = True, include_close_approaches: bool = True,
-			ca_body: str = 'Earth', include_discovery: bool = True,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			ca_body: str='Earth', include_discovery: bool = True,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4149,10 +4124,10 @@ class NearbyObjects( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_nhats_summary( self, dv: float = 6.0, dur: int = 360,
-			stay: int = 8, launch: str = '2020-2045',
-			h: float = 26.0, occ: int = 7,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_nhats_summary( self, dv: float = 6.0, dur: int=360,
+			stay: int=8, launch: str='2020-2045',
+			h: float = 26.0, occ: int=7,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4225,8 +4200,8 @@ class NearbyObjects( Fetcher ):
 			raise exception
 	
 	def fetch_nhats_object( self, designation: str, dv: float = 6.0,
-			dur: int = 360, stay: int = 8, launch: str = '2020-2045',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			dur: int=360, stay: int=8, launch: str='2020-2045',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4299,8 +4274,8 @@ class NearbyObjects( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_fireballs( self, date_min: str = '', limit: int = 20,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_fireballs( self, date_min: str='', limit: int=20,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4359,14 +4334,14 @@ class NearbyObjects( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'close_approaches', start_date: str = '',
-			end_date: str = '', query: str = '', query_type: str = 'sstr',
-			dist_max: str = '10LD', body: str = 'Earth', sort: str = 'date',
-			limit: int = 20, dv: float = 6.0, dur: int = 360,
-			stay: int = 8, launch: str = '2020-2045', h: float = 26.0,
-			occ: int = 7, include_physical: bool = True,
-			include_close_approaches: bool = True, ca_body: str = 'Earth',
-			include_discovery: bool = True, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='close_approaches', start_date: str='',
+			end_date: str='', query: str='', query_type: str='sstr',
+			dist_max: str='10LD', body: str='Earth', sort: str='date',
+			limit: int=20, dv: float = 6.0, dur: int=360,
+			stay: int=8, launch: str='2020-2045', h: float = 26.0,
+			occ: int=7, include_physical: bool = True,
+			include_close_approaches: bool = True, ca_body: str='Earth',
+			include_discovery: bool = True, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4580,19 +4555,31 @@ class OpenScience( Fetcher ):
 
 		Purpose:
 		--------
-		Provides access to NASA's Open Science Data Repository (OSDR) Biological
-		Data API.
+		Fetches open-science dataset, metadata, assay, and data resources.
 
-		The current public API surface documented by NASA emphasizes:
-			- REST traversal endpoints such as /v2/dataset/<accession>/
-			- Query endpoints such as:
-				/v2/query/metadata/
-				/v2/query/assays/
-				/v2/query/data/
-
-		References:
+		Attributes:
 		-----------
-		https://visualization.osdr.nasa.gov/biodata/api/
+		base_url,
+		url,
+		params,
+		query_text,
+		format_value,
+		size,
+		endpoint,
+		agents,
+
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_validate_format(...): Performs the _validate_format operation for this fetcher.
+		_coerce_response(...): Performs the _coerce_response operation for this fetcher.
+		fetch_dataset(...): Performs the fetch_dataset operation for this fetcher.
+		fetch_metadata(...): Performs the fetch_metadata operation for this fetcher.
+		fetch_assays(...): Performs the fetch_assays operation for this fetcher.
+		fetch_data(...): Performs the fetch_data operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	base_url: Optional[ str ]
@@ -4731,7 +4718,7 @@ class OpenScience( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_dataset( self, accession: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_dataset( self, accession: str, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4780,8 +4767,8 @@ class OpenScience( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_metadata( self, query: str, format_value: str = 'json',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_metadata( self, query: str, format_value: str='json',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4838,8 +4825,8 @@ class OpenScience( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_assays( self, query: str, format_value: str = 'json',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_assays( self, query: str, format_value: str='json',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4897,8 +4884,8 @@ class OpenScience( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_data( self, query: str, format_value: str = 'json',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_data( self, query: str, format_value: str='json',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -4956,9 +4943,9 @@ class OpenScience( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'dataset', query: str = '',
-			accession: str = '', format_value: str = 'json',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='dataset', query: str='',
+			accession: str='', format_value: str='json',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -5269,11 +5256,11 @@ class SpaceWeather( Fetcher ):
 		]
 	
 	def fetch_endpoint( self, endpoint: str, start_date: str, end_date: str,
-			time: int = 20, location: str = '', catalog: str = '',
-			notification_type: str = '', most_accurate_only: bool = True,
-			complete_entry_only: bool = True, speed: int = 0,
-			half_angle: int = 0, keyword: str = '',
-			api_key: str | None = None ) -> Dict[ str, Any ] | None:
+			time: int=20, location: str='', catalog: str='',
+			notification_type: str='', most_accurate_only: bool = True,
+			complete_entry_only: bool = True, speed: int=0,
+			half_angle: int=0, keyword: str='',
+			api_key: str=None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -5391,12 +5378,12 @@ class SpaceWeather( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'cme', start_date: str = '', end_date: str = '',
-			time: int = 20, location: str = 'ALL', catalog: str = 'ALL',
-			notification_type: str = 'all', most_accurate_only: bool = True,
-			complete_entry_only: bool = True, speed: int = 0,
-			half_angle: int = 0, keyword: str = '',
-			api_key: str | None = None ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='cme', start_date: str='', end_date: str='',
+			time: int=20, location: str='ALL', catalog: str='ALL',
+			notification_type: str='all', most_accurate_only: bool = True,
+			complete_entry_only: bool = True, speed: int=0,
+			half_angle: int=0, keyword: str='',
+			api_key: str=None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -5614,7 +5601,7 @@ class AstroCatalog( Fetcher ):
 				'fetch',
 		]
 	
-	def _normalize_attribute_path( self, quantity: str = '', attributes: str = '' ) -> str:
+	def _normalize_attribute_path( self, quantity: str='', attributes: str='' ) -> str:
 		"""
 			Purpose:
 			--------
@@ -5662,8 +5649,8 @@ class AstroCatalog( Fetcher ):
 		
 		return params
 	
-	def _request( self, route: str, params: Dict[ str, Any ] | None = None,
-			time: int = 20 ) -> Any:
+	def request( self, route: str, params: Dict[ str, Any ] | None = None,
+			time: int=20 ) -> Any:
 		"""
 			Purpose:
 			--------
@@ -5696,11 +5683,11 @@ class AstroCatalog( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
-			exception.method = '_request( self, route: str, params: Dict[ str, Any ] | None=None, time: int=20 ) -> Any'
+			exception.method = 'request( self, route: str, params: Dict[ str, Any ] | None=None, time: int=20 ) -> Any'
 			raise exception
 	
-	def fetch_object( self, name: str, quantity: str = '', attributes: str = '',
-			arguments: str = '', data_format: str = 'json', time: int = 20 ) -> Any:
+	def fetch_object( self, name: str, quantity: str='', attributes: str='',
+			arguments: str='', data_format: str='json', time: int=20 ) -> Any:
 		"""
 			Purpose:
 			--------
@@ -5726,7 +5713,7 @@ class AstroCatalog( Fetcher ):
 			if self.format:
 				params[ 'format' ] = self.format
 			
-			return self._request( route=route, params=params, time=time )
+			return self.request( route=route, params=params, time=time )
 		
 		except Exception as exc:
 			exception = Error( exc )
@@ -5738,8 +5725,8 @@ class AstroCatalog( Fetcher ):
 			)
 			raise exception
 	
-	def cone_search( self, ra: str, dec: str, radius: int = 2, quantity: str = '',
-			attributes: str = '', arguments: str = '', data_format: str = 'json', time: int = 20 ) -> Any:
+	def cone_search( self, ra: str, dec: str, radius: int=2, quantity: str='',
+			attributes: str='', arguments: str='', data_format: str='json', time: int=20 ) -> Any:
 		"""
 			Purpose:
 			--------
@@ -5771,7 +5758,7 @@ class AstroCatalog( Fetcher ):
 			if self.format:
 				params[ 'format' ] = self.format
 			
-			return self._request( route=route, params=params, time=time )
+			return self.request( route=route, params=params, time=time )
 		
 		except Exception as exc:
 			exception = Error( exc )
@@ -5784,9 +5771,9 @@ class AstroCatalog( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'object_query', query: str = '', quantity: str = '',
-			attributes: str = '', arguments: str = '', ra: str = '', dec: str = '',
-			radius: int = 2, data_format: str = 'json', time: int = 20 ) -> Any:
+	def fetch( self, mode: str='object_query', query: str='', quantity: str='',
+			attributes: str='', arguments: str='', ra: str='', dec: str='',
+			radius: int=2, data_format: str='json', time: int=20 ) -> Any:
 		"""
 			Purpose:
 			--------
@@ -5834,16 +5821,31 @@ class AstroCatalog( Fetcher ):
 
 class AstroQuery( Fetcher ):
 	'''
-
+	
 		Purpose:
 		--------
-		Provides a focused astroquery wrapper around the SIMBAD service for
-		named-object lookups, identifier retrieval, and cone/region searches.
-
-		Notes:
-		------
-		This wrapper does not require an API key for standard SIMBAD queries.
-
+		Fetches astronomical object and region data with astroquery SIMBAD operations.
+	
+		Attributes:
+		-----------
+		url,
+		radius,
+		name,
+		declination,
+		right_ascension,
+		params,
+		row_limit,
+	
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_table_to_records(...): Performs the _table_to_records operation for this fetcher.
+		object_search(...): Performs the object_search operation for this fetcher.
+		object_ids(...): Performs the object_ids operation for this fetcher.
+		region_search(...): Performs the region_search operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+	
 	'''
 	url: Optional[ str ]
 	radius: Optional[ float ]
@@ -5924,7 +5926,7 @@ class AstroQuery( Fetcher ):
 			exception.method = '_table_to_records( self, table: Table | None ) -> List[ Dict[ str, Any ] ]'
 			raise exception
 	
-	def object_search( self, name: str, row_limit: int = 100 ) -> Dict[ str, Any ] | None:
+	def object_search( self, name: str, row_limit: int=100 ) -> Dict[ str, Any ] | None:
 		"""
 
 			Purpose:
@@ -5968,7 +5970,7 @@ class AstroQuery( Fetcher ):
 			exception.method = 'object_search( self, name: str, row_limit: int=100 ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def object_ids( self, name: str, row_limit: int = 100 ) -> Dict[ str, Any ] | None:
+	def object_ids( self, name: str, row_limit: int=100 ) -> Dict[ str, Any ] | None:
 		"""
 
 			Purpose:
@@ -6012,7 +6014,7 @@ class AstroQuery( Fetcher ):
 			raise exception
 	
 	def region_search( self, ra: str, dec: str, radius: float = 0.5,
-			radius_unit: str = 'deg', row_limit: int = 100 ) -> Dict[ str, Any ] | None:
+			radius_unit: str='deg', row_limit: int=100 ) -> Dict[ str, Any ] | None:
 		"""
 
 			Purpose:
@@ -6097,9 +6099,9 @@ class AstroQuery( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'object_search', query: str = '',
-			ra: str = '', dec: str = '', radius: float = 0.5,
-			radius_unit: str = 'deg', row_limit: int = 100 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='object_search', query: str='',
+			ra: str='', dec: str='', radius: float = 0.5,
+			radius_unit: str='deg', row_limit: int=100 ) -> Dict[ str, Any ] | None:
 		"""
 
 			Purpose:
@@ -6178,13 +6180,35 @@ class StarMap( Fetcher ):
 
 		Purpose:
 		--------
-		Provides structured access to Sky-Map.org interactive links and
-		static snapshot generation.
+		Builds star-map links and image snapshots for objects or coordinates.
 
-		Notes:
-		------
-		No API key is required for the public Site Link / Image Generator
-		behavior used here.
+		Attributes:
+		-----------
+		base_url,
+		snapshot_url,
+		image_source,
+		object,
+		right_ascension,
+		declination,
+		box_color,
+		show_box,
+		show_grid,
+		show_lines,
+		show_boundaries,
+		show_const_names,
+		zoom,
+		params,
+
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_normalize_bool(...): Performs the _normalize_bool operation for this fetcher.
+		_extract_snapshot_links(...): Performs the _extract_snapshot_links operation for this fetcher.
+		fetch_object_link(...): Performs the fetch_object_link operation for this fetcher.
+		fetch_coordinate_link(...): Performs the fetch_coordinate_link operation for this fetcher.
+		fetch_snapshot(...): Performs the fetch_snapshot operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
 
 	'''
 	base_url: Optional[ str ]
@@ -6328,10 +6352,10 @@ class StarMap( Fetcher ):
 	def fetch_object_link(
 			self,
 			name: str,
-			zoom: int = 5,
-			box_color: str = 'yellow',
+			zoom: int=5,
+			box_color: str='yellow',
 			show_box: bool = True,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
@@ -6409,13 +6433,13 @@ class StarMap( Fetcher ):
 			self,
 			ra: float,
 			dec: float,
-			zoom: int = 5,
-			box_color: str = 'yellow',
+			zoom: int=5,
+			box_color: str='yellow',
 			show_box: bool = True,
 			show_grid: bool = True,
 			show_lines: bool = True,
 			show_boundaries: bool = True,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
@@ -6517,13 +6541,13 @@ class StarMap( Fetcher ):
 			self,
 			ra: float,
 			dec: float,
-			zoom: int = 10,
-			image_source: str = 'DSS2',
+			zoom: int=10,
+			image_source: str='DSS2',
 			show_grid: bool = True,
 			show_lines: bool = True,
 			show_boundaries: bool = True,
 			show_const_names: bool = False,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
@@ -6631,19 +6655,19 @@ class StarMap( Fetcher ):
 	
 	def fetch(
 			self,
-			mode: str = 'object_link',
-			query: str = '',
+			mode: str='object_link',
+			query: str='',
 			ra: float = 0.0,
 			dec: float = 0.0,
-			zoom: int = 5,
-			image_source: str = 'DSS2',
-			box_color: str = 'yellow',
+			zoom: int=5,
+			image_source: str='DSS2',
+			box_color: str='yellow',
 			show_box: bool = True,
 			show_grid: bool = True,
 			show_lines: bool = True,
 			show_boundaries: bool = True,
 			show_const_names: bool = False,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
@@ -6757,16 +6781,38 @@ class GovData( Fetcher ):
 
 		Purpose:
 		--------
-		Provides access to the GovInfo API Search Service and selected GovInfo API
-		retrieval endpoints.
+		Fetches Data.gov package search, package summary, and collection records.
 
-		Current documented surfaces used here:
-			- POST https://api.govinfo.gov/search
-			- GET  https://api.govinfo.gov/packages/{packageId}/summary
-			- GET  https://api.govinfo.gov/collections/{collection}/{startDate}
+		Attributes:
+		-----------
+		api_key,
+		base_url,
+		url,
+		params,
+		payload,
+		query,
+		page_size,
+		offset_mark,
+		sort_field,
+		sort_order,
+		package_id,
+		collection,
+		start_date,
+		agents,
 
-		The Search Service is the preferred interface for the general Gov Info
-		expander because it mirrors the main website search experience.
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
+		_validate_page_size(...): Performs the _validate_page_size operation for this fetcher.
+		_validate_sort_field(...): Performs the _validate_sort_field operation for this fetcher.
+		_validate_sort_order(...): Performs the _validate_sort_order operation for this fetcher.
+		fetch_search(...): Performs the fetch_search operation for this fetcher.
+		fetch_package_summary(...): Performs the fetch_package_summary operation for this fetcher.
+		fetch_collection(...): Performs the fetch_collection operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	api_key: Optional[ str ]
@@ -6972,9 +7018,9 @@ class GovData( Fetcher ):
 			exception.method = '_validate_sort_order( self, sort_order: str ) -> str'
 			raise exception
 	
-	def fetch_search( self, query: str, page_size: int = 10,
-			offset_mark: str = '*', sort_field: str = 'score',
-			sort_order: str = 'DESC', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_search( self, query: str, page_size: int=10,
+			offset_mark: str='*', sort_field: str='score',
+			sort_order: str='DESC', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 		
 			Purpose:
@@ -7063,7 +7109,7 @@ class GovData( Fetcher ):
 			raise exception
 	
 	def fetch_package_summary( self, package_id: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7117,8 +7163,8 @@ class GovData( Fetcher ):
 			raise exception
 	
 	def fetch_collection( self, collection: str, start_date: str,
-			page_size: int = 10, offset_mark: str = '*',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			page_size: int=10, offset_mark: str='*',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7188,11 +7234,11 @@ class GovData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'search', query: str = '',
-			page_size: int = 10, offset_mark: str = '*',
-			sort_field: str = 'score', sort_order: str = 'DESC',
-			package_id: str = '', collection: str = '',
-			start_date: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='search', query: str='',
+			page_size: int=10, offset_mark: str='*',
+			sort_field: str='score', sort_order: str='DESC',
+			package_id: str='', collection: str='',
+			start_date: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7610,7 +7656,7 @@ class StarChart( Fetcher ):
 		
 		return 1 if bool( value ) else 0
 	
-	def search_object( self, name: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def search_object( self, name: str, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7691,9 +7737,9 @@ class StarChart( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_object_chart( self, name: str, zoom: int = 5,
-			box_color: str = 'yellow', show_box: bool = True,
-			image_source: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_object_chart( self, name: str, zoom: int=5,
+			box_color: str='yellow', show_box: bool = True,
+			image_source: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7766,10 +7812,10 @@ class StarChart( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_coordinate_chart( self, ra: float, dec: float, zoom: int = 5,
-			box_color: str = 'yellow', show_box: bool = True,
+	def fetch_coordinate_chart( self, ra: float, dec: float, zoom: int=5,
+			box_color: str='yellow', show_box: bool = True,
 			show_grid: bool = True, show_lines: bool = True,
-			show_boundaries: bool = True, image_source: str = '' ) -> Dict[ str, Any ] | None:
+			show_boundaries: bool = True, image_source: str='' ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7856,11 +7902,11 @@ class StarChart( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_static_chart( self, ra: float, dec: float, zoom: int = 5,
-			image_source: str = 'DSS2', show_grid: bool = True,
+	def fetch_static_chart( self, ra: float, dec: float, zoom: int=5,
+			image_source: str='DSS2', show_grid: bool = True,
 			show_lines: bool = True, show_boundaries: bool = True,
-			show_const_names: bool = False, width: int = 900,
-			height: int = 450, magnitude: float = 7.5 ) -> Dict[ str, Any ] | None:
+			show_const_names: bool = False, width: int=900,
+			height: int=450, magnitude: float = 7.5 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7959,14 +8005,14 @@ class StarChart( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'object_chart', query: str = '',
-			ra: float = 0.0, dec: float = 0.0, zoom: int = 5,
-			image_source: str = 'DSS2', box_color: str = 'yellow',
+	def fetch( self, mode: str='object_chart', query: str='',
+			ra: float = 0.0, dec: float = 0.0, zoom: int=5,
+			image_source: str='DSS2', box_color: str='yellow',
 			show_box: bool = True, show_grid: bool = True,
 			show_lines: bool = True, show_boundaries: bool = True,
-			show_const_names: bool = False, width: int = 900,
-			height: int = 450, magnitude: float = 7.5,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			show_const_names: bool = False, width: int=900,
+			height: int=450, magnitude: float = 7.5,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -8146,22 +8192,50 @@ class Congress( Fetcher ):
 
 		Purpose:
 		--------
-		Provides access to the Congress.gov API v3 for bills, laws, and committee
-		reports.
+		Fetches Congress.gov congress, bill, law, and report resources.
 
-		The Congress.gov API is a structured endpoint API and is not a free-text
-		search wrapper. Requests are made against mode-specific endpoints such as:
+		Attributes:
+		-----------
+		api_key,
+		base_url,
+		url,
+		params,
+		mode,
+		congress_number,
+		bill_type,
+		bill_number,
+		law_type,
+		law_number,
+		report_type,
+		report_number,
+		offset,
+		limit,
+		sort,
+		from_date_time,
+		to_date_time,
+		conference,
+		agents,
 
-			- /congress
-			- /bill/{congress}
-			- /bill/{congress}/{billType}
-			- /bill/{congress}/{billType}/{billNumber}
-			- /law/{congress}
-			- /law/{congress}/{lawType}
-			- /law/{congress}/{lawType}/{lawNumber}
-			- /committee-report/{congress}
-			- /committee-report/{congress}/{reportType}
-			- /committee-report/{congress}/{reportType}/{reportNumber}
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
+		_validate_limit(...): Performs the _validate_limit operation for this fetcher.
+		_validate_offset(...): Performs the _validate_offset operation for this fetcher.
+		_normalize_bill_type(...): Performs the _normalize_bill_type operation for this fetcher.
+		_normalize_law_type(...): Performs the _normalize_law_type operation for this fetcher.
+		_normalize_report_type(...): Performs the _normalize_report_type operation for this fetcher.
+		_base_params(...): Performs the _base_params operation for this fetcher.
+		fetch_congresses(...): Performs the fetch_congresses operation for this fetcher.
+		fetch_bills(...): Performs the fetch_bills operation for this fetcher.
+		fetch_bill(...): Performs the fetch_bill operation for this fetcher.
+		fetch_laws(...): Performs the fetch_laws operation for this fetcher.
+		fetch_law(...): Performs the fetch_law operation for this fetcher.
+		fetch_reports(...): Performs the fetch_reports operation for this fetcher.
+		fetch_report(...): Performs the fetch_report operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	api_key: Optional[ str ]
@@ -8458,8 +8532,8 @@ class Congress( Fetcher ):
 			exception.method = '_normalize_report_type( self, report_type: str ) -> str'
 			raise exception
 	
-	def _base_params( self, limit: int = 20, offset: int = 0,
-			sort: str = 'updateDate+desc' ) -> Dict[ str, Any ]:
+	def _base_params( self, limit: int=20, offset: int=0,
+			sort: str='updateDate+desc' ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
@@ -8499,8 +8573,8 @@ class Congress( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_congresses( self, limit: int = 20, offset: int = 0,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_congresses( self, limit: int=20, offset: int=0,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -8554,10 +8628,10 @@ class Congress( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_bills( self, congress: int, bill_type: str = '',
-			offset: int = 0, limit: int = 20, from_date_time: str = '',
-			to_date_time: str = '', sort: str = 'updateDate+desc',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_bills( self, congress: int, bill_type: str='',
+			offset: int=0, limit: int=20, from_date_time: str='',
+			to_date_time: str='', sort: str='updateDate+desc',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -8645,7 +8719,7 @@ class Congress( Fetcher ):
 			raise exception
 	
 	def fetch_bill( self, congress: int, bill_type: str,
-			bill_number: int, time: int = 20 ) -> Dict[ str, Any ] | None:
+			bill_number: int, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -8712,9 +8786,9 @@ class Congress( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_laws( self, congress: int, law_type: str = '',
-			offset: int = 0, limit: int = 20,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_laws( self, congress: int, law_type: str='',
+			offset: int=0, limit: int=20,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -8786,7 +8860,7 @@ class Congress( Fetcher ):
 			raise exception
 	
 	def fetch_law( self, congress: int, law_type: str,
-			law_number: int, time: int = 20 ) -> Dict[ str, Any ] | None:
+			law_number: int, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -8853,9 +8927,9 @@ class Congress( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_reports( self, congress: int, report_type: str = '',
-			offset: int = 0, limit: int = 20, conference: bool = False,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_reports( self, congress: int, report_type: str='',
+			offset: int=0, limit: int=20, conference: bool = False,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -8936,7 +9010,7 @@ class Congress( Fetcher ):
 			raise exception
 	
 	def fetch_report( self, congress: int, report_type: str,
-			report_number: int, time: int = 20 ) -> Dict[ str, Any ] | None:
+			report_number: int, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -9003,13 +9077,13 @@ class Congress( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'congresses', congress: int = 0,
-			bill_type: str = '', bill_number: int = 0, law_type: str = '',
-			law_number: int = 0, report_type: str = '',
-			report_number: int = 0, offset: int = 0, limit: int = 20,
-			sort: str = 'updateDate+desc', from_date_time: str = '',
-			to_date_time: str = '', conference: bool = False,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='congresses', congress: int=0,
+			bill_type: str='', bill_number: int=0, law_type: str='',
+			law_number: int=0, report_type: str='',
+			report_number: int=0, offset: int=0, limit: int=20,
+			sort: str='updateDate+desc', from_date_time: str='',
+			to_date_time: str='', conference: bool = False,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -9220,24 +9294,35 @@ class Congress( Fetcher ):
 
 class InternetArchive( Fetcher ):
 	'''
-
+	
 		Purpose:
 		--------
-		Provides structured access to the Internet Archive Advanced Search API.
-
-		The advanced search endpoint supports query-driven retrieval with
-		parameters such as:
-
-			- q
-			- fl[]
-			- rows
-			- page
-			- sort[]
-			- output=json
-
-		This wrapper keeps the API provider-specific and returns parsed JSON
-		with request metadata for downstream UI rendering.
-
+		Fetches Internet Archive search records.
+	
+		Attributes:
+		-----------
+		keywords,
+		url,
+		response,
+		fields,
+		rows,
+		page,
+		sort,
+		media_type,
+		collection,
+		params,
+		agents,
+	
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_validate_rows(...): Performs the _validate_rows operation for this fetcher.
+		_validate_page(...): Performs the _validate_page operation for this fetcher.
+		_build_query(...): Performs the _build_query operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
+	
 	'''
 	keywords: Optional[ str ]
 	url: Optional[ str ]
@@ -9383,8 +9468,8 @@ class InternetArchive( Fetcher ):
 			exception.method = '_validate_page( self, page: int ) -> int'
 			raise exception
 	
-	def _build_query( self, keywords: str, media_type: str = '',
-			collection: str = '' ) -> str:
+	def _build_query( self, keywords: str, media_type: str='',
+			collection: str='' ) -> str:
 		'''
 			Purpose:
 			--------
@@ -9429,9 +9514,9 @@ class InternetArchive( Fetcher ):
 			raise exception
 	
 	def fetch( self, keywords: str, fields: List[ str ] | None = None,
-			rows: int = 10, page: int = 1, sort: str = 'downloads desc',
-			media_type: str = '', collection: str = '',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			rows: int=10, page: int=1, sort: str='downloads desc',
+			media_type: str='', collection: str='',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -9852,7 +9937,7 @@ class OpenWeather( Fetcher ):
 				'create_schema'
 		]
 	
-	def geocode_location( self, location: str, count: int = 10 ) -> Dict[ str, Any ] | None:
+	def geocode_location( self, location: str, count: int=10 ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -9917,8 +10002,8 @@ class OpenWeather( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_current( self, lat: float, long: float, zone: str = 'auto',
-			past_days: int = 0 ) -> Dict[ str, Any ] | None:
+	def fetch_current( self, lat: float, long: float, zone: str='auto',
+			past_days: int=0 ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -9999,8 +10084,8 @@ class OpenWeather( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_hourly( self, lat: float, long: float, zone: str = 'auto',
-			forecast_days: int = 7, past_days: int = 0 ) -> Dict[ str, Any ] | None:
+	def fetch_hourly( self, lat: float, long: float, zone: str='auto',
+			forecast_days: int=7, past_days: int=0 ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -10084,8 +10169,8 @@ class OpenWeather( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_daily( self, lat: float, long: float, zone: str = 'auto',
-			forecast_days: int = 7, past_days: int = 0 ) -> Dict[ str, Any ] | None:
+	def fetch_daily( self, lat: float, long: float, zone: str='auto',
+			forecast_days: int=7, past_days: int=0 ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -10169,9 +10254,9 @@ class OpenWeather( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, location: str, mode: str = 'current', zone: str = 'auto',
-			forecast_days: int = 7, past_days: int = 0,
-			count: int = 10 ) -> Dict[ str, Any ] | None:
+	def fetch( self, location: str, mode: str='current', zone: str='auto',
+			forecast_days: int=7, past_days: int=0,
+			count: int=10 ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -10569,7 +10654,7 @@ class HistoricalWeather( Fetcher ):
 				'create_schema'
 		]
 	
-	def geocode_location( self, location: str, count: int = 10 ) -> Dict[ str, Any ] | None:
+	def geocode_location( self, location: str, count: int=10 ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -10635,7 +10720,7 @@ class HistoricalWeather( Fetcher ):
 			raise exception
 	
 	def fetch_historical( self, lat: float, long: float, date: dt.date,
-			zone: str = 'auto' ) -> Dict[ str, Any ] | None:
+			zone: str='auto' ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -10722,7 +10807,7 @@ class HistoricalWeather( Fetcher ):
 			raise exception
 	
 	def fetch( self, location: str, date: dt.date,
-			zone: str = 'auto', count: int = 10 ) -> Dict[ str, Any ] | None:
+			zone: str='auto', count: int=10 ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -10865,19 +10950,31 @@ class Grokipedia( Fetcher ):
 
 		Purpose:
 		--------
-		Provides structured access to Grokipedia content through the
-		`grokipedia-api` Python client.
+		Fetches Grokipedia search results and page content.
 
-		Current published client examples expose:
-			- client.search( query, limit=..., offset=... )
-			- client.get_page( slug_or_title, include_content=True )
+		Attributes:
+		-----------
+		api_key,
+		client,
+		query,
+		page,
+		limit,
+		offset,
+		include_content,
+		response,
+		params,
 
-		Notes:
-		------
-		The current public package documentation does not describe mandatory API key
-		authentication for these client calls. This wrapper therefore reads
-		cfg.XAI_API_KEY for future compatibility and environment consistency, but
-		does not hard-require it for current package usage.
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_validate_limit(...): Performs the _validate_limit operation for this fetcher.
+		_validate_offset(...): Performs the _validate_offset operation for this fetcher.
+		_get_client(...): Performs the _get_client operation for this fetcher.
+		fetch_search(...): Performs the fetch_search operation for this fetcher.
+		fetch_page(...): Performs the fetch_page operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	api_key: Optional[ str ]
@@ -11030,8 +11127,8 @@ class Grokipedia( Fetcher ):
 			exception.method = '_get_client( self ) -> GrokipediaClient'
 			raise exception
 	
-	def fetch_search( self, query: str, limit: int = 12,
-			offset: int = 0 ) -> Dict[ str, Any ] | None:
+	def fetch_search( self, query: str, limit: int=12,
+			offset: int=0 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -11142,8 +11239,8 @@ class Grokipedia( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'search', query: str = '',
-			page: str = '', limit: int = 12, offset: int = 0,
+	def fetch( self, mode: str='search', query: str='',
+			page: str='', limit: int=12, offset: int=0,
 			include_content: bool = True ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -11276,23 +11373,36 @@ class GoogleGeocoding( Fetcher ):
 
 		Purpose:
 		--------
-		Provides access to Google's Geocoding API using the documented web-service
-		endpoints for:
+		Fetches Google Geocoding forward, reverse, and place lookup records.
 
-			- Forward geocoding by address
-			- Reverse geocoding by latitude / longitude
-			- Place geocoding by place_id
+		Attributes:
+		-----------
+		api_key,
+		url,
+		params,
+		mode,
+		query,
+		latitude,
+		longitude,
+		place_id,
+		language,
+		region,
+		result_type,
+		location_type,
+		timeout,
+		agents,
 
-		Referenced API Requirements:
-		----------------------------
-		Geocoding API:
-			- Endpoint: https://maps.googleapis.com/maps/api/geocode/json
-			- Required authentication: API key
-			- Billing must be enabled
-			- Supported request patterns used here:
-				- address
-				- latlng
-				- place_id
+		Methods:
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
+		request(...): Performs the request operation for this fetcher.
+		fetch_forward(...): Performs the fetch_forward operation for this fetcher.
+		fetch_reverse(...): Performs the fetch_reverse operation for this fetcher.
+		fetch_place(...): Performs the fetch_place operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	api_key: Optional[ str ]
@@ -11406,7 +11516,7 @@ class GoogleGeocoding( Fetcher ):
 			exception.method = '_resolve_api_key( self, api_key: Optional[ str ]=None ) -> str'
 			raise exception
 	
-	def _request( self, params: Dict[ str, Any ], time: int = 10,
+	def request( self, params: Dict[ str, Any ], time: int=10,
 			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -11457,13 +11567,13 @@ class GoogleGeocoding( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleGeocoding'
 			exception.method = (
-					'_request( self, params: Dict[ str, Any ], time: int=10, '
+					'request( self, params: Dict[ str, Any ], time: int=10, '
 					'api_key: Optional[ str ]=None ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_forward( self, query: str, language: str = 'en',
-			region: str = '', time: int = 10,
+	def fetch_forward( self, query: str, language: str='en',
+			region: str='', time: int=10,
 			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -11507,7 +11617,7 @@ class GoogleGeocoding( Fetcher ):
 			if self.region:
 				params[ 'region' ] = self.region
 			
-			return self._request(
+			return self.request(
 				params=params,
 				time=int( time ),
 				api_key=api_key
@@ -11525,8 +11635,8 @@ class GoogleGeocoding( Fetcher ):
 			raise exception
 	
 	def fetch_reverse( self, latitude: float, longitude: float,
-			language: str = 'en', result_type: str = '',
-			location_type: str = '', time: int = 10,
+			language: str='en', result_type: str='',
+			location_type: str='', time: int=10,
 			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -11579,7 +11689,7 @@ class GoogleGeocoding( Fetcher ):
 			if self.location_type:
 				params[ 'location_type' ] = self.location_type
 			
-			return self._request(
+			return self.request(
 				params=params,
 				time=int( time ),
 				api_key=api_key
@@ -11596,8 +11706,8 @@ class GoogleGeocoding( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_place( self, place_id: str, language: str = 'en',
-			region: str = '', time: int = 10,
+	def fetch_place( self, place_id: str, language: str='en',
+			region: str='', time: int=10,
 			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -11641,7 +11751,7 @@ class GoogleGeocoding( Fetcher ):
 			if self.region:
 				params[ 'region' ] = self.region
 			
-			return self._request(
+			return self.request(
 				params=params,
 				time=int( time ),
 				api_key=api_key
@@ -11657,10 +11767,10 @@ class GoogleGeocoding( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'forward', query: str = '',
+	def fetch( self, mode: str='forward', query: str='',
 			latitude: float = 0.0, longitude: float = 0.0,
-			place_id: str = '', language: str = 'en', region: str = '',
-			result_type: str = '', location_type: str = '', time: int = 10,
+			place_id: str='', language: str='en', region: str='',
+			result_type: str='', location_type: str='', time: int=10,
 			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -11819,38 +11929,37 @@ class GoogleGeocoding( Fetcher ):
 
 class CensusData( Fetcher ):
 	'''
+
 		Purpose:
 		--------
-		Fetch metadata and tabular results from the U.S. Census Bureau API.
+		Fetches Census API variables and tabular data.
 
-		Attribues:
+		Attributes:
 		-----------
-		api_key - Optional[ str ]
-		base_url - Optional[ str ]
-		year - Optional[ str ]
-		dataset - Optional[ str ]
-		mode - Optional[ str ]
-		fields - Optional[ List[ str ] ]
-		geography_for - Optional[ str ]
-		geography_in - Optional[ str ]
-		predicates - Optional[ Dict[ str, Any ] ]
-		params - Optional[ Dict[ str, Any ] ]
-		payload - Optional[ Dict[ str, Any ] ]
+		api_key,
+		base_url,
+		year,
+		dataset,
+		mode,
+		fields,
+		geography_for,
+		geography_in,
+		predicates,
+		params,
+		payload,
 
 		Methods:
-		-----------
-		_resolve_api_key( ) -> Optional[ str ]
-		_normalize_fields( fields: str ) -> str
-		_parse_predicates( predicates: str ) -> Dict[ str, Any ]
-		_shape_table( rows: List[ Any ] ) -> Dict[ str, Any ]
-		fetch_variables( year: str, dataset: str, time: int=20 ) -> Dict[ str, Any ]
-		fetch_data( year: str, dataset: str, fields: str, geography_for: str='',
-		            geography_in: str='', predicates: str='', time: int=20 )
-		            -> Dict[ str, Any ]
-		fetch( mode: str='variables', year: str='2022', dataset: str='acs/acs5',
-		       fields: str='NAME,B01001_001E', geography_for: str='state:*',
-		       geography_in: str='', predicates: str='', time: int=20 )
-		       -> Dict[ str, Any ]
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
+		_normalize_fields(...): Performs the _normalize_fields operation for this fetcher.
+		_parse_predicates(...): Performs the _parse_predicates operation for this fetcher.
+		_shape_table(...): Performs the _shape_table operation for this fetcher.
+		fetch_variables(...): Performs the fetch_variables operation for this fetcher.
+		fetch_data(...): Performs the fetch_data operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	api_key: Optional[ str ]
@@ -12082,7 +12191,7 @@ class CensusData( Fetcher ):
 			exception.method = '_shape_table( self, rows: List[ Any ] ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch_variables( self, year: str, dataset: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_variables( self, year: str, dataset: str, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -12141,8 +12250,8 @@ class CensusData( Fetcher ):
 			raise exception
 	
 	def fetch_data( self, year: str, dataset: str, fields: str,
-			geography_for: str = '', geography_in: str = '',
-			predicates: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+			geography_for: str='', geography_in: str='',
+			predicates: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -12232,10 +12341,10 @@ class CensusData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'variables', year: str = '2022',
-			dataset: str = 'acs/acs5', fields: str = 'NAME,B01001_001E',
-			geography_for: str = 'state:*', geography_in: str = '',
-			predicates: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='variables', year: str='2022',
+			dataset: str='acs/acs5', fields: str='NAME,B01001_001E',
+			geography_for: str='state:*', geography_in: str='',
+			predicates: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -12368,42 +12477,38 @@ class CensusData( Fetcher ):
 
 class Socrata( Fetcher ):
 	'''
+
 		Purpose:
 		--------
-		Fetch tabular data from Socrata / SODA-compatible endpoints such as
-		CDC Data API datasets.
+		Fetches metadata and rows from Socrata-backed open-data portals.
 
-		Attribues:
+		Attributes:
 		-----------
-		api_key - Optional[ str ]
-		base_url - Optional[ str ]
-		domain - Optional[ str ]
-		dataset_id - Optional[ str ]
-		mode - Optional[ str ]
-		select_clause - Optional[ str ]
-		where_clause - Optional[ str ]
-		order_clause - Optional[ str ]
-		group_clause - Optional[ str ]
-		limit_value - Optional[ int ]
-		offset_value - Optional[ int ]
-		params - Optional[ Dict[ str, Any ] ]
-		payload - Optional[ Any ]
+		api_key,
+		base_url,
+		domain,
+		dataset_id,
+		mode,
+		select_clause,
+		where_clause,
+		order_clause,
+		group_clause,
+		limit_value,
+		offset_value,
+		params,
+		payload,
 
 		Methods:
-		-----------
-		_resolve_api_key( ) -> Optional[ str ]
-		_normalize_domain( domain: str ) -> str
-		_normalize_dataset_id( dataset_id: str ) -> str
-		fetch_metadata( domain: str, dataset_id: str, time: int=20 )
-			-> Dict[ str, Any ]
-		fetch_rows( domain: str, dataset_id: str, select: str='',
-			where: str='', order: str='', group: str='',
-			limit: int=25, offset: int=0, time: int=20 )
-			-> Dict[ str, Any ]
-		fetch( mode: str='rows', domain: str='data.cdc.gov',
-			dataset_id: str='', select: str='', where: str='',
-			order: str='', group: str='', limit: int=25,
-			offset: int=0, time: int=20 ) -> Dict[ str, Any ]
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
+		_normalize_domain(...): Performs the _normalize_domain operation for this fetcher.
+		_normalize_dataset_id(...): Performs the _normalize_dataset_id operation for this fetcher.
+		fetch_metadata(...): Performs the fetch_metadata operation for this fetcher.
+		fetch_rows(...): Performs the fetch_rows operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	api_key: Optional[ str ]
@@ -12570,7 +12675,7 @@ class Socrata( Fetcher ):
 			raise exception
 	
 	def fetch_metadata( self, domain: str, dataset_id: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -12626,10 +12731,10 @@ class Socrata( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_rows( self, domain: str, dataset_id: str, select: str = '',
-			where: str = '', order: str = '', group: str = '',
-			limit: int = 25, offset: int = 0,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_rows( self, domain: str, dataset_id: str, select: str='',
+			where: str='', order: str='', group: str='',
+			limit: int=25, offset: int=0,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -12732,10 +12837,10 @@ class Socrata( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'rows', domain: str = 'data.cdc.gov',
-			dataset_id: str = '', select: str = '', where: str = '',
-			order: str = '', group: str = '', limit: int = 25,
-			offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='rows', domain: str='data.cdc.gov',
+			dataset_id: str='', select: str='', where: str='',
+			order: str='', group: str='', limit: int=25,
+			offset: int=0, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -12874,42 +12979,38 @@ class Socrata( Fetcher ):
 
 class HealthData( Fetcher ):
 	'''
+
 		Purpose:
 		--------
-		Fetch tabular data from HealthData.gov datasets using the portal's
-		open-data API surface.
+		Fetches metadata and rows from HealthData.gov Socrata datasets.
 
-		Attribues:
+		Attributes:
 		-----------
-		api_key - Optional[ str ]
-		base_url - Optional[ str ]
-		domain - Optional[ str ]
-		dataset_id - Optional[ str ]
-		mode - Optional[ str ]
-		select_clause - Optional[ str ]
-		where_clause - Optional[ str ]
-		order_clause - Optional[ str ]
-		group_clause - Optional[ str ]
-		limit_value - Optional[ int ]
-		offset_value - Optional[ int ]
-		params - Optional[ Dict[ str, Any ] ]
-		payload - Optional[ Any ]
+		api_key,
+		base_url,
+		domain,
+		dataset_id,
+		mode,
+		select_clause,
+		where_clause,
+		order_clause,
+		group_clause,
+		limit_value,
+		offset_value,
+		params,
+		payload,
 
 		Methods:
-		-----------
-		_resolve_api_key( ) -> Optional[ str ]
-		_normalize_domain( domain: str ) -> str
-		_normalize_dataset_id( dataset_id: str ) -> str
-		fetch_metadata( domain: str, dataset_id: str, time: int=20 )
-			-> Dict[ str, Any ]
-		fetch_rows( domain: str, dataset_id: str, select: str='',
-			where: str='', order: str='', group: str='',
-			limit: int=25, offset: int=0, time: int=20 )
-			-> Dict[ str, Any ]
-		fetch( mode: str='rows', domain: str='healthdata.gov',
-			dataset_id: str='', select: str='', where: str='',
-			order: str='', group: str='', limit: int=25,
-			offset: int=0, time: int=20 ) -> Dict[ str, Any ]
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
+		_normalize_domain(...): Performs the _normalize_domain operation for this fetcher.
+		_normalize_dataset_id(...): Performs the _normalize_dataset_id operation for this fetcher.
+		fetch_metadata(...): Performs the fetch_metadata operation for this fetcher.
+		fetch_rows(...): Performs the fetch_rows operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	api_key: Optional[ str ]
@@ -13078,7 +13179,7 @@ class HealthData( Fetcher ):
 			raise exception
 	
 	def fetch_metadata( self, domain: str, dataset_id: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13134,10 +13235,10 @@ class HealthData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_rows( self, domain: str, dataset_id: str, select: str = '',
-			where: str = '', order: str = '', group: str = '',
-			limit: int = 25, offset: int = 0,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_rows( self, domain: str, dataset_id: str, select: str='',
+			where: str='', order: str='', group: str='',
+			limit: int=25, offset: int=0,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13240,10 +13341,10 @@ class HealthData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'rows', domain: str = 'healthdata.gov',
-			dataset_id: str = '', select: str = '', where: str = '',
-			order: str = '', group: str = '', limit: int = 25,
-			offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='rows', domain: str='healthdata.gov',
+			dataset_id: str='', select: str='', where: str='',
+			order: str='', group: str='', limit: int=25,
+			offset: int=0, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13391,31 +13492,30 @@ class HealthData( Fetcher ):
 
 class GlobalHealthData( Fetcher ):
 	'''
+	
 		Purpose:
 		--------
-		Fetch metadata and query results from the World Health Organization
-		Global Health Observatory API surface.
-
-		Attribues:
+		Fetches United Nations SDMX catalog and query data.
+	
+		Attributes:
 		-----------
-		api_key - Optional[ str ]
-		base_url - Optional[ str ]
-		athena_base_url - Optional[ str ]
-		mode - Optional[ str ]
-		query_path - Optional[ str ]
-		params - Optional[ Dict[ str, Any ] ]
-		payload - Optional[ Any ]
-
+		base_url,
+		catalog_url,
+		mode,
+		query_path,
+		params,
+		payload,
+	
 		Methods:
-		-----------
-		_resolve_api_key( ) -> Optional[ str ]
-		_normalize_query_path( query_path: str ) -> str
-		fetch_indicator_registry( time: int=20 ) -> Dict[ str, Any ]
-		fetch_athena( query_path: str, fmt: str='json', time: int=20 )
-			-> Dict[ str, Any ]
-		fetch( mode: str='indicator_registry', query_path: str='',
-			fmt: str='json', time: int=20 ) -> Dict[ str, Any ]
-
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_normalize_query_path(...): Performs the _normalize_query_path operation for this fetcher.
+		fetch_datasets(...): Performs the fetch_datasets operation for this fetcher.
+		fetch_sdmx_query(...): Performs the fetch_sdmx_query operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
+	
 	'''
 	api_key: Optional[ str ]
 	base_url: Optional[ str ]
@@ -13472,10 +13572,43 @@ class GlobalHealthData( Fetcher ):
 		]
 	
 	def _resolve_api_key( self ) -> Optional[ str ]:
+		'''
+
+			Purpose:
+			--------
+			Fetch a NASA GIBS Mercator map image and render it through the provided
+			Cartopy coordinate reference system module.
+		
+			Parameters:
+			-----------
+			ccrs (Any | None): Optional Cartopy coordinate reference system module used
+			to project and render the returned map image.
+		
+			Returns:
+			--------
+			Any | None: The rendered map result or None when the request fails.
+		
+		'''
 		key = str( self.api_key or '' ).strip( )
 		return key if key else None
 	
 	def _normalize_query_path( self, query_path: str ) -> str:
+		'''
+		
+			Purpose:
+			--------
+			Normalize a Global Health query path by trimming whitespace and removing
+			leading path separators before composing a request URL.
+		
+			Parameters:
+			-----------
+			query_path (str): Raw Global Health query path supplied by the caller.
+		
+			Returns:
+			--------
+			str: Normalized query path suitable for request URL composition.
+		
+		'''
 		try:
 			throw_if( 'query_path', query_path )
 			value = str( query_path ).strip( )
@@ -13490,7 +13623,7 @@ class GlobalHealthData( Fetcher ):
 			exception.method = '_normalize_query_path( self, query_path: str ) -> str'
 			raise exception
 	
-	def fetch_indicator_registry( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_indicator_registry( self, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13547,8 +13680,8 @@ class GlobalHealthData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_athena( self, query_path: str, fmt: str = 'json',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_athena( self, query_path: str, fmt: str='json',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13615,8 +13748,8 @@ class GlobalHealthData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'indicator_registry', query_path: str = '',
-			fmt: str = 'json', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='indicator_registry', query_path: str='',
+			fmt: str='json', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13829,7 +13962,7 @@ class UnitedNations( Fetcher ):
 			exception.method = '_normalize_query_path( self, query_path: str ) -> str'
 			raise exception
 	
-	def fetch_datasets( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_datasets( self, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13882,7 +14015,7 @@ class UnitedNations( Fetcher ):
 			raise exception
 	
 	def fetch_sdmx_query( self, query_path: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13939,8 +14072,8 @@ class UnitedNations( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'datasets', query_path: str = '',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='datasets', query_path: str='',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -14058,33 +14191,31 @@ class UnitedNations( Fetcher ):
 
 class WorldPopulation( Fetcher ):
 	'''
+
 		Purpose:
 		--------
-		Fetch catalog and metadata content from the WorldPop API surface.
+		Fetches WorldPop catalog and raster metadata records.
 
-		Attribues:
+		Attributes:
 		-----------
-		base_url - Optional[ str ]
-		stac_url - Optional[ str ]
-		mode - Optional[ str ]
-		query_text - Optional[ str ]
-		asset_path - Optional[ str ]
-		params - Optional[ Dict[ str, Any ] ]
-		payload - Optional[ Any ]
+		base_url,
+		stac_url,
+		mode,
+		query_text,
+		asset_path,
+		params,
+		payload,
 
 		Methods:
-		-----------
-		_normalize_asset_path( asset_path: str ) -> str
-		fetch_catalog( time: int=20 ) -> Dict[ str, Any ]
-		search_catalog( query: str='', page: int=1, page_size: int=25,
-			time: int=20 ) -> Dict[ str, Any ]
-		fetch_raster_metadata( asset_path: str, time: int=20 )
-			-> Dict[ str, Any ]
-		fetch( mode: str='catalog', query: str='', asset_path: str='',
-			page: int=1, page_size: int=25, time: int=20 )
-			-> Dict[ str, Any ]
-		create_schema( self, function: str, tool: str, description: str,
-			parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_normalize_asset_path(...): Performs the _normalize_asset_path operation for this fetcher.
+		fetch_catalog(...): Performs the fetch_catalog operation for this fetcher.
+		search_catalog(...): Performs the search_catalog operation for this fetcher.
+		fetch_raster_metadata(...): Performs the fetch_raster_metadata operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	base_url: Optional[ str ]
@@ -14185,7 +14316,7 @@ class WorldPopulation( Fetcher ):
 			exception.method = '_normalize_asset_path( self, asset_path: str ) -> str'
 			raise exception
 	
-	def fetch_catalog( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_catalog( self, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -14237,8 +14368,8 @@ class WorldPopulation( Fetcher ):
 			)
 			raise exception
 	
-	def search_catalog( self, query: str = '', page: int = 1, page_size: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def search_catalog( self, query: str='', page: int=1, page_size: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -14308,7 +14439,7 @@ class WorldPopulation( Fetcher ):
 			raise exception
 	
 	def fetch_raster_metadata( self, asset_path: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -14365,9 +14496,9 @@ class WorldPopulation( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'catalog', query: str = '',
-			asset_path: str = '', page: int = 1, page_size: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='catalog', query: str='',
+			asset_path: str='', page: int=1, page_size: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -14502,31 +14633,31 @@ class WorldPopulation( Fetcher ):
 
 class Wonder( Fetcher ):
 	'''
+	
 		Purpose:
 		--------
-		Submit CDC WONDER XML requests and return the resulting XML payload.
-
-		Attribues:
+		Builds and submits CDC WONDER query templates.
+	
+		Attributes:
 		-----------
-		base_url - Optional[ str ]
-		mode - Optional[ str ]
-		dataset_id - Optional[ str ]
-		request_xml - Optional[ str ]
-		params - Optional[ Dict[ str, Any ] ]
-		payload - Optional[ Any ]
-
+		base_url,
+		mode,
+		dataset_id,
+		request_xml,
+		params,
+		payload,
+	
 		Methods:
-		-----------
-		_normalize_dataset_id( dataset_id: str ) -> str
-		build_template( dataset_id: str='D76' ) -> str
-		fetch_template( dataset_id: str='D76' ) -> Dict[ str, Any ]
-		submit_query( dataset_id: str, request_xml: str, time: int=20 )
-			-> Dict[ str, Any ]
-		fetch( mode: str='metadata_template', dataset_id: str='D76',
-			request_xml: str='', time: int=20 ) -> Dict[ str, Any ]
-		create_schema( self, function: str, tool: str, description: str,
-			parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None
-
+		--------
+		__init__(...): Performs the __init__ operation for this fetcher.
+		__dir__(...): Performs the __dir__ operation for this fetcher.
+		_normalize_dataset_id(...): Performs the _normalize_dataset_id operation for this fetcher.
+		build_template(...): Performs the build_template operation for this fetcher.
+		fetch_template(...): Performs the fetch_template operation for this fetcher.
+		submit_query(...): Performs the submit_query operation for this fetcher.
+		fetch(...): Performs the fetch operation for this fetcher.
+		create_schema(...): Performs the create_schema operation for this fetcher.
+	
 	'''
 	base_url: Optional[ str ]
 	mode: Optional[ str ]
@@ -14623,7 +14754,7 @@ class Wonder( Fetcher ):
 			exception.method = '_normalize_dataset_id( self, dataset_id: str ) -> str'
 			raise exception
 	
-	def build_template( self, dataset_id: str = 'D76' ) -> str:
+	def build_template( self, dataset_id: str='D76' ) -> str:
 		'''
 			Purpose:
 			-----------
@@ -14671,7 +14802,7 @@ class Wonder( Fetcher ):
 			exception.method = 'build_template( self, dataset_id: str="D76" ) -> str'
 			raise exception
 	
-	def fetch_template( self, dataset_id: str = 'D76' ) -> Dict[ str, Any ] | None:
+	def fetch_template( self, dataset_id: str='D76' ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			-----------
@@ -14717,7 +14848,7 @@ class Wonder( Fetcher ):
 			raise exception
 	
 	def submit_query( self, dataset_id: str, request_xml: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			-----------
@@ -14783,8 +14914,8 @@ class Wonder( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'metadata_template', dataset_id: str = 'D76',
-			request_xml: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='metadata_template', dataset_id: str='D76',
+			request_xml: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			-----------
@@ -15170,8 +15301,8 @@ class USGSEarthquakes( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_feed( self, feed: str = 'all_day.geojson',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_feed( self, feed: str='all_day.geojson',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -15237,12 +15368,11 @@ class USGSEarthquakes( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_search( self, start_date: str, end_date: str,
-			min_magnitude: float = 1.0, max_magnitude: float = 10.0,
-			limit: int = 25, order_by: str = 'time',
-			event_type: str = 'earthquake', latitude: float | None = None,
+	def fetch_search( self, start_date: str, end_date: str, min_magnitude: float = 1.0,
+			max_magnitude: float = 10.0, limit: int=25, order_by: str='time',
+			event_type: str='earthquake', latitude: float | None = None,
 			longitude: float | None = None, max_radius_km: float | None = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -15366,12 +15496,12 @@ class USGSEarthquakes( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'feed', feed: str = 'all_day.geojson',
-			start_date: str = '', end_date: str = '', min_magnitude: float = 1.0,
-			max_magnitude: float = 10.0, limit: int = 25, order_by: str = 'time',
-			event_type: str = 'earthquake', latitude: float | None = None,
+	def fetch( self, mode: str='feed', feed: str='all_day.geojson',
+			start_date: str='', end_date: str='', min_magnitude: float = 1.0,
+			max_magnitude: float = 10.0, limit: int=25, order_by: str='time',
+			event_type: str='earthquake', latitude: float | None = None,
 			longitude: float | None = None, max_radius_km: float | None = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -15610,7 +15740,7 @@ class USGSWaterData( Fetcher ):
 				'timeout',
 				'_resolve_api_key',
 				'_coalesce',
-				'_request',
+				'request',
 				'_shape_monitoring_locations',
 				'_shape_time_series_metadata',
 				'_shape_latest_values',
@@ -15694,9 +15824,9 @@ class USGSWaterData( Fetcher ):
 			exception.method = '_coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]'
 			raise exception
 	
-	def _request( self, collection: str,
+	def request( self, collection: str,
 			params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -15751,7 +15881,7 @@ class USGSWaterData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'_request( self, collection: str, '
+					'request( self, collection: str, '
 					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
 					'-> Dict[ str, Any ]'
 			)
@@ -16046,9 +16176,9 @@ class USGSWaterData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_monitoring_locations( self, monitoring_location_id: str = '',
-			state_code: str = '', county_code: str = '', site_type: str = '',
-			limit: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_monitoring_locations( self, monitoring_location_id: str='',
+			state_code: str='', county_code: str='', site_type: str='',
+			limit: int=25, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16080,7 +16210,7 @@ class USGSWaterData( Fetcher ):
 		'''
 		try:
 			self.mode = 'monitoring-locations'
-			base = self._request(
+			base = self.request(
 				collection='monitoring-locations',
 				params={
 						'monitoring_location_id': str( monitoring_location_id ).strip( ),
@@ -16115,9 +16245,9 @@ class USGSWaterData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_time_series_metadata( self, monitoring_location_id: str = '',
-			parameter_code: str = '', limit: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_time_series_metadata( self, monitoring_location_id: str='',
+			parameter_code: str='', limit: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16144,7 +16274,7 @@ class USGSWaterData( Fetcher ):
 		'''
 		try:
 			self.mode = 'time-series-metadata'
-			base = self._request(
+			base = self.request(
 				collection='time-series-metadata',
 				params={
 						'monitoring_location_id': str( monitoring_location_id ).strip( ),
@@ -16177,9 +16307,9 @@ class USGSWaterData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_latest_continuous( self, monitoring_location_id: str = '',
-			parameter_code: str = '', limit: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_latest_continuous( self, monitoring_location_id: str='',
+			parameter_code: str='', limit: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16205,7 +16335,7 @@ class USGSWaterData( Fetcher ):
 		'''
 		try:
 			self.mode = 'latest-continuous'
-			base = self._request(
+			base = self.request(
 				collection='latest-continuous',
 				params={
 						'monitoring_location_id': str( monitoring_location_id ).strip( ),
@@ -16238,9 +16368,9 @@ class USGSWaterData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_latest_daily( self, monitoring_location_id: str = '',
-			parameter_code: str = '', limit: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_latest_daily( self, monitoring_location_id: str='',
+			parameter_code: str='', limit: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16266,7 +16396,7 @@ class USGSWaterData( Fetcher ):
 		'''
 		try:
 			self.mode = 'latest-daily'
-			base = self._request(
+			base = self.request(
 				collection='latest-daily',
 				params={
 						'monitoring_location_id': str( monitoring_location_id ).strip( ),
@@ -16299,11 +16429,11 @@ class USGSWaterData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'monitoring-locations',
-			monitoring_location_id: str = '', state_code: str = '',
-			county_code: str = '', site_type: str = '',
-			parameter_code: str = '', limit: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='monitoring-locations',
+			monitoring_location_id: str='', state_code: str='',
+			county_code: str='', site_type: str='',
+			parameter_code: str='', limit: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16536,7 +16666,7 @@ class USGSTheNationalMap( Fetcher ):
 				'params',
 				'payload',
 				'timeout',
-				'_request',
+				'request',
 				'_coalesce',
 				'_shape_dataset_rows',
 				'_shape_product_rows',
@@ -16547,9 +16677,9 @@ class USGSTheNationalMap( Fetcher ):
 				'create_schema'
 		]
 	
-	def _request( self, endpoint: str,
+	def request( self, endpoint: str,
 			params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16604,7 +16734,7 @@ class USGSTheNationalMap( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
 			exception.method = (
-					'_request( self, endpoint: str, '
+					'request( self, endpoint: str, '
 					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
 					'-> Dict[ str, Any ]'
 			)
@@ -16821,7 +16951,7 @@ class USGSTheNationalMap( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_datasets( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_datasets( self, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16838,7 +16968,7 @@ class USGSTheNationalMap( Fetcher ):
 		'''
 		try:
 			self.mode = 'datasets'
-			base = self._request(
+			base = self.request(
 				endpoint='datasets',
 				params={ },
 				time=int( time )
@@ -16863,9 +16993,9 @@ class USGSTheNationalMap( Fetcher ):
 			exception.method = 'fetch_datasets( self, time: int=20 ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch_products( self, dataset: str = '', q: str = '',
-			bbox: str = '', prod_formats: str = '', max_items: int = 25,
-			offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_products( self, dataset: str='', q: str='',
+			bbox: str='', prod_formats: str='', max_items: int=25,
+			offset: int=0, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16900,7 +17030,7 @@ class USGSTheNationalMap( Fetcher ):
 		'''
 		try:
 			self.mode = 'products'
-			base = self._request(
+			base = self.request(
 				endpoint='products',
 				params={
 						'datasets': str( dataset ).strip( ),
@@ -16936,10 +17066,10 @@ class USGSTheNationalMap( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'products', dataset: str = '',
-			q: str = '', bbox: str = '', prod_formats: str = '',
-			max_items: int = 25, offset: int = 0,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='products', dataset: str='',
+			q: str='', bbox: str='', prod_formats: str='',
+			max_items: int=25, offset: int=0,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -17146,7 +17276,7 @@ class USGSScienceBase( Fetcher ):
 				'params',
 				'payload',
 				'timeout',
-				'_request',
+				'request',
 				'_coalesce',
 				'_shape_item_rows',
 				'_shape_single_item',
@@ -17157,9 +17287,9 @@ class USGSScienceBase( Fetcher ):
 				'create_schema'
 		]
 	
-	def _request( self, endpoint: str,
+	def request( self, endpoint: str,
 			params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -17214,7 +17344,7 @@ class USGSScienceBase( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
 			exception.method = (
-					'_request( self, endpoint: str, '
+					'request( self, endpoint: str, '
 					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
 					'-> Dict[ str, Any ]'
 			)
@@ -17440,9 +17570,9 @@ class USGSScienceBase( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_items( self, q: str = '', max_items: int = 25,
-			offset: int = 0, fields: str = '',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_items( self, q: str='', max_items: int=25,
+			offset: int=0, fields: str='',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -17471,7 +17601,7 @@ class USGSScienceBase( Fetcher ):
 		'''
 		try:
 			self.mode = 'items'
-			base = self._request(
+			base = self.request(
 				endpoint='items',
 				params={
 						'q': str( q ).strip( ),
@@ -17505,7 +17635,7 @@ class USGSScienceBase( Fetcher ):
 			raise exception
 	
 	def fetch_item( self, item_id: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -17527,7 +17657,7 @@ class USGSScienceBase( Fetcher ):
 			throw_if( 'item_id', item_id )
 			
 			self.mode = 'item'
-			base = self._request(
+			base = self.request(
 				endpoint=f'item/{str( item_id ).strip( )}',
 				params={ },
 				time=int( time )
@@ -17560,9 +17690,9 @@ class USGSScienceBase( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'items', q: str = '',
-			item_id: str = '', max_items: int = 25, offset: int = 0,
-			fields: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='items', q: str='',
+			item_id: str='', max_items: int=25, offset: int=0,
+			fields: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -17765,7 +17895,7 @@ class AirNow( Fetcher ):
 				'payload',
 				'timeout',
 				'_resolve_api_key',
-				'_request',
+				'request',
 				'_shape_rows',
 				'_summarize_rows',
 				'fetch_current_zip',
@@ -17809,8 +17939,8 @@ class AirNow( Fetcher ):
 			exception.method = '_resolve_api_key( self ) -> Optional[ str ]'
 			raise exception
 	
-	def _request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -17873,7 +18003,7 @@ class AirNow( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'AirNow'
 			exception.method = (
-					'_request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ]=None, '
+					'request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ]=None, '
 					'time: int=20 ) -> Dict[ str, Any ]'
 			)
 			raise exception
@@ -17984,8 +18114,8 @@ class AirNow( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_current_zip( self, zip_code: str, distance: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_current_zip( self, zip_code: str, distance: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18010,7 +18140,7 @@ class AirNow( Fetcher ):
 			throw_if( 'zip_code', zip_code )
 			
 			self.mode = 'current-zip'
-			base = self._request(
+			base = self.request(
 				endpoint='observation/zipCode/current/',
 				params={
 						'zipCode': str( zip_code ).strip( ),
@@ -18042,7 +18172,7 @@ class AirNow( Fetcher ):
 			raise exception
 	
 	def fetch_current_latlon( self, latitude: float, longitude: float,
-			distance: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
+			distance: int=25, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18068,7 +18198,7 @@ class AirNow( Fetcher ):
 		'''
 		try:
 			self.mode = 'current-latlon'
-			base = self._request(
+			base = self.request(
 				endpoint='observation/latLong/current/',
 				params={
 						'latitude': float( latitude ),
@@ -18101,7 +18231,7 @@ class AirNow( Fetcher ):
 			raise exception
 	
 	def fetch_forecast_zip( self, zip_code: str, date: str,
-			distance: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
+			distance: int=25, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18130,7 +18260,7 @@ class AirNow( Fetcher ):
 			throw_if( 'date', date )
 			
 			self.mode = 'forecast-zip'
-			base = self._request(
+			base = self.request(
 				endpoint='forecast/zipCode/',
 				params={
 						'zipCode': str( zip_code ).strip( ),
@@ -18163,7 +18293,7 @@ class AirNow( Fetcher ):
 			raise exception
 	
 	def fetch_forecast_latlon( self, latitude: float, longitude: float,
-			date: str, distance: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
+			date: str, distance: int=25, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18194,7 +18324,7 @@ class AirNow( Fetcher ):
 			throw_if( 'date', date )
 			
 			self.mode = 'forecast-latlon'
-			base = self._request(
+			base = self.request(
 				endpoint='forecast/latLong/',
 				params={
 						'latitude': float( latitude ),
@@ -18227,10 +18357,10 @@ class AirNow( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'current-zip', zip_code: str = '',
+	def fetch( self, mode: str='current-zip', zip_code: str='',
 			latitude: float | None = None, longitude: float | None = None,
-			date: str = '', distance: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			date: str='', distance: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18466,7 +18596,7 @@ class ClimateData( Fetcher ):
 				'params',
 				'payload',
 				'timeout',
-				'_request',
+				'request',
 				'_shape_dataset_rows',
 				'_shape_data_rows',
 				'_summarize_rows',
@@ -18476,8 +18606,8 @@ class ClimateData( Fetcher ):
 				'create_schema'
 		]
 	
-	def _request( self, url: str, params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def request( self, url: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18532,7 +18662,7 @@ class ClimateData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
 			exception.method = (
-					'_request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None, '
+					'request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None, '
 					'time: int=20 ) -> Dict[ str, Any ]'
 			)
 			raise exception
@@ -18674,9 +18804,9 @@ class ClimateData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_datasets( self, keyword: str = '', start_date: str = '',
-			end_date: str = '', limit: int = 25, offset: int = 0,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_datasets( self, keyword: str='', start_date: str='',
+			end_date: str='', limit: int=25, offset: int=0,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18708,7 +18838,7 @@ class ClimateData( Fetcher ):
 		'''
 		try:
 			self.mode = 'datasets'
-			base = self._request(
+			base = self.request(
 				url=f'{self.search_url}/datasets',
 				params={
 						'keyword': str( keyword ).strip( ),
@@ -18744,8 +18874,8 @@ class ClimateData( Fetcher ):
 			raise exception
 	
 	def fetch_data( self, dataset: str, start_date: str, end_date: str,
-			stations: str = '', data_types: str = '', limit: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			stations: str='', data_types: str='', limit: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18784,7 +18914,7 @@ class ClimateData( Fetcher ):
 			throw_if( 'end_date', end_date )
 			
 			self.mode = 'data'
-			base = self._request(
+			base = self.request(
 				url=self.data_url,
 				params={
 						'dataset': str( dataset ).strip( ),
@@ -18821,10 +18951,10 @@ class ClimateData( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'datasets', keyword: str = '', dataset: str = '',
-			start_date: str = '', end_date: str = '', stations: str = '',
-			data_types: str = '', limit: int = 25, offset: int = 0,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='datasets', keyword: str='', dataset: str='',
+			start_date: str='', end_date: str='', stations: str='',
+			data_types: str='', limit: int=25, offset: int=0,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -19047,7 +19177,7 @@ class EoNet( Fetcher ):
 				'params',
 				'payload',
 				'timeout',
-				'_request',
+				'request',
 				'_shape_event_rows',
 				'_shape_category_rows',
 				'_summarize_rows',
@@ -19057,9 +19187,9 @@ class EoNet( Fetcher ):
 				'create_schema'
 		]
 	
-	def _request( self, endpoint: str,
+	def request( self, endpoint: str,
 			params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -19114,7 +19244,7 @@ class EoNet( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EoNet'
 			exception.method = (
-					'_request( self, endpoint: str, '
+					'request( self, endpoint: str, '
 					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
 					'-> Dict[ str, Any ]'
 			)
@@ -19285,10 +19415,10 @@ class EoNet( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_events( self, source: str = '', category: str = '',
-			status: str = 'open', limit: int = 25, days: int = 30,
-			start_date: str = '', end_date: str = '', bbox: str = '',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_events( self, source: str='', category: str='',
+			status: str='open', limit: int=25, days: int=30,
+			start_date: str='', end_date: str='', bbox: str='',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -19333,7 +19463,7 @@ class EoNet( Fetcher ):
 		'''
 		try:
 			self.mode = 'events'
-			base = self._request(
+			base = self.request(
 				endpoint='events',
 				params={
 						'source': str( source ).strip( ),
@@ -19372,7 +19502,7 @@ class EoNet( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_categories( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_categories( self, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -19389,7 +19519,7 @@ class EoNet( Fetcher ):
 		'''
 		try:
 			self.mode = 'categories'
-			base = self._request(
+			base = self.request(
 				endpoint='categories',
 				params={ },
 				time=int( time )
@@ -19415,10 +19545,10 @@ class EoNet( Fetcher ):
 			exception.method = 'fetch_categories( self, time: int=20 ) -> Dict[ str, Any ]'
 			raise exception
 	
-	def fetch( self, mode: str = 'events', source: str = '', category: str = '',
-			status: str = 'open', limit: int = 25, days: int = 30,
-			start_date: str = '', end_date: str = '', bbox: str = '',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='events', source: str='', category: str='',
+			status: str='open', limit: int=25, days: int=30,
+			start_date: str='', end_date: str='', bbox: str='',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -19637,7 +19767,7 @@ class EnviroFacts( Fetcher ):
 				'payload',
 				'timeout',
 				'_resolve_table_path',
-				'_request',
+				'request',
 				'_shape_rows',
 				'_summarize_rows',
 				'fetch_table',
@@ -19646,8 +19776,8 @@ class EnviroFacts( Fetcher ):
 		]
 	
 	def _resolve_table_path( self, table_name: str,
-			state_code: str = '', facility_name: str = '',
-			limit: int = 25 ) -> str:
+			state_code: str='', facility_name: str='',
+			limit: int=25 ) -> str:
 		'''
 			Purpose:
 			--------
@@ -19714,7 +19844,7 @@ class EnviroFacts( Fetcher ):
 			)
 			raise exception
 	
-	def _request( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def request( self, url: str, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -19758,7 +19888,7 @@ class EnviroFacts( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EnviroFacts'
 			exception.method = (
-					'_request( self, url: str, time: int=20 ) '
+					'request( self, url: str, time: int=20 ) '
 					'-> Dict[ str, Any ]'
 			)
 			raise exception
@@ -19851,9 +19981,9 @@ class EnviroFacts( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_table( self, table_name: str, state_code: str = '',
-			facility_name: str = '', limit: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_table( self, table_name: str, state_code: str='',
+			facility_name: str='', limit: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -19907,7 +20037,7 @@ class EnviroFacts( Fetcher ):
 				limit=int( limit )
 			)
 			
-			base = self._request(
+			base = self.request(
 				url=f'{self.base_url}/{path}',
 				time=int( time )
 			) or { }
@@ -19942,9 +20072,9 @@ class EnviroFacts( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, table_name: str = 'TRI_FACILITY', state_code: str = '',
-			facility_name: str = '', limit: int = 25,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, table_name: str='TRI_FACILITY', state_code: str='',
+			facility_name: str='', limit: int=25,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20134,7 +20264,7 @@ class TidesAndCurrents( Fetcher ):
 				'params',
 				'payload',
 				'timeout',
-				'_request',
+				'request',
 				'_shape_station_rows',
 				'_shape_data_rows',
 				'_summarize_rows',
@@ -20145,8 +20275,8 @@ class TidesAndCurrents( Fetcher ):
 				'create_schema'
 		]
 	
-	def _request( self, url: str, params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def request( self, url: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20201,7 +20331,7 @@ class TidesAndCurrents( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'_request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None, '
+					'request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None, '
 					'time: int=20 ) -> Dict[ str, Any ]'
 			)
 			raise exception
@@ -20351,7 +20481,7 @@ class TidesAndCurrents( Fetcher ):
 			raise exception
 	
 	def fetch_station( self, station_id: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20373,7 +20503,7 @@ class TidesAndCurrents( Fetcher ):
 			throw_if( 'station_id', station_id )
 			
 			self.mode = 'station'
-			base = self._request(
+			base = self.request(
 				url=f'{self.metadata_url}/stations/{str( station_id ).strip( )}.json',
 				params={ },
 				time=int( time )
@@ -20403,8 +20533,8 @@ class TidesAndCurrents( Fetcher ):
 			raise exception
 	
 	def fetch_water_level( self, station_id: str, begin_date: str, end_date: str,
-			datum: str = 'MLLW', units: str = 'metric',
-			time_zone: str = 'gmt', time: int = 20 ) -> Dict[ str, Any ] | None:
+			datum: str='MLLW', units: str='metric',
+			time_zone: str='gmt', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20443,7 +20573,7 @@ class TidesAndCurrents( Fetcher ):
 			throw_if( 'end_date', end_date )
 			
 			self.mode = 'water-level'
-			base = self._request(
+			base = self.request(
 				url=self.data_url,
 				params={
 						'product': 'water_level',
@@ -20484,9 +20614,9 @@ class TidesAndCurrents( Fetcher ):
 			raise exception
 	
 	def fetch_tide_predictions( self, station_id: str, begin_date: str,
-			end_date: str, datum: str = 'MLLW', units: str = 'metric',
-			time_zone: str = 'gmt', interval: str = 'hilo',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			end_date: str, datum: str='MLLW', units: str='metric',
+			time_zone: str='gmt', interval: str='hilo',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20528,7 +20658,7 @@ class TidesAndCurrents( Fetcher ):
 			throw_if( 'end_date', end_date )
 			
 			self.mode = 'tide-predictions'
-			base = self._request(
+			base = self.request(
 				url=self.data_url,
 				params={
 						'product': 'predictions',
@@ -20570,10 +20700,10 @@ class TidesAndCurrents( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'water-level', station_id: str = '',
-			begin_date: str = '', end_date: str = '', datum: str = 'MLLW',
-			units: str = 'metric', time_zone: str = 'gmt',
-			interval: str = 'hilo', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='water-level', station_id: str='',
+			begin_date: str='', end_date: str='', datum: str='MLLW',
+			units: str='metric', time_zone: str='gmt',
+			interval: str='hilo', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20797,7 +20927,7 @@ class UvIndex( Fetcher ):
 				'params',
 				'payload',
 				'timeout',
-				'_request',
+				'request',
 				'_shape_rows',
 				'_summarize_rows',
 				'fetch_daily_zip',
@@ -20808,7 +20938,7 @@ class UvIndex( Fetcher ):
 				'create_schema'
 		]
 	
-	def _request( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def request( self, url: str, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20852,7 +20982,7 @@ class UvIndex( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
 			exception.method = (
-					'_request( self, url: str, time: int=20 ) '
+					'request( self, url: str, time: int=20 ) '
 					'-> Dict[ str, Any ]'
 			)
 			raise exception
@@ -20953,7 +21083,7 @@ class UvIndex( Fetcher ):
 			raise exception
 	
 	def fetch_daily_zip( self, zip_code: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20975,7 +21105,7 @@ class UvIndex( Fetcher ):
 			throw_if( 'zip_code', zip_code )
 			
 			self.mode = 'daily-zip'
-			base = self._request(
+			base = self.request(
 				url=f'{self.base_url}/getEnvirofactsUVDAILY/ZIP/{str( zip_code ).strip( )}/JSON',
 				time=int( time )
 			) or { }
@@ -21004,7 +21134,7 @@ class UvIndex( Fetcher ):
 			raise exception
 	
 	def fetch_daily_city_state( self, city: str, state: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21030,7 +21160,7 @@ class UvIndex( Fetcher ):
 			throw_if( 'state', state )
 			
 			self.mode = 'daily-city-state'
-			base = self._request(
+			base = self.request(
 				url=(
 						f'{self.base_url}/getEnvirofactsUVDAILY/CITY/'
 						f'{str( city ).strip( )}/STATE/{str( state ).strip( )}/JSON'
@@ -21065,7 +21195,7 @@ class UvIndex( Fetcher ):
 			raise exception
 	
 	def fetch_hourly_zip( self, zip_code: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21087,7 +21217,7 @@ class UvIndex( Fetcher ):
 			throw_if( 'zip_code', zip_code )
 			
 			self.mode = 'hourly-zip'
-			base = self._request(
+			base = self.request(
 				url=f'{self.base_url}/getEnvirofactsUVHOURLY/ZIP/{str( zip_code ).strip( )}/JSON',
 				time=int( time )
 			) or { }
@@ -21116,7 +21246,7 @@ class UvIndex( Fetcher ):
 			raise exception
 	
 	def fetch_hourly_city_state( self, city: str, state: str,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21142,7 +21272,7 @@ class UvIndex( Fetcher ):
 			throw_if( 'state', state )
 			
 			self.mode = 'hourly-city-state'
-			base = self._request(
+			base = self.request(
 				url=(
 						f'{self.base_url}/getEnvirofactsUVHOURLY/CITY/'
 						f'{str( city ).strip( )}/STATE/{str( state ).strip( )}/JSON'
@@ -21176,9 +21306,9 @@ class UvIndex( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'daily-zip', zip_code: str = '',
-			city: str = '', state: str = '',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='daily-zip', zip_code: str='',
+			city: str='', state: str='',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21403,7 +21533,7 @@ class PurpleAir( Fetcher ):
 				'payload',
 				'timeout',
 				'_resolve_api_key',
-				'_request',
+				'request',
 				'_shape_sensor_list_rows',
 				'_shape_sensor_detail_rows',
 				'_summarize_rows',
@@ -21446,9 +21576,9 @@ class PurpleAir( Fetcher ):
 			exception.method = '_resolve_api_key( self ) -> Optional[ str ]'
 			raise exception
 	
-	def _request( self, endpoint: str,
+	def request( self, endpoint: str,
 			params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21509,7 +21639,7 @@ class PurpleAir( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
 			exception.method = (
-					'_request( self, endpoint: str, '
+					'request( self, endpoint: str, '
 					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
 					'-> Dict[ str, Any ]'
 			)
@@ -21670,8 +21800,8 @@ class PurpleAir( Fetcher ):
 			raise exception
 	
 	def fetch_sensors( self, nwlng: float, nwlat: float, selng: float, selat: float,
-			location_type: int = 0, max_age: int = 0, modified_since: int = 0,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			location_type: int=0, max_age: int=0, modified_since: int=0,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21709,7 +21839,7 @@ class PurpleAir( Fetcher ):
 		'''
 		try:
 			self.mode = 'sensors'
-			base = self._request(
+			base = self.request(
 				endpoint='sensors',
 				params={
 						'fields': 'name,pm2.5,temperature,humidity,latitude,longitude,last_seen,location_type',
@@ -21748,7 +21878,7 @@ class PurpleAir( Fetcher ):
 			raise exception
 	
 	def fetch_sensor( self, sensor_index: int,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21768,7 +21898,7 @@ class PurpleAir( Fetcher ):
 		'''
 		try:
 			self.mode = 'sensor'
-			base = self._request(
+			base = self.request(
 				endpoint=f'sensors/{int( sensor_index )}',
 				params={
 						'fields': (
@@ -21805,11 +21935,11 @@ class PurpleAir( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'sensors', sensor_index: int | None = None,
+	def fetch( self, mode: str='sensors', sensor_index: int | None = None,
 			nwlng: float | None = None, nwlat: float | None = None,
 			selng: float | None = None, selat: float | None = None,
-			location_type: int = 0, max_age: int = 0, modified_since: int = 0,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			location_type: int=0, max_age: int=0, modified_since: int=0,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -22039,7 +22169,7 @@ class OpenAQ( Fetcher ):
 				'payload',
 				'timeout',
 				'_resolve_api_key',
-				'_request',
+				'request',
 				'_shape_location_rows',
 				'_shape_latest_rows',
 				'_summarize_rows',
@@ -22082,9 +22212,9 @@ class OpenAQ( Fetcher ):
 			exception.method = '_resolve_api_key( self ) -> Optional[ str ]'
 			raise exception
 	
-	def _request( self, endpoint: str,
+	def request( self, endpoint: str,
 			params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -22144,7 +22274,7 @@ class OpenAQ( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
 			exception.method = (
-					'_request( self, endpoint: str, '
+					'request( self, endpoint: str, '
 					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
 					'-> Dict[ str, Any ]'
 			)
@@ -22313,10 +22443,10 @@ class OpenAQ( Fetcher ):
 			raise exception
 	
 	def fetch_locations( self, country_id: int | None = None,
-			coordinates: str = '', radius: int = 25000,
-			providers_id: str = '', parameters_id: str = '',
-			limit: int = 25, page: int = 1,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			coordinates: str='', radius: int=25000,
+			providers_id: str='', parameters_id: str='',
+			limit: int=25, page: int=1,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -22354,7 +22484,7 @@ class OpenAQ( Fetcher ):
 		'''
 		try:
 			self.mode = 'locations'
-			base = self._request(
+			base = self.request(
 				endpoint='locations',
 				params={
 						'country_id': None if country_id is None else int( country_id ),
@@ -22392,7 +22522,7 @@ class OpenAQ( Fetcher ):
 			raise exception
 	
 	def fetch_latest( self, location_id: int,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -22412,7 +22542,7 @@ class OpenAQ( Fetcher ):
 		'''
 		try:
 			self.mode = 'latest'
-			base = self._request(
+			base = self.request(
 				endpoint=f'locations/{int( location_id )}/latest',
 				params={ },
 				time=int( time )
@@ -22440,11 +22570,11 @@ class OpenAQ( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'locations', location_id: int | None = None,
-			country_id: int | None = None, coordinates: str = '',
-			radius: int = 25000, providers_id: str = '',
-			parameters_id: str = '', limit: int = 25, page: int = 1,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='locations', location_id: int | None = None,
+			country_id: int | None = None, coordinates: str='',
+			radius: int=25000, providers_id: str='',
+			parameters_id: str='', limit: int=25, page: int=1,
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -22667,7 +22797,7 @@ class Firms( Fetcher ):
 				'payload',
 				'timeout',
 				'_resolve_map_key',
-				'_request_csv',
+				'request_csv',
 				'_csv_to_rows',
 				'_summarize_rows',
 				'fetch_area',
@@ -22709,7 +22839,7 @@ class Firms( Fetcher ):
 			exception.method = '_resolve_map_key( self ) -> Optional[ str ]'
 			raise exception
 	
-	def _request_csv( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def request_csv( self, url: str, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -22759,7 +22889,7 @@ class Firms( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
 			exception.method = (
-					'_request_csv( self, url: str, time: int=20 ) '
+					'request_csv( self, url: str, time: int=20 ) '
 					'-> Dict[ str, Any ]'
 			)
 			raise exception
@@ -22852,9 +22982,9 @@ class Firms( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_area( self, source: str, area_coordinates: str = 'world',
-			day_range: int = 1, date: str = '',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_area( self, source: str, area_coordinates: str='world',
+			day_range: int=1, date: str='',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -22905,7 +23035,7 @@ class Firms( Fetcher ):
 			if str( date ).strip( ):
 				url = f'{url}/{str( date ).strip( )}'
 			
-			base = self._request_csv(
+			base = self.request_csv(
 				url=url,
 				time=int( time )
 			) or { }
@@ -22937,8 +23067,8 @@ class Firms( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_data_availability( self, sensor: str = 'ALL',
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_data_availability( self, sensor: str='ALL',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -22962,7 +23092,7 @@ class Firms( Fetcher ):
 			self.mode = 'data-availability'
 			sensor_value = str( sensor ).strip( ).upper( )
 			
-			base = self._request_csv(
+			base = self.request_csv(
 				url=f'{self.base_url}/data_availability/csv/{self.map_key}/{sensor_value}',
 				time=int( time )
 			) or { }
@@ -22990,9 +23120,9 @@ class Firms( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'area', source: str = '',
-			area_coordinates: str = 'world', day_range: int = 1, date: str = '',
-			sensor: str = 'ALL', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str='area', source: str='',
+			area_coordinates: str='world', day_range: int=1, date: str='',
+			sensor: str='ALL', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -23233,8 +23363,8 @@ class OpenSky( Fetcher ):
 			exception.method = 'get_token( self, client_id: str, client_secret: str ) -> str'
 			raise exception
 	
-	def request( self, endpoint: str, params: Dict[ str, Any ], client_id: str | None = None,
-			client_secret: str | None = None ) -> Any:
+	def request( self, endpoint: str, params: Dict[ str, Any ], client_id: str=None,
+			client_secret: str=None ) -> Any:
 		'''
 	
 			Purpose:
@@ -23299,6 +23429,23 @@ class OpenSky( Fetcher ):
 			raise exception
 	
 	def normalize_states( self, payload: Dict[ str, Any ] | None ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Normalize an OpenSky state-vector response into a structured dictionary with
+			mode metadata and aircraft state records.
+		
+			Parameters:
+			-----------
+			payload (Dict[ str, Any ] | None): Raw OpenSky state-vector response payload.
+		
+			Returns:
+			--------
+			Dict[ str, Any ] | None: Normalized state-vector records and metadata, or
+			None when normalization fails.
+		
+		'''
 		try:
 			if not payload:
 				return {
@@ -23439,11 +23586,11 @@ class OpenSky( Fetcher ):
 			exception.method = 'normalize_track( self, payload: Dict[ str, Any ] | None )'
 			raise exception
 	
-	def fetch( self, mode: str = 'states_bbox', icao24: str = '', airport: str = '',
+	def fetch( self, mode: str='states_bbox', icao24: str='', airport: str='',
 			begin: int | None = None, end: int | None = None, time_value: int | None = None,
 			lamin: float | None = None, lomin: float | None = None, lamax: float | None = None,
-			lomax: float | None = None, extended: bool = False, client_id: str | None = None,
-			client_secret: str | None = None, time: int = 20 ) -> Dict[ str, Any ] | None:
+			lomax: float | None = None, extended: bool = False, client_id: str=None,
+			client_secret: str=None, time: int=20 ) -> Dict[ str, Any ] | None:
 		try:
 			self.timeout = int( time )
 			active_mode = (mode or 'states_bbox').strip( ).lower( )

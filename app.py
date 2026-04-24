@@ -47,7 +47,7 @@ from astroquery.simbad import Simbad
 import base64
 
 from bs4 import BeautifulSoup
-
+import crawl4ai
 import config as cfg
 from collections import deque, Counter
 import datetime as dt
@@ -1920,4335 +1920,3364 @@ with st.sidebar:
 # DOCUMENT LOADING MODE
 # =============================================================================
 if mode == 'Loading':
-	st.subheader( f'📤  Data Loading' )
-	st.divider( )
-	metrics_container = st.container( )
-	tokens = st.session_state.get( 'tokens' )
-	
-	def render_metrics_panel( ):
-		raw_text = st.session_state.get( 'raw_text' )
-		processed_text = st.session_state.get( 'processed_text' )
-		if isinstance( processed_text, str ) and processed_text.strip( ):
-			text = processed_text
-		elif isinstance( raw_text, str ) and raw_text.strip( ):
-			text = raw_text
-		else:
-			st.info( 'Load a document to compute metrics.' )
-			return
+	left_c1, center_c2, right_c3 = st.columns( [ 0.05, 0.9, 0.05 ] )
+	with center_c2:
+		st.subheader( f'📤  Data Loading' )
+		st.divider( )
+		metrics_container = st.container( )
+		tokens = st.session_state.get( 'tokens' )
 		
-		# ----------------------------------------------
-		# Tokenization (session-cached)
-		# ----------------------------------------------
-		if st.session_state.tokens is None:
-			try:
-				tokens = [ t.lower( ) for t in word_tokenize( text ) if t.isalpha( ) ]
-			except LookupError:
-				st.error(
-					'NLTK resources missing.\n\n'
-					'Run:\n'
-					'`python -m nltk.downloader punkt stopwords`' )
+		def render_metrics_panel( ):
+			raw_text = st.session_state.get( 'raw_text' )
+			processed_text = st.session_state.get( 'processed_text' )
+			if isinstance( processed_text, str ) and processed_text.strip( ):
+				text = processed_text
+			elif isinstance( raw_text, str ) and raw_text.strip( ):
+				text = raw_text
+			else:
+				st.info( 'Load a document to compute metrics.' )
 				return
 			
-			if not tokens:
-				st.warning( 'No valid alphabetic tokens found.' )
-				return
-			
-			st.session_state.tokens = tokens
-			st.session_state.vocabulary = set( tokens )
-			st.session_state.token_counts = Counter( tokens )
-		tokens = st.session_state.tokens
-		vocabulary = st.session_state.vocabulary
-		counts = st.session_state.token_counts
-		
-		# ----------------------------------------------
-		# Metric calculations (derived only)
-		# ----------------------------------------------
-		char_count = len( text )
-		token_count = len( tokens )
-		vocab_size = len( vocabulary )
-		hapax_count = sum( 1 for c in counts.values( ) if c == 1 )
-		hapax_ratio = hapax_count / vocab_size if vocab_size else 0.0
-		avg_word_len = sum( len( t ) for t in tokens ) / token_count
-		ttr = vocab_size / token_count
-		stopword_ratio = 0.0
-		lexical_density = 0.0
-		try:
-			stop_words = set( stopwords.words( 'english' ) )
-			stopword_ratio = sum( 1 for t in tokens if t in stop_words ) / token_count
-			lexical_density = 1.0 - stopword_ratio
-		except LookupError:
-			pass
-		
-		# -------------------------------
-		# Top Tokens
-		# -------------------------------
-		with st.expander( '🔤 Top Tokens', expanded=False ):
-			top_tokens = counts.most_common( 10 )
-			df_top = pd.DataFrame( top_tokens, columns=[ 'token', 'count' ] ).set_index( 'token' )
-			st.bar_chart( df_top, color='#01438A' )
-		
-		# -------------------------------
-		# Corpus Metrics
-		# -------------------------------
-		with st.expander( '📊 Corpus Metrics', expanded=False ):
-			col1, col2, col3, col4 = st.columns( 4, border=True )
-			with col1:
-				metric_with_tooltip(
-					'Characters',
-					f'{char_count:,}',
-					'Total number of characters in the selected text.'
-				)
-			with col2:
-				metric_with_tooltip(
-					'Tokens',
-					f'{token_count:,}',
-					'Token Count: total number of tokenized words after cleanup.'
-				)
-			with col3:
-				metric_with_tooltip(
-					'Unique Tokens',
-					f'{vocab_size:,}',
-					'Vocabulary Size: number of distinct word types in the text.'
-				)
-			with col4:
-				metric_with_tooltip(
-					'TTR',
-					f'{ttr:.3f}',
-					'Type–Token Ratio: unique words ÷ total words.'
-				)
-			
-			col5, col6, col7, col8 = st.columns( 4, border=True )
-			with col5:
-				metric_with_tooltip(
-					'Hapax Ratio',
-					f'{hapax_ratio:.3f}',
-					'Hapax Ratio: proportion of words that occur only once.'
-				)
-			with col6:
-				metric_with_tooltip(
-					'Avg Length',
-					f'{avg_word_len:.2f}',
-					'Average number of characters per token.'
-				)
-			with col7:
-				metric_with_tooltip(
-					'Stopword Ratio',
-					f'{stopword_ratio:.2%}',
-					'Percentage of stopwords in the text.'
-				)
-			with col8:
-				metric_with_tooltip(
-					'Lexical Density',
-					f'{lexical_density:.2%}',
-					'Proportion of content-bearing words.'
-				)
-		
-		# -------------------------------
-		# Readability
-		# -------------------------------
-		with st.expander( '📖 Readability', expanded=False ):
-			if TEXTSTAT_AVAILABLE:
-				r1, r2, r3, r4 = st.columns( 4, border=True )
-				with r1:
-					metric_with_tooltip(
-						'Flesch Reading Ease',
-						f'{textstat.flesch_reading_ease( text ):.1f}',
-						'Higher scores indicate easier readability.'
-					)
-				with r2:
-					metric_with_tooltip(
-						'Flesch–Kincaid Grade',
-						f'{textstat.flesch_kincaid_grade( text ):.1f}',
-						'Estimated U.S. grade level required.'
-					)
-				with r3:
-					metric_with_tooltip(
-						'Gunning Fog',
-						f'{textstat.gunning_fog( text ):.1f}',
-						'Readability based on sentence length and complex words.'
-					)
-				with r4:
-					metric_with_tooltip(
-						'Coleman–Liau Index',
-						f'{textstat.coleman_liau_index( text ):.1f}',
-						'Readability based on characters and sentences.'
-					)
-			else:
-				st.caption( 'Install `textstat` to enable readability metrics.' )
-	
-	# ------------------------------------------------------------------
-	# SINGLE metrics
-	# ------------------------------------------------------------------
-	with metrics_container:
-		render_metrics_panel( )
-	
-	# ------------------------------------------------------------------
-	# Left Layout
-	# ------------------------------------------------------------------
-	left, right = st.columns( [ 1, 1.5 ] )
-	with left:
-		_loader_msg = st.session_state.pop( '_loader_status', None )
-		if isinstance( _loader_msg, str ) and _loader_msg.strip( ):
-			st.success( _loader_msg )
-		
-		def _rebuild_raw_text_from_documents( ) -> str | None:
-			docs = st.session_state.get( "documents" ) or [ ]
-			if not docs:
-				return None
-			text = "\n\n".join(
-				d.page_content for d in docs
-				if hasattr( d, "page_content" ) and isinstance( d.page_content, str ) and d.page_content.strip( )
-			)
-			return text if text.strip( ) else None
-		
-		# --------------------------- Text Loader
-		with st.expander( label='Text Loader', icon='📄', expanded=False ):
-			files = st.file_uploader( 'Upload TXT files', type=[ 'txt' ],
-				accept_multiple_files=True, key='txt_upload' )
-			
-			# ------------------------------------------------------------------
-			# Buttons: Load / Clear / Save (same placement + interaction model)
-			# ------------------------------------------------------------------
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_txt = col_load.button( 'Load', key='txt_load' )
-			clear_txt = col_clear.button( 'Clear', key='txt_clear' )
-			can_save = (st.session_state.get( 'active_loader' ) == 'TextLoader'
-			            and isinstance( st.session_state.get( 'raw_text' ), str )
-			            and st.session_state.get( 'raw_text' ).strip( ))
-			
-			if can_save:
-				col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
-					file_name='text_loader_output.txt', mime='text/plain', key='txt_save' )
-			else:
-				col_save.button( 'Save', key='txt_save_disabled', disabled=True )
-			
-			# ------------------------------------------------------------------
-			# Clear (unchanged behavior)
-			# ------------------------------------------------------------------
-			if clear_txt:
-				clear_if_active( 'TextLoader' )
-				st.info( 'Text Loader state cleared.' )
-			
-			# ------------------------------------------------------------------
-			# Load (unchanged behavior)
-			# ------------------------------------------------------------------
-			if load_txt and files:
-				documents = [ ]
-				for f in files:
-					text = f.read( ).decode( 'utf-8', errors='ignore' )
-					documents.append( Document( page_content=text,
-						metadata={
-								'source': f.name,
-								'loader': 'TextLoader' }, ) )
+			# ----------------------------------------------
+			# Tokenization (session-cached)
+			# ----------------------------------------------
+			if st.session_state.tokens is None:
+				try:
+					tokens = [ t.lower( ) for t in word_tokenize( text ) if t.isalpha( ) ]
+				except LookupError:
+					st.error(
+						'NLTK resources missing.\n\n'
+						'Run:\n'
+						'`python -m nltk.downloader punkt stopwords`' )
+					return
 				
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
-				st.session_state.active_loader = "TextLoader"
-				st.success( f'Loaded {len( documents )} text document(s).' )
-		
-		# --------------------------- NLTK Loader
-		with st.expander( label='Corpora Loader', icon='📚', expanded=False ):
-			import nltk
-			from nltk.corpus import (
-				brown,
-				gutenberg,
-				reuters,
-				webtext,
-				inaugural,
-				state_union,
-			)
+				if not tokens:
+					st.warning( 'No valid alphabetic tokens found.' )
+					return
+				
+				st.session_state.tokens = tokens
+				st.session_state.vocabulary = set( tokens )
+				st.session_state.token_counts = Counter( tokens )
+			tokens = st.session_state.tokens
+			vocabulary = st.session_state.vocabulary
+			counts = st.session_state.token_counts
 			
-			st.markdown( '###### NLTK Corpora' )
-			
-			corpus_name = st.selectbox( 'Select corpus',
-				[ 'Brown', 'Gutenberg', 'Reuters', 'WebText', 'Inaugural', 'State of the Union', ],
-				key='nltk_corpus_name', )
-			
-			file_ids = [ ]
+			# ----------------------------------------------
+			# Metric calculations (derived only)
+			# ----------------------------------------------
+			char_count = len( text )
+			token_count = len( tokens )
+			vocab_size = len( vocabulary )
+			hapax_count = sum( 1 for c in counts.values( ) if c == 1 )
+			hapax_ratio = hapax_count / vocab_size if vocab_size else 0.0
+			avg_word_len = sum( len( t ) for t in tokens ) / token_count
+			ttr = vocab_size / token_count
+			stopword_ratio = 0.0
+			lexical_density = 0.0
 			try:
-				if corpus_name == 'Brown':
-					file_ids = brown.fileids( )
-				elif corpus_name == 'Gutenberg':
-					file_ids = gutenberg.fileids( )
-				elif corpus_name == 'Reuters':
-					file_ids = reuters.fileids( )
-				elif corpus_name == 'WebText':
-					file_ids = webtext.fileids( )
-				elif corpus_name == 'Inaugural':
-					file_ids = inaugural.fileids( )
-				elif corpus_name == 'State of the Union':
-					file_ids = state_union.fileids( )
+				stop_words = set( stopwords.words( 'english' ) )
+				stopword_ratio = sum( 1 for t in tokens if t in stop_words ) / token_count
+				lexical_density = 1.0 - stopword_ratio
 			except LookupError:
-				st.error(
-					"NLTK corpus not found. Run:\n\n"
-					"python -m nltk.downloader all\n\n"
-					"or download individual corpora."
-				)
+				pass
 			
-			selected_files = st.multiselect( 'Select files (leave empty to load all)',
-				options=file_ids, key='nltk_file_ids', )
+			# -------------------------------
+			# Top Tokens
+			# -------------------------------
+			with st.expander( '🔤 Top Tokens', expanded=False ):
+				top_tokens = counts.most_common( 10 )
+				df_top = pd.DataFrame( top_tokens, columns=[ 'token', 'count' ] ).set_index( 'token' )
+				st.bar_chart( df_top, color='#01438A' )
 			
-			st.divider( )
-			
-			st.markdown( '###### Local Corpus' )
-			
-			local_corpus_dir = st.text_input( 'Local directory', placeholder='path/to/text/files',
-				key='nltk_local_dir', )
-			
-			# ------------------------------------------------------------------
-			# Load / Clear / Save controls
-			# ------------------------------------------------------------------
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_nltk = col_load.button( 'Load', key='nltk_load' )
-			clear_nltk = col_clear.button( 'Clear', key='nltk_clear' )
-			
-			_docs = st.session_state.get( 'documents' ) or [ ]
-			_nltk_docs = [ d for d in _docs if d.metadata.get( 'loader' ) == 'NLTKLoader' ]
-			_nltk_text = "\n\n".join( d.page_content for d in _nltk_docs )
-			_export_name = f"nltk_{corpus_name.lower( ).replace( ' ', '_' )}.txt"
-			
-			col_save.download_button(
-				'Save',
-				data=_nltk_text,
-				file_name=_export_name,
-				mime='text/plain',
-				disabled=not bool( _nltk_text.strip( ) ),
-			)
-			
-			# ------------------------------------------------------------------
-			# Clear
-			# ------------------------------------------------------------------
-			if clear_nltk and st.session_state.get( 'documents' ):
-				st.session_state.documents = [ d for d in st.session_state.documents
-				                               if d.metadata.get( 'loader' ) != 'NLTKLoader'
-				                               ]
-				
-				st.session_state.raw_text = (
-						"\n\n".join( d.page_content for d in st.session_state.documents )
-						if st.session_state.documents else None)
-				
-				st.session_state.active_loader = None
-				
-				st.info( 'NLTKLoader documents removed.' )
-			
-			# ------------------------------------------------------------------
-			# Load
-			# ------------------------------------------------------------------
-			if load_nltk:
-				documents = [ ]
-				
-				# Built-in corpora
-				if file_ids:
-					files_to_load = selected_files or file_ids
-					
-					for fid in files_to_load:
-						try:
-							if corpus_name == 'Brown':
-								text = ' '.join( brown.words( fid ) )
-							elif corpus_name == 'Gutenberg':
-								text = gutenberg.raw( fid )
-							elif corpus_name == 'Reuters':
-								text = reuters.raw( fid )
-							elif corpus_name == 'WebText':
-								text = webtext.raw( fid )
-							elif corpus_name == 'Inaugural':
-								text = inaugural.raw( fid )
-							elif corpus_name == 'State of the Union':
-								text = state_union.raw( fid )
-							
-							if text.strip( ):
-								documents.append(
-									Document(
-										page_content=text,
-										metadata={
-												'loader': 'NLTKLoader',
-												'corpus': corpus_name,
-												'file_id': fid,
-										},
-									)
-								)
-						except Exception:
-							continue
-				
-				# Local corpus
-				if local_corpus_dir and os.path.isdir( local_corpus_dir ):
-					for fname in os.listdir( local_corpus_dir ):
-						path = os.path.join( local_corpus_dir, fname )
-						if os.path.isfile( path ) and fname.lower( ).endswith( '.txt' ):
-							with open( path, 'r', encoding='utf-8', errors='ignore' ) as f:
-								text = f.read( )
-							
-							if text.strip( ):
-								documents.append(
-									Document(
-										page_content=text,
-										metadata={
-												'loader': 'NLTKLoader',
-												'source': path,
-										},
-									)
-								)
-				
-				if documents:
-					if st.session_state.get( 'documents' ):
-						st.session_state.documents.extend( documents )
-					else:
-						st.session_state.documents = documents
-						st.session_state.raw_documents = list( documents )
-					
-					st.session_state.raw_text = "\n\n".join(
-						d.page_content for d in st.session_state.documents
+			# -------------------------------
+			# Corpus Metrics
+			# -------------------------------
+			with st.expander( '📊 Corpus Metrics', expanded=False ):
+				col1, col2, col3, col4 = st.columns( 4, border=True )
+				with col1:
+					metric_with_tooltip(
+						'Characters',
+						f'{char_count:,}',
+						'Total number of characters in the selected text.'
 					)
-					
-					st.session_state.processed_text = None
-					st.session_state.active_loader = 'NLTKLoader'
-					
-					st.success( f'Loaded {len( documents )} document(s) from NLTK.' )
-				else:
-					st.warning( 'No documents were loaded.' )
-		
-		# --------------------------- CSV Loader
-		with st.expander( label="CSV Loader", icon='📑', expanded=False ):
-			csv_file = st.file_uploader( "Upload CSV", type=[ "csv" ],
-				key="csv_upload", )
-			
-			delimiter = st.text_input( "Delimiter", value="\n\n", key="csv_delim", )
-			quotechar = st.text_input( "Quote Character", value='"', key="csv_quote", )
-			
-			# --------------------------------------------------
-			# Buttons: Load / Clear / Save
-			# --------------------------------------------------
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_csv = col_load.button( 'Load', key='csv_load' )
-			clear_csv = col_clear.button( 'Clear', key='csv_clear' )
-			
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'CsvLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
-					file_name='csv_loader_output.txt', mime='text/plain', key='csv_save', )
-			else:
-				col_save.button( 'Save', key='csv_save_disabled', disabled=True )
-			
-			# --------------------------------------------------
-			# Clear
-			# --------------------------------------------------
-			if clear_csv:
-				clear_if_active( "CsvLoader" )
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ "_loader_status" ] = "CSV Loader state cleared."
-				st.rerun( )
-			
-			# --------------------------------------------------
-			# Load
-			# --------------------------------------------------
-			if load_csv and csv_file:
-				with tempfile.TemporaryDirectory( ) as tmp:
-					path = os.path.join( tmp, csv_file.name )
-					with open( path, "wb" ) as f:
-						f.write( csv_file.read( ) )
-					
-					loader = CsvLoader( )
-					documents = loader.load(
-						path,
-						columns=None,
-						delimiter=delimiter,
-						quotechar=quotechar,
-					) or [ ]
+				with col2:
+					metric_with_tooltip(
+						'Tokens',
+						f'{token_count:,}',
+						'Token Count: total number of tokenized words after cleanup.'
+					)
+				with col3:
+					metric_with_tooltip(
+						'Unique Tokens',
+						f'{vocab_size:,}',
+						'Vocabulary Size: number of distinct word types in the text.'
+					)
+				with col4:
+					metric_with_tooltip(
+						'TTR',
+						f'{ttr:.3f}',
+						'Type–Token Ratio: unique words ÷ total words.'
+					)
 				
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = "\n\n".join(
-					d.page_content for d in documents
-					if
-					hasattr( d, "page_content" ) and isinstance( d.page_content, str ) and d.page_content.strip( )
-				)
-				st.session_state.processed_text = None
-				st.session_state.active_loader = "CsvLoader"
-				
-				st.session_state[ "_loader_status" ] = f"Loaded {len( documents )} CSV document(s)."
-				st.rerun( )
-		
-		# -------------------------- XML Loader Expander
-		with st.expander( label='XML Loader', icon='🧬', expanded=False ):
-			# ------------------------------------------------------------------
-			# Session-backed loader instance
-			# ------------------------------------------------------------------
-			if 'xml_loader' not in st.session_state or st.session_state.xml_loader is None:
-				st.session_state.xml_loader = XmlLoader( )
+				col5, col6, col7, col8 = st.columns( 4, border=True )
+				with col5:
+					metric_with_tooltip(
+						'Hapax Ratio',
+						f'{hapax_ratio:.3f}',
+						'Hapax Ratio: proportion of words that occur only once.'
+					)
+				with col6:
+					metric_with_tooltip(
+						'Avg Length',
+						f'{avg_word_len:.2f}',
+						'Average number of characters per token.'
+					)
+				with col7:
+					metric_with_tooltip(
+						'Stopword Ratio',
+						f'{stopword_ratio:.2%}',
+						'Percentage of stopwords in the text.'
+					)
+				with col8:
+					metric_with_tooltip(
+						'Lexical Density',
+						f'{lexical_density:.2%}',
+						'Proportion of content-bearing words.'
+					)
 			
-			loader = st.session_state.xml_loader
-			
-			xml_file = st.file_uploader(
-				label='Select XML file',
-				type=[ 'xml' ],
-				accept_multiple_files=False,
-				key='xml_file_uploader'
-			)
-			
-			st.subheader( 'Semantic XML Loading (Unstructured)' )
-			
-			col1, col2 = st.columns( 2 )
-			
-			with col1:
-				chunk_size = st.number_input(
-					'Chunk Size',
-					min_value=100,
-					max_value=5000,
-					value=1000,
-					step=100
-				)
-			
-			with col2:
-				overlap_amount = st.number_input(
-					'Chunk Overlap',
-					min_value=0,
-					max_value=1000,
-					value=200,
-					step=50
-				)
-			
-			# --------------------------------------------------
-			# Semantic Load
-			# --------------------------------------------------
-			if st.button( 'Load XML (Semantic)', use_container_width=True ):
-				if xml_file is None:
-					st.warning( 'Please select an XML file.' )
+			# -------------------------------
+			# Readability
+			# -------------------------------
+			with st.expander( '📖 Readability', expanded=False ):
+				if TEXTSTAT_AVAILABLE:
+					r1, r2, r3, r4 = st.columns( 4, border=True )
+					with r1:
+						metric_with_tooltip(
+							'Flesch Reading Ease',
+							f'{textstat.flesch_reading_ease( text ):.1f}',
+							'Higher scores indicate easier readability.'
+						)
+					with r2:
+						metric_with_tooltip(
+							'Flesch–Kincaid Grade',
+							f'{textstat.flesch_kincaid_grade( text ):.1f}',
+							'Estimated U.S. grade level required.'
+						)
+					with r3:
+						metric_with_tooltip(
+							'Gunning Fog',
+							f'{textstat.gunning_fog( text ):.1f}',
+							'Readability based on sentence length and complex words.'
+						)
+					with r4:
+						metric_with_tooltip(
+							'Coleman–Liau Index',
+							f'{textstat.coleman_liau_index( text ):.1f}',
+							'Readability based on characters and sentences.'
+						)
 				else:
-					with tempfile.TemporaryDirectory( ) as tmp:
-						path = os.path.join( tmp, xml_file.name )
-						with open( path, 'wb' ) as f:
-							f.write( xml_file.read( ) )
+					st.caption( 'Install `textstat` to enable readability metrics.' )
+		
+		# ------------------------------------------------------------------
+		# SINGLE metrics
+		# ------------------------------------------------------------------
+		with metrics_container:
+			render_metrics_panel( )
+		
+		# ------------------------------------------------------------------
+		# Left Layout
+		# ------------------------------------------------------------------
+		left, right = st.columns( [ 1, 1.5 ] )
+		with left:
+			_loader_msg = st.session_state.pop( '_loader_status', None )
+			if isinstance( _loader_msg, str ) and _loader_msg.strip( ):
+				st.success( _loader_msg )
+			
+			def _rebuild_raw_text_from_documents( ) -> str | None:
+				docs = st.session_state.get( "documents" ) or [ ]
+				if not docs:
+					return None
+				text = "\n\n".join(
+					d.page_content for d in docs
+					if hasattr( d, "page_content" ) and isinstance( d.page_content, str ) and d.page_content.strip( )
+				)
+				return text if text.strip( ) else None
+			
+			# --------------------------- Text Loader
+			with st.expander( label='Text Loader', icon='📄', expanded=False ):
+				files = st.file_uploader( 'Upload TXT files', type=[ 'txt' ],
+					accept_multiple_files=True, key='txt_upload' )
+				
+				# ------------------------------------------------------------------
+				# Buttons: Load / Clear / Save (same placement + interaction model)
+				# ------------------------------------------------------------------
+				col_load, col_clear, col_save = st.columns( 3 )
+				load_txt = col_load.button( 'Load', key='txt_load' )
+				clear_txt = col_clear.button( 'Clear', key='txt_clear' )
+				can_save = (st.session_state.get( 'active_loader' ) == 'TextLoader'
+				            and isinstance( st.session_state.get( 'raw_text' ), str )
+				            and st.session_state.get( 'raw_text' ).strip( ))
+				
+				if can_save:
+					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+						file_name='text_loader_output.txt', mime='text/plain', key='txt_save' )
+				else:
+					col_save.button( 'Save', key='txt_save_disabled', disabled=True )
+				
+				# ------------------------------------------------------------------
+				# Clear (unchanged behavior)
+				# ------------------------------------------------------------------
+				if clear_txt:
+					clear_if_active( 'TextLoader' )
+					st.info( 'Text Loader state cleared.' )
+				
+				# ------------------------------------------------------------------
+				# Load (unchanged behavior)
+				# ------------------------------------------------------------------
+				if load_txt and files:
+					documents = [ ]
+					for f in files:
+						text = f.read( ).decode( 'utf-8', errors='ignore' )
+						documents.append( Document( page_content=text,
+							metadata={
+									'source': f.name,
+									'loader': 'TextLoader' }, ) )
+					
+					st.session_state.documents = documents
+					st.session_state.raw_documents = list( documents )
+					st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
+					st.session_state.active_loader = "TextLoader"
+					st.success( f'Loaded {len( documents )} text document(s).' )
+			
+			# --------------------------- NLTK Loader
+			with st.expander( label='Corpora Loader', icon='📚', expanded=False ):
+				import nltk
+				from nltk.corpus import (
+					brown,
+					gutenberg,
+					reuters,
+					webtext,
+					inaugural,
+					state_union,
+				)
+				
+				st.markdown( '###### NLTK Corpora' )
+				
+				corpus_name = st.selectbox( 'Select corpus',
+					[ 'Brown', 'Gutenberg', 'Reuters', 'WebText', 'Inaugural', 'State of the Union', ],
+					key='nltk_corpus_name', )
+				
+				file_ids = [ ]
+				try:
+					if corpus_name == 'Brown':
+						file_ids = brown.fileids( )
+					elif corpus_name == 'Gutenberg':
+						file_ids = gutenberg.fileids( )
+					elif corpus_name == 'Reuters':
+						file_ids = reuters.fileids( )
+					elif corpus_name == 'WebText':
+						file_ids = webtext.fileids( )
+					elif corpus_name == 'Inaugural':
+						file_ids = inaugural.fileids( )
+					elif corpus_name == 'State of the Union':
+						file_ids = state_union.fileids( )
+				except LookupError:
+					st.error(
+						"NLTK corpus not found. Run:\n\n"
+						"python -m nltk.downloader all\n\n"
+						"or download individual corpora."
+					)
+				
+				selected_files = st.multiselect( 'Select files (leave empty to load all)',
+					options=file_ids, key='nltk_file_ids', )
+				
+				st.divider( )
+				
+				st.markdown( '###### Local Corpus' )
+				
+				local_corpus_dir = st.text_input( 'Local directory', placeholder='path/to/text/files',
+					key='nltk_local_dir', )
+				
+				# ------------------------------------------------------------------
+				# Load / Clear / Save controls
+				# ------------------------------------------------------------------
+				col_load, col_clear, col_save = st.columns( 3 )
+				load_nltk = col_load.button( 'Load', key='nltk_load' )
+				clear_nltk = col_clear.button( 'Clear', key='nltk_clear' )
+				
+				_docs = st.session_state.get( 'documents' ) or [ ]
+				_nltk_docs = [ d for d in _docs if d.metadata.get( 'loader' ) == 'NLTKLoader' ]
+				_nltk_text = "\n\n".join( d.page_content for d in _nltk_docs )
+				_export_name = f"nltk_{corpus_name.lower( ).replace( ' ', '_' )}.txt"
+				
+				col_save.download_button(
+					'Save',
+					data=_nltk_text,
+					file_name=_export_name,
+					mime='text/plain',
+					disabled=not bool( _nltk_text.strip( ) ),
+				)
+				
+				# ------------------------------------------------------------------
+				# Clear
+				# ------------------------------------------------------------------
+				if clear_nltk and st.session_state.get( 'documents' ):
+					st.session_state.documents = [ d for d in st.session_state.documents
+					                               if d.metadata.get( 'loader' ) != 'NLTKLoader'
+					                               ]
+					
+					st.session_state.raw_text = (
+							"\n\n".join( d.page_content for d in st.session_state.documents )
+							if st.session_state.documents else None)
+					
+					st.session_state.active_loader = None
+					
+					st.info( 'NLTKLoader documents removed.' )
+				
+				# ------------------------------------------------------------------
+				# Load
+				# ------------------------------------------------------------------
+				if load_nltk:
+					documents = [ ]
+					
+					# Built-in corpora
+					if file_ids:
+						files_to_load = selected_files or file_ids
 						
-						with st.spinner( 'Loading XML via UnstructuredXMLLoader...' ):
-							documents = loader.load( path )
+						for fid in files_to_load:
+							try:
+								if corpus_name == 'Brown':
+									text = ' '.join( brown.words( fid ) )
+								elif corpus_name == 'Gutenberg':
+									text = gutenberg.raw( fid )
+								elif corpus_name == 'Reuters':
+									text = reuters.raw( fid )
+								elif corpus_name == 'WebText':
+									text = webtext.raw( fid )
+								elif corpus_name == 'Inaugural':
+									text = inaugural.raw( fid )
+								elif corpus_name == 'State of the Union':
+									text = state_union.raw( fid )
+								
+								if text.strip( ):
+									documents.append(
+										Document(
+											page_content=text,
+											metadata={
+													'loader': 'NLTKLoader',
+													'corpus': corpus_name,
+													'file_id': fid,
+											},
+										)
+									)
+							except Exception:
+								continue
+					
+					# Local corpus
+					if local_corpus_dir and os.path.isdir( local_corpus_dir ):
+						for fname in os.listdir( local_corpus_dir ):
+							path = os.path.join( local_corpus_dir, fname )
+							if os.path.isfile( path ) and fname.lower( ).endswith( '.txt' ):
+								with open( path, 'r', encoding='utf-8', errors='ignore' ) as f:
+									text = f.read( )
+								
+								if text.strip( ):
+									documents.append(
+										Document(
+											page_content=text,
+											metadata={
+													'loader': 'NLTKLoader',
+													'source': path,
+											},
+										)
+									)
 					
 					if documents:
-						raw_text = '\n\n'.join(
-							d.page_content
-							for d in documents
-							if hasattr( d, 'page_content' )
-							and isinstance( d.page_content, str )
-							and d.page_content.strip( )
+						if st.session_state.get( 'documents' ):
+							st.session_state.documents.extend( documents )
+						else:
+							st.session_state.documents = documents
+							st.session_state.raw_documents = list( documents )
+						
+						st.session_state.raw_text = "\n\n".join(
+							d.page_content for d in st.session_state.documents
 						)
 						
-						st.session_state.documents = documents
-						st.session_state.raw_documents = list( documents )
-						st.session_state.raw_text = raw_text
 						st.session_state.processed_text = None
-						st.session_state.active_loader = 'XmlLoader'
-						st.session_state[ 'xml_documents' ] = documents
-						st.session_state[ 'xml_tree_loaded' ] = False
-						st.session_state[ 'xml_xpath_results' ] = None
-						st.session_state[ 'xml_namespaces' ] = None
-						st.rerun( )
+						st.session_state.active_loader = 'NLTKLoader'
+						
+						st.success( f'Loaded {len( documents )} document(s) from NLTK.' )
 					else:
-						st.warning( 'No extractable text found in XML.' )
+						st.warning( 'No documents were loaded.' )
 			
-			# --------------------------------------------------
-			# Split Semantic Documents
-			# --------------------------------------------------
-			if st.button( 'Split Semantic Documents', use_container_width=True ):
-				with st.spinner( 'Splitting documents...' ):
-					split_docs = loader.split(
-						size=int( chunk_size ),
-						amount=int( overlap_amount )
-					)
+			# --------------------------- CSV Loader
+			with st.expander( label="CSV Loader", icon='📑', expanded=False ):
+				csv_file = st.file_uploader( "Upload CSV", type=[ "csv" ],
+					key="csv_upload", )
 				
-				if split_docs:
-					st.session_state[ 'xml_split_documents' ] = split_docs
-					st.success( f'Produced {len( split_docs )} document chunks.' )
-			
-			# ------------------------------------------------------------------
-			# Structured XML Tree Loading
-			# ------------------------------------------------------------------
-			st.divider( )
-			st.subheader( 'Structured XML Tree Loading (XPath)' )
-			
-			if st.button( 'Load XML Tree', use_container_width=True ):
-				if xml_file is None:
-					st.warning( 'Please select an XML file.' )
-				else:
-					with tempfile.TemporaryDirectory( ) as tmp:
-						path = os.path.join( tmp, xml_file.name )
-						with open( path, 'wb' ) as f:
-							f.write( xml_file.read( ) )
-						
-						with st.spinner( 'Parsing XML into ElementTree...' ):
-							tree = loader.load_tree( path )
-					
-					if tree is not None:
-						xml_text = etree.tostring(
-							tree,
-							pretty_print=True,
-							encoding='unicode'
-						)
-						
-						st.session_state.raw_text = xml_text
-						st.session_state.processed_text = None
-						st.session_state.active_loader = 'XmlLoader'
-						st.session_state[ 'xml_tree_loaded' ] = True
-						st.session_state[ 'xml_namespaces' ] = loader.xml_namespaces
-						st.session_state[ 'xml_xpath_results' ] = None
-						
-						st.success( 'XML tree loaded successfully.' )
-					else:
-						st.warning( 'Failed to parse XML tree.' )
-			
-			# ------------------------------------------------------------------
-			# XPath Query Interface
-			# ------------------------------------------------------------------
-			xml_loader = st.session_state.get( 'xml_loader' )
-			
-			if xml_loader is None:
-				st.info( 'No loader initialized.' )
-			elif not hasattr( xml_loader, 'xml_root' ):
-				st.info( 'XML loader does not support XML tree operations.' )
-			elif xml_loader.xml_root is None:
-				st.info( 'XML loader initialized but no XML tree loaded.' )
-			else:
-				st.markdown( '**XPath Query**' )
+				delimiter = st.text_input( "Delimiter", value="\n\n", key="csv_delim", )
+				quotechar = st.text_input( "Quote Character", value='"', key="csv_quote", )
 				
-				xpath_expr = st.text_input(
-					'XPath Expression',
-					value='//*',
-					help='Use namespace prefixes if applicable.'
+				# --------------------------------------------------
+				# Buttons: Load / Clear / Save
+				# --------------------------------------------------
+				col_load, col_clear, col_save = st.columns( 3 )
+				load_csv = col_load.button( 'Load', key='csv_load' )
+				clear_csv = col_clear.button( 'Clear', key='csv_clear' )
+				
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'CsvLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
 				)
 				
-				if st.button( 'Run XPath Query', use_container_width=True ):
-					with st.spinner( 'Executing XPath...' ):
-						elements = xml_loader.get_elements( xpath_expr )
-					
-					if elements is not None:
-						st.session_state[ 'xml_xpath_results' ] = elements
-						st.success( f'Returned {len( elements )} elements.' )
+				if can_save:
+					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+						file_name='csv_loader_output.txt', mime='text/plain', key='csv_save', )
+				else:
+					col_save.button( 'Save', key='csv_save_disabled', disabled=True )
 				
-				if 'xml_xpath_results' in st.session_state and \
-						st.session_state[ 'xml_xpath_results' ] is not None:
-					preview_count = min(
-						10,
-						len( st.session_state[ 'xml_xpath_results' ] )
+				# --------------------------------------------------
+				# Clear
+				# --------------------------------------------------
+				if clear_csv:
+					clear_if_active( "CsvLoader" )
+					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+					st.session_state[ "_loader_status" ] = "CSV Loader state cleared."
+					st.rerun( )
+				
+				# --------------------------------------------------
+				# Load
+				# --------------------------------------------------
+				if load_csv and csv_file:
+					with tempfile.TemporaryDirectory( ) as tmp:
+						path = os.path.join( tmp, csv_file.name )
+						with open( path, "wb" ) as f:
+							f.write( csv_file.read( ) )
+						
+						loader = CsvLoader( )
+						documents = loader.load(
+							path,
+							columns=None,
+							delimiter=delimiter,
+							quotechar=quotechar,
+						) or [ ]
+					
+					st.session_state.documents = documents
+					st.session_state.raw_documents = list( documents )
+					st.session_state.raw_text = "\n\n".join(
+						d.page_content for d in documents
+						if
+						hasattr( d, "page_content" ) and isinstance( d.page_content, str ) and d.page_content.strip( )
 					)
+					st.session_state.processed_text = None
+					st.session_state.active_loader = "CsvLoader"
 					
-					st.caption( f'Previewing first {preview_count} elements' )
+					st.session_state[ "_loader_status" ] = f"Loaded {len( documents )} CSV document(s)."
+					st.rerun( )
+			
+			# -------------------------- XML Loader Expander
+			with st.expander( label='XML Loader', icon='🧬', expanded=False ):
+				# ------------------------------------------------------------------
+				# Session-backed loader instance
+				# ------------------------------------------------------------------
+				if 'xml_loader' not in st.session_state or st.session_state.xml_loader is None:
+					st.session_state.xml_loader = XmlLoader( )
+				
+				loader = st.session_state.xml_loader
+				
+				xml_file = st.file_uploader(
+					label='Select XML file',
+					type=[ 'xml' ],
+					accept_multiple_files=False,
+					key='xml_file_uploader'
+				)
+				
+				st.subheader( 'Semantic XML Loading (Unstructured)' )
+				
+				col1, col2 = st.columns( 2 )
+				
+				with col1:
+					chunk_size = st.number_input(
+						'Chunk Size',
+						min_value=100,
+						max_value=5000,
+						value=1000,
+						step=100
+					)
+				
+				with col2:
+					overlap_amount = st.number_input(
+						'Chunk Overlap',
+						min_value=0,
+						max_value=1000,
+						value=200,
+						step=50
+					)
+				
+				# --------------------------------------------------
+				# Semantic Load
+				# --------------------------------------------------
+				if st.button( 'Load XML (Semantic)', use_container_width=True ):
+					if xml_file is None:
+						st.warning( 'Please select an XML file.' )
+					else:
+						with tempfile.TemporaryDirectory( ) as tmp:
+							path = os.path.join( tmp, xml_file.name )
+							with open( path, 'wb' ) as f:
+								f.write( xml_file.read( ) )
+							
+							with st.spinner( 'Loading XML via UnstructuredXMLLoader...' ):
+								documents = loader.load( path )
+						
+						if documents:
+							raw_text = '\n\n'.join(
+								d.page_content
+								for d in documents
+								if hasattr( d, 'page_content' )
+								and isinstance( d.page_content, str )
+								and d.page_content.strip( )
+							)
+							
+							st.session_state.documents = documents
+							st.session_state.raw_documents = list( documents )
+							st.session_state.raw_text = raw_text
+							st.session_state.processed_text = None
+							st.session_state.active_loader = 'XmlLoader'
+							st.session_state[ 'xml_documents' ] = documents
+							st.session_state[ 'xml_tree_loaded' ] = False
+							st.session_state[ 'xml_xpath_results' ] = None
+							st.session_state[ 'xml_namespaces' ] = None
+							st.rerun( )
+						else:
+							st.warning( 'No extractable text found in XML.' )
+				
+				# --------------------------------------------------
+				# Split Semantic Documents
+				# --------------------------------------------------
+				if st.button( 'Split Semantic Documents', use_container_width=True ):
+					with st.spinner( 'Splitting documents...' ):
+						split_docs = loader.split(
+							size=int( chunk_size ),
+							amount=int( overlap_amount )
+						)
 					
-					for el in st.session_state[ 'xml_xpath_results' ][ :preview_count ]:
-						st.code(
-							etree.tostring(
-								el,
+					if split_docs:
+						st.session_state[ 'xml_split_documents' ] = split_docs
+						st.success( f'Produced {len( split_docs )} document chunks.' )
+				
+				# ------------------------------------------------------------------
+				# Structured XML Tree Loading
+				# ------------------------------------------------------------------
+				st.divider( )
+				st.subheader( 'Structured XML Tree Loading (XPath)' )
+				
+				if st.button( 'Load XML Tree', use_container_width=True ):
+					if xml_file is None:
+						st.warning( 'Please select an XML file.' )
+					else:
+						with tempfile.TemporaryDirectory( ) as tmp:
+							path = os.path.join( tmp, xml_file.name )
+							with open( path, 'wb' ) as f:
+								f.write( xml_file.read( ) )
+							
+							with st.spinner( 'Parsing XML into ElementTree...' ):
+								tree = loader.load_tree( path )
+						
+						if tree is not None:
+							xml_text = etree.tostring(
+								tree,
 								pretty_print=True,
 								encoding='unicode'
-							),
-							language='xml'
-						)
-			
-			# ------------------------------------------------------------------
-			# Debug / Introspection
-			# ------------------------------------------------------------------
-			with st.expander( "ℹ Loader State" ):
+							)
+							
+							st.session_state.raw_text = xml_text
+							st.session_state.processed_text = None
+							st.session_state.active_loader = 'XmlLoader'
+							st.session_state[ 'xml_tree_loaded' ] = True
+							st.session_state[ 'xml_namespaces' ] = loader.xml_namespaces
+							st.session_state[ 'xml_xpath_results' ] = None
+							
+							st.success( 'XML tree loaded successfully.' )
+						else:
+							st.warning( 'Failed to parse XML tree.' )
+				
+				# ------------------------------------------------------------------
+				# XPath Query Interface
+				# ------------------------------------------------------------------
 				xml_loader = st.session_state.get( 'xml_loader' )
 				
 				if xml_loader is None:
-					st.info( "No loader initialized." )
+					st.info( 'No loader initialized.' )
+				elif not hasattr( xml_loader, 'xml_root' ):
+					st.info( 'XML loader does not support XML tree operations.' )
+				elif xml_loader.xml_root is None:
+					st.info( 'XML loader initialized but no XML tree loaded.' )
 				else:
-					st.json(
-						{
-								"file_path": getattr( xml_loader, 'file_path', None ),
-								"documents_loaded": getattr( xml_loader, 'documents', None ) is not None,
-								"xml_tree_loaded": getattr( xml_loader, 'xml_tree', None ) is not None,
-								"namespaces": getattr( xml_loader, 'xml_namespaces', None ),
-								"chunk_size": getattr( xml_loader, 'chunk_size', None ),
-								"overlap_amount": getattr( xml_loader, 'overlap_amount', None ),
-						}
+					st.markdown( '**XPath Query**' )
+					
+					xpath_expr = st.text_input(
+						'XPath Expression',
+						value='//*',
+						help='Use namespace prefixes if applicable.'
 					)
-		
-		# --------------------------- PDF Loader
-		with st.expander( label='PDF Loader', icon='📕', expanded=False ):
-			pdf = st.file_uploader( 'Upload PDF', type=[ 'pdf' ], key='pdf_upload' )
-			mode = st.selectbox( 'Mode', [ 'single', 'elements' ], key='pdf_mode' )
-			extract = st.selectbox( 'Extract', [ 'plain', 'ocr' ], key='pdf_extract' )
-			include = st.checkbox( 'Include Images', value=False, key='pdf_include' )
-			fmt = st.selectbox( 'Format', [ 'markdown-img', 'text' ], key='pdf_fmt' )
-			
-			# --------------------------------------------------
-			# Buttons: Load / Clear / Save
-			# --------------------------------------------------
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_pdf = col_load.button( 'Load', key='pdf_load' )
-			clear_pdf = col_clear.button( 'Clear', key='pdf_clear' )
-			
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'PdfLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='pdf_loader_output.txt',
-					mime='text/plain',
-					key='pdf_save',
-				)
-			else:
-				col_save.button( 'Save', key='pdf_save_disabled', disabled=True )
-			
-			# --------------------------------------------------
-			# Clear
-			# --------------------------------------------------
-			if clear_pdf:
-				clear_if_active( "PdfLoader" )
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ "_loader_status" ] = "PDF Loader state cleared."
-				st.rerun( )
-			
-			# --------------------------------------------------
-			# Load
-			# --------------------------------------------------
-			if load_pdf and pdf:
-				with tempfile.TemporaryDirectory( ) as tmp:
-					path = os.path.join( tmp, pdf.name )
-					with open( path, "wb" ) as f:
-						f.write( pdf.read( ) )
 					
-					loader = PdfLoader( )
-					documents = loader.load(
-						path,
-						mode=mode,
-						extract=extract,
-						include=include,
-						format=fmt,
-					) or [ ]
-				
-				# Canonical promotion: loaded content == raw_text
-				raw_text = "\n\n".join(
-					d.page_content for d in documents
-					if
-					hasattr( d, "page_content" )
-					and isinstance( d.page_content, str )
-					and d.page_content.strip( )
-				)
-				
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = raw_text
-				st.session_state.processed_text = raw_text
-				st.session_state.active_loader = "PdfLoader"
-				
-				st.session_state[ "_loader_status" ] = \
-					f"Loaded {len( documents )} PDF document(s)."
-				st.rerun( )
-		
-		# --------------------------- Markdown Loader
-		with st.expander( label='Markdown Loader', icon='🧾', expanded=False ):
-			md = st.file_uploader(
-				'Upload Markdown',
-				type=[ 'md',
-				       'markdown' ],
-				key='md_upload',
-			)
-			
-			# --------------------------------------------------
-			# Buttons: Load / Clear / Save (same row, same style)
-			# --------------------------------------------------
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_md = col_load.button(
-				'Load',
-				key='md_load',
-			)
-			
-			clear_md = col_clear.button(
-				'Clear',
-				key='md_clear',
-			)
-			
-			# Save enabled only when MarkdownLoader is active and raw_text exists
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'MarkdownLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='markdown_loader_output.txt',
-					mime='text/plain',
-					key='md_save',
-				)
-			else:
-				col_save.button(
-					'Save',
-					key='md_save_disabled',
-					disabled=True,
-				)
-			
-			# --------------------------------------------------
-			# Clear (UNCHANGED behavior)
-			# --------------------------------------------------
-			if clear_md:
-				clear_if_active( 'MarkdownLoader' )
-				st.info( "Markdown Loader state cleared." )
-			
-			# --------------------------------------------------
-			# Load (UNCHANGED behavior)
-			# --------------------------------------------------
-			if load_md and md:
-				with tempfile.TemporaryDirectory( ) as tmp:
-					path = os.path.join( tmp, md.name )
-					with open( path, "wb" ) as f:
-						f.write( md.read( ) )
+					if st.button( 'Run XPath Query', use_container_width=True ):
+						with st.spinner( 'Executing XPath...' ):
+							elements = xml_loader.get_elements( xpath_expr )
+						
+						if elements is not None:
+							st.session_state[ 'xml_xpath_results' ] = elements
+							st.success( f'Returned {len( elements )} elements.' )
 					
-					loader = MarkdownLoader( )
-					documents = loader.load( path )
+					if 'xml_xpath_results' in st.session_state and \
+							st.session_state[ 'xml_xpath_results' ] is not None:
+						preview_count = min(
+							10,
+							len( st.session_state[ 'xml_xpath_results' ] )
+						)
+						
+						st.caption( f'Previewing first {preview_count} elements' )
+						
+						for el in st.session_state[ 'xml_xpath_results' ][ :preview_count ]:
+							st.code(
+								etree.tostring(
+									el,
+									pretty_print=True,
+									encoding='unicode'
+								),
+								language='xml'
+							)
 				
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
-				st.session_state.active_loader = "MarkdownLoader"
-				
-				st.success( f"Loaded {len( documents )} Markdown document(s)." )
-		
-		# --------------------------- HTML Loader
-		with st.expander( label='HTML Loader', icon='🌐', expanded=False ):
-			html = st.file_uploader( 'Upload HTML', type=[ 'html', 'htm' ], key='html_upload' )
-			
-			# --------------------------------------------------
-			# Buttons: Load / Clear / Save (same row, same style)
-			# --------------------------------------------------
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_html = col_load.button( 'Load', key='html_load' )
-			clear_html = col_clear.button( 'Clear', key='html_clear' )
-			
-			# Save enabled only when HtmlLoader is active and raw_text exists
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'HtmlLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='html_loader_output.txt',
-					mime='text/plain',
-					key='html_save',
-				)
-			else:
-				col_save.button(
-					'Save',
-					key='html_save_disabled',
-					disabled=True,
-				)
-			
-			# --------------------------------------------------
-			# Clear (UNCHANGED behavior)
-			# --------------------------------------------------
-			if clear_html:
-				clear_if_active( "HtmlLoader" )
-				st.info( "HTML Loader state cleared." )
-			
-			# --------------------------------------------------
-			# Load (UNCHANGED behavior)
-			# --------------------------------------------------
-			if load_html and html:
-				with tempfile.TemporaryDirectory( ) as tmp:
-					path = os.path.join( tmp, html.name )
-					with open( path, "wb" ) as f:
-						f.write( html.read( ) )
+				# ------------------------------------------------------------------
+				# Debug / Introspection
+				# ------------------------------------------------------------------
+				with st.expander( "ℹ Loader State" ):
+					xml_loader = st.session_state.get( 'xml_loader' )
 					
-					loader = HtmlLoader( )
-					documents = loader.load( path )
+					if xml_loader is None:
+						st.info( "No loader initialized." )
+					else:
+						st.json(
+							{
+									"file_path": getattr( xml_loader, 'file_path', None ),
+									"documents_loaded": getattr( xml_loader, 'documents', None ) is not None,
+									"xml_tree_loaded": getattr( xml_loader, 'xml_tree', None ) is not None,
+									"namespaces": getattr( xml_loader, 'xml_namespaces', None ),
+									"chunk_size": getattr( xml_loader, 'chunk_size', None ),
+									"overlap_amount": getattr( xml_loader, 'overlap_amount', None ),
+							}
+						)
+			
+			# --------------------------- PDF Loader
+			with st.expander( label='PDF Loader', icon='📕', expanded=False ):
+				pdf = st.file_uploader( 'Upload PDF', type=[ 'pdf' ], key='pdf_upload' )
+				mode = st.selectbox( 'Mode', [ 'single', 'elements' ], key='pdf_mode' )
+				extract = st.selectbox( 'Extract', [ 'plain', 'ocr' ], key='pdf_extract' )
+				include = st.checkbox( 'Include Images', value=False, key='pdf_include' )
+				fmt = st.selectbox( 'Format', [ 'markdown-img', 'text' ], key='pdf_fmt' )
 				
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
-				st.session_state.active_loader = "HtmlLoader"
-				st.success( f"Loaded {len( documents )} HTML document(s)." )
-		
-		# --------------------------- JSON Loader
-		with st.expander( label='JSON Loader', icon='🧩', expanded=False ):
-			js = st.file_uploader( 'Upload JSON', type=[ 'json' ], key='json_upload', )
-			
-			is_lines = st.checkbox( 'JSON Lines', value=False, key='json_lines', )
-			
-			# --------------------------------------------------
-			# Buttons: Load / Clear / Save (same row, same style)
-			# --------------------------------------------------
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_json = col_load.button( 'Load', key='json_load', )
-			
-			clear_json = col_clear.button( 'Clear', key='json_clear', )
-			
-			# Save enabled only when JsonLoader is active and raw_text exists
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'JsonLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='json_loader_output.txt',
-					mime='text/plain',
-					key='json_save',
+				# --------------------------------------------------
+				# Buttons: Load / Clear / Save
+				# --------------------------------------------------
+				col_load, col_clear, col_save = st.columns( 3 )
+				load_pdf = col_load.button( 'Load', key='pdf_load' )
+				clear_pdf = col_clear.button( 'Clear', key='pdf_clear' )
+				
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'PdfLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
 				)
-			else:
-				col_save.button(
-					'Save',
-					key='json_save_disabled',
-					disabled=True,
-				)
-			
-			# --------------------------------------------------
-			# Clear (UNCHANGED behavior)
-			# --------------------------------------------------
-			if clear_json:
-				clear_if_active( 'JsonLoader' )
-				st.info( 'JSON Loader state cleared.' )
-			
-			# --------------------------------------------------
-			# Load (UNCHANGED behavior)
-			# --------------------------------------------------
-			if load_json and js:
-				with tempfile.TemporaryDirectory( ) as tmp:
-					path = os.path.join( tmp, js.name )
-					with open( path, 'wb' ) as f:
-						f.write( js.read( ) )
+				
+				if can_save:
+					col_save.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='pdf_loader_output.txt',
+						mime='text/plain',
+						key='pdf_save',
+					)
+				else:
+					col_save.button( 'Save', key='pdf_save_disabled', disabled=True )
+				
+				# --------------------------------------------------
+				# Clear
+				# --------------------------------------------------
+				if clear_pdf:
+					clear_if_active( "PdfLoader" )
+					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+					st.session_state[ "_loader_status" ] = "PDF Loader state cleared."
+					st.rerun( )
+				
+				# --------------------------------------------------
+				# Load
+				# --------------------------------------------------
+				if load_pdf and pdf:
+					with tempfile.TemporaryDirectory( ) as tmp:
+						path = os.path.join( tmp, pdf.name )
+						with open( path, "wb" ) as f:
+							f.write( pdf.read( ) )
+						
+						loader = PdfLoader( )
+						documents = loader.load(
+							path,
+							mode=mode,
+							extract=extract,
+							include=include,
+							format=fmt,
+						) or [ ]
 					
-					loader = JsonLoader( )
-					documents = loader.load(
-						path,
-						is_text=True,
-						is_lines=is_lines,
+					# Canonical promotion: loaded content == raw_text
+					raw_text = "\n\n".join(
+						d.page_content for d in documents
+						if
+						hasattr( d, "page_content" )
+						and isinstance( d.page_content, str )
+						and d.page_content.strip( )
+					)
+					
+					st.session_state.documents = documents
+					st.session_state.raw_documents = list( documents )
+					st.session_state.raw_text = raw_text
+					st.session_state.processed_text = raw_text
+					st.session_state.active_loader = "PdfLoader"
+					
+					st.session_state[ "_loader_status" ] = \
+						f"Loaded {len( documents )} PDF document(s)."
+					st.rerun( )
+			
+			# --------------------------- Markdown Loader
+			with st.expander( label='Markdown Loader', icon='🧾', expanded=False ):
+				md = st.file_uploader(
+					'Upload Markdown',
+					type=[ 'md',
+					       'markdown' ],
+					key='md_upload',
+				)
+				
+				# --------------------------------------------------
+				# Buttons: Load / Clear / Save (same row, same style)
+				# --------------------------------------------------
+				col_load, col_clear, col_save = st.columns( 3 )
+				load_md = col_load.button(
+					'Load',
+					key='md_load',
+				)
+				
+				clear_md = col_clear.button(
+					'Clear',
+					key='md_clear',
+				)
+				
+				# Save enabled only when MarkdownLoader is active and raw_text exists
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'MarkdownLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
+				
+				if can_save:
+					col_save.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='markdown_loader_output.txt',
+						mime='text/plain',
+						key='md_save',
+					)
+				else:
+					col_save.button(
+						'Save',
+						key='md_save_disabled',
+						disabled=True,
 					)
 				
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
-				st.session_state.active_loader = "JsonLoader"
-				st.success( f"Loaded {len( documents )} JSON document(s)." )
-		
-		# --------------------------- PowerPoint Loader
-		with st.expander( '📽 Power Point Loader', expanded=False ):
-			pptx = st.file_uploader(
-				'Upload PPTX',
-				type=[ 'pptx' ],
-				key='pptx_upload',
-			)
-			
-			mode = st.selectbox(
-				'Mode',
-				[ 'single',
-				  'multiple' ],
-				key='pptx_mode',
-			)
-			
-			# --------------------------------------------------
-			# Buttons: Load / Clear / Save (same row, same style)
-			# --------------------------------------------------
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_pptx = col_load.button(
-				'Load',
-				key='pptx_load',
-			)
-			
-			clear_pptx = col_clear.button(
-				'Clear',
-				key='pptx_clear',
-			)
-			
-			# Save enabled only when PowerPointLoader is active and raw_text exists
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'PowerPointLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='powerpoint_loader_output.txt',
-					mime='text/plain',
-					key='pptx_save',
-				)
-			else:
-				col_save.button(
-					'Save',
-					key='pptx_save_disabled',
-					disabled=True,
-				)
-			
-			# --------------------------------------------------
-			# Clear (UNCHANGED behavior)
-			# --------------------------------------------------
-			if clear_pptx:
-				clear_if_active( 'PowerPointLoader' )
-				st.info( 'PowerPoint Loader state cleared.' )
-			
-			# --------------------------------------------------
-			# Load (UNCHANGED behavior)
-			# --------------------------------------------------
-			if load_pptx and pptx:
-				with tempfile.TemporaryDirectory( ) as tmp:
-					path = os.path.join( tmp, pptx.name )
-					with open( path, "wb" ) as f:
-						f.write( pptx.read( ) )
+				# --------------------------------------------------
+				# Clear (UNCHANGED behavior)
+				# --------------------------------------------------
+				if clear_md:
+					clear_if_active( 'MarkdownLoader' )
+					st.info( "Markdown Loader state cleared." )
+				
+				# --------------------------------------------------
+				# Load (UNCHANGED behavior)
+				# --------------------------------------------------
+				if load_md and md:
+					with tempfile.TemporaryDirectory( ) as tmp:
+						path = os.path.join( tmp, md.name )
+						with open( path, "wb" ) as f:
+							f.write( md.read( ) )
+						
+						loader = MarkdownLoader( )
+						documents = loader.load( path )
 					
-					loader = PowerPointLoader( )
-					documents = (
-							loader.load( path )
-							if mode == "single"
-							else loader.load_multiple( path )
+					st.session_state.documents = documents
+					st.session_state.raw_documents = list( documents )
+					st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
+					st.session_state.active_loader = "MarkdownLoader"
+					
+					st.success( f"Loaded {len( documents )} Markdown document(s)." )
+			
+			# --------------------------- HTML Loader
+			with st.expander( label='HTML Loader', icon='🌐', expanded=False ):
+				html = st.file_uploader( 'Upload HTML', type=[ 'html', 'htm' ], key='html_upload' )
+				
+				# --------------------------------------------------
+				# Buttons: Load / Clear / Save (same row, same style)
+				# --------------------------------------------------
+				col_load, col_clear, col_save = st.columns( 3 )
+				load_html = col_load.button( 'Load', key='html_load' )
+				clear_html = col_clear.button( 'Clear', key='html_clear' )
+				
+				# Save enabled only when HtmlLoader is active and raw_text exists
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'HtmlLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
+				
+				if can_save:
+					col_save.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='html_loader_output.txt',
+						mime='text/plain',
+						key='html_save',
+					)
+				else:
+					col_save.button(
+						'Save',
+						key='html_save_disabled',
+						disabled=True,
 					)
 				
-				st.session_state.documents = documents
-				st.session_state.raw_documents = list( documents )
-				st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
-				st.session_state.active_loader = "PowerPointLoader"
-				st.success( f"Loaded {len( documents )} PowerPoint document(s)." )
-		
-		# --------------------------- Excel Loader
-		with st.expander( '📊 Excel Loader', expanded=False ):
-			excel_file = st.file_uploader(
-				'Upload Excel file',
-				type=[ 'xlsx',
-				       'xls' ],
-				key='excel_upload',
-			)
-			
-			sheet_name = st.text_input(
-				'Sheet name (leave blank for all sheets)',
-				key='excel_sheet',
-			)
-			
-			table_prefix = st.text_input(
-				'SQLite table prefix',
-				value='excel',
-				help='Each sheet will be written as <prefix>_<sheetname>',
-				key='excel_table_prefix',
-			)
-			
-			# --------------------------------------------------
-			# Buttons: Load / Clear / Save
-			# --------------------------------------------------
-			col_load, col_clear, col_save = st.columns( 3 )
-			load_excel = col_load.button( 'Load', key='excel_load' )
-			clear_excel = col_clear.button( 'Clear', key='excel_clear' )
-			
-			can_save = (
-					st.session_state.get( 'active_loader' ) == 'ExcelLoader'
-					and isinstance( st.session_state.get( 'raw_text' ), str )
-					and st.session_state.get( 'raw_text' ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					'Save',
-					data=st.session_state.get( 'raw_text' ),
-					file_name='excel_loader_output.txt',
-					mime='text/plain',
-					key='excel_save',
-				)
-			else:
-				col_save.button(
-					'Save',
-					key='excel_save_disabled',
-					disabled=True,
-				)
-			
-			# --------------------------------------------------
-			# Clear (remove only ExcelLoader documents)
-			# --------------------------------------------------
-			if clear_excel and st.session_state.get( 'documents' ):
-				st.session_state.documents = [
-						d for d in st.session_state.documents
-						if d.metadata.get( 'loader' ) != 'ExcelLoader'
-				]
+				# --------------------------------------------------
+				# Clear (UNCHANGED behavior)
+				# --------------------------------------------------
+				if clear_html:
+					clear_if_active( "HtmlLoader" )
+					st.info( "HTML Loader state cleared." )
 				
-				st.session_state.raw_text = (
-						"\n\n".join(
+				# --------------------------------------------------
+				# Load (UNCHANGED behavior)
+				# --------------------------------------------------
+				if load_html and html:
+					with tempfile.TemporaryDirectory( ) as tmp:
+						path = os.path.join( tmp, html.name )
+						with open( path, "wb" ) as f:
+							f.write( html.read( ) )
+						
+						loader = HtmlLoader( )
+						documents = loader.load( path )
+					
+					st.session_state.documents = documents
+					st.session_state.raw_documents = list( documents )
+					st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
+					st.session_state.active_loader = "HtmlLoader"
+					st.success( f"Loaded {len( documents )} HTML document(s)." )
+			
+			# --------------------------- JSON Loader
+			with st.expander( label='JSON Loader', icon='🧩', expanded=False ):
+				js = st.file_uploader( 'Upload JSON', type=[ 'json' ], key='json_upload', )
+				
+				is_lines = st.checkbox( 'JSON Lines', value=False, key='json_lines', )
+				
+				# --------------------------------------------------
+				# Buttons: Load / Clear / Save (same row, same style)
+				# --------------------------------------------------
+				col_load, col_clear, col_save = st.columns( 3 )
+				load_json = col_load.button( 'Load', key='json_load', )
+				
+				clear_json = col_clear.button( 'Clear', key='json_clear', )
+				
+				# Save enabled only when JsonLoader is active and raw_text exists
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'JsonLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
+				
+				if can_save:
+					col_save.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='json_loader_output.txt',
+						mime='text/plain',
+						key='json_save',
+					)
+				else:
+					col_save.button(
+						'Save',
+						key='json_save_disabled',
+						disabled=True,
+					)
+				
+				# --------------------------------------------------
+				# Clear (UNCHANGED behavior)
+				# --------------------------------------------------
+				if clear_json:
+					clear_if_active( 'JsonLoader' )
+					st.info( 'JSON Loader state cleared.' )
+				
+				# --------------------------------------------------
+				# Load (UNCHANGED behavior)
+				# --------------------------------------------------
+				if load_json and js:
+					with tempfile.TemporaryDirectory( ) as tmp:
+						path = os.path.join( tmp, js.name )
+						with open( path, 'wb' ) as f:
+							f.write( js.read( ) )
+						
+						loader = JsonLoader( )
+						documents = loader.load(
+							path,
+							is_text=True,
+							is_lines=is_lines,
+						)
+					
+					st.session_state.documents = documents
+					st.session_state.raw_documents = list( documents )
+					st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
+					st.session_state.active_loader = "JsonLoader"
+					st.success( f"Loaded {len( documents )} JSON document(s)." )
+			
+			# --------------------------- PowerPoint Loader
+			with st.expander( '📽 Power Point Loader', expanded=False ):
+				pptx = st.file_uploader(
+					'Upload PPTX',
+					type=[ 'pptx' ],
+					key='pptx_upload',
+				)
+				
+				mode = st.selectbox(
+					'Mode',
+					[ 'single',
+					  'multiple' ],
+					key='pptx_mode',
+				)
+				
+				# --------------------------------------------------
+				# Buttons: Load / Clear / Save (same row, same style)
+				# --------------------------------------------------
+				col_load, col_clear, col_save = st.columns( 3 )
+				load_pptx = col_load.button(
+					'Load',
+					key='pptx_load',
+				)
+				
+				clear_pptx = col_clear.button(
+					'Clear',
+					key='pptx_clear',
+				)
+				
+				# Save enabled only when PowerPointLoader is active and raw_text exists
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'PowerPointLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
+				
+				if can_save:
+					col_save.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='powerpoint_loader_output.txt',
+						mime='text/plain',
+						key='pptx_save',
+					)
+				else:
+					col_save.button(
+						'Save',
+						key='pptx_save_disabled',
+						disabled=True,
+					)
+				
+				# --------------------------------------------------
+				# Clear (UNCHANGED behavior)
+				# --------------------------------------------------
+				if clear_pptx:
+					clear_if_active( 'PowerPointLoader' )
+					st.info( 'PowerPoint Loader state cleared.' )
+				
+				# --------------------------------------------------
+				# Load (UNCHANGED behavior)
+				# --------------------------------------------------
+				if load_pptx and pptx:
+					with tempfile.TemporaryDirectory( ) as tmp:
+						path = os.path.join( tmp, pptx.name )
+						with open( path, "wb" ) as f:
+							f.write( pptx.read( ) )
+						
+						loader = PowerPointLoader( )
+						documents = (
+								loader.load( path )
+								if mode == "single"
+								else loader.load_multiple( path )
+						)
+					
+					st.session_state.documents = documents
+					st.session_state.raw_documents = list( documents )
+					st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
+					st.session_state.active_loader = "PowerPointLoader"
+					st.success( f"Loaded {len( documents )} PowerPoint document(s)." )
+			
+			# --------------------------- Excel Loader
+			with st.expander( '📊 Excel Loader', expanded=False ):
+				excel_file = st.file_uploader(
+					'Upload Excel file',
+					type=[ 'xlsx',
+					       'xls' ],
+					key='excel_upload',
+				)
+				
+				sheet_name = st.text_input(
+					'Sheet name (leave blank for all sheets)',
+					key='excel_sheet',
+				)
+				
+				table_prefix = st.text_input(
+					'SQLite table prefix',
+					value='excel',
+					help='Each sheet will be written as <prefix>_<sheetname>',
+					key='excel_table_prefix',
+				)
+				
+				# --------------------------------------------------
+				# Buttons: Load / Clear / Save
+				# --------------------------------------------------
+				col_load, col_clear, col_save = st.columns( 3 )
+				load_excel = col_load.button( 'Load', key='excel_load' )
+				clear_excel = col_clear.button( 'Clear', key='excel_clear' )
+				
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'ExcelLoader'
+						and isinstance( st.session_state.get( 'raw_text' ), str )
+						and st.session_state.get( 'raw_text' ).strip( )
+				)
+				
+				if can_save:
+					col_save.download_button(
+						'Save',
+						data=st.session_state.get( 'raw_text' ),
+						file_name='excel_loader_output.txt',
+						mime='text/plain',
+						key='excel_save',
+					)
+				else:
+					col_save.button(
+						'Save',
+						key='excel_save_disabled',
+						disabled=True,
+					)
+				
+				# --------------------------------------------------
+				# Clear (remove only ExcelLoader documents)
+				# --------------------------------------------------
+				if clear_excel and st.session_state.get( 'documents' ):
+					st.session_state.documents = [
+							d for d in st.session_state.documents
+							if d.metadata.get( 'loader' ) != 'ExcelLoader'
+					]
+					
+					st.session_state.raw_text = (
+							"\n\n".join(
+								d.page_content
+								for d in st.session_state.documents
+								if isinstance( d.page_content, str )
+								and d.page_content.strip( )
+							)
+							if st.session_state.documents else None
+					)
+					
+					st.session_state.active_loader = None
+					
+					st.info( "ExcelLoader documents removed." )
+				
+				# --------------------------------------------------
+				# Load + SQLite ingestion
+				# --------------------------------------------------
+				if load_excel and excel_file:
+					sqlite_path = os.path.join( "stores", "sqlite", "data.db" )
+					os.makedirs( os.path.dirname( sqlite_path ), exist_ok=True )
+					
+					with tempfile.TemporaryDirectory( ) as tmp:
+						excel_path = os.path.join( tmp, excel_file.name )
+						with open( excel_path, "wb" ) as f:
+							f.write( excel_file.read( ) )
+						
+						if sheet_name.strip( ):
+							dfs = {
+									sheet_name: pd.read_excel(
+										excel_path,
+										sheet_name=sheet_name,
+									)
+							}
+						else:
+							dfs = pd.read_excel(
+								excel_path,
+								sheet_name=None,
+							)
+					
+					conn = sqlite3.connect( sqlite_path )
+					documents = [ ]
+					
+					for sheet, df in dfs.items( ):
+						if df.empty:
+							continue
+						
+						table_name = f"{table_prefix}_{sheet}".replace(
+							" ", "_"
+						).lower( )
+						
+						df.to_sql(
+							table_name,
+							conn,
+							if_exists="replace",
+							index=False,
+						)
+						
+						text = df.to_csv( index=False )
+						
+						documents.append(
+							Document(
+								page_content=text,
+								metadata={
+										'loader': 'ExcelLoader',
+										'source': excel_file.name,
+										'sheet': sheet,
+										'table': table_name,
+										'sqlite_db': sqlite_path,
+								},
+							)
+						)
+					
+					conn.close( )
+					
+					if documents:
+						if st.session_state.get( 'documents' ):
+							st.session_state.documents.extend( documents )
+						else:
+							st.session_state.documents = documents
+							st.session_state.raw_documents = list( documents )
+						
+						st.session_state.raw_text = "\n\n".join(
 							d.page_content
 							for d in st.session_state.documents
 							if isinstance( d.page_content, str )
 							and d.page_content.strip( )
 						)
-						if st.session_state.documents else None
+						
+						st.session_state.processed_text = None
+						st.session_state.active_loader = 'ExcelLoader'
+						
+						st.success(
+							f"Loaded {len( documents )} sheet(s) and stored in SQLite."
+						)
+					else:
+						st.warning(
+							"No data loaded (empty sheets or invalid selection)."
+						)
+			
+			# --------------------------- arXiv Loader
+			with st.expander( "🧠 ArXiv Loader", expanded=False ):
+				arxiv_query = st.text_input(
+					"Query",
+					placeholder="e.g., transformer OR llm",
+					key="arxiv_query",
 				)
 				
-				st.session_state.active_loader = None
+				arxiv_max_chars = st.number_input(
+					"Max characters per document",
+					min_value=250,
+					max_value=100000,
+					value=1000,
+					step=250,
+					key="arxiv_max_chars",
+					help="Maximum characters read",
+				)
 				
-				st.info( "ExcelLoader documents removed." )
-			
-			# --------------------------------------------------
-			# Load + SQLite ingestion
-			# --------------------------------------------------
-			if load_excel and excel_file:
-				sqlite_path = os.path.join( "stores", "sqlite", "data.db" )
-				os.makedirs( os.path.dirname( sqlite_path ), exist_ok=True )
+				col_fetch, col_clear, col_save = st.columns( 3 )
+				arxiv_fetch = col_fetch.button( "Load", key="arxiv_fetch" )  # label kept as Load button row convention
+				arxiv_clear = col_clear.button( "Clear", key="arxiv_clear" )
 				
-				with tempfile.TemporaryDirectory( ) as tmp:
-					excel_path = os.path.join( tmp, excel_file.name )
-					with open( excel_path, "wb" ) as f:
-						f.write( excel_file.read( ) )
-					
-					if sheet_name.strip( ):
-						dfs = {
-								sheet_name: pd.read_excel(
-									excel_path,
-									sheet_name=sheet_name,
-								)
-						}
-					else:
-						dfs = pd.read_excel(
-							excel_path,
-							sheet_name=None,
-						)
+				can_save = (
+						st.session_state.get( "active_loader" ) == "ArXivLoader"
+						and isinstance( st.session_state.get( "raw_text" ), str )
+						and st.session_state.get( "raw_text" ).strip( )
+				)
 				
-				conn = sqlite3.connect( sqlite_path )
-				documents = [ ]
-				
-				for sheet, df in dfs.items( ):
-					if df.empty:
-						continue
-					
-					table_name = f"{table_prefix}_{sheet}".replace(
-						" ", "_"
-					).lower( )
-					
-					df.to_sql(
-						table_name,
-						conn,
-						if_exists="replace",
-						index=False,
-					)
-					
-					text = df.to_csv( index=False )
-					
-					documents.append(
-						Document(
-							page_content=text,
-							metadata={
-									'loader': 'ExcelLoader',
-									'source': excel_file.name,
-									'sheet': sheet,
-									'table': table_name,
-									'sqlite_db': sqlite_path,
-							},
-						)
-					)
-				
-				conn.close( )
-				
-				if documents:
-					if st.session_state.get( 'documents' ):
-						st.session_state.documents.extend( documents )
-					else:
-						st.session_state.documents = documents
-						st.session_state.raw_documents = list( documents )
-					
-					st.session_state.raw_text = "\n\n".join(
-						d.page_content
-						for d in st.session_state.documents
-						if isinstance( d.page_content, str )
-						and d.page_content.strip( )
-					)
-					
-					st.session_state.processed_text = None
-					st.session_state.active_loader = 'ExcelLoader'
-					
-					st.success(
-						f"Loaded {len( documents )} sheet(s) and stored in SQLite."
+				if can_save:
+					col_save.download_button(
+						"Save",
+						data=st.session_state.get( "raw_text" ),
+						file_name="arxiv_loader_output.txt",
+						mime="text/plain",
+						key="arxiv_save",
 					)
 				else:
-					st.warning(
-						"No data loaded (empty sheets or invalid selection)."
-					)
-		
-		# --------------------------- arXiv Loader
-		with st.expander( "🧠 ArXiv Loader", expanded=False ):
-			arxiv_query = st.text_input(
-				"Query",
-				placeholder="e.g., transformer OR llm",
-				key="arxiv_query",
-			)
-			
-			arxiv_max_chars = st.number_input(
-				"Max characters per document",
-				min_value=250,
-				max_value=100000,
-				value=1000,
-				step=250,
-				key="arxiv_max_chars",
-				help="Maximum characters read",
-			)
-			
-			col_fetch, col_clear, col_save = st.columns( 3 )
-			arxiv_fetch = col_fetch.button( "Load", key="arxiv_fetch" )  # label kept as Load button row convention
-			arxiv_clear = col_clear.button( "Clear", key="arxiv_clear" )
-			
-			can_save = (
-					st.session_state.get( "active_loader" ) == "ArXivLoader"
-					and isinstance( st.session_state.get( "raw_text" ), str )
-					and st.session_state.get( "raw_text" ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					"Save",
-					data=st.session_state.get( "raw_text" ),
-					file_name="arxiv_loader_output.txt",
-					mime="text/plain",
-					key="arxiv_save",
-				)
-			else:
-				col_save.button( "Save", key="arxiv_save_disabled", disabled=True )
-			
-			if arxiv_clear and st.session_state.get( "documents" ):
-				st.session_state.documents = [
-						d for d in st.session_state.documents
-						if d.metadata.get( "loader" ) != "ArXivLoader"
-				]
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ "_loader_status" ] = "ArXivLoader documents removed."
-				st.rerun( )
-			
-			if arxiv_fetch and arxiv_query:
-				loader = ArXivLoader( )
-				documents = loader.load(
-					arxiv_query,
-					max_chars=int( arxiv_max_chars ),
-				) or [ ]
+					col_save.button( "Save", key="arxiv_save_disabled", disabled=True )
 				
-				for d in documents:
-					d.metadata[ "loader" ] = "ArXivLoader"
-					d.metadata[ "source" ] = arxiv_query
-				
-				if documents:
-					if st.session_state.get( "documents" ):
-						st.session_state.documents.extend( documents )
-					else:
-						st.session_state.documents = documents
-						st.session_state.raw_documents = list( documents )
-					
+				if arxiv_clear and st.session_state.get( "documents" ):
+					st.session_state.documents = [
+							d for d in st.session_state.documents
+							if d.metadata.get( "loader" ) != "ArXivLoader"
+					]
 					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-					st.session_state.active_loader = "ArXivLoader"
-					
-					st.session_state[
-						"_loader_status" ] = f"Fetched {len( documents )} arXiv document(s)."
+					st.session_state[ "_loader_status" ] = "ArXivLoader documents removed."
 					st.rerun( )
-		
-		# --------------------------- Wikipedia Loader
-		with st.expander( "📚 Wikipedia Loader", expanded=False ):
-			wiki_query = st.text_input(
-				"Query",
-				placeholder="e.g., Natural language processing",
-				key="wiki_query",
-			)
-			
-			wiki_max_docs = st.number_input(
-				"Max documents",
-				min_value=1,
-				max_value=250,
-				value=25,
-				step=1,
-				key="wiki_max_docs",
-				help="Maximum number of documents loaded",
-			)
-			
-			wiki_max_chars = st.number_input(
-				"Max characters per document",
-				min_value=250,
-				max_value=100000,
-				value=4000,
-				step=250,
-				key="wiki_max_chars",
-				help="Upper limit on the number of characters",
-			)
-			
-			col_fetch, col_clear, col_save = st.columns( 3 )
-			wiki_fetch = col_fetch.button( "Load", key="wiki_fetch" )
-			wiki_clear = col_clear.button( "Clear", key="wiki_clear" )
-			
-			can_save = (
-					st.session_state.get( "active_loader" ) == "WikiLoader"
-					and isinstance( st.session_state.get( "raw_text" ), str )
-					and st.session_state.get( "raw_text" ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					"Save",
-					data=st.session_state.get( "raw_text" ),
-					file_name="wiki_loader_output.txt",
-					mime="text/plain",
-					key="wiki_save",
-				)
-			else:
-				col_save.button( "Save", key="wiki_save_disabled", disabled=True )
-			
-			if wiki_clear and st.session_state.get( "documents" ):
-				st.session_state.documents = [
-						d for d in st.session_state.documents
-						if d.metadata.get( "loader" ) != "WikiLoader"
-				]
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ "_loader_status" ] = "WikiLoader documents removed."
-				st.rerun( )
-			
-			if wiki_fetch and wiki_query:
-				loader = WikiLoader( )
-				documents = loader.load(
-					wiki_query,
-					max_docs=int( wiki_max_docs ),
-					max_chars=int( wiki_max_chars ),
-				) or [ ]
 				
-				for d in documents:
-					d.metadata[ "loader" ] = "WikiLoader"
-					d.metadata[ "source" ] = wiki_query
-				
-				if documents:
-					if st.session_state.get( "documents" ):
-						st.session_state.documents.extend( documents )
-					else:
-						st.session_state.documents = documents
-						st.session_state.raw_documents = list( documents )
+				if arxiv_fetch and arxiv_query:
+					loader = ArXivLoader( )
+					documents = loader.load(
+						arxiv_query,
+						max_chars=int( arxiv_max_chars ),
+					) or [ ]
 					
-					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-					st.session_state.active_loader = "WikiLoader"
-					
-					st.session_state[
-						"_loader_status" ] = f"Fetched {len( documents )} Wikipedia document(s)."
-					st.rerun( )
-		
-		# --------------------------- GitHub Loader
-		with st.expander( "🐙 GitHub Loader", expanded=False ):
-			gh_url = st.text_input(
-				"GitHub API URL",
-				placeholder="https://api.github.com",
-				value="https://api.github.com",
-				key="gh_url",
-				help="web url to a github repository",
-			)
-			
-			gh_repo = st.text_input(
-				"Repo (owner/name)",
-				placeholder="openai/openai-python",
-				key="gh_repo",
-				help="Name of the repository",
-			)
-			
-			gh_branch = st.text_input(
-				"Branch",
-				placeholder="main",
-				value="main",
-				key="gh_branch",
-				help="The branch of the repository",
-			)
-			
-			gh_filetype = st.text_input(
-				"File type filter",
-				value=".md",
-				key="gh_filetype",
-				help="Filtering by file type. Example: .py, .md, .txt",
-			)
-			
-			col_fetch, col_clear, col_save = st.columns( 3 )
-			gh_fetch = col_fetch.button( "Load", key="gh_fetch" )
-			gh_clear = col_clear.button( "Clear", key="gh_clear" )
-			
-			can_save = (st.session_state.get( "active_loader" ) == "GithubLoader"
-			            and isinstance( st.session_state.get( "raw_text" ), str )
-			            and st.session_state.get( "raw_text" ).strip( ))
-			
-			if can_save:
-				col_save.download_button(
-					"Save",
-					data=st.session_state.get( "raw_text" ),
-					file_name="github_loader_output.txt",
-					mime="text/plain",
-					key="gh_save", )
-			else:
-				col_save.button( "Save", key="gh_save_disabled", disabled=True )
-			
-			if gh_clear and st.session_state.get( "documents" ):
-				st.session_state.documents = [
-						d for d in st.session_state.documents
-						if d.metadata.get( "loader" ) != "GithubLoader" ]
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ "_loader_status" ] = "GithubLoader documents removed."
-				st.rerun( )
-			
-			if gh_fetch and gh_repo and gh_branch:
-				loader = GithubLoader( )
-				documents = loader.load(
-					gh_url,
-					gh_repo,
-					gh_branch,
-					gh_filetype,
-				) or [ ]
-				
-				for d in documents:
-					d.metadata[ "loader" ] = "GithubLoader"
-					d.metadata[ "source" ] = f"{gh_repo}@{gh_branch}"
-				
-				if documents:
-					if st.session_state.get( "documents" ):
-						st.session_state.documents.extend( documents )
-					else:
-						st.session_state.documents = documents
-						st.session_state.raw_documents = list( documents )
-					
-					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-					st.session_state.active_loader = "GithubLoader"
-					
-					st.session_state[
-						"_loader_status" ] = f"Fetched {len( documents )} GitHub document(s)."
-					st.rerun( )
-		
-		# --------------------------- Web Loader
-		with st.expander( "🔗 Web Loader", expanded=False ):
-			urls = st.text_area(
-				"Enter one URL per line",
-				placeholder="https://example.com\nhttps://another.com",
-				key="web_urls", )
-			
-			col_fetch, col_clear, col_save = st.columns( 3 )
-			load_web = col_fetch.button( "Load", key="web_fetch" )
-			clear_web = col_clear.button( "Clear", key="web_clear" )
-			can_save = (st.session_state.get( "active_loader" ) == "WebLoader"
-			            and isinstance( st.session_state.get( "raw_text" ), str )
-			            and st.session_state.get( "raw_text" ).strip( ))
-			
-			if can_save:
-				col_save.download_button(
-					"Save",
-					data=st.session_state.get( "raw_text" ),
-					file_name="web_loader_output.txt",
-					mime="text/plain",
-					key="web_save",
-				)
-			else:
-				col_save.button( "Save", key="web_save_disabled", disabled=True )
-			
-			if clear_web and st.session_state.get( "documents" ):
-				st.session_state.documents = [
-						d for d in st.session_state.documents
-						if d.metadata.get( "loader" ) != "WebLoader"
-				]
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ "_loader_status" ] = "WebLoader documents removed."
-				st.rerun( )
-			
-			if load_web and urls.strip( ):
-				loader = WebLoader( recursive=False )
-				new_docs = [ ]
-				
-				for url in [ u.strip( ) for u in urls.splitlines( ) if u.strip( ) ]:
-					documents = loader.load( url ) or [ ]
 					for d in documents:
-						d.metadata[ "loader" ] = "WebLoader"
-						d.metadata[ "source" ] = url
-					new_docs.extend( documents )
+						d.metadata[ "loader" ] = "ArXivLoader"
+						d.metadata[ "source" ] = arxiv_query
+					
+					if documents:
+						if st.session_state.get( "documents" ):
+							st.session_state.documents.extend( documents )
+						else:
+							st.session_state.documents = documents
+							st.session_state.raw_documents = list( documents )
+						
+						st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+						st.session_state.active_loader = "ArXivLoader"
+						
+						st.session_state[
+							"_loader_status" ] = f"Fetched {len( documents )} arXiv document(s)."
+						st.rerun( )
+			
+			# --------------------------- Wikipedia Loader
+			with st.expander( "📚 Wikipedia Loader", expanded=False ):
+				wiki_query = st.text_input(
+					"Query",
+					placeholder="e.g., Natural language processing",
+					key="wiki_query",
+				)
 				
-				if new_docs:
-					if st.session_state.get( "documents" ):
-						st.session_state.documents.extend( new_docs )
-					else:
-						st.session_state.documents = new_docs
-						st.session_state.raw_documents = list( new_docs )
-					
+				wiki_max_docs = st.number_input(
+					"Max documents",
+					min_value=1,
+					max_value=250,
+					value=25,
+					step=1,
+					key="wiki_max_docs",
+					help="Maximum number of documents loaded",
+				)
+				
+				wiki_max_chars = st.number_input(
+					"Max characters per document",
+					min_value=250,
+					max_value=100000,
+					value=4000,
+					step=250,
+					key="wiki_max_chars",
+					help="Upper limit on the number of characters",
+				)
+				
+				col_fetch, col_clear, col_save = st.columns( 3 )
+				wiki_fetch = col_fetch.button( "Load", key="wiki_fetch" )
+				wiki_clear = col_clear.button( "Clear", key="wiki_clear" )
+				
+				can_save = (
+						st.session_state.get( "active_loader" ) == "WikiLoader"
+						and isinstance( st.session_state.get( "raw_text" ), str )
+						and st.session_state.get( "raw_text" ).strip( )
+				)
+				
+				if can_save:
+					col_save.download_button(
+						"Save",
+						data=st.session_state.get( "raw_text" ),
+						file_name="wiki_loader_output.txt",
+						mime="text/plain",
+						key="wiki_save",
+					)
+				else:
+					col_save.button( "Save", key="wiki_save_disabled", disabled=True )
+				
+				if wiki_clear and st.session_state.get( "documents" ):
+					st.session_state.documents = [
+							d for d in st.session_state.documents
+							if d.metadata.get( "loader" ) != "WikiLoader"
+					]
 					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-					st.session_state.active_loader = "WebLoader"
-					
-					st.session_state[
-						"_loader_status" ] = f"Fetched {len( new_docs )} web document(s)."
+					st.session_state[ "_loader_status" ] = "WikiLoader documents removed."
 					st.rerun( )
+				
+				if wiki_fetch and wiki_query:
+					loader = WikiLoader( )
+					documents = loader.load(
+						wiki_query,
+						max_docs=int( wiki_max_docs ),
+						max_chars=int( wiki_max_chars ),
+					) or [ ]
+					
+					for d in documents:
+						d.metadata[ "loader" ] = "WikiLoader"
+						d.metadata[ "source" ] = wiki_query
+					
+					if documents:
+						if st.session_state.get( "documents" ):
+							st.session_state.documents.extend( documents )
+						else:
+							st.session_state.documents = documents
+							st.session_state.raw_documents = list( documents )
+						
+						st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+						st.session_state.active_loader = "WikiLoader"
+						
+						st.session_state[
+							"_loader_status" ] = f"Fetched {len( documents )} Wikipedia document(s)."
+						st.rerun( )
+			
+			# --------------------------- GitHub Loader
+			with st.expander( "🐙 GitHub Loader", expanded=False ):
+				gh_url = st.text_input(
+					"GitHub API URL",
+					placeholder="https://api.github.com",
+					value="https://api.github.com",
+					key="gh_url",
+					help="web url to a github repository",
+				)
+				
+				gh_repo = st.text_input(
+					"Repo (owner/name)",
+					placeholder="openai/openai-python",
+					key="gh_repo",
+					help="Name of the repository",
+				)
+				
+				gh_branch = st.text_input(
+					"Branch",
+					placeholder="main",
+					value="main",
+					key="gh_branch",
+					help="The branch of the repository",
+				)
+				
+				gh_filetype = st.text_input(
+					"File type filter",
+					value=".md",
+					key="gh_filetype",
+					help="Filtering by file type. Example: .py, .md, .txt",
+				)
+				
+				col_fetch, col_clear, col_save = st.columns( 3 )
+				gh_fetch = col_fetch.button( "Load", key="gh_fetch" )
+				gh_clear = col_clear.button( "Clear", key="gh_clear" )
+				
+				can_save = (st.session_state.get( "active_loader" ) == "GithubLoader"
+				            and isinstance( st.session_state.get( "raw_text" ), str )
+				            and st.session_state.get( "raw_text" ).strip( ))
+				
+				if can_save:
+					col_save.download_button(
+						"Save",
+						data=st.session_state.get( "raw_text" ),
+						file_name="github_loader_output.txt",
+						mime="text/plain",
+						key="gh_save", )
+				else:
+					col_save.button( "Save", key="gh_save_disabled", disabled=True )
+				
+				if gh_clear and st.session_state.get( "documents" ):
+					st.session_state.documents = [
+							d for d in st.session_state.documents
+							if d.metadata.get( "loader" ) != "GithubLoader" ]
+					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+					st.session_state[ "_loader_status" ] = "GithubLoader documents removed."
+					st.rerun( )
+				
+				if gh_fetch and gh_repo and gh_branch:
+					loader = GithubLoader( )
+					documents = loader.load(
+						gh_url,
+						gh_repo,
+						gh_branch,
+						gh_filetype,
+					) or [ ]
+					
+					for d in documents:
+						d.metadata[ "loader" ] = "GithubLoader"
+						d.metadata[ "source" ] = f"{gh_repo}@{gh_branch}"
+					
+					if documents:
+						if st.session_state.get( "documents" ):
+							st.session_state.documents.extend( documents )
+						else:
+							st.session_state.documents = documents
+							st.session_state.raw_documents = list( documents )
+						
+						st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+						st.session_state.active_loader = "GithubLoader"
+						
+						st.session_state[
+							"_loader_status" ] = f"Fetched {len( documents )} GitHub document(s)."
+						st.rerun( )
+			
+			# --------------------------- Web Loader
+			with st.expander( "🔗 Web Loader", expanded=False ):
+				urls = st.text_area(
+					"Enter one URL per line",
+					placeholder="https://example.com\nhttps://another.com",
+					key="web_urls", )
+				
+				col_fetch, col_clear, col_save = st.columns( 3 )
+				load_web = col_fetch.button( "Load", key="web_fetch" )
+				clear_web = col_clear.button( "Clear", key="web_clear" )
+				can_save = (st.session_state.get( "active_loader" ) == "WebLoader"
+				            and isinstance( st.session_state.get( "raw_text" ), str )
+				            and st.session_state.get( "raw_text" ).strip( ))
+				
+				if can_save:
+					col_save.download_button(
+						"Save",
+						data=st.session_state.get( "raw_text" ),
+						file_name="web_loader_output.txt",
+						mime="text/plain",
+						key="web_save",
+					)
+				else:
+					col_save.button( "Save", key="web_save_disabled", disabled=True )
+				
+				if clear_web and st.session_state.get( "documents" ):
+					st.session_state.documents = [
+							d for d in st.session_state.documents
+							if d.metadata.get( "loader" ) != "WebLoader"
+					]
+					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+					st.session_state[ "_loader_status" ] = "WebLoader documents removed."
+					st.rerun( )
+				
+				if load_web and urls.strip( ):
+					loader = WebLoader( recursive=False )
+					new_docs = [ ]
+					
+					for url in [ u.strip( ) for u in urls.splitlines( ) if u.strip( ) ]:
+						documents = loader.load( url ) or [ ]
+						for d in documents:
+							d.metadata[ "loader" ] = "WebLoader"
+							d.metadata[ "source" ] = url
+						new_docs.extend( documents )
+					
+					if new_docs:
+						if st.session_state.get( "documents" ):
+							st.session_state.documents.extend( new_docs )
+						else:
+							st.session_state.documents = new_docs
+							st.session_state.raw_documents = list( new_docs )
+						
+						st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+						st.session_state.active_loader = "WebLoader"
+						
+						st.session_state[
+							"_loader_status" ] = f"Fetched {len( new_docs )} web document(s)."
+						st.rerun( )
+			
+			# --------------------------- Web Crawler
+			with st.expander( "🕷️ Web Crawler", expanded=False ):
+				start_url = st.text_input(
+					"Start URL",
+					placeholder="https://example.com",
+					key="crawl_start_url",
+				)
+				
+				max_depth = st.number_input(
+					"Max crawl depth",
+					min_value=1,
+					max_value=5,
+					value=2,
+					step=1,
+					key="crawl_depth",
+				)
+				
+				stay_on_domain = st.checkbox(
+					"Stay on starting domain",
+					value=True,
+					key="crawl_domain_lock",
+				)
+				
+				col_run, col_clear, col_save = st.columns( 3 )
+				run_crawl = col_run.button( "Load", key="crawl_run" )
+				clear_crawl = col_clear.button( "Clear", key="crawl_clear" )
+				
+				can_save = (
+						st.session_state.get( "active_loader" ) == "WebCrawler"
+						and isinstance( st.session_state.get( "raw_text" ), str )
+						and st.session_state.get( "raw_text" ).strip( )
+				)
+				
+				if can_save:
+					col_save.download_button(
+						"Save",
+						data=st.session_state.get( "raw_text" ),
+						file_name="web_crawler_output.txt",
+						mime="text/plain",
+						key="crawl_save",
+					)
+				else:
+					col_save.button( "Save", key="crawl_save_disabled", disabled=True )
+				
+				if clear_crawl and st.session_state.get( "documents" ):
+					st.session_state.documents = [
+							d for d in st.session_state.documents
+							if d.metadata.get( "loader" ) != "WebCrawler"
+					]
+					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+					st.session_state[ "_loader_status" ] = "WebCrawler documents removed."
+					st.rerun( )
+				
+				if run_crawl and start_url:
+					loader = WebLoader(
+						recursive=True,
+						max_depth=max_depth,
+						prevent_outside=stay_on_domain,
+					)
+					
+					documents = loader.load( start_url ) or [ ]
+					for d in documents:
+						d.metadata[ "loader" ] = "WebCrawler"
+						d.metadata[ "source" ] = start_url
+					
+					if documents:
+						if st.session_state.get( "documents" ):
+							st.session_state.documents.extend( documents )
+						else:
+							st.session_state.documents = documents
+							st.session_state.raw_documents = list( documents )
+						
+						st.session_state.raw_text = _rebuild_raw_text_from_documents( )
+						st.session_state.active_loader = "WebCrawler"
+						st.session_state[
+							"_loader_status" ] = f"Crawled {len( documents )} document(s)."
+						st.rerun( )
 		
-		# --------------------------- Web Crawler
-		with st.expander( "🕷️ Web Crawler", expanded=False ):
-			start_url = st.text_input(
-				"Start URL",
-				placeholder="https://example.com",
-				key="crawl_start_url",
-			)
-			
-			max_depth = st.number_input(
-				"Max crawl depth",
-				min_value=1,
-				max_value=5,
-				value=2,
-				step=1,
-				key="crawl_depth",
-			)
-			
-			stay_on_domain = st.checkbox(
-				"Stay on starting domain",
-				value=True,
-				key="crawl_domain_lock",
-			)
-			
-			col_run, col_clear, col_save = st.columns( 3 )
-			run_crawl = col_run.button( "Load", key="crawl_run" )
-			clear_crawl = col_clear.button( "Clear", key="crawl_clear" )
-			
-			can_save = (
-					st.session_state.get( "active_loader" ) == "WebCrawler"
-					and isinstance( st.session_state.get( "raw_text" ), str )
-					and st.session_state.get( "raw_text" ).strip( )
-			)
-			
-			if can_save:
-				col_save.download_button(
-					"Save",
-					data=st.session_state.get( "raw_text" ),
-					file_name="web_crawler_output.txt",
-					mime="text/plain",
-					key="crawl_save",
-				)
+		# ------------------------------------------------------------------
+		# RIGHT COLUMN — Document Preview
+		# ------------------------------------------------------------------
+		with right:
+			documents = st.session_state.documents
+			if not documents:
+				st.info( 'No documents loaded.' )
 			else:
-				col_save.button( "Save", key="crawl_save_disabled", disabled=True )
-			
-			if clear_crawl and st.session_state.get( "documents" ):
-				st.session_state.documents = [
-						d for d in st.session_state.documents
-						if d.metadata.get( "loader" ) != "WebCrawler"
-				]
-				st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-				st.session_state[ "_loader_status" ] = "WebCrawler documents removed."
-				st.rerun( )
-			
-			if run_crawl and start_url:
-				loader = WebLoader(
-					recursive=True,
-					max_depth=max_depth,
-					prevent_outside=stay_on_domain,
-				)
-				
-				documents = loader.load( start_url ) or [ ]
-				for d in documents:
-					d.metadata[ "loader" ] = "WebCrawler"
-					d.metadata[ "source" ] = start_url
-				
-				if documents:
-					if st.session_state.get( "documents" ):
-						st.session_state.documents.extend( documents )
-					else:
-						st.session_state.documents = documents
-						st.session_state.raw_documents = list( documents )
-					
-					st.session_state.raw_text = _rebuild_raw_text_from_documents( )
-					st.session_state.active_loader = "WebCrawler"
-					st.session_state[
-						"_loader_status" ] = f"Crawled {len( documents )} document(s)."
-					st.rerun( )
-	
-	# ------------------------------------------------------------------
-	# RIGHT COLUMN — Document Preview
-	# ------------------------------------------------------------------
-	with right:
-		documents = st.session_state.documents
-		if not documents:
-			st.info( 'No documents loaded.' )
-		else:
-			st.caption( f'Active Loader: {st.session_state.active_loader}' )
-			st.write( f'Documents: {len( documents )}' )
-			for i, d in enumerate( documents[ :5 ] ):
-				with st.expander( f'Document {i + 1}', expanded=True ):
-					st.json( d.metadata )
-					st.text_area( 'Content', d.page_content[ :5000 ],
-						height=500, key=f'preview_doc_{i}' )
+				st.caption( f'Active Loader: {st.session_state.active_loader}' )
+				st.write( f'Documents: {len( documents )}' )
+				for i, d in enumerate( documents[ :5 ] ):
+					with st.expander( f'Document {i + 1}', expanded=True ):
+						st.json( d.metadata )
+						st.text_area( 'Content', d.page_content[ :5000 ],
+							height=500, key=f'preview_doc_{i}' )
 
 # =============================================================================
 # SCRAPING MODE
 # ==============================================================================
 elif mode == 'Scraping':
-	st.subheader( f'🕷️ Web Scraping' )
-	st.divider( )
-	
-	if 'webscrape_clear_request' not in st.session_state:
-		st.session_state[ 'webscrape_clear_request' ] = False
-	
-	if st.session_state.get( 'webscrape_clear_request', False ):
-		st.session_state[ 'webfetcher_url' ] = ''
-		st.session_state[ 'webscrape_results' ] = [ ]
-		st.session_state[ 'webscrape_summary' ] = { }
-		st.session_state[ 'webscrape_clear_request' ] = False
-	
-	def _clear_webscrape_state( ) -> None:
-		st.session_state[ 'webscrape_clear_request' ] = True
-	
-	def _coerce_items( value: Any ) -> list[ str ]:
-		if value is None:
-			return [ ]
-		if isinstance( value, list ):
-			return [ str( item ) for item in value if item is not None ]
-		return [ str( value ) ]
-	
-	def _extract_title_from_html( html: str ) -> str:
-		try:
-			if not isinstance( html, str ) or not html.strip( ):
-				return ''
-			
-			match = re.search(
-				r'<title[^>]*>(.*?)</title>',
-				html,
-				flags=re.IGNORECASE | re.DOTALL )
-			
-			if not match:
-				return ''
-			
-			title = re.sub( r'\s+', ' ', match.group( 1 ) ).strip( )
-			return html_lib.unescape( title )
-		except Exception:
-			return ''
-	
-	def _truncate_text( text: str, limit: int = 12000 ) -> str:
-		if not isinstance( text, str ):
-			return ''
-		if len( text ) <= limit:
-			return text
-		return text[ : limit ] + '\n\n... [truncated]'
-	
-	def _normalize_url( base_url: str, href: str ) -> str:
-		try:
-			if not href or not isinstance( href, str ):
-				return ''
-			
-			href = href.strip( )
-			if not href:
-				return ''
-			
-			absolute = urljoin( base_url, href )
-			parsed = urlparse( absolute )
-			if parsed.scheme not in ('http', 'https'):
-				return ''
-			
-			normalized = parsed._replace( fragment='' )
-			return normalized.geturl( )
-		except Exception:
-			return ''
-	
-	def _same_domain( left: str, right: str ) -> bool:
-		try:
-			left_host = (urlparse( left ).netloc or '').lower( )
-			right_host = (urlparse( right ).netloc or '').lower( )
-			return bool( left_host ) and left_host == right_host
-		except Exception:
-			return False
-	
-	def _extract_links_from_html( base_url: str, html: str ) -> list[ str ]:
-		try:
-			if not isinstance( html, str ) or not html.strip( ):
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	with center:
+		st.subheader( f'🕷️ Web Scraping' )
+		st.divider( )
+		
+		if 'webscrape_clear_request' not in st.session_state:
+			st.session_state[ 'webscrape_clear_request' ] = False
+		
+		if st.session_state.get( 'webscrape_clear_request', False ):
+			st.session_state[ 'webfetcher_url' ] = ''
+			st.session_state[ 'webscrape_results' ] = [ ]
+			st.session_state[ 'webscrape_summary' ] = { }
+			st.session_state[ 'webscrape_clear_request' ] = False
+		
+		def _clear_webscrape_state( ) -> None:
+			st.session_state[ 'webscrape_clear_request' ] = True
+		
+		def _coerce_items( value: Any ) -> list[ str ]:
+			if value is None:
 				return [ ]
-			
-			soup = BeautifulSoup( html, 'html.parser' )
-			results: list[ str ] = [ ]
-			seen: set[ str ] = set( )
-			for tag in soup.find_all( 'a', href=True ):
-				candidate = _normalize_url( base_url, tag.get( 'href', '' ) )
-				if candidate and candidate not in seen:
-					seen.add( candidate )
-					results.append( candidate )
-			
-			return results
-		except Exception:
-			return [ ]
-	
-	def _scrape_single_page(
-			url: str,
-			include_title: bool,
-			include_basic_text: bool,
-			include_raw_html: bool,
-			selected_methods: list[ str ] ) -> dict[ str, Any ]:
-		page_result: dict[ str, Any ] = \
-		{
-				'url': url,
-				'status_code': None,
-				'encoding': None,
-				'title': '',
-				'plain_text': '',
-				'raw_html': '',
-				'links_discovered': [ ],
-				'data': { },
-				'errors': [ ],
-		}
+			if isinstance( value, list ):
+				return [ str( item ) for item in value if item is not None ]
+			return [ str( value ) ]
 		
-		fetcher = WebFetcher( )
+		def _extract_title_from_html( html: str ) -> str:
+			try:
+				if not isinstance( html, str ) or not html.strip( ):
+					return ''
+				
+				match = re.search(
+					r'<title[^>]*>(.*?)</title>',
+					html,
+					flags=re.IGNORECASE | re.DOTALL )
+				
+				if not match:
+					return ''
+				
+				title = re.sub( r'\s+', ' ', match.group( 1 ) ).strip( )
+				return html_lib.unescape( title )
+			except Exception:
+				return ''
 		
-		try:
-			response = fetcher.fetch( url )
-			if response is None:
-				page_result[ 'errors' ].append( 'No response returned.' )
+		def _truncate_text( text: str, limit: int = 12000 ) -> str:
+			if not isinstance( text, str ):
+				return ''
+			if len( text ) <= limit:
+				return text
+			return text[ : limit ] + '\n\n... [truncated]'
+		
+		def _normalize_url( base_url: str, href: str ) -> str:
+			try:
+				if not href or not isinstance( href, str ):
+					return ''
+				
+				href = href.strip( )
+				if not href:
+					return ''
+				
+				absolute = urljoin( base_url, href )
+				parsed = urlparse( absolute )
+				if parsed.scheme not in ('http', 'https'):
+					return ''
+				
+				normalized = parsed._replace( fragment='' )
+				return normalized.geturl( )
+			except Exception:
+				return ''
+		
+		def _same_domain( left: str, right: str ) -> bool:
+			try:
+				left_host = (urlparse( left ).netloc or '').lower( )
+				right_host = (urlparse( right ).netloc or '').lower( )
+				return bool( left_host ) and left_host == right_host
+			except Exception:
+				return False
+		
+		def _extract_links_from_html( base_url: str, html: str ) -> list[ str ]:
+			try:
+				if not isinstance( html, str ) or not html.strip( ):
+					return [ ]
+				
+				soup = BeautifulSoup( html, 'html.parser' )
+				results: list[ str ] = [ ]
+				seen: set[ str ] = set( )
+				for tag in soup.find_all( 'a', href=True ):
+					candidate = _normalize_url( base_url, tag.get( 'href', '' ) )
+					if candidate and candidate not in seen:
+						seen.add( candidate )
+						results.append( candidate )
+				
+				return results
+			except Exception:
+				return [ ]
+		
+		def _scrape_single_page(
+				url: str,
+				include_title: bool,
+				include_basic_text: bool,
+				include_raw_html: bool,
+				selected_methods: list[ str ] ) -> dict[ str, Any ]:
+			page_result: dict[ str, Any ] = \
+			{
+					'url': url,
+					'status_code': None,
+					'encoding': None,
+					'title': '',
+					'plain_text': '',
+					'raw_html': '',
+					'links_discovered': [ ],
+					'data': { },
+					'errors': [ ],
+			}
+			
+			fetcher = WebFetcher( )
+			
+			try:
+				response = fetcher.fetch( url )
+				if response is None:
+					page_result[ 'errors' ].append( 'No response returned.' )
+					return page_result
+				
+				page_result[ 'status_code' ] = getattr( response, 'status_code', None )
+				page_result[ 'encoding' ] = getattr( response, 'encoding', None )
+				raw_html = getattr( response, 'text', '' ) or ''
+				page_result[ 'links_discovered' ] = _extract_links_from_html( url, raw_html )
+				if include_title:
+					page_result[ 'title' ] = _extract_title_from_html( raw_html )
+				
+				if include_basic_text:
+					try:
+						page_result[ 'plain_text' ] = fetcher.html_to_text( raw_html ) or ''
+					except Exception as exc:
+						page_result[ 'errors' ].append( f'Basic Text: {str( exc )}' )
+				
+				if include_raw_html:
+					page_result[ 'raw_html' ] = raw_html
+			
+			except Exception as exc:
+				page_result[ 'errors' ].append( f'Fetch: {str( exc )}' )
 				return page_result
 			
-			page_result[ 'status_code' ] = getattr( response, 'status_code', None )
-			page_result[ 'encoding' ] = getattr( response, 'encoding', None )
-			raw_html = getattr( response, 'text', '' ) or ''
-			page_result[ 'links_discovered' ] = _extract_links_from_html( url, raw_html )
-			if include_title:
-				page_result[ 'title' ] = _extract_title_from_html( raw_html )
+			REGISTRY: dict[ str, tuple[ str, callable ] ] = \
+			{
+					'scrape_headings': ('Headings', fetcher.scrape_headings),
+					'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
+					'scrape_lists': ('Lists', fetcher.scrape_lists),
+					'scrape_tables': ('Tables', fetcher.scrape_tables),
+					'scrape_articles': ('Articles', fetcher.scrape_articles),
+					'scrape_sections': ('Sections', fetcher.scrape_sections),
+					'scrape_divisions': ('Divisions', fetcher.scrape_divisions),
+					'scrape_blockquotes': ('Blockquotes', fetcher.scrape_blockquotes),
+					'scrape_hyperlinks': ('Hyperlinks', fetcher.scrape_hyperlinks),
+					'scrape_images': ('Images', fetcher.scrape_images),
+			}
 			
-			if include_basic_text:
+			for method_name in selected_methods:
+				if method_name not in REGISTRY:
+					continue
+				
+				label, method = REGISTRY[ method_name ]
 				try:
-					page_result[ 'plain_text' ] = fetcher.html_to_text( raw_html ) or ''
+					data = method( url )
+					page_result[ 'data' ][ label ] = _coerce_items( data )
 				except Exception as exc:
-					page_result[ 'errors' ].append( f'Basic Text: {str( exc )}' )
+					page_result[ 'data' ][ label ] = [ ]
+					page_result[ 'errors' ].append( f'{label}: {str( exc )}' )
 			
-			if include_raw_html:
-				page_result[ 'raw_html' ] = raw_html
-		
-		except Exception as exc:
-			page_result[ 'errors' ].append( f'Fetch: {str( exc )}' )
 			return page_result
 		
-		REGISTRY: dict[ str, tuple[ str, callable ] ] = \
-		{
-				'scrape_headings': ('Headings', fetcher.scrape_headings),
-				'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
-				'scrape_lists': ('Lists', fetcher.scrape_lists),
-				'scrape_tables': ('Tables', fetcher.scrape_tables),
-				'scrape_articles': ('Articles', fetcher.scrape_articles),
-				'scrape_sections': ('Sections', fetcher.scrape_sections),
-				'scrape_divisions': ('Divisions', fetcher.scrape_divisions),
-				'scrape_blockquotes': ('Blockquotes', fetcher.scrape_blockquotes),
-				'scrape_hyperlinks': ('Hyperlinks', fetcher.scrape_hyperlinks),
-				'scrape_images': ('Images', fetcher.scrape_images),
-		}
-		
-		for method_name in selected_methods:
-			if method_name not in REGISTRY:
-				continue
+		def _crawl_pages(
+				seed_url: str,
+				include_title: bool,
+				include_basic_text: bool,
+				include_raw_html: bool,
+				selected_methods: list[ str ],
+				recursive: bool,
+				max_depth: int,
+				max_pages: int,
+				same_domain_only: bool ) -> tuple[ list[ dict[ str, Any ] ], dict[ str, Any ] ]:
+			results: list[ dict[ str, Any ] ] = [ ]
+			visited: set[ str ] = set( )
+			enqueued: set[ str ] = set( )
+			queue: deque[ tuple[ str, int ] ] = deque( )
+			skipped_urls: list[ str ] = [ ]
 			
-			label, method = REGISTRY[ method_name ]
-			try:
-				data = method( url )
-				page_result[ 'data' ][ label ] = _coerce_items( data )
-			except Exception as exc:
-				page_result[ 'data' ][ label ] = [ ]
-				page_result[ 'errors' ].append( f'{label}: {str( exc )}' )
-		
-		return page_result
-	
-	def _crawl_pages(
-			seed_url: str,
-			include_title: bool,
-			include_basic_text: bool,
-			include_raw_html: bool,
-			selected_methods: list[ str ],
-			recursive: bool,
-			max_depth: int,
-			max_pages: int,
-			same_domain_only: bool ) -> tuple[ list[ dict[ str, Any ] ], dict[ str, Any ] ]:
-		results: list[ dict[ str, Any ] ] = [ ]
-		visited: set[ str ] = set( )
-		enqueued: set[ str ] = set( )
-		queue: deque[ tuple[ str, int ] ] = deque( )
-		skipped_urls: list[ str ] = [ ]
-		
-		normalized_seed = _normalize_url( seed_url, seed_url )
-		if not normalized_seed:
-			raise ValueError( 'A valid absolute URL is required.' )
-		
-		queue.append( (normalized_seed, 0) )
-		enqueued.add( normalized_seed )
-		
-		while queue and len( results ) < max_pages:
-			current_url, depth = queue.popleft( )
+			normalized_seed = _normalize_url( seed_url, seed_url )
+			if not normalized_seed:
+				raise ValueError( 'A valid absolute URL is required.' )
 			
-			if current_url in visited:
-				continue
+			queue.append( (normalized_seed, 0) )
+			enqueued.add( normalized_seed )
 			
-			visited.add( current_url )
-			
-			page_result = _scrape_single_page(
-				url=current_url,
-				include_title=include_title,
-				include_basic_text=include_basic_text,
-				include_raw_html=include_raw_html,
-				selected_methods=selected_methods )
-			
-			page_result[ 'depth' ] = depth
-			results.append( page_result )
-			
-			if not recursive:
-				continue
-			
-			if depth >= max_depth:
-				continue
-			
-			discovered_links = page_result.get( 'links_discovered', [ ] ) or [ ]
-			for next_url in discovered_links:
-				if len( results ) + len( queue ) >= max_pages:
-					break
+			while queue and len( results ) < max_pages:
+				current_url, depth = queue.popleft( )
 				
-				if not next_url or next_url in visited or next_url in enqueued:
+				if current_url in visited:
 					continue
 				
-				if same_domain_only and not _same_domain( normalized_seed, next_url ):
-					skipped_urls.append( next_url )
-					continue
+				visited.add( current_url )
 				
-				queue.append( (next_url, depth + 1) )
-				enqueued.add( next_url )
-		
-		summary: dict[ str, Any ] = \
-		{
-				'mode': 'recursive' if recursive else 'single-page',
-				'seed_url': normalized_seed,
-				'pages_processed': len( results ),
-				'pages_visited': len( visited ),
-				'pages_skipped': len( skipped_urls ),
-				'recursive_requested': bool( recursive ),
-				'max_depth': int( max_depth ),
-				'max_pages': int( max_pages ),
-				'same_domain_only': bool( same_domain_only ),
-				'visited_urls': list( visited ),
-				'skipped_urls': skipped_urls,
-		}
-		
-		return results, summary
-	
-	col_left, col_right = st.columns( [ 1, 2 ], border=True )
-	
-	with col_left:
-		target_url = st.text_input(
-			'Enter Target URL',
-			placeholder='https://example.com',
-			key='webfetcher_url' )
-		
-		st.markdown( '##### Core Output' )
-		
-		include_title = st.checkbox(
-			'Page Title',
-			value=True,
-			key='wf_page_title' )
-		
-		include_basic_text = st.checkbox(
-			'Basic Text',
-			value=True,
-			key='wf_basic_text' )
-		
-		include_raw_html = st.checkbox(
-			'Raw HTML',
-			value=False,
-			key='wf_raw_html' )
-		
-		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-		
-		st.markdown( '##### Structured Extraction' )
-
-		col1, col2 = st.columns( [ 0.5, 0.5 ] )
-		
-		REGISTRY_LABELS: dict[ str, str ] = \
-		{
-				'scrape_headings': 'Headings',
-				'scrape_paragraphs': 'Paragraphs',
-				'scrape_lists': 'Lists',
-				'scrape_tables': 'Tables',
-				'scrape_articles': 'Articles',
-				'scrape_sections': 'Sections',
-				'scrape_divisions': 'Divisions',
-				'scrape_blockquotes': 'Blockquotes',
-				'scrape_hyperlinks': 'Hyperlinks',
-				'scrape_images': 'Images',
-		}
-		
-		selected_methods: list[ str ] = [ ]
-		
-		_registry_items: list[ tuple[ str, str ] ] = list( REGISTRY_LABELS.items( ) )
-		_col1_items: list[ tuple[ str, str ] ] = _registry_items[ :5 ]
-		_col2_items: list[ tuple[ str, str ] ] = _registry_items[ 5: ]
-		
-		with col1:
-			for method_name, label in _col1_items:
-				if st.checkbox( label, key=f'wf_{method_name}' ):
-					selected_methods.append( method_name )
-		
-		with col2:
-			for method_name, label in _col2_items:
-				if st.checkbox( label, key=f'wf_{method_name}' ):
-					selected_methods.append( method_name )
-		
-		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-		
-		st.markdown( '##### Crawl Controls' )
-		
-		enable_recursive = st.checkbox(
-			'Recursive Crawl',
-			value=False,
-			key='wf_recursive' )
-		
-		max_depth = st.number_input(
-			'Max Depth',
-			min_value=0,
-			max_value=10,
-			value=1,
-			step=1,
-			key='wf_max_depth',
-			disabled=(not enable_recursive) )
-		
-		max_pages = st.number_input(
-			'Max Pages',
-			min_value=1,
-			max_value=500,
-			value=10,
-			step=1,
-			key='wf_max_pages' )
-		
-		same_domain_only = st.checkbox(
-			'Same Domain Only',
-			value=True,
-			key='wf_same_domain_only',
-			disabled=(not enable_recursive) )
-		
-		b1, b2 = st.columns( 2 )
-		
-		with b1:
-			run_scraper = st.button( 'Run Scraper', key='webfetcher_run' )
-		
-		with b2:
-			st.button( 'Clear', key='webfetcher_clear', on_click=_clear_webscrape_state )
-	
-	with col_right:
-		if run_scraper:
-			try:
-				if not target_url or not target_url.strip( ):
-					raise ValueError( 'A target URL is required.' )
-				
-				results, summary = _crawl_pages(
-					seed_url=target_url.strip( ),
+				page_result = _scrape_single_page(
+					url=current_url,
 					include_title=include_title,
 					include_basic_text=include_basic_text,
 					include_raw_html=include_raw_html,
-					selected_methods=selected_methods,
-					recursive=bool( enable_recursive ),
-					max_depth=int( max_depth ),
-					max_pages=int( max_pages ),
-					same_domain_only=bool( same_domain_only ) )
+					selected_methods=selected_methods )
 				
-				st.session_state[ 'webscrape_results' ] = results
-				st.session_state[ 'webscrape_summary' ] = summary
-				st.rerun( )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-		
-		summary = st.session_state.get( 'webscrape_summary', { } )
-		results = st.session_state.get( 'webscrape_results', [ ] )
-		
-		if summary:
-			st.subheader( 'Summary' )
-			st.json( summary )
-		
-		if not results:
-			st.info( 'No results.' )
-		else:
-			st.subheader( 'Results' )
-			
-			for idx, page in enumerate( results, start=1 ):
-				title = page.get( 'title', '' ) or page.get( 'url', f'Page {idx}' )
-				depth = page.get( 'depth', 0 )
+				page_result[ 'depth' ] = depth
+				results.append( page_result )
 				
-				with st.expander( f'Page {idx} [Depth {depth}]: {title}', expanded=(idx == 1) ):
-					meta_col1, meta_col2 = st.columns( 2 )
-					
-					with meta_col1:
-						st.markdown( f"**URL:** {page.get( 'url', '' )}" )
-						st.markdown( f"**Status Code:** {page.get( 'status_code', '' )}" )
-						st.markdown( f"**Depth:** {page.get( 'depth', 0 )}" )
-					
-					with meta_col2:
-						st.markdown( f"**Encoding:** {page.get( 'encoding', '' )}" )
-						st.markdown( f"**Title:** {page.get( 'title', '' )}" )
-					
-					plain_text = page.get( 'plain_text', '' )
-					if isinstance( plain_text, str ) and plain_text.strip( ):
-						st.subheader( 'Basic Text' )
-						st.text_area(
-							label='',
-							value=_truncate_text( plain_text, limit=12000 ),
-							height=280,
-							key=f'webscrape_plain_text_{idx}' )
-					
-					raw_html = page.get( 'raw_html', '' )
-					if isinstance( raw_html, str ) and raw_html.strip( ):
-						st.subheader( 'Raw HTML' )
-						st.text_area(
-							label='',
-							value=_truncate_text( raw_html, limit=12000 ),
-							height=240,
-							key=f'webscrape_raw_html_{idx}' )
-					
-					discovered_links = page.get( 'links_discovered', [ ] ) or [ ]
-					if discovered_links:
-						st.subheader( 'Links Discovered' )
-						for link_idx, link in enumerate( discovered_links, start=1 ):
-							st.write( f'{link_idx}. {link}' )
-					
-					data = page.get( 'data', { } ) or { }
-					for label, items in data.items( ):
-						st.subheader( f'{label}' )
-						
-						if not items:
-							st.info( 'No results returned.' )
-							continue
-						
-						for item_idx, item in enumerate( items, start=1 ):
-							st.write( f'{item_idx}. {item}' )
-					
-					errors = page.get( 'errors', [ ] ) or [ ]
-					if errors:
-						st.subheader( 'Errors' )
-						for err in errors:
-							st.error( err )
-							
-# ==============================================================================
-# FETCHING MODE
-# =============================================================================
-elif mode == 'Retrieval':
-	st.subheader( f'🏛️ Public Collections & Archives' )
-	st.divider( )
-	st.session_state.setdefault( "arxiv_input", "" )
-	st.session_state.setdefault( "arxiv_results", [ ] )
-	
-	# -------- ArXiv
-	with st.expander( label='ArXiv', icon='📘', expanded=False  ):
-		if 'arxiv_results' not in st.session_state:
-			st.session_state[ 'arxiv_results' ] = [ ]
-		
-		if 'arxiv_clear_request' not in st.session_state:
-			st.session_state[ 'arxiv_clear_request' ] = False
-		
-		if st.session_state.get( 'arxiv_clear_request', False ):
-			st.session_state[ 'arxiv_input' ] = ''
-			st.session_state[ 'arxiv_results' ] = [ ]
-			st.session_state[ 'arxiv_max_docs' ] = 5
-			st.session_state[ 'arxiv_full_documents' ] = False
-			st.session_state[ 'arxiv_include_metadata' ] = False
-			st.session_state[ 'arxiv_clear_request' ] = False
-		
-		def _clear_arxiv_state( ) -> None:
-			st.session_state[ 'arxiv_clear_request' ] = True
-		
-		col1, col2 = st.columns( 2, border=True )
-		
-		with col1:
-			arxiv_input = st.text_area(
-				'Query',
-				height=80,
-				key='arxiv_input',
-				placeholder=(
-						'Examples:\n'
-						'What is the ImageBind model?\n'
-						'2401.01234\n'
-						'graph neural networks for molecular property prediction'
-				), )
-			
-			c1, c2 = st.columns( 2 )
-			with c1:
-				arxiv_max_docs = st.number_input(
-					'Max Docs',
-					min_value=1,
-					max_value=300,
-					value=st.session_state.get( 'arxiv_max_docs', 5 ),
-					step=1,
-					key='arxiv_max_docs',
-					help='Maximum number of ArXiv documents to retrieve.'
-				)
-			
-			with c2:
-				arxiv_full_documents = st.checkbox(
-					'Full Documents',
-					value=st.session_state.get( 'arxiv_full_documents', False ),
-					key='arxiv_full_documents',
-					help='When checked, retrieves fuller document text instead of lighter summary-based output.'
-				)
-			
-			arxiv_include_metadata = st.checkbox(
-				'Include All Metadata',
-				value=st.session_state.get( 'arxiv_include_metadata', False ),
-				key='arxiv_include_metadata',
-				help='Include additional metadata fields when available.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				do_submit = st.button( 'Submit', key='arxiv_submit' )
-			
-			with b2:
-				st.button( 'Clear', key='arxiv_clear', on_click=_clear_arxiv_state )
-			
-			if do_submit:
-				try:
-					queries = [ q.strip( ) for q in (arxiv_input or '').splitlines( ) if
-					            q.strip( ) ]
-					
-					if not queries:
-						st.warning( 'No input provided.' )
-					else:
-						from fetchers import ArXiv
-						
-						fetcher = ArXiv(
-							max_documents=int( arxiv_max_docs ),
-							full_documents=bool( arxiv_full_documents ),
-							include_metadata=bool( arxiv_include_metadata ) )
-						
-						results: list[ Document ] = [ ]
-						
-						for q in queries:
-							docs = fetcher.fetch(
-								q,
-								max_documents=int( arxiv_max_docs ),
-								full_documents=bool( arxiv_full_documents ),
-								include_metadata=bool( arxiv_include_metadata ) )
-							
-							if isinstance( docs, list ):
-								results.extend( docs )
-						
-						st.session_state[ 'arxiv_results' ] = results
-						st.rerun( )
+				if not recursive:
+					continue
 				
-				except Exception as exc:
-					st.error( 'ArXiv request failed.' )
-					st.exception( exc )
-		
-		with col2:
-			st.markdown( 'Results' )
-			
-			results = st.session_state.get( 'arxiv_results', [ ] )
-			
-			if not results:
-				st.text( 'No results.' )
-			else:
-				for idx, doc in enumerate( results, start=1 ):
-					title = ''
-					if isinstance( doc, Document ):
-						title = str( doc.metadata.get( 'Title', '' ) ) if doc.metadata else ''
-					label = f'Document {idx}' if not title else f'Document {idx}: {title}'
-					
-					with st.expander( label, expanded=False ):
-						if isinstance( doc, Document ):
-							if doc.metadata:
-								meta_col1, meta_col2 = st.columns( 2 )
-								
-								with meta_col1:
-									if 'Title' in doc.metadata:
-										st.markdown( f"**Title:** {doc.metadata.get( 'Title', '' )}" )
-									if 'Authors' in doc.metadata:
-										st.markdown( f"**Authors:** {doc.metadata.get( 'Authors', '' )}" )
-								
-								with meta_col2:
-									if 'Published' in doc.metadata:
-										st.markdown( f"**Published:** {doc.metadata.get( 'Published', '' )}" )
-									if 'Entry ID' in doc.metadata:
-										st.markdown( f"**Entry ID:** {doc.metadata.get( 'Entry ID', '' )}" )
-							
-							st.text_area(
-								'Content',
-								value=doc.page_content or '',
-								height=300,
-								key=f'arxiv_doc_{idx}' )
-							
-							if doc.metadata:
-								st.json( doc.metadata )
-						else:
-							st.write( doc )
+				if depth >= max_depth:
+					continue
 				
-	# -------- Google Drive
-	with st.expander( label='Google Drive', icon='🛡️',expanded=False ):
-		if 'googledrive_results' not in st.session_state:
-			st.session_state[ 'googledrive_results' ] = [ ]
+				discovered_links = page_result.get( 'links_discovered', [ ] ) or [ ]
+				for next_url in discovered_links:
+					if len( results ) + len( queue ) >= max_pages:
+						break
+					
+					if not next_url or next_url in visited or next_url in enqueued:
+						continue
+					
+					if same_domain_only and not _same_domain( normalized_seed, next_url ):
+						skipped_urls.append( next_url )
+						continue
+					
+					queue.append( (next_url, depth + 1) )
+					enqueued.add( next_url )
+			
+			summary: dict[ str, Any ] = \
+			{
+					'mode': 'recursive' if recursive else 'single-page',
+					'seed_url': normalized_seed,
+					'pages_processed': len( results ),
+					'pages_visited': len( visited ),
+					'pages_skipped': len( skipped_urls ),
+					'recursive_requested': bool( recursive ),
+					'max_depth': int( max_depth ),
+					'max_pages': int( max_pages ),
+					'same_domain_only': bool( same_domain_only ),
+					'visited_urls': list( visited ),
+					'skipped_urls': skipped_urls,
+			}
+			
+			return results, summary
 		
-		if 'googledrive_clear_request' not in st.session_state:
-			st.session_state[ 'googledrive_clear_request' ] = False
-		
-		if st.session_state.get( 'googledrive_clear_request', False ):
-			st.session_state[ 'googledrive_query' ] = ''
-			st.session_state[ 'googledrive_folder_id' ] = cfg.GOOGLE_DRIVE_FOLDER_ID or 'root'
-			st.session_state[ 'googledrive_results_limit' ] = 10
-			st.session_state[ 'googledrive_template' ] = 'gdrive-query'
-			st.session_state[ 'googledrive_mode' ] = 'documents'
-			st.session_state[ 'googledrive_mime_type' ] = ''
-			st.session_state[ 'googledrive_results' ] = [ ]
-			st.session_state[ 'googledrive_clear_request' ] = False
-		
-		def _clear_googledrive_state( ) -> None:
-			st.session_state[ 'googledrive_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
+		col_left, col_right = st.columns( [ 1, 2 ], border=True )
 		
 		with col_left:
-			gd_query = st.text_area(
-				'Google Drive Query',
-				height=90,
-				help=cfg.GOOGLE_DRIVE,
-				key='googledrive_query',
-				placeholder=( 'Examples:\n'
-						'machine learning\n'
-						'budget execution\n'
-						'FY 2026 operating plan\n'
-						'\n'
-						'Use "*" only when the selected template supports folder-wide or mime-type retrieval.'
-				),
-			)
+			target_url = st.text_input(
+				'Enter Target URL',
+				placeholder='https://example.com',
+				key='webfetcher_url' )
 			
-			c1, c2 = st.columns( 2 )
+			st.markdown( '##### Core Output' )
 			
-			with c1:
-				gd_folder_id = st.text_input(
-					'Folder ID',
-					value=st.session_state.get( 'googledrive_folder_id', cfg.GOOGLE_DRIVE_FOLDER_ID or 'root' ),
-					key='googledrive_folder_id',
-					placeholder='root or a Google Drive folder id',
-					help='Use "root" for your My Drive root, or provide a specific folder id.'
-				)
+			include_title = st.checkbox(
+				'Page Title',
+				value=True,
+				key='wf_page_title' )
 			
-			with c2:
-				gd_results_limit = st.number_input( 'Max Docs', min_value=1, max_value=100,
-					value=int( st.session_state.get( 'googledrive_results_limit', 10 ) ),
-					step=1, key='googledrive_results_limit', )
+			include_basic_text = st.checkbox(
+				'Basic Text',
+				value=True,
+				key='wf_basic_text' )
 			
-			c3, c4 = st.columns( 2 )
-			with c3:
-				gd_template = st.selectbox(
-					'Template',
-					options=[
-							'gdrive-all-in-folder',
-							'gdrive-query',
-							'gdrive-by-name',
-							'gdrive-query-in-folder',
-							'gdrive-mime-type',
-							'gdrive-mime-type-in-folder',
-							'gdrive-query-with-mime-type',
-							'gdrive-query-with-mime-type-and-folder',
-					],
-					index=1,
-					key='googledrive_template',
-					help='Select the Drive retrieval strategy.' )
+			include_raw_html = st.checkbox(
+				'Raw HTML',
+				value=False,
+				key='wf_raw_html' )
 			
-			with c4:
-				gd_mode = st.selectbox(
-					'Mode',
-					options=[ 'documents', 'snippets' ],
-					index=0,
-					key='googledrive_mode',
-					help='Use snippets for short metadata-driven returns.'
-				)
+			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 			
-			gd_mime_type = st.selectbox(
-				'MIME Type Filter',
-				options=[
-						'',
-						'text/text',
-						'text/plain',
-						'text/html',
-						'text/csv',
-						'text/markdown',
-						'image/png',
-						'image/jpeg',
-						'application/epub+zip',
-						'application/pdf',
-						'application/rtf',
-						'application/vnd.google-apps.document',
-						'application/vnd.google-apps.presentation',
-						'application/vnd.google-apps.spreadsheet',
-						'application/vnd.google.colaboratory',
-						'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-						'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-				],
-				index=0,
-				key='googledrive_mime_type', help='Optional MIME type restriction.' )
-			
-			st.caption( 'Expected auth: GOOGLE_ACCOUNT_FILE for credentials JSON. '
-				'Optional: GOOGLE_DRIVE_TOKEN_PATH for token persistence.' )
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				gd_submit = st.button( 'Submit', key='googledrive_submit' )
-			
-			with b2:
-				st.button( 'Clear', key='googledrive_clear', on_click=_clear_googledrive_state )
-			
-			if gd_submit:
-				try:
-					from fetchers import GoogleDrive
-					fetcher = GoogleDrive( )
-					docs = fetcher.fetch( question=gd_query, folder_id=gd_folder_id or 'root',
-						results=int( gd_results_limit ), template=gd_template,
-						mime_type=gd_mime_type or None, mode=gd_mode, )
-					
-					st.session_state[ 'googledrive_results' ] = docs or [ ]
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Google Drive request failed.' )
-					st.exception( exc )
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			results = st.session_state.get( 'googledrive_results', [ ] )
-			
-			if not results:
-				st.text( 'No results.' )
-			else:
-				for idx, doc in enumerate( results, start=1 ):
-					title = ''
-					if isinstance( doc, Document ):
-						title = str( doc.metadata.get( 'name', '' ) ) if doc.metadata else ''
-					
-					label = f'Document {idx}' if not title else f'Document {idx}: {title}'
-					
-					with st.expander( label, expanded=False ):
-						if isinstance( doc, Document ):
-							if doc.metadata:
-								meta_col1, meta_col2 = st.columns( 2 )
-								
-								with meta_col1:
-									if 'name' in doc.metadata:
-										st.markdown( f"**Name:** {doc.metadata.get( 'name', '' )}" )
-									if 'id' in doc.metadata:
-										st.markdown( f"**ID:** {doc.metadata.get( 'id', '' )}" )
-								
-								with meta_col2:
-									if 'mimeType' in doc.metadata:
-										st.markdown( f"**MIME Type:** {doc.metadata.get( 'mimeType', '' )}" )
-									if 'modifiedTime' in doc.metadata:
-										st.markdown( f"**Modified:** {doc.metadata.get( 'modifiedTime', '' )}" )
-							
-							st.text_area(
-								'Content',
-								value=doc.page_content or '',
-								height=300,
-								key=f'googledrive_doc_{idx}'
-							)
-							
-							if doc.metadata:
-								st.json( doc.metadata )
-						else:
-							st.write( doc )
+			st.markdown( '##### Structured Extraction' )
 	
-	# -------- Wikipedia
-	with st.expander( label='Wikipedia', icon='📖',expanded=False ):
-		if 'wikipedia_results' not in st.session_state:
-			st.session_state[ 'wikipedia_results' ] = [ ]
-		
-		if 'wikipedia_clear_request' not in st.session_state:
-			st.session_state[ 'wikipedia_clear_request' ] = False
-		
-		if st.session_state.get( 'wikipedia_clear_request', False ):
-			st.session_state[ 'wikipedia_query' ] = ''
-			st.session_state[ 'wikipedia_language' ] = 'en'
-			st.session_state[ 'wikipedia_max_docs' ] = 5
-			st.session_state[ 'wikipedia_include_metadata' ] = False
-			st.session_state[ 'wikipedia_results' ] = [ ]
-			st.session_state[ 'wikipedia_clear_request' ] = False
-		
-		def _clear_wikipedia_state( ) -> None:
-			st.session_state[ 'wikipedia_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			wiki_query = st.text_area(
-				'Wikipedia Query',
-				height=90,
-				key='wikipedia_query',
-				help=cfg.WIKIPEDIA,
-				placeholder=(
-						'Examples:\n'
-						'Alan Turing\n'
-						'History of machine learning\n'
-						'Python (programming language)\n'
-						'Battle of Midway'
-				),
-			)
+			col1, col2 = st.columns( [ 0.5, 0.5 ] )
 			
-			c1, c2 = st.columns( 2 )
+			REGISTRY_LABELS: dict[ str, str ] = \
+			{
+					'scrape_headings': 'Headings',
+					'scrape_paragraphs': 'Paragraphs',
+					'scrape_lists': 'Lists',
+					'scrape_tables': 'Tables',
+					'scrape_articles': 'Articles',
+					'scrape_sections': 'Sections',
+					'scrape_divisions': 'Divisions',
+					'scrape_blockquotes': 'Blockquotes',
+					'scrape_hyperlinks': 'Hyperlinks',
+					'scrape_images': 'Images',
+			}
 			
-			with c1:
-				wiki_language = st.text_input(
-					'Language Code',
-					value=st.session_state.get( 'wikipedia_language', 'en' ),
-					key='wikipedia_language',
-					placeholder='en',
-					help='Wikipedia language code, e.g. en, fr, de, ja.'
-				)
+			selected_methods: list[ str ] = [ ]
 			
-			with c2:
-				wiki_max_docs = st.number_input(
-					'Max Docs',
-					min_value=1,
-					max_value=300,
-					value=int( st.session_state.get( 'wikipedia_max_docs', 5 ) ),
-					step=1,
-					key='wikipedia_max_docs',
-					help='Maximum number of Wikipedia documents to retrieve.'
-				)
+			_registry_items: list[ tuple[ str, str ] ] = list( REGISTRY_LABELS.items( ) )
+			_col1_items: list[ tuple[ str, str ] ] = _registry_items[ :5 ]
+			_col2_items: list[ tuple[ str, str ] ] = _registry_items[ 5: ]
 			
-			wiki_include_metadata = st.checkbox(
-				'Include All Metadata',
-				value=st.session_state.get( 'wikipedia_include_metadata', False ),
-				key='wikipedia_include_metadata',
-				help='Include additional metadata fields when available.'
-			)
+			with col1:
+				for method_name, label in _col1_items:
+					if st.checkbox( label, key=f'wf_{method_name}' ):
+						selected_methods.append( method_name )
 			
-			st.caption(
-				'No API key is required for Wikipedia retrieval. '
-				'Optional only: LANGSMITH_API_KEY for tracing.'
-			)
+			with col2:
+				for method_name, label in _col2_items:
+					if st.checkbox( label, key=f'wf_{method_name}' ):
+						selected_methods.append( method_name )
 			
-			b1, b2 = st.columns( 2 )
+			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 			
-			with b1:
-				wiki_submit = st.button( 'Submit', key='wikipedia_submit' )
+			st.markdown( '##### Crawl Controls' )
 			
-			with b2:
-				st.button( 'Clear', key='wikipedia_clear', on_click=_clear_wikipedia_state )
+			enable_recursive = st.checkbox(
+				'Recursive Crawl',
+				value=False,
+				key='wf_recursive' )
 			
-			if wiki_submit:
-				try:
-					queries = [ q.strip( ) for q in (wiki_query or '').splitlines( ) if q.strip( ) ]
-					
-					if not queries:
-						st.warning( 'No input provided.' )
-					else:
-						from fetchers import Wikipedia
-						
-						fetcher = Wikipedia(
-							language=wiki_language or 'en',
-							max_documents=int( wiki_max_docs ),
-							include_metadata=bool( wiki_include_metadata ) )
-						
-						results: list[ Document ] = [ ]
-						
-						for q in queries:
-							docs = fetcher.fetch(
-								q,
-								language=wiki_language or 'en',
-								max_documents=int( wiki_max_docs ),
-								include_metadata=bool( wiki_include_metadata ) )
-							
-							if isinstance( docs, list ):
-								results.extend( docs )
-						
-						st.session_state[ 'wikipedia_results' ] = results
-						st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Wikipedia request failed.' )
-					st.exception( exc )
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			results = st.session_state.get( 'wikipedia_results', [ ] )
-			
-			if not results:
-				st.text( 'No results.' )
-			else:
-				for idx, doc in enumerate( results, start=1 ):
-					title = ''
-					if isinstance( doc, Document ):
-						title = str( doc.metadata.get( 'title', '' ) ) if doc.metadata else ''
-					
-					label = f'Document {idx}' if not title else f'Document {idx}: {title}'
-					
-					with st.expander( 'Search Results', expanded=False ):
-						if isinstance( doc, Document ):
-							if doc.metadata:
-								meta_col1, meta_col2 = st.columns( 2 )
-								
-								with meta_col1:
-									if 'title' in doc.metadata:
-										st.markdown( f"**Title:** {doc.metadata.get( 'title', '' )}" )
-									if 'source' in doc.metadata:
-										st.markdown( f"**Source:** {doc.metadata.get( 'source', '' )}" )
-								
-								with meta_col2:
-									if 'categories' in doc.metadata:
-										st.markdown( f"**Categories:** {doc.metadata.get( 'categories', '' )}" )
-									if 'pageid' in doc.metadata:
-										st.markdown( f"**Page ID:** {doc.metadata.get( 'pageid', '' )}" )
-							
-							st.text_area(
-								'Content',
-								value=doc.page_content or '',
-								height=300,
-								key=f'wikipedia_doc_{idx}' )
-							
-							if doc.metadata:
-								st.json( doc.metadata )
-						else:
-							st.write( doc )
-	
-	# -------- Google Search
-	with st.expander( label='Google Search', icon='🔍', expanded=False ):
-		if 'googlesearch_results' not in st.session_state:
-			st.session_state[ 'googlesearch_results' ] = { }
-		
-		if 'googlesearch_clear_request' not in st.session_state:
-			st.session_state[ 'googlesearch_clear_request' ] = False
-		
-		if st.session_state.get( 'googlesearch_clear_request', False ):
-			st.session_state[ 'googlesearch_query' ] = ''
-			st.session_state[ 'googlesearch_num_results' ] = 10
-			st.session_state[ 'googlesearch_start' ] = 1
-			st.session_state[ 'googlesearch_exact_terms' ] = ''
-			st.session_state[ 'googlesearch_exclude_terms' ] = ''
-			st.session_state[ 'googlesearch_file_type' ] = ''
-			st.session_state[ 'googlesearch_date_restrict' ] = ''
-			st.session_state[ 'googlesearch_gl' ] = ''
-			st.session_state[ 'googlesearch_lr' ] = ''
-			st.session_state[ 'googlesearch_safe' ] = 'off'
-			st.session_state[ 'googlesearch_search_type' ] = ''
-			st.session_state[ 'googlesearch_site_search' ] = ''
-			st.session_state[ 'googlesearch_site_search_filter' ] = ''
-			st.session_state[ 'googlesearch_sort' ] = ''
-			st.session_state[ 'googlesearch_img_size' ] = ''
-			st.session_state[ 'googlesearch_img_type' ] = ''
-			st.session_state[ 'googlesearch_img_color_type' ] = ''
-			st.session_state[ 'googlesearch_img_dominant_color' ] = ''
-			st.session_state[ 'googlesearch_api_key' ] = ''
-			st.session_state[ 'googlesearch_cse_id' ] = ''
-			st.session_state[ 'googlesearch_timeout' ] = 10
-			st.session_state[ 'googlesearch_results' ] = { }
-			st.session_state[ 'googlesearch_clear_request' ] = False
-		
-		def _clear_googlesearch_state( ) -> None:
-			st.session_state[ 'googlesearch_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			google_query = st.text_area(
-				'Query',
-				height=90,
-				key='googlesearch_query',
-				placeholder=(
-						'Examples:\n'
-						'site:epa.gov budget execution\n'
-						'OpenAI GPT-5 reasoning\n'
-						'filetype:pdf appropriations law'
-				),
-			)
-			
-			c1, c2, c3 = st.columns( 3 )
-			
-			with c1:
-				google_num_results = st.number_input(
-					'Results / Request',
-					min_value=1,
-					max_value=10,
-					value=int( st.session_state.get( 'googlesearch_num_results', 10 ) ),
-					step=1,
-					key='googlesearch_num_results',
-					help='Google Custom Search returns up to 10 results per request.'
-				)
-			
-			with c2:
-				google_start = st.number_input(
-					'Start Index',
-					min_value=1,
-					max_value=91,
-					value=int( st.session_state.get( 'googlesearch_start', 1 ) ),
-					step=1,
-					key='googlesearch_start'
-				)
-			
-			with c3:
-				google_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=60,
-					value=int( st.session_state.get( 'googlesearch_timeout', 10 ) ),
-					step=1,
-					key='googlesearch_timeout'
-				)
-			
-			c4, c5 = st.columns( 2 )
-			
-			with c4:
-				google_exact_terms = st.text_input(
-					'Exact Terms',
-					value=st.session_state.get( 'googlesearch_exact_terms', '' ),
-					key='googlesearch_exact_terms'
-				)
-			
-			with c5:
-				google_exclude_terms = st.text_input(
-					'Exclude Terms',
-					value=st.session_state.get( 'googlesearch_exclude_terms', '' ),
-					key='googlesearch_exclude_terms'
-				)
-			
-			c6, c7, c8 = st.columns( 3 )
-			
-			with c6:
-				google_file_type = st.text_input(
-					'File Type',
-					value=st.session_state.get( 'googlesearch_file_type', '' ),
-					key='googlesearch_file_type',
-					placeholder='pdf'
-				)
-			
-			with c7:
-				google_date_restrict = st.text_input(
-					'Date Restrict',
-					value=st.session_state.get( 'googlesearch_date_restrict', '' ),
-					key='googlesearch_date_restrict',
-					placeholder='d7, m1, y1'
-				)
-			
-			with c8:
-				google_safe = st.selectbox(
-					'Safe Search',
-					options=[ 'off', 'active' ],
-					index=[ 'off', 'active' ].index(
-						st.session_state.get( 'googlesearch_safe', 'off' )
-					),
-					key='googlesearch_safe'
-				)
-			
-			c9, c10, c11 = st.columns( 3 )
-			
-			with c9:
-				google_gl = st.text_input(
-					'Country (gl)',
-					value=st.session_state.get( 'googlesearch_gl', '' ),
-					key='googlesearch_gl',
-					placeholder='us'
-				)
-			
-			with c10:
-				google_lr = st.text_input(
-					'Language Restrict (lr)',
-					value=st.session_state.get( 'googlesearch_lr', '' ),
-					key='googlesearch_lr',
-					placeholder='lang_en'
-				)
-			
-			with c11:
-				google_search_type = st.selectbox(
-					'Search Type',
-					options=[ '', 'image' ],
-					index=[ '', 'image' ].index(
-						st.session_state.get( 'googlesearch_search_type', '' )
-					),
-					key='googlesearch_search_type'
-				)
-			
-			c12, c13 = st.columns( 2 )
-			
-			with c12:
-				google_site_search = st.text_input(
-					'Site Search',
-					value=st.session_state.get( 'googlesearch_site_search', '' ),
-					key='googlesearch_site_search',
-					placeholder='example.gov'
-				)
-			
-			with c13:
-				google_site_search_filter = st.selectbox(
-					'Site Search Filter',
-					options=[ '', 'i', 'e' ],
-					index=[ '', 'i', 'e' ].index(
-						st.session_state.get( 'googlesearch_site_search_filter', '' )
-					),
-					key='googlesearch_site_search_filter',
-					help='i=include, e=exclude'
-				)
-			
-			google_sort = st.text_input(
-				'Sort',
-				value=st.session_state.get( 'googlesearch_sort', '' ),
-				key='googlesearch_sort',
-				placeholder='date'
-			)
-			
-			c14, c15 = st.columns( 2 )
-			
-			with c14:
-				google_img_size = st.selectbox(
-					'Image Size',
-					options=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge', 'huge' ],
-					index=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge',
-					        'huge' ].index(
-						st.session_state.get( 'googlesearch_img_size', '' )
-					),
-					key='googlesearch_img_size',
-					disabled=(google_search_type != 'image')
-				)
-			
-			with c15:
-				google_img_type = st.selectbox(
-					'Image Type',
-					options=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ],
-					index=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ].index(
-						st.session_state.get( 'googlesearch_img_type', '' )
-					),
-					key='googlesearch_img_type',
-					disabled=(google_search_type != 'image')
-				)
-			
-			c16, c17 = st.columns( 2 )
-			
-			with c16:
-				google_img_color_type = st.selectbox(
-					'Image Color Type',
-					options=[ '', 'color', 'gray', 'mono', 'trans' ],
-					index=[ '', 'color', 'gray', 'mono', 'trans' ].index(
-						st.session_state.get( 'googlesearch_img_color_type', '' )
-					),
-					key='googlesearch_img_color_type',
-					disabled=(google_search_type != 'image')
-				)
-			
-			with c17:
-				google_img_dominant_color = st.selectbox(
-					'Image Dominant Color',
-					options=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange',
-					          'pink', 'purple', 'red', 'teal', 'white', 'yellow' ],
-					index=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange',
-					        'pink', 'purple', 'red', 'teal', 'white', 'yellow' ].index(
-						st.session_state.get( 'googlesearch_img_dominant_color', '' )
-					),
-					key='googlesearch_img_dominant_color',
-					disabled=(google_search_type != 'image')
-				)
-			
-			c18, c19 = st.columns( 2 )
-			
-			with c18:
-				google_api_key = st.text_input(
-					'API Key',
-					value='',
-					type='password',
-					key='googlesearch_api_key',
-					placeholder='Uses GOOGLE_API_KEY when left blank.'
-				)
-			
-			with c19:
-				google_cse_id = st.text_input(
-					'CSE ID',
-					value='',
-					key='googlesearch_cse_id',
-					placeholder='Uses GOOGLE_CSE_ID when left blank.'
-				)
-			
-			st.caption(
-				'Required keys: GOOGLE_API_KEY and GOOGLE_CSE_ID. '
-				'Endpoint updated to customsearch.googleapis.com/customsearch/v1.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				google_submit = st.button( 'Submit', key='googlesearch_submit' )
-			with b2:
-				st.button( 'Clear', key='googlesearch_clear', on_click=_clear_googlesearch_state )
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if google_submit:
-				try:
-					f = GoogleSearch( )
-					result = f.fetch(
-						keywords=google_query,
-						results=int( google_num_results ),
-						start=int( google_start ),
-						exact_terms=google_exact_terms,
-						exclude_terms=google_exclude_terms,
-						file_type=google_file_type,
-						date_restrict=google_date_restrict,
-						gl=google_gl,
-						lr=google_lr,
-						safe=google_safe,
-						search_type=google_search_type,
-						site_search=google_site_search,
-						site_search_filter=google_site_search_filter,
-						sort=google_sort,
-						img_size=google_img_size,
-						img_type=google_img_type,
-						img_color_type=google_img_color_type,
-						img_dominant_color=google_img_dominant_color,
-						time=int( google_timeout ),
-						api_key=(google_api_key or None),
-						cse_id=(google_cse_id or None)
-					)
-					
-					st.session_state[ 'googlesearch_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Google Search request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'googlesearch_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				queries = result.get( 'queries', { } ) if isinstance( result, dict ) else { }
-				search_info = result.get( 'searchInformation', { } ) if isinstance( result, dict ) else { }
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if queries or search_info:
-					st.markdown( '#### Search Metadata' )
-					
-					meta_summary: Dict[ str, Any ] = { }
-					
-					if isinstance( search_info, dict ):
-						for key in [ 'searchTime', 'formattedSearchTime', 'totalResults',
-						             'formattedTotalResults' ]:
-							if key in search_info:
-								meta_summary[ key ] = search_info.get( key )
-					
-					if isinstance( queries, dict ) and 'request' in queries:
-						requests = queries.get( 'request', [ ] )
-						if isinstance( requests, list ) and requests:
-							request_item = requests[ 0 ]
-							if isinstance( request_item, dict ):
-								for key in [ 'searchTerms', 'count', 'startIndex', 'inputEncoding',
-								             'outputEncoding' ]:
-									if key in request_item:
-										meta_summary[ key ] = request_item.get( key )
-					
-					if meta_summary:
-						st.json( meta_summary )
-					
-					with st.expander( 'Raw Search Metadata', expanded=False ):
-						st.json(
-							{
-									'queries': queries,
-									'searchInformation': search_info,
-							}
-						)
-				
-				if not items:
-					st.info( 'No results returned.' )
-				else:
-					for idx, item in enumerate( items, start=1 ):
-						title = item.get( 'title', f'Result {idx}' )
-						
-						with st.container( border=True ):
-							st.markdown( f'**{idx}. {title}**' )
-							
-							link_value = item.get( 'link', '' )
-							display_link = item.get( 'displayLink', '' )
-							snippet_value = item.get( 'snippet', '' )
-							
-							meta_parts: List[ str ] = [ ]
-							if display_link:
-								meta_parts.append( f'Domain: `{display_link}`' )
-							
-							pagemap = item.get( 'pagemap', { } ) if isinstance( item, dict ) else { }
-							if isinstance( pagemap, dict ):
-								if 'metatags' in pagemap:
-									meta_parts.append( 'Has metatags' )
-								if 'cse_image' in pagemap:
-									meta_parts.append( 'Has image' )
-							
-							if meta_parts:
-								st.caption( ' | '.join( meta_parts ) )
-							
-							if link_value:
-								st.markdown( f'**Link:** {link_value}' )
-							
-							if snippet_value:
-								st.write( str( snippet_value ) )
-							
-							image_url = ''
-							if isinstance( pagemap, dict ):
-								cse_images = pagemap.get( 'cse_image', [ ] )
-								if isinstance( cse_images, list ) and cse_images:
-									first_img = cse_images[ 0 ]
-									if isinstance( first_img, dict ):
-										image_url = first_img.get( 'src', '' )
-							
-							if image_url and google_search_type == 'image':
-								try:
-									st.image( image_url, use_container_width=True )
-								except Exception:
-									pass
-							
-							with st.expander( 'Raw Item', expanded=False ):
-								st.json( item )
-	
-	# -------- Open Science
-	with st.expander( label='Open Science', icon='🧪', expanded=False ):
-		if 'openscience_results' not in st.session_state:
-			st.session_state[ 'openscience_results' ] = { }
-		
-		if 'openscience_clear_request' not in st.session_state:
-			st.session_state[ 'openscience_clear_request' ] = False
-		
-		if st.session_state.get( 'openscience_clear_request', False ):
-			st.session_state[ 'openscience_mode' ] = 'dataset'
-			st.session_state[ 'openscience_accession' ] = ''
-			st.session_state[ 'openscience_query' ] = ''
-			st.session_state[ 'openscience_format' ] = 'json'
-			st.session_state[ 'openscience_timeout' ] = 20
-			st.session_state[ 'openscience_results' ] = { }
-			st.session_state[ 'openscience_clear_request' ] = False
-		
-		def _clear_openscience_state( ) -> None:
-			st.session_state[ 'openscience_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			openscience_mode = st.selectbox(
-				'Mode',
-				options=[ 'dataset', 'metadata', 'assays', 'data' ],
-				index=[ 'dataset', 'metadata', 'assays', 'data' ].index(
-					st.session_state.get( 'openscience_mode', 'dataset' )
-				),
-				key='openscience_mode',
-				help=(
-						'dataset = fetch dataset metadata by accession; '
-						'metadata/assays/data = query the corresponding OSDR API endpoint.'
-				)
-			)
-			
-			openscience_accession = st.text_input(
-				'Dataset Accession',
-				value=st.session_state.get( 'openscience_accession', '' ),
-				key='openscience_accession',
-				placeholder='Example: OSD-48'
-			)
-			
-			openscience_query = st.text_area(
-				'Query',
-				value=st.session_state.get( 'openscience_query', '' ),
-				height=120,
-				key='openscience_query',
-				placeholder=(
-						'Example: (id.accession=OSD-48) '
-						'OR study.characteristics.organism=Mus musculus'
-				)
-			)
-			
-			openscience_format = st.selectbox(
-				'Format',
-				options=[ 'json', 'csv', 'tsv', 'browser' ],
-				index=[ 'json', 'csv', 'tsv', 'browser' ].index(
-					st.session_state.get( 'openscience_format', 'json' )
-				),
-				key='openscience_format'
-			)
-			
-			openscience_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'openscience_timeout', 20 ) ),
+			max_depth = st.number_input(
+				'Max Depth',
+				min_value=0,
+				max_value=10,
+				value=1,
 				step=1,
-				key='openscience_timeout'
-			)
+				key='wf_max_depth',
+				disabled=(not enable_recursive) )
+			
+			max_pages = st.number_input(
+				'Max Pages',
+				min_value=1,
+				max_value=500,
+				value=10,
+				step=1,
+				key='wf_max_pages' )
+			
+			same_domain_only = st.checkbox(
+				'Same Domain Only',
+				value=True,
+				key='wf_same_domain_only',
+				disabled=(not enable_recursive) )
 			
 			b1, b2 = st.columns( 2 )
+			
 			with b1:
-				openscience_submit = st.button(
-					'Submit',
-					key='openscience_submit',
-					use_container_width=True
-				)
+				run_scraper = st.button( 'Run Scraper', key='webfetcher_run' )
+			
 			with b2:
-				st.button(
-					'Clear',
-					key='openscience_clear',
-					on_click=_clear_openscience_state,
-					use_container_width=True
-				)
+				st.button( 'Clear', key='webfetcher_clear', on_click=_clear_webscrape_state )
 		
 		with col_right:
-			st.markdown( 'Results' )
-			
-			if openscience_submit:
+			if run_scraper:
 				try:
-					f = OpenScience( )
+					if not target_url or not target_url.strip( ):
+						raise ValueError( 'A target URL is required.' )
 					
-					result = f.fetch(
-						mode=str( openscience_mode ),
-						query=str( openscience_query ),
-						accession=str( openscience_accession ),
-						format_value=str( openscience_format ),
-						time=int( openscience_timeout )
-					)
+					results, summary = _crawl_pages(
+						seed_url=target_url.strip( ),
+						include_title=include_title,
+						include_basic_text=include_basic_text,
+						include_raw_html=include_raw_html,
+						selected_methods=selected_methods,
+						recursive=bool( enable_recursive ),
+						max_depth=int( max_depth ),
+						max_pages=int( max_pages ),
+						same_domain_only=bool( same_domain_only ) )
 					
-					st.session_state[ 'openscience_results' ] = result or { }
+					st.session_state[ 'webscrape_results' ] = results
+					st.session_state[ 'webscrape_summary' ] = summary
 					st.rerun( )
 				
 				except Exception as exc:
 					st.error( str( exc ) )
 			
-			result = st.session_state.get( 'openscience_results', { } )
+			summary = st.session_state.get( 'webscrape_summary', { } )
+			results = st.session_state.get( 'webscrape_results', [ ] )
 			
-			if not result:
-				st.text( 'No results.' )
+			if summary:
+				st.subheader( 'Summary' )
+				st.json( summary )
+			
+			if not results:
+				st.info( 'No results.' )
 			else:
-				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+				st.subheader( 'Results' )
 				
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': mode_value,
-							'url': result.get( 'url', '' ),
-							'params': params,
-					}
+				for idx, page in enumerate( results, start=1 ):
+					title = page.get( 'title', '' ) or page.get( 'url', f'Page {idx}' )
+					depth = page.get( 'depth', 0 )
+					
+					with st.expander( f'Page {idx} [Depth {depth}]: {title}', expanded=(idx == 1) ):
+						meta_col1, meta_col2 = st.columns( 2 )
+						
+						with meta_col1:
+							st.markdown( f"**URL:** {page.get( 'url', '' )}" )
+							st.markdown( f"**Status Code:** {page.get( 'status_code', '' )}" )
+							st.markdown( f"**Depth:** {page.get( 'depth', 0 )}" )
+						
+						with meta_col2:
+							st.markdown( f"**Encoding:** {page.get( 'encoding', '' )}" )
+							st.markdown( f"**Title:** {page.get( 'title', '' )}" )
+						
+						plain_text = page.get( 'plain_text', '' )
+						if isinstance( plain_text, str ) and plain_text.strip( ):
+							st.subheader( 'Basic Text' )
+							st.text_area(
+								label='',
+								value=_truncate_text( plain_text, limit=12000 ),
+								height=280,
+								key=f'webscrape_plain_text_{idx}' )
+						
+						raw_html = page.get( 'raw_html', '' )
+						if isinstance( raw_html, str ) and raw_html.strip( ):
+							st.subheader( 'Raw HTML' )
+							st.text_area(
+								label='',
+								value=_truncate_text( raw_html, limit=12000 ),
+								height=240,
+								key=f'webscrape_raw_html_{idx}' )
+						
+						discovered_links = page.get( 'links_discovered', [ ] ) or [ ]
+						if discovered_links:
+							st.subheader( 'Links Discovered' )
+							for link_idx, link in enumerate( discovered_links, start=1 ):
+								st.write( f'{link_idx}. {link}' )
+						
+						data = page.get( 'data', { } ) or { }
+						for label, items in data.items( ):
+							st.subheader( f'{label}' )
+							
+							if not items:
+								st.info( 'No results returned.' )
+								continue
+							
+							for item_idx, item in enumerate( items, start=1 ):
+								st.write( f'{item_idx}. {item}' )
+						
+						errors = page.get( 'errors', [ ] ) or [ ]
+						if errors:
+							st.subheader( 'Errors' )
+							for err in errors:
+								st.error( err )
+							
+# ==============================================================================
+# FETCHING MODE
+# =============================================================================
+elif mode == 'Retrieval':
+	st.session_state.setdefault( "arxiv_input", "" )
+	st.session_state.setdefault( "arxiv_results", [ ] )
+	
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	with center:
+		st.subheader( f'🏛️ Public Collections & Archives' )
+		st.divider( )
+		# -------- ArXiv
+		with st.expander( label='ArXiv', icon='📘', expanded=False  ):
+			if 'arxiv_results' not in st.session_state:
+				st.session_state[ 'arxiv_results' ] = [ ]
+			
+			if 'arxiv_clear_request' not in st.session_state:
+				st.session_state[ 'arxiv_clear_request' ] = False
+			
+			if st.session_state.get( 'arxiv_clear_request', False ):
+				st.session_state[ 'arxiv_input' ] = ''
+				st.session_state[ 'arxiv_results' ] = [ ]
+				st.session_state[ 'arxiv_max_docs' ] = 5
+				st.session_state[ 'arxiv_full_documents' ] = False
+				st.session_state[ 'arxiv_include_metadata' ] = False
+				st.session_state[ 'arxiv_clear_request' ] = False
+			
+			def _clear_arxiv_state( ) -> None:
+				st.session_state[ 'arxiv_clear_request' ] = True
+			
+			col1, col2 = st.columns( 2, border=True )
+			
+			with col1:
+				arxiv_input = st.text_area( 'Query', height=80, key='arxiv_input',
+					placeholder=(
+							'Examples:\n'
+							'What is the ImageBind model?\n'
+							'2401.01234\n'
+							'graph neural networks for molecular property prediction'
+					), )
+				
+				c1, c2 = st.columns( 2 )
+				with c1:
+					arxiv_max_docs = st.number_input( 'Max Docs', min_value=1, max_value=300,
+						value=st.session_state.get( 'arxiv_max_docs', 5 ),
+						step=1,
+						key='arxiv_max_docs',
+						help='Maximum number of ArXiv documents to retrieve.' )
+				
+				with c2:
+					arxiv_full_documents = st.checkbox(
+						'Full Documents',
+						value=st.session_state.get( 'arxiv_full_documents', False ),
+						key='arxiv_full_documents',
+						help='When checked, retrieves fuller document text instead of lighter summary-based output.'
+					)
+				
+				arxiv_include_metadata = st.checkbox(
+					'Include All Metadata',
+					value=st.session_state.get( 'arxiv_include_metadata', False ),
+					key='arxiv_include_metadata',
+					help='Include additional metadata fields when available.'
 				)
 				
-				if mode_value == 'dataset' and isinstance( data, dict ) and data:
-					title_value = (
-							data.get( 'title' )
-							or data.get( 'name' )
-							or data.get( 'accession' )
-							or params.get( 'accession', '' )
-							or 'Dataset'
+				b1, b2 = st.columns( 2 )
+				with b1:
+					do_submit = st.button( 'Submit', key='arxiv_submit' )
+				
+				with b2:
+					st.button( 'Clear', key='arxiv_clear', on_click=_clear_arxiv_state )
+				
+				if do_submit:
+					try:
+						queries = [ q.strip( ) for q in (arxiv_input or '').splitlines( ) if
+						            q.strip( ) ]
+						
+						if not queries:
+							st.warning( 'No input provided.' )
+						else:
+							from fetchers import ArXiv
+							
+							fetcher = ArXiv(
+								max_documents=int( arxiv_max_docs ),
+								full_documents=bool( arxiv_full_documents ),
+								include_metadata=bool( arxiv_include_metadata ) )
+							
+							results: list[ Document ] = [ ]
+							
+							for q in queries:
+								docs = fetcher.fetch(
+									q,
+									max_documents=int( arxiv_max_docs ),
+									full_documents=bool( arxiv_full_documents ),
+									include_metadata=bool( arxiv_include_metadata ) )
+								
+								if isinstance( docs, list ):
+									results.extend( docs )
+							
+							st.session_state[ 'arxiv_results' ] = results
+							st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'ArXiv request failed.' )
+						st.exception( exc )
+			
+			with col2:
+				st.markdown( 'Results' )
+				results = st.session_state.get( 'arxiv_results', [ ] )
+				
+				if not results:
+					st.text( 'No results.' )
+				else:
+					for idx, doc in enumerate( results, start=1 ):
+						title = ''
+						if isinstance( doc, Document ):
+							title = str( doc.metadata.get( 'Title', '' ) ) if doc.metadata else ''
+						label = f'Document {idx}' if not title else f'Document {idx}: {title}'
+						
+						with st.expander( label, expanded=False ):
+							if isinstance( doc, Document ):
+								if doc.metadata:
+									meta_col1, meta_col2 = st.columns( 2 )
+									
+									with meta_col1:
+										if 'Title' in doc.metadata:
+											st.markdown( f"**Title:** {doc.metadata.get( 'Title', '' )}" )
+										if 'Authors' in doc.metadata:
+											st.markdown( f"**Authors:** {doc.metadata.get( 'Authors', '' )}" )
+									
+									with meta_col2:
+										if 'Published' in doc.metadata:
+											st.markdown( f"**Published:** {doc.metadata.get( 'Published', '' )}" )
+										if 'Entry ID' in doc.metadata:
+											st.markdown( f"**Entry ID:** {doc.metadata.get( 'Entry ID', '' )}" )
+								
+								st.text_area( 'Content', value=doc.page_content or '', height=300,
+									key=f'arxiv_doc_{idx}' )
+								
+								if doc.metadata:
+									st.json( doc.metadata )
+							else:
+								st.write( doc )
+			
+			help_c1, help_c2 = st.columns( [ 0.5, 0.5 ] )
+			with help_c1:
+				with st.expander( label='Details', expanded=False ):
+					st.help( ArXivLoader )
+			with help_c2:
+				with st.expander( label='Information', expanded=False ):
+					st.markdown( cfg.ARXIV )
+				
+		# -------- Google Drive
+		with st.expander( label='Google Drive', icon='🛡️',expanded=False ):
+			if 'googledrive_results' not in st.session_state:
+				st.session_state[ 'googledrive_results' ] = [ ]
+			
+			if 'googledrive_clear_request' not in st.session_state:
+				st.session_state[ 'googledrive_clear_request' ] = False
+			
+			if st.session_state.get( 'googledrive_clear_request', False ):
+				st.session_state[ 'googledrive_query' ] = ''
+				st.session_state[ 'googledrive_folder_id' ] = cfg.GOOGLE_DRIVE_FOLDER_ID or 'root'
+				st.session_state[ 'googledrive_results_limit' ] = 10
+				st.session_state[ 'googledrive_template' ] = 'gdrive-query'
+				st.session_state[ 'googledrive_mode' ] = 'documents'
+				st.session_state[ 'googledrive_mime_type' ] = ''
+				st.session_state[ 'googledrive_results' ] = [ ]
+				st.session_state[ 'googledrive_clear_request' ] = False
+			
+			def _clear_googledrive_state( ) -> None:
+				st.session_state[ 'googledrive_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				gd_query = st.text_area( 'Google Drive Query', height=90, key='googledrive_query',
+					placeholder=('Examples:\n'
+							'machine learning\n'
+							'budget execution\n'
+							'FY 2026 operating plan\n'
+							'\n'
+							'Use "*" only when the selected template supports folder-wide or mime-type retrieval.'
+					), )
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					gd_folder_id = st.text_input(
+						'Folder ID',
+						value=st.session_state.get( 'googledrive_folder_id', cfg.GOOGLE_DRIVE_FOLDER_ID or 'root' ),
+						key='googledrive_folder_id',
+						placeholder='root or a Google Drive folder id',
+						help='Use "root" for your My Drive root, or provide a specific folder id.'
+					)
+				
+				with c2:
+					gd_results_limit = st.number_input( 'Max Docs', min_value=1, max_value=100,
+						value=int( st.session_state.get( 'googledrive_results_limit', 10 ) ),
+						step=1, key='googledrive_results_limit', )
+				
+				c3, c4 = st.columns( 2 )
+				with c3:
+					gd_template = st.selectbox(
+						'Template',
+						options=[
+								'gdrive-all-in-folder',
+								'gdrive-query',
+								'gdrive-by-name',
+								'gdrive-query-in-folder',
+								'gdrive-mime-type',
+								'gdrive-mime-type-in-folder',
+								'gdrive-query-with-mime-type',
+								'gdrive-query-with-mime-type-and-folder',
+						],
+						index=1,
+						key='googledrive_template',
+						help='Select the Drive retrieval strategy.' )
+				
+				with c4:
+					gd_mode = st.selectbox(
+						'Mode',
+						options=[ 'documents', 'snippets' ],
+						index=0,
+						key='googledrive_mode',
+						help='Use snippets for short metadata-driven returns.'
+					)
+				
+				gd_mime_type = st.selectbox(
+					'MIME Type Filter',
+					options=[
+							'',
+							'text/text',
+							'text/plain',
+							'text/html',
+							'text/csv',
+							'text/markdown',
+							'image/png',
+							'image/jpeg',
+							'application/epub+zip',
+							'application/pdf',
+							'application/rtf',
+							'application/vnd.google-apps.document',
+							'application/vnd.google-apps.presentation',
+							'application/vnd.google-apps.spreadsheet',
+							'application/vnd.google.colaboratory',
+							'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+							'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+					],
+					index=0,
+					key='googledrive_mime_type', help='Optional MIME type restriction.' )
+				
+				st.caption( 'Expected auth: GOOGLE_ACCOUNT_FILE for credentials JSON. '
+					'Optional: GOOGLE_DRIVE_TOKEN_PATH for token persistence.' )
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					gd_submit = st.button( 'Submit', key='googledrive_submit' )
+				
+				with b2:
+					st.button( 'Clear', key='googledrive_clear', on_click=_clear_googledrive_state )
+				
+				if gd_submit:
+					try:
+						from fetchers import GoogleDrive
+						fetcher = GoogleDrive( )
+						docs = fetcher.fetch( question=gd_query, folder_id=gd_folder_id or 'root',
+							results=int( gd_results_limit ), template=gd_template,
+							mime_type=gd_mime_type or None, mode=gd_mode, )
+						
+						st.session_state[ 'googledrive_results' ] = docs or [ ]
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Google Drive request failed.' )
+						st.exception( exc )
+			
+			with col_right:
+				st.markdown( 'Results', help=cfg.GOOGLE_DRIVE )
+				
+				results = st.session_state.get( 'googledrive_results', [ ] )
+				
+				if not results:
+					st.text( 'No results.' )
+				else:
+					for idx, doc in enumerate( results, start=1 ):
+						title = ''
+						if isinstance( doc, Document ):
+							title = str( doc.metadata.get( 'name', '' ) ) if doc.metadata else ''
+						
+						label = f'Document {idx}' if not title else f'Document {idx}: {title}'
+						
+						with st.expander( label, expanded=False ):
+							if isinstance( doc, Document ):
+								if doc.metadata:
+									meta_col1, meta_col2 = st.columns( 2 )
+									
+									with meta_col1:
+										if 'name' in doc.metadata:
+											st.markdown( f"**Name:** {doc.metadata.get( 'name', '' )}" )
+										if 'id' in doc.metadata:
+											st.markdown( f"**ID:** {doc.metadata.get( 'id', '' )}" )
+									
+									with meta_col2:
+										if 'mimeType' in doc.metadata:
+											st.markdown( f"**MIME Type:** {doc.metadata.get( 'mimeType', '' )}" )
+										if 'modifiedTime' in doc.metadata:
+											st.markdown( f"**Modified:** {doc.metadata.get( 'modifiedTime', '' )}" )
+								
+								st.text_area( 'Content', value=doc.page_content or '', height=300,
+									key=f'googledrive_doc_{idx}' )
+								
+								if doc.metadata:
+									st.json( doc.metadata )
+							else:
+								st.write( doc )
+			
+			with st.expander( label='Information', expanded=False ):
+				st.help( GoogleDrive )
+		
+		# -------- Wikipedia
+		with st.expander( label='Wikipedia', icon='📖',expanded=False ):
+			if 'wikipedia_results' not in st.session_state:
+				st.session_state[ 'wikipedia_results' ] = [ ]
+			
+			if 'wikipedia_clear_request' not in st.session_state:
+				st.session_state[ 'wikipedia_clear_request' ] = False
+			
+			if st.session_state.get( 'wikipedia_clear_request', False ):
+				st.session_state[ 'wikipedia_query' ] = ''
+				st.session_state[ 'wikipedia_language' ] = 'en'
+				st.session_state[ 'wikipedia_max_docs' ] = 5
+				st.session_state[ 'wikipedia_include_metadata' ] = False
+				st.session_state[ 'wikipedia_results' ] = [ ]
+				st.session_state[ 'wikipedia_clear_request' ] = False
+			
+			def _clear_wikipedia_state( ) -> None:
+				st.session_state[ 'wikipedia_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				wiki_query = st.text_area(
+					'Wikipedia Query',
+					height=90,
+					key='wikipedia_query',
+					help=cfg.WIKIPEDIA,
+					placeholder=(
+							'Examples:\n'
+							'Alan Turing\n'
+							'History of machine learning\n'
+							'Python (programming language)\n'
+							'Battle of Midway'
+					),
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					wiki_language = st.text_input(
+						'Language Code',
+						value=st.session_state.get( 'wikipedia_language', 'en' ),
+						key='wikipedia_language',
+						placeholder='en',
+						help='Wikipedia language code, e.g. en, fr, de, ja.'
+					)
+				
+				with c2:
+					wiki_max_docs = st.number_input(
+						'Max Docs',
+						min_value=1,
+						max_value=300,
+						value=int( st.session_state.get( 'wikipedia_max_docs', 5 ) ),
+						step=1,
+						key='wikipedia_max_docs',
+						help='Maximum number of Wikipedia documents to retrieve.'
+					)
+				
+				wiki_include_metadata = st.checkbox(
+					'Include All Metadata',
+					value=st.session_state.get( 'wikipedia_include_metadata', False ),
+					key='wikipedia_include_metadata',
+					help='Include additional metadata fields when available.'
+				)
+				
+				st.caption(
+					'No API key is required for Wikipedia retrieval. '
+					'Optional only: LANGSMITH_API_KEY for tracing.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					wiki_submit = st.button( 'Submit', key='wikipedia_submit' )
+				
+				with b2:
+					st.button( 'Clear', key='wikipedia_clear', on_click=_clear_wikipedia_state )
+				
+				if wiki_submit:
+					try:
+						queries = [ q.strip( ) for q in (wiki_query or '').splitlines( ) if q.strip( ) ]
+						
+						if not queries:
+							st.warning( 'No input provided.' )
+						else:
+							from fetchers import Wikipedia
+							
+							fetcher = Wikipedia(
+								language=wiki_language or 'en',
+								max_documents=int( wiki_max_docs ),
+								include_metadata=bool( wiki_include_metadata ) )
+							
+							results: list[ Document ] = [ ]
+							
+							for q in queries:
+								docs = fetcher.fetch(
+									q,
+									language=wiki_language or 'en',
+									max_documents=int( wiki_max_docs ),
+									include_metadata=bool( wiki_include_metadata ) )
+								
+								if isinstance( docs, list ):
+									results.extend( docs )
+							
+							st.session_state[ 'wikipedia_results' ] = results
+							st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Wikipedia request failed.' )
+						st.exception( exc )
+			
+			with col_right:
+				st.markdown( 'Results' )
+				
+				results = st.session_state.get( 'wikipedia_results', [ ] )
+				
+				if not results:
+					st.text( 'No results.' )
+				else:
+					for idx, doc in enumerate( results, start=1 ):
+						title = ''
+						if isinstance( doc, Document ):
+							title = str( doc.metadata.get( 'title', '' ) ) if doc.metadata else ''
+						
+						label = f'Document {idx}' if not title else f'Document {idx}: {title}'
+						
+						with st.expander( 'Search Results', expanded=False ):
+							if isinstance( doc, Document ):
+								if doc.metadata:
+									meta_col1, meta_col2 = st.columns( 2 )
+									
+									with meta_col1:
+										if 'title' in doc.metadata:
+											st.markdown( f"**Title:** {doc.metadata.get( 'title', '' )}" )
+										if 'source' in doc.metadata:
+											st.markdown( f"**Source:** {doc.metadata.get( 'source', '' )}" )
+									
+									with meta_col2:
+										if 'categories' in doc.metadata:
+											st.markdown( f"**Categories:** {doc.metadata.get( 'categories', '' )}" )
+										if 'pageid' in doc.metadata:
+											st.markdown( f"**Page ID:** {doc.metadata.get( 'pageid', '' )}" )
+								
+								st.text_area(
+									'Content',
+									value=doc.page_content or '',
+									height=300,
+									key=f'wikipedia_doc_{idx}' )
+								
+								if doc.metadata:
+									st.json( doc.metadata )
+							else:
+								st.write( doc )
+			
+			with st.expander( label='Information', expanded=False ):
+				st.help( Wikipedia )
+		
+		# -------- Google Search
+		with st.expander( label='Google Search', icon='🔍', expanded=False ):
+			if 'googlesearch_results' not in st.session_state:
+				st.session_state[ 'googlesearch_results' ] = { }
+			
+			if 'googlesearch_clear_request' not in st.session_state:
+				st.session_state[ 'googlesearch_clear_request' ] = False
+			
+			if st.session_state.get( 'googlesearch_clear_request', False ):
+				st.session_state[ 'googlesearch_query' ] = ''
+				st.session_state[ 'googlesearch_num_results' ] = 10
+				st.session_state[ 'googlesearch_start' ] = 1
+				st.session_state[ 'googlesearch_exact_terms' ] = ''
+				st.session_state[ 'googlesearch_exclude_terms' ] = ''
+				st.session_state[ 'googlesearch_file_type' ] = ''
+				st.session_state[ 'googlesearch_date_restrict' ] = ''
+				st.session_state[ 'googlesearch_gl' ] = ''
+				st.session_state[ 'googlesearch_lr' ] = ''
+				st.session_state[ 'googlesearch_safe' ] = 'off'
+				st.session_state[ 'googlesearch_search_type' ] = ''
+				st.session_state[ 'googlesearch_site_search' ] = ''
+				st.session_state[ 'googlesearch_site_search_filter' ] = ''
+				st.session_state[ 'googlesearch_sort' ] = ''
+				st.session_state[ 'googlesearch_img_size' ] = ''
+				st.session_state[ 'googlesearch_img_type' ] = ''
+				st.session_state[ 'googlesearch_img_color_type' ] = ''
+				st.session_state[ 'googlesearch_img_dominant_color' ] = ''
+				st.session_state[ 'googlesearch_api_key' ] = ''
+				st.session_state[ 'googlesearch_cse_id' ] = ''
+				st.session_state[ 'googlesearch_timeout' ] = 10
+				st.session_state[ 'googlesearch_results' ] = { }
+				st.session_state[ 'googlesearch_clear_request' ] = False
+			
+			def _clear_googlesearch_state( ) -> None:
+				st.session_state[ 'googlesearch_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				google_query = st.text_area(
+					'Query',
+					height=90,
+					key='googlesearch_query',
+					placeholder=(
+							'Examples:\n'
+							'site:epa.gov budget execution\n'
+							'OpenAI GPT-5 reasoning\n'
+							'filetype:pdf appropriations law'
+					),
+				)
+				
+				c1, c2, c3 = st.columns( 3 )
+				
+				with c1:
+					google_num_results = st.number_input(
+						'Results / Request',
+						min_value=1,
+						max_value=10,
+						value=int( st.session_state.get( 'googlesearch_num_results', 10 ) ),
+						step=1,
+						key='googlesearch_num_results',
+						help='Google Custom Search returns up to 10 results per request.'
+					)
+				
+				with c2:
+					google_start = st.number_input(
+						'Start Index',
+						min_value=1,
+						max_value=91,
+						value=int( st.session_state.get( 'googlesearch_start', 1 ) ),
+						step=1,
+						key='googlesearch_start'
+					)
+				
+				with c3:
+					google_timeout = st.number_input(
+						'Timeout',
+						min_value=1,
+						max_value=60,
+						value=int( st.session_state.get( 'googlesearch_timeout', 10 ) ),
+						step=1,
+						key='googlesearch_timeout'
+					)
+				
+				c4, c5 = st.columns( 2 )
+				
+				with c4:
+					google_exact_terms = st.text_input(
+						'Exact Terms',
+						value=st.session_state.get( 'googlesearch_exact_terms', '' ),
+						key='googlesearch_exact_terms'
+					)
+				
+				with c5:
+					google_exclude_terms = st.text_input(
+						'Exclude Terms',
+						value=st.session_state.get( 'googlesearch_exclude_terms', '' ),
+						key='googlesearch_exclude_terms'
+					)
+				
+				c6, c7, c8 = st.columns( 3 )
+				
+				with c6:
+					google_file_type = st.text_input(
+						'File Type',
+						value=st.session_state.get( 'googlesearch_file_type', '' ),
+						key='googlesearch_file_type',
+						placeholder='pdf'
+					)
+				
+				with c7:
+					google_date_restrict = st.text_input(
+						'Date Restrict',
+						value=st.session_state.get( 'googlesearch_date_restrict', '' ),
+						key='googlesearch_date_restrict',
+						placeholder='d7, m1, y1'
+					)
+				
+				with c8:
+					google_safe = st.selectbox(
+						'Safe Search',
+						options=[ 'off', 'active' ],
+						index=[ 'off', 'active' ].index(
+							st.session_state.get( 'googlesearch_safe', 'off' )
+						),
+						key='googlesearch_safe'
+					)
+				
+				c9, c10, c11 = st.columns( 3 )
+				
+				with c9:
+					google_gl = st.text_input(
+						'Country (gl)',
+						value=st.session_state.get( 'googlesearch_gl', '' ),
+						key='googlesearch_gl',
+						placeholder='us'
+					)
+				
+				with c10:
+					google_lr = st.text_input(
+						'Language Restrict (lr)',
+						value=st.session_state.get( 'googlesearch_lr', '' ),
+						key='googlesearch_lr',
+						placeholder='lang_en'
+					)
+				
+				with c11:
+					google_search_type = st.selectbox(
+						'Search Type',
+						options=[ '', 'image' ],
+						index=[ '', 'image' ].index(
+							st.session_state.get( 'googlesearch_search_type', '' )
+						),
+						key='googlesearch_search_type'
+					)
+				
+				c12, c13 = st.columns( 2 )
+				
+				with c12:
+					google_site_search = st.text_input(
+						'Site Search',
+						value=st.session_state.get( 'googlesearch_site_search', '' ),
+						key='googlesearch_site_search',
+						placeholder='example.gov'
+					)
+				
+				with c13:
+					google_site_search_filter = st.selectbox(
+						'Site Search Filter',
+						options=[ '', 'i', 'e' ],
+						index=[ '', 'i', 'e' ].index(
+							st.session_state.get( 'googlesearch_site_search_filter', '' )
+						),
+						key='googlesearch_site_search_filter',
+						help='i=include, e=exclude'
+					)
+				
+				google_sort = st.text_input(
+					'Sort',
+					value=st.session_state.get( 'googlesearch_sort', '' ),
+					key='googlesearch_sort',
+					placeholder='date'
+				)
+				
+				c14, c15 = st.columns( 2 )
+				
+				with c14:
+					google_img_size = st.selectbox(
+						'Image Size',
+						options=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge', 'huge' ],
+						index=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge',
+						        'huge' ].index(
+							st.session_state.get( 'googlesearch_img_size', '' )
+						),
+						key='googlesearch_img_size',
+						disabled=(google_search_type != 'image')
+					)
+				
+				with c15:
+					google_img_type = st.selectbox(
+						'Image Type',
+						options=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ],
+						index=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ].index(
+							st.session_state.get( 'googlesearch_img_type', '' )
+						),
+						key='googlesearch_img_type',
+						disabled=(google_search_type != 'image')
+					)
+				
+				c16, c17 = st.columns( 2 )
+				
+				with c16:
+					google_img_color_type = st.selectbox(
+						'Image Color Type',
+						options=[ '', 'color', 'gray', 'mono', 'trans' ],
+						index=[ '', 'color', 'gray', 'mono', 'trans' ].index(
+							st.session_state.get( 'googlesearch_img_color_type', '' )
+						),
+						key='googlesearch_img_color_type',
+						disabled=(google_search_type != 'image')
+					)
+				
+				with c17:
+					google_img_dominant_color = st.selectbox(
+						'Image Dominant Color',
+						options=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange',
+						          'pink', 'purple', 'red', 'teal', 'white', 'yellow' ],
+						index=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange',
+						        'pink', 'purple', 'red', 'teal', 'white', 'yellow' ].index(
+							st.session_state.get( 'googlesearch_img_dominant_color', '' )
+						),
+						key='googlesearch_img_dominant_color',
+						disabled=(google_search_type != 'image')
+					)
+				
+				c18, c19 = st.columns( 2 )
+				
+				with c18:
+					google_api_key = st.text_input(
+						'API Key',
+						value='',
+						type='password',
+						key='googlesearch_api_key',
+						placeholder='Uses GOOGLE_API_KEY when left blank.'
+					)
+				
+				with c19:
+					google_cse_id = st.text_input(
+						'CSE ID',
+						value='',
+						key='googlesearch_cse_id',
+						placeholder='Uses GOOGLE_CSE_ID when left blank.'
+					)
+				
+				st.caption(
+					'Required keys: GOOGLE_API_KEY and GOOGLE_CSE_ID. '
+					'Endpoint updated to customsearch.googleapis.com/customsearch/v1.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					google_submit = st.button( 'Submit', key='googlesearch_submit' )
+				with b2:
+					st.button( 'Clear', key='googlesearch_clear', on_click=_clear_googlesearch_state )
+			
+			with col_right:
+				st.markdown( 'Results' )
+				
+				if google_submit:
+					try:
+						f = GoogleSearch( )
+						result = f.fetch(
+							keywords=google_query,
+							results=int( google_num_results ),
+							start=int( google_start ),
+							exact_terms=google_exact_terms,
+							exclude_terms=google_exclude_terms,
+							file_type=google_file_type,
+							date_restrict=google_date_restrict,
+							gl=google_gl,
+							lr=google_lr,
+							safe=google_safe,
+							search_type=google_search_type,
+							site_search=google_site_search,
+							site_search_filter=google_site_search_filter,
+							sort=google_sort,
+							img_size=google_img_size,
+							img_type=google_img_type,
+							img_color_type=google_img_color_type,
+							img_dominant_color=google_img_dominant_color,
+							time=int( google_timeout ),
+							api_key=(google_api_key or None),
+							cse_id=(google_cse_id or None)
+						)
+						
+						st.session_state[ 'googlesearch_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Google Search request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'googlesearch_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					queries = result.get( 'queries', { } ) if isinstance( result, dict ) else { }
+					search_info = result.get( 'searchInformation', { } ) if isinstance( result, dict ) else { }
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if queries or search_info:
+						st.markdown( '#### Search Metadata' )
+						
+						meta_summary: Dict[ str, Any ] = { }
+						
+						if isinstance( search_info, dict ):
+							for key in [ 'searchTime', 'formattedSearchTime', 'totalResults',
+							             'formattedTotalResults' ]:
+								if key in search_info:
+									meta_summary[ key ] = search_info.get( key )
+						
+						if isinstance( queries, dict ) and 'request' in queries:
+							requests = queries.get( 'request', [ ] )
+							if isinstance( requests, list ) and requests:
+								request_item = requests[ 0 ]
+								if isinstance( request_item, dict ):
+									for key in [ 'searchTerms', 'count', 'startIndex', 'inputEncoding',
+									             'outputEncoding' ]:
+										if key in request_item:
+											meta_summary[ key ] = request_item.get( key )
+						
+						if meta_summary:
+							st.json( meta_summary )
+						
+						with st.expander( 'Raw Search Metadata', expanded=False ):
+							st.json(
+								{
+										'queries': queries,
+										'searchInformation': search_info,
+								}
+							)
+					
+					if not items:
+						st.info( 'No results returned.' )
+					else:
+						for idx, item in enumerate( items, start=1 ):
+							title = item.get( 'title', f'Result {idx}' )
+							
+							with st.container( border=True ):
+								st.markdown( f'**{idx}. {title}**' )
+								
+								link_value = item.get( 'link', '' )
+								display_link = item.get( 'displayLink', '' )
+								snippet_value = item.get( 'snippet', '' )
+								
+								meta_parts: List[ str ] = [ ]
+								if display_link:
+									meta_parts.append( f'Domain: `{display_link}`' )
+								
+								pagemap = item.get( 'pagemap', { } ) if isinstance( item, dict ) else { }
+								if isinstance( pagemap, dict ):
+									if 'metatags' in pagemap:
+										meta_parts.append( 'Has metatags' )
+									if 'cse_image' in pagemap:
+										meta_parts.append( 'Has image' )
+								
+								if meta_parts:
+									st.caption( ' | '.join( meta_parts ) )
+								
+								if link_value:
+									st.markdown( f'**Link:** {link_value}' )
+								
+								if snippet_value:
+									st.write( str( snippet_value ) )
+								
+								image_url = ''
+								if isinstance( pagemap, dict ):
+									cse_images = pagemap.get( 'cse_image', [ ] )
+									if isinstance( cse_images, list ) and cse_images:
+										first_img = cse_images[ 0 ]
+										if isinstance( first_img, dict ):
+											image_url = first_img.get( 'src', '' )
+								
+								if image_url and google_search_type == 'image':
+									try:
+										st.image( image_url, use_container_width=True )
+									except Exception:
+										pass
+								
+								with st.expander( 'Raw Item', expanded=False ):
+									st.json( item )
+		
+		# -------- Open Science
+		with st.expander( label='Open Science', icon='🧪', expanded=False ):
+			if 'openscience_results' not in st.session_state:
+				st.session_state[ 'openscience_results' ] = { }
+			
+			if 'openscience_clear_request' not in st.session_state:
+				st.session_state[ 'openscience_clear_request' ] = False
+			
+			if st.session_state.get( 'openscience_clear_request', False ):
+				st.session_state[ 'openscience_mode' ] = 'dataset'
+				st.session_state[ 'openscience_accession' ] = ''
+				st.session_state[ 'openscience_query' ] = ''
+				st.session_state[ 'openscience_format' ] = 'json'
+				st.session_state[ 'openscience_timeout' ] = 20
+				st.session_state[ 'openscience_results' ] = { }
+				st.session_state[ 'openscience_clear_request' ] = False
+			
+			def _clear_openscience_state( ) -> None:
+				st.session_state[ 'openscience_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				openscience_mode = st.selectbox(
+					'Mode',
+					options=[ 'dataset', 'metadata', 'assays', 'data' ],
+					index=[ 'dataset', 'metadata', 'assays', 'data' ].index(
+						st.session_state.get( 'openscience_mode', 'dataset' )
+					),
+					key='openscience_mode',
+					help=(
+							'dataset = fetch dataset metadata by accession; '
+							'metadata/assays/data = query the corresponding OSDR API endpoint.'
+					)
+				)
+				
+				openscience_accession = st.text_input(
+					'Dataset Accession',
+					value=st.session_state.get( 'openscience_accession', '' ),
+					key='openscience_accession',
+					placeholder='Example: OSD-48'
+				)
+				
+				openscience_query = st.text_area(
+					'Query',
+					value=st.session_state.get( 'openscience_query', '' ),
+					height=120,
+					key='openscience_query',
+					placeholder=(
+							'Example: (id.accession=OSD-48) '
+							'OR study.characteristics.organism=Mus musculus'
+					)
+				)
+				
+				openscience_format = st.selectbox(
+					'Format',
+					options=[ 'json', 'csv', 'tsv', 'browser' ],
+					index=[ 'json', 'csv', 'tsv', 'browser' ].index(
+						st.session_state.get( 'openscience_format', 'json' )
+					),
+					key='openscience_format'
+				)
+				
+				openscience_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'openscience_timeout', 20 ) ),
+					step=1,
+					key='openscience_timeout'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					openscience_submit = st.button(
+						'Submit',
+						key='openscience_submit',
+						use_container_width=True
+					)
+				with b2:
+					st.button(
+						'Clear',
+						key='openscience_clear',
+						on_click=_clear_openscience_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				st.markdown( 'Results' )
+				
+				if openscience_submit:
+					try:
+						f = OpenScience( )
+						
+						result = f.fetch(
+							mode=str( openscience_mode ),
+							query=str( openscience_query ),
+							accession=str( openscience_accession ),
+							format_value=str( openscience_format ),
+							time=int( openscience_timeout )
+						)
+						
+						st.session_state[ 'openscience_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( str( exc ) )
+				
+				result = st.session_state.get( 'openscience_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+					data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+					
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': mode_value,
+								'url': result.get( 'url', '' ),
+								'params': params,
+						}
 					)
 					
-					st.markdown( f'### {title_value}' )
+					if mode_value == 'dataset' and isinstance( data, dict ) and data:
+						title_value = (
+								data.get( 'title' )
+								or data.get( 'name' )
+								or data.get( 'accession' )
+								or params.get( 'accession', '' )
+								or 'Dataset'
+						)
+						
+						st.markdown( f'### {title_value}' )
+						
+						meta_fields: Dict[ str, Any ] = { }
+						for key in [
+								'accession',
+								'identifier',
+								'organism',
+								'platform',
+								'assay',
+								'project',
+								'study'
+						]:
+							if key in data:
+								meta_fields[ key ] = data.get( key )
+						
+						if meta_fields:
+							st.json( meta_fields )
+						
+						for key in [ 'summary', 'description', 'abstract' ]:
+							if key in data and str( data.get( key ) ).strip( ):
+								st.markdown( '#### Description' )
+								st.write( str( data.get( key ) ) )
+								break
+						
+						with st.expander( 'Raw Dataset JSON', expanded=False ):
+							st.json( data )
 					
-					meta_fields: Dict[ str, Any ] = { }
-					for key in [
-							'accession',
-							'identifier',
-							'organism',
-							'platform',
-							'assay',
-							'project',
-							'study'
-					]:
-						if key in data:
-							meta_fields[ key ] = data.get( key )
-					
-					if meta_fields:
-						st.json( meta_fields )
-					
-					for key in [ 'summary', 'description', 'abstract' ]:
-						if key in data and str( data.get( key ) ).strip( ):
-							st.markdown( '#### Description' )
-							st.write( str( data.get( key ) ) )
-							break
-					
-					with st.expander( 'Raw Dataset JSON', expanded=False ):
-						st.json( data )
-				
-				elif isinstance( data, list ) and data:
-					df_os = pd.DataFrame( data )
-					if not df_os.empty:
-						st.markdown( f'#### Result Rows ({len( df_os )})' )
-						st.dataframe( df_os, use_container_width=True, hide_index=True )
-					else:
-						st.json( data )
-				
-				elif isinstance( data, dict ) and data:
-					table_candidates: List[ Dict[ str, Any ] ] = [ ]
-					for key in [ 'results', 'items', 'rows', 'data' ]:
-						value = data.get( key, None )
-						if isinstance( value, list ) and value:
-							table_candidates = [ item for item in value if
-							                     isinstance( item, dict ) ]
-							break
-					
-					if table_candidates:
-						df_os = pd.DataFrame( table_candidates )
+					elif isinstance( data, list ) and data:
+						df_os = pd.DataFrame( data )
 						if not df_os.empty:
 							st.markdown( f'#### Result Rows ({len( df_os )})' )
 							st.dataframe( df_os, use_container_width=True, hide_index=True )
 						else:
 							st.json( data )
-					else:
-						st.markdown( '#### Result' )
-						st.json( data )
-				
-				elif data:
-					st.text_area(
-						'Output',
-						value=str( data ),
-						height=320
-					)
-				else:
-					st.info( 'No results returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- Gov Info
-	with st.expander( label='Gov Info', icon='🏛️', expanded=False ):
-		if 'govinfo_results' not in st.session_state:
-			st.session_state[ 'govinfo_results' ] = { }
-		
-		if 'govinfo_clear_request' not in st.session_state:
-			st.session_state[ 'govinfo_clear_request' ] = False
-		
-		if st.session_state.get( 'govinfo_clear_request', False ):
-			st.session_state[ 'govinfo_mode' ] = 'search'
-			st.session_state[ 'govinfo_query' ] = ''
-			st.session_state[ 'govinfo_page_size' ] = 10
-			st.session_state[ 'govinfo_offset_mark' ] = '*'
-			st.session_state[ 'govinfo_sort_field' ] = 'score'
-			st.session_state[ 'govinfo_sort_order' ] = 'DESC'
-			st.session_state[ 'govinfo_package_id' ] = ''
-			st.session_state[ 'govinfo_collection' ] = ''
-			st.session_state[ 'govinfo_start_date' ] = '2025-01-01T00:00:00Z'
-			st.session_state[ 'govinfo_timeout' ] = 20
-			st.session_state[ 'govinfo_results' ] = { }
-			st.session_state[ 'govinfo_clear_request' ] = False
-		
-		def _clear_govinfo_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Gov Info expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'govinfo_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			govinfo_mode = st.selectbox(
-				'Mode',
-				options=[ 'search', 'package_summary', 'collection' ],
-				index=[ 'search', 'package_summary', 'collection' ].index(
-					st.session_state.get( 'govinfo_mode', 'search' )
-				),
-				key='govinfo_mode',
-				help=(
-						'search = GovInfo Search Service; '
-						'package_summary = package details by package ID; '
-						'collection = browse a collection since an ISO timestamp.'
-				)
-			)
-			
-			govinfo_query = st.text_area(
-				'Query',
-				value=st.session_state.get( 'govinfo_query', '' ),
-				height=120,
-				key='govinfo_query',
-				placeholder=(
-						'Example: collection:BILLS AND congress:118 '
-						'AND title:"appropriations"'
-				)
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				govinfo_page_size = st.number_input(
-					'Page Size',
-					min_value=1,
-					max_value=1000,
-					value=int( st.session_state.get( 'govinfo_page_size', 10 ) ),
-					step=1,
-					key='govinfo_page_size'
-				)
-			
-			with c2:
-				govinfo_offset_mark = st.text_input(
-					'Offset Mark',
-					value=st.session_state.get( 'govinfo_offset_mark', '*' ),
-					key='govinfo_offset_mark',
-					placeholder='*'
-				)
-			
-			c3, c4 = st.columns( 2 )
-			
-			with c3:
-				govinfo_sort_field = st.selectbox(
-					'Sort Field',
-					options=[ 'score', 'lastModified' ],
-					index=[ 'score', 'lastModified' ].index(
-						st.session_state.get( 'govinfo_sort_field', 'score' )
-					),
-					key='govinfo_sort_field'
-				)
-			
-			with c4:
-				govinfo_sort_order = st.selectbox(
-					'Sort Order',
-					options=[ 'DESC', 'ASC' ],
-					index=[ 'DESC', 'ASC' ].index(
-						st.session_state.get( 'govinfo_sort_order', 'DESC' )
-					),
-					key='govinfo_sort_order'
-				)
-			
-			govinfo_package_id = st.text_input(
-				'Package ID',
-				value=st.session_state.get( 'govinfo_package_id', '' ),
-				key='govinfo_package_id',
-				placeholder='Example: CREC-2018-10-10'
-			)
-			
-			c5, c6 = st.columns( 2 )
-			
-			with c5:
-				govinfo_collection = st.text_input(
-					'Collection',
-					value=st.session_state.get( 'govinfo_collection', '' ),
-					key='govinfo_collection',
-					placeholder='Example: CREC'
-				)
-			
-			with c6:
-				govinfo_start_date = st.text_input(
-					'Start Date (ISO)',
-					value=st.session_state.get(
-						'govinfo_start_date',
-						'2025-01-01T00:00:00Z'
-					),
-					key='govinfo_start_date',
-					placeholder='YYYY-MM-DDTHH:MM:SSZ'
-				)
-			
-			govinfo_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'govinfo_timeout', 20 ) ),
-				step=1,
-				key='govinfo_timeout'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				govinfo_submit = st.button(
-					'Submit',
-					key='govinfo_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				govinfo_clear = st.button(
-					'Clear',
-					key='govinfo_clear',
-					on_click=_clear_govinfo_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			govinfo_output = st.empty( )
-		
-		result = st.session_state.get( 'govinfo_results', { } )
-		
-		if govinfo_submit:
-			try:
-				f = GovData( )
-				
-				result = f.fetch(
-					mode=str( govinfo_mode ),
-					query=str( govinfo_query ),
-					page_size=int( govinfo_page_size ),
-					offset_mark=str( govinfo_offset_mark ),
-					sort_field=str( govinfo_sort_field ),
-					sort_order=str( govinfo_sort_order ),
-					package_id=str( govinfo_package_id ),
-					collection=str( govinfo_collection ),
-					start_date=str( govinfo_start_date ),
-					time=int( govinfo_timeout )
-				)
-				
-				st.session_state[ 'govinfo_results' ] = result or { }
-				st.rerun( )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-				
-				result = st.session_state.get( 'govinfo_results', { } )
-		
-		if not result:
-			govinfo_output.text( 'No results.' )
-		else:
-			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
-			payload = result.get( 'payload', { } ) if isinstance( result, dict ) else { }
-			
-			with col_right:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': mode_value,
-							'url': result.get( 'url', '' ),
-							'params': params,
-							'payload': payload,
-					}
-				)
-				
-				items: List[ Dict[ str, Any ] ] = [ ]
-				
-				if isinstance( data, dict ):
-					for key in [ 'packages', 'results', 'items' ]:
-						value = data.get( key, None )
-						if isinstance( value, list ):
-							items = [ item for item in value if isinstance( item, dict ) ]
-							break
-				elif isinstance( data, list ):
-					items = [ item for item in data if isinstance( item, dict ) ]
-				
-				if mode_value == 'package_summary' and isinstance( data, dict ) and data:
-					st.markdown( '#### Package Summary' )
 					
-					title_value = (
-							data.get( 'title' )
-							or data.get( 'packageTitle' )
-							or data.get( 'packageId' )
-							or 'Package'
-					)
-					
-					st.markdown( f'### {title_value}' )
-					
-					meta_parts: List[ str ] = [ ]
-					for key in [ 'packageId', 'collectionCode', 'lastModified', 'dateIssued' ]:
-						if key in data and str( data.get( key ) ).strip( ):
-							meta_parts.append( f'{key}: `{data.get( key )}`' )
-					
-					if meta_parts:
-						st.caption( ' | '.join( meta_parts ) )
-					
-					for text_key in [ 'summary', 'description' ]:
-						if text_key in data and str( data.get( text_key ) ).strip( ):
-							st.write( str( data.get( text_key ) ) )
-							break
-					
-					with st.expander( 'Raw Package JSON', expanded=False ):
-						st.json( data )
-				
-				elif items:
-					st.markdown( '#### Results' )
-					
-					for index, item in enumerate( items, start=1 ):
-						title_value = (
-								item.get( 'title' )
-								or item.get( 'packageTitle' )
-								or item.get( 'packageId' )
-								or item.get( 'granuleId' )
-								or f'Result {index}'
-						)
+					elif isinstance( data, dict ) and data:
+						table_candidates: List[ Dict[ str, Any ] ] = [ ]
+						for key in [ 'results', 'items', 'rows', 'data' ]:
+							value = data.get( key, None )
+							if isinstance( value, list ) and value:
+								table_candidates = [ item for item in value if
+								                     isinstance( item, dict ) ]
+								break
 						
-						package_value = (
-								item.get( 'packageId' )
-								or item.get( 'granuleId' )
-								or item.get( 'id' )
-								or ''
-						)
-						
-						collection_value = (
-								item.get( 'collectionCode' )
-								or item.get( 'collectionName' )
-								or item.get( 'collection' )
-								or ''
-						)
-						
-						date_value = (
-								item.get( 'lastModified' )
-								or item.get( 'dateIssued' )
-								or item.get( 'publishDate' )
-								or ''
-						)
-						
-						summary_value = (
-								item.get( 'summary' )
-								or item.get( 'description' )
-								or item.get( 'snippet' )
-								or ''
-						)
-						
-						with st.container( border=True ):
-							st.markdown( f'**{index}. {title_value}**' )
-							
-							meta_parts: List[ str ] = [ ]
-							
-							if package_value:
-								meta_parts.append( f'ID: `{package_value}`' )
-							
-							if collection_value:
-								meta_parts.append( f'Collection: `{collection_value}`' )
-							
-							if date_value:
-								meta_parts.append( f'Date: `{date_value}`' )
-							
-							if meta_parts:
-								st.caption( ' | '.join( meta_parts ) )
-							
-							if summary_value:
-								st.write( str( summary_value ) )
+						if table_candidates:
+							df_os = pd.DataFrame( table_candidates )
+							if not df_os.empty:
+								st.markdown( f'#### Result Rows ({len( df_os )})' )
+								st.dataframe( df_os, use_container_width=True, hide_index=True )
 							else:
-								st.caption( 'No summary available.' )
-							
-							with st.expander( 'Raw Item', expanded=False ):
-								st.json( item )
-				
-				elif isinstance( data, dict ) and data:
-					st.markdown( '#### Result' )
-					st.json( data )
-				elif data:
-					st.markdown( '#### Result' )
-					st.text_area(
-						'Output',
-						value=str( data ),
-						height=320
-					)
-				else:
-					st.info( 'No results returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- Congress
-	with st.expander( label='US Congress', icon='⚖️', expanded=False ):
-		if 'congress_results' not in st.session_state:
-			st.session_state[ 'congress_results' ] = { }
-		
-		if 'congress_clear_request' not in st.session_state:
-			st.session_state[ 'congress_clear_request' ] = False
-		
-		if st.session_state.get( 'congress_clear_request', False ):
-			st.session_state[ 'congress_mode' ] = 'congresses'
-			st.session_state[ 'congress_number' ] = 119
-			st.session_state[ 'congress_bill_type' ] = ''
-			st.session_state[ 'congress_bill_number' ] = 0
-			st.session_state[ 'congress_law_type' ] = ''
-			st.session_state[ 'congress_law_number' ] = 0
-			st.session_state[ 'congress_report_type' ] = ''
-			st.session_state[ 'congress_report_number' ] = 0
-			st.session_state[ 'congress_offset' ] = 0
-			st.session_state[ 'congress_limit' ] = 20
-			st.session_state[ 'congress_sort' ] = 'updateDate+desc'
-			st.session_state[ 'congress_from_datetime' ] = ''
-			st.session_state[ 'congress_to_datetime' ] = ''
-			st.session_state[ 'congress_conference' ] = False
-			st.session_state[ 'congress_timeout' ] = 20
-			st.session_state[ 'congress_results' ] = { }
-			st.session_state[ 'congress_clear_request' ] = False
-		
-		def _clear_congress_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Congress expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'congress_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			congress_mode = st.selectbox(
-				'Mode',
-				options=[
-						'congresses',
-						'bills',
-						'bill_detail',
-						'laws',
-						'law_detail',
-						'reports',
-						'report_detail'
-				],
-				index=[
-						'congresses',
-						'bills',
-						'bill_detail',
-						'laws',
-						'law_detail',
-						'reports',
-						'report_detail'
-				].index( st.session_state.get( 'congress_mode', 'congresses' ) ),
-				key='congress_mode',
-				help=(
-						'Congress.gov is a structured endpoint API. '
-						'Choose the specific operation you want to perform.'
-				)
-			)
-			
-			congress_number = st.number_input(
-				'Congress Number',
-				min_value=1,
-				max_value=999,
-				value=int( st.session_state.get( 'congress_number', 119 ) ),
-				step=1,
-				key='congress_number'
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				congress_bill_type = st.selectbox(
-					'Bill Type',
-					options=[ '', 'hr', 's', 'hjres', 'sjres', 'hconres', 'sconres', 'hres',
-					          'sres' ],
-					index=[ '', 'hr', 's', 'hjres', 'sjres', 'hconres', 'sconres', 'hres',
-					        'sres' ].index(
-						st.session_state.get( 'congress_bill_type', '' )
-					),
-					key='congress_bill_type'
-				)
-			
-			with c2:
-				congress_bill_number = st.number_input(
-					'Bill Number',
-					min_value=0,
-					max_value=999999,
-					value=int( st.session_state.get( 'congress_bill_number', 0 ) ),
-					step=1,
-					key='congress_bill_number'
-				)
-			
-			c3, c4 = st.columns( 2 )
-			
-			with c3:
-				congress_law_type = st.selectbox(
-					'Law Type',
-					options=[ '', 'pub', 'priv' ],
-					index=[ '', 'pub', 'priv' ].index(
-						st.session_state.get( 'congress_law_type', '' )
-					),
-					key='congress_law_type'
-				)
-			
-			with c4:
-				congress_law_number = st.number_input(
-					'Law Number',
-					min_value=0,
-					max_value=999999,
-					value=int( st.session_state.get( 'congress_law_number', 0 ) ),
-					step=1,
-					key='congress_law_number'
-				)
-			
-			c5, c6 = st.columns( 2 )
-			
-			with c5:
-				congress_report_type = st.selectbox(
-					'Report Type',
-					options=[ '', 'hrpt', 'srpt', 'erpt' ],
-					index=[ '', 'hrpt', 'srpt', 'erpt' ].index(
-						st.session_state.get( 'congress_report_type', '' )
-					),
-					key='congress_report_type'
-				)
-			
-			with c6:
-				congress_report_number = st.number_input(
-					'Report Number',
-					min_value=0,
-					max_value=999999,
-					value=int( st.session_state.get( 'congress_report_number', 0 ) ),
-					step=1,
-					key='congress_report_number'
-				)
-			
-			c7, c8 = st.columns( 2 )
-			
-			with c7:
-				congress_offset = st.number_input(
-					'Offset',
-					min_value=0,
-					max_value=1000000,
-					value=int( st.session_state.get( 'congress_offset', 0 ) ),
-					step=1,
-					key='congress_offset'
-				)
-			
-			with c8:
-				congress_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=250,
-					value=int( st.session_state.get( 'congress_limit', 20 ) ),
-					step=1,
-					key='congress_limit'
-				)
-			
-			congress_sort = st.selectbox(
-				'Sort',
-				options=[ 'updateDate+desc', 'updateDate+asc' ],
-				index=[ 'updateDate+desc', 'updateDate+asc' ].index(
-					st.session_state.get( 'congress_sort', 'updateDate+desc' )
-				),
-				key='congress_sort'
-			)
-			
-			c9, c10 = st.columns( 2 )
-			
-			with c9:
-				congress_from_datetime = st.text_input(
-					'From DateTime (ISO)',
-					value=st.session_state.get( 'congress_from_datetime', '' ),
-					key='congress_from_datetime',
-					placeholder='YYYY-MM-DDTHH:MM:SSZ'
-				)
-			
-			with c10:
-				congress_to_datetime = st.text_input(
-					'To DateTime (ISO)',
-					value=st.session_state.get( 'congress_to_datetime', '' ),
-					key='congress_to_datetime',
-					placeholder='YYYY-MM-DDTHH:MM:SSZ'
-				)
-			
-			congress_conference = st.checkbox(
-				'Conference Reports',
-				value=bool( st.session_state.get( 'congress_conference', False ) ),
-				key='congress_conference'
-			)
-			
-			congress_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'congress_timeout', 20 ) ),
-				step=1,
-				key='congress_timeout'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				congress_submit = st.button(
-					'Submit',
-					key='congress_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				congress_clear = st.button(
-					'Clear',
-					key='congress_clear',
-					on_click=_clear_congress_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			congress_output = st.empty( )
-		
-		if congress_submit:
-			try:
-				f = Congress( )
-				
-				result = f.fetch(
-					mode=str( congress_mode ),
-					congress=int( congress_number ),
-					bill_type=str( congress_bill_type ),
-					bill_number=int( congress_bill_number ),
-					law_type=str( congress_law_type ),
-					law_number=int( congress_law_number ),
-					report_type=str( congress_report_type ),
-					report_number=int( congress_report_number ),
-					offset=int( congress_offset ),
-					limit=int( congress_limit ),
-					sort=str( congress_sort ),
-					from_date_time=str( congress_from_datetime ),
-					to_date_time=str( congress_to_datetime ),
-					conference=bool( congress_conference ),
-					time=int( congress_timeout )
-				)
-				
-				st.session_state[ 'congress_results' ] = result or { }
-				st.rerun( )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-				
-		result = st.session_state.get( 'congress_results', { } )
-		
-		if not result:
-			congress_output.text( 'No results.' )
-		else:
-			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
-			
-			with col_right:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': mode_value,
-							'url': result.get( 'url', '' ),
-							'params': params,
-					}
-				)
-				
-				items: List[ Dict[ str, Any ] ] = [ ]
-				
-				if isinstance( data, dict ):
-					for key in [
-							'bills',
-							'laws',
-							'reports',
-							'committeeReports',
-							'congresses',
-							'sessions',
-							'results',
-							'items'
-					]:
-						value = data.get( key, None )
-						if isinstance( value, list ):
-							items = [ item for item in value if isinstance( item, dict ) ]
-							break
-				elif isinstance( data, list ):
-					items = [ item for item in data if isinstance( item, dict ) ]
-				
-				if items:
-					st.markdown( '#### Results' )
+								st.json( data )
+						else:
+							st.markdown( '#### Result' )
+							st.json( data )
 					
-					for index, item in enumerate( items, start=1 ):
-						title_value = (
-								item.get( 'title' )
-								or item.get( 'name' )
-								or item.get( 'number' )
-								or item.get( 'billNumber' )
-								or item.get( 'lawNumber' )
-								or item.get( 'reportNumber' )
-								or f'Result {index}'
+					elif data:
+						st.text_area(
+							'Output',
+							value=str( data ),
+							height=320
 						)
-						
-						id_parts: List[ str ] = [ ]
-						for key in [
-								'congress',
-								'type',
-								'number',
-								'billType',
-								'billNumber',
-								'lawType',
-								'lawNumber',
-								'reportType',
-								'reportNumber'
-						]:
-							if key in item and str( item.get( key ) ).strip( ):
-								id_parts.append( f'{key}={item.get( key )}' )
-						
-						action_value = (
-								item.get( 'latestAction' )
-								or item.get( 'latestActionText' )
-								or item.get( 'actionDate' )
-								or ''
-						)
-						
-						with st.container( border=True ):
-							st.markdown( f'**{index}. {title_value}**' )
-							
-							if id_parts:
-								st.caption( ' | '.join( id_parts ) )
-							
-							if isinstance( action_value, dict ):
-								st.write( str( action_value ) )
-							elif action_value:
-								st.write( str( action_value ) )
-							
-							with st.expander( 'Raw Item', expanded=False ):
-								st.json( item )
-				
-				elif isinstance( data, dict ) and data:
-					st.markdown( '#### Detail' )
-					
-					title_value = (
-							data.get( 'title' )
-							or data.get( 'name' )
-							or data.get( 'number' )
-							or data.get( 'billNumber' )
-							or data.get( 'lawNumber' )
-							or data.get( 'reportNumber' )
-							or 'Result'
-					)
-					
-					st.markdown( f'### {title_value}' )
-					
-					summary_fields: Dict[ str, Any ] = { }
-					for key in [
-							'congress',
-							'type',
-							'number',
-							'billType',
-							'billNumber',
-							'lawType',
-							'lawNumber',
-							'reportType',
-							'reportNumber',
-							'updateDate',
-							'actionDate'
-					]:
-						if key in data:
-							summary_fields[ key ] = data.get( key )
-					
-					if summary_fields:
-						st.json( summary_fields )
-					
-					for key in [ 'summary', 'latestAction', 'description' ]:
-						if key in data and str( data.get( key ) ).strip( ):
-							st.markdown( f'#### {key}' )
-							st.write( str( data.get( key ) ) )
-					
-					with st.expander( 'Raw Detail JSON', expanded=False ):
-						st.json( data )
-				
-				elif data:
-					st.markdown( '#### Result' )
-					st.text_area(
-						'Output',
-						value=str( data ),
-						height=320
-					)
-				else:
-					st.info( 'No results returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- Internet Archive
-	with st.expander( label='Internet Archive', icon='🌐', expanded=False ):
-		if 'internetarchive_results' not in st.session_state:
-			st.session_state[ 'internetarchive_results' ] = { }
-		
-		if 'internetarchive_clear_request' not in st.session_state:
-			st.session_state[ 'internetarchive_clear_request' ] = False
-		
-		if st.session_state.get( 'internetarchive_clear_request', False ):
-			st.session_state[ 'internetarchive_query' ] = ''
-			st.session_state[ 'internetarchive_rows' ] = 10
-			st.session_state[ 'internetarchive_page' ] = 1
-			st.session_state[ 'internetarchive_sort' ] = 'downloads desc'
-			st.session_state[ 'internetarchive_media_type' ] = ''
-			st.session_state[ 'internetarchive_collection' ] = ''
-			st.session_state[ 'internetarchive_timeout' ] = 20
-			st.session_state[ 'internetarchive_results' ] = { }
-			st.session_state[ 'internetarchive_clear_request' ] = False
-		
-		def _clear_internetarchive_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Internet Archive expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'internetarchive_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			ia_query = st.text_area(
-				'Query',
-				value=st.session_state.get( 'internetarchive_query', '' ),
-				height=80,
-				key='internetarchive_query',
-				placeholder=(
-						'Examples:\n'
-						'climate change\n'
-						'title:"appropriations" AND creator:"Congress"\n'
-						'budget execution'
-				)
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				ia_rows = st.number_input(
-					'Rows',
-					min_value=1,
-					max_value=100,
-					value=int( st.session_state.get( 'internetarchive_rows', 10 ) ),
-					step=1,
-					key='internetarchive_rows'
-				)
-			
-			with c2:
-				ia_page = st.number_input(
-					'Page',
-					min_value=1,
-					max_value=100000,
-					value=int( st.session_state.get( 'internetarchive_page', 1 ) ),
-					step=1,
-					key='internetarchive_page'
-				)
-			
-			ia_sort = st.selectbox(
-				'Sort',
-				options=[
-						'downloads desc',
-						'downloads asc',
-						'publicdate desc',
-						'publicdate asc',
-						'titleSorter asc',
-						'titleSorter desc'
-				],
-				index=[
-						'downloads desc',
-						'downloads asc',
-						'publicdate desc',
-						'publicdate asc',
-						'titleSorter asc',
-						'titleSorter desc'
-				].index(
-					st.session_state.get( 'internetarchive_sort', 'downloads desc' )
-				),
-				key='internetarchive_sort'
-			)
-			
-			c3, c4 = st.columns( 2 )
-			
-			with c3:
-				ia_media_type = st.text_input(
-					'Mediatype',
-					value=st.session_state.get( 'internetarchive_media_type', '' ),
-					key='internetarchive_media_type',
-					placeholder='Example: texts'
-				)
-			
-			with c4:
-				ia_collection = st.text_input(
-					'Collection',
-					value=st.session_state.get( 'internetarchive_collection', '' ),
-					key='internetarchive_collection',
-					placeholder='Example: americana'
-				)
-			
-			ia_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'internetarchive_timeout', 20 ) ),
-				step=1,
-				key='internetarchive_timeout'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				ia_submit = st.button(
-					'Submit',
-					key='internetarchive_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				ia_clear = st.button(
-					'Clear',
-					key='internetarchive_clear',
-					on_click=_clear_internetarchive_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			ia_output = st.empty( )
-			
-		result = st.session_state.get( 'internetarchive_results', { } )
-		
-		if ia_submit:
-			try:
-				f = InternetArchive( )
-				
-				result = f.fetch(
-					keywords=str( ia_query ),
-					rows=int( ia_rows ),
-					page=int( ia_page ),
-					sort=str( ia_sort ),
-					media_type=str( ia_media_type ),
-					collection=str( ia_collection ),
-					time=int( ia_timeout )
-				)
-				
-				st.session_state[ 'internetarchive_results' ] = result or { }
-				st.rerun( )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-				
-			result = st.session_state.get( 'internetarchive_results', { } )
-		
-		if not result:
-			ia_output.text( 'No results.' )
-		else:
-			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
-			
-			with col_right:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': mode_value,
-							'url': result.get( 'url', '' ),
-							'params': params,
-					}
-				)
-				
-				docs: List[ Dict[ str, Any ] ] = [ ]
-				num_found = None
-				
-				if isinstance( data, dict ):
-					response_block = data.get( 'response', { } )
-					
-					if isinstance( response_block, dict ):
-						num_found = response_block.get( 'numFound', None )
-						value = response_block.get( 'docs', [ ] )
-						if isinstance( value, list ):
-							docs = [ item for item in value if isinstance( item, dict ) ]
-				
-				if num_found is not None:
-					st.markdown( f'#### Search Results ({num_found})' )
-				else:
-					st.markdown( '#### Search Results' )
-				
-				if docs:
-					for index, item in enumerate( docs, start=1 ):
-						title_value = (
-								item.get( 'title' )
-								or item.get( 'identifier' )
-								or f'Result {index}'
-						)
-						
-						identifier_value = item.get( 'identifier', '' )
-						mediatype_value = item.get( 'mediatype', '' )
-						
-						collection_value = ''
-						collection_raw = item.get( 'collection', '' )
-						if isinstance( collection_raw, list ) and collection_raw:
-							collection_value = ', '.join( [ str( x ) for x in
-							                                collection_raw[ :3 ] ] )
-						elif collection_raw:
-							collection_value = str( collection_raw )
-						
-						date_value = (
-								item.get( 'publicdate' )
-								or item.get( 'date' )
-								or item.get( 'addeddate' )
-								or ''
-						)
-						
-						desc_value = item.get( 'description', '' )
-						if isinstance( desc_value, list ):
-							desc_value = ' '.join( [ str( x ) for x in desc_value[ :2 ] ] )
-						
-						with st.container( border=True ):
-							st.markdown( f'**{index}. {title_value}**' )
-							
-							meta_parts: List[ str ] = [ ]
-							
-							if identifier_value:
-								meta_parts.append( f'Identifier: `{identifier_value}`' )
-							
-							if mediatype_value:
-								meta_parts.append( f'Mediatype: `{mediatype_value}`' )
-							
-							if collection_value:
-								meta_parts.append( f'Collection: `{collection_value}`' )
-							
-							if date_value:
-								meta_parts.append( f'Date: `{date_value}`' )
-							
-							if meta_parts:
-								st.caption( ' | '.join( meta_parts ) )
-							
-							if desc_value:
-								st.write( str( desc_value ) )
-							else:
-								st.caption( 'No description available.' )
-							
-							with st.expander( 'Raw Item', expanded=False ):
-								st.json( item )
-				
-				elif isinstance( data, dict ) and data:
-					st.markdown( '#### Result' )
-					st.json( data )
-				elif isinstance( data, list ) and data:
-					df_ia = pd.DataFrame( data )
-					if not df_ia.empty:
-						st.dataframe( df_ia, use_container_width=True, hide_index=True )
 					else:
-						st.json( data )
-				elif data:
-					st.markdown( '#### Result' )
-					st.text_area(
-						'Output',
-						value=str( data ),
-						height=320
-					)
-				else:
-					st.info( 'No results returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-
-	# -------- Grokipedia
-	with st.expander( label='Grokipedia', icon='🧠', expanded=False ):
-		if 'grokipedia_results' not in st.session_state:
-			st.session_state[ 'grokipedia_results' ] = { }
+						st.info( 'No results returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 		
-		if 'grokipedia_clear_request' not in st.session_state:
-			st.session_state[ 'grokipedia_clear_request' ] = False
-		
-		if 'grokipedia_auto_fetch_page' not in st.session_state:
-			st.session_state[ 'grokipedia_auto_fetch_page' ] = False
-		
-		if st.session_state.get( 'grokipedia_clear_request', False ):
-			st.session_state[ 'grokipedia_mode' ] = 'search'
-			st.session_state[ 'grokipedia_query' ] = ''
-			st.session_state[ 'grokipedia_page' ] = ''
-			st.session_state[ 'grokipedia_limit' ] = 12
-			st.session_state[ 'grokipedia_offset' ] = 0
-			st.session_state[ 'grokipedia_include_content' ] = True
-			st.session_state[ 'grokipedia_results' ] = { }
-			st.session_state[ 'grokipedia_auto_fetch_page' ] = False
-			st.session_state[ 'grokipedia_clear_request' ] = False
-		
-		def _clear_grokipedia_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Grokipedia expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'grokipedia_clear_request' ] = True
-		
-		def _load_grokipedia_page( slug: str ) -> None:
-			'''
-				Purpose:
-				--------
-				Load a selected Grokipedia slug into the page controls and trigger
-				an immediate page fetch on rerun.
-
-				Parameters:
-				-----------
-				slug (str):
-					The selected page slug.
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'grokipedia_mode' ] = 'page'
-			st.session_state[ 'grokipedia_page' ] = str( slug ).strip( )
-			st.session_state[ 'grokipedia_include_content' ] = True
-			st.session_state[ 'grokipedia_auto_fetch_page' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			grokipedia_mode = st.selectbox(
-				'Mode',
-				options=[ 'search', 'page' ],
-				index=[ 'search', 'page' ].index(
-					st.session_state.get( 'grokipedia_mode', 'search' )
-				),
-				key='grokipedia_mode',
-				help='search = keyword search; page = fetch a specific page by slug.'
-			)
+		# -------- Gov Info
+		with st.expander( label='Gov Info', icon='🏛️', expanded=False ):
+			if 'govinfo_results' not in st.session_state:
+				st.session_state[ 'govinfo_results' ] = { }
 			
-			grokipedia_query = st.text_input(
-				'Query',
-				value=st.session_state.get( 'grokipedia_query', '' ),
-				key='grokipedia_query',
-				placeholder='Example: machine learning'
-			)
+			if 'govinfo_clear_request' not in st.session_state:
+				st.session_state[ 'govinfo_clear_request' ] = False
 			
-			grokipedia_page = st.text_input(
-				'Page Slug',
-				value=st.session_state.get( 'grokipedia_page', '' ),
-				key='grokipedia_page',
-				placeholder='Example: United_Petroleum'
-			)
+			if st.session_state.get( 'govinfo_clear_request', False ):
+				st.session_state[ 'govinfo_mode' ] = 'search'
+				st.session_state[ 'govinfo_query' ] = ''
+				st.session_state[ 'govinfo_page_size' ] = 10
+				st.session_state[ 'govinfo_offset_mark' ] = '*'
+				st.session_state[ 'govinfo_sort_field' ] = 'score'
+				st.session_state[ 'govinfo_sort_order' ] = 'DESC'
+				st.session_state[ 'govinfo_package_id' ] = ''
+				st.session_state[ 'govinfo_collection' ] = ''
+				st.session_state[ 'govinfo_start_date' ] = '2025-01-01T00:00:00Z'
+				st.session_state[ 'govinfo_timeout' ] = 20
+				st.session_state[ 'govinfo_results' ] = { }
+				st.session_state[ 'govinfo_clear_request' ] = False
 			
-			c1, c2 = st.columns( 2 )
+			def _clear_govinfo_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Gov Info expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'govinfo_clear_request' ] = True
 			
-			with c1:
-				grokipedia_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=100,
-					value=int( st.session_state.get( 'grokipedia_limit', 12 ) ),
-					step=1,
-					key='grokipedia_limit'
-				)
+			col_left, col_right = st.columns( 2, border=True )
 			
-			with c2:
-				grokipedia_offset = st.number_input(
-					'Offset',
-					min_value=0,
-					max_value=100000,
-					value=int( st.session_state.get( 'grokipedia_offset', 0 ) ),
-					step=1,
-					key='grokipedia_offset'
-				)
-			
-			grokipedia_include_content = st.checkbox(
-				'Include Content',
-				value=bool(
-					st.session_state.get( 'grokipedia_include_content', True )
-				),
-				key='grokipedia_include_content'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				grokipedia_submit = st.button(
-					'Submit',
-					key='grokipedia_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				grokipedia_clear = st.button(
-					'Clear',
-					key='grokipedia_clear',
-					on_click=_clear_grokipedia_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			grokipedia_output = st.empty( )
-		
-		should_fetch_grokipedia = False
-		
-		if grokipedia_submit:
-			should_fetch_grokipedia = True
-		
-		if st.session_state.get( 'grokipedia_auto_fetch_page', False ):
-			should_fetch_grokipedia = True
-		
-		if should_fetch_grokipedia:
-			try:
-				f = Grokipedia( )
-				
-				result = f.fetch(
-					mode=str( st.session_state.get( 'grokipedia_mode', 'search' ) ),
-					query=str( st.session_state.get( 'grokipedia_query', '' ) ),
-					page=str( st.session_state.get( 'grokipedia_page', '' ) ),
-					limit=int( st.session_state.get( 'grokipedia_limit', 12 ) ),
-					offset=int( st.session_state.get( 'grokipedia_offset', 0 ) ),
-					include_content=bool(
-						st.session_state.get( 'grokipedia_include_content', True )
+			with col_left:
+				govinfo_mode = st.selectbox(
+					'Mode',
+					options=[ 'search', 'package_summary', 'collection' ],
+					index=[ 'search', 'package_summary', 'collection' ].index(
+						st.session_state.get( 'govinfo_mode', 'search' )
+					),
+					key='govinfo_mode',
+					help=(
+							'search = GovInfo Search Service; '
+							'package_summary = package details by package ID; '
+							'collection = browse a collection since an ISO timestamp.'
 					)
 				)
 				
-				st.session_state[ 'grokipedia_results' ] = result or { }
-				st.session_state[ 'grokipedia_auto_fetch_page' ] = False
-				st.rerun( )
-			
-			except Exception as exc:
-				st.session_state[ 'grokipedia_auto_fetch_page' ] = False
-				st.error( str( exc ) )
-		
-		result = st.session_state.get( 'grokipedia_results', { } )
-		
-		if not result:
-			grokipedia_output.text( 'No results.' )
-		else:
-			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				govinfo_query = st.text_area(
+					'Query',
+					value=st.session_state.get( 'govinfo_query', '' ),
+					height=120,
+					key='govinfo_query',
+					placeholder=(
+							'Example: collection:BILLS AND congress:118 '
+							'AND title:"appropriations"'
+					)
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					govinfo_page_size = st.number_input(
+						'Page Size',
+						min_value=1,
+						max_value=1000,
+						value=int( st.session_state.get( 'govinfo_page_size', 10 ) ),
+						step=1,
+						key='govinfo_page_size'
+					)
+				
+				with c2:
+					govinfo_offset_mark = st.text_input(
+						'Offset Mark',
+						value=st.session_state.get( 'govinfo_offset_mark', '*' ),
+						key='govinfo_offset_mark',
+						placeholder='*'
+					)
+				
+				c3, c4 = st.columns( 2 )
+				
+				with c3:
+					govinfo_sort_field = st.selectbox(
+						'Sort Field',
+						options=[ 'score', 'lastModified' ],
+						index=[ 'score', 'lastModified' ].index(
+							st.session_state.get( 'govinfo_sort_field', 'score' )
+						),
+						key='govinfo_sort_field'
+					)
+				
+				with c4:
+					govinfo_sort_order = st.selectbox(
+						'Sort Order',
+						options=[ 'DESC', 'ASC' ],
+						index=[ 'DESC', 'ASC' ].index(
+							st.session_state.get( 'govinfo_sort_order', 'DESC' )
+						),
+						key='govinfo_sort_order'
+					)
+				
+				govinfo_package_id = st.text_input(
+					'Package ID',
+					value=st.session_state.get( 'govinfo_package_id', '' ),
+					key='govinfo_package_id',
+					placeholder='Example: CREC-2018-10-10'
+				)
+				
+				c5, c6 = st.columns( 2 )
+				
+				with c5:
+					govinfo_collection = st.text_input(
+						'Collection',
+						value=st.session_state.get( 'govinfo_collection', '' ),
+						key='govinfo_collection',
+						placeholder='Example: CREC'
+					)
+				
+				with c6:
+					govinfo_start_date = st.text_input(
+						'Start Date (ISO)',
+						value=st.session_state.get(
+							'govinfo_start_date',
+							'2025-01-01T00:00:00Z'
+						),
+						key='govinfo_start_date',
+						placeholder='YYYY-MM-DDTHH:MM:SSZ'
+					)
+				
+				govinfo_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'govinfo_timeout', 20 ) ),
+					step=1,
+					key='govinfo_timeout'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					govinfo_submit = st.button(
+						'Submit',
+						key='govinfo_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					govinfo_clear = st.button(
+						'Clear',
+						key='govinfo_clear',
+						on_click=_clear_govinfo_state,
+						use_container_width=True
+					)
 			
 			with col_right:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': result.get( 'mode', '' ),
-							'url': result.get( 'url', '' ),
-							'params': result.get( 'params', { } ),
-							'api_key_configured': result.get( 'api_key_configured', False )
-					}
-				)
+				govinfo_output = st.empty( )
+			
+			result = st.session_state.get( 'govinfo_results', { } )
+			
+			if govinfo_submit:
+				try:
+					f = GovData( )
+					
+					result = f.fetch(
+						mode=str( govinfo_mode ),
+						query=str( govinfo_query ),
+						page_size=int( govinfo_page_size ),
+						offset_mark=str( govinfo_offset_mark ),
+						sort_field=str( govinfo_sort_field ),
+						sort_order=str( govinfo_sort_order ),
+						package_id=str( govinfo_package_id ),
+						collection=str( govinfo_collection ),
+						start_date=str( govinfo_start_date ),
+						time=int( govinfo_timeout )
+					)
+					
+					st.session_state[ 'govinfo_results' ] = result or { }
+					st.rerun( )
 				
-				if mode_value == 'search':
-					st.markdown( '#### Search Results' )
+				except Exception as exc:
+					st.error( str( exc ) )
+					
+					result = st.session_state.get( 'govinfo_results', { } )
+			
+			if not result:
+				govinfo_output.text( 'No results.' )
+			else:
+				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+				payload = result.get( 'payload', { } ) if isinstance( result, dict ) else { }
+				
+				with col_right:
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': mode_value,
+								'url': result.get( 'url', '' ),
+								'params': params,
+								'payload': payload,
+						}
+					)
 					
 					items: List[ Dict[ str, Any ] ] = [ ]
 					
-					if isinstance( data, list ):
-						items = [ item for item in data if isinstance( item, dict ) ]
-					elif isinstance( data, dict ):
-						for key in [ 'results', 'items', 'pages', 'data' ]:
+					if isinstance( data, dict ):
+						for key in [ 'packages', 'results', 'items' ]:
 							value = data.get( key, None )
 							if isinstance( value, list ):
 								items = [ item for item in value if isinstance( item, dict ) ]
 								break
+					elif isinstance( data, list ):
+						items = [ item for item in data if isinstance( item, dict ) ]
 					
-					if not items:
-						if data:
-							st.info(
-								'No structured search hits were detected. '
-								'Showing raw output.'
-							)
+					if mode_value == 'package_summary' and isinstance( data, dict ) and data:
+						st.markdown( '#### Package Summary' )
+						
+						title_value = (
+								data.get( 'title' )
+								or data.get( 'packageTitle' )
+								or data.get( 'packageId' )
+								or 'Package'
+						)
+						
+						st.markdown( f'### {title_value}' )
+						
+						meta_parts: List[ str ] = [ ]
+						for key in [ 'packageId', 'collectionCode', 'lastModified', 'dateIssued' ]:
+							if key in data and str( data.get( key ) ).strip( ):
+								meta_parts.append( f'{key}: `{data.get( key )}`' )
+						
+						if meta_parts:
+							st.caption( ' | '.join( meta_parts ) )
+						
+						for text_key in [ 'summary', 'description' ]:
+							if text_key in data and str( data.get( text_key ) ).strip( ):
+								st.write( str( data.get( text_key ) ) )
+								break
+						
+						with st.expander( 'Raw Package JSON', expanded=False ):
 							st.json( data )
-						else:
-							st.info( 'No results returned.' )
-					else:
+					
+					elif items:
+						st.markdown( '#### Results' )
+						
 						for index, item in enumerate( items, start=1 ):
 							title_value = (
 									item.get( 'title' )
-									or item.get( 'name' )
-									or item.get( 'slug' )
-									or item.get( 'id' )
+									or item.get( 'packageTitle' )
+									or item.get( 'packageId' )
+									or item.get( 'granuleId' )
 									or f'Result {index}'
 							)
 							
-							slug_value = (
-									item.get( 'slug' )
-									or item.get( 'page' )
-									or item.get( 'path' )
+							package_value = (
+									item.get( 'packageId' )
+									or item.get( 'granuleId' )
 									or item.get( 'id' )
+									or ''
+							)
+							
+							collection_value = (
+									item.get( 'collectionCode' )
+									or item.get( 'collectionName' )
+									or item.get( 'collection' )
+									or ''
+							)
+							
+							date_value = (
+									item.get( 'lastModified' )
+									or item.get( 'dateIssued' )
+									or item.get( 'publishDate' )
 									or ''
 							)
 							
 							summary_value = (
 									item.get( 'summary' )
 									or item.get( 'description' )
-									or item.get( 'excerpt' )
 									or item.get( 'snippet' )
 									or ''
-							)
-							
-							score_value = (
-									item.get( 'score' )
-									or item.get( 'rank' )
-									or item.get( 'relevance' )
 							)
 							
 							with st.container( border=True ):
@@ -6256,11 +5285,14 @@ elif mode == 'Retrieval':
 								
 								meta_parts: List[ str ] = [ ]
 								
-								if slug_value:
-									meta_parts.append( f'Slug: `{slug_value}`' )
+								if package_value:
+									meta_parts.append( f'ID: `{package_value}`' )
 								
-								if score_value is not None and str( score_value ).strip( ):
-									meta_parts.append( f'Score: `{score_value}`' )
+								if collection_value:
+									meta_parts.append( f'Collection: `{collection_value}`' )
+								
+								if date_value:
+									meta_parts.append( f'Date: `{date_value}`' )
 								
 								if meta_parts:
 									st.caption( ' | '.join( meta_parts ) )
@@ -6270,95 +5302,14 @@ elif mode == 'Retrieval':
 								else:
 									st.caption( 'No summary available.' )
 								
-								ca, cb = st.columns( 2 )
-								
-								with ca:
-									if slug_value:
-										if st.button(
-												'Load Page',
-												key=f'grokipedia_load_page_{index}_{slug_value}',
-												use_container_width=True
-										):
-											_load_grokipedia_page( slug_value )
-											st.rerun( )
-								
-								with cb:
-									with st.expander( 'Raw Item', expanded=False ):
-										st.json( item )
-				
-				elif mode_value == 'page':
-					st.markdown( '#### Page Result' )
+								with st.expander( 'Raw Item', expanded=False ):
+									st.json( item )
 					
-					page_item: Dict[ str, Any ] = data if isinstance( data, dict ) else { }
-					
-					if not page_item:
-						if data:
-							st.text_area(
-								'Output',
-								value=str( data ),
-								height=320
-							)
-						else:
-							st.info( 'No results returned.' )
-					else:
-						title_value = (
-								page_item.get( 'title' )
-								or page_item.get( 'name' )
-								or page_item.get( 'slug' )
-								or page_item.get( 'id' )
-								or 'Untitled Page'
-						)
-						
-						slug_value = (
-								page_item.get( 'slug' )
-								or page_item.get( 'page' )
-								or page_item.get( 'path' )
-								or page_item.get( 'id' )
-								or ''
-						)
-						
-						summary_value = (
-								page_item.get( 'summary' )
-								or page_item.get( 'description' )
-								or page_item.get( 'excerpt' )
-								or ''
-						)
-						
-						content_value = (
-								page_item.get( 'content' )
-								or page_item.get( 'text' )
-								or page_item.get( 'body' )
-								or ''
-						)
-						
-						st.markdown( f'### {title_value}' )
-						
-						if slug_value:
-							st.caption( f'Slug: `{slug_value}`' )
-						
-						if summary_value:
-							st.markdown( '#### Summary' )
-							st.write( str( summary_value ) )
-						
-						if content_value:
-							st.markdown( '#### Content' )
-							st.text_area(
-								'Page Content',
-								value=str( content_value ),
-								height=360
-							)
-						else:
-							st.info( 'No page content was returned.' )
-						
-						with st.expander( 'Raw Page JSON', expanded=False ):
-							st.json( page_item )
-				
-				else:
-					st.markdown( '#### Result' )
-					
-					if isinstance( data, dict ) or isinstance( data, list ):
+					elif isinstance( data, dict ) and data:
+						st.markdown( '#### Result' )
 						st.json( data )
 					elif data:
+						st.markdown( '#### Result' )
 						st.text_area(
 							'Output',
 							value=str( data ),
@@ -6366,1277 +5317,2325 @@ elif mode == 'Retrieval':
 						)
 					else:
 						st.info( 'No results returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- Congress
+		with st.expander( label='US Congress', icon='⚖️', expanded=False ):
+			if 'congress_results' not in st.session_state:
+				st.session_state[ 'congress_results' ] = { }
+			
+			if 'congress_clear_request' not in st.session_state:
+				st.session_state[ 'congress_clear_request' ] = False
+			
+			if st.session_state.get( 'congress_clear_request', False ):
+				st.session_state[ 'congress_mode' ] = 'congresses'
+				st.session_state[ 'congress_number' ] = 119
+				st.session_state[ 'congress_bill_type' ] = ''
+				st.session_state[ 'congress_bill_number' ] = 0
+				st.session_state[ 'congress_law_type' ] = ''
+				st.session_state[ 'congress_law_number' ] = 0
+				st.session_state[ 'congress_report_type' ] = ''
+				st.session_state[ 'congress_report_number' ] = 0
+				st.session_state[ 'congress_offset' ] = 0
+				st.session_state[ 'congress_limit' ] = 20
+				st.session_state[ 'congress_sort' ] = 'updateDate+desc'
+				st.session_state[ 'congress_from_datetime' ] = ''
+				st.session_state[ 'congress_to_datetime' ] = ''
+				st.session_state[ 'congress_conference' ] = False
+				st.session_state[ 'congress_timeout' ] = 20
+				st.session_state[ 'congress_results' ] = { }
+				st.session_state[ 'congress_clear_request' ] = False
+			
+			def _clear_congress_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Congress expander state for reset on the next rerun.
 	
-	# -------- Jupyter Notebook
-	with st.expander( label='Jupyter Notebook', icon='🪐', expanded=False ):
-		if 'jupyter_notebook_results' not in st.session_state:
-			st.session_state[ 'jupyter_notebook_results' ] = { }
-		
-		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-		
-		with col_left:
-			notebook_file = st.file_uploader(
-				'Upload Notebook',
-				type=[ 'ipynb' ],
-				key='jupyter_notebook_upload'
-			)
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'congress_clear_request' ] = True
 			
-			include_outputs = st.checkbox(
-				'Include Outputs',
-				value=True,
-				key='jupyter_notebook_include_outputs'
-			)
+			col_left, col_right = st.columns( 2, border=True )
 			
-			max_output_length = st.number_input(
-				'Max Output Length',
-				min_value=1,
-				max_value=20000,
-				value=100,
-				step=10,
-				key='jupyter_notebook_max_output_length'
-			)
-			
-			remove_newline = st.checkbox(
-				'Remove Newline',
-				value=False,
-				key='jupyter_notebook_remove_newline'
-			)
-			
-			include_traceback = st.checkbox(
-				'Traceback',
-				value=False,
-				key='jupyter_notebook_traceback'
-			)
-			
-			b1, b2, b3 = st.columns( 3 )
-			
-			with b1:
-				jupyter_submit = st.button(
-					'Submit',
-					key='jupyter_notebook_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				jupyter_clear = st.button(
-					'Clear',
-					key='jupyter_notebook_clear',
-					use_container_width=True
-				)
-			
-			with b3:
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'JupyterNotebookLoader'
-						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( )
+			with col_left:
+				congress_mode = st.selectbox(
+					'Mode',
+					options=[
+							'congresses',
+							'bills',
+							'bill_detail',
+							'laws',
+							'law_detail',
+							'reports',
+							'report_detail'
+					],
+					index=[
+							'congresses',
+							'bills',
+							'bill_detail',
+							'laws',
+							'law_detail',
+							'reports',
+							'report_detail'
+					].index( st.session_state.get( 'congress_mode', 'congresses' ) ),
+					key='congress_mode',
+					help=(
+							'Congress.gov is a structured endpoint API. '
+							'Choose the specific operation you want to perform.'
+					)
 				)
 				
-				if can_save:
-					st.download_button(
-						'Save',
-						data=st.session_state.get( 'raw_text' ),
-						file_name='jupyter_notebook_loader_output.txt',
-						mime='text/plain',
-						key='jupyter_notebook_save',
-						use_container_width=True
-					)
-				else:
-					st.button(
-						'Save',
-						key='jupyter_notebook_save_disabled',
-						disabled=True,
-						use_container_width=True
-					)
-		
-		with col_right:
-			if jupyter_clear:
-				st.session_state[ 'jupyter_notebook_results' ] = { }
-				remaining = _clear_loader_documents( 'JupyterNotebookLoader' )
-				st.info(
-					f'Jupyter Notebook Loader state cleared. Remaining documents: {remaining}.'
+				congress_number = st.number_input(
+					'Congress Number',
+					min_value=1,
+					max_value=999,
+					value=int( st.session_state.get( 'congress_number', 119 ) ),
+					step=1,
+					key='congress_number'
 				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					congress_bill_type = st.selectbox(
+						'Bill Type',
+						options=[ '', 'hr', 's', 'hjres', 'sjres', 'hconres', 'sconres', 'hres',
+						          'sres' ],
+						index=[ '', 'hr', 's', 'hjres', 'sjres', 'hconres', 'sconres', 'hres',
+						        'sres' ].index(
+							st.session_state.get( 'congress_bill_type', '' )
+						),
+						key='congress_bill_type'
+					)
+				
+				with c2:
+					congress_bill_number = st.number_input(
+						'Bill Number',
+						min_value=0,
+						max_value=999999,
+						value=int( st.session_state.get( 'congress_bill_number', 0 ) ),
+						step=1,
+						key='congress_bill_number'
+					)
+				
+				c3, c4 = st.columns( 2 )
+				
+				with c3:
+					congress_law_type = st.selectbox(
+						'Law Type',
+						options=[ '', 'pub', 'priv' ],
+						index=[ '', 'pub', 'priv' ].index(
+							st.session_state.get( 'congress_law_type', '' )
+						),
+						key='congress_law_type'
+					)
+				
+				with c4:
+					congress_law_number = st.number_input(
+						'Law Number',
+						min_value=0,
+						max_value=999999,
+						value=int( st.session_state.get( 'congress_law_number', 0 ) ),
+						step=1,
+						key='congress_law_number'
+					)
+				
+				c5, c6 = st.columns( 2 )
+				
+				with c5:
+					congress_report_type = st.selectbox(
+						'Report Type',
+						options=[ '', 'hrpt', 'srpt', 'erpt' ],
+						index=[ '', 'hrpt', 'srpt', 'erpt' ].index(
+							st.session_state.get( 'congress_report_type', '' )
+						),
+						key='congress_report_type'
+					)
+				
+				with c6:
+					congress_report_number = st.number_input(
+						'Report Number',
+						min_value=0,
+						max_value=999999,
+						value=int( st.session_state.get( 'congress_report_number', 0 ) ),
+						step=1,
+						key='congress_report_number'
+					)
+				
+				c7, c8 = st.columns( 2 )
+				
+				with c7:
+					congress_offset = st.number_input(
+						'Offset',
+						min_value=0,
+						max_value=1000000,
+						value=int( st.session_state.get( 'congress_offset', 0 ) ),
+						step=1,
+						key='congress_offset'
+					)
+				
+				with c8:
+					congress_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=250,
+						value=int( st.session_state.get( 'congress_limit', 20 ) ),
+						step=1,
+						key='congress_limit'
+					)
+				
+				congress_sort = st.selectbox(
+					'Sort',
+					options=[ 'updateDate+desc', 'updateDate+asc' ],
+					index=[ 'updateDate+desc', 'updateDate+asc' ].index(
+						st.session_state.get( 'congress_sort', 'updateDate+desc' )
+					),
+					key='congress_sort'
+				)
+				
+				c9, c10 = st.columns( 2 )
+				
+				with c9:
+					congress_from_datetime = st.text_input(
+						'From DateTime (ISO)',
+						value=st.session_state.get( 'congress_from_datetime', '' ),
+						key='congress_from_datetime',
+						placeholder='YYYY-MM-DDTHH:MM:SSZ'
+					)
+				
+				with c10:
+					congress_to_datetime = st.text_input(
+						'To DateTime (ISO)',
+						value=st.session_state.get( 'congress_to_datetime', '' ),
+						key='congress_to_datetime',
+						placeholder='YYYY-MM-DDTHH:MM:SSZ'
+					)
+				
+				congress_conference = st.checkbox(
+					'Conference Reports',
+					value=bool( st.session_state.get( 'congress_conference', False ) ),
+					key='congress_conference'
+				)
+				
+				congress_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'congress_timeout', 20 ) ),
+					step=1,
+					key='congress_timeout'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					congress_submit = st.button(
+						'Submit',
+						key='congress_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					congress_clear = st.button(
+						'Clear',
+						key='congress_clear',
+						on_click=_clear_congress_state,
+						use_container_width=True
+					)
 			
-			if jupyter_submit:
-				if not notebook_file:
-					st.info( 'Upload a notebook file.' )
-				else:
-					try:
-						with tempfile.TemporaryDirectory( ) as tmp:
-							path = os.path.join( tmp, notebook_file.name )
-							with open( path, 'wb' ) as f:
-								f.write( notebook_file.read( ) )
+			with col_right:
+				congress_output = st.empty( )
+			
+			if congress_submit:
+				try:
+					f = Congress( )
+					
+					result = f.fetch(
+						mode=str( congress_mode ),
+						congress=int( congress_number ),
+						bill_type=str( congress_bill_type ),
+						bill_number=int( congress_bill_number ),
+						law_type=str( congress_law_type ),
+						law_number=int( congress_law_number ),
+						report_type=str( congress_report_type ),
+						report_number=int( congress_report_number ),
+						offset=int( congress_offset ),
+						limit=int( congress_limit ),
+						sort=str( congress_sort ),
+						from_date_time=str( congress_from_datetime ),
+						to_date_time=str( congress_to_datetime ),
+						conference=bool( congress_conference ),
+						time=int( congress_timeout )
+					)
+					
+					st.session_state[ 'congress_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( str( exc ) )
+					
+			result = st.session_state.get( 'congress_results', { } )
+			
+			if not result:
+				congress_output.text( 'No results.' )
+			else:
+				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+				
+				with col_right:
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': mode_value,
+								'url': result.get( 'url', '' ),
+								'params': params,
+						}
+					)
+					
+					items: List[ Dict[ str, Any ] ] = [ ]
+					
+					if isinstance( data, dict ):
+						for key in [
+								'bills',
+								'laws',
+								'reports',
+								'committeeReports',
+								'congresses',
+								'sessions',
+								'results',
+								'items'
+						]:
+							value = data.get( key, None )
+							if isinstance( value, list ):
+								items = [ item for item in value if isinstance( item, dict ) ]
+								break
+					elif isinstance( data, list ):
+						items = [ item for item in data if isinstance( item, dict ) ]
+					
+					if items:
+						st.markdown( '#### Results' )
+						
+						for index, item in enumerate( items, start=1 ):
+							title_value = (
+									item.get( 'title' )
+									or item.get( 'name' )
+									or item.get( 'number' )
+									or item.get( 'billNumber' )
+									or item.get( 'lawNumber' )
+									or item.get( 'reportNumber' )
+									or f'Result {index}'
+							)
 							
-							loader = JupyterNotebookLoader( )
-							documents = loader.load(
-								path=path,
-								include_outputs=include_outputs,
-								max_output_length=int( max_output_length ),
-								remove_newline=remove_newline,
-								traceback=include_traceback
-							) or [ ]
-						
-						count = _promote_loader_documents(
-							documents,
-							'JupyterNotebookLoader'
-						)
-						
-						items: list[ dict[ str, Any ] ] = [ ]
-						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
+							id_parts: List[ str ] = [ ]
+							for key in [
+									'congress',
+									'type',
+									'number',
+									'billType',
+									'billNumber',
+									'lawType',
+									'lawNumber',
+									'reportType',
+									'reportNumber'
+							]:
+								if key in item and str( item.get( key ) ).strip( ):
+									id_parts.append( f'{key}={item.get( key )}' )
+							
+							action_value = (
+									item.get( 'latestAction' )
+									or item.get( 'latestActionText' )
+									or item.get( 'actionDate' )
+									or ''
 							)
-							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Source': metadata.get( 'source', '' ),
-										'Preview': content[ :200 ],
-										'Content': content,
-										'Metadata': metadata,
-								}
-							)
-						
-						st.session_state[ 'jupyter_notebook_results' ] = {
-								'mode': 'jupyter_notebook',
-								'include_outputs': include_outputs,
-								'max_output_length': int( max_output_length ),
-								'remove_newline': remove_newline,
-								'traceback': include_traceback,
-								'count': count,
-								'items': items,
-						}
-						
-						st.success( f'Loaded {count} notebook document(s).' )
-					
-					except Exception as exc:
-						st.error( 'Jupyter Notebook request failed.' )
-						st.exception( exc )
-			
-			result = st.session_state.get( 'jupyter_notebook_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'IncludeOutputs': result.get( 'include_outputs', False ),
-							'MaxOutputLength': result.get( 'max_output_length', 0 ),
-							'RemoveNewline': result.get( 'remove_newline', False ),
-							'Traceback': result.get( 'traceback', False ),
-							'Returned': result.get( 'count', 0 ),
-					}
-				)
-				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if items:
-					table_rows = [
-							{
-									'Index': item.get( 'Index', '' ),
-									'Source': item.get( 'Source', '' ),
-									'Preview': item.get( 'Preview', '' ),
-							}
-							for item in items
-					]
-					
-					st.markdown( '#### Results' )
-					st.dataframe( table_rows, use_container_width=True, hide_index=True )
-					
-					first = items[ 0 ]
-					st.markdown( '#### First Notebook Preview' )
-					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
-				else:
-					st.info( 'No notebook documents returned.' )
-				
-				_render_fallback_raw( result )
-
-	# -------- Google Cloud File
-	with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
-		if 'google_cloud_file_results' not in st.session_state:
-			st.session_state[ 'google_cloud_file_results' ] = { }
-		
-		col_left, col_right = st.columns( [ 0.50, 0.50 ], border=True )
-		
-		with col_left:
-			project_name = st.text_input(
-				'Project Name',
-				key='google_cloud_file_project_name'
-			)
-			
-			bucket = st.text_input(
-				'Bucket',
-				key='google_cloud_file_bucket'
-			)
-			
-			blob = st.text_input(
-				'Blob',
-				key='google_cloud_file_blob',
-				help='The exact object name in the Google Cloud Storage bucket.'
-			)
-			
-			b1, b2, b3 = st.columns( 3 )
-			
-			with b1:
-				google_cloud_file_submit = st.button(
-					'Submit',
-					key='google_cloud_file_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				google_cloud_file_clear = st.button(
-					'Clear',
-					key='google_cloud_file_clear',
-					use_container_width=True
-				)
-			
-			with b3:
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'GoogleCloudStorageFileLoader'
-						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( )
-				)
-				
-				if can_save:
-					st.download_button(
-						'Save',
-						data=st.session_state.get( 'raw_text' ),
-						file_name='google_cloud_file_loader_output.txt',
-						mime='text/plain',
-						key='google_cloud_file_save',
-						use_container_width=True
-					)
-				else:
-					st.button(
-						'Save',
-						key='google_cloud_file_save_disabled',
-						disabled=True,
-						use_container_width=True
-					)
-		
-		with col_right:
-			if google_cloud_file_clear:
-				st.session_state[ 'google_cloud_file_results' ] = { }
-				remaining = _clear_loader_documents( 'GoogleCloudStorageFileLoader' )
-				st.info(
-					f'Google Cloud File Loader state cleared. Remaining documents: {remaining}.'
-				)
-			
-			if google_cloud_file_submit:
-				if not project_name or not project_name.strip( ):
-					st.info( 'Enter a Project Name.' )
-				elif not bucket or not bucket.strip( ):
-					st.info( 'Enter a Bucket.' )
-				elif not blob or not blob.strip( ):
-					st.info( 'Enter a Blob.' )
-				else:
-					try:
-						loader = GoogleCloudStorageFileLoader( )
-						documents = loader.load(
-							project_name=project_name.strip( ),
-							bucket=bucket.strip( ),
-							blob=blob.strip( )
-						) or [ ]
-						
-						count = _promote_loader_documents(
-							documents,
-							'GoogleCloudStorageFileLoader'
-						)
-						
-						items: list[ dict[ str, Any ] ] = [ ]
-						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
-							)
-							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Source': metadata.get( 'source', '' ),
-										'Blob': blob.strip( ),
-										'Preview': content[ :200 ],
-										'Content': content,
-										'Metadata': metadata,
-								}
-							)
-						
-						st.session_state[ 'google_cloud_file_results' ] = {
-								'mode': 'google_cloud_file',
-								'project_name': project_name.strip( ),
-								'bucket': bucket.strip( ),
-								'blob': blob.strip( ),
-								'count': count,
-								'items': items,
-						}
-						
-						st.success( f'Loaded {count} Google Cloud file document(s).' )
-					
-					except Exception as exc:
-						st.error( 'Google Cloud File request failed.' )
-						st.exception( exc )
-			
-			result = st.session_state.get( 'google_cloud_file_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'ProjectName': result.get( 'project_name', '' ),
-							'Bucket': result.get( 'bucket', '' ),
-							'Blob': result.get( 'blob', '' ),
-							'Returned': result.get( 'count', 0 ),
-					}
-				)
-				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if items:
-					table_rows = [
-							{
-									'Index': item.get( 'Index', '' ),
-									'Source': item.get( 'Source', '' ),
-									'Blob': item.get( 'Blob', '' ),
-									'Preview': item.get( 'Preview', '' ),
-							}
-							for item in items
-					]
-					
-					st.markdown( '#### Results' )
-					st.dataframe( table_rows, use_container_width=True, hide_index=True )
-					
-					first = items[ 0 ]
-					st.markdown( '#### First File Preview' )
-					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
-				else:
-					st.info( 'No Google Cloud file documents returned.' )
-				
-			_render_fallback_raw( result )
-
-	# -------- AWS S3 File
-	with st.expander( label='AWS S3 File', icon='📗', expanded=False ):
-		if 'aws_file_results' not in st.session_state:
-			st.session_state[ 'aws_file_results' ] = { }
-		
-		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-		
-		with col_left:
-			bucket = st.text_input(
-				'Bucket',
-				key='aws_file_bucket'
-			)
-			
-			key_name = st.text_input(
-				'Key',
-				key='aws_file_key',
-				help='The exact S3 object key to load.'
-			)
-			
-			region_name = st.text_input(
-				'Region (Optional)',
-				key='aws_file_region_name'
-			)
-			
-			aws_access_key_id = st.text_input(
-				'AWS Access Key ID (Optional)',
-				type='password',
-				key='aws_file_access_key'
-			)
-			
-			aws_secret_access_key = st.text_input(
-				'AWS Secret Access Key (Optional)',
-				type='password',
-				key='aws_file_secret_key'
-			)
-			
-			aws_session_token = st.text_input(
-				'AWS Session Token (Optional)',
-				type='password',
-				key='aws_file_session_token'
-			)
-			
-			b1, b2, b3 = st.columns( 3 )
-			
-			with b1:
-				aws_file_submit = st.button(
-					'Submit',
-					key='aws_file_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				aws_file_clear = st.button(
-					'Clear',
-					key='aws_file_clear',
-					use_container_width=True
-				)
-			
-			with b3:
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'AwsFileLoader'
-						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( )
-				)
-				
-				if can_save:
-					st.download_button(
-						'Save',
-						data=st.session_state.get( 'raw_text' ),
-						file_name='aws_s3_file_loader_output.txt',
-						mime='text/plain',
-						key='aws_file_save',
-						use_container_width=True
-					)
-				else:
-					st.button(
-						'Save',
-						key='aws_file_save_disabled',
-						disabled=True,
-						use_container_width=True
-					)
-		
-		with col_right:
-			if aws_file_clear:
-				st.session_state[ 'aws_file_results' ] = { }
-				remaining = _clear_loader_documents( 'AwsFileLoader' )
-				st.info( f'AWS S3 File Loader state cleared. Remaining documents: {remaining}.' )
-			
-			if aws_file_submit:
-				if not bucket or not bucket.strip( ):
-					st.info( 'Enter a Bucket.' )
-				elif not key_name or not key_name.strip( ):
-					st.info( 'Enter a Key.' )
-				else:
-					try:
-						loader = AwsFileLoader( )
-						documents = loader.load(
-							bucket=bucket.strip( ),
-							key=key_name.strip( ),
-							aws_access_key_id=aws_access_key_id.strip( ) or None,
-							aws_secret_access_key=aws_secret_access_key.strip( ) or None,
-							aws_session_token=aws_session_token.strip( ) or None,
-							region_name=region_name.strip( ) or None
-						) or [ ]
-						
-						count = _promote_loader_documents( documents, 'AwsFileLoader' )
-						
-						items: list[ dict[ str, Any ] ] = [ ]
-						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
-							)
-							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Source': metadata.get( 'source', '' ),
-										'Bucket': bucket.strip( ),
-										'Key': key_name.strip( ),
-										'Preview': content[ :200 ],
-										'Content': content,
-										'Metadata': metadata,
-								}
-							)
-						
-						st.session_state[ 'aws_file_results' ] = {
-								'mode': 'aws_s3_file',
-								'bucket': bucket.strip( ),
-								'key': key_name.strip( ),
-								'region_name': region_name.strip( ) or '',
-								'count': count,
-								'items': items,
-						}
-						
-						st.success( f'Loaded {count} AWS S3 file document(s).' )
-					
-					except Exception as exc:
-						st.error( 'AWS S3 File request failed.' )
-						st.exception( exc )
-			
-			result = st.session_state.get( 'aws_file_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'Bucket': result.get( 'bucket', '' ),
-							'Key': result.get( 'key', '' ),
-							'Region': result.get( 'region_name', '' ),
-							'Returned': result.get( 'count', 0 ),
-					}
-				)
-				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if items:
-					table_rows = [
-							{
-									'Index': item.get( 'Index', '' ),
-									'Source': item.get( 'Source', '' ),
-									'Bucket': item.get( 'Bucket', '' ),
-									'Key': item.get( 'Key', '' ),
-									'Preview': item.get( 'Preview', '' ),
-							}
-							for item in items
-					]
-					
-					st.markdown( '##### Results' )
-					st.dataframe( table_rows, use_container_width=True, hide_index=True )
-					
-					first = items[ 0 ]
-					st.markdown( '##### First File Preview' )
-					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
-				else:
-					st.info( 'No AWS S3 file documents returned.' )
-				
-				_render_fallback_raw( result )
-				
-	# -------- OneDrive
-	with st.expander( label='OneDrive', icon='💻', expanded=False ):
-		if 'onedrive_results' not in st.session_state:
-			st.session_state[ 'onedrive_results' ] = { }
-		
-		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-		
-		with col_left:
-			drive_id = st.text_input(
-				'Drive ID',
-				key='onedrive_drive_id'
-			)
-			
-			folder_path = st.text_input(
-				'Folder Path (Optional)',
-				key='onedrive_folder_path',
-				help='Example: Documents/clients'
-			)
-			
-			object_ids_text = st.text_area(
-				'Object IDs (Optional)',
-				key='onedrive_object_ids',
-				help='Optional comma-separated OneDrive object IDs. Leave blank to load by folder path.'
-			)
-			
-			auth_with_token = st.checkbox(
-				'Authenticate With Cached Token',
-				value=True,
-				key='onedrive_auth_with_token'
-			)
-			
-			b1, b2, b3 = st.columns( 3 )
-			
-			with b1:
-				onedrive_submit = st.button(
-					'Submit',
-					key='onedrive_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				onedrive_clear = st.button(
-					'Clear',
-					key='onedrive_clear',
-					use_container_width=True
-				)
-			
-			with b3:
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'OneDriveDocLoader'
-						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( )
-				)
-				
-				if can_save:
-					st.download_button(
-						'Save',
-						data=st.session_state.get( 'raw_text' ),
-						file_name='onedrive_loader_output.txt',
-						mime='text/plain',
-						key='onedrive_save',
-						use_container_width=True
-					)
-				else:
-					st.button(
-						'Save',
-						key='onedrive_save_disabled',
-						disabled=True,
-						use_container_width=True
-					)
-		
-		with col_right:
-			if onedrive_clear:
-				st.session_state[ 'onedrive_results' ] = { }
-				remaining = _clear_loader_documents( 'OneDriveDocLoader' )
-				st.info( f'OneDrive Loader state cleared. Remaining documents: {remaining}.' )
-			
-			if onedrive_submit:
-				if not drive_id or not drive_id.strip( ):
-					st.info( 'Enter a Drive ID.' )
-				else:
-					try:
-						object_ids: List[ str ] | None = None
-						if object_ids_text and object_ids_text.strip( ):
-							object_ids = [
-									item.strip( ) for item in object_ids_text.split( ',' )
-									if item and item.strip( )
-							]
-						
-						loader = OneDriveDocLoader( )
-						documents = loader.load(
-							drive_id=drive_id.strip( ),
-							folder_path=folder_path.strip( ) or None,
-							object_ids=object_ids,
-							auth_with_token=auth_with_token
-						) or [ ]
-						
-						count = _promote_loader_documents(
-							documents,
-							'OneDriveDocLoader'
-						)
-						
-						items: list[ dict[ str, Any ] ] = [ ]
-						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
-							)
-							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Source': metadata.get( 'source', '' ),
-										'DriveId': drive_id.strip( ),
-										'Preview': content[ :200 ],
-										'Content': content,
-										'Metadata': metadata,
-								}
-							)
-						
-						st.session_state[ 'onedrive_results' ] = {
-								'mode': 'onedrive',
-								'drive_id': drive_id.strip( ),
-								'folder_path': folder_path.strip( ) or '',
-								'object_ids_count': len( object_ids or [ ] ),
-								'auth_with_token': auth_with_token,
-								'count': count,
-								'items': items,
-						}
-						
-						st.success( f'Loaded {count} OneDrive document(s).' )
-					
-					except Exception as exc:
-						st.error( 'OneDrive request failed.' )
-						st.exception( exc )
-			
-			result = st.session_state.get( 'onedrive_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'DriveId': result.get( 'drive_id', '' ),
-							'FolderPath': result.get( 'folder_path', '' ),
-							'ObjectIds': result.get( 'object_ids_count', 0 ),
-							'AuthWithToken': result.get( 'auth_with_token', False ),
-							'Returned': result.get( 'count', 0 ),
-					}
-				)
-				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if items:
-					table_rows = [
-							{
-									'Index': item.get( 'Index', '' ),
-									'Source': item.get( 'Source', '' ),
-									'DriveId': item.get( 'DriveId', '' ),
-									'Preview': item.get( 'Preview', '' ),
-							}
-							for item in items
-					]
-					
-					st.markdown( '##### Results' )
-					st.dataframe( table_rows, use_container_width=True, hide_index=True )
-					
-					first = items[ 0 ]
-					st.markdown( '#### First File Preview' )
-					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
-				else:
-					st.info( 'No OneDrive documents returned.' )
-				
-				_render_fallback_raw( result )
-				
-	# -------- Google Speech-to-Text
-	with st.expander( label='Google Speech-to-Text', icon='🗣️', expanded=False ):
-		if 'google_speech_to_text_results' not in st.session_state:
-			st.session_state[ 'google_speech_to_text_results' ] = { }
-		
-		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-		
-		with col_left:
-			project_id = st.text_input(
-				'Project ID',
-				key='google_speech_to_text_project_id'
-			)
-			
-			audio_file = st.file_uploader(
-				'Upload Audio File',
-				type=[ 'wav', 'flac', 'mp3', 'm4a', 'ogg' ],
-				key='google_speech_to_text_audio_upload'
-			)
-			
-			gcs_audio_uri = st.text_input(
-				'GCS Audio URI (Optional)',
-				placeholder='gs://bucket/path/audio.flac',
-				key='google_speech_to_text_gcs_uri',
-				help='Use either a local upload or a gs:// URI.'
-			)
-			
-			language_code = st.text_input(
-				'Language Code (Optional)',
-				value='en-US',
-				key='google_speech_to_text_language_code'
-			)
-			
-			b1, b2, b3 = st.columns( 3 )
-			
-			with b1:
-				google_speech_submit = st.button(
-					'Submit',
-					key='google_speech_to_text_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				google_speech_clear = st.button(
-					'Clear',
-					key='google_speech_to_text_clear',
-					use_container_width=True
-				)
-			
-			with b3:
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'GoogleSpeechToTextLoader'
-						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( )
-				)
-				
-				if can_save:
-					st.download_button(
-						'Save',
-						data=st.session_state.get( 'raw_text' ),
-						file_name='google_speech_to_text_loader_output.txt',
-						mime='text/plain',
-						key='google_speech_to_text_save',
-						use_container_width=True
-					)
-				else:
-					st.button(
-						'Save',
-						key='google_speech_to_text_save_disabled',
-						disabled=True,
-						use_container_width=True
-					)
-		
-		with col_right:
-			if google_speech_clear:
-				st.session_state[ 'google_speech_to_text_results' ] = { }
-				remaining = _clear_loader_documents( 'GoogleSpeechToTextLoader' )
-				st.info(
-					f'Google Speech-to-Text Loader state cleared. Remaining documents: {remaining}.'
-				)
-			
-			if google_speech_submit:
-				if not project_id or not project_id.strip( ):
-					st.info( 'Enter a Project ID.' )
-				elif not audio_file and not gcs_audio_uri.strip( ):
-					st.info( 'Upload an audio file or enter a GCS Audio URI.' )
-				else:
-					try:
-						config: Dict[ str, Any ] | None = None
-						if language_code.strip( ):
-							config = { 'language_code': language_code.strip( ) }
-						
-						if gcs_audio_uri.strip( ):
-							file_path = gcs_audio_uri.strip( )
-							loader = GoogleSpeechToTextLoader( )
-							documents = loader.load(
-								project_id=project_id.strip( ),
-								file_path=file_path,
-								config=config
-							) or [ ]
-						else:
-							with tempfile.TemporaryDirectory( ) as tmp:
-								path = os.path.join( tmp, audio_file.name )
-								with open( path, 'wb' ) as f:
-									f.write( audio_file.read( ) )
+							
+							with st.container( border=True ):
+								st.markdown( f'**{index}. {title_value}**' )
 								
+								if id_parts:
+									st.caption( ' | '.join( id_parts ) )
+								
+								if isinstance( action_value, dict ):
+									st.write( str( action_value ) )
+								elif action_value:
+									st.write( str( action_value ) )
+								
+								with st.expander( 'Raw Item', expanded=False ):
+									st.json( item )
+					
+					elif isinstance( data, dict ) and data:
+						st.markdown( '#### Detail' )
+						
+						title_value = (
+								data.get( 'title' )
+								or data.get( 'name' )
+								or data.get( 'number' )
+								or data.get( 'billNumber' )
+								or data.get( 'lawNumber' )
+								or data.get( 'reportNumber' )
+								or 'Result'
+						)
+						
+						st.markdown( f'### {title_value}' )
+						
+						summary_fields: Dict[ str, Any ] = { }
+						for key in [
+								'congress',
+								'type',
+								'number',
+								'billType',
+								'billNumber',
+								'lawType',
+								'lawNumber',
+								'reportType',
+								'reportNumber',
+								'updateDate',
+								'actionDate'
+						]:
+							if key in data:
+								summary_fields[ key ] = data.get( key )
+						
+						if summary_fields:
+							st.json( summary_fields )
+						
+						for key in [ 'summary', 'latestAction', 'description' ]:
+							if key in data and str( data.get( key ) ).strip( ):
+								st.markdown( f'#### {key}' )
+								st.write( str( data.get( key ) ) )
+						
+						with st.expander( 'Raw Detail JSON', expanded=False ):
+							st.json( data )
+					
+					elif data:
+						st.markdown( '#### Result' )
+						st.text_area(
+							'Output',
+							value=str( data ),
+							height=320
+						)
+					else:
+						st.info( 'No results returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- Internet Archive
+		with st.expander( label='Internet Archive', icon='🌐', expanded=False ):
+			if 'internetarchive_results' not in st.session_state:
+				st.session_state[ 'internetarchive_results' ] = { }
+			
+			if 'internetarchive_clear_request' not in st.session_state:
+				st.session_state[ 'internetarchive_clear_request' ] = False
+			
+			if st.session_state.get( 'internetarchive_clear_request', False ):
+				st.session_state[ 'internetarchive_query' ] = ''
+				st.session_state[ 'internetarchive_rows' ] = 10
+				st.session_state[ 'internetarchive_page' ] = 1
+				st.session_state[ 'internetarchive_sort' ] = 'downloads desc'
+				st.session_state[ 'internetarchive_media_type' ] = ''
+				st.session_state[ 'internetarchive_collection' ] = ''
+				st.session_state[ 'internetarchive_timeout' ] = 20
+				st.session_state[ 'internetarchive_results' ] = { }
+				st.session_state[ 'internetarchive_clear_request' ] = False
+			
+			def _clear_internetarchive_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Internet Archive expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'internetarchive_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				ia_query = st.text_area(
+					'Query',
+					value=st.session_state.get( 'internetarchive_query', '' ),
+					height=80,
+					key='internetarchive_query',
+					placeholder=(
+							'Examples:\n'
+							'climate change\n'
+							'title:"appropriations" AND creator:"Congress"\n'
+							'budget execution'
+					)
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					ia_rows = st.number_input(
+						'Rows',
+						min_value=1,
+						max_value=100,
+						value=int( st.session_state.get( 'internetarchive_rows', 10 ) ),
+						step=1,
+						key='internetarchive_rows'
+					)
+				
+				with c2:
+					ia_page = st.number_input(
+						'Page',
+						min_value=1,
+						max_value=100000,
+						value=int( st.session_state.get( 'internetarchive_page', 1 ) ),
+						step=1,
+						key='internetarchive_page'
+					)
+				
+				ia_sort = st.selectbox(
+					'Sort',
+					options=[
+							'downloads desc',
+							'downloads asc',
+							'publicdate desc',
+							'publicdate asc',
+							'titleSorter asc',
+							'titleSorter desc'
+					],
+					index=[
+							'downloads desc',
+							'downloads asc',
+							'publicdate desc',
+							'publicdate asc',
+							'titleSorter asc',
+							'titleSorter desc'
+					].index(
+						st.session_state.get( 'internetarchive_sort', 'downloads desc' )
+					),
+					key='internetarchive_sort'
+				)
+				
+				c3, c4 = st.columns( 2 )
+				
+				with c3:
+					ia_media_type = st.text_input(
+						'Mediatype',
+						value=st.session_state.get( 'internetarchive_media_type', '' ),
+						key='internetarchive_media_type',
+						placeholder='Example: texts'
+					)
+				
+				with c4:
+					ia_collection = st.text_input(
+						'Collection',
+						value=st.session_state.get( 'internetarchive_collection', '' ),
+						key='internetarchive_collection',
+						placeholder='Example: americana'
+					)
+				
+				ia_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'internetarchive_timeout', 20 ) ),
+					step=1,
+					key='internetarchive_timeout'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					ia_submit = st.button(
+						'Submit',
+						key='internetarchive_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					ia_clear = st.button(
+						'Clear',
+						key='internetarchive_clear',
+						on_click=_clear_internetarchive_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				ia_output = st.empty( )
+				
+			result = st.session_state.get( 'internetarchive_results', { } )
+			
+			if ia_submit:
+				try:
+					f = InternetArchive( )
+					
+					result = f.fetch(
+						keywords=str( ia_query ),
+						rows=int( ia_rows ),
+						page=int( ia_page ),
+						sort=str( ia_sort ),
+						media_type=str( ia_media_type ),
+						collection=str( ia_collection ),
+						time=int( ia_timeout )
+					)
+					
+					st.session_state[ 'internetarchive_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( str( exc ) )
+					
+				result = st.session_state.get( 'internetarchive_results', { } )
+			
+			if not result:
+				ia_output.text( 'No results.' )
+			else:
+				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+				
+				with col_right:
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': mode_value,
+								'url': result.get( 'url', '' ),
+								'params': params,
+						}
+					)
+					
+					docs: List[ Dict[ str, Any ] ] = [ ]
+					num_found = None
+					
+					if isinstance( data, dict ):
+						response_block = data.get( 'response', { } )
+						
+						if isinstance( response_block, dict ):
+							num_found = response_block.get( 'numFound', None )
+							value = response_block.get( 'docs', [ ] )
+							if isinstance( value, list ):
+								docs = [ item for item in value if isinstance( item, dict ) ]
+					
+					if num_found is not None:
+						st.markdown( f'#### Search Results ({num_found})' )
+					else:
+						st.markdown( '#### Search Results' )
+					
+					if docs:
+						for index, item in enumerate( docs, start=1 ):
+							title_value = (
+									item.get( 'title' )
+									or item.get( 'identifier' )
+									or f'Result {index}'
+							)
+							
+							identifier_value = item.get( 'identifier', '' )
+							mediatype_value = item.get( 'mediatype', '' )
+							
+							collection_value = ''
+							collection_raw = item.get( 'collection', '' )
+							if isinstance( collection_raw, list ) and collection_raw:
+								collection_value = ', '.join( [ str( x ) for x in
+								                                collection_raw[ :3 ] ] )
+							elif collection_raw:
+								collection_value = str( collection_raw )
+							
+							date_value = (
+									item.get( 'publicdate' )
+									or item.get( 'date' )
+									or item.get( 'addeddate' )
+									or ''
+							)
+							
+							desc_value = item.get( 'description', '' )
+							if isinstance( desc_value, list ):
+								desc_value = ' '.join( [ str( x ) for x in desc_value[ :2 ] ] )
+							
+							with st.container( border=True ):
+								st.markdown( f'**{index}. {title_value}**' )
+								
+								meta_parts: List[ str ] = [ ]
+								
+								if identifier_value:
+									meta_parts.append( f'Identifier: `{identifier_value}`' )
+								
+								if mediatype_value:
+									meta_parts.append( f'Mediatype: `{mediatype_value}`' )
+								
+								if collection_value:
+									meta_parts.append( f'Collection: `{collection_value}`' )
+								
+								if date_value:
+									meta_parts.append( f'Date: `{date_value}`' )
+								
+								if meta_parts:
+									st.caption( ' | '.join( meta_parts ) )
+								
+								if desc_value:
+									st.write( str( desc_value ) )
+								else:
+									st.caption( 'No description available.' )
+								
+								with st.expander( 'Raw Item', expanded=False ):
+									st.json( item )
+					
+					elif isinstance( data, dict ) and data:
+						st.markdown( '#### Result' )
+						st.json( data )
+					elif isinstance( data, list ) and data:
+						df_ia = pd.DataFrame( data )
+						if not df_ia.empty:
+							st.dataframe( df_ia, use_container_width=True, hide_index=True )
+						else:
+							st.json( data )
+					elif data:
+						st.markdown( '#### Result' )
+						st.text_area(
+							'Output',
+							value=str( data ),
+							height=320
+						)
+					else:
+						st.info( 'No results returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+	
+		# -------- Grokipedia
+		with st.expander( label='Grokipedia', icon='🧠', expanded=False ):
+			if 'grokipedia_results' not in st.session_state:
+				st.session_state[ 'grokipedia_results' ] = { }
+			
+			if 'grokipedia_clear_request' not in st.session_state:
+				st.session_state[ 'grokipedia_clear_request' ] = False
+			
+			if 'grokipedia_auto_fetch_page' not in st.session_state:
+				st.session_state[ 'grokipedia_auto_fetch_page' ] = False
+			
+			if st.session_state.get( 'grokipedia_clear_request', False ):
+				st.session_state[ 'grokipedia_mode' ] = 'search'
+				st.session_state[ 'grokipedia_query' ] = ''
+				st.session_state[ 'grokipedia_page' ] = ''
+				st.session_state[ 'grokipedia_limit' ] = 12
+				st.session_state[ 'grokipedia_offset' ] = 0
+				st.session_state[ 'grokipedia_include_content' ] = True
+				st.session_state[ 'grokipedia_results' ] = { }
+				st.session_state[ 'grokipedia_auto_fetch_page' ] = False
+				st.session_state[ 'grokipedia_clear_request' ] = False
+			
+			def _clear_grokipedia_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Grokipedia expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'grokipedia_clear_request' ] = True
+			
+			def _load_grokipedia_page( slug: str ) -> None:
+				'''
+					Purpose:
+					--------
+					Load a selected Grokipedia slug into the page controls and trigger
+					an immediate page fetch on rerun.
+	
+					Parameters:
+					-----------
+					slug (str):
+						The selected page slug.
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'grokipedia_mode' ] = 'page'
+				st.session_state[ 'grokipedia_page' ] = str( slug ).strip( )
+				st.session_state[ 'grokipedia_include_content' ] = True
+				st.session_state[ 'grokipedia_auto_fetch_page' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				grokipedia_mode = st.selectbox(
+					'Mode',
+					options=[ 'search', 'page' ],
+					index=[ 'search', 'page' ].index(
+						st.session_state.get( 'grokipedia_mode', 'search' )
+					),
+					key='grokipedia_mode',
+					help='search = keyword search; page = fetch a specific page by slug.'
+				)
+				
+				grokipedia_query = st.text_input(
+					'Query',
+					value=st.session_state.get( 'grokipedia_query', '' ),
+					key='grokipedia_query',
+					placeholder='Example: machine learning'
+				)
+				
+				grokipedia_page = st.text_input(
+					'Page Slug',
+					value=st.session_state.get( 'grokipedia_page', '' ),
+					key='grokipedia_page',
+					placeholder='Example: United_Petroleum'
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					grokipedia_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=100,
+						value=int( st.session_state.get( 'grokipedia_limit', 12 ) ),
+						step=1,
+						key='grokipedia_limit'
+					)
+				
+				with c2:
+					grokipedia_offset = st.number_input(
+						'Offset',
+						min_value=0,
+						max_value=100000,
+						value=int( st.session_state.get( 'grokipedia_offset', 0 ) ),
+						step=1,
+						key='grokipedia_offset'
+					)
+				
+				grokipedia_include_content = st.checkbox(
+					'Include Content',
+					value=bool(
+						st.session_state.get( 'grokipedia_include_content', True )
+					),
+					key='grokipedia_include_content'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					grokipedia_submit = st.button(
+						'Submit',
+						key='grokipedia_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					grokipedia_clear = st.button(
+						'Clear',
+						key='grokipedia_clear',
+						on_click=_clear_grokipedia_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				grokipedia_output = st.empty( )
+			
+			should_fetch_grokipedia = False
+			
+			if grokipedia_submit:
+				should_fetch_grokipedia = True
+			
+			if st.session_state.get( 'grokipedia_auto_fetch_page', False ):
+				should_fetch_grokipedia = True
+			
+			if should_fetch_grokipedia:
+				try:
+					f = Grokipedia( )
+					
+					result = f.fetch(
+						mode=str( st.session_state.get( 'grokipedia_mode', 'search' ) ),
+						query=str( st.session_state.get( 'grokipedia_query', '' ) ),
+						page=str( st.session_state.get( 'grokipedia_page', '' ) ),
+						limit=int( st.session_state.get( 'grokipedia_limit', 12 ) ),
+						offset=int( st.session_state.get( 'grokipedia_offset', 0 ) ),
+						include_content=bool(
+							st.session_state.get( 'grokipedia_include_content', True )
+						)
+					)
+					
+					st.session_state[ 'grokipedia_results' ] = result or { }
+					st.session_state[ 'grokipedia_auto_fetch_page' ] = False
+					st.rerun( )
+				
+				except Exception as exc:
+					st.session_state[ 'grokipedia_auto_fetch_page' ] = False
+					st.error( str( exc ) )
+			
+			result = st.session_state.get( 'grokipedia_results', { } )
+			
+			if not result:
+				grokipedia_output.text( 'No results.' )
+			else:
+				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				
+				with col_right:
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': result.get( 'mode', '' ),
+								'url': result.get( 'url', '' ),
+								'params': result.get( 'params', { } ),
+								'api_key_configured': result.get( 'api_key_configured', False )
+						}
+					)
+					
+					if mode_value == 'search':
+						st.markdown( '#### Search Results' )
+						
+						items: List[ Dict[ str, Any ] ] = [ ]
+						
+						if isinstance( data, list ):
+							items = [ item for item in data if isinstance( item, dict ) ]
+						elif isinstance( data, dict ):
+							for key in [ 'results', 'items', 'pages', 'data' ]:
+								value = data.get( key, None )
+								if isinstance( value, list ):
+									items = [ item for item in value if isinstance( item, dict ) ]
+									break
+						
+						if not items:
+							if data:
+								st.info(
+									'No structured search hits were detected. '
+									'Showing raw output.'
+								)
+								st.json( data )
+							else:
+								st.info( 'No results returned.' )
+						else:
+							for index, item in enumerate( items, start=1 ):
+								title_value = (
+										item.get( 'title' )
+										or item.get( 'name' )
+										or item.get( 'slug' )
+										or item.get( 'id' )
+										or f'Result {index}'
+								)
+								
+								slug_value = (
+										item.get( 'slug' )
+										or item.get( 'page' )
+										or item.get( 'path' )
+										or item.get( 'id' )
+										or ''
+								)
+								
+								summary_value = (
+										item.get( 'summary' )
+										or item.get( 'description' )
+										or item.get( 'excerpt' )
+										or item.get( 'snippet' )
+										or ''
+								)
+								
+								score_value = (
+										item.get( 'score' )
+										or item.get( 'rank' )
+										or item.get( 'relevance' )
+								)
+								
+								with st.container( border=True ):
+									st.markdown( f'**{index}. {title_value}**' )
+									
+									meta_parts: List[ str ] = [ ]
+									
+									if slug_value:
+										meta_parts.append( f'Slug: `{slug_value}`' )
+									
+									if score_value is not None and str( score_value ).strip( ):
+										meta_parts.append( f'Score: `{score_value}`' )
+									
+									if meta_parts:
+										st.caption( ' | '.join( meta_parts ) )
+									
+									if summary_value:
+										st.write( str( summary_value ) )
+									else:
+										st.caption( 'No summary available.' )
+									
+									ca, cb = st.columns( 2 )
+									
+									with ca:
+										if slug_value:
+											if st.button(
+													'Load Page',
+													key=f'grokipedia_load_page_{index}_{slug_value}',
+													use_container_width=True
+											):
+												_load_grokipedia_page( slug_value )
+												st.rerun( )
+									
+									with cb:
+										with st.expander( 'Raw Item', expanded=False ):
+											st.json( item )
+					
+					elif mode_value == 'page':
+						st.markdown( '#### Page Result' )
+						
+						page_item: Dict[ str, Any ] = data if isinstance( data, dict ) else { }
+						
+						if not page_item:
+							if data:
+								st.text_area(
+									'Output',
+									value=str( data ),
+									height=320
+								)
+							else:
+								st.info( 'No results returned.' )
+						else:
+							title_value = (
+									page_item.get( 'title' )
+									or page_item.get( 'name' )
+									or page_item.get( 'slug' )
+									or page_item.get( 'id' )
+									or 'Untitled Page'
+							)
+							
+							slug_value = (
+									page_item.get( 'slug' )
+									or page_item.get( 'page' )
+									or page_item.get( 'path' )
+									or page_item.get( 'id' )
+									or ''
+							)
+							
+							summary_value = (
+									page_item.get( 'summary' )
+									or page_item.get( 'description' )
+									or page_item.get( 'excerpt' )
+									or ''
+							)
+							
+							content_value = (
+									page_item.get( 'content' )
+									or page_item.get( 'text' )
+									or page_item.get( 'body' )
+									or ''
+							)
+							
+							st.markdown( f'### {title_value}' )
+							
+							if slug_value:
+								st.caption( f'Slug: `{slug_value}`' )
+							
+							if summary_value:
+								st.markdown( '#### Summary' )
+								st.write( str( summary_value ) )
+							
+							if content_value:
+								st.markdown( '#### Content' )
+								st.text_area(
+									'Page Content',
+									value=str( content_value ),
+									height=360
+								)
+							else:
+								st.info( 'No page content was returned.' )
+							
+							with st.expander( 'Raw Page JSON', expanded=False ):
+								st.json( page_item )
+					
+					else:
+						st.markdown( '#### Result' )
+						
+						if isinstance( data, dict ) or isinstance( data, list ):
+							st.json( data )
+						elif data:
+							st.text_area(
+								'Output',
+								value=str( data ),
+								height=320
+							)
+						else:
+							st.info( 'No results returned.' )
+		
+		# -------- Jupyter Notebook
+		with st.expander( label='Jupyter Notebook', icon='🪐', expanded=False ):
+			if 'jupyter_notebook_results' not in st.session_state:
+				st.session_state[ 'jupyter_notebook_results' ] = { }
+			
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			
+			with col_left:
+				notebook_file = st.file_uploader(
+					'Upload Notebook',
+					type=[ 'ipynb' ],
+					key='jupyter_notebook_upload'
+				)
+				
+				include_outputs = st.checkbox(
+					'Include Outputs',
+					value=True,
+					key='jupyter_notebook_include_outputs'
+				)
+				
+				max_output_length = st.number_input(
+					'Max Output Length',
+					min_value=1,
+					max_value=20000,
+					value=100,
+					step=10,
+					key='jupyter_notebook_max_output_length'
+				)
+				
+				remove_newline = st.checkbox(
+					'Remove Newline',
+					value=False,
+					key='jupyter_notebook_remove_newline'
+				)
+				
+				include_traceback = st.checkbox(
+					'Traceback',
+					value=False,
+					key='jupyter_notebook_traceback'
+				)
+				
+				b1, b2, b3 = st.columns( 3 )
+				
+				with b1:
+					jupyter_submit = st.button(
+						'Submit',
+						key='jupyter_notebook_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					jupyter_clear = st.button(
+						'Clear',
+						key='jupyter_notebook_clear',
+						use_container_width=True
+					)
+				
+				with b3:
+					can_save = (
+							st.session_state.get( 'active_loader' ) == 'JupyterNotebookLoader'
+							and isinstance( st.session_state.get( 'raw_text' ), str )
+							and st.session_state.get( 'raw_text' ).strip( )
+					)
+					
+					if can_save:
+						st.download_button(
+							'Save',
+							data=st.session_state.get( 'raw_text' ),
+							file_name='jupyter_notebook_loader_output.txt',
+							mime='text/plain',
+							key='jupyter_notebook_save',
+							use_container_width=True
+						)
+					else:
+						st.button(
+							'Save',
+							key='jupyter_notebook_save_disabled',
+							disabled=True,
+							use_container_width=True
+						)
+			
+			with col_right:
+				if jupyter_clear:
+					st.session_state[ 'jupyter_notebook_results' ] = { }
+					remaining = _clear_loader_documents( 'JupyterNotebookLoader' )
+					st.info(
+						f'Jupyter Notebook Loader state cleared. Remaining documents: {remaining}.'
+					)
+				
+				if jupyter_submit:
+					if not notebook_file:
+						st.info( 'Upload a notebook file.' )
+					else:
+						try:
+							with tempfile.TemporaryDirectory( ) as tmp:
+								path = os.path.join( tmp, notebook_file.name )
+								with open( path, 'wb' ) as f:
+									f.write( notebook_file.read( ) )
+								
+								loader = JupyterNotebookLoader( )
+								documents = loader.load(
+									path=path,
+									include_outputs=include_outputs,
+									max_output_length=int( max_output_length ),
+									remove_newline=remove_newline,
+									traceback=include_traceback
+								) or [ ]
+							
+							count = _promote_loader_documents(
+								documents,
+								'JupyterNotebookLoader'
+							)
+							
+							items: list[ dict[ str, Any ] ] = [ ]
+							for i, doc in enumerate( documents, start=1 ):
+								metadata = (
+										doc.metadata
+										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										else { }
+								)
+								content = str( getattr( doc, 'page_content', '' ) or '' )
+								items.append(
+									{
+											'Index': i,
+											'Source': metadata.get( 'source', '' ),
+											'Preview': content[ :200 ],
+											'Content': content,
+											'Metadata': metadata,
+									}
+								)
+							
+							st.session_state[ 'jupyter_notebook_results' ] = {
+									'mode': 'jupyter_notebook',
+									'include_outputs': include_outputs,
+									'max_output_length': int( max_output_length ),
+									'remove_newline': remove_newline,
+									'traceback': include_traceback,
+									'count': count,
+									'items': items,
+							}
+							
+							st.success( f'Loaded {count} notebook document(s).' )
+						
+						except Exception as exc:
+							st.error( 'Jupyter Notebook request failed.' )
+							st.exception( exc )
+				
+				result = st.session_state.get( 'jupyter_notebook_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'IncludeOutputs': result.get( 'include_outputs', False ),
+								'MaxOutputLength': result.get( 'max_output_length', 0 ),
+								'RemoveNewline': result.get( 'remove_newline', False ),
+								'Traceback': result.get( 'traceback', False ),
+								'Returned': result.get( 'count', 0 ),
+						}
+					)
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						table_rows = [
+								{
+										'Index': item.get( 'Index', '' ),
+										'Source': item.get( 'Source', '' ),
+										'Preview': item.get( 'Preview', '' ),
+								}
+								for item in items
+						]
+						
+						st.markdown( '#### Results' )
+						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						
+						first = items[ 0 ]
+						st.markdown( '#### First Notebook Preview' )
+						st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+					else:
+						st.info( 'No notebook documents returned.' )
+					
+					_render_fallback_raw( result )
+	
+		# -------- Google Cloud File
+		with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
+			if 'google_cloud_file_results' not in st.session_state:
+				st.session_state[ 'google_cloud_file_results' ] = { }
+			
+			col_left, col_right = st.columns( [ 0.50, 0.50 ], border=True )
+			
+			with col_left:
+				project_name = st.text_input(
+					'Project Name',
+					key='google_cloud_file_project_name'
+				)
+				
+				bucket = st.text_input(
+					'Bucket',
+					key='google_cloud_file_bucket'
+				)
+				
+				blob = st.text_input(
+					'Blob',
+					key='google_cloud_file_blob',
+					help='The exact object name in the Google Cloud Storage bucket.'
+				)
+				
+				b1, b2, b3 = st.columns( 3 )
+				
+				with b1:
+					google_cloud_file_submit = st.button(
+						'Submit',
+						key='google_cloud_file_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					google_cloud_file_clear = st.button(
+						'Clear',
+						key='google_cloud_file_clear',
+						use_container_width=True
+					)
+				
+				with b3:
+					can_save = (
+							st.session_state.get( 'active_loader' ) == 'GoogleCloudStorageFileLoader'
+							and isinstance( st.session_state.get( 'raw_text' ), str )
+							and st.session_state.get( 'raw_text' ).strip( )
+					)
+					
+					if can_save:
+						st.download_button(
+							'Save',
+							data=st.session_state.get( 'raw_text' ),
+							file_name='google_cloud_file_loader_output.txt',
+							mime='text/plain',
+							key='google_cloud_file_save',
+							use_container_width=True
+						)
+					else:
+						st.button(
+							'Save',
+							key='google_cloud_file_save_disabled',
+							disabled=True,
+							use_container_width=True
+						)
+			
+			with col_right:
+				if google_cloud_file_clear:
+					st.session_state[ 'google_cloud_file_results' ] = { }
+					remaining = _clear_loader_documents( 'GoogleCloudStorageFileLoader' )
+					st.info(
+						f'Google Cloud File Loader state cleared. Remaining documents: {remaining}.'
+					)
+				
+				if google_cloud_file_submit:
+					if not project_name or not project_name.strip( ):
+						st.info( 'Enter a Project Name.' )
+					elif not bucket or not bucket.strip( ):
+						st.info( 'Enter a Bucket.' )
+					elif not blob or not blob.strip( ):
+						st.info( 'Enter a Blob.' )
+					else:
+						try:
+							loader = GoogleCloudStorageFileLoader( )
+							documents = loader.load(
+								project_name=project_name.strip( ),
+								bucket=bucket.strip( ),
+								blob=blob.strip( )
+							) or [ ]
+							
+							count = _promote_loader_documents(
+								documents,
+								'GoogleCloudStorageFileLoader'
+							)
+							
+							items: list[ dict[ str, Any ] ] = [ ]
+							for i, doc in enumerate( documents, start=1 ):
+								metadata = (
+										doc.metadata
+										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										else { }
+								)
+								content = str( getattr( doc, 'page_content', '' ) or '' )
+								items.append(
+									{
+											'Index': i,
+											'Source': metadata.get( 'source', '' ),
+											'Blob': blob.strip( ),
+											'Preview': content[ :200 ],
+											'Content': content,
+											'Metadata': metadata,
+									}
+								)
+							
+							st.session_state[ 'google_cloud_file_results' ] = {
+									'mode': 'google_cloud_file',
+									'project_name': project_name.strip( ),
+									'bucket': bucket.strip( ),
+									'blob': blob.strip( ),
+									'count': count,
+									'items': items,
+							}
+							
+							st.success( f'Loaded {count} Google Cloud file document(s).' )
+						
+						except Exception as exc:
+							st.error( 'Google Cloud File request failed.' )
+							st.exception( exc )
+				
+				result = st.session_state.get( 'google_cloud_file_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'ProjectName': result.get( 'project_name', '' ),
+								'Bucket': result.get( 'bucket', '' ),
+								'Blob': result.get( 'blob', '' ),
+								'Returned': result.get( 'count', 0 ),
+						}
+					)
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						table_rows = [
+								{
+										'Index': item.get( 'Index', '' ),
+										'Source': item.get( 'Source', '' ),
+										'Blob': item.get( 'Blob', '' ),
+										'Preview': item.get( 'Preview', '' ),
+								}
+								for item in items
+						]
+						
+						st.markdown( '#### Results' )
+						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						
+						first = items[ 0 ]
+						st.markdown( '#### First File Preview' )
+						st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+					else:
+						st.info( 'No Google Cloud file documents returned.' )
+					
+				_render_fallback_raw( result )
+	
+		# -------- AWS S3 File
+		with st.expander( label='AWS S3 File', icon='📗', expanded=False ):
+			if 'aws_file_results' not in st.session_state:
+				st.session_state[ 'aws_file_results' ] = { }
+			
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			
+			with col_left:
+				bucket = st.text_input(
+					'Bucket',
+					key='aws_file_bucket'
+				)
+				
+				key_name = st.text_input(
+					'Key',
+					key='aws_file_key',
+					help='The exact S3 object key to load.'
+				)
+				
+				region_name = st.text_input(
+					'Region (Optional)',
+					key='aws_file_region_name'
+				)
+				
+				aws_access_key_id = st.text_input(
+					'AWS Access Key ID (Optional)',
+					type='password',
+					key='aws_file_access_key'
+				)
+				
+				aws_secret_access_key = st.text_input(
+					'AWS Secret Access Key (Optional)',
+					type='password',
+					key='aws_file_secret_key'
+				)
+				
+				aws_session_token = st.text_input(
+					'AWS Session Token (Optional)',
+					type='password',
+					key='aws_file_session_token'
+				)
+				
+				b1, b2, b3 = st.columns( 3 )
+				
+				with b1:
+					aws_file_submit = st.button(
+						'Submit',
+						key='aws_file_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					aws_file_clear = st.button(
+						'Clear',
+						key='aws_file_clear',
+						use_container_width=True
+					)
+				
+				with b3:
+					can_save = (
+							st.session_state.get( 'active_loader' ) == 'AwsFileLoader'
+							and isinstance( st.session_state.get( 'raw_text' ), str )
+							and st.session_state.get( 'raw_text' ).strip( )
+					)
+					
+					if can_save:
+						st.download_button(
+							'Save',
+							data=st.session_state.get( 'raw_text' ),
+							file_name='aws_s3_file_loader_output.txt',
+							mime='text/plain',
+							key='aws_file_save',
+							use_container_width=True
+						)
+					else:
+						st.button(
+							'Save',
+							key='aws_file_save_disabled',
+							disabled=True,
+							use_container_width=True
+						)
+			
+			with col_right:
+				if aws_file_clear:
+					st.session_state[ 'aws_file_results' ] = { }
+					remaining = _clear_loader_documents( 'AwsFileLoader' )
+					st.info( f'AWS S3 File Loader state cleared. Remaining documents: {remaining}.' )
+				
+				if aws_file_submit:
+					if not bucket or not bucket.strip( ):
+						st.info( 'Enter a Bucket.' )
+					elif not key_name or not key_name.strip( ):
+						st.info( 'Enter a Key.' )
+					else:
+						try:
+							loader = AwsFileLoader( )
+							documents = loader.load(
+								bucket=bucket.strip( ),
+								key=key_name.strip( ),
+								aws_access_key_id=aws_access_key_id.strip( ) or None,
+								aws_secret_access_key=aws_secret_access_key.strip( ) or None,
+								aws_session_token=aws_session_token.strip( ) or None,
+								region_name=region_name.strip( ) or None
+							) or [ ]
+							
+							count = _promote_loader_documents( documents, 'AwsFileLoader' )
+							
+							items: list[ dict[ str, Any ] ] = [ ]
+							for i, doc in enumerate( documents, start=1 ):
+								metadata = (
+										doc.metadata
+										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										else { }
+								)
+								content = str( getattr( doc, 'page_content', '' ) or '' )
+								items.append(
+									{
+											'Index': i,
+											'Source': metadata.get( 'source', '' ),
+											'Bucket': bucket.strip( ),
+											'Key': key_name.strip( ),
+											'Preview': content[ :200 ],
+											'Content': content,
+											'Metadata': metadata,
+									}
+								)
+							
+							st.session_state[ 'aws_file_results' ] = {
+									'mode': 'aws_s3_file',
+									'bucket': bucket.strip( ),
+									'key': key_name.strip( ),
+									'region_name': region_name.strip( ) or '',
+									'count': count,
+									'items': items,
+							}
+							
+							st.success( f'Loaded {count} AWS S3 file document(s).' )
+						
+						except Exception as exc:
+							st.error( 'AWS S3 File request failed.' )
+							st.exception( exc )
+				
+				result = st.session_state.get( 'aws_file_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'Bucket': result.get( 'bucket', '' ),
+								'Key': result.get( 'key', '' ),
+								'Region': result.get( 'region_name', '' ),
+								'Returned': result.get( 'count', 0 ),
+						}
+					)
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						table_rows = [
+								{
+										'Index': item.get( 'Index', '' ),
+										'Source': item.get( 'Source', '' ),
+										'Bucket': item.get( 'Bucket', '' ),
+										'Key': item.get( 'Key', '' ),
+										'Preview': item.get( 'Preview', '' ),
+								}
+								for item in items
+						]
+						
+						st.markdown( '##### Results' )
+						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						
+						first = items[ 0 ]
+						st.markdown( '##### First File Preview' )
+						st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+					else:
+						st.info( 'No AWS S3 file documents returned.' )
+					
+					_render_fallback_raw( result )
+					
+		# -------- OneDrive
+		with st.expander( label='OneDrive', icon='💻', expanded=False ):
+			if 'onedrive_results' not in st.session_state:
+				st.session_state[ 'onedrive_results' ] = { }
+			
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			
+			with col_left:
+				drive_id = st.text_input(
+					'Drive ID',
+					key='onedrive_drive_id'
+				)
+				
+				folder_path = st.text_input(
+					'Folder Path (Optional)',
+					key='onedrive_folder_path',
+					help='Example: Documents/clients'
+				)
+				
+				object_ids_text = st.text_area(
+					'Object IDs (Optional)',
+					key='onedrive_object_ids',
+					help='Optional comma-separated OneDrive object IDs. Leave blank to load by folder path.'
+				)
+				
+				auth_with_token = st.checkbox(
+					'Authenticate With Cached Token',
+					value=True,
+					key='onedrive_auth_with_token'
+				)
+				
+				b1, b2, b3 = st.columns( 3 )
+				
+				with b1:
+					onedrive_submit = st.button(
+						'Submit',
+						key='onedrive_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					onedrive_clear = st.button(
+						'Clear',
+						key='onedrive_clear',
+						use_container_width=True
+					)
+				
+				with b3:
+					can_save = (
+							st.session_state.get( 'active_loader' ) == 'OneDriveDocLoader'
+							and isinstance( st.session_state.get( 'raw_text' ), str )
+							and st.session_state.get( 'raw_text' ).strip( )
+					)
+					
+					if can_save:
+						st.download_button(
+							'Save',
+							data=st.session_state.get( 'raw_text' ),
+							file_name='onedrive_loader_output.txt',
+							mime='text/plain',
+							key='onedrive_save',
+							use_container_width=True
+						)
+					else:
+						st.button(
+							'Save',
+							key='onedrive_save_disabled',
+							disabled=True,
+							use_container_width=True
+						)
+			
+			with col_right:
+				if onedrive_clear:
+					st.session_state[ 'onedrive_results' ] = { }
+					remaining = _clear_loader_documents( 'OneDriveDocLoader' )
+					st.info( f'OneDrive Loader state cleared. Remaining documents: {remaining}.' )
+				
+				if onedrive_submit:
+					if not drive_id or not drive_id.strip( ):
+						st.info( 'Enter a Drive ID.' )
+					else:
+						try:
+							object_ids: List[ str ] | None = None
+							if object_ids_text and object_ids_text.strip( ):
+								object_ids = [
+										item.strip( ) for item in object_ids_text.split( ',' )
+										if item and item.strip( )
+								]
+							
+							loader = OneDriveDocLoader( )
+							documents = loader.load(
+								drive_id=drive_id.strip( ),
+								folder_path=folder_path.strip( ) or None,
+								object_ids=object_ids,
+								auth_with_token=auth_with_token
+							) or [ ]
+							
+							count = _promote_loader_documents(
+								documents,
+								'OneDriveDocLoader'
+							)
+							
+							items: list[ dict[ str, Any ] ] = [ ]
+							for i, doc in enumerate( documents, start=1 ):
+								metadata = (
+										doc.metadata
+										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										else { }
+								)
+								content = str( getattr( doc, 'page_content', '' ) or '' )
+								items.append(
+									{
+											'Index': i,
+											'Source': metadata.get( 'source', '' ),
+											'DriveId': drive_id.strip( ),
+											'Preview': content[ :200 ],
+											'Content': content,
+											'Metadata': metadata,
+									}
+								)
+							
+							st.session_state[ 'onedrive_results' ] = {
+									'mode': 'onedrive',
+									'drive_id': drive_id.strip( ),
+									'folder_path': folder_path.strip( ) or '',
+									'object_ids_count': len( object_ids or [ ] ),
+									'auth_with_token': auth_with_token,
+									'count': count,
+									'items': items,
+							}
+							
+							st.success( f'Loaded {count} OneDrive document(s).' )
+						
+						except Exception as exc:
+							st.error( 'OneDrive request failed.' )
+							st.exception( exc )
+				
+				result = st.session_state.get( 'onedrive_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'DriveId': result.get( 'drive_id', '' ),
+								'FolderPath': result.get( 'folder_path', '' ),
+								'ObjectIds': result.get( 'object_ids_count', 0 ),
+								'AuthWithToken': result.get( 'auth_with_token', False ),
+								'Returned': result.get( 'count', 0 ),
+						}
+					)
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						table_rows = [
+								{
+										'Index': item.get( 'Index', '' ),
+										'Source': item.get( 'Source', '' ),
+										'DriveId': item.get( 'DriveId', '' ),
+										'Preview': item.get( 'Preview', '' ),
+								}
+								for item in items
+						]
+						
+						st.markdown( '##### Results' )
+						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						
+						first = items[ 0 ]
+						st.markdown( '#### First File Preview' )
+						st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+					else:
+						st.info( 'No OneDrive documents returned.' )
+					
+					_render_fallback_raw( result )
+					
+		# -------- Google Speech-to-Text
+		with st.expander( label='Google Speech-to-Text', icon='🗣️', expanded=False ):
+			if 'google_speech_to_text_results' not in st.session_state:
+				st.session_state[ 'google_speech_to_text_results' ] = { }
+			
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			
+			with col_left:
+				project_id = st.text_input(
+					'Project ID',
+					key='google_speech_to_text_project_id'
+				)
+				
+				audio_file = st.file_uploader(
+					'Upload Audio File',
+					type=[ 'wav', 'flac', 'mp3', 'm4a', 'ogg' ],
+					key='google_speech_to_text_audio_upload'
+				)
+				
+				gcs_audio_uri = st.text_input(
+					'GCS Audio URI (Optional)',
+					placeholder='gs://bucket/path/audio.flac',
+					key='google_speech_to_text_gcs_uri',
+					help='Use either a local upload or a gs:// URI.'
+				)
+				
+				language_code = st.text_input(
+					'Language Code (Optional)',
+					value='en-US',
+					key='google_speech_to_text_language_code'
+				)
+				
+				b1, b2, b3 = st.columns( 3 )
+				
+				with b1:
+					google_speech_submit = st.button(
+						'Submit',
+						key='google_speech_to_text_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					google_speech_clear = st.button(
+						'Clear',
+						key='google_speech_to_text_clear',
+						use_container_width=True
+					)
+				
+				with b3:
+					can_save = (
+							st.session_state.get( 'active_loader' ) == 'GoogleSpeechToTextLoader'
+							and isinstance( st.session_state.get( 'raw_text' ), str )
+							and st.session_state.get( 'raw_text' ).strip( )
+					)
+					
+					if can_save:
+						st.download_button(
+							'Save',
+							data=st.session_state.get( 'raw_text' ),
+							file_name='google_speech_to_text_loader_output.txt',
+							mime='text/plain',
+							key='google_speech_to_text_save',
+							use_container_width=True
+						)
+					else:
+						st.button(
+							'Save',
+							key='google_speech_to_text_save_disabled',
+							disabled=True,
+							use_container_width=True
+						)
+			
+			with col_right:
+				if google_speech_clear:
+					st.session_state[ 'google_speech_to_text_results' ] = { }
+					remaining = _clear_loader_documents( 'GoogleSpeechToTextLoader' )
+					st.info(
+						f'Google Speech-to-Text Loader state cleared. Remaining documents: {remaining}.'
+					)
+				
+				if google_speech_submit:
+					if not project_id or not project_id.strip( ):
+						st.info( 'Enter a Project ID.' )
+					elif not audio_file and not gcs_audio_uri.strip( ):
+						st.info( 'Upload an audio file or enter a GCS Audio URI.' )
+					else:
+						try:
+							config: Dict[ str, Any ] | None = None
+							if language_code.strip( ):
+								config = { 'language_code': language_code.strip( ) }
+							
+							if gcs_audio_uri.strip( ):
+								file_path = gcs_audio_uri.strip( )
 								loader = GoogleSpeechToTextLoader( )
 								documents = loader.load(
 									project_id=project_id.strip( ),
-									file_path=path,
+									file_path=file_path,
 									config=config
 								) or [ ]
-						
-						count = _promote_loader_documents( documents, 'GoogleSpeechToTextLoader' )
-						
-						items: list[ dict[ str, Any ] ] = [ ]
-						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
-							)
-							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Source': metadata.get( 'source', '' ),
-										'LanguageCode': language_code.strip( ),
-										'Preview': content[ :200 ],
-										'Content': content,
-										'Metadata': metadata,
-								}
-							)
-						
-						st.session_state[ 'google_speech_to_text_results' ] = {
-								'mode': 'google_speech_to_text',
-								'project_id': project_id.strip( ),
-								'file_path': gcs_audio_uri.strip( ) or audio_file.name,
-								'language_code': language_code.strip( ),
-								'count': count,
-								'items': items,
-						}
-						
-						st.success( f'Loaded {count} transcript document(s).' )
-					
-					except Exception as exc:
-						st.error( 'Google Speech-to-Text request failed.' )
-						st.exception( exc )
-			
-			result = st.session_state.get( 'google_speech_to_text_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'ProjectId': result.get( 'project_id', '' ),
-							'FilePath': result.get( 'file_path', '' ),
-							'LanguageCode': result.get( 'language_code', '' ),
-							'Returned': result.get( 'count', 0 ),
-					}
-				)
-				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if items:
-					table_rows = [
-							{
-									'Index': item.get( 'Index', '' ),
-									'Source': item.get( 'Source', '' ),
-									'LanguageCode': item.get( 'LanguageCode', '' ),
-									'Preview': item.get( 'Preview', '' ),
+							else:
+								with tempfile.TemporaryDirectory( ) as tmp:
+									path = os.path.join( tmp, audio_file.name )
+									with open( path, 'wb' ) as f:
+										f.write( audio_file.read( ) )
+									
+									loader = GoogleSpeechToTextLoader( )
+									documents = loader.load(
+										project_id=project_id.strip( ),
+										file_path=path,
+										config=config
+									) or [ ]
+							
+							count = _promote_loader_documents( documents, 'GoogleSpeechToTextLoader' )
+							
+							items: list[ dict[ str, Any ] ] = [ ]
+							for i, doc in enumerate( documents, start=1 ):
+								metadata = (
+										doc.metadata
+										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										else { }
+								)
+								content = str( getattr( doc, 'page_content', '' ) or '' )
+								items.append(
+									{
+											'Index': i,
+											'Source': metadata.get( 'source', '' ),
+											'LanguageCode': language_code.strip( ),
+											'Preview': content[ :200 ],
+											'Content': content,
+											'Metadata': metadata,
+									}
+								)
+							
+							st.session_state[ 'google_speech_to_text_results' ] = {
+									'mode': 'google_speech_to_text',
+									'project_id': project_id.strip( ),
+									'file_path': gcs_audio_uri.strip( ) or audio_file.name,
+									'language_code': language_code.strip( ),
+									'count': count,
+									'items': items,
 							}
-							for item in items
-					]
-					
-					st.markdown( '##### Results' )
-					st.dataframe( table_rows, use_container_width=True, hide_index=True )
-					
-					first = items[ 0 ]
-					st.markdown( '##### Transcript Preview' )
-					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+							
+							st.success( f'Loaded {count} transcript document(s).' )
+						
+						except Exception as exc:
+							st.error( 'Google Speech-to-Text request failed.' )
+							st.exception( exc )
+				
+				result = st.session_state.get( 'google_speech_to_text_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
 				else:
-					st.info( 'No transcript documents returned.' )
-				
-				_render_fallback_raw( result )
-				
-	# -------- AWS S3 Bucket
-	with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
-		if 'aws_bucket_results' not in st.session_state:
-			st.session_state[ 'aws_bucket_results' ] = { }
-		
-		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-		
-		with col_left:
-			bucket_name = st.text_input(
-				'Bucket',
-				key='aws_bucket_name'
-			)
-			
-			prefix = st.text_input(
-				'Prefix (Optional)',
-				key='aws_bucket_prefix',
-				help='Optional folder / key prefix inside the bucket.'
-			)
-			
-			region_name = st.text_input(
-				'Region (Optional)',
-				key='aws_bucket_region_name'
-			)
-			
-			endpoint_url = st.text_input(
-				'Endpoint URL (Optional)',
-				key='aws_bucket_endpoint_url',
-				help='Optional S3-compatible endpoint URL.'
-			)
-			
-			aws_access_key_id = st.text_input(
-				'AWS Access Key ID (Optional)',
-				type='password',
-				key='aws_bucket_access_key'
-			)
-			
-			aws_secret_access_key = st.text_input(
-				'AWS Secret Access Key (Optional)',
-				type='password',
-				key='aws_bucket_secret_key'
-			)
-			
-			aws_session_token = st.text_input(
-				'AWS Session Token (Optional)',
-				type='password',
-				key='aws_bucket_session_token'
-			)
-			
-			b1, b2, b3 = st.columns( 3 )
-			
-			with b1:
-				aws_bucket_submit = st.button(
-					'Submit',
-					key='aws_bucket_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				aws_bucket_clear = st.button(
-					'Clear',
-					key='aws_bucket_clear',
-					use_container_width=True
-				)
-			
-			with b3:
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'AmazonBucketLoader'
-						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( )
-				)
-				
-				if can_save:
-					st.download_button(
-						'Save',
-						data=st.session_state.get( 'raw_text' ),
-						file_name='aws_s3_bucket_loader_output.txt',
-						mime='text/plain',
-						key='aws_bucket_save',
-						use_container_width=True
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'ProjectId': result.get( 'project_id', '' ),
+								'FilePath': result.get( 'file_path', '' ),
+								'LanguageCode': result.get( 'language_code', '' ),
+								'Returned': result.get( 'count', 0 ),
+						}
 					)
-				else:
-					st.button(
-						'Save',
-						key='aws_bucket_save_disabled',
-						disabled=True,
-						use_container_width=True
-					)
-		
-		with col_right:
-			if aws_bucket_clear:
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						table_rows = [
+								{
+										'Index': item.get( 'Index', '' ),
+										'Source': item.get( 'Source', '' ),
+										'LanguageCode': item.get( 'LanguageCode', '' ),
+										'Preview': item.get( 'Preview', '' ),
+								}
+								for item in items
+						]
+						
+						st.markdown( '##### Results' )
+						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						
+						first = items[ 0 ]
+						st.markdown( '##### Transcript Preview' )
+						st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+					else:
+						st.info( 'No transcript documents returned.' )
+					
+					_render_fallback_raw( result )
+					
+		# -------- AWS S3 Bucket
+		with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
+			if 'aws_bucket_results' not in st.session_state:
 				st.session_state[ 'aws_bucket_results' ] = { }
-				remaining = _clear_loader_documents( 'AmazonBucketLoader' )
-				st.info( f'AWS S3 Bucket Loader state cleared. Remaining documents: {remaining}.' )
 			
-			if aws_bucket_submit:
-				if not bucket_name or not bucket_name.strip( ):
-					st.info( 'Enter a Bucket.' )
-				else:
-					try:
-						loader = AmazonBucketLoader( )
-						documents = loader.load(
-							bucket=bucket_name.strip( ),
-							prefix=prefix.strip( ) or None,
-							aws_access_key_id=aws_access_key_id.strip( ) or None,
-							aws_secret_access_key=aws_secret_access_key.strip( ) or None,
-							aws_session_token=aws_session_token.strip( ) or None,
-							region_name=region_name.strip( ) or None,
-							endpoint_url=endpoint_url.strip( ) or None
-						) or [ ]
-						
-						count = _promote_loader_documents(
-							documents,
-							'AmazonBucketLoader'
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			
+			with col_left:
+				bucket_name = st.text_input(
+					'Bucket',
+					key='aws_bucket_name'
+				)
+				
+				prefix = st.text_input(
+					'Prefix (Optional)',
+					key='aws_bucket_prefix',
+					help='Optional folder / key prefix inside the bucket.'
+				)
+				
+				region_name = st.text_input(
+					'Region (Optional)',
+					key='aws_bucket_region_name'
+				)
+				
+				endpoint_url = st.text_input(
+					'Endpoint URL (Optional)',
+					key='aws_bucket_endpoint_url',
+					help='Optional S3-compatible endpoint URL.'
+				)
+				
+				aws_access_key_id = st.text_input(
+					'AWS Access Key ID (Optional)',
+					type='password',
+					key='aws_bucket_access_key'
+				)
+				
+				aws_secret_access_key = st.text_input(
+					'AWS Secret Access Key (Optional)',
+					type='password',
+					key='aws_bucket_secret_key'
+				)
+				
+				aws_session_token = st.text_input(
+					'AWS Session Token (Optional)',
+					type='password',
+					key='aws_bucket_session_token'
+				)
+				
+				b1, b2, b3 = st.columns( 3 )
+				
+				with b1:
+					aws_bucket_submit = st.button(
+						'Submit',
+						key='aws_bucket_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					aws_bucket_clear = st.button(
+						'Clear',
+						key='aws_bucket_clear',
+						use_container_width=True
+					)
+				
+				with b3:
+					can_save = (
+							st.session_state.get( 'active_loader' ) == 'AmazonBucketLoader'
+							and isinstance( st.session_state.get( 'raw_text' ), str )
+							and st.session_state.get( 'raw_text' ).strip( )
+					)
+					
+					if can_save:
+						st.download_button(
+							'Save',
+							data=st.session_state.get( 'raw_text' ),
+							file_name='aws_s3_bucket_loader_output.txt',
+							mime='text/plain',
+							key='aws_bucket_save',
+							use_container_width=True
 						)
-						
-						items: list[ dict[ str, Any ] ] = [ ]
-						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
-							)
-							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Source': metadata.get( 'source', '' ),
-										'Bucket': bucket_name.strip( ),
-										'Prefix': prefix.strip( ) or '',
-										'Preview': content[ :200 ],
-										'Content': content,
-										'Metadata': metadata,
-								}
-							)
-						
-						st.session_state[ 'aws_bucket_results' ] = {
-								'mode': 'aws_s3_bucket',
-								'bucket': bucket_name.strip( ),
-								'prefix': prefix.strip( ) or '',
-								'region_name': region_name.strip( ) or '',
-								'endpoint_url': endpoint_url.strip( ) or '',
-								'count': count,
-								'items': items,
-						}
-						
-						st.success( f'Loaded {count} AWS S3 bucket document(s).' )
-					
-					except Exception as exc:
-						st.error( 'AWS S3 Bucket request failed.' )
-						st.exception( exc )
+					else:
+						st.button(
+							'Save',
+							key='aws_bucket_save_disabled',
+							disabled=True,
+							use_container_width=True
+						)
 			
-			result = st.session_state.get( 'aws_bucket_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'Bucket': result.get( 'bucket', '' ),
-							'Prefix': result.get( 'prefix', '' ),
-							'Region': result.get( 'region_name', '' ),
-							'EndpointUrl': result.get( 'endpoint_url', '' ),
-							'Returned': result.get( 'count', 0 ),
-					}
-				)
+			with col_right:
+				if aws_bucket_clear:
+					st.session_state[ 'aws_bucket_results' ] = { }
+					remaining = _clear_loader_documents( 'AmazonBucketLoader' )
+					st.info( f'AWS S3 Bucket Loader state cleared. Remaining documents: {remaining}.' )
 				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if items:
-					table_rows = [
-							{
-									'Index': item.get( 'Index', '' ),
-									'Source': item.get( 'Source', '' ),
-									'Bucket': item.get( 'Bucket', '' ),
-									'Prefix': item.get( 'Prefix', '' ),
-									'Preview': item.get( 'Preview', '' ),
+				if aws_bucket_submit:
+					if not bucket_name or not bucket_name.strip( ):
+						st.info( 'Enter a Bucket.' )
+					else:
+						try:
+							loader = AmazonBucketLoader( )
+							documents = loader.load(
+								bucket=bucket_name.strip( ),
+								prefix=prefix.strip( ) or None,
+								aws_access_key_id=aws_access_key_id.strip( ) or None,
+								aws_secret_access_key=aws_secret_access_key.strip( ) or None,
+								aws_session_token=aws_session_token.strip( ) or None,
+								region_name=region_name.strip( ) or None,
+								endpoint_url=endpoint_url.strip( ) or None
+							) or [ ]
+							
+							count = _promote_loader_documents(
+								documents,
+								'AmazonBucketLoader'
+							)
+							
+							items: list[ dict[ str, Any ] ] = [ ]
+							for i, doc in enumerate( documents, start=1 ):
+								metadata = (
+										doc.metadata
+										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										else { }
+								)
+								content = str( getattr( doc, 'page_content', '' ) or '' )
+								items.append(
+									{
+											'Index': i,
+											'Source': metadata.get( 'source', '' ),
+											'Bucket': bucket_name.strip( ),
+											'Prefix': prefix.strip( ) or '',
+											'Preview': content[ :200 ],
+											'Content': content,
+											'Metadata': metadata,
+									}
+								)
+							
+							st.session_state[ 'aws_bucket_results' ] = {
+									'mode': 'aws_s3_bucket',
+									'bucket': bucket_name.strip( ),
+									'prefix': prefix.strip( ) or '',
+									'region_name': region_name.strip( ) or '',
+									'endpoint_url': endpoint_url.strip( ) or '',
+									'count': count,
+									'items': items,
 							}
-							for item in items
-					]
-					
-					st.markdown( '#### Results' )
-					st.dataframe( table_rows, use_container_width=True, hide_index=True )
-					
-					first = items[ 0 ]
-					st.markdown( '#### First File Preview' )
-					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
-				else:
-					st.info( 'No AWS S3 bucket documents returned.' )
+							
+							st.success( f'Loaded {count} AWS S3 bucket document(s).' )
+						
+						except Exception as exc:
+							st.error( 'AWS S3 Bucket request failed.' )
+							st.exception( exc )
 				
-				_render_fallback_raw( result )
-
-	# -------- Google Cloud Bucket
-	with st.expander( label='Google Cloud Bucket', icon='🧊', expanded=False ):
-		if 'google_bucket_results' not in st.session_state:
-			st.session_state[ 'google_bucket_results' ] = { }
-		
-		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-		
-		with col_left:
-			project_name = st.text_input(
-				'Project Name',
-				key='google_bucket_project_name'
-			)
-			
-			bucket_name = st.text_input(
-				'Bucket',
-				key='google_bucket_name'
-			)
-			
-			prefix = st.text_input(
-				'Prefix (Optional)',
-				key='google_bucket_prefix',
-				help='Optional folder / object prefix filter inside the bucket.'
-			)
-			
-			continue_on_failure = st.checkbox(
-				'Continue On Failure',
-				value=False,
-				key='google_bucket_continue_on_failure',
-				help='Skip objects that fail to load instead of aborting the whole request.'
-			)
-			
-			b1, b2, b3 = st.columns( 3 )
-			
-			with b1:
-				google_bucket_submit = st.button(
-					'Submit',
-					key='google_bucket_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				google_bucket_clear = st.button(
-					'Clear',
-					key='google_bucket_clear',
-					use_container_width=True
-				)
-			
-			with b3:
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'GoogleBucketLoader'
-						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( )
-				)
+				result = st.session_state.get( 'aws_bucket_results', { } )
 				
-				if can_save:
-					st.download_button(
-						'Save',
-						data=st.session_state.get( 'raw_text' ),
-						file_name='google_bucket_loader_output.txt',
-						mime='text/plain',
-						key='google_bucket_save',
-						use_container_width=True
-					)
+				if not result:
+					st.text( 'No results.' )
 				else:
-					st.button(
-						'Save',
-						key='google_bucket_save_disabled',
-						disabled=True,
-						use_container_width=True
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'Bucket': result.get( 'bucket', '' ),
+								'Prefix': result.get( 'prefix', '' ),
+								'Region': result.get( 'region_name', '' ),
+								'EndpointUrl': result.get( 'endpoint_url', '' ),
+								'Returned': result.get( 'count', 0 ),
+						}
 					)
-		
-		with col_right:
-			if google_bucket_clear:
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						table_rows = [
+								{
+										'Index': item.get( 'Index', '' ),
+										'Source': item.get( 'Source', '' ),
+										'Bucket': item.get( 'Bucket', '' ),
+										'Prefix': item.get( 'Prefix', '' ),
+										'Preview': item.get( 'Preview', '' ),
+								}
+								for item in items
+						]
+						
+						st.markdown( '#### Results' )
+						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						
+						first = items[ 0 ]
+						st.markdown( '#### First File Preview' )
+						st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+					else:
+						st.info( 'No AWS S3 bucket documents returned.' )
+					
+					_render_fallback_raw( result )
+	
+		# -------- Google Cloud Bucket
+		with st.expander( label='Google Cloud Bucket', icon='🧊', expanded=False ):
+			if 'google_bucket_results' not in st.session_state:
 				st.session_state[ 'google_bucket_results' ] = { }
-				remaining = _clear_loader_documents( 'GoogleBucketLoader' )
-				st.info( f'Google Bucket Loader state cleared. Remaining documents: {remaining}.' )
 			
-			if google_bucket_submit:
-				if not project_name or not project_name.strip( ):
-					st.info( 'Enter a Project Name.' )
-				elif not bucket_name or not bucket_name.strip( ):
-					st.info( 'Enter a Bucket.' )
-				else:
-					try:
-						loader = GoogleBucketLoader( )
-						documents = loader.load(
-							project_name=project_name.strip( ),
-							bucket=bucket_name.strip( ),
-							prefix=prefix.strip( ) or None,
-							continue_on_failure=continue_on_failure
-						) or [ ]
-						
-						count = _promote_loader_documents(
-							documents,
-							'GoogleBucketLoader'
-						)
-						
-						items: list[ dict[ str, Any ] ] = [ ]
-						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
-							)
-							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Source': metadata.get( 'source', '' ),
-										'Bucket': bucket_name.strip( ),
-										'Prefix': prefix.strip( ) or '',
-										'Preview': content[ :200 ],
-										'Content': content,
-										'Metadata': metadata,
-								}
-							)
-						
-						st.session_state[ 'google_bucket_results' ] = {
-								'mode': 'google_cloud_bucket',
-								'project_name': project_name.strip( ),
-								'bucket': bucket_name.strip( ),
-								'prefix': prefix.strip( ) or '',
-								'continue_on_failure': continue_on_failure,
-								'count': count,
-								'items': items,
-						}
-						
-						st.success( f'Loaded {count} Google bucket document(s).' )
-					
-					except Exception as exc:
-						st.error( 'Google Cloud Bucket request failed.' )
-						st.exception( exc )
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
 			
-			result = st.session_state.get( 'google_bucket_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'ProjectName': result.get( 'project_name', '' ),
-							'Bucket': result.get( 'bucket', '' ),
-							'Prefix': result.get( 'prefix', '' ),
-							'ContinueOnFailure': result.get( 'continue_on_failure', False ),
-							'Returned': result.get( 'count', 0 ),
-					}
+			with col_left:
+				project_name = st.text_input(
+					'Project Name',
+					key='google_bucket_project_name'
 				)
 				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				bucket_name = st.text_input(
+					'Bucket',
+					key='google_bucket_name'
+				)
 				
-				if items:
-					table_rows = [
-							{
-									'Index': item.get( 'Index', '' ),
-									'Source': item.get( 'Source', '' ),
-									'Bucket': item.get( 'Bucket', '' ),
-									'Prefix': item.get( 'Prefix', '' ),
-									'Preview': item.get( 'Preview', '' ),
+				prefix = st.text_input(
+					'Prefix (Optional)',
+					key='google_bucket_prefix',
+					help='Optional folder / object prefix filter inside the bucket.'
+				)
+				
+				continue_on_failure = st.checkbox(
+					'Continue On Failure',
+					value=False,
+					key='google_bucket_continue_on_failure',
+					help='Skip objects that fail to load instead of aborting the whole request.'
+				)
+				
+				b1, b2, b3 = st.columns( 3 )
+				
+				with b1:
+					google_bucket_submit = st.button(
+						'Submit',
+						key='google_bucket_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					google_bucket_clear = st.button(
+						'Clear',
+						key='google_bucket_clear',
+						use_container_width=True
+					)
+				
+				with b3:
+					can_save = (
+							st.session_state.get( 'active_loader' ) == 'GoogleBucketLoader'
+							and isinstance( st.session_state.get( 'raw_text' ), str )
+							and st.session_state.get( 'raw_text' ).strip( )
+					)
+					
+					if can_save:
+						st.download_button(
+							'Save',
+							data=st.session_state.get( 'raw_text' ),
+							file_name='google_bucket_loader_output.txt',
+							mime='text/plain',
+							key='google_bucket_save',
+							use_container_width=True
+						)
+					else:
+						st.button(
+							'Save',
+							key='google_bucket_save_disabled',
+							disabled=True,
+							use_container_width=True
+						)
+			
+			with col_right:
+				if google_bucket_clear:
+					st.session_state[ 'google_bucket_results' ] = { }
+					remaining = _clear_loader_documents( 'GoogleBucketLoader' )
+					st.info( f'Google Bucket Loader state cleared. Remaining documents: {remaining}.' )
+				
+				if google_bucket_submit:
+					if not project_name or not project_name.strip( ):
+						st.info( 'Enter a Project Name.' )
+					elif not bucket_name or not bucket_name.strip( ):
+						st.info( 'Enter a Bucket.' )
+					else:
+						try:
+							loader = GoogleBucketLoader( )
+							documents = loader.load(
+								project_name=project_name.strip( ),
+								bucket=bucket_name.strip( ),
+								prefix=prefix.strip( ) or None,
+								continue_on_failure=continue_on_failure
+							) or [ ]
+							
+							count = _promote_loader_documents(
+								documents,
+								'GoogleBucketLoader'
+							)
+							
+							items: list[ dict[ str, Any ] ] = [ ]
+							for i, doc in enumerate( documents, start=1 ):
+								metadata = (
+										doc.metadata
+										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										else { }
+								)
+								content = str( getattr( doc, 'page_content', '' ) or '' )
+								items.append(
+									{
+											'Index': i,
+											'Source': metadata.get( 'source', '' ),
+											'Bucket': bucket_name.strip( ),
+											'Prefix': prefix.strip( ) or '',
+											'Preview': content[ :200 ],
+											'Content': content,
+											'Metadata': metadata,
+									}
+								)
+							
+							st.session_state[ 'google_bucket_results' ] = {
+									'mode': 'google_cloud_bucket',
+									'project_name': project_name.strip( ),
+									'bucket': bucket_name.strip( ),
+									'prefix': prefix.strip( ) or '',
+									'continue_on_failure': continue_on_failure,
+									'count': count,
+									'items': items,
 							}
-							for item in items
-					]
-					
-					st.markdown( '#### Results' )
-					st.dataframe( table_rows, use_container_width=True, hide_index=True )
-					
-					first = items[ 0 ]
-					st.markdown( '#### First File Preview' )
-					st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
-				else:
-					st.info( 'No Google Cloud bucket documents returned.' )
+							
+							st.success( f'Loaded {count} Google bucket document(s).' )
+						
+						except Exception as exc:
+							st.error( 'Google Cloud Bucket request failed.' )
+							st.exception( exc )
 				
-				_render_fallback_raw( result )
+				result = st.session_state.get( 'google_bucket_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'ProjectName': result.get( 'project_name', '' ),
+								'Bucket': result.get( 'bucket', '' ),
+								'Prefix': result.get( 'prefix', '' ),
+								'ContinueOnFailure': result.get( 'continue_on_failure', False ),
+								'Returned': result.get( 'count', 0 ),
+						}
+					)
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						table_rows = [
+								{
+										'Index': item.get( 'Index', '' ),
+										'Source': item.get( 'Source', '' ),
+										'Bucket': item.get( 'Bucket', '' ),
+										'Prefix': item.get( 'Prefix', '' ),
+										'Preview': item.get( 'Preview', '' ),
+								}
+								for item in items
+						]
+						
+						st.markdown( '#### Results' )
+						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						
+						first = items[ 0 ]
+						st.markdown( '#### First File Preview' )
+						st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
+					else:
+						st.info( 'No Google Cloud bucket documents returned.' )
+					
+					_render_fallback_raw( result )
 
 # ==============================================================================
 # GEOSPATIAL MODE
