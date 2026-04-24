@@ -58,3 +58,4 @@ playwright>=1.50,<2
 streamlit==1.55.0
 streamlit-extras
 streamlit-pdf
+openai

@@ -120,7 +120,7 @@ class Fetcher:
 
 		Purpose:
 		--------
-		Base class for fetchers. Implement `fetch(...)` in concrete subclasses.
+		Base class for fetchers.
 
 		Attribues:
 		-----------
@@ -194,7 +194,7 @@ class Fetcher:
 			-----------
 			url (str): Resource URL to fetch.
 			time (int): Timeout in seconds.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
+			query (str):  Text provided to Agent
 
 			Returns:
 			---------
@@ -980,8 +980,8 @@ class ArXiv( Fetcher ):
 	include_metadata: Optional[ bool ]
 	query: Optional[ str ]
 	
-	def __init__( self, max_documents: int=5, full_documents: bool = False,
-			include_metadata: bool = False ) -> None:
+	def __init__( self, max_documents: int=5, full_documents: bool=False,
+			include_metadata: bool=False ) -> None:
 		super( ).__init__( )
 		self.fetcher = None
 		self.documents = None
@@ -990,9 +990,9 @@ class ArXiv( Fetcher ):
 		self.full_documents = bool( full_documents )
 		self.include_metadata = bool( include_metadata )
 	
-	def fetch( self, question: str, max_documents: int | None = None,
-			full_documents: bool | None = None,
-			include_metadata: bool | None = None ) -> List[ Document ] | None:
+	def fetch( self, question: str, max_documents: int=None,
+			full_documents: bool=None,
+			include_metadata: bool=None ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1283,7 +1283,7 @@ class Wikipedia( Fetcher ):
 	query: Optional[ str ]
 	
 	def __init__( self, language: str='en', max_documents: int=5,
-			include_metadata: bool = False ) -> None:
+			include_metadata: bool=False ) -> None:
 		super( ).__init__( )
 		self.fetcher = None
 		self.documents = None
@@ -1293,8 +1293,7 @@ class Wikipedia( Fetcher ):
 		self.include_metadata = bool( include_metadata )
 	
 	def fetch( self, question: str, language: str=None,
-			max_documents: int | None = None,
-			include_metadata: bool | None = None ) -> List[ Document ] | None:
+			max_documents: int=None, include_metadata: bool=None ) -> List[ Document ] | None:
 		'''
 			Query Wikipedia through LangChain's WikipediaRetriever and return
 			LangChain Document objects.
@@ -1330,9 +1329,7 @@ class Wikipedia( Fetcher ):
 			load_meta = self.include_metadata if include_metadata is None else \
 				bool( include_metadata )
 			
-			self.fetcher = WikipediaRetriever(
-				lang=lang,
-				load_max_docs=max_docs,
+			self.fetcher = WikipediaRetriever( lang=lang, load_max_docs=max_docs,
 				load_all_available_meta=load_meta )
 			
 			self.documents = self.fetcher.invoke( input=self.query )
@@ -1342,11 +1339,7 @@ class Wikipedia( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Wikipedia'
-			exception.method = (
-					'fetch( self, question: str, language: str | None=None, '
-					'max_documents: int | None=None, include_metadata: bool | None=None ) '
-					'-> List[ Document ]'
-			)
+			exception.method = 'fetch( self, question: str, *params ) -> List[ Document ]'
 			raise exception
 
 class TheNews( Fetcher ):
@@ -1410,14 +1403,12 @@ class TheNews( Fetcher ):
 				'fetch',
 		]
 	
-	def fetch( self, endpoint: str='all', query: str='', language: str='en',
-			categories: str='', exclude_categories: str='', locale: str='',
-			domains: str='', exclude_domains: str='', source_ids: str='',
-			exclude_source_ids: str='', published_after: str='', published_before: str='',
-			published_on: str='', sort: str='published_at',
-			limit: int=10, page: int=1, include_similar: bool = True,
-			headlines_per_category: int=6, time: int=10,
-			api_key: str=None ) -> Dict[ str, Any ] | None:
+	def fetch( self, endpoint: str='all', query: str='', language: str='en', categories: str='',
+			exclude_categories: str='', locale: str='', domains: str='', exclude_domains: str='',
+			source_ids: str='', exclude_source_ids: str='', published_after: str='',
+			published_before: str='', published_on: str='', sort: str='published_at',
+			limit: int=10, page: int=1, include_similar: bool=True, headlines_per_category: int=6,
+			time: int=10, api_key: str=None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -1476,22 +1467,16 @@ class TheNews( Fetcher ):
 			self.timeout = int( time )
 			self.limit = max( 1, min( int( limit ), 50 ) )
 			self.page = max( 1, int( page ) )
-			
 			active_key = (api_key or self.api_key or '').strip( )
 			if not active_key:
-				raise ValueError(
-					'The News API key is required. Set THENEWSAPI_API_KEY or enter one in the UI.'
-				)
+				raise ValueError( 'The News API key is required.' )
 			
 			valid_endpoints = { 'all', 'top', 'headlines', 'sources' }
 			if self.endpoint not in valid_endpoints:
-				raise ValueError(
-					f"Unsupported endpoint '{self.endpoint}'. "
-					f"Supported endpoints: {', '.join( sorted( valid_endpoints ) )}."
-				)
+				raise ValueError( f"Unsupported endpoint '{self.endpoint}'. "
+					f"Supported endpoints: {', '.join( sorted( valid_endpoints ) )}." )
 			
 			self.params = { 'api_token': active_key }
-			
 			if self.endpoint in ('all', 'top'):
 				if query and query.strip( ):
 					self.params[ 'search' ] = query.strip( )
@@ -1531,7 +1516,6 @@ class TheNews( Fetcher ):
 				
 				self.params[ 'limit' ] = self.limit
 				self.params[ 'page' ] = self.page
-				
 				if self.endpoint == 'top' and locale and locale.strip( ):
 					self.params[ 'locale' ] = locale.strip( )
 			
@@ -1557,9 +1541,7 @@ class TheNews( Fetcher ):
 				if published_on and published_on.strip( ):
 					self.params[ 'published_on' ] = published_on.strip( )
 				
-				self.params[ 'headlines_per_category' ] = max(
-					1,
-					min( int( headlines_per_category ), 10 ) )
+				self.params[ 'headlines_per_category' ] = max( 1, min( int( headlines_per_category ), 10 ) )
 				
 				self.params[ 'include_similar' ] = \
 					'true' if bool( include_similar ) else 'false'
@@ -1577,10 +1559,7 @@ class TheNews( Fetcher ):
 				self.params[ 'page' ] = self.page
 			
 			request_url = f'{self.url}/{self.endpoint}'
-			self.response = requests.get(
-				url=request_url,
-				params=self.params,
-				headers=self.headers,
+			self.response = requests.get( url=request_url, params=self.params, headers=self.headers,
 				timeout=self.timeout )
 			
 			self.response.raise_for_status( )
@@ -1590,16 +1569,7 @@ class TheNews( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'TheNews'
-			exception.method = (
-					'fetch( self, endpoint: str=all, query: str=, language: str=en, '
-					'categories: str=, exclude_categories: str=, locale: str=, '
-					'domains: str=, exclude_domains: str=, source_ids: str=, '
-					'exclude_source_ids: str=, published_after: str=, '
-					'published_before: str=, published_on: str=, '
-					'sort: str=published_at, limit: int=10, page: int=1, '
-					'include_similar: bool=True, headlines_per_category: int=6, '
-					'time: int=10, api_key: str | None=None ) -> Dict[ str, Any ]'
-			)
+			exception.method =  'fetch( self, *parms ) -> Dict[ str, Any ]'
 			raise exception
 
 class GoogleSearch( Fetcher ):
@@ -1677,8 +1647,7 @@ class GoogleSearch( Fetcher ):
 			-----------
 			Control visible ordering for GoogleSearch.
 		'''
-		return [
-				'keywords',
+		return [ 'keywords',
 				'url',
 				'timeout',
 				'headers',
@@ -1761,7 +1730,6 @@ class GoogleSearch( Fetcher ):
 			throw_if( 'keywords', keywords )
 			active_key = (api_key or self.api_key or '').strip( )
 			active_cse = (cse_id or self.cse_id or '').strip( )
-			
 			if not active_key:
 				raise ValueError( 'Google API key is required. Set GOOGLE_API_KEY.' )
 			
@@ -1772,7 +1740,6 @@ class GoogleSearch( Fetcher ):
 			self.keywords = keywords.strip( )
 			self.results = max( 1, min( int( results ), 10 ) )
 			self.start = max( 1, min( int( start ), 91 ) )
-			
 			self.params = {
 					'q': self.keywords,
 					'key': active_key,
@@ -1927,7 +1894,7 @@ class GoogleMaps( Fetcher ):
 	
 			self.response = requests.get( url=self.url, params=self.params )
 			self.response.raise_for_status( )
-			_response = self.response.json()
+			_response = self.response.json( )
 			_result = _response[ 'results' ][ 0 ]
 			_geo = _result[ 'geometry' ]
 			_loc = _geo[ 'location' ]
@@ -1951,7 +1918,8 @@ class GoogleMaps( Fetcher ):
 
 			Parameters:
 			-----------
-			address (str): address
+			lat (float): The geographic latitude of a given location
+			long (floa): The geographic longitude of a given location
 
 			Returns:
 			--------
@@ -1986,9 +1954,7 @@ class GoogleMaps( Fetcher ):
 	
 			Parameters:
 			-----------
-			api_key (str): Your Google Maps API key.
-			address_lines (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
-			region_code (str): Country code (default "US").
+			address (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
 	
 			Returns:
 			--------
@@ -2202,9 +2168,9 @@ class GoogleWeather( Fetcher ):
 		self.gmaps = GoogleMaps( )
 		self.mode = None
 		self.url = 'https://weather.googleapis.com/v1'
-		self.longitude = None
-		self.latitude = None
-		self.coordinates = None
+		self.longitude = 0.0
+		self.latitude = 0.0
+		self.coordinates = ( 0.0, 0.0 )
 		self.fetcher = None
 		self.address = None
 		self.params = { }
@@ -4032,8 +3998,8 @@ class NearbyObjects( Fetcher ):
 			raise exception
 	
 	def fetch_object_lookup( self, query: str, query_type: str='sstr',
-			include_physical: bool = True, include_close_approaches: bool = True,
-			ca_body: str='Earth', include_discovery: bool = True,
+			include_physical: bool=True, include_close_approaches: bool=True,
+			ca_body: str='Earth', include_discovery: bool=True,
 			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -4339,9 +4305,9 @@ class NearbyObjects( Fetcher ):
 			dist_max: str='10LD', body: str='Earth', sort: str='date',
 			limit: int=20, dv: float = 6.0, dur: int=360,
 			stay: int=8, launch: str='2020-2045', h: float = 26.0,
-			occ: int=7, include_physical: bool = True,
-			include_close_approaches: bool = True, ca_body: str='Earth',
-			include_discovery: bool = True, time: int=20 ) -> Dict[ str, Any ] | None:
+			occ: int=7, include_physical: bool=True,
+			include_close_approaches: bool=True, ca_body: str='Earth',
+			include_discovery: bool=True, time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -5257,8 +5223,8 @@ class SpaceWeather( Fetcher ):
 	
 	def fetch_endpoint( self, endpoint: str, start_date: str, end_date: str,
 			time: int=20, location: str='', catalog: str='',
-			notification_type: str='', most_accurate_only: bool = True,
-			complete_entry_only: bool = True, speed: int=0,
+			notification_type: str='', most_accurate_only: bool=True,
+			complete_entry_only: bool=True, speed: int=0,
 			half_angle: int=0, keyword: str='',
 			api_key: str=None ) -> Dict[ str, Any ] | None:
 		'''
@@ -5380,8 +5346,8 @@ class SpaceWeather( Fetcher ):
 	
 	def fetch( self, mode: str='cme', start_date: str='', end_date: str='',
 			time: int=20, location: str='ALL', catalog: str='ALL',
-			notification_type: str='all', most_accurate_only: bool = True,
-			complete_entry_only: bool = True, speed: int=0,
+			notification_type: str='all', most_accurate_only: bool=True,
+			complete_entry_only: bool=True, speed: int=0,
 			half_angle: int=0, keyword: str='',
 			api_key: str=None ) -> Dict[ str, Any ] | None:
 		'''
@@ -6354,7 +6320,7 @@ class StarMap( Fetcher ):
 			name: str,
 			zoom: int=5,
 			box_color: str='yellow',
-			show_box: bool = True,
+			show_box: bool=True,
 			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 		
@@ -6435,10 +6401,10 @@ class StarMap( Fetcher ):
 			dec: float,
 			zoom: int=5,
 			box_color: str='yellow',
-			show_box: bool = True,
-			show_grid: bool = True,
-			show_lines: bool = True,
-			show_boundaries: bool = True,
+			show_box: bool=True,
+			show_grid: bool=True,
+			show_lines: bool=True,
+			show_boundaries: bool=True,
 			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 		
@@ -6543,10 +6509,10 @@ class StarMap( Fetcher ):
 			dec: float,
 			zoom: int=10,
 			image_source: str='DSS2',
-			show_grid: bool = True,
-			show_lines: bool = True,
-			show_boundaries: bool = True,
-			show_const_names: bool = False,
+			show_grid: bool=True,
+			show_lines: bool=True,
+			show_boundaries: bool=True,
+			show_const_names: bool=False,
 			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 		
@@ -6662,11 +6628,11 @@ class StarMap( Fetcher ):
 			zoom: int=5,
 			image_source: str='DSS2',
 			box_color: str='yellow',
-			show_box: bool = True,
-			show_grid: bool = True,
-			show_lines: bool = True,
-			show_boundaries: bool = True,
-			show_const_names: bool = False,
+			show_box: bool=True,
+			show_grid: bool=True,
+			show_lines: bool=True,
+			show_boundaries: bool=True,
+			show_const_names: bool=False,
 			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 		
@@ -7633,7 +7599,7 @@ class StarChart( Fetcher ):
 				'create_schema'
 		]
 	
-	def _flag( self, value: bool, invert: bool = False ) -> int:
+	def _flag( self, value: bool, invert: bool=False ) -> int:
 		'''
 			Purpose:
 			--------
@@ -7738,7 +7704,7 @@ class StarChart( Fetcher ):
 			raise exception
 	
 	def fetch_object_chart( self, name: str, zoom: int=5,
-			box_color: str='yellow', show_box: bool = True,
+			box_color: str='yellow', show_box: bool=True,
 			image_source: str='', time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -7813,9 +7779,9 @@ class StarChart( Fetcher ):
 			raise exception
 	
 	def fetch_coordinate_chart( self, ra: float, dec: float, zoom: int=5,
-			box_color: str='yellow', show_box: bool = True,
-			show_grid: bool = True, show_lines: bool = True,
-			show_boundaries: bool = True, image_source: str='' ) -> Dict[ str, Any ] | None:
+			box_color: str='yellow', show_box: bool=True,
+			show_grid: bool=True, show_lines: bool=True,
+			show_boundaries: bool=True, image_source: str='' ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7903,9 +7869,9 @@ class StarChart( Fetcher ):
 			raise exception
 	
 	def fetch_static_chart( self, ra: float, dec: float, zoom: int=5,
-			image_source: str='DSS2', show_grid: bool = True,
-			show_lines: bool = True, show_boundaries: bool = True,
-			show_const_names: bool = False, width: int=900,
+			image_source: str='DSS2', show_grid: bool=True,
+			show_lines: bool=True, show_boundaries: bool=True,
+			show_const_names: bool=False, width: int=900,
 			height: int=450, magnitude: float = 7.5 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -8008,9 +7974,9 @@ class StarChart( Fetcher ):
 	def fetch( self, mode: str='object_chart', query: str='',
 			ra: float = 0.0, dec: float = 0.0, zoom: int=5,
 			image_source: str='DSS2', box_color: str='yellow',
-			show_box: bool = True, show_grid: bool = True,
-			show_lines: bool = True, show_boundaries: bool = True,
-			show_const_names: bool = False, width: int=900,
+			show_box: bool=True, show_grid: bool=True,
+			show_lines: bool=True, show_boundaries: bool=True,
+			show_const_names: bool=False, width: int=900,
 			height: int=450, magnitude: float = 7.5,
 			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
@@ -8928,7 +8894,7 @@ class Congress( Fetcher ):
 			raise exception
 	
 	def fetch_reports( self, congress: int, report_type: str='',
-			offset: int=0, limit: int=20, conference: bool = False,
+			offset: int=0, limit: int=20, conference: bool=False,
 			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -9082,7 +9048,7 @@ class Congress( Fetcher ):
 			law_number: int=0, report_type: str='',
 			report_number: int=0, offset: int=0, limit: int=20,
 			sort: str='updateDate+desc', from_date_time: str='',
-			to_date_time: str='', conference: bool = False,
+			to_date_time: str='', conference: bool=False,
 			time: int=20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
@@ -11187,7 +11153,7 @@ class Grokipedia( Fetcher ):
 			raise exception
 	
 	def fetch_page( self, page: str,
-			include_content: bool = True ) -> Dict[ str, Any ] | None:
+			include_content: bool=True ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -11241,7 +11207,7 @@ class Grokipedia( Fetcher ):
 	
 	def fetch( self, mode: str='search', query: str='',
 			page: str='', limit: int=12, offset: int=0,
-			include_content: bool = True ) -> Dict[ str, Any ] | None:
+			include_content: bool=True ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21935,7 +21901,7 @@ class PurpleAir( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str='sensors', sensor_index: int | None = None,
+	def fetch( self, mode: str='sensors', sensor_index: int=None,
 			nwlng: float | None = None, nwlat: float | None = None,
 			selng: float | None = None, selat: float | None = None,
 			location_type: int=0, max_age: int=0, modified_since: int=0,
@@ -22442,7 +22408,7 @@ class OpenAQ( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_locations( self, country_id: int | None = None,
+	def fetch_locations( self, country_id: int=None,
 			coordinates: str='', radius: int=25000,
 			providers_id: str='', parameters_id: str='',
 			limit: int=25, page: int=1,
@@ -22570,8 +22536,8 @@ class OpenAQ( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str='locations', location_id: int | None = None,
-			country_id: int | None = None, coordinates: str='',
+	def fetch( self, mode: str='locations', location_id: int=None,
+			country_id: int=None, coordinates: str='',
 			radius: int=25000, providers_id: str='',
 			parameters_id: str='', limit: int=25, page: int=1,
 			time: int=20 ) -> Dict[ str, Any ] | None:
@@ -23587,9 +23553,9 @@ class OpenSky( Fetcher ):
 			raise exception
 	
 	def fetch( self, mode: str='states_bbox', icao24: str='', airport: str='',
-			begin: int | None = None, end: int | None = None, time_value: int | None = None,
+			begin: int=None, end: int=None, time_value: int=None,
 			lamin: float | None = None, lomin: float | None = None, lamax: float | None = None,
-			lomax: float | None = None, extended: bool = False, client_id: str=None,
+			lomax: float | None = None, extended: bool=False, client_id: str=None,
 			client_secret: str=None, time: int=20 ) -> Dict[ str, Any ] | None:
 		try:
 			self.timeout = int( time )

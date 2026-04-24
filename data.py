@@ -598,8 +598,8 @@ class Chroma:
 		collection (chromadb.Collection): Vector collection used for insert and query.
 
 	'''
-	client: chromadb.Client
-	collection: chromadb.Collection
+	client: Optional[ chromadb.Client ]
+	collection: Optional[ chromadb.Collection ]
 	
 	def __init__( self, path: str='./chroma', collection: str='embeddings' ) -> None:
 		'''
