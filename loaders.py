@@ -349,7 +349,7 @@ class TextLoader( Loader ):
 		         'load',
 		         'split', ]
 	
-	def load( self, path: str, encoding: Optional[ str ] = None ) -> List[ Document ] | None:
+	def load( self, path: str, encoding: Optional[ str ]=None ) -> List[ Document ] | None:
 		'''
 			Load a plain-text file into LangChain Document objects.
 
@@ -367,27 +367,20 @@ class TextLoader( Loader ):
 			throw_if( 'path', path )
 			self.file_path = self.verify_exists( path )
 			self.encoding = encoding
-			
 			if self.encoding:
-				self.loader = TextDocLoader(
-					file_path=self.file_path,
-					encoding=self.encoding )
+				self.loader = TextDocLoader( file_path=self.file_path, encoding=self.encoding )
 			else:
 				self.loader = TextDocLoader( file_path=self.file_path )
-			
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'loaders'
 			exception.cause = 'TextLoader'
-			exception.method = (
-					'load( self, path: str, encoding: Optional[ str ]=None ) '
-					'-> List[ Document ]'
-			)
+			exception.method = 'load( self, path: str, encoding: Optional[ str ]=None ) -> List[ Document ]'
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 			Split loaded text documents into manageable chunks for downstream LLM
 			processing.
@@ -406,19 +399,14 @@ class TextLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self.split_documents(
-				self.documents,
-				chunk=self.chunk_size,
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
 				overlap=self.overlap_amount )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'loaders'
 			exception.cause = 'TextLoader'
-			exception.method = (
-					'split( self, chunk: int=1000, overlap: int=200 ) '
-					'-> List[ Document ]'
-			)
+			exception.method = 'split( self, chunk: int=1000, overlap: int=200 )-> List[ Document ]'
 			raise exception
 
 class CsvLoader( Loader ):
@@ -450,33 +438,15 @@ class CsvLoader( Loader ):
 		self.quotechar = None
 	
 	def __dir__( self ) -> List[ str ]:
-		return [
-				'loader',
-				'file_path',
-				'documents',
-				'encoding',
-				'csv_args',
-				'source_column',
-				'delimiter',
-				'quotechar',
-				'chunk_size',
-				'overlap_amount',
-				'load',
-				'split',
-				'split_documents',
-		]
+		return [ 'loader', 'file_path', 'documents', 'encoding',
+				'csv_args', 'source_column', 'delimiter', 'quotechar',
+				'chunk_size', 'overlap_amount', 'load', 'split',
+				'split_documents', ]
 	
-	def load(
-			self,
-			path: str,
-			encoding: Optional[ str ] = 'utf-8',
-			source_column: Optional[ str ] = None,
-			delimiter: str = ',',
+	def load( self, path: str, encoding: Optional[ str ]='utf-8',
+			source_column: Optional[ str ]=None, delimiter: str = ',',
 			quotechar: str = '"' ) -> List[ Document ] | None:
-		'''
-
-			Purpose:
-			--------
+		''' 
 			Load a CSV file into LangChain Document objects.
 
 			Parameters:
@@ -522,7 +492,7 @@ class CsvLoader( Loader ):
 			)
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -543,11 +513,8 @@ class CsvLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self.split_documents(
-				self.documents,
-				chunk=self.chunk_size,
-				overlap=self.overlap_amount
-			)
+			self.documents = self.split_documents( self.documents,
+				chunk=self.chunk_size, overlap=self.overlap_amount )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
@@ -602,9 +569,9 @@ class WebLoader( Loader ):
 	recursive: Optional[ bool ]
 	prevent_outside: Optional[ bool ]
 	
-	def __init__( self, recursive: bool = False, max_depth: int = 2,
-			prevent_outside: bool = True, timeout: int = 10,
-			ignore: bool = True, progress: bool = True ) -> None:
+	def __init__( self, recursive: bool=False, max_depth: int=2,
+			prevent_outside: bool=True, timeout: int=10,
+			ignore: bool=True, progress: bool=True ) -> None:
 		'''
 
 			Purpose:
@@ -794,8 +761,8 @@ class WebLoader( Loader ):
 			exception.method = 'load( self, urls: str | List[ str ] ) -> List[ Document ]'
 			raise exception
 	
-	def load_recursive( self, url: str, depth: int = 2, max_time: int = 10,
-			ignore: bool = True ) -> List[ Document ] | None:
+	def load_recursive( self, url: str, depth: int=2, max_time: int=10,
+			ignore: bool=True ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -846,8 +813,8 @@ class WebLoader( Loader ):
 			                    'max_time: int=10, ignore: bool=True ) -> List[ Document ]')
 			raise exception
 	
-	def load_pages( self, urls: List[ str ], depth: int = 2, timeout: int = 10,
-			ignore: bool = True, progress: bool = True ) -> List[ Document ] | None:
+	def load_pages( self, urls: List[ str ], depth: int=2, timeout: int=10,
+			ignore: bool=True, progress: bool=True ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -894,7 +861,7 @@ class WebLoader( Loader ):
 			                    'progress: bool=True ) -> List[ Document ]')
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -1033,7 +1000,7 @@ class PdfReader( Loader ):
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 			Purpose:
 			--------
@@ -1160,7 +1127,7 @@ class PdfLoader( PdfReader ):
 		return [ 'html-img', 'markdown-img', 'text-img' ]
 	
 	def load( self, path: str, mode: str = 'single', extract: str = 'plain',
-			include: bool = False, format: str = 'markdown-img' ) -> List[ Document ]:
+			include: bool=False, format: str = 'markdown-img' ) -> List[ Document ]:
 		"""
 		
 			Purpose:
@@ -1310,7 +1277,7 @@ class ExcelLoader( Loader ):
 		'''
 		return [ 'single', 'page' ]
 	
-	def load( self, path: str, mode: str = 'elements', has_headers: bool = True ) -> List[
+	def load( self, path: str, mode: str = 'elements', has_headers: bool=True ) -> List[
 		                                                                                 Document ] | None:
 		'''
 
@@ -1346,7 +1313,7 @@ class ExcelLoader( Loader ):
 			exception.method = 'load( self, **kwargs ) -> List[ Document ]'
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 
@@ -1480,7 +1447,7 @@ class WordLoader( Loader ):
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 
@@ -1738,7 +1705,7 @@ class HtmlLoader( Loader ):
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -2571,9 +2538,9 @@ class OneDriveDocLoader( Loader ):
 					'split_documents',
 			]
 		
-		def load( self, drive_id: str, folder_path: Optional[ str ] = None,
-				object_ids: Optional[ List[ str ] ] = None,
-				auth_with_token: bool = True ) -> List[ Document ] | None:
+		def load( self, drive_id: str, folder_path: Optional[ str ]=None,
+				object_ids: Optional[ List[ str ] ]=None,
+				auth_with_token: bool=True ) -> List[ Document ] | None:
 			'''
 	
 				Purpose:
@@ -2600,16 +2567,16 @@ class OneDriveDocLoader( Loader ):
 				self.object_ids = object_ids
 				self.auth_with_token = auth_with_token
 				
-				kwargs: Dict[ str, Any ] = {
+				kwargs: Dict[ str, Any ]={
 						'drive_id': self.drive_id,
 						'auth_with_token': self.auth_with_token,
 				}
 				
 				if self.folder_path:
-					kwargs[ 'folder_path' ] = self.folder_path
+					kwargs[ 'folder_path' ]=self.folder_path
 				
 				if self.object_ids:
-					kwargs[ 'object_ids' ] = self.object_ids
+					kwargs[ 'object_ids' ]=self.object_ids
 				
 				self.loader = OneDriveLoader( **kwargs )
 				self.documents = self.loader.load( )
@@ -2626,7 +2593,7 @@ class OneDriveDocLoader( Loader ):
 				)
 				raise exception
 		
-		def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+		def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 			try:
 				throw_if( 'documents', self.documents )
 				self.chunk_size = chunk
@@ -2862,7 +2829,7 @@ class JsonLoader( Loader ):
 		         'load',
 		         'split', ]
 	
-	def load( self, filepath: str, is_text: bool = True, is_lines: bool = False ) -> List[
+	def load( self, filepath: str, is_text: bool=True, is_lines: bool=False ) -> List[
 		                                                                                 Document ] | None:
 		'''
 
@@ -2895,7 +2862,7 @@ class JsonLoader( Loader ):
 			exception.method = 'load( self, path: str ) -> List[ Document ]'
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -3054,7 +3021,7 @@ class GithubLoader( Loader ):
 			exception.method = 'load( self, **kwargs  ) -> List[ Document ]'
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -3220,7 +3187,7 @@ class XmlLoader( Loader ):
 			exception.method = "load(self, filepath: str)"
 			raise exception
 	
-	def split( self, size: int = 1000, amount: int = 200 ) -> List[ Document ] | None:
+	def split( self, size: int=1000, amount: int=200 ) -> List[ Document ] | None:
 		"""
 			
 			Purpose:
@@ -3254,7 +3221,7 @@ class XmlLoader( Loader ):
 			exception = Error( e )
 			exception.module = "chonky"
 			exception.cause = "XmlLoader"
-			exception.method = "split(self, size: int = 1000, amount: int = 200)"
+			exception.method = "split(self, size: int=1000, amount: int=200)"
 			raise exception
 	
 	def load_tree( self, filepath: str ) -> etree._ElementTree | None:
@@ -3358,7 +3325,7 @@ class PubMedSearchLoader( Loader ):
 				'split_documents',
 		]
 	
-	def load( self, query: str, max_docs: int = 5 ) -> List[ Document ] | None:
+	def load( self, query: str, max_docs: int=5 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -3391,7 +3358,7 @@ class PubMedSearchLoader( Loader ):
 			)
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		try:
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
@@ -3447,7 +3414,7 @@ class OpenCityLoader( Loader ):
 				'split_documents',
 		]
 	
-	def load( self, city_id: str, dataset_id: str, limit: int = 100 ) -> List[ Document ] | None:
+	def load( self, city_id: str, dataset_id: str, limit: int=100 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -3488,7 +3455,7 @@ class OpenCityLoader( Loader ):
 			)
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		try:
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
@@ -3550,8 +3517,8 @@ class JupyterNotebookLoader( Loader ):
 				'split_documents',
 		]
 	
-	def load( self, path: str, include_outputs: bool = False, max_output_length: int = 10,
-			remove_newline: bool = False, traceback: bool = False ) -> List[ Document ] | None:
+	def load( self, path: str, include_outputs: bool=False, max_output_length: int=10,
+			remove_newline: bool=False, traceback: bool=False ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -3600,7 +3567,7 @@ class JupyterNotebookLoader( Loader ):
 			)
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		try:
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
@@ -3695,7 +3662,7 @@ class GoogleCloudFileLoader( Loader ):
 			)
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		try:
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
@@ -3757,9 +3724,9 @@ class AwsFileLoader( Loader ):
 				'split_documents',
 		]
 	
-	def load( self, bucket: str, key: str, aws_access_key_id: Optional[ str ] = None,
-			aws_secret_access_key: Optional[ str ] = None, aws_session_token: Optional[ str ] = None,
-			region_name: Optional[ str ] = None ) -> List[ Document ] | None:
+	def load( self, bucket: str, key: str, aws_access_key_id: Optional[ str ]=None,
+			aws_secret_access_key: Optional[ str ]=None, aws_session_token: Optional[ str ]=None,
+			region_name: Optional[ str ]=None ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -3791,15 +3758,15 @@ class AwsFileLoader( Loader ):
 			self.aws_session_token = aws_session_token
 			self.region_name = region_name
 			
-			kwargs: Dict[ str, Any ] = { }
+			kwargs: Dict[ str, Any ]={ }
 			if self.aws_access_key_id:
-				kwargs[ 'aws_access_key_id' ] = self.aws_access_key_id
+				kwargs[ 'aws_access_key_id' ]=self.aws_access_key_id
 			if self.aws_secret_access_key:
-				kwargs[ 'aws_secret_access_key' ] = self.aws_secret_access_key
+				kwargs[ 'aws_secret_access_key' ]=self.aws_secret_access_key
 			if self.aws_session_token:
-				kwargs[ 'aws_session_token' ] = self.aws_session_token
+				kwargs[ 'aws_session_token' ]=self.aws_session_token
 			if self.region_name:
-				kwargs[ 'region_name' ] = self.region_name
+				kwargs[ 'region_name' ]=self.region_name
 			
 			self.loader = S3FileLoader(
 				self.bucket,
@@ -3823,7 +3790,7 @@ class AwsFileLoader( Loader ):
 			)
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		try:
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
@@ -3881,7 +3848,7 @@ class GoogleSpeechToTextLoader( Loader ):
 		]
 	
 	def load( self, project_id: str, file_path: str,
-			config: Optional[ Dict[ str, Any ] ] = None ) -> List[ Document ] | None:
+			config: Optional[ Dict[ str, Any ] ]=None ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -3933,7 +3900,7 @@ class GoogleSpeechToTextLoader( Loader ):
 			)
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		try:
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
@@ -3994,8 +3961,8 @@ class GoogleBucketLoader( Loader ):
 				'split_documents',
 		]
 	
-	def load( self, project_name: str, bucket: str, prefix: Optional[ str ] = None,
-			continue_on_failure: bool = False ) -> List[ Document ] | None:
+	def load( self, project_name: str, bucket: str, prefix: Optional[ str ]=None,
+			continue_on_failure: bool=False ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -4030,14 +3997,14 @@ class GoogleBucketLoader( Loader ):
 			self.bucket = bucket
 			self.prefix = prefix
 			self.continue_on_failure = continue_on_failure
-			kwargs: Dict[ str, Any ] = {
+			kwargs: Dict[ str, Any ]={
 					'project_name': self.project_name,
 					'bucket': self.bucket,
 					'continue_on_failure': self.continue_on_failure,
 			}
 			
 			if self.prefix:
-				kwargs[ 'prefix' ] = self.prefix
+				kwargs[ 'prefix' ]=self.prefix
 			
 			self.loader = GCSDirectoryLoader( **kwargs )
 			self.documents = self.loader.load( )
@@ -4047,14 +4014,10 @@ class GoogleBucketLoader( Loader ):
 			exception = Error( e )
 			exception.module = 'loaders'
 			exception.cause = 'GoogleBucketLoader'
-			exception.method = (
-					'load( self, project_name: str, bucket: str, '
-					'prefix: Optional[ str ]=None, continue_on_failure: bool=False ) '
-					'-> List[ Document ] | None'
-			)
+			exception.method = 'load( self, *kwargs ) -> List[ Document ] | None'
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -4080,20 +4043,14 @@ class GoogleBucketLoader( Loader ):
 			throw_if( 'documents', self.documents )
 			self.chunk_size = chunk
 			self.overlap_amount = overlap
-			self.documents = self.split_documents(
-				self.documents,
-				chunk=self.chunk_size,
-				overlap=self.overlap_amount
-			)
+			self.documents = self.split_documents( self.documents, chunk=self.chunk_size,
+				overlap=self.overlap_amount )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'loaders'
 			exception.cause = 'GoogleBucketLoader'
-			exception.method = (
-					'split( self, chunk: int=1000, overlap: int=200 ) '
-					'-> List[ Document ] | None'
-			)
+			exception.method = 'split( self, *args ) -> List[ Document ] | None'
 			raise exception
 
 class AwsBucketLoader( Loader ):
@@ -4145,15 +4102,10 @@ class AwsBucketLoader( Loader ):
 				'split_documents',
 		]
 	
-	def load(
-			self,
-			bucket: str,
-			prefix: Optional[ str ] = None,
-			aws_access_key_id: Optional[ str ] = None,
-			aws_secret_access_key: Optional[ str ] = None,
-			aws_session_token: Optional[ str ] = None,
-			region_name: Optional[ str ] = None,
-			endpoint_url: Optional[ str ] = None ) -> List[ Document ] | None:
+	def load( self, bucket: str, prefix: Optional[ str ]=None,
+			aws_access_key_id: Optional[ str ]=None, aws_secret_access_key: Optional[ str ]=None,
+			aws_session_token: Optional[ str ]=None, region_name: Optional[ str ]=None,
+			endpoint_url: Optional[ str ]=None ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -4186,42 +4138,31 @@ class AwsBucketLoader( Loader ):
 			self.aws_session_token = aws_session_token
 			self.region_name = region_name
 			self.endpoint_url = endpoint_url
-			
-			kwargs: Dict[ str, Any ] = { }
+			kwargs: Dict[ str, Any ]={ }
 			if self.prefix:
-				kwargs[ 'prefix' ] = self.prefix
+				kwargs[ 'prefix' ]=self.prefix
 			if self.aws_access_key_id:
-				kwargs[ 'aws_access_key_id' ] = self.aws_access_key_id
+				kwargs[ 'aws_access_key_id' ]=self.aws_access_key_id
 			if self.aws_secret_access_key:
-				kwargs[ 'aws_secret_access_key' ] = self.aws_secret_access_key
+				kwargs[ 'aws_secret_access_key' ]=self.aws_secret_access_key
 			if self.aws_session_token:
-				kwargs[ 'aws_session_token' ] = self.aws_session_token
+				kwargs[ 'aws_session_token' ]=self.aws_session_token
 			if self.region_name:
-				kwargs[ 'region_name' ] = self.region_name
+				kwargs[ 'region_name' ]=self.region_name
 			if self.endpoint_url:
-				kwargs[ 'endpoint_url' ] = self.endpoint_url
+				kwargs[ 'endpoint_url' ]=self.endpoint_url
 			
-			self.loader = S3DirectoryLoader(
-				self.bucket,
-				**kwargs
-			)
+			self.loader = S3DirectoryLoader( self.bucket, **kwargs )
 			self.documents = self.loader.load( )
 			return self.documents
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'loaders'
 			exception.cause = 'AmazonBucketLoader'
-			exception.method = (
-					'load( self, bucket: str, prefix: Optional[ str ]=None, '
-					'aws_access_key_id: Optional[ str ]=None, '
-					'aws_secret_access_key: Optional[ str ]=None, '
-					'aws_session_token: Optional[ str ]=None, '
-					'region_name: Optional[ str ]=None, '
-					'endpoint_url: Optional[ str ]=None ) -> List[ Document ] | None'
-			)
+			exception.method = 'load( self, bucket: str, **kwargs ) -> List[ Document ] | None'
 			raise exception
 	
-	def split( self, chunk: int = 1000, overlap: int = 200 ) -> List[ Document ] | None:
+	def split( self, chunk: int=1000, overlap: int=200 ) -> List[ Document ] | None:
 		'''
 
 			Purpose:

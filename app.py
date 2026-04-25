@@ -1926,7 +1926,6 @@ if mode == 'Loading':
 		st.divider( )
 		metrics_container = st.container( )
 		tokens = st.session_state.get( 'tokens' )
-		
 		def render_metrics_panel( ):
 			raw_text = st.session_state.get( 'raw_text' )
 			processed_text = st.session_state.get( 'processed_text' )
@@ -1945,10 +1944,7 @@ if mode == 'Loading':
 				try:
 					tokens = [ t.lower( ) for t in word_tokenize( text ) if t.isalpha( ) ]
 				except LookupError:
-					st.error(
-						'NLTK resources missing.\n\n'
-						'Run:\n'
-						'`python -m nltk.downloader punkt stopwords`' )
+					st.error( 'NLTK resources missing' )
 					return
 				
 				if not tokens:
@@ -1995,55 +1991,31 @@ if mode == 'Loading':
 			with st.expander( '📊 Corpus Metrics', expanded=False ):
 				col1, col2, col3, col4 = st.columns( 4, border=True )
 				with col1:
-					metric_with_tooltip(
-						'Characters',
-						f'{char_count:,}',
-						'Total number of characters in the selected text.'
-					)
+					metric_with_tooltip( 'Characters', f'{char_count:,}',
+						'Total number of characters in the selected text.' )
 				with col2:
-					metric_with_tooltip(
-						'Tokens',
-						f'{token_count:,}',
-						'Token Count: total number of tokenized words after cleanup.'
-					)
+					metric_with_tooltip( 'Tokens', f'{token_count:,}',
+						'Token Count: total number of tokenized words after cleanup.' )
 				with col3:
-					metric_with_tooltip(
-						'Unique Tokens',
-						f'{vocab_size:,}',
-						'Vocabulary Size: number of distinct word types in the text.'
-					)
+					metric_with_tooltip( 'Unique Tokens', f'{vocab_size:,}',
+						'Vocabulary Size: number of distinct word types in the text.' )
 				with col4:
-					metric_with_tooltip(
-						'TTR',
-						f'{ttr:.3f}',
-						'Type–Token Ratio: unique words ÷ total words.'
-					)
+					metric_with_tooltip( 'TTR', f'{ttr:.3f}',
+						'Type–Token Ratio: unique words ÷ total words.' )
 				
 				col5, col6, col7, col8 = st.columns( 4, border=True )
 				with col5:
-					metric_with_tooltip(
-						'Hapax Ratio',
-						f'{hapax_ratio:.3f}',
-						'Hapax Ratio: proportion of words that occur only once.'
-					)
+					metric_with_tooltip( 'Hapax Ratio', f'{hapax_ratio:.3f}',
+						'Hapax Ratio: proportion of words that occur only once.' )
 				with col6:
-					metric_with_tooltip(
-						'Avg Length',
-						f'{avg_word_len:.2f}',
-						'Average number of characters per token.'
-					)
+					metric_with_tooltip( 'Avg Length', f'{avg_word_len:.2f}',
+						'Average number of characters per token.' )
 				with col7:
-					metric_with_tooltip(
-						'Stopword Ratio',
-						f'{stopword_ratio:.2%}',
-						'Percentage of stopwords in the text.'
-					)
+					metric_with_tooltip( 'Stopword Ratio', f'{stopword_ratio:.2%}',
+						'Percentage of stopwords in the text.' )
 				with col8:
-					metric_with_tooltip(
-						'Lexical Density',
-						f'{lexical_density:.2%}',
-						'Proportion of content-bearing words.'
-					)
+					metric_with_tooltip( 'Lexical Density', f'{lexical_density:.2%}',
+						'Proportion of content-bearing words.' )
 			
 			# -------------------------------
 			# Readability
@@ -3949,8 +3921,7 @@ elif mode == 'Retrieval':
 			def _clear_arxiv_state( ) -> None:
 				st.session_state[ 'arxiv_clear_request' ] = True
 			
-			col1, col2 = st.columns( 2, border=True )
-			
+			col1, col2 = st.columns( [ 0.4, 0.6 ], border=True, gap='xxsmall' )
 			with col1:
 				arxiv_input = st.text_area( 'Query', height=80, key='arxiv_input',
 					placeholder=(
@@ -3960,28 +3931,23 @@ elif mode == 'Retrieval':
 							'graph neural networks for molecular property prediction'
 					), )
 				
-				c1, c2 = st.columns( 2 )
+				c1, c2 = st.columns( 2, vertical_alignment='center' )
 				with c1:
 					arxiv_max_docs = st.number_input( 'Max Docs', min_value=1, max_value=300,
 						value=st.session_state.get( 'arxiv_max_docs', 5 ),
-						step=1,
-						key='arxiv_max_docs',
+						step=1, key='arxiv_max_docs',
 						help='Maximum number of ArXiv documents to retrieve.' )
 				
 				with c2:
-					arxiv_full_documents = st.checkbox(
-						'Full Documents',
+					arxiv_full_documents = st.checkbox( 'Full Documents',
 						value=st.session_state.get( 'arxiv_full_documents', False ),
 						key='arxiv_full_documents',
-						help='When checked, retrieves fuller document text instead of lighter summary-based output.'
-					)
-				
-				arxiv_include_metadata = st.checkbox(
-					'Include All Metadata',
+						help='When checked, retrieves full document text.' )
+					
+				arxiv_include_metadata = st.checkbox( 'Include All Metadata',
 					value=st.session_state.get( 'arxiv_include_metadata', False ),
 					key='arxiv_include_metadata',
-					help='Include additional metadata fields when available.'
-				)
+					help='Include additional metadata fields when available.' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
@@ -4061,14 +4027,6 @@ elif mode == 'Retrieval':
 									st.json( doc.metadata )
 							else:
 								st.write( doc )
-			
-			help_c1, help_c2 = st.columns( [ 0.5, 0.5 ] )
-			with help_c1:
-				with st.expander( label='Details', expanded=False ):
-					st.help( ArXivLoader )
-			with help_c2:
-				with st.expander( label='Information', expanded=False ):
-					st.markdown( cfg.ARXIV )
 				
 		# -------- Google Drive
 		with st.expander( label='Google Drive', icon='🛡️',expanded=False ):
@@ -4106,13 +4064,10 @@ elif mode == 'Retrieval':
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					gd_folder_id = st.text_input(
-						'Folder ID',
+					gd_folder_id = st.text_input( 'Folder ID',
 						value=st.session_state.get( 'googledrive_folder_id', cfg.GOOGLE_DRIVE_FOLDER_ID or 'root' ),
-						key='googledrive_folder_id',
-						placeholder='root or a Google Drive folder id',
-						help='Use "root" for your My Drive root, or provide a specific folder id.'
-					)
+						key='googledrive_folder_id', placeholder='root or a Google Drive folder id',
+						help='Use "root" for your My Drive root, or provide a specific folder id.' )
 				
 				with c2:
 					gd_results_limit = st.number_input( 'Max Docs', min_value=1, max_value=100,
@@ -4121,8 +4076,7 @@ elif mode == 'Retrieval':
 				
 				c3, c4 = st.columns( 2 )
 				with c3:
-					gd_template = st.selectbox(
-						'Template',
+					gd_template = st.selectbox( 'Template',
 						options=[
 								'gdrive-all-in-folder',
 								'gdrive-query',
@@ -4132,22 +4086,15 @@ elif mode == 'Retrieval':
 								'gdrive-mime-type-in-folder',
 								'gdrive-query-with-mime-type',
 								'gdrive-query-with-mime-type-and-folder',
-						],
-						index=1,
-						key='googledrive_template',
+						], index=1, key='googledrive_template',
 						help='Select the Drive retrieval strategy.' )
 				
 				with c4:
-					gd_mode = st.selectbox(
-						'Mode',
-						options=[ 'documents', 'snippets' ],
-						index=0,
-						key='googledrive_mode',
-						help='Use snippets for short metadata-driven returns.'
-					)
+					gd_mode = st.selectbox( 'Mode', options=[ 'documents', 'snippets' ],
+						index=0, key='googledrive_mode',
+						help='Use snippets for short metadata-driven returns.' )
 				
-				gd_mime_type = st.selectbox(
-					'MIME Type Filter',
+				gd_mime_type = st.selectbox( 'MIME Type Filter',
 					options=[
 							'',
 							'text/text',
@@ -4166,8 +4113,7 @@ elif mode == 'Retrieval':
 							'application/vnd.google.colaboratory',
 							'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 							'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-					],
-					index=0,
+					], index=0,
 					key='googledrive_mime_type', help='Optional MIME type restriction.' )
 				
 				st.caption( 'Expected auth: GOOGLE_ACCOUNT_FILE for credentials JSON. '
@@ -4234,10 +4180,7 @@ elif mode == 'Retrieval':
 									st.json( doc.metadata )
 							else:
 								st.write( doc )
-			
-			with st.expander( label='Information', expanded=False ):
-				st.help( GoogleDrive )
-		
+						
 		# -------- Wikipedia
 		with st.expander( label='Wikipedia', icon='📖',expanded=False ):
 			if 'wikipedia_results' not in st.session_state:

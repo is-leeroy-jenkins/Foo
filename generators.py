@@ -464,13 +464,13 @@ class Grok( Generator ):
 			                    'response_format: str | None=None ) -> str | None')
 			raise exception
 	
-	def fetch( self, query: str, model: str = 'grok-4-fast-reasoning', temperature: float = 0.7,
+	def fetch( self, query: str, model: str='grok-4-fast-reasoning', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, seed: int | None = None,
 			system: str | None = None, response_format: str | None = None,
 			reasoning_effort: str | None = None, web_search: bool = False,
 			search_domains: Any = None, stop: List[ str ] | None = None, stream: bool = False,
 			store: bool = True, parallel_tool_calls: bool = True,
-			tool_choice: str = 'auto' ) -> str | None:
+			tool_choice: str='auto' ) -> str | None:
 		'''
 		
 			Purpose:
@@ -572,13 +572,13 @@ class Grok( Generator ):
 			)
 			raise exception
 	
-	def generate_text( self, query: str, model: str = 'grok-4-fast-reasoning', temperature: float = 0.7,
+	def generate_text( self, query: str, model: str='grok-4-fast-reasoning', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, seed: int | None = None,
 			system: str | None = None, response_format: str | None = None,
 			reasoning_effort: str | None = None, web_search: bool = False,
 			search_domains: Any = None, stop: List[ str ] | None = None, stream: bool = False,
 			store: bool = True, parallel_tool_calls: bool = True,
-			tool_choice: str = 'auto' ) -> str | None:
+			tool_choice: str='auto' ) -> str | None:
 		'''
 		
 			Purpose:
@@ -595,12 +595,8 @@ class Grok( Generator ):
 			
 		'''
 		try:
-			return self.fetch(
-				query=query,
-				model=model,
-				temperature=temperature,
-				max_tokens=max_tokens,
-				top_p=top_p,
+			return self.fetch( query=query, model=model, temperature=temperature,
+				max_tokens=max_tokens, top_p=top_p,
 				seed=seed,
 				system=system,
 				response_format=response_format,
@@ -620,12 +616,12 @@ class Grok( Generator ):
 			exception.method = 'generate_text( self, query: str, ... ) -> str | None'
 			raise exception
 	
-	def search_web( self, query: str, model: str = 'grok-4-fast-reasoning', temperature: float = 0.7,
+	def search_web( self, query: str, model: str='grok-4-fast-reasoning', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, seed: int | None = None,
 			system: str | None = None, response_format: str | None = None,
 			reasoning_effort: str | None = None, search_domains: Any = None,
 			stream: bool = False, store: bool = True, parallel_tool_calls: bool = True,
-			tool_choice: str = 'auto' ) -> str | None:
+			tool_choice: str='auto' ) -> str | None:
 		'''
 		
 			Purpose:
@@ -1041,7 +1037,7 @@ class Gemini( Generator ):
 			exception.method = '_extract_text( self, response: Any ) -> str'
 			raise exception
 	
-	def fetch( self, prompt: str, model: str = 'gemini-2.5-flash', temperature: float = 0.7,
+	def fetch( self, prompt: str, model: str='gemini-2.5-flash', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
 			candidate_count: int = 1, seed: int | None = None, system: str | None = None,
 			response_format: str | None = None, stop_sequences: List[ str ] | None = None,
@@ -1159,7 +1155,7 @@ class Gemini( Generator ):
 			)
 			raise exception
 	
-	def generate_text( self, prompt: str, model: str = 'gemini-2.5-flash', temperature: float = 0.7,
+	def generate_text( self, prompt: str, model: str='gemini-2.5-flash', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
 			candidate_count: int = 1, seed: int | None = None, system: str | None = None,
 			response_format: str | None = None, stop_sequences: List[ str ] | None = None,
@@ -1206,7 +1202,7 @@ class Gemini( Generator ):
 			exception.method = 'generate_text( self, prompt: str, ... ) -> str | None'
 			raise exception
 	
-	def search_web( self, prompt: str, model: str = 'gemini-2.5-flash', temperature: float = 0.7,
+	def search_web( self, prompt: str, model: str='gemini-2.5-flash', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
 			candidate_count: int = 1, seed: int | None = None, system: str | None = None,
 			response_format: str | None = None, stop_sequences: List[ str ] | None = None,
@@ -1500,7 +1496,7 @@ class Claude( Generator ):
 			exception.method = '_extract_text( self, response: Any ) -> str'
 			raise exception
 	
-	def fetch( self, query: str, model: str = 'claude-sonnet-4-6', temperature: float = 0.7,
+	def fetch( self, query: str, model: str='claude-sonnet-4-6', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
 			system: str | None = None, stop_sequences: List[ str ] | None = None,
 			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
@@ -1616,7 +1612,7 @@ class Claude( Generator ):
 			)
 			raise exception
 	
-	def generate_text( self, query: str, model: str = 'claude-sonnet-4-6', temperature: float = 0.7,
+	def generate_text( self, query: str, model: str='claude-sonnet-4-6', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
 			system: str | None = None, stop_sequences: List[ str ] | None = None,
 			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
@@ -1659,7 +1655,7 @@ class Claude( Generator ):
 			exception.method = 'generate_text( self, query: str, ... ) -> str | None'
 			raise exception
 	
-	def search_web( self, query: str, model: str = 'claude-sonnet-4-6', temperature: float = 0.7,
+	def search_web( self, query: str, model: str='claude-sonnet-4-6', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
 			system: str | None = None, stop_sequences: List[ str ] | None = None,
 			thinking: bool = False, thinking_budget: int | None = None,
@@ -1880,7 +1876,7 @@ class Mistral( Generator ):
 			exception.method = '_extract_text( self, response: Any ) -> str'
 			raise exception
 	
-	def fetch( self, query: str, model: str = 'mistral-large-latest', temperature: float = 0.7,
+	def fetch( self, query: str, model: str='mistral-large-latest', temperature: float = 0.7,
 			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
 			safe_mode: bool = False, system: str | None = None ) -> str | None:
 		'''
@@ -2254,12 +2250,12 @@ class Chat( Generator ):
 			                    'search_domains: Any=None ) -> str | None')
 			raise exception
 	
-	def fetch( self, prompt: str, model: str = 'gpt-5-mini', temperature: float = 0.7,
+	def fetch( self, prompt: str, model: str='gpt-5-mini', temperature: float = 0.7,
 			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
 			system: str | None = None, response_format: str | None = None,
 			reasoning_effort: str | None = None, web_search: bool = False,
 			search_domains: Any = None, store: bool = True, stream: bool = False,
-			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str:
+			parallel_tool_calls: bool = True, tool_choice: str='auto' ) -> str:
 		"""
 	
 	        Purpose
@@ -2366,12 +2362,12 @@ class Chat( Generator ):
 			)
 			raise exception
 	
-	def generate_text( self, prompt: str, model: str = 'gpt-5-mini', temperature: float = 0.7,
+	def generate_text( self, prompt: str, model: str='gpt-5-mini', temperature: float = 0.7,
 			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
 			system: str | None = None, response_format: str | None = None,
 			reasoning_effort: str | None = None, web_search: bool = False,
 			search_domains: Any = None, store: bool = True, stream: bool = False,
-			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str:
+			parallel_tool_calls: bool = True, tool_choice: str='auto' ) -> str:
 		"""
 	
 	        Purpose
@@ -2555,12 +2551,12 @@ class Chat( Generator ):
 			exception.method = 'summarize_document( self, prompt: str, path: str ) -> str'
 			raise exception
 	
-	def search_web( self, prompt: str, model: str = 'gpt-5-mini', temperature: float = 0.7,
+	def search_web( self, prompt: str, model: str='gpt-5-mini', temperature: float = 0.7,
 			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
 			system: str | None = None, response_format: str | None = None,
 			reasoning_effort: str | None = None, search_domains: Any = None,
 			store: bool = True, stream: bool = False, parallel_tool_calls: bool = True,
-			tool_choice: str = 'auto' ) -> str:
+			tool_choice: str='auto' ) -> str:
 		"""
 	
 	        Purpose
