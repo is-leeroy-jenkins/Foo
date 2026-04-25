@@ -606,7 +606,7 @@ class WebFetcher( Fetcher ):
 			self.response = requests.get( uri, timeout=10 )
 			self.response.raise_for_status( )
 			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			blocks = [ sec.get_text( " ", strip=True ) for sec in self.soup.find_all( 'section' ) ]
+			blocks = [ sec.get_text( ' ', strip=True ) for sec in self.soup.find_all( 'section' ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
 			exception = Error( exc )
@@ -835,7 +835,6 @@ class WebCrawler( WebFetcher ):
 			Parameters:
 			-----------
 			headers (Optional[Dict[str, str]]): Optional headers.
-			use_playwright (bool): If True, enable Playwright fallback.
 				
 			Returns:
 			--------
@@ -865,11 +864,8 @@ class WebCrawler( WebFetcher ):
 			list[str]: Ordered attribute/method names.
 			
 		'''
-		return [ 'use_playwright',
-		         'browser_context',
-		         'fetch',
-		         'html_to_text',
-		         'render_with_playwright' ]
+		return [ 'use_playwright', 'browser_context', 'fetch',
+		         'html_to_text', 'render_with_playwright' ]
 
 	def fetch( self, url: str, time: int=10 ) -> Result | None:
 		'''
@@ -884,7 +880,6 @@ class WebCrawler( WebFetcher ):
 			-------
 			url (str): Absolute URL to fetch.
 			time (int): Timeout seconds.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
 				
 			Returns:
 			-------
@@ -982,8 +977,7 @@ class ArXiv( Fetcher ):
 		self.include_metadata = bool( include_metadata )
 	
 	def fetch( self, question: str, max_documents: int=None,
-			full_documents: bool=None,
-			include_metadata: bool=None ) -> List[ Document ] | None:
+			full_documents: bool=None, include_metadata: bool=None ) -> List[ Document ] | None:
 		'''
 
 			Purpose:
@@ -993,16 +987,18 @@ class ArXiv( Fetcher ):
 
 			Parameters:
 			-----------
-			question:
-				Free-text search query or arXiv identifier.
-			max_documents:
-				Optional override for maximum number of returned documents.
-			full_documents:
-				Optional override indicating whether full document text should be
-				fetched instead of summary-oriented retrieval.
-			include_metadata:
-				Optional override indicating whether all available metadata should
-				be included.
+			question: str
+			Free-text search query or arXiv identifier.
+			
+			max_documents: int
+			Optional override for maximum number of returned documents.
+			
+			full_documents:  bool
+			Optional override indicating whether full document text should  be fetched instead of
+			summary-oriented retrieval.
+			
+			include_metadata: bool
+			Optional override indicating whether all available metadata should be included.
 
 			Returns:
 			--------
@@ -1012,7 +1008,6 @@ class ArXiv( Fetcher ):
 		try:
 			throw_if( 'question', question )
 			self.query = question.strip( )
-			
 			max_docs = self.max_documents if max_documents is None else \
 				max( 1, min( int( max_documents ), 300 ) )
 			
@@ -1022,9 +1017,7 @@ class ArXiv( Fetcher ):
 			load_meta = self.include_metadata if include_metadata is None else \
 				bool( include_metadata )
 			
-			self.fetcher = ArxivRetriever(
-				load_max_docs=max_docs,
-				get_full_documents=get_full,
+			self.fetcher = ArxivRetriever( load_max_docs=max_docs, get_full_documents=get_full,
 				load_all_available_meta=load_meta )
 			
 			self.documents = self.fetcher.invoke( self.query )
@@ -1034,11 +1027,7 @@ class ArXiv( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ArXiv'
-			exception.method = (
-					'fetch( self, question: str, max_documents: int | None=None, '
-					'full_documents: bool | None=None, include_metadata: bool | None=None ) '
-					'-> List[ Document ]'
-			)
+			exception.method =  'fetch( self, *kwargs ) -> List[ Document ]'
 			raise exception
 
 class GoogleDrive( Fetcher ):
@@ -1101,25 +1090,13 @@ class GoogleDrive( Fetcher ):
 			List[str]
 		
 		'''
-		return [
-				'',
-				'text/text',
-				'text/plain',
-				'text/html',
-				'text/csv',
-				'text/markdown',
-				'image/png',
-				'image/jpeg',
-				'application/epub+zip',
-				'application/pdf',
-				'application/rtf',
-				'application/vnd.google-apps.document',
-				'application/vnd.google-apps.presentation',
-				'application/vnd.google-apps.spreadsheet',
+		return [ '', 'text/text', 'text/plain', 'text/html', 'text/csv', 'text/markdown',
+				'image/png', 'image/jpeg', 'application/epub+zip', 'application/pdf',
+				'application/rtf', 'application/vnd.google-apps.document',
+				'application/vnd.google-apps.presentation', 'application/vnd.google-apps.spreadsheet',
 				'application/vnd.google.colaboratory',
 				'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-		]
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document', ]
 	
 	@property
 	def template_options( self ) -> List[ str ]:
@@ -1134,16 +1111,9 @@ class GoogleDrive( Fetcher ):
 			List[str]
 		
 		'''
-		return [
-				'gdrive-all-in-folder',
-				'gdrive-query',
-				'gdrive-by-name',
-				'gdrive-query-in-folder',
-				'gdrive-mime-type',
-				'gdrive-mime-type-in-folder',
-				'gdrive-query-with-mime-type',
-				'gdrive-query-with-mime-type-and-folder',
-		]
+		return [ 'gdrive-all-in-folder', 'gdrive-query', 'gdrive-by-name', 'gdrive-query-in-folder',
+				'gdrive-mime-type', 'gdrive-mime-type-in-folder', 'gdrive-query-with-mime-type',
+				'gdrive-query-with-mime-type-and-folder', ]
 	
 	@property
 	def mode_options( self ) -> List[ str ]:
@@ -1160,30 +1130,29 @@ class GoogleDrive( Fetcher ):
 		'''
 		return [ 'documents', 'snippets' ]
 	
-	def fetch( self, question: str, folder_id: str='root', results: int=10,
-			template: str='gdrive-query', mime_type: str=None,
-			mode: str='documents' ) -> List[ Document ] | None:
-		'''
-		
-			Purpose:
-			--------
-			Query Google Drive through LangChain's GoogleDriveRetriever and
-			return LangChain Document objects.
+	def fetch( self, question: str, folder_id: str='root', results: int=10, template: str='gdrive-query',
+			mime_type: str=None, mode: str='documents' ) -> List[ Document ] | None:
+		'''Query Google Drive through LangChain's GoogleDriveRetriever and return LangChain Document objects.
 		
 			Parameters:
 			-----------
-			question:
+			question: str
 				Free-text query used by the retriever. For templates that do not
 				require a query, a placeholder value may still be passed.
-			folder_id:
+				
+			folder_id: str
 				Google Drive folder id. Use 'root' for the user's root Drive.
-			results:
+				
+			results: int
 				Maximum number of returned documents.
-			template:
+				
+			template: str
 				Predefined GoogleDriveRetriever selection template.
+				
 			mime_type:
 				Optional MIME type filter.
-			mode:
+				
+			mode: str
 				Retrieval mode, typically 'documents' or 'snippets'.
 		
 			Returns:
@@ -1226,9 +1195,7 @@ class GoogleDrive( Fetcher ):
 				                     'gdrive-mime-type-in-folder'):
 					invoke_query = '*'
 				else:
-					raise ValueError(
-						'A query is required for the selected Google Drive template.'
-					)
+					raise ValueError( 'A query is required for the selected Google Drive template.')
 			
 			self.documents = self.fetcher.invoke( invoke_query )
 			return self.documents
@@ -1237,11 +1204,7 @@ class GoogleDrive( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleDrive'
-			exception.method = (
-					'fetch( self, question: str, folder_id: str=root, results: int=10, '
-					'template: str=gdrive-query, mime_type: str | None=None, '
-					'mode: str=documents ) -> List[ Document ]'
-			)
+			exception.method = 'fetch( self, *kwargs ) -> List[ Document ]'
 			raise exception
 
 class Wikipedia( Fetcher ):
@@ -1283,8 +1246,8 @@ class Wikipedia( Fetcher ):
 		self.max_documents = max( 1, min( int( max_documents ), 300 ) )
 		self.include_metadata = bool( include_metadata )
 	
-	def fetch( self, question: str, language: str=None,
-			max_documents: int=None, include_metadata: bool=None ) -> List[ Document ] | None:
+	def fetch( self, question: str, language: str=None, max_documents: int=None,
+			include_metadata: bool=None ) -> List[ Document ] | None:
 		'''
 			Query Wikipedia through LangChain's WikipediaRetriever and return
 			LangChain Document objects.
@@ -1293,11 +1256,14 @@ class Wikipedia( Fetcher ):
 			-----------
 			question:
 				Free-text Wikipedia query.
+				
 			language:
 				Optional language code override, e.g. "en", "fr", "de", "ja".
+				
 			max_documents:
 				Optional override for maximum number of returned documents.
 				Hard-capped at 300.
+				
 			include_metadata:
 				Optional override indicating whether all available metadata
 				should be included.
@@ -1330,7 +1296,7 @@ class Wikipedia( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Wikipedia'
-			exception.method = 'fetch( self, question: str, *params ) -> List[ Document ]'
+			exception.method = 'fetch( self, question: str, **kwargs ) -> List[ Document ]'
 			raise exception
 
 class TheNews( Fetcher ):
@@ -1378,21 +1344,10 @@ class TheNews( Fetcher ):
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
-			Purpose:
-			-----------
 			Return visible member ordering.
 		'''
-		return [
-				'api_key',
-				'url',
-				'timeout',
-				'headers',
-				'endpoint',
-				'limit',
-				'page',
-				'params',
-				'fetch',
-		]
+		return [ 'api_key', 'url', 'timeout', 'headers', 'endpoint',
+		         'limit', 'page', 'params', 'fetch', ]
 	
 	def fetch( self, endpoint: str='all', query: str='', language: str='en', categories: str='',
 			exclude_categories: str='', locale: str='', domains: str='', exclude_domains: str='',
@@ -1400,52 +1355,67 @@ class TheNews( Fetcher ):
 			published_before: str='', published_on: str='', sort: str='published_at',
 			limit: int=10, page: int=1, include_similar: bool=True, headlines_per_category: int=6,
 			time: int=10, api_key: str=None ) -> Dict[ str, Any ] | None:
-		'''
-			Purpose:
-			--------
-			Send a request to The News API using one of the documented endpoints
-			and return the parsed JSON response.
+		'''Send a request to The News API using one of the documented endpoints and return the parsed JSON response.
 
 			Parameters:
 			-----------
 			endpoint:
 				One of: all, top, headlines, sources
+				
 			query:
 				Search query for endpoints that support search.
+				
 			language:
 				Comma-separated language codes.
+				
 			categories:
 				Comma-separated category filter.
+				
 			exclude_categories:
 				Comma-separated excluded categories.
+				
 			locale:
 				Comma-separated country codes where supported.
+				
 			domains:
 				Comma-separated included domains.
+				
 			exclude_domains:
 				Comma-separated excluded domains.
+				
 			source_ids:
 				Comma-separated included source ids.
+				
 			exclude_source_ids:
 				Comma-separated excluded source ids.
+				
 			published_after:
 				Date/datetime filter when supported.
+				
 			published_before:
 				Date/datetime filter when supported.
+				
 			published_on:
 				Single publication date filter when supported.
+				
 			sort:
 				Sort order for applicable endpoints.
+				
 			limit:
 				Result size.
+				
 			page:
 				Page number.
+				
 			include_similar:
 				Headlines-only switch.
+				
 			headlines_per_category:
 				Headlines-only per-category limit.
+				
 			time:
 				Request timeout in seconds.
+				
 			api_key:
 				Optional runtime override. Falls back to cfg.THENEWS_API_KEY.
 
@@ -1560,7 +1530,7 @@ class TheNews( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'TheNews'
-			exception.method =  'fetch( self, *parms ) -> Dict[ str, Any ]'
+			exception.method =  'fetch( self, **kwargs ) -> Dict[ str, Any ]'
 			raise exception
 
 class GoogleSearch( Fetcher ):
