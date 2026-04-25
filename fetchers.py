@@ -98,22 +98,26 @@ def throw_if( name: str, value: Any ) -> None:
 		raise ValueError( f"Argument '{name}' cannot be empty!" )
 
 def encode_image( path: str ) -> str:
-	"""
-	
+	'''
+		
 		Purpose:
-		_________
+		-----------
+		Simple guard which raises ValueError when `path` is falsy (None, empty).
 		
-		Parametes:
-		----------
-		
+		Parameters:
+		-----------
+		path (str): the path to an image file.
 		
 		Returns:
-		--------
+		-----------
+		str: string representing the bytes of the image
 		
-		
-	"""
-	data = Path( path ).read_bytes( )
-	return base64.b64encode( data ).decode( "utf-8" )
+	'''
+	if path is None:
+		raise ValueError( f"Argument '{path}' cannot be empty!" )
+	else:
+		data = Path( path ).read_bytes( )
+		return base64.b64encode( data ).decode( "utf-8" )
 
 class Fetcher:
 	'''
@@ -254,13 +258,6 @@ class WebFetcher( Fetcher ):
 			-----------
 			Initialize WebFetcher with optional headers and sane defaults.
 			
-			Parameters:
-			-----------
-			headers (Optional[Dict[str, str]]): Optional headers for requests.
-			
-			Returns:
-			-----------
-			None
 		'''
 		super( ).__init__( )
 		self.timeout = 10
@@ -355,7 +352,6 @@ class WebFetcher( Fetcher ):
 			Parameters:
 			---------
 			html (str): Raw HTML string.
-			show_dialog (bool): If True, show an ErrorDialog on exception.
 			
 			Returns:
 			--------
@@ -543,12 +539,7 @@ class WebFetcher( Fetcher ):
 			self.response = requests.get( uri, timeout=10 )
 			self.response.raise_for_status( )
 			self.soup = BeautifulSoup( self.response.text, "html.parser" )
-			heading_tags = [ 'h1',
-			                 'h2',
-			                 'h3',
-			                 'h4',
-			                 'h5',
-			                 'h6' ]
+			heading_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ]
 			blocks = [ h.get_text( ' ', strip=True ) for h in self.soup.find_all( heading_tags ) ]
 			return [ b for b in blocks if b ]
 		except Exception as exc:
