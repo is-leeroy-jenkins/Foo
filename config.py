@@ -290,10 +290,10 @@ CONGRESS = r'''Submit queries against the Congressional Research Service's (CRS)
 		Status Table.
 '''
 
-INTERNET_ARCHIVE = r'''The Internet Archive, a 501(c)(3) non-profit, is building a digital library
-		of Internet sites and other cultural artifacts in digital form. Like a paper library,
-		we provide free access to researchers, historians, scholars, people with print disabilities,
-		and the general public. Our mission is to provide Universal Access to All Knowledge.
+INTERNET_ARCHIVE = r'''The Internet Archive is a non-profit, digital library founded in 1996 that
+		provides free, public access to vast collections of digitized materials, including over 800
+		billion web pages via its "Wayback Machine". It acts as a "time machine" for the web, preserving
+		books, movies, music, software, and websites to provide universal access to knowledge.
 '''
 
 THE_SATELLITE_CENTER = r'''Provides access to APIs from NASA's Satellite Situation Center Web (SSCWeb) service
@@ -430,7 +430,54 @@ NOAA_CLIMATE_DATA = r'''NOAA climate data is provided primarily through the Nati
 		via the NCEI Climate Data Online (CDO) portal and NOAA Climate.gov maps and tools
 '''
 
-USGS_NATIONAL_MAP = r'''
+USGS_NATIONAL_MAP = r'''The USGS National Map is a premier collaborative program providing free,
+		accurate, and public domain geospatial data for the United States and its territories.
+		It offers topographic maps, 3D elevation data, and 8+ data layers (transportation,
+		hydrography, structures) via an online viewer, data downloads, and web services for public,
+		academic, and government use
+'''
+
+JUPYTER_NOTEBOOK = r'''Jupyter Notebook is an open-source, browser-based application used for
+		interactive computing, data analysis, and visualization. It allows users to create documents
+		containing live code (primarily Python), markdown text, equations, and plots in one place.
+		It is widely used in data science for exploratory analysis and data cleaning
+'''
+
+AWS_BUCKET = r'''The fundamental container for data in Amazon Simple Storage Service (S3), a highly
+		scalable object storage service. These are logical containers used to store data, similar to
+		folders but operating on a flat structure rather than a traditional hierarchical file system.
+'''
+
+AWS_FILE = r'''High-performance, fully managed file system access to S3 object storage for analytics,
+		machine learning, and shared workloads, delivering ~1ms latency. It bridges object storage with
+		file-based tools, offering intelligent prefetching and NFS compatibility. AWS also offers
+		dedicated file services like Amazon EFS, FSx for Lustre, and FSx for Windows.
+'''
+
+
+GOOGLE_BUCKET = r'''Google Cloud Storage buckets are foundational, globally unique containers holding
+		data as objects (files) within Google Cloud, ranging up to 5 TB each. They offer high durability
+		and availability, featuring flexible storage classes (Standard, Nearline, Coldline, Archive)
+		tailored for various access frequencies, and are managed via IAM policies, console, or API.
+'''
+
+GOOGLE_FILE = r'''Highly scalable, secure, and durable storage solutions, primarily using Cloud Storage
+		for object storage (unstructured data) and Filestore for managed file shares (structured data).
+		It allows storing massive datasets, static website hosting, and data backups, with data organized
+		into buckets and accessed via APIs, featuring flexible, tiered pricing based on access frequency.
+'''
+
+GOOGLE_STT = r'''Google Speech-to-Text is a Google Cloud service that converts audio into text using
+		advanced AI models, supporting 125+ languages and dialects. It enables real-time streaming or
+		batch processing of audio files, commonly used in voice search, customer service, and transcription.
+		The service offers high accuracy, including specialized models for video, phone calls, and, as of 2026,
+		the advanced Chirp 3 model, which uses self-supervised learning for better accuracy across accents and languages
+'''
+
+ONEDRIVE = r'''Microsoft OneDrive is a cloud storage service that allows you to store, sync, and back up
+		files (photos, documents, etc.) online, making them accessible from any device, including Windows,
+		macOS, Android, and iOS. It integrates with Microsoft 365, enabling real-time collaboration,
+		file sharing, and automatic, secure backup, with 5GB of free storage for new users
 '''
 
 USGS_SCIENCE = r'''USGS ScienceBase is a collaborative digital repository and information

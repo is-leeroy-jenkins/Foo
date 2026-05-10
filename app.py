@@ -3904,6 +3904,8 @@ elif mode == 'Retrieval':
 		st.divider( )
 		# -------- ArXiv
 		with st.expander( label='ArXiv', icon='📘', expanded=False  ):
+			st.badge( label='Information', help=cfg.ARXIV )
+			
 			if 'arxiv_results' not in st.session_state:
 				st.session_state[ 'arxiv_results' ] = [ ]
 			
@@ -3951,10 +3953,11 @@ elif mode == 'Retrieval':
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					do_submit = st.button( 'Submit', key='arxiv_submit' )
+					do_submit = st.button( 'Submit', key='arxiv_submit', width='stretch' )
 				
 				with b2:
-					st.button( 'Clear', key='arxiv_clear', on_click=_clear_arxiv_state )
+					st.button( 'Clear', key='arxiv_clear',
+						on_click=_clear_arxiv_state, width='stretch' )
 				
 				if do_submit:
 					try:
@@ -4030,6 +4033,7 @@ elif mode == 'Retrieval':
 				
 		# -------- Google Drive
 		with st.expander( label='Google Drive', icon='🛡️',expanded=False ):
+			st.badge( label='Information', help=cfg.GOOGLE_DRIVE )
 			if 'googledrive_results' not in st.session_state:
 				st.session_state[ 'googledrive_results' ] = [ ]
 			
@@ -4049,8 +4053,7 @@ elif mode == 'Retrieval':
 			def _clear_googledrive_state( ) -> None:
 				st.session_state[ 'googledrive_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
-			
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			with col_left:
 				gd_query = st.text_area( 'Google Drive Query', height=90, key='googledrive_query',
 					placeholder=('Examples:\n'
@@ -4121,10 +4124,11 @@ elif mode == 'Retrieval':
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					gd_submit = st.button( 'Submit', key='googledrive_submit' )
+					gd_submit = st.button( 'Submit', key='googledrive_submit', width='stretch' )
 				
 				with b2:
-					st.button( 'Clear', key='googledrive_clear', on_click=_clear_googledrive_state )
+					st.button( 'Clear', key='googledrive_clear',
+						on_click=_clear_googledrive_state, width='stretch' )
 				
 				if gd_submit:
 					try:
@@ -4183,6 +4187,7 @@ elif mode == 'Retrieval':
 						
 		# -------- Wikipedia
 		with st.expander( label='Wikipedia', icon='📖',expanded=False ):
+			st.badge( label='Information', help=cfg.WIKIPEDIA )
 			if 'wikipedia_results' not in st.session_state:
 				st.session_state[ 'wikipedia_results' ] = [ ]
 			
@@ -4200,14 +4205,12 @@ elif mode == 'Retrieval':
 			def _clear_wikipedia_state( ) -> None:
 				st.session_state[ 'wikipedia_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
-			
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			with col_left:
 				wiki_query = st.text_area(
 					'Wikipedia Query',
 					height=90,
 					key='wikipedia_query',
-					help=cfg.WIKIPEDIA,
 					placeholder=(
 							'Examples:\n'
 							'Alan Turing\n'
@@ -4340,6 +4343,7 @@ elif mode == 'Retrieval':
 		
 		# -------- Google Search
 		with st.expander( label='Google Search', icon='🔍', expanded=False ):
+			st.badge( label='Information', help=cfg.GOOGLE_CSE )
 			if 'googlesearch_results' not in st.session_state:
 				st.session_state[ 'googlesearch_results' ] = { }
 			
@@ -4374,8 +4378,7 @@ elif mode == 'Retrieval':
 			def _clear_googlesearch_state( ) -> None:
 				st.session_state[ 'googlesearch_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
-			
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			with col_left:
 				google_query = st.text_area(
 					'Query',
@@ -4733,6 +4736,7 @@ elif mode == 'Retrieval':
 		
 		# -------- Open Science
 		with st.expander( label='Open Science', icon='🧪', expanded=False ):
+			st.badge( label='Information', help=cfg.NASA_OPEN_SCIENCE )
 			if 'openscience_results' not in st.session_state:
 				st.session_state[ 'openscience_results' ] = { }
 			
@@ -4751,8 +4755,7 @@ elif mode == 'Retrieval':
 			def _clear_openscience_state( ) -> None:
 				st.session_state[ 'openscience_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
-			
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			with col_left:
 				openscience_mode = st.selectbox(
 					'Mode',
@@ -4935,6 +4938,7 @@ elif mode == 'Retrieval':
 		
 		# -------- Gov Info
 		with st.expander( label='Gov Info', icon='🏛️', expanded=False ):
+			st.badge( label='Information', help=cfg.GOV_INFO )
 			if 'govinfo_results' not in st.session_state:
 				st.session_state[ 'govinfo_results' ] = { }
 			
@@ -4971,8 +4975,7 @@ elif mode == 'Retrieval':
 				'''
 				st.session_state[ 'govinfo_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
-			
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			with col_left:
 				govinfo_mode = st.selectbox(
 					'Mode',
@@ -5266,6 +5269,7 @@ elif mode == 'Retrieval':
 		
 		# -------- Congress
 		with st.expander( label='US Congress', icon='⚖️', expanded=False ):
+			st.badge( label='Information', help=cfg.CONGRESS )
 			if 'congress_results' not in st.session_state:
 				st.session_state[ 'congress_results' ] = { }
 			
@@ -5307,7 +5311,7 @@ elif mode == 'Retrieval':
 				'''
 				st.session_state[ 'congress_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				congress_mode = st.selectbox(
@@ -5673,6 +5677,7 @@ elif mode == 'Retrieval':
 		
 		# -------- Internet Archive
 		with st.expander( label='Internet Archive', icon='🌐', expanded=False ):
+			st.badge( label='Information', help=cfg.INTERNET_ARCHIVE )
 			if 'internetarchive_results' not in st.session_state:
 				st.session_state[ 'internetarchive_results' ] = { }
 			
@@ -5706,7 +5711,7 @@ elif mode == 'Retrieval':
 				'''
 				st.session_state[ 'internetarchive_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				ia_query = st.text_area(
@@ -5954,6 +5959,7 @@ elif mode == 'Retrieval':
 	
 		# -------- Grokipedia
 		with st.expander( label='Grokipedia', icon='🧠', expanded=False ):
+			st.badge( label='Information', help=cfg.GROKIPEDIA )
 			if 'grokipedia_results' not in st.session_state:
 				st.session_state[ 'grokipedia_results' ] = { }
 			
@@ -6011,7 +6017,7 @@ elif mode == 'Retrieval':
 				st.session_state[ 'grokipedia_include_content' ] = True
 				st.session_state[ 'grokipedia_auto_fetch_page' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				grokipedia_mode = st.selectbox(
@@ -6311,10 +6317,11 @@ elif mode == 'Retrieval':
 		
 		# -------- Jupyter Notebook
 		with st.expander( label='Jupyter Notebook', icon='🪐', expanded=False ):
+			st.badge( label='Information', help=cfg.JUPYTER_NOTEBOOK )
 			if 'jupyter_notebook_results' not in st.session_state:
 				st.session_state[ 'jupyter_notebook_results' ] = { }
 			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				notebook_file = st.file_uploader(
@@ -6498,10 +6505,11 @@ elif mode == 'Retrieval':
 	
 		# -------- Google Cloud File
 		with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
+			st.badge( label='Information', help=cfg.GOOGLE_FILE )
 			if 'google_cloud_file_results' not in st.session_state:
 				st.session_state[ 'google_cloud_file_results' ] = { }
 			
-			col_left, col_right = st.columns( [ 0.50, 0.50 ], border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				project_name = st.text_input(
@@ -6665,10 +6673,11 @@ elif mode == 'Retrieval':
 	
 		# -------- AWS S3 File
 		with st.expander( label='AWS S3 File', icon='📗', expanded=False ):
+			st.badge( label='Information', help=cfg.AWS_FILE )
 			if 'aws_file_results' not in st.session_state:
 				st.session_state[ 'aws_file_results' ] = { }
 			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				bucket = st.text_input(
@@ -6848,10 +6857,11 @@ elif mode == 'Retrieval':
 					
 		# -------- OneDrive
 		with st.expander( label='OneDrive', icon='💻', expanded=False ):
+			st.badge( label='Information', help=cfg.ONEDRIVE )
 			if 'onedrive_results' not in st.session_state:
 				st.session_state[ 'onedrive_results' ] = { }
 			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				drive_id = st.text_input(
@@ -7026,10 +7036,11 @@ elif mode == 'Retrieval':
 					
 		# -------- Google Speech-to-Text
 		with st.expander( label='Google Speech-to-Text', icon='🗣️', expanded=False ):
+			st.badge( label='Information', help=cfg.GOOGLE_STT )
 			if 'google_speech_to_text_results' not in st.session_state:
 				st.session_state[ 'google_speech_to_text_results' ] = { }
 			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				project_id = st.text_input(
@@ -7214,10 +7225,11 @@ elif mode == 'Retrieval':
 					
 		# -------- AWS S3 Bucket
 		with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
+			st.badge( label='Information', help=cfg.AWS_BUCKET )
 			if 'aws_bucket_results' not in st.session_state:
 				st.session_state[ 'aws_bucket_results' ] = { }
 			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				bucket_name = st.text_input(
@@ -7407,10 +7419,11 @@ elif mode == 'Retrieval':
 	
 		# -------- Google Cloud Bucket
 		with st.expander( label='Google Cloud Bucket', icon='🧊', expanded=False ):
+			st.badge( label='Information', help=cfg.GOOGLE_BUCKET )
 			if 'google_bucket_results' not in st.session_state:
 				st.session_state[ 'google_bucket_results' ] = { }
 			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
 				project_name = st.text_input(
