@@ -1925,7 +1925,7 @@ with st.sidebar:
 # DOCUMENT LOADING MODE
 # =============================================================================
 if mode == 'Loading':
-	left_c1, center_c2, right_c3 = st.columns( [ 0.05, 0.9, 0.05 ] )
+	left_c1, center_c2, right_c3 = st.columns( [ 0.1, 0.8, 0.1 ] )
 	with center_c2:
 		st.subheader( f'📤  Data Loading' )
 		st.divider( )
@@ -3451,7 +3451,7 @@ if mode == 'Loading':
 # SCRAPING MODE
 # ==============================================================================
 elif mode == 'Scraping':
-	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
 	with center:
 		st.subheader( f'🕷️ Web Scraping' )
 		st.divider( )
@@ -3900,7 +3900,7 @@ elif mode == 'Retrieval':
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
 	
-	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
 	with center:
 		st.subheader( f'🏛️ Public Collections & Archives' )
 		st.divider( )
@@ -7594,5684 +7594,5662 @@ elif mode == 'Retrieval':
 # GEOSPATIAL MODE
 # ==============================================================================
 elif mode == 'Geospatial':
-	st.subheader( f'📡 Weather & Geospatial Data' )
-	st.divider( )
 	
-	# -------- Google Geocoding
-	with st.expander( label='Geocoding', icon='📍', expanded=False ):
-		if 'googlegeocoding_results' not in st.session_state:
-			st.session_state[ 'googlegeocoding_results' ] = { }
+	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	with center:
+		st.subheader( f'📡 Weather & Geospatial Data' )
+		st.divider( )
 		
-		if 'googlegeocoding_clear_request' not in st.session_state:
-			st.session_state[ 'googlegeocoding_clear_request' ] = False
+		# -------- Google Geocoding
+		with st.expander( label='Geocoding', icon='📍', expanded=False ):
+			if 'googlegeocoding_results' not in st.session_state:
+				st.session_state[ 'googlegeocoding_results' ] = { }
+			
+			if 'googlegeocoding_clear_request' not in st.session_state:
+				st.session_state[ 'googlegeocoding_clear_request' ] = False
+			
+			if st.session_state.get( 'googlegeocoding_clear_request', False ):
+				st.session_state[ 'googlegeocoding_mode' ] = 'forward'
+				st.session_state[ 'googlegeocoding_query' ] = ''
+				st.session_state[ 'googlegeocoding_latitude' ] = 38.8895
+				st.session_state[ 'googlegeocoding_longitude' ] = -77.0353
+				st.session_state[ 'googlegeocoding_place_id' ] = ''
+				st.session_state[ 'googlegeocoding_language' ] = 'en'
+				st.session_state[ 'googlegeocoding_region' ] = ''
+				st.session_state[ 'googlegeocoding_result_type' ] = ''
+				st.session_state[ 'googlegeocoding_location_type' ] = ''
+				st.session_state[ 'googlegeocoding_api_key' ] = ''
+				st.session_state[ 'googlegeocoding_timeout' ] = 10
+				st.session_state[ 'googlegeocoding_results' ] = { }
+				st.session_state[ 'googlegeocoding_clear_request' ] = False
+			
+			def _clear_googlegeocoding_state( ) -> None:
+				st.session_state[ 'googlegeocoding_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				googlegeocoding_mode = st.selectbox(
+					'Mode',
+					options=[ 'forward', 'reverse', 'place' ],
+					index=[ 'forward', 'reverse', 'place' ].index(
+						st.session_state.get( 'googlegeocoding_mode', 'forward' )
+					),
+					key='googlegeocoding_mode',
+					help='forward = address search; reverse = lat/lng to address; place = place_id lookup.'
+				)
+				
+				googlegeocoding_query = st.text_area(
+					'Address Query',
+					height=80,
+					key='googlegeocoding_query',
+					placeholder=(
+							'Examples:\n'
+							'1600 Amphitheatre Parkway, Mountain View, CA\n'
+							'Arlington, VA\n'
+							'10 Downing Street, London'
+					),
+					disabled=(googlegeocoding_mode != 'forward')
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					googlegeocoding_latitude = st.number_input(
+						'Latitude',
+						min_value=-90.0,
+						max_value=90.0,
+						value=float( st.session_state.get( 'googlegeocoding_latitude', 38.8895 ) ),
+						step=0.0001,
+						format='%.6f',
+						key='googlegeocoding_latitude',
+						disabled=(googlegeocoding_mode != 'reverse')
+					)
+				
+				with c2:
+					googlegeocoding_longitude = st.number_input(
+						'Longitude',
+						min_value=-180.0,
+						max_value=180.0,
+						value=float( st.session_state.get( 'googlegeocoding_longitude', -77.0353 ) ),
+						step=0.0001,
+						format='%.6f',
+						key='googlegeocoding_longitude',
+						disabled=(googlegeocoding_mode != 'reverse')
+					)
+				
+				googlegeocoding_place_id = st.text_input(
+					'Place ID',
+					value=st.session_state.get( 'googlegeocoding_place_id', '' ),
+					key='googlegeocoding_place_id',
+					placeholder='ChIJ2eUgeAK6j4ARbn5u_wAGqWA',
+					disabled=(googlegeocoding_mode != 'place')
+				)
+				
+				c3, c4 = st.columns( 2 )
+				
+				with c3:
+					googlegeocoding_language = st.text_input(
+						'Language',
+						value=st.session_state.get( 'googlegeocoding_language', 'en' ),
+						key='googlegeocoding_language',
+						placeholder='en'
+					)
+				
+				with c4:
+					googlegeocoding_region = st.text_input(
+						'Region Bias',
+						value=st.session_state.get( 'googlegeocoding_region', '' ),
+						key='googlegeocoding_region',
+						placeholder='us',
+						disabled=(googlegeocoding_mode == 'reverse')
+					)
+				
+				c5, c6 = st.columns( 2 )
+				
+				with c5:
+					googlegeocoding_result_type = st.text_input(
+						'Result Type',
+						value=st.session_state.get( 'googlegeocoding_result_type', '' ),
+						key='googlegeocoding_result_type',
+						placeholder='street_address|premise',
+						disabled=(googlegeocoding_mode != 'reverse')
+					)
+				
+				with c6:
+					googlegeocoding_location_type = st.text_input(
+						'Location Type',
+						value=st.session_state.get( 'googlegeocoding_location_type', '' ),
+						key='googlegeocoding_location_type',
+						placeholder='ROOFTOP|GEOMETRIC_CENTER',
+						disabled=(googlegeocoding_mode != 'reverse')
+					)
+				
+				c7, c8 = st.columns( 2 )
+				
+				with c7:
+					googlegeocoding_api_key = st.text_input(
+						'API Key',
+						value='',
+						type='password',
+						key='googlegeocoding_api_key',
+						placeholder='Uses GOOGLE_API_KEY when left blank.'
+					)
+				
+				with c8:
+					googlegeocoding_timeout = st.number_input(
+						'Timeout',
+						min_value=1,
+						max_value=60,
+						value=int( st.session_state.get( 'googlegeocoding_timeout', 10 ) ),
+						step=1,
+						key='googlegeocoding_timeout'
+					)
+				
+				st.caption(
+					'Google Geocoding requires billing plus a Google API key. '
+					'Result filters apply to reverse geocoding only.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					googlegeocoding_submit = st.button(
+						'Submit',
+						key='googlegeocoding_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='googlegeocoding_clear',
+						on_click=_clear_googlegeocoding_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				st.markdown( 'Results' )
+				
+				if googlegeocoding_submit:
+					try:
+						f = GoogleGeocoding( )
+						result = f.fetch(
+							mode=str( googlegeocoding_mode ),
+							query=str( googlegeocoding_query ),
+							latitude=float( googlegeocoding_latitude ),
+							longitude=float( googlegeocoding_longitude ),
+							place_id=str( googlegeocoding_place_id ),
+							language=str( googlegeocoding_language or 'en' ).strip( ),
+							region=str( googlegeocoding_region or '' ).strip( ),
+							result_type=str( googlegeocoding_result_type or '' ).strip( ),
+							location_type=str( googlegeocoding_location_type or '' ).strip( ),
+							time=int( googlegeocoding_timeout ),
+							api_key=(googlegeocoding_api_key or None)
+						)
+						
+						st.session_state[ 'googlegeocoding_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Google Geocoding request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'googlegeocoding_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': result.get( 'mode', '' ),
+								'url': result.get( 'url', '' ),
+								'params': result.get( 'params', { } ),
+								'status': result.get( 'status', '' ),
+						}
+					)
+					
+					results_list = result.get( 'results', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if not results_list:
+						st.info( 'No geocoding results returned.' )
+					else:
+						for idx, item in enumerate( results_list, start=1 ):
+							formatted_address = item.get( 'formatted_address', f'Result {idx}' )
+							place_id_value = item.get( 'place_id', '' )
+							types_value = item.get( 'types', [ ] )
+							
+							geometry = item.get( 'geometry', { } ) if isinstance( item, dict ) else { }
+							location = geometry.get( 'location', { } ) if isinstance( geometry, dict ) else { }
+							
+							with st.container( border=True ):
+								st.markdown( f'**{idx}. {formatted_address}**' )
+								
+								meta_parts: List[ str ] = [ ]
+								
+								if place_id_value:
+									meta_parts.append( f'Place ID: `{place_id_value}`' )
+								
+								if isinstance( types_value, list ) and types_value:
+									meta_parts.append( f"Types: `{', '.join( types_value[ :4 ] )}`" )
+								
+								if meta_parts:
+									st.caption( ' | '.join( meta_parts ) )
+								
+								if isinstance( location, dict ):
+									lat_value = location.get( 'lat', '' )
+									lng_value = location.get( 'lng', '' )
+									if str( lat_value ).strip( ) or str( lng_value ).strip( ):
+										st.write( f'Coordinates: {lat_value}, {lng_value}' )
+								
+								address_components = item.get( 'address_components', [ ] )
+								if isinstance( address_components, list ) and address_components:
+									component_rows: List[ Dict[ str, Any ] ] = [ ]
+									for component in address_components:
+										if isinstance( component, dict ):
+											component_rows.append(
+												{
+														'long_name': component.get( 'long_name', '' ),
+														'short_name': component.get( 'short_name', '' ),
+														'types': ', '.join( component.get( 'types', [ ] ) )
+												}
+											)
+									
+									if component_rows:
+										with st.expander( 'Address Components', expanded=False ):
+											st.dataframe(
+												pd.DataFrame( component_rows ),
+												use_container_width=True,
+												hide_index=True
+											)
+								
+								with st.expander( 'Raw Item', expanded=False ):
+									st.json( item )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 		
-		if st.session_state.get( 'googlegeocoding_clear_request', False ):
-			st.session_state[ 'googlegeocoding_mode' ] = 'forward'
-			st.session_state[ 'googlegeocoding_query' ] = ''
-			st.session_state[ 'googlegeocoding_latitude' ] = 38.8895
-			st.session_state[ 'googlegeocoding_longitude' ] = -77.0353
-			st.session_state[ 'googlegeocoding_place_id' ] = ''
-			st.session_state[ 'googlegeocoding_language' ] = 'en'
-			st.session_state[ 'googlegeocoding_region' ] = ''
-			st.session_state[ 'googlegeocoding_result_type' ] = ''
-			st.session_state[ 'googlegeocoding_location_type' ] = ''
-			st.session_state[ 'googlegeocoding_api_key' ] = ''
-			st.session_state[ 'googlegeocoding_timeout' ] = 10
-			st.session_state[ 'googlegeocoding_results' ] = { }
-			st.session_state[ 'googlegeocoding_clear_request' ] = False
+		# -------- Google Maps
+		with st.expander( label='Google Maps', icon='🗺️', expanded=False ):
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				gm_query = st.text_area( "Address", value='',
+					height=40, key='googlemaps_query' )
+				
+				gm_radius = st.number_input( 'Radius (meters)', min_value=1,
+					max_value=50000, value=5000, step=100, key='googlemaps_radius' )
+				
+				m1, m2 = st.columns( 2 )
+				with m1:
+					gm_submit = st.button( 'Submit', key='googlemaps_submit' )
+				with m2:
+					gm_clear = st.button( 'Clear', key='googlemaps_clear' )
+			
+			with col_right:
+				gm_output = st.empty( )
+				
+				if gm_clear:
+					st.session_state.update( { 'googlemaps_query': '', 'googlemaps_radius': 5000 } )
+					st.rerun( )
+				
+				if gm_submit:
+					try:
+						gm = GoogleMaps( )
+						loc = gm.geocode_location( gm_query )
+						coords = f'{loc[ 0 ]}, {loc[ 1 ]}'
+						gm_output.text_area( 'Coords', value=coords, height=300 )
+					except Exception as exc:
+						st.error( exc )
 		
-		def _clear_googlegeocoding_state( ) -> None:
-			st.session_state[ 'googlegeocoding_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			googlegeocoding_mode = st.selectbox(
-				'Mode',
-				options=[ 'forward', 'reverse', 'place' ],
-				index=[ 'forward', 'reverse', 'place' ].index(
-					st.session_state.get( 'googlegeocoding_mode', 'forward' )
-				),
-				key='googlegeocoding_mode',
-				help='forward = address search; reverse = lat/lng to address; place = place_id lookup.'
-			)
+		# -------- Google Weather
+		with st.expander( label='Google Weather', icon='🌤️', expanded=False ):
+			if 'googleweather_results' not in st.session_state:
+				st.session_state[ 'googleweather_results' ] = { }
 			
-			googlegeocoding_query = st.text_area(
-				'Address Query',
-				height=80,
-				key='googlegeocoding_query',
-				placeholder=(
-						'Examples:\n'
-						'1600 Amphitheatre Parkway, Mountain View, CA\n'
-						'Arlington, VA\n'
-						'10 Downing Street, London'
-				),
-				disabled=(googlegeocoding_mode != 'forward')
-			)
+			if 'googleweather_clear_request' not in st.session_state:
+				st.session_state[ 'googleweather_clear_request' ] = False
 			
-			c1, c2 = st.columns( 2 )
+			if st.session_state.get( 'googleweather_clear_request', False ):
+				st.session_state[ 'googleweather_location' ] = ''
+				st.session_state[ 'googleweather_mode' ] = 'current'
+				st.session_state[ 'googleweather_units' ] = 'METRIC'
+				st.session_state[ 'googleweather_language' ] = 'en'
+				st.session_state[ 'googleweather_hours' ] = 24
+				st.session_state[ 'googleweather_days' ] = 5
+				st.session_state[ 'googleweather_timeout' ] = 10
+				st.session_state[ 'googleweather_results' ] = { }
+				st.session_state[ 'googleweather_clear_request' ] = False
 			
-			with c1:
-				googlegeocoding_latitude = st.number_input(
-					'Latitude',
-					min_value=-90.0,
-					max_value=90.0,
-					value=float( st.session_state.get( 'googlegeocoding_latitude', 38.8895 ) ),
-					step=0.0001,
-					format='%.6f',
-					key='googlegeocoding_latitude',
-					disabled=(googlegeocoding_mode != 'reverse')
+			def _clear_googleweather_state( ) -> None:
+				st.session_state[ 'googleweather_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				gw_location = st.text_area(
+					'Location',
+					height=70,
+					key='googleweather_location',
+					placeholder=(
+							'Examples:\n'
+							'Washington, DC\n'
+							'1600 Pennsylvania Ave NW, Washington, DC\n'
+							'Arlington, VA'
+					),
 				)
-			
-			with c2:
-				googlegeocoding_longitude = st.number_input(
-					'Longitude',
-					min_value=-180.0,
-					max_value=180.0,
-					value=float( st.session_state.get( 'googlegeocoding_longitude', -77.0353 ) ),
-					step=0.0001,
-					format='%.6f',
-					key='googlegeocoding_longitude',
-					disabled=(googlegeocoding_mode != 'reverse')
-				)
-			
-			googlegeocoding_place_id = st.text_input(
-				'Place ID',
-				value=st.session_state.get( 'googlegeocoding_place_id', '' ),
-				key='googlegeocoding_place_id',
-				placeholder='ChIJ2eUgeAK6j4ARbn5u_wAGqWA',
-				disabled=(googlegeocoding_mode != 'place')
-			)
-			
-			c3, c4 = st.columns( 2 )
-			
-			with c3:
-				googlegeocoding_language = st.text_input(
-					'Language',
-					value=st.session_state.get( 'googlegeocoding_language', 'en' ),
-					key='googlegeocoding_language',
-					placeholder='en'
-				)
-			
-			with c4:
-				googlegeocoding_region = st.text_input(
-					'Region Bias',
-					value=st.session_state.get( 'googlegeocoding_region', '' ),
-					key='googlegeocoding_region',
-					placeholder='us',
-					disabled=(googlegeocoding_mode == 'reverse')
-				)
-			
-			c5, c6 = st.columns( 2 )
-			
-			with c5:
-				googlegeocoding_result_type = st.text_input(
-					'Result Type',
-					value=st.session_state.get( 'googlegeocoding_result_type', '' ),
-					key='googlegeocoding_result_type',
-					placeholder='street_address|premise',
-					disabled=(googlegeocoding_mode != 'reverse')
-				)
-			
-			with c6:
-				googlegeocoding_location_type = st.text_input(
-					'Location Type',
-					value=st.session_state.get( 'googlegeocoding_location_type', '' ),
-					key='googlegeocoding_location_type',
-					placeholder='ROOFTOP|GEOMETRIC_CENTER',
-					disabled=(googlegeocoding_mode != 'reverse')
-				)
-			
-			c7, c8 = st.columns( 2 )
-			
-			with c7:
-				googlegeocoding_api_key = st.text_input(
-					'API Key',
-					value='',
-					type='password',
-					key='googlegeocoding_api_key',
-					placeholder='Uses GOOGLE_API_KEY when left blank.'
-				)
-			
-			with c8:
-				googlegeocoding_timeout = st.number_input(
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					gw_mode = st.selectbox(
+						'Mode',
+						options=[ 'current', 'hourly_forecast', 'daily_forecast', 'alerts' ],
+						index=[ 'current', 'hourly_forecast', 'daily_forecast', 'alerts' ].index(
+							st.session_state.get( 'googleweather_mode', 'current' ) ),
+						key='googleweather_mode'
+					)
+				
+				with c2:
+					gw_units = st.selectbox(
+						'Units',
+						options=[ 'METRIC', 'IMPERIAL' ],
+						index=[ 'METRIC', 'IMPERIAL' ].index(
+							st.session_state.get( 'googleweather_units', 'METRIC' ) ),
+						key='googleweather_units'
+					)
+				
+				c3, c4, c5 = st.columns( 3 )
+				
+				with c3:
+					gw_language = st.text_input(
+						'Language',
+						value=st.session_state.get( 'googleweather_language', 'en' ),
+						key='googleweather_language',
+						placeholder='en'
+					)
+				
+				with c4:
+					gw_hours = st.number_input(
+						'Hours',
+						min_value=1,
+						max_value=240,
+						value=int( st.session_state.get( 'googleweather_hours', 24 ) ),
+						step=1,
+						key='googleweather_hours',
+						disabled=(gw_mode != 'hourly_forecast')
+					)
+				
+				with c5:
+					gw_days = st.number_input(
+						'Days',
+						min_value=1,
+						max_value=10,
+						value=int( st.session_state.get( 'googleweather_days', 5 ) ),
+						step=1,
+						key='googleweather_days',
+						disabled=(gw_mode != 'daily_forecast')
+					)
+				
+				gw_timeout = st.number_input(
 					'Timeout',
 					min_value=1,
 					max_value=60,
-					value=int( st.session_state.get( 'googlegeocoding_timeout', 10 ) ),
+					value=int( st.session_state.get( 'googleweather_timeout', 10 ) ),
 					step=1,
-					key='googlegeocoding_timeout'
+					key='googleweather_timeout'
 				)
-			
-			st.caption(
-				'Google Geocoding requires billing plus a Google API key. '
-				'Result filters apply to reverse geocoding only.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				googlegeocoding_submit = st.button(
-					'Submit',
-					key='googlegeocoding_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='googlegeocoding_clear',
-					on_click=_clear_googlegeocoding_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if googlegeocoding_submit:
-				try:
-					f = GoogleGeocoding( )
-					result = f.fetch(
-						mode=str( googlegeocoding_mode ),
-						query=str( googlegeocoding_query ),
-						latitude=float( googlegeocoding_latitude ),
-						longitude=float( googlegeocoding_longitude ),
-						place_id=str( googlegeocoding_place_id ),
-						language=str( googlegeocoding_language or 'en' ).strip( ),
-						region=str( googlegeocoding_region or '' ).strip( ),
-						result_type=str( googlegeocoding_result_type or '' ).strip( ),
-						location_type=str( googlegeocoding_location_type or '' ).strip( ),
-						time=int( googlegeocoding_timeout ),
-						api_key=(googlegeocoding_api_key or None)
-					)
-					
-					st.session_state[ 'googlegeocoding_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'Google Geocoding request failed.' )
-					st.exception( exc )
+				st.caption(
+					'Required key: GOOGLE_WEATHER_API_KEY. '
+					'Weather API must be enabled in your Google Cloud project.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					gw_submit = st.button( 'Submit', key='googleweather_submit' )
+				with b2:
+					st.button( 'Clear', key='googleweather_clear', on_click=_clear_googleweather_state )
 			
-			result = st.session_state.get( 'googlegeocoding_results', { } )
+			with col_right:
+				st.markdown( 'Results' )
+				
+				if gw_submit:
+					try:
+						f = GoogleWeather( )
+						
+						if gw_mode == 'current':
+							result = f.fetch_current(
+								address=gw_location,
+								units_system=gw_units,
+								language_code=gw_language,
+								time=int( gw_timeout ) )
+						elif gw_mode == 'hourly_forecast':
+							result = f.fetch_hourly_forecast(
+								address=gw_location,
+								hours=int( gw_hours ),
+								units_system=gw_units,
+								language_code=gw_language,
+								time=int( gw_timeout ) )
+						elif gw_mode == 'daily_forecast':
+							result = f.fetch_daily_forecast(
+								address=gw_location,
+								days=int( gw_days ),
+								units_system=gw_units,
+								language_code=gw_language,
+								time=int( gw_timeout ) )
+						else:
+							result = f.fetch_alerts(
+								address=gw_location,
+								language_code=gw_language,
+								time=int( gw_timeout ) )
+						
+						st.session_state[ 'googleweather_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Google Weather request failed.' )
+						st.exception( exc )
+						
+			result = st.session_state.get( 'googleweather_results', { } )
 			
 			if not result:
 				st.text( 'No results.' )
 			else:
+				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+				
 				st.markdown( '#### Request Metadata' )
 				st.json(
 					{
-							'mode': result.get( 'mode', '' ),
+							'mode': mode_value,
 							'url': result.get( 'url', '' ),
-							'params': result.get( 'params', { } ),
-							'status': result.get( 'status', '' ),
+							'params': params,
 					}
 				)
 				
-				results_list = result.get( 'results', [ ] ) if isinstance( result, dict ) else [ ]
+				if isinstance( data, dict ) and data:
+					current = (
+							data.get( 'currentWeather' )
+							or data.get( 'current_weather' )
+							or data.get( 'currentConditions' )
+							or data.get( 'current_conditions' )
+							or { }
+					)
+					
+					hourly = (
+							data.get( 'hourlyForecasts' )
+							or data.get( 'hourly_forecasts' )
+							or data.get( 'hours' )
+							or [ ]
+					)
+					
+					daily = (
+							data.get( 'dailyForecasts' )
+							or data.get( 'daily_forecasts' )
+							or data.get( 'days' )
+							or [ ]
+					)
+					
+					alerts = (
+							data.get( 'weatherAlerts' )
+							or data.get( 'alerts' )
+							or [ ]
+					)
+					
+					location_bits: List[ str ] = [ ]
+					for key in [ 'address', 'resolvedAddress', 'location', 'displayName', 'name' ]:
+						value = data.get( key, '' )
+						if value:
+							location_bits.append( str( value ) )
+							break
+					
+					if location_bits:
+						st.markdown( '#### Location' )
+						st.write( location_bits[ 0 ] )
+					
+					if current:
+						st.markdown( '#### Current Conditions' )
+						
+						c1, c2, c3 = st.columns( 3 )
+						
+						with c1:
+							for key in [ 'temperature', 'temp', 'temperature_f', 'temperature_c' ]:
+								if key in current:
+									st.metric( 'Temperature', current.get( key ) )
+									break
+						
+						with c2:
+							for key in [ 'humidity', 'relativeHumidity', 'relative_humidity' ]:
+								if key in current:
+									st.metric( 'Humidity', current.get( key ) )
+									break
+						
+						with c3:
+							for key in [ 'weatherCondition', 'condition', 'description', 'icon' ]:
+								if key in current:
+									st.metric( 'Condition', current.get( key ) )
+									break
+						
+						with st.expander( 'Current Conditions Detail', expanded=False ):
+							st.json( current )
+					
+					if isinstance( hourly, list ) and hourly:
+						st.markdown( '#### Hourly Forecast' )
+						df_hourly = pd.DataFrame( hourly )
+						if not df_hourly.empty:
+							st.dataframe( df_hourly.head( 24 ), use_container_width=True, hide_index=True )
+						else:
+							st.info( 'Hourly forecast returned no displayable rows.' )
+					
+					if isinstance( daily, list ) and daily:
+						st.markdown( '#### Daily Forecast' )
+						df_daily = pd.DataFrame( daily )
+						if not df_daily.empty:
+							st.dataframe( df_daily, use_container_width=True, hide_index=True )
+						else:
+							st.info( 'Daily forecast returned no displayable rows.' )
+					
+					if isinstance( alerts, list ) and alerts:
+						st.markdown( '#### Alerts' )
+						for idx, alert in enumerate( alerts, start=1 ):
+							with st.expander( f'Alert {idx}', expanded=False ):
+								if isinstance( alert, dict ):
+									title_value = (
+											alert.get( 'headline' )
+											or alert.get( 'title' )
+											or alert.get( 'event' )
+											or f'Alert {idx}'
+									)
+									st.markdown( f'**{title_value}**' )
+									
+									desc_value = (
+											alert.get( 'description' )
+											or alert.get( 'summary' )
+											or ''
+									)
+									if desc_value:
+										st.write( str( desc_value ) )
+									
+									st.json( alert )
+								else:
+									st.write( alert )
+					
+					if not current and not hourly and not daily and not alerts:
+						st.markdown( '#### Result' )
+						st.json( data )
 				
-				if not results_list:
-					st.info( 'No geocoding results returned.' )
+				elif isinstance( data, list ) and data:
+					st.markdown( '#### Results' )
+					df_weather = pd.DataFrame( data )
+					if not df_weather.empty:
+						st.dataframe( df_weather, use_container_width=True, hide_index=True )
+					else:
+						st.json( data )
 				else:
-					for idx, item in enumerate( results_list, start=1 ):
-						formatted_address = item.get( 'formatted_address', f'Result {idx}' )
-						place_id_value = item.get( 'place_id', '' )
-						types_value = item.get( 'types', [ ] )
-						
-						geometry = item.get( 'geometry', { } ) if isinstance( item, dict ) else { }
-						location = geometry.get( 'location', { } ) if isinstance( geometry, dict ) else { }
-						
-						with st.container( border=True ):
-							st.markdown( f'**{idx}. {formatted_address}**' )
-							
-							meta_parts: List[ str ] = [ ]
-							
-							if place_id_value:
-								meta_parts.append( f'Place ID: `{place_id_value}`' )
-							
-							if isinstance( types_value, list ) and types_value:
-								meta_parts.append( f"Types: `{', '.join( types_value[ :4 ] )}`" )
-							
-							if meta_parts:
-								st.caption( ' | '.join( meta_parts ) )
-							
-							if isinstance( location, dict ):
-								lat_value = location.get( 'lat', '' )
-								lng_value = location.get( 'lng', '' )
-								if str( lat_value ).strip( ) or str( lng_value ).strip( ):
-									st.write( f'Coordinates: {lat_value}, {lng_value}' )
-							
-							address_components = item.get( 'address_components', [ ] )
-							if isinstance( address_components, list ) and address_components:
-								component_rows: List[ Dict[ str, Any ] ] = [ ]
-								for component in address_components:
-									if isinstance( component, dict ):
-										component_rows.append(
-											{
-													'long_name': component.get( 'long_name', '' ),
-													'short_name': component.get( 'short_name', '' ),
-													'types': ', '.join( component.get( 'types', [ ] ) )
-											}
-										)
-								
-								if component_rows:
-									with st.expander( 'Address Components', expanded=False ):
-										st.dataframe(
-											pd.DataFrame( component_rows ),
-											use_container_width=True,
-											hide_index=True
-										)
-							
-							with st.expander( 'Raw Item', expanded=False ):
-								st.json( item )
+					st.info( 'No results returned.' )
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
+		
+		# -------- Open Weather
+		with st.expander( label='Open Weather', icon='🌦️', expanded=False ):
+			if 'openweather_results' not in st.session_state:
+				st.session_state[ 'openweather_results' ] = { }
+			
+			if 'openweather_clear_request' not in st.session_state:
+				st.session_state[ 'openweather_clear_request' ] = False
+			
+			if st.session_state.get( 'openweather_clear_request', False ):
+				st.session_state[ 'openweather_location' ] = ''
+				st.session_state[ 'openweather_mode' ] = 'current'
+				st.session_state[ 'openweather_timezone' ] = 'auto'
+				st.session_state[ 'openweather_forecast_days' ] = 7
+				st.session_state[ 'openweather_past_days' ] = 0
+				st.session_state[ 'openweather_count' ] = 10
+				st.session_state[ 'openweather_results' ] = { }
+				st.session_state[ 'openweather_clear_request' ] = False
+			
+			def _clear_openweather_state( ) -> None:
+				'''
 	
-	# -------- Google Maps
-	with st.expander( label='Google Maps', icon='🗺️', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			gm_query = st.text_area( "Address", value='',
-				height=40, key='googlemaps_query' )
-			
-			gm_radius = st.number_input( 'Radius (meters)', min_value=1,
-				max_value=50000, value=5000, step=100, key='googlemaps_radius' )
-			
-			m1, m2 = st.columns( 2 )
-			with m1:
-				gm_submit = st.button( 'Submit', key='googlemaps_submit' )
-			with m2:
-				gm_clear = st.button( 'Clear', key='googlemaps_clear' )
-		
-		with col_right:
-			gm_output = st.empty( )
-			
-			if gm_clear:
-				st.session_state.update( { 'googlemaps_query': '', 'googlemaps_radius': 5000 } )
-				st.rerun( )
-			
-			if gm_submit:
-				try:
-					gm = GoogleMaps( )
-					loc = gm.geocode_location( gm_query )
-					coords = f'{loc[ 0 ]}, {loc[ 1 ]}'
-					gm_output.text_area( 'Coords', value=coords, height=300 )
-				except Exception as exc:
-					st.error( exc )
+					Purpose:
+					--------
+					Flag the Open Weather expander state for reset on the next rerun.
 	
-	# -------- Google Weather
-	with st.expander( label='Google Weather', icon='🌤️', expanded=False ):
-		if 'googleweather_results' not in st.session_state:
-			st.session_state[ 'googleweather_results' ] = { }
-		
-		if 'googleweather_clear_request' not in st.session_state:
-			st.session_state[ 'googleweather_clear_request' ] = False
-		
-		if st.session_state.get( 'googleweather_clear_request', False ):
-			st.session_state[ 'googleweather_location' ] = ''
-			st.session_state[ 'googleweather_mode' ] = 'current'
-			st.session_state[ 'googleweather_units' ] = 'METRIC'
-			st.session_state[ 'googleweather_language' ] = 'en'
-			st.session_state[ 'googleweather_hours' ] = 24
-			st.session_state[ 'googleweather_days' ] = 5
-			st.session_state[ 'googleweather_timeout' ] = 10
-			st.session_state[ 'googleweather_results' ] = { }
-			st.session_state[ 'googleweather_clear_request' ] = False
-		
-		def _clear_googleweather_state( ) -> None:
-			st.session_state[ 'googleweather_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			gw_location = st.text_area(
-				'Location',
-				height=70,
-				key='googleweather_location',
-				placeholder=(
-						'Examples:\n'
-						'Washington, DC\n'
-						'1600 Pennsylvania Ave NW, Washington, DC\n'
-						'Arlington, VA'
-				),
-			)
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+	
+				'''
+				st.session_state[ 'openweather_clear_request' ] = True
 			
-			c1, c2 = st.columns( 2 )
+			col_left, col_right = st.columns( 2, border=True )
 			
-			with c1:
-				gw_mode = st.selectbox(
+			with col_left:
+				openweather_location = st.text_area(
+					'Location',
+					height=80,
+					key='openweather_location',
+					placeholder=(
+							'Examples:\n'
+							'Arlington, VA\n'
+							'Paris, France\n'
+							'90210'
+					)
+				)
+				
+				openweather_mode = st.selectbox(
 					'Mode',
-					options=[ 'current', 'hourly_forecast', 'daily_forecast', 'alerts' ],
-					index=[ 'current', 'hourly_forecast', 'daily_forecast', 'alerts' ].index(
-						st.session_state.get( 'googleweather_mode', 'current' ) ),
-					key='googleweather_mode'
+					options=[ 'current', 'hourly', 'daily' ],
+					index=[ 'current', 'hourly', 'daily' ].index(
+						st.session_state.get( 'openweather_mode', 'current' )
+					),
+					key='openweather_mode'
 				)
+				
+				cfg_c1, cfg_c2 = st.columns( 2 )
+				
+				with cfg_c1:
+					openweather_forecast_days = st.number_input(
+						'Forecast Days',
+						min_value=1,
+						max_value=16,
+						value=int( st.session_state.get( 'openweather_forecast_days', 7 ) ),
+						step=1,
+						key='openweather_forecast_days',
+						disabled=(openweather_mode == 'current')
+					)
+				
+				with cfg_c2:
+					openweather_past_days = st.number_input(
+						'Past Days',
+						min_value=0,
+						max_value=92,
+						value=int( st.session_state.get( 'openweather_past_days', 0 ) ),
+						step=1,
+						key='openweather_past_days'
+					)
+				
+				meta_c1, meta_c2 = st.columns( 2 )
+				
+				with meta_c1:
+					openweather_timezone = st.text_input(
+						'Timezone',
+						value=st.session_state.get( 'openweather_timezone', 'auto' ),
+						key='openweather_timezone',
+						placeholder='auto'
+					)
+				
+				with meta_c2:
+					openweather_count = st.number_input(
+						'Geocode Matches',
+						min_value=1,
+						max_value=20,
+						value=int( st.session_state.get( 'openweather_count', 10 ) ),
+						step=1,
+						key='openweather_count'
+					)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					openweather_submit = st.button(
+						'Submit',
+						key='openweather_submit'
+					)
+				
+				with btn_c2:
+					openweather_clear = st.button(
+						'Clear',
+						key='openweather_clear',
+						on_click=_clear_openweather_state
+					)
 			
-			with c2:
-				gw_units = st.selectbox(
-					'Units',
-					options=[ 'METRIC', 'IMPERIAL' ],
-					index=[ 'METRIC', 'IMPERIAL' ].index(
-						st.session_state.get( 'googleweather_units', 'METRIC' ) ),
-					key='googleweather_units'
-				)
-			
-			c3, c4, c5 = st.columns( 3 )
-			
-			with c3:
-				gw_language = st.text_input(
-					'Language',
-					value=st.session_state.get( 'googleweather_language', 'en' ),
-					key='googleweather_language',
-					placeholder='en'
-				)
-			
-			with c4:
-				gw_hours = st.number_input(
-					'Hours',
-					min_value=1,
-					max_value=240,
-					value=int( st.session_state.get( 'googleweather_hours', 24 ) ),
-					step=1,
-					key='googleweather_hours',
-					disabled=(gw_mode != 'hourly_forecast')
-				)
-			
-			with c5:
-				gw_days = st.number_input(
-					'Days',
-					min_value=1,
-					max_value=10,
-					value=int( st.session_state.get( 'googleweather_days', 5 ) ),
-					step=1,
-					key='googleweather_days',
-					disabled=(gw_mode != 'daily_forecast')
-				)
-			
-			gw_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=60,
-				value=int( st.session_state.get( 'googleweather_timeout', 10 ) ),
-				step=1,
-				key='googleweather_timeout'
-			)
-			
-			st.caption(
-				'Required key: GOOGLE_WEATHER_API_KEY. '
-				'Weather API must be enabled in your Google Cloud project.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				gw_submit = st.button( 'Submit', key='googleweather_submit' )
-			with b2:
-				st.button( 'Clear', key='googleweather_clear', on_click=_clear_googleweather_state )
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if gw_submit:
-				try:
-					f = GoogleWeather( )
+			with col_right:
+				if openweather_submit:
+					try:
+						f = OpenWeather( )
+						result = f.fetch(
+							location=str( openweather_location ),
+							mode=str( openweather_mode ),
+							zone=str( openweather_timezone or 'auto' ).strip( ),
+							forecast_days=int( openweather_forecast_days ),
+							past_days=int( openweather_past_days ),
+							count=int( openweather_count )
+						)
+						
+						st.session_state[ 'openweather_results' ] = result or { }
+						st.rerun( )
 					
-					if gw_mode == 'current':
-						result = f.fetch_current(
-							address=gw_location,
-							units_system=gw_units,
-							language_code=gw_language,
-							time=int( gw_timeout ) )
-					elif gw_mode == 'hourly_forecast':
-						result = f.fetch_hourly_forecast(
-							address=gw_location,
-							hours=int( gw_hours ),
-							units_system=gw_units,
-							language_code=gw_language,
-							time=int( gw_timeout ) )
-					elif gw_mode == 'daily_forecast':
-						result = f.fetch_daily_forecast(
-							address=gw_location,
-							days=int( gw_days ),
-							units_system=gw_units,
-							language_code=gw_language,
-							time=int( gw_timeout ) )
-					else:
-						result = f.fetch_alerts(
-							address=gw_location,
-							language_code=gw_language,
-							time=int( gw_timeout ) )
-					
-					st.session_state[ 'googleweather_results' ] = result or { }
-					st.rerun( )
+					except Exception as exc:
+						st.error( 'Open Weather request failed.' )
+						st.exception( exc )
 				
-				except Exception as exc:
-					st.error( 'Google Weather request failed.' )
-					st.exception( exc )
-					
-		result = st.session_state.get( 'googleweather_results', { } )
-		
-		if not result:
-			st.text( 'No results.' )
-		else:
-			mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
-			
-			st.markdown( '#### Request Metadata' )
-			st.json(
-				{
-						'mode': mode_value,
-						'url': result.get( 'url', '' ),
-						'params': params,
-				}
-			)
-			
-			if isinstance( data, dict ) and data:
-				current = (
-						data.get( 'currentWeather' )
-						or data.get( 'current_weather' )
-						or data.get( 'currentConditions' )
-						or data.get( 'current_conditions' )
-						or { }
-				)
+				result = st.session_state.get( 'openweather_results', { } )
 				
-				hourly = (
-						data.get( 'hourlyForecasts' )
-						or data.get( 'hourly_forecasts' )
-						or data.get( 'hours' )
-						or [ ]
-				)
-				
-				daily = (
-						data.get( 'dailyForecasts' )
-						or data.get( 'daily_forecasts' )
-						or data.get( 'days' )
-						or [ ]
-				)
-				
-				alerts = (
-						data.get( 'weatherAlerts' )
-						or data.get( 'alerts' )
-						or [ ]
-				)
-				
-				location_bits: List[ str ] = [ ]
-				for key in [ 'address', 'resolvedAddress', 'location', 'displayName', 'name' ]:
-					value = data.get( key, '' )
-					if value:
-						location_bits.append( str( value ) )
-						break
-				
-				if location_bits:
-					st.markdown( '#### Location' )
-					st.write( location_bits[ 0 ] )
-				
-				if current:
-					st.markdown( '#### Current Conditions' )
-					
-					c1, c2, c3 = st.columns( 3 )
-					
-					with c1:
-						for key in [ 'temperature', 'temp', 'temperature_f', 'temperature_c' ]:
-							if key in current:
-								st.metric( 'Temperature', current.get( key ) )
-								break
-					
-					with c2:
-						for key in [ 'humidity', 'relativeHumidity', 'relative_humidity' ]:
-							if key in current:
-								st.metric( 'Humidity', current.get( key ) )
-								break
-					
-					with c3:
-						for key in [ 'weatherCondition', 'condition', 'description', 'icon' ]:
-							if key in current:
-								st.metric( 'Condition', current.get( key ) )
-								break
-					
-					with st.expander( 'Current Conditions Detail', expanded=False ):
-						st.json( current )
-				
-				if isinstance( hourly, list ) and hourly:
-					st.markdown( '#### Hourly Forecast' )
-					df_hourly = pd.DataFrame( hourly )
-					if not df_hourly.empty:
-						st.dataframe( df_hourly.head( 24 ), use_container_width=True, hide_index=True )
-					else:
-						st.info( 'Hourly forecast returned no displayable rows.' )
-				
-				if isinstance( daily, list ) and daily:
-					st.markdown( '#### Daily Forecast' )
-					df_daily = pd.DataFrame( daily )
-					if not df_daily.empty:
-						st.dataframe( df_daily, use_container_width=True, hide_index=True )
-					else:
-						st.info( 'Daily forecast returned no displayable rows.' )
-				
-				if isinstance( alerts, list ) and alerts:
-					st.markdown( '#### Alerts' )
-					for idx, alert in enumerate( alerts, start=1 ):
-						with st.expander( f'Alert {idx}', expanded=False ):
-							if isinstance( alert, dict ):
-								title_value = (
-										alert.get( 'headline' )
-										or alert.get( 'title' )
-										or alert.get( 'event' )
-										or f'Alert {idx}'
-								)
-								st.markdown( f'**{title_value}**' )
-								
-								desc_value = (
-										alert.get( 'description' )
-										or alert.get( 'summary' )
-										or ''
-								)
-								if desc_value:
-									st.write( str( desc_value ) )
-								
-								st.json( alert )
-							else:
-								st.write( alert )
-				
-				if not current and not hourly and not daily and not alerts:
-					st.markdown( '#### Result' )
-					st.json( data )
-			
-			elif isinstance( data, list ) and data:
-				st.markdown( '#### Results' )
-				df_weather = pd.DataFrame( data )
-				if not df_weather.empty:
-					st.dataframe( df_weather, use_container_width=True, hide_index=True )
+				if not result:
+					st.text( 'No results.' )
 				else:
-					st.json( data )
-			else:
-				st.info( 'No results returned.' )
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'location' in result:
+							st.markdown( f"**Location:** {result.get( 'location', '' )}" )
+						if 'latitude' in result:
+							st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
+					
+					with meta_c2:
+						if 'longitude' in result:
+							st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
+						if 'timezone' in result:
+							st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					geocoding = result.get( 'geocoding', { } ) or { }
+					if geocoding:
+						st.markdown( '#### Geocoding Result' )
+						st.json( geocoding )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						st.markdown( '#### Request Parameters' )
+						st.json( params )
+					
+					data = result.get( 'data', { } ) or { }
+					if data:
+						st.markdown( '#### Forecast Payload' )
+						st.json( data )
+					
+					message = result.get( 'message', '' )
+					if message:
+						st.info( message )
+		
+		# -------- Historical Weather
+		with st.expander( label='Historical Weather', icon='📈', expanded=False ):
+			if 'historicalweather_results' not in st.session_state:
+				st.session_state[ 'historicalweather_results' ] = { }
 			
-			with st.expander( 'Raw Result', expanded=False ):
-				st.json( result )
+			if 'historicalweather_clear_request' not in st.session_state:
+				st.session_state[ 'historicalweather_clear_request' ] = False
+			
+			if st.session_state.get( 'historicalweather_clear_request', False ):
+				st.session_state[ 'historicalweather_location' ] = ''
+				st.session_state[ 'historicalweather_date' ] = dt.date.today( ) - dt.timedelta( days=1 )
+				st.session_state[ 'historicalweather_timezone' ] = 'auto'
+				st.session_state[ 'historicalweather_count' ] = 10
+				st.session_state[ 'historicalweather_results' ] = { }
+				st.session_state[ 'historicalweather_clear_request' ] = False
+			
+			def _clear_historicalweather_state( ) -> None:
+				'''
 	
-	# -------- Open Weather
-	with st.expander( label='Open Weather', icon='🌦️', expanded=False ):
-		if 'openweather_results' not in st.session_state:
-			st.session_state[ 'openweather_results' ] = { }
-		
-		if 'openweather_clear_request' not in st.session_state:
-			st.session_state[ 'openweather_clear_request' ] = False
-		
-		if st.session_state.get( 'openweather_clear_request', False ):
-			st.session_state[ 'openweather_location' ] = ''
-			st.session_state[ 'openweather_mode' ] = 'current'
-			st.session_state[ 'openweather_timezone' ] = 'auto'
-			st.session_state[ 'openweather_forecast_days' ] = 7
-			st.session_state[ 'openweather_past_days' ] = 0
-			st.session_state[ 'openweather_count' ] = 10
-			st.session_state[ 'openweather_results' ] = { }
-			st.session_state[ 'openweather_clear_request' ] = False
-		
-		def _clear_openweather_state( ) -> None:
-			'''
-
-				Purpose:
-				--------
-				Flag the Open Weather expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-
-			'''
-			st.session_state[ 'openweather_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			openweather_location = st.text_area(
-				'Location',
-				height=80,
-				key='openweather_location',
-				placeholder=(
-						'Examples:\n'
-						'Arlington, VA\n'
-						'Paris, France\n'
-						'90210'
+					Purpose:
+					--------
+					Flag the Historical Weather expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+	
+				'''
+				st.session_state[ 'historicalweather_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				historicalweather_location = st.text_area(
+					'Location',
+					height=80,
+					key='historicalweather_location',
+					placeholder=(
+							'Examples:\n'
+							'Arlington, VA\n'
+							'Tokyo, Japan\n'
+							'90210'
+					)
 				)
-			)
-			
-			openweather_mode = st.selectbox(
-				'Mode',
-				options=[ 'current', 'hourly', 'daily' ],
-				index=[ 'current', 'hourly', 'daily' ].index(
-					st.session_state.get( 'openweather_mode', 'current' )
-				),
-				key='openweather_mode'
-			)
-			
-			cfg_c1, cfg_c2 = st.columns( 2 )
-			
-			with cfg_c1:
-				openweather_forecast_days = st.number_input(
-					'Forecast Days',
-					min_value=1,
-					max_value=16,
-					value=int( st.session_state.get( 'openweather_forecast_days', 7 ) ),
-					step=1,
-					key='openweather_forecast_days',
-					disabled=(openweather_mode == 'current')
-				)
-			
-			with cfg_c2:
-				openweather_past_days = st.number_input(
-					'Past Days',
-					min_value=0,
-					max_value=92,
-					value=int( st.session_state.get( 'openweather_past_days', 0 ) ),
-					step=1,
-					key='openweather_past_days'
-				)
-			
-			meta_c1, meta_c2 = st.columns( 2 )
-			
-			with meta_c1:
-				openweather_timezone = st.text_input(
+				
+				date_c1, date_c2 = st.columns( 2 )
+				
+				with date_c1:
+					historicalweather_date = st.date_input(
+						'Date',
+						value=st.session_state.get(
+							'historicalweather_date',
+							dt.date.today( ) - dt.timedelta( days=1 )
+						),
+						key='historicalweather_date'
+					)
+				
+				with date_c2:
+					historicalweather_count = st.number_input(
+						'Geocode Matches',
+						min_value=1,
+						max_value=20,
+						value=int( st.session_state.get( 'historicalweather_count', 10 ) ),
+						step=1,
+						key='historicalweather_count'
+					)
+				
+				historicalweather_timezone = st.text_input(
 					'Timezone',
-					value=st.session_state.get( 'openweather_timezone', 'auto' ),
-					key='openweather_timezone',
+					value=st.session_state.get( 'historicalweather_timezone', 'auto' ),
+					key='historicalweather_timezone',
 					placeholder='auto'
 				)
-			
-			with meta_c2:
-				openweather_count = st.number_input(
-					'Geocode Matches',
-					min_value=1,
-					max_value=20,
-					value=int( st.session_state.get( 'openweather_count', 10 ) ),
-					step=1,
-					key='openweather_count'
-				)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				openweather_submit = st.button(
-					'Submit',
-					key='openweather_submit'
-				)
-			
-			with btn_c2:
-				openweather_clear = st.button(
-					'Clear',
-					key='openweather_clear',
-					on_click=_clear_openweather_state
-				)
-		
-		with col_right:
-			if openweather_submit:
-				try:
-					f = OpenWeather( )
-					result = f.fetch(
-						location=str( openweather_location ),
-						mode=str( openweather_mode ),
-						zone=str( openweather_timezone or 'auto' ).strip( ),
-						forecast_days=int( openweather_forecast_days ),
-						past_days=int( openweather_past_days ),
-						count=int( openweather_count )
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					historicalweather_submit = st.button(
+						'Submit',
+						key='historicalweather_submit'
 					)
-					
-					st.session_state[ 'openweather_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'Open Weather request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'openweather_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'location' in result:
-						st.markdown( f"**Location:** {result.get( 'location', '' )}" )
-					if 'latitude' in result:
-						st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
-				
-				with meta_c2:
-					if 'longitude' in result:
-						st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
-					if 'timezone' in result:
-						st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				geocoding = result.get( 'geocoding', { } ) or { }
-				if geocoding:
-					st.markdown( '#### Geocoding Result' )
-					st.json( geocoding )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					st.markdown( '#### Request Parameters' )
-					st.json( params )
-				
-				data = result.get( 'data', { } ) or { }
-				if data:
-					st.markdown( '#### Forecast Payload' )
-					st.json( data )
-				
-				message = result.get( 'message', '' )
-				if message:
-					st.info( message )
-	
-	# -------- Historical Weather
-	with st.expander( label='Historical Weather', icon='📈', expanded=False ):
-		if 'historicalweather_results' not in st.session_state:
-			st.session_state[ 'historicalweather_results' ] = { }
-		
-		if 'historicalweather_clear_request' not in st.session_state:
-			st.session_state[ 'historicalweather_clear_request' ] = False
-		
-		if st.session_state.get( 'historicalweather_clear_request', False ):
-			st.session_state[ 'historicalweather_location' ] = ''
-			st.session_state[ 'historicalweather_date' ] = dt.date.today( ) - dt.timedelta( days=1 )
-			st.session_state[ 'historicalweather_timezone' ] = 'auto'
-			st.session_state[ 'historicalweather_count' ] = 10
-			st.session_state[ 'historicalweather_results' ] = { }
-			st.session_state[ 'historicalweather_clear_request' ] = False
-		
-		def _clear_historicalweather_state( ) -> None:
-			'''
-
-				Purpose:
-				--------
-				Flag the Historical Weather expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-
-			'''
-			st.session_state[ 'historicalweather_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			historicalweather_location = st.text_area(
-				'Location',
-				height=80,
-				key='historicalweather_location',
-				placeholder=(
-						'Examples:\n'
-						'Arlington, VA\n'
-						'Tokyo, Japan\n'
-						'90210'
-				)
-			)
-			
-			date_c1, date_c2 = st.columns( 2 )
-			
-			with date_c1:
-				historicalweather_date = st.date_input(
-					'Date',
-					value=st.session_state.get(
-						'historicalweather_date',
-						dt.date.today( ) - dt.timedelta( days=1 )
-					),
-					key='historicalweather_date'
-				)
-			
-			with date_c2:
-				historicalweather_count = st.number_input(
-					'Geocode Matches',
-					min_value=1,
-					max_value=20,
-					value=int( st.session_state.get( 'historicalweather_count', 10 ) ),
-					step=1,
-					key='historicalweather_count'
-				)
-			
-			historicalweather_timezone = st.text_input(
-				'Timezone',
-				value=st.session_state.get( 'historicalweather_timezone', 'auto' ),
-				key='historicalweather_timezone',
-				placeholder='auto'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				historicalweather_submit = st.button(
-					'Submit',
-					key='historicalweather_submit'
-				)
-			
-			with btn_c2:
-				historicalweather_clear = st.button(
-					'Clear',
-					key='historicalweather_clear',
-					on_click=_clear_historicalweather_state
-				)
-		
-		with col_right:
-			if historicalweather_submit:
-				try:
-					f = HistoricalWeather( )
-					result = f.fetch(
-						location=str( historicalweather_location ),
-						date=historicalweather_date,
-						zone=str( historicalweather_timezone or 'auto' ).strip( ),
-						count=int( historicalweather_count )
+				with btn_c2:
+					historicalweather_clear = st.button(
+						'Clear',
+						key='historicalweather_clear',
+						on_click=_clear_historicalweather_state
 					)
-					
-					st.session_state[ 'historicalweather_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Historical Weather request failed.' )
-					st.exception( exc )
 			
-			result = st.session_state.get( 'historicalweather_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'location' in result:
-						st.markdown( f"**Location:** {result.get( 'location', '' )}" )
-					if 'latitude' in result:
-						st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
-					if 'longitude' in result:
-						st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
-				
-				with meta_c2:
-					if 'date' in result:
-						st.markdown( f"**Date:** {result.get( 'date', '' )}" )
-					if 'timezone' in result:
-						st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				geocoding = result.get( 'geocoding', { } ) or { }
-				if geocoding:
-					st.markdown( '#### Geocoding Result' )
-					st.json( geocoding )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					st.markdown( '#### Request Parameters' )
-					st.json( params )
-				
-				data = result.get( 'data', { } ) or { }
-				if data:
-					st.markdown( '#### Historical Weather Payload' )
-					st.json( data )
-				
-				message = result.get( 'message', '' )
-				if message:
-					st.info( message )
-	
-	# -------- USGS Earthquakes
-	with st.expander( label='USGS Earthquakes', icon='🌎', expanded=False ):
-		if 'usgsearthquakes_results' not in st.session_state:
-			st.session_state[ 'usgsearthquakes_results' ] = { }
-		
-		if 'usgsearthquakes_clear_request' not in st.session_state:
-			st.session_state[ 'usgsearthquakes_clear_request' ] = False
-		
-		if st.session_state.get( 'usgsearthquakes_clear_request', False ):
-			st.session_state[ 'usgsearthquakes_mode' ] = 'feed'
-			st.session_state[ 'usgsearthquakes_feed' ] = 'all_day.geojson'
-			st.session_state[
-				'usgsearthquakes_start_date' ] = dt.date.today( ) - dt.timedelta( days=7 )
-			st.session_state[ 'usgsearthquakes_end_date' ] = dt.date.today( )
-			st.session_state[ 'usgsearthquakes_min_magnitude' ] = 1.0
-			st.session_state[ 'usgsearthquakes_max_magnitude' ] = 10.0
-			st.session_state[ 'usgsearthquakes_limit' ] = 25
-			st.session_state[ 'usgsearthquakes_order_by' ] = 'time'
-			st.session_state[ 'usgsearthquakes_event_type' ] = 'earthquake'
-			st.session_state[ 'usgsearthquakes_latitude' ] = ''
-			st.session_state[ 'usgsearthquakes_longitude' ] = ''
-			st.session_state[ 'usgsearthquakes_max_radius_km' ] = ''
-			st.session_state[ 'usgsearthquakes_timeout' ] = 20
-			st.session_state[ 'usgsearthquakes_results' ] = { }
-			st.session_state[ 'usgsearthquakes_clear_request' ] = False
-		
-		def _clear_usgsearthquakes_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the USGS Earthquakes expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'usgsearthquakes_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			usgseq_mode = st.selectbox(
-				'Mode',
-				options=[ 'feed', 'search' ],
-				index=[ 'feed', 'search' ].index(
-					st.session_state.get( 'usgsearthquakes_mode', 'feed' )
-				),
-				key='usgsearthquakes_mode'
-			)
-			
-			usgseq_feed = st.selectbox(
-				'Feed',
-				options=[
-						'all_hour.geojson',
-						'all_day.geojson',
-						'all_week.geojson',
-						'all_month.geojson',
-						'significant_hour.geojson',
-						'significant_day.geojson',
-						'significant_week.geojson',
-						'significant_month.geojson',
-						'4.5_hour.geojson',
-						'4.5_day.geojson',
-						'4.5_week.geojson',
-						'4.5_month.geojson'
-				],
-				index=[
-						'all_hour.geojson',
-						'all_day.geojson',
-						'all_week.geojson',
-						'all_month.geojson',
-						'significant_hour.geojson',
-						'significant_day.geojson',
-						'significant_week.geojson',
-						'significant_month.geojson',
-						'4.5_hour.geojson',
-						'4.5_day.geojson',
-						'4.5_week.geojson',
-						'4.5_month.geojson'
-				].index(
-					st.session_state.get( 'usgsearthquakes_feed', 'all_day.geojson' )
-				),
-				key='usgsearthquakes_feed',
-				disabled=(usgseq_mode != 'feed')
-			)
-			
-			date_c1, date_c2 = st.columns( 2 )
-			
-			with date_c1:
-				usgseq_start_date = st.date_input(
-					'Start Date',
-					value=st.session_state.get(
-						'usgsearthquakes_start_date',
-						dt.date.today( ) - dt.timedelta( days=7 )
-					),
-					key='usgsearthquakes_start_date',
-					disabled=(usgseq_mode != 'search')
-				)
-			
-			with date_c2:
-				usgseq_end_date = st.date_input(
-					'End Date',
-					value=st.session_state.get(
-						'usgsearthquakes_end_date',
-						dt.date.today( )
-					),
-					key='usgsearthquakes_end_date',
-					disabled=(usgseq_mode != 'search')
-				)
-			
-			mag_c1, mag_c2 = st.columns( 2 )
-			
-			with mag_c1:
-				usgseq_min_magnitude = st.number_input(
-					'Min Magnitude',
-					min_value=0.0,
-					max_value=10.0,
-					value=float( st.session_state.get( 'usgsearthquakes_min_magnitude', 1.0 ) ),
-					step=0.1,
-					key='usgsearthquakes_min_magnitude',
-					disabled=(usgseq_mode != 'search')
-				)
-			
-			with mag_c2:
-				usgseq_max_magnitude = st.number_input(
-					'Max Magnitude',
-					min_value=0.0,
-					max_value=10.0,
-					value=float( st.session_state.get( 'usgsearthquakes_max_magnitude', 10.0 ) ),
-					step=0.1,
-					key='usgsearthquakes_max_magnitude',
-					disabled=(usgseq_mode != 'search')
-				)
-			
-			opt_c1, opt_c2 = st.columns( 2 )
-			
-			with opt_c1:
-				usgseq_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=200,
-					value=int( st.session_state.get( 'usgsearthquakes_limit', 25 ) ),
-					step=1,
-					key='usgsearthquakes_limit',
-					disabled=(usgseq_mode != 'search')
-				)
-			
-			with opt_c2:
-				usgseq_order_by = st.selectbox(
-					'Order By',
-					options=[ 'time', 'time-asc', 'magnitude', 'magnitude-asc' ],
-					index=[ 'time', 'time-asc', 'magnitude', 'magnitude-asc' ].index(
-						st.session_state.get( 'usgsearthquakes_order_by', 'time' )
-					),
-					key='usgsearthquakes_order_by',
-					disabled=(usgseq_mode != 'search')
-				)
-			
-			usgseq_event_type = st.text_input(
-				'Event Type',
-				value=st.session_state.get( 'usgsearthquakes_event_type', 'earthquake' ),
-				key='usgsearthquakes_event_type',
-				disabled=(usgseq_mode != 'search')
-			)
-			
-			coord_c1, coord_c2 = st.columns( 2 )
-			
-			with coord_c1:
-				usgseq_latitude = st.text_input(
-					'Latitude (optional)',
-					value=st.session_state.get( 'usgsearthquakes_latitude', '' ),
-					key='usgsearthquakes_latitude',
-					disabled=(usgseq_mode != 'search')
-				)
-			
-			with coord_c2:
-				usgseq_longitude = st.text_input(
-					'Longitude (optional)',
-					value=st.session_state.get( 'usgsearthquakes_longitude', '' ),
-					key='usgsearthquakes_longitude',
-					disabled=(usgseq_mode != 'search')
-				)
-			
-			usgseq_max_radius_km = st.text_input(
-				'Max Radius KM (optional)',
-				value=st.session_state.get( 'usgsearthquakes_max_radius_km', '' ),
-				key='usgsearthquakes_max_radius_km',
-				disabled=(usgseq_mode != 'search')
-			)
-			
-			usgseq_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'usgsearthquakes_timeout', 20 ) ),
-				step=1,
-				key='usgsearthquakes_timeout'
-			)
-			
-			st.caption(
-				'Feed mode is best for quick display. Search mode supports date, '
-				'magnitude, and optional radial filtering.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				usgseq_submit = st.button(
-					'Submit',
-					key='usgsearthquakes_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='usgsearthquakes_clear',
-					on_click=_clear_usgsearthquakes_state
-				)
-		
-		with col_right:
-			if usgseq_submit:
-				try:
-					f = USGSEarthquakes( )
-					
-					latitude_value = None
-					longitude_value = None
-					max_radius_value = None
-					
-					if str( usgseq_latitude or '' ).strip( ):
-						latitude_value = float( usgseq_latitude )
-					
-					if str( usgseq_longitude or '' ).strip( ):
-						longitude_value = float( usgseq_longitude )
-					
-					if str( usgseq_max_radius_km or '' ).strip( ):
-						max_radius_value = float( usgseq_max_radius_km )
-					
-					result = f.fetch(
-						mode=str( usgseq_mode ),
-						feed=str( usgseq_feed ),
-						start_date=str( usgseq_start_date ),
-						end_date=str( usgseq_end_date ),
-						min_magnitude=float( usgseq_min_magnitude ),
-						max_magnitude=float( usgseq_max_magnitude ),
-						limit=int( usgseq_limit ),
-						order_by=str( usgseq_order_by ),
-						event_type=str( usgseq_event_type or 'earthquake' ),
-						latitude=latitude_value,
-						longitude=longitude_value,
-						max_radius_km=max_radius_value,
-						time=int( usgseq_timeout )
-					)
-					
-					st.session_state[ 'usgsearthquakes_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'USGS Earthquakes request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'usgsearthquakes_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'feed' in result:
-						st.markdown( f"**Feed:** {result.get( 'feed', '' )}" )
-					if 'count' in result:
-						st.markdown( f"**Events Returned:** {result.get( 'count', 0 )}" )
-				
-				with meta_c2:
-					if 'title' in result:
-						st.markdown( f"**Title:** {result.get( 'title', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '##### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						max_mag = summary.get( 'max_magnitude', None )
-						st.metric(
-							'Strongest Magnitude',
-							'' if max_mag is None else str( max_mag )
+			with col_right:
+				if historicalweather_submit:
+					try:
+						f = HistoricalWeather( )
+						result = f.fetch(
+							location=str( historicalweather_location ),
+							date=historicalweather_date,
+							zone=str( historicalweather_timezone or 'auto' ).strip( ),
+							count=int( historicalweather_count )
 						)
-					
-					with sum_c3:
-						strongest_place = str( summary.get( 'strongest_place', '' ) or '' )
-						if strongest_place:
-							st.markdown( f"**Strongest Event:** {strongest_place}" )
-						else:
-							st.markdown( '**Strongest Event:** N/A' )
-					
-					most_recent = str( summary.get( 'most_recent', '' ) or '' )
-					if most_recent:
-						st.caption( f'Most recent event in current result set: {most_recent}' )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '##### Events' )
-					df_eq = pd.DataFrame( rows )
-					
-					if not df_eq.empty:
-						st.dataframe( df_eq, use_container_width=True, hide_index=True )
 						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str( item.get( 'Place', '' ) or f'Event {idx}' )
-							magnitude = item.get( 'Magnitude', '' )
-							time_value = str( item.get( 'Time', '' ) or '' )
-							
-							with st.expander(
-									f'Event {idx}: M{magnitude} - {label}',
-									expanded=False
-							):
-								detail_c1, detail_c2 = st.columns( 2 )
-								
-								with detail_c1:
-									st.markdown( f"**Time:** {time_value}" )
-									st.markdown(
-										f"**Depth (km):** {item.get( 'Depth (km)', '' )}"
-									)
-									st.markdown(
-										f"**Latitude:** {item.get( 'Latitude', '' )}"
-									)
-									st.markdown(
-										f"**Longitude:** {item.get( 'Longitude', '' )}"
-									)
-								
-								with detail_c2:
-									st.markdown( f"**Status:** {item.get( 'Status', '' )}" )
-									st.markdown( f"**Alert:** {item.get( 'Alert', '' )}" )
-									st.markdown(
-										f"**Tsunami:** {item.get( 'Tsunami', '' )}"
-									)
-									st.markdown(
-										f"**Felt Reports:** {item.get( 'Felt Reports', '' )}"
-									)
-								
-								url_value = str( item.get( 'URL', '' ) or '' )
-								if url_value:
-									st.markdown( f"**URL:** {url_value}" )
-					else:
-						st.info( 'No displayable earthquake rows were found.' )
-				else:
-					st.info( 'No earthquake events were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- Earth Observatory
-	with st.expander( label='NASA Earth Observatory', icon='🛰️', expanded=False ):
-		if 'earthobservatory_results' not in st.session_state:
-			st.session_state[ 'earthobservatory_results' ] = { }
-		
-		if 'earthobservatory_clear_request' not in st.session_state:
-			st.session_state[ 'earthobservatory_clear_request' ] = False
-		
-		if st.session_state.get( 'earthobservatory_clear_request', False ):
-			st.session_state[ 'earthobservatory_mode' ] = 'events'
-			st.session_state[ 'earthobservatory_status' ] = 'open'
-			st.session_state[ 'earthobservatory_category' ] = ''
-			st.session_state[ 'earthobservatory_source' ] = ''
-			st.session_state[ 'earthobservatory_limit' ] = 20
-			st.session_state[ 'earthobservatory_days' ] = 30
-			st.session_state[ 'earthobservatory_start_date' ] = ''
-			st.session_state[ 'earthobservatory_end_date' ] = ''
-			st.session_state[ 'earthobservatory_timeout' ] = 20
-			st.session_state[ 'earthobservatory_results' ] = { }
-			st.session_state[ 'earthobservatory_clear_request' ] = False
-		
-		def _clear_earthobservatory_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Earth Observatory expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'earthobservatory_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			earth_mode = st.selectbox(
-				'Mode',
-				options=[ 'events', 'categories', 'sources', 'layers' ],
-				index=[ 'events', 'categories', 'sources', 'layers' ].index(
-					st.session_state.get( 'earthobservatory_mode', 'events' )
-				),
-				key='earthobservatory_mode',
-				help='Choose the current documented EONET v3 endpoint.'
-			)
-			
-			earth_status = st.selectbox(
-				'Status',
-				options=[ 'open', 'closed', 'all' ],
-				index=[ 'open', 'closed', 'all' ].index(
-					st.session_state.get( 'earthobservatory_status', 'open' )
-				),
-				key='earthobservatory_status',
-				disabled=(earth_mode != 'events')
-			)
-			
-			earth_category = st.text_input(
-				'Category',
-				value=st.session_state.get( 'earthobservatory_category', '' ),
-				key='earthobservatory_category',
-				placeholder='Examples: wildfires, severe storms, volcanoes ',
-				help='Used for events filtering and layers category path.',
-				disabled=(earth_mode not in [ 'events', 'layers' ])
-			)
-			
-			earth_source = st.text_input(
-				'Source',
-				value=st.session_state.get( 'earthobservatory_source', '' ),
-				key='earthobservatory_source',
-				placeholder=(
-						'Examples: InciWeb, InciWeb, EO'
-				),
-				disabled=(earth_mode != 'events')
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				earth_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'earthobservatory_limit', 20 ) ),
-					step=1,
-					key='earthobservatory_limit',
-					disabled=(earth_mode != 'events')
-				)
-			
-			with c2:
-				earth_days = st.number_input(
-					'Days',
-					min_value=1,
-					max_value=3650,
-					value=int( st.session_state.get( 'earthobservatory_days', 30 ) ),
-					step=1,
-					key='earthobservatory_days',
-					disabled=(earth_mode != 'events')
-				)
-			
-			d1, d2 = st.columns( 2 )
-			
-			with d1:
-				earth_start_date = st.text_input(
-					'Start Date',
-					value=st.session_state.get( 'earthobservatory_start_date', '' ),
-					key='earthobservatory_start_date',
-					placeholder='2026-03-01',
-					disabled=(earth_mode != 'events')
-				)
-			
-			with d2:
-				earth_end_date = st.text_input(
-					'End Date',
-					value=st.session_state.get( 'earthobservatory_end_date', '' ),
-					key='earthobservatory_end_date',
-					placeholder='2026-03-15',
-					disabled=(earth_mode != 'events')
-				)
-			
-			earth_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=120,
-				value=int( st.session_state.get( 'earthobservatory_timeout', 20 ) ),
-				step=1,
-				key='earthobservatory_timeout'
-			)
-			
-			st.caption(
-				'Examples: use events + category=wildfires, status=open; '
-				'use sources to list event source providers; '
-				'use layers + category=wildfires to inspect imagery layers.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				earth_submit = st.button(
-					'Submit',
-					key='earthobservatory_submit'
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='earthobservatory_clear',
-					on_click=_clear_earthobservatory_state
-				)
-		
-		with col_right:
-			if earth_submit:
-				try:
-					f = EarthObservatory( )
-					result = f.fetch(
-						mode=earth_mode,
-						status=earth_status,
-						category=earth_category,
-						source=earth_source,
-						limit=int( earth_limit ),
-						days=int( earth_days ),
-						start_date=str( earth_start_date ),
-						end_date=str( earth_end_date ),
-						time=int( earth_timeout )
-					)
+						st.session_state[ 'historicalweather_results' ] = result or { }
+						st.rerun( )
 					
-					st.session_state[ 'earthobservatory_results' ] = result or { }
-					st.rerun( )
+					except Exception as exc:
+						st.error( 'Historical Weather request failed.' )
+						st.exception( exc )
 				
-				except Exception as exc:
-					st.error( 'Earth Observatory request failed.' )
-					st.exception( exc )
+				result = st.session_state.get( 'historicalweather_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'location' in result:
+							st.markdown( f"**Location:** {result.get( 'location', '' )}" )
+						if 'latitude' in result:
+							st.markdown( f"**Latitude:** {result.get( 'latitude', '' )}" )
+						if 'longitude' in result:
+							st.markdown( f"**Longitude:** {result.get( 'longitude', '' )}" )
+					
+					with meta_c2:
+						if 'date' in result:
+							st.markdown( f"**Date:** {result.get( 'date', '' )}" )
+						if 'timezone' in result:
+							st.markdown( f"**Timezone:** {result.get( 'timezone', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					geocoding = result.get( 'geocoding', { } ) or { }
+					if geocoding:
+						st.markdown( '#### Geocoding Result' )
+						st.json( geocoding )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						st.markdown( '#### Request Parameters' )
+						st.json( params )
+					
+					data = result.get( 'data', { } ) or { }
+					if data:
+						st.markdown( '#### Historical Weather Payload' )
+						st.json( data )
+					
+					message = result.get( 'message', '' )
+					if message:
+						st.info( message )
+		
+		# -------- USGS Earthquakes
+		with st.expander( label='USGS Earthquakes', icon='🌎', expanded=False ):
+			if 'usgsearthquakes_results' not in st.session_state:
+				st.session_state[ 'usgsearthquakes_results' ] = { }
 			
-			result = st.session_state.get( 'earthobservatory_results', { } )
+			if 'usgsearthquakes_clear_request' not in st.session_state:
+				st.session_state[ 'usgsearthquakes_clear_request' ] = False
 			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
+			if st.session_state.get( 'usgsearthquakes_clear_request', False ):
+				st.session_state[ 'usgsearthquakes_mode' ] = 'feed'
+				st.session_state[ 'usgsearthquakes_feed' ] = 'all_day.geojson'
+				st.session_state[
+					'usgsearthquakes_start_date' ] = dt.date.today( ) - dt.timedelta( days=7 )
+				st.session_state[ 'usgsearthquakes_end_date' ] = dt.date.today( )
+				st.session_state[ 'usgsearthquakes_min_magnitude' ] = 1.0
+				st.session_state[ 'usgsearthquakes_max_magnitude' ] = 10.0
+				st.session_state[ 'usgsearthquakes_limit' ] = 25
+				st.session_state[ 'usgsearthquakes_order_by' ] = 'time'
+				st.session_state[ 'usgsearthquakes_event_type' ] = 'earthquake'
+				st.session_state[ 'usgsearthquakes_latitude' ] = ''
+				st.session_state[ 'usgsearthquakes_longitude' ] = ''
+				st.session_state[ 'usgsearthquakes_max_radius_km' ] = ''
+				st.session_state[ 'usgsearthquakes_timeout' ] = 20
+				st.session_state[ 'usgsearthquakes_results' ] = { }
+				st.session_state[ 'usgsearthquakes_clear_request' ] = False
+			
+			def _clear_usgsearthquakes_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the USGS Earthquakes expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'usgsearthquakes_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				usgseq_mode = st.selectbox(
+					'Mode',
+					options=[ 'feed', 'search' ],
+					index=[ 'feed', 'search' ].index(
+						st.session_state.get( 'usgsearthquakes_mode', 'feed' )
+					),
+					key='usgsearthquakes_mode'
+				)
 				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+				usgseq_feed = st.selectbox(
+					'Feed',
+					options=[
+							'all_hour.geojson',
+							'all_day.geojson',
+							'all_week.geojson',
+							'all_month.geojson',
+							'significant_hour.geojson',
+							'significant_day.geojson',
+							'significant_week.geojson',
+							'significant_month.geojson',
+							'4.5_hour.geojson',
+							'4.5_day.geojson',
+							'4.5_week.geojson',
+							'4.5_month.geojson'
+					],
+					index=[
+							'all_hour.geojson',
+							'all_day.geojson',
+							'all_week.geojson',
+							'all_month.geojson',
+							'significant_hour.geojson',
+							'significant_day.geojson',
+							'significant_week.geojson',
+							'significant_month.geojson',
+							'4.5_hour.geojson',
+							'4.5_day.geojson',
+							'4.5_week.geojson',
+							'4.5_month.geojson'
+					].index(
+						st.session_state.get( 'usgsearthquakes_feed', 'all_day.geojson' )
+					),
+					key='usgsearthquakes_feed',
+					disabled=(usgseq_mode != 'feed')
+				)
 				
-				with meta_c2:
+				date_c1, date_c2 = st.columns( 2 )
+				
+				with date_c1:
+					usgseq_start_date = st.date_input(
+						'Start Date',
+						value=st.session_state.get(
+							'usgsearthquakes_start_date',
+							dt.date.today( ) - dt.timedelta( days=7 )
+						),
+						key='usgsearthquakes_start_date',
+						disabled=(usgseq_mode != 'search')
+					)
+				
+				with date_c2:
+					usgseq_end_date = st.date_input(
+						'End Date',
+						value=st.session_state.get(
+							'usgsearthquakes_end_date',
+							dt.date.today( )
+						),
+						key='usgsearthquakes_end_date',
+						disabled=(usgseq_mode != 'search')
+					)
+				
+				mag_c1, mag_c2 = st.columns( 2 )
+				
+				with mag_c1:
+					usgseq_min_magnitude = st.number_input(
+						'Min Magnitude',
+						min_value=0.0,
+						max_value=10.0,
+						value=float( st.session_state.get( 'usgsearthquakes_min_magnitude', 1.0 ) ),
+						step=0.1,
+						key='usgsearthquakes_min_magnitude',
+						disabled=(usgseq_mode != 'search')
+					)
+				
+				with mag_c2:
+					usgseq_max_magnitude = st.number_input(
+						'Max Magnitude',
+						min_value=0.0,
+						max_value=10.0,
+						value=float( st.session_state.get( 'usgsearthquakes_max_magnitude', 10.0 ) ),
+						step=0.1,
+						key='usgsearthquakes_max_magnitude',
+						disabled=(usgseq_mode != 'search')
+					)
+				
+				opt_c1, opt_c2 = st.columns( 2 )
+				
+				with opt_c1:
+					usgseq_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=200,
+						value=int( st.session_state.get( 'usgsearthquakes_limit', 25 ) ),
+						step=1,
+						key='usgsearthquakes_limit',
+						disabled=(usgseq_mode != 'search')
+					)
+				
+				with opt_c2:
+					usgseq_order_by = st.selectbox(
+						'Order By',
+						options=[ 'time', 'time-asc', 'magnitude', 'magnitude-asc' ],
+						index=[ 'time', 'time-asc', 'magnitude', 'magnitude-asc' ].index(
+							st.session_state.get( 'usgsearthquakes_order_by', 'time' )
+						),
+						key='usgsearthquakes_order_by',
+						disabled=(usgseq_mode != 'search')
+					)
+				
+				usgseq_event_type = st.text_input(
+					'Event Type',
+					value=st.session_state.get( 'usgsearthquakes_event_type', 'earthquake' ),
+					key='usgsearthquakes_event_type',
+					disabled=(usgseq_mode != 'search')
+				)
+				
+				coord_c1, coord_c2 = st.columns( 2 )
+				
+				with coord_c1:
+					usgseq_latitude = st.text_input(
+						'Latitude (optional)',
+						value=st.session_state.get( 'usgsearthquakes_latitude', '' ),
+						key='usgsearthquakes_latitude',
+						disabled=(usgseq_mode != 'search')
+					)
+				
+				with coord_c2:
+					usgseq_longitude = st.text_input(
+						'Longitude (optional)',
+						value=st.session_state.get( 'usgsearthquakes_longitude', '' ),
+						key='usgsearthquakes_longitude',
+						disabled=(usgseq_mode != 'search')
+					)
+				
+				usgseq_max_radius_km = st.text_input(
+					'Max Radius KM (optional)',
+					value=st.session_state.get( 'usgsearthquakes_max_radius_km', '' ),
+					key='usgsearthquakes_max_radius_km',
+					disabled=(usgseq_mode != 'search')
+				)
+				
+				usgseq_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'usgsearthquakes_timeout', 20 ) ),
+					step=1,
+					key='usgsearthquakes_timeout'
+				)
+				
+				st.caption(
+					'Feed mode is best for quick display. Search mode supports date, '
+					'magnitude, and optional radial filtering.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					usgseq_submit = st.button(
+						'Submit',
+						key='usgsearthquakes_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='usgsearthquakes_clear',
+						on_click=_clear_usgsearthquakes_state
+					)
+			
+			with col_right:
+				if usgseq_submit:
+					try:
+						f = USGSEarthquakes( )
+						
+						latitude_value = None
+						longitude_value = None
+						max_radius_value = None
+						
+						if str( usgseq_latitude or '' ).strip( ):
+							latitude_value = float( usgseq_latitude )
+						
+						if str( usgseq_longitude or '' ).strip( ):
+							longitude_value = float( usgseq_longitude )
+						
+						if str( usgseq_max_radius_km or '' ).strip( ):
+							max_radius_value = float( usgseq_max_radius_km )
+						
+						result = f.fetch(
+							mode=str( usgseq_mode ),
+							feed=str( usgseq_feed ),
+							start_date=str( usgseq_start_date ),
+							end_date=str( usgseq_end_date ),
+							min_magnitude=float( usgseq_min_magnitude ),
+							max_magnitude=float( usgseq_max_magnitude ),
+							limit=int( usgseq_limit ),
+							order_by=str( usgseq_order_by ),
+							event_type=str( usgseq_event_type or 'earthquake' ),
+							latitude=latitude_value,
+							longitude=longitude_value,
+							max_radius_km=max_radius_value,
+							time=int( usgseq_timeout )
+						)
+						
+						st.session_state[ 'usgsearthquakes_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'USGS Earthquakes request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'usgsearthquakes_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'feed' in result:
+							st.markdown( f"**Feed:** {result.get( 'feed', '' )}" )
+						if 'count' in result:
+							st.markdown( f"**Events Returned:** {result.get( 'count', 0 )}" )
+					
+					with meta_c2:
+						if 'title' in result:
+							st.markdown( f"**Title:** {result.get( 'title', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '##### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							max_mag = summary.get( 'max_magnitude', None )
+							st.metric(
+								'Strongest Magnitude',
+								'' if max_mag is None else str( max_mag )
+							)
+						
+						with sum_c3:
+							strongest_place = str( summary.get( 'strongest_place', '' ) or '' )
+							if strongest_place:
+								st.markdown( f"**Strongest Event:** {strongest_place}" )
+							else:
+								st.markdown( '**Strongest Event:** N/A' )
+						
+						most_recent = str( summary.get( 'most_recent', '' ) or '' )
+						if most_recent:
+							st.caption( f'Most recent event in current result set: {most_recent}' )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '##### Events' )
+						df_eq = pd.DataFrame( rows )
+						
+						if not df_eq.empty:
+							st.dataframe( df_eq, use_container_width=True, hide_index=True )
+							
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str( item.get( 'Place', '' ) or f'Event {idx}' )
+								magnitude = item.get( 'Magnitude', '' )
+								time_value = str( item.get( 'Time', '' ) or '' )
+								
+								with st.expander(
+										f'Event {idx}: M{magnitude} - {label}',
+										expanded=False
+								):
+									detail_c1, detail_c2 = st.columns( 2 )
+									
+									with detail_c1:
+										st.markdown( f"**Time:** {time_value}" )
+										st.markdown(
+											f"**Depth (km):** {item.get( 'Depth (km)', '' )}"
+										)
+										st.markdown(
+											f"**Latitude:** {item.get( 'Latitude', '' )}"
+										)
+										st.markdown(
+											f"**Longitude:** {item.get( 'Longitude', '' )}"
+										)
+									
+									with detail_c2:
+										st.markdown( f"**Status:** {item.get( 'Status', '' )}" )
+										st.markdown( f"**Alert:** {item.get( 'Alert', '' )}" )
+										st.markdown(
+											f"**Tsunami:** {item.get( 'Tsunami', '' )}"
+										)
+										st.markdown(
+											f"**Felt Reports:** {item.get( 'Felt Reports', '' )}"
+										)
+									
+									url_value = str( item.get( 'URL', '' ) or '' )
+									if url_value:
+										st.markdown( f"**URL:** {url_value}" )
+						else:
+							st.info( 'No displayable earthquake rows were found.' )
+					else:
+						st.info( 'No earthquake events were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- Earth Observatory
+		with st.expander( label='NASA Earth Observatory', icon='🛰️', expanded=False ):
+			if 'earthobservatory_results' not in st.session_state:
+				st.session_state[ 'earthobservatory_results' ] = { }
+			
+			if 'earthobservatory_clear_request' not in st.session_state:
+				st.session_state[ 'earthobservatory_clear_request' ] = False
+			
+			if st.session_state.get( 'earthobservatory_clear_request', False ):
+				st.session_state[ 'earthobservatory_mode' ] = 'events'
+				st.session_state[ 'earthobservatory_status' ] = 'open'
+				st.session_state[ 'earthobservatory_category' ] = ''
+				st.session_state[ 'earthobservatory_source' ] = ''
+				st.session_state[ 'earthobservatory_limit' ] = 20
+				st.session_state[ 'earthobservatory_days' ] = 30
+				st.session_state[ 'earthobservatory_start_date' ] = ''
+				st.session_state[ 'earthobservatory_end_date' ] = ''
+				st.session_state[ 'earthobservatory_timeout' ] = 20
+				st.session_state[ 'earthobservatory_results' ] = { }
+				st.session_state[ 'earthobservatory_clear_request' ] = False
+			
+			def _clear_earthobservatory_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Earth Observatory expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'earthobservatory_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				earth_mode = st.selectbox(
+					'Mode',
+					options=[ 'events', 'categories', 'sources', 'layers' ],
+					index=[ 'events', 'categories', 'sources', 'layers' ].index(
+						st.session_state.get( 'earthobservatory_mode', 'events' )
+					),
+					key='earthobservatory_mode',
+					help='Choose the current documented EONET v3 endpoint.'
+				)
+				
+				earth_status = st.selectbox(
+					'Status',
+					options=[ 'open', 'closed', 'all' ],
+					index=[ 'open', 'closed', 'all' ].index(
+						st.session_state.get( 'earthobservatory_status', 'open' )
+					),
+					key='earthobservatory_status',
+					disabled=(earth_mode != 'events')
+				)
+				
+				earth_category = st.text_input(
+					'Category',
+					value=st.session_state.get( 'earthobservatory_category', '' ),
+					key='earthobservatory_category',
+					placeholder='Examples: wildfires, severe storms, volcanoes ',
+					help='Used for events filtering and layers category path.',
+					disabled=(earth_mode not in [ 'events', 'layers' ])
+				)
+				
+				earth_source = st.text_input(
+					'Source',
+					value=st.session_state.get( 'earthobservatory_source', '' ),
+					key='earthobservatory_source',
+					placeholder=(
+							'Examples: InciWeb, InciWeb, EO'
+					),
+					disabled=(earth_mode != 'events')
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					earth_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=500,
+						value=int( st.session_state.get( 'earthobservatory_limit', 20 ) ),
+						step=1,
+						key='earthobservatory_limit',
+						disabled=(earth_mode != 'events')
+					)
+				
+				with c2:
+					earth_days = st.number_input(
+						'Days',
+						min_value=1,
+						max_value=3650,
+						value=int( st.session_state.get( 'earthobservatory_days', 30 ) ),
+						step=1,
+						key='earthobservatory_days',
+						disabled=(earth_mode != 'events')
+					)
+				
+				d1, d2 = st.columns( 2 )
+				
+				with d1:
+					earth_start_date = st.text_input(
+						'Start Date',
+						value=st.session_state.get( 'earthobservatory_start_date', '' ),
+						key='earthobservatory_start_date',
+						placeholder='2026-03-01',
+						disabled=(earth_mode != 'events')
+					)
+				
+				with d2:
+					earth_end_date = st.text_input(
+						'End Date',
+						value=st.session_state.get( 'earthobservatory_end_date', '' ),
+						key='earthobservatory_end_date',
+						placeholder='2026-03-15',
+						disabled=(earth_mode != 'events')
+					)
+				
+				earth_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'earthobservatory_timeout', 20 ) ),
+					step=1,
+					key='earthobservatory_timeout'
+				)
+				
+				st.caption(
+					'Examples: use events + category=wildfires, status=open; '
+					'use sources to list event source providers; '
+					'use layers + category=wildfires to inspect imagery layers.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					earth_submit = st.button(
+						'Submit',
+						key='earthobservatory_submit'
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='earthobservatory_clear',
+						on_click=_clear_earthobservatory_state
+					)
+			
+			with col_right:
+				if earth_submit:
+					try:
+						f = EarthObservatory( )
+						result = f.fetch(
+							mode=earth_mode,
+							status=earth_status,
+							category=earth_category,
+							source=earth_source,
+							limit=int( earth_limit ),
+							days=int( earth_days ),
+							start_date=str( earth_start_date ),
+							end_date=str( earth_end_date ),
+							time=int( earth_timeout )
+						)
+						
+						st.session_state[ 'earthobservatory_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Earth Observatory request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'earthobservatory_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						if result.get( 'params', { } ):
+							st.markdown( f"**Parameters:** {len( result.get( 'params', { } ) )}" )
+					
 					if result.get( 'params', { } ):
-						st.markdown( f"**Parameters:** {len( result.get( 'params', { } ) )}" )
-				
-				if result.get( 'params', { } ):
-					st.markdown( '#### Request Parameters' )
-					st.json( result.get( 'params', { } ) )
-				
-				if result.get( 'events', [ ] ):
-					st.markdown( '#### Events' )
-					df_events = pd.DataFrame( result.get( 'events', [ ] ) )
-					st.dataframe( df_events, use_container_width=True, hide_index=True )
-				
-				if result.get( 'categories', [ ] ):
-					st.markdown( '#### Categories' )
-					df_categories = pd.DataFrame( result.get( 'categories', [ ] ) )
-					st.dataframe( df_categories, use_container_width=True, hide_index=True )
-				
-				if result.get( 'sources', [ ] ):
-					st.markdown( '#### Sources' )
-					df_sources = pd.DataFrame( result.get( 'sources', [ ] ) )
-					st.dataframe( df_sources, use_container_width=True, hide_index=True )
-				
-				if result.get( 'layers', [ ] ):
-					st.markdown( '#### Layers' )
-					df_layers = pd.DataFrame( result.get( 'layers', [ ] ) )
-					st.dataframe( df_layers, use_container_width=True, hide_index=True )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
+						st.markdown( '#### Request Parameters' )
+						st.json( result.get( 'params', { } ) )
+					
+					if result.get( 'events', [ ] ):
+						st.markdown( '#### Events' )
+						df_events = pd.DataFrame( result.get( 'events', [ ] ) )
+						st.dataframe( df_events, use_container_width=True, hide_index=True )
+					
+					if result.get( 'categories', [ ] ):
+						st.markdown( '#### Categories' )
+						df_categories = pd.DataFrame( result.get( 'categories', [ ] ) )
+						st.dataframe( df_categories, use_container_width=True, hide_index=True )
+					
+					if result.get( 'sources', [ ] ):
+						st.markdown( '#### Sources' )
+						df_sources = pd.DataFrame( result.get( 'sources', [ ] ) )
+						st.dataframe( df_sources, use_container_width=True, hide_index=True )
+					
+					if result.get( 'layers', [ ] ):
+						st.markdown( '#### Layers' )
+						df_layers = pd.DataFrame( result.get( 'layers', [ ] ) )
+						st.dataframe( df_layers, use_container_width=True, hide_index=True )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- USGS The National Map
+		with st.expander( label='The National Map', icon='🗺️', expanded=False ):
+			if 'usgstnm_results' not in st.session_state:
+				st.session_state[ 'usgstnm_results' ] = { }
+			
+			if 'usgstnm_clear_request' not in st.session_state:
+				st.session_state[ 'usgstnm_clear_request' ] = False
+			
+			if st.session_state.get( 'usgstnm_clear_request', False ):
+				st.session_state[ 'usgstnm_mode' ] = 'products'
+				st.session_state[ 'usgstnm_dataset' ] = ''
+				st.session_state[ 'usgstnm_q' ] = ''
+				st.session_state[ 'usgstnm_bbox' ] = ''
+				st.session_state[ 'usgstnm_prod_formats' ] = ''
+				st.session_state[ 'usgstnm_max_items' ] = 25
+				st.session_state[ 'usgstnm_offset' ] = 0
+				st.session_state[ 'usgstnm_timeout' ] = 20
+				st.session_state[ 'usgstnm_results' ] = { }
+				st.session_state[ 'usgstnm_clear_request' ] = False
+			
+			def _clear_usgstnm_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the USGS The National Map expander state for reset on the next
+					rerun.
 	
-	# -------- USGS The National Map
-	with st.expander( label='The National Map', icon='🗺️', expanded=False ):
-		if 'usgstnm_results' not in st.session_state:
-			st.session_state[ 'usgstnm_results' ] = { }
-		
-		if 'usgstnm_clear_request' not in st.session_state:
-			st.session_state[ 'usgstnm_clear_request' ] = False
-		
-		if st.session_state.get( 'usgstnm_clear_request', False ):
-			st.session_state[ 'usgstnm_mode' ] = 'products'
-			st.session_state[ 'usgstnm_dataset' ] = ''
-			st.session_state[ 'usgstnm_q' ] = ''
-			st.session_state[ 'usgstnm_bbox' ] = ''
-			st.session_state[ 'usgstnm_prod_formats' ] = ''
-			st.session_state[ 'usgstnm_max_items' ] = 25
-			st.session_state[ 'usgstnm_offset' ] = 0
-			st.session_state[ 'usgstnm_timeout' ] = 20
-			st.session_state[ 'usgstnm_results' ] = { }
-			st.session_state[ 'usgstnm_clear_request' ] = False
-		
-		def _clear_usgstnm_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the USGS The National Map expander state for reset on the next
-				rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'usgstnm_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			usgstnm_mode = st.selectbox(
-				'Mode',
-				options=[ 'products', 'datasets' ],
-				index=[ 'products', 'datasets' ].index(
-					st.session_state.get( 'usgstnm_mode', 'products' )
-				),
-				key='usgstnm_mode'
-			)
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'usgstnm_clear_request' ] = True
 			
-			usgstnm_dataset = st.text_input(
-				'Dataset',
-				value=st.session_state.get( 'usgstnm_dataset', '' ),
-				key='usgstnm_dataset',
-				disabled=(usgstnm_mode != 'products'),
-				placeholder='Example: Digital Elevation Model (DEM) 1 meter'
-			)
+			col_left, col_right = st.columns( 2, border=True )
 			
-			usgstnm_q = st.text_input(
-				'Search Text',
-				value=st.session_state.get( 'usgstnm_q', '' ),
-				key='usgstnm_q',
-				disabled=(usgstnm_mode != 'products'),
-				placeholder='Optional keyword search'
-			)
-			
-			usgstnm_bbox = st.text_input(
-				'Bounding Box',
-				value=st.session_state.get( 'usgstnm_bbox', '' ),
-				key='usgstnm_bbox',
-				disabled=(usgstnm_mode != 'products'),
-				placeholder='minx,miny,maxx,maxy'
-			)
-			
-			usgstnm_prod_formats = st.text_input(
-				'Product Formats',
-				value=st.session_state.get( 'usgstnm_prod_formats', '' ),
-				key='usgstnm_prod_formats',
-				disabled=(usgstnm_mode != 'products'),
-				placeholder='Examples: GeoTIFF, IMG, LAS, LAZ'
-			)
-			
-			page_c1, page_c2 = st.columns( 2 )
-			
-			with page_c1:
-				usgstnm_max_items = st.number_input(
-					'Max Items',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'usgstnm_max_items', 25 ) ),
-					step=1,
-					key='usgstnm_max_items',
-					disabled=(usgstnm_mode != 'products')
+			with col_left:
+				usgstnm_mode = st.selectbox(
+					'Mode',
+					options=[ 'products', 'datasets' ],
+					index=[ 'products', 'datasets' ].index(
+						st.session_state.get( 'usgstnm_mode', 'products' )
+					),
+					key='usgstnm_mode'
 				)
-			
-			with page_c2:
-				usgstnm_offset = st.number_input(
-					'Offset',
-					min_value=0,
-					max_value=10000,
-					value=int( st.session_state.get( 'usgstnm_offset', 0 ) ),
-					step=1,
-					key='usgstnm_offset',
-					disabled=(usgstnm_mode != 'products')
+				
+				usgstnm_dataset = st.text_input(
+					'Dataset',
+					value=st.session_state.get( 'usgstnm_dataset', '' ),
+					key='usgstnm_dataset',
+					disabled=(usgstnm_mode != 'products'),
+					placeholder='Example: Digital Elevation Model (DEM) 1 meter'
 				)
-			
-			usgstnm_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'usgstnm_timeout', 20 ) ),
-				step=1,
-				key='usgstnm_timeout'
-			)
-			
-			st.caption(
-				'Products mode searches downloadable TNM records. Datasets mode '
-				'returns the dataset catalog for discovery.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				usgstnm_submit = st.button(
-					'Submit',
-					key='usgstnm_submit'
+				
+				usgstnm_q = st.text_input(
+					'Search Text',
+					value=st.session_state.get( 'usgstnm_q', '' ),
+					key='usgstnm_q',
+					disabled=(usgstnm_mode != 'products'),
+					placeholder='Optional keyword search'
 				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='usgstnm_clear',
-					on_click=_clear_usgstnm_state
+				
+				usgstnm_bbox = st.text_input(
+					'Bounding Box',
+					value=st.session_state.get( 'usgstnm_bbox', '' ),
+					key='usgstnm_bbox',
+					disabled=(usgstnm_mode != 'products'),
+					placeholder='minx,miny,maxx,maxy'
 				)
-		
-		with col_right:
-			if usgstnm_submit:
-				try:
-					f = USGSTheNationalMap( )
-					result = f.fetch(
-						mode=str( usgstnm_mode ),
-						dataset=str( usgstnm_dataset ).strip( ),
-						q=str( usgstnm_q ).strip( ),
-						bbox=str( usgstnm_bbox ).strip( ),
-						prod_formats=str( usgstnm_prod_formats ).strip( ),
-						max_items=int( usgstnm_max_items ),
-						offset=int( usgstnm_offset ),
-						time=int( usgstnm_timeout )
+				
+				usgstnm_prod_formats = st.text_input(
+					'Product Formats',
+					value=st.session_state.get( 'usgstnm_prod_formats', '' ),
+					key='usgstnm_prod_formats',
+					disabled=(usgstnm_mode != 'products'),
+					placeholder='Examples: GeoTIFF, IMG, LAS, LAZ'
+				)
+				
+				page_c1, page_c2 = st.columns( 2 )
+				
+				with page_c1:
+					usgstnm_max_items = st.number_input(
+						'Max Items',
+						min_value=1,
+						max_value=500,
+						value=int( st.session_state.get( 'usgstnm_max_items', 25 ) ),
+						step=1,
+						key='usgstnm_max_items',
+						disabled=(usgstnm_mode != 'products')
 					)
-					
-					st.session_state[ 'usgstnm_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'USGS The National Map request failed.' )
-					st.exception( exc )
+				with page_c2:
+					usgstnm_offset = st.number_input(
+						'Offset',
+						min_value=0,
+						max_value=10000,
+						value=int( st.session_state.get( 'usgstnm_offset', 0 ) ),
+						step=1,
+						key='usgstnm_offset',
+						disabled=(usgstnm_mode != 'products')
+					)
+				
+				usgstnm_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'usgstnm_timeout', 20 ) ),
+					step=1,
+					key='usgstnm_timeout'
+				)
+				
+				st.caption(
+					'Products mode searches downloadable TNM records. Datasets mode '
+					'returns the dataset catalog for discovery.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					usgstnm_submit = st.button(
+						'Submit',
+						key='usgstnm_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='usgstnm_clear',
+						on_click=_clear_usgstnm_state
+					)
 			
-			result = st.session_state.get( 'usgstnm_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					params = result.get( 'params', { } ) or { }
-					if 'datasets' in params:
-						st.markdown(
-							f"**Dataset Filter:** {params.get( 'datasets', '' )}"
-						)
-					if 'bbox' in params:
-						st.markdown(
-							f"**Bounding Box:** {params.get( 'bbox', '' )}"
-						)
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						first_title = str( summary.get( 'first_title', '' ) or '' )
-						if first_title:
-							st.markdown( f"**First Result:** {first_title}" )
-						else:
-							st.markdown( '**First Result:** N/A' )
-					
-					with sum_c3:
-						first_dataset = str( summary.get( 'first_dataset', '' ) or '' )
-						if first_dataset:
-							st.markdown( f"**Dataset:** {first_dataset}" )
-						else:
-							st.markdown( '**Dataset:** N/A' )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### Results' )
-					df_usgstnm = pd.DataFrame( rows )
-					
-					if not df_usgstnm.empty:
-						st.dataframe(
-							df_usgstnm,
-							use_container_width=True,
-							hide_index=True
+			with col_right:
+				if usgstnm_submit:
+					try:
+						f = USGSTheNationalMap( )
+						result = f.fetch(
+							mode=str( usgstnm_mode ),
+							dataset=str( usgstnm_dataset ).strip( ),
+							q=str( usgstnm_q ).strip( ),
+							bbox=str( usgstnm_bbox ).strip( ),
+							prod_formats=str( usgstnm_prod_formats ).strip( ),
+							max_items=int( usgstnm_max_items ),
+							offset=int( usgstnm_offset ),
+							time=int( usgstnm_timeout )
 						)
 						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Title', '' ) or
-								item.get( 'Name', '' ) or
-								f'Record {idx}'
+						st.session_state[ 'usgstnm_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'USGS The National Map request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'usgstnm_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'datasets' in params:
+							st.markdown(
+								f"**Dataset Filter:** {params.get( 'datasets', '' )}"
+							)
+						if 'bbox' in params:
+							st.markdown(
+								f"**Bounding Box:** {params.get( 'bbox', '' )}"
+							)
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							first_title = str( summary.get( 'first_title', '' ) or '' )
+							if first_title:
+								st.markdown( f"**First Result:** {first_title}" )
+							else:
+								st.markdown( '**First Result:** N/A' )
+						
+						with sum_c3:
+							first_dataset = str( summary.get( 'first_dataset', '' ) or '' )
+							if first_dataset:
+								st.markdown( f"**Dataset:** {first_dataset}" )
+							else:
+								st.markdown( '**Dataset:** N/A' )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### Results' )
+						df_usgstnm = pd.DataFrame( rows )
+						
+						if not df_usgstnm.empty:
+							st.dataframe(
+								df_usgstnm,
+								use_container_width=True,
+								hide_index=True
 							)
 							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								left_c, right_c = st.columns( 2 )
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Title', '' ) or
+									item.get( 'Name', '' ) or
+									f'Record {idx}'
+								)
 								
-								with left_c:
-									if 'Dataset' in item:
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									left_c, right_c = st.columns( 2 )
+									
+									with left_c:
+										if 'Dataset' in item:
+											st.markdown(
+												f"**Dataset:** {item.get( 'Dataset', '' )}"
+											)
+										if 'Format' in item:
+											st.markdown(
+												f"**Format:** {item.get( 'Format', '' )}"
+											)
+										if 'Publication Date' in item:
+											st.markdown(
+												f"**Publication Date:** "
+												f"{item.get( 'Publication Date', '' )}"
+											)
+									
+									with right_c:
+										if 'Bounding Box' in item:
+											st.markdown(
+												f"**Bounding Box:** "
+												f"{item.get( 'Bounding Box', '' )}"
+											)
+										if 'Download URL' in item:
+											st.markdown(
+												f"**Download URL:** "
+												f"{item.get( 'Download URL', '' )}"
+											)
+										if 'Metadata URL' in item:
+											st.markdown(
+												f"**Metadata URL:** "
+												f"{item.get( 'Metadata URL', '' )}"
+											)
+									
+									if 'Description' in item and item.get( 'Description', '' ):
 										st.markdown(
-											f"**Dataset:** {item.get( 'Dataset', '' )}"
+											f"**Description:** {item.get( 'Description', '' )}"
 										)
-									if 'Format' in item:
-										st.markdown(
-											f"**Format:** {item.get( 'Format', '' )}"
-										)
-									if 'Publication Date' in item:
-										st.markdown(
-											f"**Publication Date:** "
-											f"{item.get( 'Publication Date', '' )}"
-										)
-								
-								with right_c:
-									if 'Bounding Box' in item:
-										st.markdown(
-											f"**Bounding Box:** "
-											f"{item.get( 'Bounding Box', '' )}"
-										)
-									if 'Download URL' in item:
-										st.markdown(
-											f"**Download URL:** "
-											f"{item.get( 'Download URL', '' )}"
-										)
-									if 'Metadata URL' in item:
-										st.markdown(
-											f"**Metadata URL:** "
-											f"{item.get( 'Metadata URL', '' )}"
-										)
-								
-								if 'Description' in item and item.get( 'Description', '' ):
-									st.markdown(
-										f"**Description:** {item.get( 'Description', '' )}"
-									)
-					else:
-						st.info( 'No displayable TNM rows were found.' )
-				else:
-					st.info( 'No TNM records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- USGS ScienceBase
-	with st.expander( label='USGS Science Base', icon='🔬', expanded=False ):
-		if 'usgssb_results' not in st.session_state:
-			st.session_state[ 'usgssb_results' ] = { }
-		
-		if 'usgssb_clear_request' not in st.session_state:
-			st.session_state[ 'usgssb_clear_request' ] = False
-		
-		if st.session_state.get( 'usgssb_clear_request', False ):
-			st.session_state[ 'usgssb_mode' ] = 'items'
-			st.session_state[ 'usgssb_q' ] = ''
-			st.session_state[ 'usgssb_item_id' ] = ''
-			st.session_state[ 'usgssb_max_items' ] = 25
-			st.session_state[ 'usgssb_offset' ] = 0
-			st.session_state[ 'usgssb_fields' ] = ''
-			st.session_state[ 'usgssb_timeout' ] = 20
-			st.session_state[ 'usgssb_results' ] = { }
-			st.session_state[ 'usgssb_clear_request' ] = False
-		
-		def _clear_usgssb_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the USGS ScienceBase expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'usgssb_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		with col_left:
-			usgssb_mode = st.selectbox(
-				'Mode',
-				options=[ 'items', 'item' ],
-				index=[ 'items', 'item' ].index(
-					st.session_state.get( 'usgssb_mode', 'items' )
-				),
-				key='usgssb_mode'
-			)
-			
-			usgssb_q = st.text_input(
-				'Search Query',
-				value=st.session_state.get( 'usgssb_q', '' ),
-				key='usgssb_q',
-				disabled=(usgssb_mode != 'items'),
-				placeholder='Optional keyword search'
-			)
-			
-			usgssb_item_id = st.text_input(
-				'Item ID',
-				value=st.session_state.get( 'usgssb_item_id', '' ),
-				key='usgssb_item_id',
-				disabled=(usgssb_mode != 'item'),
-				placeholder='ScienceBase item identifier'
-			)
-			
-			page_c1, page_c2 = st.columns( 2 )
-			
-			with page_c1:
-				usgssb_max_items = st.number_input(
-					'Max Items',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'usgssb_max_items', 25 ) ),
-					step=1,
-					key='usgssb_max_items',
-					disabled=(usgssb_mode != 'items')
-				)
-			
-			with page_c2:
-				usgssb_offset = st.number_input(
-					'Offset',
-					min_value=0,
-					max_value=10000,
-					value=int( st.session_state.get( 'usgssb_offset', 0 ) ),
-					step=1,
-					key='usgssb_offset',
-					disabled=(usgssb_mode != 'items')
-				)
-			
-			usgssb_fields = st.text_input(
-				'Fields',
-				value=st.session_state.get( 'usgssb_fields', '' ),
-				key='usgssb_fields',
-				disabled=(usgssb_mode != 'items'),
-				placeholder='Optional fields selector'
-			)
-			
-			usgssb_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'usgssb_timeout', 20 ) ),
-				step=1,
-				key='usgssb_timeout'
-			)
-			
-			st.caption(
-				'Items mode performs catalog discovery. Item mode retrieves a single '
-				'ScienceBase record by identifier.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				usgssb_submit = st.button(
-					'Submit',
-					key='usgssb_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='usgssb_clear',
-					on_click=_clear_usgssb_state
-				)
-		
-		with col_right:
-			if usgssb_submit:
-				try:
-					f = USGSScienceBase( )
-					result = f.fetch(
-						mode=str( usgssb_mode ),
-						q=str( usgssb_q ).strip( ),
-						item_id=str( usgssb_item_id ).strip( ),
-						max_items=int( usgssb_max_items ),
-						offset=int( usgssb_offset ),
-						fields=str( usgssb_fields ).strip( ),
-						time=int( usgssb_timeout )
-					)
-					
-					st.session_state[ 'usgssb_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'USGS ScienceBase request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'usgssb_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					params = result.get( 'params', { } ) or { }
-					if 'q' in params:
-						st.markdown(
-							f"**Search Query:** {params.get( 'q', '' )}"
-						)
-					if 'fields' in params:
-						st.markdown(
-							f"**Fields:** {params.get( 'fields', '' )}"
-						)
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						first_title = str( summary.get( 'first_title', '' ) or '' )
-						if first_title:
-							st.markdown( f"**First Result:** {first_title}" )
 						else:
-							st.markdown( '**First Result:** N/A' )
+							st.info( 'No displayable TNM rows were found.' )
+					else:
+						st.info( 'No TNM records were returned.' )
 					
-					with sum_c3:
-						st.metric(
-							'Spatial Records',
-							int( summary.get( 'spatial_count', 0 ) or 0 )
-						)
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- USGS ScienceBase
+		with st.expander( label='USGS Science Base', icon='🔬', expanded=False ):
+			if 'usgssb_results' not in st.session_state:
+				st.session_state[ 'usgssb_results' ] = { }
+			
+			if 'usgssb_clear_request' not in st.session_state:
+				st.session_state[ 'usgssb_clear_request' ] = False
+			
+			if st.session_state.get( 'usgssb_clear_request', False ):
+				st.session_state[ 'usgssb_mode' ] = 'items'
+				st.session_state[ 'usgssb_q' ] = ''
+				st.session_state[ 'usgssb_item_id' ] = ''
+				st.session_state[ 'usgssb_max_items' ] = 25
+				st.session_state[ 'usgssb_offset' ] = 0
+				st.session_state[ 'usgssb_fields' ] = ''
+				st.session_state[ 'usgssb_timeout' ] = 20
+				st.session_state[ 'usgssb_results' ] = { }
+				st.session_state[ 'usgssb_clear_request' ] = False
+			
+			def _clear_usgssb_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the USGS ScienceBase expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'usgssb_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			with col_left:
+				usgssb_mode = st.selectbox(
+					'Mode',
+					options=[ 'items', 'item' ],
+					index=[ 'items', 'item' ].index(
+						st.session_state.get( 'usgssb_mode', 'items' )
+					),
+					key='usgssb_mode'
+				)
 				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
+				usgssb_q = st.text_input(
+					'Search Query',
+					value=st.session_state.get( 'usgssb_q', '' ),
+					key='usgssb_q',
+					disabled=(usgssb_mode != 'items'),
+					placeholder='Optional keyword search'
+				)
 				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### Results' )
-					df_usgssb = pd.DataFrame( rows )
-					
-					if not df_usgssb.empty:
-						st.dataframe(
-							df_usgssb,
-							use_container_width=True,
-							hide_index=True
+				usgssb_item_id = st.text_input(
+					'Item ID',
+					value=st.session_state.get( 'usgssb_item_id', '' ),
+					key='usgssb_item_id',
+					disabled=(usgssb_mode != 'item'),
+					placeholder='ScienceBase item identifier'
+				)
+				
+				page_c1, page_c2 = st.columns( 2 )
+				
+				with page_c1:
+					usgssb_max_items = st.number_input(
+						'Max Items',
+						min_value=1,
+						max_value=500,
+						value=int( st.session_state.get( 'usgssb_max_items', 25 ) ),
+						step=1,
+						key='usgssb_max_items',
+						disabled=(usgssb_mode != 'items')
+					)
+				
+				with page_c2:
+					usgssb_offset = st.number_input(
+						'Offset',
+						min_value=0,
+						max_value=10000,
+						value=int( st.session_state.get( 'usgssb_offset', 0 ) ),
+						step=1,
+						key='usgssb_offset',
+						disabled=(usgssb_mode != 'items')
+					)
+				
+				usgssb_fields = st.text_input(
+					'Fields',
+					value=st.session_state.get( 'usgssb_fields', '' ),
+					key='usgssb_fields',
+					disabled=(usgssb_mode != 'items'),
+					placeholder='Optional fields selector'
+				)
+				
+				usgssb_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'usgssb_timeout', 20 ) ),
+					step=1,
+					key='usgssb_timeout'
+				)
+				
+				st.caption(
+					'Items mode performs catalog discovery. Item mode retrieves a single '
+					'ScienceBase record by identifier.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					usgssb_submit = st.button(
+						'Submit',
+						key='usgssb_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='usgssb_clear',
+						on_click=_clear_usgssb_state
+					)
+			
+			with col_right:
+				if usgssb_submit:
+					try:
+						f = USGSScienceBase( )
+						result = f.fetch(
+							mode=str( usgssb_mode ),
+							q=str( usgssb_q ).strip( ),
+							item_id=str( usgssb_item_id ).strip( ),
+							max_items=int( usgssb_max_items ),
+							offset=int( usgssb_offset ),
+							fields=str( usgssb_fields ).strip( ),
+							time=int( usgssb_timeout )
 						)
 						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Title', '' ) or
-								item.get( 'Id', '' ) or
-								f'Record {idx}'
+						st.session_state[ 'usgssb_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'USGS ScienceBase request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'usgssb_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'q' in params:
+							st.markdown(
+								f"**Search Query:** {params.get( 'q', '' )}"
+							)
+						if 'fields' in params:
+							st.markdown(
+								f"**Fields:** {params.get( 'fields', '' )}"
+							)
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							first_title = str( summary.get( 'first_title', '' ) or '' )
+							if first_title:
+								st.markdown( f"**First Result:** {first_title}" )
+							else:
+								st.markdown( '**First Result:** N/A' )
+						
+						with sum_c3:
+							st.metric(
+								'Spatial Records',
+								int( summary.get( 'spatial_count', 0 ) or 0 )
+							)
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### Results' )
+						df_usgssb = pd.DataFrame( rows )
+						
+						if not df_usgssb.empty:
+							st.dataframe(
+								df_usgssb,
+								use_container_width=True,
+								hide_index=True
 							)
 							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								left_c, right_c = st.columns( 2 )
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Title', '' ) or
+									item.get( 'Id', '' ) or
+									f'Record {idx}'
+								)
 								
-								with left_c:
-									if 'Type' in item:
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									left_c, right_c = st.columns( 2 )
+									
+									with left_c:
+										if 'Type' in item:
+											st.markdown(
+												f"**Type:** {item.get( 'Type', '' )}"
+											)
+										if 'Updated' in item:
+											st.markdown(
+												f"**Updated:** {item.get( 'Updated', '' )}"
+											)
+										if 'Has Spatial Metadata' in item:
+											st.markdown(
+												f"**Has Spatial Metadata:** "
+												f"{item.get( 'Has Spatial Metadata', '' )}"
+											)
+									
+									with right_c:
+										if 'File Count' in item:
+											st.markdown(
+												f"**File Count:** {item.get( 'File Count', '' )}"
+											)
+										if 'Web Link Count' in item:
+											st.markdown(
+												f"**Web Link Count:** "
+												f"{item.get( 'Web Link Count', '' )}"
+											)
+										if 'Contact Count' in item:
+											st.markdown(
+												f"**Contact Count:** "
+												f"{item.get( 'Contact Count', '' )}"
+											)
+									
+									if 'Summary' in item and item.get( 'Summary', '' ):
 										st.markdown(
-											f"**Type:** {item.get( 'Type', '' )}"
+											f"**Summary:** {item.get( 'Summary', '' )}"
 										)
-									if 'Updated' in item:
-										st.markdown(
-											f"**Updated:** {item.get( 'Updated', '' )}"
-										)
-									if 'Has Spatial Metadata' in item:
-										st.markdown(
-											f"**Has Spatial Metadata:** "
-											f"{item.get( 'Has Spatial Metadata', '' )}"
-										)
-								
-								with right_c:
-									if 'File Count' in item:
-										st.markdown(
-											f"**File Count:** {item.get( 'File Count', '' )}"
-										)
-									if 'Web Link Count' in item:
-										st.markdown(
-											f"**Web Link Count:** "
-											f"{item.get( 'Web Link Count', '' )}"
-										)
-									if 'Contact Count' in item:
-										st.markdown(
-											f"**Contact Count:** "
-											f"{item.get( 'Contact Count', '' )}"
-										)
-								
-								if 'Summary' in item and item.get( 'Summary', '' ):
-									st.markdown(
-										f"**Summary:** {item.get( 'Summary', '' )}"
-									)
+						else:
+							st.info( 'No displayable ScienceBase rows were found.' )
 					else:
-						st.info( 'No displayable ScienceBase rows were found.' )
-				else:
-					st.info( 'No ScienceBase records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- Open Sky
-	with st.expander( label='Open Sky', icon='✈️', expanded=False ):
-		def _clear_opensky_state( ) -> None:
-			st.session_state[ 'opensky_results' ] = { }
-			st.session_state[ 'opensky_mode' ] = 'states_bbox'
-			st.session_state[ 'opensky_icao24' ] = ''
-			st.session_state[ 'opensky_airport' ] = ''
-			st.session_state[ 'opensky_begin' ] = 0
-			st.session_state[ 'opensky_end' ] = 0
-			st.session_state[ 'opensky_time_value' ] = 0
-			st.session_state[ 'opensky_lamin' ] = 39.0
-			st.session_state[ 'opensky_lomin' ] = -77.5
-			st.session_state[ 'opensky_lamax' ] = 40.5
-			st.session_state[ 'opensky_lomax' ] = -75.0
-			st.session_state[ 'opensky_extended' ] = False
-			st.session_state[ 'opensky_client_id' ] = ''
-			st.session_state[ 'opensky_client_secret' ] = ''
-			st.session_state[ 'opensky_timeout' ] = 20
-			
-		if 'opensky_results' not in st.session_state:
-			st.session_state[ 'opensky_results' ] = { }
+						st.info( 'No ScienceBase records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 		
-		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-		
-		with col_left:
-			mode = st.selectbox(
-				'Mode',
-				options=[
-						'states_bbox',
-						'flights_aircraft',
-						'arrivals_airport',
-						'departures_airport',
-						'track_aircraft',
-				],
-				key='opensky_mode',
-				help=(
-						'states_bbox = live aircraft inside a bounding box; '
-						'flights_aircraft = flights for one aircraft; '
-						'arrivals_airport / departures_airport = airport traffic; '
-						'track_aircraft = trajectory waypoints for one aircraft.'
-				)
-			)
-			
-			icao24 = st.text_input(
-				'ICAO24 (Aircraft Hex ID)',
-				value='',
-				key='opensky_icao24',
-				help='Required for flights_aircraft and track_aircraft.'
-			)
-			
-			airport = st.text_input(
-				'Airport ICAO',
-				value='',
-				key='opensky_airport',
-				help='Required for arrivals_airport and departures_airport.'
-			)
-			
-			begin = st.number_input(
-				'Begin (Unix Time)',
-				min_value=0,
-				value=0,
-				step=60,
-				key='opensky_begin',
-				help='Required for aircraft and airport history queries.'
-			)
-			
-			end = st.number_input(
-				'End (Unix Time)',
-				min_value=0,
-				value=0,
-				step=60,
-				key='opensky_end',
-				help='Required for aircraft and airport history queries.'
-			)
-			
-			time_value = st.number_input(
-				'Time (Unix Time / 0 for Live Track)',
-				min_value=0,
-				value=0,
-				step=60,
-				key='opensky_time_value',
-				help='Optional for states_bbox; used by track_aircraft.'
-			)
-			
-			lamin = st.number_input( 'Min Latitude', value=39.0, key='opensky_lamin' )
-			lomin = st.number_input( 'Min Longitude', value=-77.5, key='opensky_lomin' )
-			lamax = st.number_input( 'Max Latitude', value=40.5, key='opensky_lamax' )
-			lomax = st.number_input( 'Max Longitude', value=-75.0, key='opensky_lomax' )
-			
-			extended = st.checkbox(
-				'Extended Aircraft Categories',
-				value=False,
-				key='opensky_extended',
-				help='Only applies to states_bbox.'
-			)
-			
-			client_id = st.text_input(
-				'Client ID (Optional)',
-				value='',
-				key='opensky_client_id'
-			)
-			
-			client_secret = st.text_input(
-				'Client Secret (Optional)',
-				value='',
-				type='password',
-				key='opensky_client_secret'
-			)
-			
-			timeout = st.slider(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=60,
-				value=20,
-				step=1,
-				key='opensky_timeout'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				opensky_submit = st.button(
-					'Submit',
-					key='opensky_submit',
-					use_container_width=True
-				)
-			with b2:
-				st.button(
-					'Clear',
-					key='opensky_clear',
-					on_click=_clear_opensky_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			if opensky_submit:
-				try:
-					client = OpenSky( )
-					result = client.fetch(
-						mode=mode,
-						icao24=icao24,
-						airport=airport,
-						begin=int( begin ) if begin else None,
-						end=int( end ) if end else None,
-						time_value=int( time_value ) if time_value is not None else None,
-						lamin=float( lamin ) if lamin is not None else None,
-						lomin=float( lomin ) if lomin is not None else None,
-						lamax=float( lamax ) if lamax is not None else None,
-						lomax=float( lomax ) if lomax is not None else None,
-						extended=extended,
-						client_id=client_id.strip( ) or None,
-						client_secret=client_secret.strip( ) or None,
-						time=int( timeout ),
-					)
-					st.session_state[ 'opensky_results' ] = result or { }
-				except Exception as exc:
-					st.error( 'OpenSky request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'opensky_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'Returned': int( result.get( 'count', 0 ) or 0 ),
-							'Time': result.get( 'time', '' ) or result.get( 'start_time', '' ),
-							'ICAO24': result.get( 'icao24', '' ),
-							'Callsign': result.get( 'callsign', '' ),
-					}
-				)
+		# -------- Open Sky
+		with st.expander( label='Open Sky', icon='✈️', expanded=False ):
+			def _clear_opensky_state( ) -> None:
+				st.session_state[ 'opensky_results' ] = { }
+				st.session_state[ 'opensky_mode' ] = 'states_bbox'
+				st.session_state[ 'opensky_icao24' ] = ''
+				st.session_state[ 'opensky_airport' ] = ''
+				st.session_state[ 'opensky_begin' ] = 0
+				st.session_state[ 'opensky_end' ] = 0
+				st.session_state[ 'opensky_time_value' ] = 0
+				st.session_state[ 'opensky_lamin' ] = 39.0
+				st.session_state[ 'opensky_lomin' ] = -77.5
+				st.session_state[ 'opensky_lamax' ] = 40.5
+				st.session_state[ 'opensky_lomax' ] = -75.0
+				st.session_state[ 'opensky_extended' ] = False
+				st.session_state[ 'opensky_client_id' ] = ''
+				st.session_state[ 'opensky_client_secret' ] = ''
+				st.session_state[ 'opensky_timeout' ] = 20
 				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if result.get( 'mode' ) == 'states_bbox':
-					if items:
-						st.markdown( '#### Live State Vectors' )
-						st.dataframe( items, use_container_width=True, hide_index=True )
-						
-						map_rows = [
-								{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-								for x in items
-								if x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
-						]
-						if map_rows:
-							st.markdown( '#### Aircraft Positions' )
-							st.map( map_rows )
-					else:
-						st.info( 'No aircraft state vectors matched the requested filter.' )
-				
-				elif result.get( 'mode' ) in (
+			if 'opensky_results' not in st.session_state:
+				st.session_state[ 'opensky_results' ] = { }
+			
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			
+			with col_left:
+				mode = st.selectbox(
+					'Mode',
+					options=[
+							'states_bbox',
 							'flights_aircraft',
 							'arrivals_airport',
-							'departures_airport'
-				):
-					if items:
-						st.markdown( '#### Flights' )
-						st.dataframe( items, use_container_width=True, hide_index=True )
-					else:
-						st.info( 'No flight rows were returned for that query window.' )
+							'departures_airport',
+							'track_aircraft',
+					],
+					key='opensky_mode',
+					help=(
+							'states_bbox = live aircraft inside a bounding box; '
+							'flights_aircraft = flights for one aircraft; '
+							'arrivals_airport / departures_airport = airport traffic; '
+							'track_aircraft = trajectory waypoints for one aircraft.'
+					)
+				)
 				
-				elif result.get( 'mode' ) == 'track_aircraft':
-					if items:
-						st.markdown( '#### Track Waypoints' )
-						st.dataframe( items, use_container_width=True, hide_index=True )
-						
-						map_rows = [
-								{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-								for x in items
-								if x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
-						]
-						if map_rows:
-							st.markdown( '#### Track Map' )
-							st.map( map_rows )
-					else:
-						st.info( 'No track waypoints were returned for that aircraft/time.' )
+				icao24 = st.text_input(
+					'ICAO24 (Aircraft Hex ID)',
+					value='',
+					key='opensky_icao24',
+					help='Required for flights_aircraft and track_aircraft.'
+				)
 				
-				_render_fallback_raw( result )
+				airport = st.text_input(
+					'Airport ICAO',
+					value='',
+					key='opensky_airport',
+					help='Required for arrivals_airport and departures_airport.'
+				)
+				
+				begin = st.number_input(
+					'Begin (Unix Time)',
+					min_value=0,
+					value=0,
+					step=60,
+					key='opensky_begin',
+					help='Required for aircraft and airport history queries.'
+				)
+				
+				end = st.number_input(
+					'End (Unix Time)',
+					min_value=0,
+					value=0,
+					step=60,
+					key='opensky_end',
+					help='Required for aircraft and airport history queries.'
+				)
+				
+				time_value = st.number_input(
+					'Time (Unix Time / 0 for Live Track)',
+					min_value=0,
+					value=0,
+					step=60,
+					key='opensky_time_value',
+					help='Optional for states_bbox; used by track_aircraft.'
+				)
+				
+				lamin = st.number_input( 'Min Latitude', value=39.0, key='opensky_lamin' )
+				lomin = st.number_input( 'Min Longitude', value=-77.5, key='opensky_lomin' )
+				lamax = st.number_input( 'Max Latitude', value=40.5, key='opensky_lamax' )
+				lomax = st.number_input( 'Max Longitude', value=-75.0, key='opensky_lomax' )
+				
+				extended = st.checkbox(
+					'Extended Aircraft Categories',
+					value=False,
+					key='opensky_extended',
+					help='Only applies to states_bbox.'
+				)
+				
+				client_id = st.text_input(
+					'Client ID (Optional)',
+					value='',
+					key='opensky_client_id'
+				)
+				
+				client_secret = st.text_input(
+					'Client Secret (Optional)',
+					value='',
+					type='password',
+					key='opensky_client_secret'
+				)
+				
+				timeout = st.slider(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=60,
+					value=20,
+					step=1,
+					key='opensky_timeout'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					opensky_submit = st.button(
+						'Submit',
+						key='opensky_submit',
+						use_container_width=True
+					)
+				with b2:
+					st.button(
+						'Clear',
+						key='opensky_clear',
+						on_click=_clear_opensky_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				if opensky_submit:
+					try:
+						client = OpenSky( )
+						result = client.fetch(
+							mode=mode,
+							icao24=icao24,
+							airport=airport,
+							begin=int( begin ) if begin else None,
+							end=int( end ) if end else None,
+							time_value=int( time_value ) if time_value is not None else None,
+							lamin=float( lamin ) if lamin is not None else None,
+							lomin=float( lomin ) if lomin is not None else None,
+							lamax=float( lamax ) if lamax is not None else None,
+							lomax=float( lomax ) if lomax is not None else None,
+							extended=extended,
+							client_id=client_id.strip( ) or None,
+							client_secret=client_secret.strip( ) or None,
+							time=int( timeout ),
+						)
+						st.session_state[ 'opensky_results' ] = result or { }
+					except Exception as exc:
+						st.error( 'OpenSky request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'opensky_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'Returned': int( result.get( 'count', 0 ) or 0 ),
+								'Time': result.get( 'time', '' ) or result.get( 'start_time', '' ),
+								'ICAO24': result.get( 'icao24', '' ),
+								'Callsign': result.get( 'callsign', '' ),
+						}
+					)
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if result.get( 'mode' ) == 'states_bbox':
+						if items:
+							st.markdown( '#### Live State Vectors' )
+							st.dataframe( items, use_container_width=True, hide_index=True )
+							
+							map_rows = [
+									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+									for x in items
+									if x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
+							]
+							if map_rows:
+								st.markdown( '#### Aircraft Positions' )
+								st.map( map_rows )
+						else:
+							st.info( 'No aircraft state vectors matched the requested filter.' )
+					
+					elif result.get( 'mode' ) in (
+								'flights_aircraft',
+								'arrivals_airport',
+								'departures_airport'
+					):
+						if items:
+							st.markdown( '#### Flights' )
+							st.dataframe( items, use_container_width=True, hide_index=True )
+						else:
+							st.info( 'No flight rows were returned for that query window.' )
+					
+					elif result.get( 'mode' ) == 'track_aircraft':
+						if items:
+							st.markdown( '#### Track Waypoints' )
+							st.dataframe( items, use_container_width=True, hide_index=True )
+							
+							map_rows = [
+									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+									for x in items
+									if x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
+							]
+							if map_rows:
+								st.markdown( '#### Track Map' )
+								st.map( map_rows )
+						else:
+							st.info( 'No track waypoints were returned for that aircraft/time.' )
+					
+					_render_fallback_raw( result )
 			
 # ==============================================================================
 # ENVIRONMENTAL MODE
 # ==============================================================================
 elif mode == 'Environmental':
-	st.subheader( f'🌍 Environmental Data' )
-	st.divider( )
+	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	with center:
+		st.subheader( f'🌍 Environmental Data' )
+		st.divider( )
+		
+		# -------- AirNow
+		with st.expander( label='Air Now', icon='🌫️', expanded=False ):
+			if 'airnow_results' not in st.session_state:
+				st.session_state[ 'airnow_results' ] = { }
+			
+			if 'airnow_clear_request' not in st.session_state:
+				st.session_state[ 'airnow_clear_request' ] = False
+			
+			if st.session_state.get( 'airnow_clear_request', False ):
+				st.session_state[ 'airnow_mode' ] = 'current-zip'
+				st.session_state[ 'airnow_zip_code' ] = ''
+				st.session_state[ 'airnow_latitude' ] = ''
+				st.session_state[ 'airnow_longitude' ] = ''
+				st.session_state[ 'airnow_date' ] = dt.date.today( )
+				st.session_state[ 'airnow_distance' ] = 25
+				st.session_state[ 'airnow_timeout' ] = 20
+				st.session_state[ 'airnow_results' ] = { }
+				st.session_state[ 'airnow_clear_request' ] = False
+			
+			def _clear_airnow_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the AirNow expander state for reset on the next rerun.
 	
-	# -------- AirNow
-	with st.expander( label='Air Now', icon='🌫️', expanded=False ):
-		if 'airnow_results' not in st.session_state:
-			st.session_state[ 'airnow_results' ] = { }
-		
-		if 'airnow_clear_request' not in st.session_state:
-			st.session_state[ 'airnow_clear_request' ] = False
-		
-		if st.session_state.get( 'airnow_clear_request', False ):
-			st.session_state[ 'airnow_mode' ] = 'current-zip'
-			st.session_state[ 'airnow_zip_code' ] = ''
-			st.session_state[ 'airnow_latitude' ] = ''
-			st.session_state[ 'airnow_longitude' ] = ''
-			st.session_state[ 'airnow_date' ] = dt.date.today( )
-			st.session_state[ 'airnow_distance' ] = 25
-			st.session_state[ 'airnow_timeout' ] = 20
-			st.session_state[ 'airnow_results' ] = { }
-			st.session_state[ 'airnow_clear_request' ] = False
-		
-		def _clear_airnow_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the AirNow expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'airnow_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			airnow_mode = st.selectbox(
-				'Mode',
-				options=[
-						'current-zip',
-						'current-latlon',
-						'forecast-zip',
-						'forecast-latlon'
-				],
-				index=[
-						'current-zip',
-						'current-latlon',
-						'forecast-zip',
-						'forecast-latlon'
-				].index(
-					st.session_state.get( 'airnow_mode', 'current-zip' )
-				),
-				key='airnow_mode'
-			)
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'airnow_clear_request' ] = True
 			
-			airnow_zip_code = st.text_input(
-				'Zip Code',
-				value=st.session_state.get( 'airnow_zip_code', '' ),
-				key='airnow_zip_code',
-				disabled=(airnow_mode not in [ 'current-zip', 'forecast-zip' ]),
-				placeholder='Example: 22201'
-			)
+			col_left, col_right = st.columns( 2, border=True )
 			
-			coord_c1, coord_c2 = st.columns( 2 )
-			
-			with coord_c1:
-				airnow_latitude = st.text_input(
-					'Latitude',
-					value=st.session_state.get( 'airnow_latitude', '' ),
-					key='airnow_latitude',
-					disabled=(airnow_mode not in [ 'current-latlon', 'forecast-latlon' ]),
-					placeholder='Example: 38.8816'
+			with col_left:
+				airnow_mode = st.selectbox(
+					'Mode',
+					options=[
+							'current-zip',
+							'current-latlon',
+							'forecast-zip',
+							'forecast-latlon'
+					],
+					index=[
+							'current-zip',
+							'current-latlon',
+							'forecast-zip',
+							'forecast-latlon'
+					].index(
+						st.session_state.get( 'airnow_mode', 'current-zip' )
+					),
+					key='airnow_mode'
 				)
-			
-			with coord_c2:
-				airnow_longitude = st.text_input(
-					'Longitude',
-					value=st.session_state.get( 'airnow_longitude', '' ),
-					key='airnow_longitude',
-					disabled=(airnow_mode not in [ 'current-latlon', 'forecast-latlon' ]),
-					placeholder='Example: -77.0910'
+				
+				airnow_zip_code = st.text_input(
+					'Zip Code',
+					value=st.session_state.get( 'airnow_zip_code', '' ),
+					key='airnow_zip_code',
+					disabled=(airnow_mode not in [ 'current-zip', 'forecast-zip' ]),
+					placeholder='Example: 22201'
 				)
-			
-			airnow_date = st.date_input(
-				'Forecast Date',
-				value=st.session_state.get( 'airnow_date', dt.date.today( ) ),
-				key='airnow_date',
-				disabled=(airnow_mode not in [ 'forecast-zip', 'forecast-latlon' ])
-			)
-			
-			airnow_distance = st.number_input(
-				'Distance (miles)',
-				min_value=0,
-				max_value=500,
-				value=int( st.session_state.get( 'airnow_distance', 25 ) ),
-				step=1,
-				key='airnow_distance'
-			)
-			
-			airnow_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'airnow_timeout', 20 ) ),
-				step=1,
-				key='airnow_timeout'
-			)
-			
-			st.caption(
-				'AirNow supports current observations and forecasts by Zip code or '
-				'latitude/longitude.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				airnow_submit = st.button(
-					'Submit',
-					key='airnow_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='airnow_clear',
-					on_click=_clear_airnow_state
-				)
-		
-		with col_right:
-			if airnow_submit:
-				try:
-					f = AirNow( )
-					
-					latitude_value = None
-					longitude_value = None
-					
-					if str( airnow_latitude or '' ).strip( ):
-						latitude_value = float( airnow_latitude )
-					
-					if str( airnow_longitude or '' ).strip( ):
-						longitude_value = float( airnow_longitude )
-					
-					result = f.fetch(
-						mode=str( airnow_mode ),
-						zip_code=str( airnow_zip_code ).strip( ),
-						latitude=latitude_value,
-						longitude=longitude_value,
-						date=str( airnow_date ),
-						distance=int( airnow_distance ),
-						time=int( airnow_timeout )
+				
+				coord_c1, coord_c2 = st.columns( 2 )
+				
+				with coord_c1:
+					airnow_latitude = st.text_input(
+						'Latitude',
+						value=st.session_state.get( 'airnow_latitude', '' ),
+						key='airnow_latitude',
+						disabled=(airnow_mode not in [ 'current-latlon', 'forecast-latlon' ]),
+						placeholder='Example: 38.8816'
 					)
-					
-					st.session_state[ 'airnow_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'AirNow request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'airnow_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					params = result.get( 'params', { } ) or { }
-					if 'zipCode' in params:
-						st.markdown( f"**Zip Code:** {params.get( 'zipCode', '' )}" )
-					if 'distance' in params:
-						st.markdown( f"**Distance:** {params.get( 'distance', '' )} miles" )
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						max_aqi = summary.get( 'max_aqi', None )
-						st.metric(
-							'Peak AQI',
-							'' if max_aqi is None else str( max_aqi )
-						)
-					
-					with sum_c3:
-						top_category = str( summary.get( 'top_category', '' ) or '' )
-						if top_category:
-							st.markdown( f"**Category:** {top_category}" )
-						else:
-							st.markdown( '**Category:** N/A' )
-					
-					reporting_area = str( summary.get( 'reporting_area', '' ) or '' )
-					dominant_parameter = str(
-						summary.get( 'dominant_parameter', '' ) or ''
+				with coord_c2:
+					airnow_longitude = st.text_input(
+						'Longitude',
+						value=st.session_state.get( 'airnow_longitude', '' ),
+						key='airnow_longitude',
+						disabled=(airnow_mode not in [ 'current-latlon', 'forecast-latlon' ]),
+						placeholder='Example: -77.0910'
 					)
-					
-					if reporting_area:
-						st.markdown( f"**Reporting Area:** {reporting_area}" )
-					if dominant_parameter:
-						st.markdown(
-							f"**Dominant Parameter in Result Set:** {dominant_parameter}"
-						)
 				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
+				airnow_date = st.date_input(
+					'Forecast Date',
+					value=st.session_state.get( 'airnow_date', dt.date.today( ) ),
+					key='airnow_date',
+					disabled=(airnow_mode not in [ 'forecast-zip', 'forecast-latlon' ])
+				)
 				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### Air Quality Results' )
-					df_airnow = pd.DataFrame( rows )
-					
-					if not df_airnow.empty:
-						st.dataframe(
-							df_airnow,
-							use_container_width=True,
-							hide_index=True
+				airnow_distance = st.number_input(
+					'Distance (miles)',
+					min_value=0,
+					max_value=500,
+					value=int( st.session_state.get( 'airnow_distance', 25 ) ),
+					step=1,
+					key='airnow_distance'
+				)
+				
+				airnow_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'airnow_timeout', 20 ) ),
+					step=1,
+					key='airnow_timeout'
+				)
+				
+				st.caption(
+					'AirNow supports current observations and forecasts by Zip code or '
+					'latitude/longitude.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					airnow_submit = st.button(
+						'Submit',
+						key='airnow_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='airnow_clear',
+						on_click=_clear_airnow_state
+					)
+			
+			with col_right:
+				if airnow_submit:
+					try:
+						f = AirNow( )
+						
+						latitude_value = None
+						longitude_value = None
+						
+						if str( airnow_latitude or '' ).strip( ):
+							latitude_value = float( airnow_latitude )
+						
+						if str( airnow_longitude or '' ).strip( ):
+							longitude_value = float( airnow_longitude )
+						
+						result = f.fetch(
+							mode=str( airnow_mode ),
+							zip_code=str( airnow_zip_code ).strip( ),
+							latitude=latitude_value,
+							longitude=longitude_value,
+							date=str( airnow_date ),
+							distance=int( airnow_distance ),
+							time=int( airnow_timeout )
 						)
 						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Reporting Area', '' ) or f'Record {idx}'
-							)
-							aqi = item.get( 'AQI', '' )
-							parameter = str( item.get( 'Parameter Name', '' ) or '' )
-							
-							with st.expander(
-									f'Record {idx}: AQI {aqi} - {label} - {parameter}',
-									expanded=False
-							):
-								left_c, right_c = st.columns( 2 )
-								
-								with left_c:
-									st.markdown(
-										f"**Date Observed:** "
-										f"{item.get( 'Date Observed', '' )}"
-									)
-									st.markdown(
-										f"**Hour Observed:** "
-										f"{item.get( 'Hour Observed', '' )}"
-									)
-									st.markdown(
-										f"**Reporting Area:** "
-										f"{item.get( 'Reporting Area', '' )}"
-									)
-									st.markdown(
-										f"**State Code:** {item.get( 'State Code', '' )}"
-									)
-								
-								with right_c:
-									st.markdown(
-										f"**Parameter Name:** "
-										f"{item.get( 'Parameter Name', '' )}"
-									)
-									st.markdown( f"**AQI:** {item.get( 'AQI', '' )}" )
-									st.markdown(
-										f"**Category:** {item.get( 'Category', '' )}"
-									)
-									st.markdown(
-										f"**Action Day:** {item.get( 'Action Day', '' )}"
-									)
-								
-								discussion = str( item.get( 'Discussion', '' ) or '' )
-								if discussion:
-									st.markdown( f"**Discussion:** {discussion}" )
-					else:
-						st.info( 'No displayable AirNow rows were found.' )
+						st.session_state[ 'airnow_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'AirNow request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'airnow_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
 				else:
-					st.info( 'No AirNow records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- NOAA Climate Data
-	with st.expander( label='NOAA Climate Data', icon='🌡️', expanded=False ):
-		if 'climatedata_results' not in st.session_state:
-			st.session_state[ 'climatedata_results' ] = { }
-		
-		if 'climatedata_clear_request' not in st.session_state:
-			st.session_state[ 'climatedata_clear_request' ] = False
-		
-		if st.session_state.get( 'climatedata_clear_request', False ):
-			st.session_state[ 'climatedata_mode' ] = 'datasets'
-			st.session_state[ 'climatedata_keyword' ] = ''
-			st.session_state[ 'climatedata_dataset' ] = 'daily-summaries'
-			st.session_state[
-				'climatedata_start_date' ] = dt.date.today( ) - dt.timedelta( days=30 )
-			st.session_state[ 'climatedata_end_date' ] = dt.date.today( )
-			st.session_state[ 'climatedata_stations' ] = ''
-			st.session_state[ 'climatedata_data_types' ] = ''
-			st.session_state[ 'climatedata_limit' ] = 25
-			st.session_state[ 'climatedata_offset' ] = 0
-			st.session_state[ 'climatedata_timeout' ] = 20
-			st.session_state[ 'climatedata_results' ] = { }
-			st.session_state[ 'climatedata_clear_request' ] = False
-		
-		def _clear_climatedata_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the NOAA Climate Data expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'climatedata_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			climatedata_mode = st.selectbox(
-				'Mode',
-				options=[ 'datasets', 'data' ],
-				index=[ 'datasets', 'data' ].index(
-					st.session_state.get( 'climatedata_mode', 'datasets' )
-				),
-				key='climatedata_mode'
-			)
-			
-			climatedata_keyword = st.text_input(
-				'Keyword',
-				value=st.session_state.get( 'climatedata_keyword', '' ),
-				key='climatedata_keyword',
-				disabled=(climatedata_mode != 'datasets'),
-				placeholder='Optional dataset discovery keyword'
-			)
-			
-			climatedata_dataset = st.text_input(
-				'Dataset',
-				value=st.session_state.get( 'climatedata_dataset', 'daily-summaries' ),
-				key='climatedata_dataset',
-				disabled=(climatedata_mode != 'data'),
-				placeholder='Example: daily-summaries'
-			)
-			
-			date_c1, date_c2 = st.columns( 2 )
-			
-			with date_c1:
-				climatedata_start_date = st.date_input(
-					'Start Date',
-					value=st.session_state.get(
-						'climatedata_start_date',
-						dt.date.today( ) - dt.timedelta( days=30 )
-					),
-					key='climatedata_start_date'
-				)
-			
-			with date_c2:
-				climatedata_end_date = st.date_input(
-					'End Date',
-					value=st.session_state.get(
-						'climatedata_end_date',
-						dt.date.today( )
-					),
-					key='climatedata_end_date'
-				)
-			
-			climatedata_stations = st.text_input(
-				'Stations',
-				value=st.session_state.get( 'climatedata_stations', '' ),
-				key='climatedata_stations',
-				disabled=(climatedata_mode != 'data'),
-				placeholder='Comma-separated station IDs'
-			)
-			
-			climatedata_data_types = st.text_input(
-				'Data Types',
-				value=st.session_state.get( 'climatedata_data_types', '' ),
-				key='climatedata_data_types',
-				disabled=(climatedata_mode != 'data'),
-				placeholder='Comma-separated datatype IDs'
-			)
-			
-			page_c1, page_c2 = st.columns( 2 )
-			
-			with page_c1:
-				climatedata_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'climatedata_limit', 25 ) ),
-					step=1,
-					key='climatedata_limit'
-				)
-			
-			with page_c2:
-				climatedata_offset = st.number_input(
-					'Offset',
-					min_value=0,
-					max_value=10000,
-					value=int( st.session_state.get( 'climatedata_offset', 0 ) ),
-					step=1,
-					key='climatedata_offset',
-					disabled=(climatedata_mode != 'datasets')
-				)
-			
-			climatedata_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'climatedata_timeout', 20 ) ),
-				step=1,
-				key='climatedata_timeout'
-			)
-			
-			st.caption(
-				'Datasets mode discovers NOAA climate datasets. Data mode retrieves '
-				'subsetted climate records from a selected dataset.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				climatedata_submit = st.button(
-					'Submit',
-					key='climatedata_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='climatedata_clear',
-					on_click=_clear_climatedata_state
-				)
-		
-		with col_right:
-			if climatedata_submit:
-				try:
-					f = ClimateData( )
-					result = f.fetch(
-						mode=str( climatedata_mode ),
-						keyword=str( climatedata_keyword ).strip( ),
-						dataset=str( climatedata_dataset ).strip( ),
-						start_date=str( climatedata_start_date ),
-						end_date=str( climatedata_end_date ),
-						stations=str( climatedata_stations ).strip( ),
-						data_types=str( climatedata_data_types ).strip( ),
-						limit=int( climatedata_limit ),
-						offset=int( climatedata_offset ),
-						time=int( climatedata_timeout )
-					)
+					meta_c1, meta_c2 = st.columns( 2 )
 					
-					st.session_state[ 'climatedata_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'NOAA Climate Data request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'climatedata_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'zipCode' in params:
+							st.markdown( f"**Zip Code:** {params.get( 'zipCode', '' )}" )
+						if 'distance' in params:
+							st.markdown( f"**Distance:** {params.get( 'distance', '' )} miles" )
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							max_aqi = summary.get( 'max_aqi', None )
+							st.metric(
+								'Peak AQI',
+								'' if max_aqi is None else str( max_aqi )
+							)
+						
+						with sum_c3:
+							top_category = str( summary.get( 'top_category', '' ) or '' )
+							if top_category:
+								st.markdown( f"**Category:** {top_category}" )
+							else:
+								st.markdown( '**Category:** N/A' )
+						
+						reporting_area = str( summary.get( 'reporting_area', '' ) or '' )
+						dominant_parameter = str(
+							summary.get( 'dominant_parameter', '' ) or ''
+						)
+						
+						if reporting_area:
+							st.markdown( f"**Reporting Area:** {reporting_area}" )
+						if dominant_parameter:
+							st.markdown(
+								f"**Dominant Parameter in Result Set:** {dominant_parameter}"
+							)
+					
 					params = result.get( 'params', { } ) or { }
-					if 'dataset' in params:
-						st.markdown( f"**Dataset:** {params.get( 'dataset', '' )}" )
-					if 'stations' in params:
-						st.markdown( f"**Stations:** {params.get( 'stations', '' )}" )
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### Air Quality Results' )
+						df_airnow = pd.DataFrame( rows )
+						
+						if not df_airnow.empty:
+							st.dataframe(
+								df_airnow,
+								use_container_width=True,
+								hide_index=True
+							)
+							
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Reporting Area', '' ) or f'Record {idx}'
+								)
+								aqi = item.get( 'AQI', '' )
+								parameter = str( item.get( 'Parameter Name', '' ) or '' )
+								
+								with st.expander(
+										f'Record {idx}: AQI {aqi} - {label} - {parameter}',
+										expanded=False
+								):
+									left_c, right_c = st.columns( 2 )
+									
+									with left_c:
+										st.markdown(
+											f"**Date Observed:** "
+											f"{item.get( 'Date Observed', '' )}"
+										)
+										st.markdown(
+											f"**Hour Observed:** "
+											f"{item.get( 'Hour Observed', '' )}"
+										)
+										st.markdown(
+											f"**Reporting Area:** "
+											f"{item.get( 'Reporting Area', '' )}"
+										)
+										st.markdown(
+											f"**State Code:** {item.get( 'State Code', '' )}"
+										)
+									
+									with right_c:
+										st.markdown(
+											f"**Parameter Name:** "
+											f"{item.get( 'Parameter Name', '' )}"
+										)
+										st.markdown( f"**AQI:** {item.get( 'AQI', '' )}" )
+										st.markdown(
+											f"**Category:** {item.get( 'Category', '' )}"
+										)
+										st.markdown(
+											f"**Action Day:** {item.get( 'Action Day', '' )}"
+										)
+									
+									discussion = str( item.get( 'Discussion', '' ) or '' )
+									if discussion:
+										st.markdown( f"**Discussion:** {discussion}" )
+						else:
+							st.info( 'No displayable AirNow rows were found.' )
+					else:
+						st.info( 'No AirNow records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- NOAA Climate Data
+		with st.expander( label='NOAA Climate Data', icon='🌡️', expanded=False ):
+			if 'climatedata_results' not in st.session_state:
+				st.session_state[ 'climatedata_results' ] = { }
+			
+			if 'climatedata_clear_request' not in st.session_state:
+				st.session_state[ 'climatedata_clear_request' ] = False
+			
+			if st.session_state.get( 'climatedata_clear_request', False ):
+				st.session_state[ 'climatedata_mode' ] = 'datasets'
+				st.session_state[ 'climatedata_keyword' ] = ''
+				st.session_state[ 'climatedata_dataset' ] = 'daily-summaries'
+				st.session_state[
+					'climatedata_start_date' ] = dt.date.today( ) - dt.timedelta( days=30 )
+				st.session_state[ 'climatedata_end_date' ] = dt.date.today( )
+				st.session_state[ 'climatedata_stations' ] = ''
+				st.session_state[ 'climatedata_data_types' ] = ''
+				st.session_state[ 'climatedata_limit' ] = 25
+				st.session_state[ 'climatedata_offset' ] = 0
+				st.session_state[ 'climatedata_timeout' ] = 20
+				st.session_state[ 'climatedata_results' ] = { }
+				st.session_state[ 'climatedata_clear_request' ] = False
+			
+			def _clear_climatedata_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the NOAA Climate Data expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'climatedata_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				climatedata_mode = st.selectbox(
+					'Mode',
+					options=[ 'datasets', 'data' ],
+					index=[ 'datasets', 'data' ].index(
+						st.session_state.get( 'climatedata_mode', 'datasets' )
+					),
+					key='climatedata_mode'
+				)
 				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
+				climatedata_keyword = st.text_input(
+					'Keyword',
+					value=st.session_state.get( 'climatedata_keyword', '' ),
+					key='climatedata_keyword',
+					disabled=(climatedata_mode != 'datasets'),
+					placeholder='Optional dataset discovery keyword'
+				)
+				
+				climatedata_dataset = st.text_input(
+					'Dataset',
+					value=st.session_state.get( 'climatedata_dataset', 'daily-summaries' ),
+					key='climatedata_dataset',
+					disabled=(climatedata_mode != 'data'),
+					placeholder='Example: daily-summaries'
+				)
+				
+				date_c1, date_c2 = st.columns( 2 )
+				
+				with date_c1:
+					climatedata_start_date = st.date_input(
+						'Start Date',
+						value=st.session_state.get(
+							'climatedata_start_date',
+							dt.date.today( ) - dt.timedelta( days=30 )
+						),
+						key='climatedata_start_date'
+					)
+				
+				with date_c2:
+					climatedata_end_date = st.date_input(
+						'End Date',
+						value=st.session_state.get(
+							'climatedata_end_date',
+							dt.date.today( )
+						),
+						key='climatedata_end_date'
+					)
+				
+				climatedata_stations = st.text_input(
+					'Stations',
+					value=st.session_state.get( 'climatedata_stations', '' ),
+					key='climatedata_stations',
+					disabled=(climatedata_mode != 'data'),
+					placeholder='Comma-separated station IDs'
+				)
+				
+				climatedata_data_types = st.text_input(
+					'Data Types',
+					value=st.session_state.get( 'climatedata_data_types', '' ),
+					key='climatedata_data_types',
+					disabled=(climatedata_mode != 'data'),
+					placeholder='Comma-separated datatype IDs'
+				)
+				
+				page_c1, page_c2 = st.columns( 2 )
+				
+				with page_c1:
+					climatedata_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=500,
+						value=int( st.session_state.get( 'climatedata_limit', 25 ) ),
+						step=1,
+						key='climatedata_limit'
+					)
+				
+				with page_c2:
+					climatedata_offset = st.number_input(
+						'Offset',
+						min_value=0,
+						max_value=10000,
+						value=int( st.session_state.get( 'climatedata_offset', 0 ) ),
+						step=1,
+						key='climatedata_offset',
+						disabled=(climatedata_mode != 'datasets')
+					)
+				
+				climatedata_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'climatedata_timeout', 20 ) ),
+					step=1,
+					key='climatedata_timeout'
+				)
+				
+				st.caption(
+					'Datasets mode discovers NOAA climate datasets. Data mode retrieves '
+					'subsetted climate records from a selected dataset.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					climatedata_submit = st.button(
+						'Submit',
+						key='climatedata_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='climatedata_clear',
+						on_click=_clear_climatedata_state
+					)
+			
+			with col_right:
+				if climatedata_submit:
+					try:
+						f = ClimateData( )
+						result = f.fetch(
+							mode=str( climatedata_mode ),
+							keyword=str( climatedata_keyword ).strip( ),
+							dataset=str( climatedata_dataset ).strip( ),
+							start_date=str( climatedata_start_date ),
+							end_date=str( climatedata_end_date ),
+							stations=str( climatedata_stations ).strip( ),
+							data_types=str( climatedata_data_types ).strip( ),
+							limit=int( climatedata_limit ),
+							offset=int( climatedata_offset ),
+							time=int( climatedata_timeout )
+						)
+						
+						st.session_state[ 'climatedata_results' ] = result or { }
+						st.rerun( )
 					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+					except Exception as exc:
+						st.error( 'NOAA Climate Data request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'climatedata_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
 					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
 					
-					with sum_c2:
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'dataset' in params:
+							st.markdown( f"**Dataset:** {params.get( 'dataset', '' )}" )
+						if 'stations' in params:
+							st.markdown( f"**Stations:** {params.get( 'stations', '' )}" )
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							first_title = str( summary.get( 'first_title', '' ) or '' )
+							if first_title:
+								st.markdown( f"**First Result:** {first_title}" )
+							else:
+								st.markdown( '**First Result:** N/A' )
+						
+						with sum_c3:
+							first_dataset = str( summary.get( 'first_dataset', '' ) or '' )
+							if first_dataset:
+								st.markdown( f"**Dataset/Type:** {first_dataset}" )
+							else:
+								st.markdown( '**Dataset/Type:** N/A' )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### Climate Results' )
+						df_climatedata = pd.DataFrame( rows )
+						
+						if not df_climatedata.empty:
+							st.dataframe(
+								df_climatedata,
+								use_container_width=True,
+								hide_index=True
+							)
+							
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Title', '' ) or
+									item.get( 'Station', '' ) or
+									item.get( 'Date', '' ) or
+									f'Record {idx}'
+								)
+								
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
+						else:
+							st.info( 'No displayable climate data rows were found.' )
+					else:
+						st.info( 'No climate records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- NASA EONET
+		with st.expander( label='NASA EONET', icon='🔥',expanded=False ):
+			if 'eonet_results' not in st.session_state:
+				st.session_state[ 'eonet_results' ] = { }
+			
+			if 'eonet_clear_request' not in st.session_state:
+				st.session_state[ 'eonet_clear_request' ] = False
+			
+			if st.session_state.get( 'eonet_clear_request', False ):
+				st.session_state[ 'eonet_mode' ] = 'events'
+				st.session_state[ 'eonet_source' ] = ''
+				st.session_state[ 'eonet_category' ] = ''
+				st.session_state[ 'eonet_status' ] = 'open'
+				st.session_state[ 'eonet_limit' ] = 25
+				st.session_state[ 'eonet_days' ] = 30
+				st.session_state[ 'eonet_start_date' ] = ''
+				st.session_state[ 'eonet_end_date' ] = ''
+				st.session_state[ 'eonet_bbox' ] = ''
+				st.session_state[ 'eonet_timeout' ] = 20
+				st.session_state[ 'eonet_results' ] = { }
+				st.session_state[ 'eonet_clear_request' ] = False
+			
+			def _clear_eonet_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the NASA EONET expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'eonet_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				eonet_mode = st.selectbox(
+					'Mode',
+					options=[ 'events', 'categories' ],
+					index=[ 'events', 'categories' ].index(
+						st.session_state.get( 'eonet_mode', 'events' )
+					),
+					key='eonet_mode'
+				)
+				
+				eonet_source = st.text_input(
+					'Source',
+					value=st.session_state.get( 'eonet_source', '' ),
+					key='eonet_source',
+					disabled=(eonet_mode != 'events'),
+					placeholder='Optional source ID or comma-separated source IDs'
+				)
+				
+				eonet_category = st.text_input(
+					'Category',
+					value=st.session_state.get( 'eonet_category', '' ),
+					key='eonet_category',
+					disabled=(eonet_mode != 'events'),
+					placeholder='Optional category ID or comma-separated category IDs'
+				)
+				
+				eonet_status = st.selectbox(
+					'Status',
+					options=[ 'open', 'closed', 'all' ],
+					index=[ 'open', 'closed', 'all' ].index(
+						st.session_state.get( 'eonet_status', 'open' )
+					),
+					key='eonet_status',
+					disabled=(eonet_mode != 'events')
+				)
+				
+				filter_c1, filter_c2 = st.columns( 2 )
+				
+				with filter_c1:
+					eonet_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=500,
+						value=int( st.session_state.get( 'eonet_limit', 25 ) ),
+						step=1,
+						key='eonet_limit',
+						disabled=(eonet_mode != 'events')
+					)
+				
+				with filter_c2:
+					eonet_days = st.number_input(
+						'Days',
+						min_value=1,
+						max_value=3650,
+						value=int( st.session_state.get( 'eonet_days', 30 ) ),
+						step=1,
+						key='eonet_days',
+						disabled=(eonet_mode != 'events')
+					)
+				
+				date_c1, date_c2 = st.columns( 2 )
+				
+				with date_c1:
+					eonet_start_date = st.text_input(
+						'Start Date',
+						value=st.session_state.get( 'eonet_start_date', '' ),
+						key='eonet_start_date',
+						disabled=(eonet_mode != 'events'),
+						placeholder='YYYY-MM-DD'
+					)
+				
+				with date_c2:
+					eonet_end_date = st.text_input(
+						'End Date',
+						value=st.session_state.get( 'eonet_end_date', '' ),
+						key='eonet_end_date',
+						disabled=(eonet_mode != 'events'),
+						placeholder='YYYY-MM-DD'
+					)
+				
+				eonet_bbox = st.text_input(
+					'Bounding Box',
+					value=st.session_state.get( 'eonet_bbox', '' ),
+					key='eonet_bbox',
+					disabled=(eonet_mode != 'events'),
+					placeholder='min_lon,max_lat,max_lon,min_lat'
+				)
+				
+				eonet_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'eonet_timeout', 20 ) ),
+					step=1,
+					key='eonet_timeout'
+				)
+				
+				st.caption(
+					'Events mode retrieves natural events. Categories mode lists the '
+					'available EONET event categories.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					eonet_submit = st.button(
+						'Submit',
+						key='eonet_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='eonet_clear',
+						on_click=_clear_eonet_state
+					)
+			
+			with col_right:
+				if eonet_submit:
+					try:
+						f = EoNet( )
+						result = f.fetch(
+							mode=str( eonet_mode ),
+							source=str( eonet_source ).strip( ),
+							category=str( eonet_category ).strip( ),
+							status=str( eonet_status ).strip( ),
+							limit=int( eonet_limit ),
+							days=int( eonet_days ),
+							start_date=str( eonet_start_date ).strip( ),
+							end_date=str( eonet_end_date ).strip( ),
+							bbox=str( eonet_bbox ).strip( ),
+							time=int( eonet_timeout )
+						)
+						
+						st.session_state[ 'eonet_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'NASA EONET request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'eonet_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'category' in params:
+							st.markdown( f"**Category Filter:** {params.get( 'category', '' )}" )
+						if 'status' in params:
+							st.markdown( f"**Status:** {params.get( 'status', '' )}" )
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							st.metric(
+								'Open Records',
+								int( summary.get( 'open_count', 0 ) or 0 )
+							)
+						
+						with sum_c3:
+							first_categories = str(
+								summary.get( 'first_categories', '' ) or ''
+							)
+							if first_categories:
+								st.markdown( f"**First Categories:** {first_categories}" )
+							else:
+								st.markdown( '**First Categories:** N/A' )
+						
 						first_title = str( summary.get( 'first_title', '' ) or '' )
 						if first_title:
 							st.markdown( f"**First Result:** {first_title}" )
-						else:
-							st.markdown( '**First Result:** N/A' )
 					
-					with sum_c3:
-						first_dataset = str( summary.get( 'first_dataset', '' ) or '' )
-						if first_dataset:
-							st.markdown( f"**Dataset/Type:** {first_dataset}" )
-						else:
-							st.markdown( '**Dataset/Type:** N/A' )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### Climate Results' )
-					df_climatedata = pd.DataFrame( rows )
-					
-					if not df_climatedata.empty:
-						st.dataframe(
-							df_climatedata,
-							use_container_width=True,
-							hide_index=True
-						)
-						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Title', '' ) or
-								item.get( 'Station', '' ) or
-								item.get( 'Date', '' ) or
-								f'Record {idx}'
-							)
-							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								st.json( item )
-					else:
-						st.info( 'No displayable climate data rows were found.' )
-				else:
-					st.info( 'No climate records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- NASA EONET
-	with st.expander( label='NASA EONET', icon='🔥',expanded=False ):
-		if 'eonet_results' not in st.session_state:
-			st.session_state[ 'eonet_results' ] = { }
-		
-		if 'eonet_clear_request' not in st.session_state:
-			st.session_state[ 'eonet_clear_request' ] = False
-		
-		if st.session_state.get( 'eonet_clear_request', False ):
-			st.session_state[ 'eonet_mode' ] = 'events'
-			st.session_state[ 'eonet_source' ] = ''
-			st.session_state[ 'eonet_category' ] = ''
-			st.session_state[ 'eonet_status' ] = 'open'
-			st.session_state[ 'eonet_limit' ] = 25
-			st.session_state[ 'eonet_days' ] = 30
-			st.session_state[ 'eonet_start_date' ] = ''
-			st.session_state[ 'eonet_end_date' ] = ''
-			st.session_state[ 'eonet_bbox' ] = ''
-			st.session_state[ 'eonet_timeout' ] = 20
-			st.session_state[ 'eonet_results' ] = { }
-			st.session_state[ 'eonet_clear_request' ] = False
-		
-		def _clear_eonet_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the NASA EONET expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'eonet_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			eonet_mode = st.selectbox(
-				'Mode',
-				options=[ 'events', 'categories' ],
-				index=[ 'events', 'categories' ].index(
-					st.session_state.get( 'eonet_mode', 'events' )
-				),
-				key='eonet_mode'
-			)
-			
-			eonet_source = st.text_input(
-				'Source',
-				value=st.session_state.get( 'eonet_source', '' ),
-				key='eonet_source',
-				disabled=(eonet_mode != 'events'),
-				placeholder='Optional source ID or comma-separated source IDs'
-			)
-			
-			eonet_category = st.text_input(
-				'Category',
-				value=st.session_state.get( 'eonet_category', '' ),
-				key='eonet_category',
-				disabled=(eonet_mode != 'events'),
-				placeholder='Optional category ID or comma-separated category IDs'
-			)
-			
-			eonet_status = st.selectbox(
-				'Status',
-				options=[ 'open', 'closed', 'all' ],
-				index=[ 'open', 'closed', 'all' ].index(
-					st.session_state.get( 'eonet_status', 'open' )
-				),
-				key='eonet_status',
-				disabled=(eonet_mode != 'events')
-			)
-			
-			filter_c1, filter_c2 = st.columns( 2 )
-			
-			with filter_c1:
-				eonet_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'eonet_limit', 25 ) ),
-					step=1,
-					key='eonet_limit',
-					disabled=(eonet_mode != 'events')
-				)
-			
-			with filter_c2:
-				eonet_days = st.number_input(
-					'Days',
-					min_value=1,
-					max_value=3650,
-					value=int( st.session_state.get( 'eonet_days', 30 ) ),
-					step=1,
-					key='eonet_days',
-					disabled=(eonet_mode != 'events')
-				)
-			
-			date_c1, date_c2 = st.columns( 2 )
-			
-			with date_c1:
-				eonet_start_date = st.text_input(
-					'Start Date',
-					value=st.session_state.get( 'eonet_start_date', '' ),
-					key='eonet_start_date',
-					disabled=(eonet_mode != 'events'),
-					placeholder='YYYY-MM-DD'
-				)
-			
-			with date_c2:
-				eonet_end_date = st.text_input(
-					'End Date',
-					value=st.session_state.get( 'eonet_end_date', '' ),
-					key='eonet_end_date',
-					disabled=(eonet_mode != 'events'),
-					placeholder='YYYY-MM-DD'
-				)
-			
-			eonet_bbox = st.text_input(
-				'Bounding Box',
-				value=st.session_state.get( 'eonet_bbox', '' ),
-				key='eonet_bbox',
-				disabled=(eonet_mode != 'events'),
-				placeholder='min_lon,max_lat,max_lon,min_lat'
-			)
-			
-			eonet_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'eonet_timeout', 20 ) ),
-				step=1,
-				key='eonet_timeout'
-			)
-			
-			st.caption(
-				'Events mode retrieves natural events. Categories mode lists the '
-				'available EONET event categories.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				eonet_submit = st.button(
-					'Submit',
-					key='eonet_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='eonet_clear',
-					on_click=_clear_eonet_state
-				)
-		
-		with col_right:
-			if eonet_submit:
-				try:
-					f = EoNet( )
-					result = f.fetch(
-						mode=str( eonet_mode ),
-						source=str( eonet_source ).strip( ),
-						category=str( eonet_category ).strip( ),
-						status=str( eonet_status ).strip( ),
-						limit=int( eonet_limit ),
-						days=int( eonet_days ),
-						start_date=str( eonet_start_date ).strip( ),
-						end_date=str( eonet_end_date ).strip( ),
-						bbox=str( eonet_bbox ).strip( ),
-						time=int( eonet_timeout )
-					)
-					
-					st.session_state[ 'eonet_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'NASA EONET request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'eonet_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
 					params = result.get( 'params', { } ) or { }
-					if 'category' in params:
-						st.markdown( f"**Category Filter:** {params.get( 'category', '' )}" )
-					if 'status' in params:
-						st.markdown( f"**Status:** {params.get( 'status', '' )}" )
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
 					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						st.metric(
-							'Open Records',
-							int( summary.get( 'open_count', 0 ) or 0 )
-						)
-					
-					with sum_c3:
-						first_categories = str(
-							summary.get( 'first_categories', '' ) or ''
-						)
-						if first_categories:
-							st.markdown( f"**First Categories:** {first_categories}" )
-						else:
-							st.markdown( '**First Categories:** N/A' )
-					
-					first_title = str( summary.get( 'first_title', '' ) or '' )
-					if first_title:
-						st.markdown( f"**First Result:** {first_title}" )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### EONET Results' )
-					df_eonet = pd.DataFrame( rows )
-					
-					if not df_eonet.empty:
-						st.dataframe(
-							df_eonet,
-							use_container_width=True,
-							hide_index=True
-						)
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### EONET Results' )
+						df_eonet = pd.DataFrame( rows )
 						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Title', '' ) or
-								f'Record {idx}'
+						if not df_eonet.empty:
+							st.dataframe(
+								df_eonet,
+								use_container_width=True,
+								hide_index=True
 							)
 							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								left_c, right_c = st.columns( 2 )
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Title', '' ) or
+									f'Record {idx}'
+								)
 								
-								with left_c:
-									if 'Status' in item:
-										st.markdown( f"**Status:** {item.get( 'Status', '' )}" )
-									if 'Categories' in item:
-										st.markdown(
-											f"**Categories:** {item.get( 'Categories', '' )}"
-										)
-									if 'Sources' in item:
-										st.markdown(
-											f"**Sources:** {item.get( 'Sources', '' )}"
-										)
-								
-								with right_c:
-									if 'Geometry Count' in item:
-										st.markdown(
-											f"**Geometry Count:** "
-											f"{item.get( 'Geometry Count', '' )}"
-										)
-									if 'Last Geometry Date' in item:
-										st.markdown(
-											f"**Last Geometry Date:** "
-											f"{item.get( 'Last Geometry Date', '' )}"
-										)
-									if 'Link' in item:
-										st.markdown( f"**Link:** {item.get( 'Link', '' )}" )
-								
-								description = str( item.get( 'Description', '' ) or '' )
-								if description:
-									st.markdown( f"**Description:** {description}" )
-					else:
-						st.info( 'No displayable EONET rows were found.' )
-				else:
-					st.info( 'No EONET records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- EPA Envirofacts
-	with st.expander( label='EPA Envirofacts', icon='♻️', expanded=False ):
-		if 'envirofacts_results' not in st.session_state:
-			st.session_state[ 'envirofacts_results' ] = { }
-		
-		if 'envirofacts_clear_request' not in st.session_state:
-			st.session_state[ 'envirofacts_clear_request' ] = False
-		
-		if st.session_state.get( 'envirofacts_clear_request', False ):
-			st.session_state[ 'envirofacts_table_name' ] = 'TRI_FACILITY'
-			st.session_state[ 'envirofacts_state_code' ] = ''
-			st.session_state[ 'envirofacts_facility_name' ] = ''
-			st.session_state[ 'envirofacts_limit' ] = 25
-			st.session_state[ 'envirofacts_timeout' ] = 20
-			st.session_state[ 'envirofacts_results' ] = { }
-			st.session_state[ 'envirofacts_clear_request' ] = False
-		
-		def _clear_envirofacts_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Envirofacts expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'envirofacts_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			envirofacts_table_name = st.selectbox(
-				'Table',
-				options=[
-						'TRI_FACILITY',
-						'TRI_RELEASE',
-						'EF_W_EMISSIONS_SOURCE_GHG'
-				],
-				index=[
-						'TRI_FACILITY',
-						'TRI_RELEASE',
-						'EF_W_EMISSIONS_SOURCE_GHG'
-				].index(
-					st.session_state.get( 'envirofacts_table_name', 'TRI_FACILITY' )
-				),
-				key='envirofacts_table_name'
-			)
-			
-			envirofacts_state_code = st.text_input(
-				'State Code',
-				value=st.session_state.get( 'envirofacts_state_code', '' ),
-				key='envirofacts_state_code',
-				placeholder='Example: VA'
-			)
-			
-			envirofacts_facility_name = st.text_input(
-				'Facility Name Prefix',
-				value=st.session_state.get( 'envirofacts_facility_name', '' ),
-				key='envirofacts_facility_name',
-				placeholder='Optional facility-name prefix'
-			)
-			
-			envirofacts_limit = st.number_input(
-				'Limit',
-				min_value=1,
-				max_value=500,
-				value=int( st.session_state.get( 'envirofacts_limit', 25 ) ),
-				step=1,
-				key='envirofacts_limit'
-			)
-			
-			envirofacts_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'envirofacts_timeout', 20 ) ),
-				step=1,
-				key='envirofacts_timeout'
-			)
-			
-			st.caption(
-				'This first-pass Envirofacts wrapper focuses on a constrained set of '
-				'common tables so the output remains human-readable and easy to use.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				envirofacts_submit = st.button(
-					'Submit',
-					key='envirofacts_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='envirofacts_clear',
-					on_click=_clear_envirofacts_state
-				)
-		
-		with col_right:
-			if envirofacts_submit:
-				try:
-					f = EnviroFacts( )
-					result = f.fetch(
-						table_name=str( envirofacts_table_name ).strip( ),
-						state_code=str( envirofacts_state_code ).strip( ),
-						facility_name=str( envirofacts_facility_name ).strip( ),
-						limit=int( envirofacts_limit ),
-						time=int( envirofacts_timeout )
-					)
-					
-					st.session_state[ 'envirofacts_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Envirofacts request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'envirofacts_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'table_name' in result:
-						st.markdown( f"**Table:** {result.get( 'table_name', '' )}" )
-				
-				with meta_c2:
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						first_facility = str(
-							summary.get( 'first_facility', '' ) or ''
-						)
-						if first_facility:
-							st.markdown( f"**First Facility:** {first_facility}" )
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									left_c, right_c = st.columns( 2 )
+									
+									with left_c:
+										if 'Status' in item:
+											st.markdown( f"**Status:** {item.get( 'Status', '' )}" )
+										if 'Categories' in item:
+											st.markdown(
+												f"**Categories:** {item.get( 'Categories', '' )}"
+											)
+										if 'Sources' in item:
+											st.markdown(
+												f"**Sources:** {item.get( 'Sources', '' )}"
+											)
+									
+									with right_c:
+										if 'Geometry Count' in item:
+											st.markdown(
+												f"**Geometry Count:** "
+												f"{item.get( 'Geometry Count', '' )}"
+											)
+										if 'Last Geometry Date' in item:
+											st.markdown(
+												f"**Last Geometry Date:** "
+												f"{item.get( 'Last Geometry Date', '' )}"
+											)
+										if 'Link' in item:
+											st.markdown( f"**Link:** {item.get( 'Link', '' )}" )
+									
+									description = str( item.get( 'Description', '' ) or '' )
+									if description:
+										st.markdown( f"**Description:** {description}" )
 						else:
-							st.markdown( '**First Facility:** N/A' )
-					
-					with sum_c3:
-						first_state = str( summary.get( 'first_state', '' ) or '' )
-						if first_state:
-							st.markdown( f"**First State:** {first_state}" )
-						else:
-							st.markdown( '**First State:** N/A' )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### Envirofacts Results' )
-					df_envirofacts = pd.DataFrame( rows )
-					
-					if not df_envirofacts.empty:
-						st.dataframe(
-							df_envirofacts,
-							use_container_width=True,
-							hide_index=True
-						)
-						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Facility Name', '' ) or
-								item.get( 'Primary Name', '' ) or
-								item.get( 'Name', '' ) or
-								f'Record {idx}'
-							)
-							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								st.json( item )
+							st.info( 'No displayable EONET rows were found.' )
 					else:
-						st.info( 'No displayable Envirofacts rows were found.' )
-				else:
-					st.info( 'No Envirofacts records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
+						st.info( 'No EONET records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- EPA Envirofacts
+		with st.expander( label='EPA Envirofacts', icon='♻️', expanded=False ):
+			if 'envirofacts_results' not in st.session_state:
+				st.session_state[ 'envirofacts_results' ] = { }
+			
+			if 'envirofacts_clear_request' not in st.session_state:
+				st.session_state[ 'envirofacts_clear_request' ] = False
+			
+			if st.session_state.get( 'envirofacts_clear_request', False ):
+				st.session_state[ 'envirofacts_table_name' ] = 'TRI_FACILITY'
+				st.session_state[ 'envirofacts_state_code' ] = ''
+				st.session_state[ 'envirofacts_facility_name' ] = ''
+				st.session_state[ 'envirofacts_limit' ] = 25
+				st.session_state[ 'envirofacts_timeout' ] = 20
+				st.session_state[ 'envirofacts_results' ] = { }
+				st.session_state[ 'envirofacts_clear_request' ] = False
+			
+			def _clear_envirofacts_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Envirofacts expander state for reset on the next rerun.
 	
-	# -------- NOAA Tides & Currents
-	with st.expander( label='NOAA Tides & Currents', icon='🌊', expanded=False ):
-		if 'tidesandcurrents_results' not in st.session_state:
-			st.session_state[ 'tidesandcurrents_results' ] = { }
-		
-		if 'tidesandcurrents_clear_request' not in st.session_state:
-			st.session_state[ 'tidesandcurrents_clear_request' ] = False
-		
-		if st.session_state.get( 'tidesandcurrents_clear_request', False ):
-			st.session_state[ 'tidesandcurrents_mode' ] = 'water-level'
-			st.session_state[ 'tidesandcurrents_station_id' ] = ''
-			st.session_state[
-				'tidesandcurrents_begin_date' ] = dt.date.today( ) - dt.timedelta( days=1 )
-			st.session_state[ 'tidesandcurrents_end_date' ] = dt.date.today( )
-			st.session_state[ 'tidesandcurrents_datum' ] = 'MLLW'
-			st.session_state[ 'tidesandcurrents_units' ] = 'metric'
-			st.session_state[ 'tidesandcurrents_time_zone' ] = 'gmt'
-			st.session_state[ 'tidesandcurrents_interval' ] = 'hilo'
-			st.session_state[ 'tidesandcurrents_timeout' ] = 20
-			st.session_state[ 'tidesandcurrents_results' ] = { }
-			st.session_state[ 'tidesandcurrents_clear_request' ] = False
-		
-		def _clear_tidesandcurrents_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the NOAA Tides & Currents expander state for reset on the next
-				rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'tidesandcurrents_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			tac_mode = st.selectbox(
-				'Mode',
-				options=[ 'station', 'water-level', 'tide-predictions' ],
-				index=[ 'station', 'water-level', 'tide-predictions' ].index(
-					st.session_state.get( 'tidesandcurrents_mode', 'water-level' )
-				),
-				key='tidesandcurrents_mode'
-			)
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'envirofacts_clear_request' ] = True
 			
-			tac_station_id = st.text_input(
-				'Station ID',
-				value=st.session_state.get( 'tidesandcurrents_station_id', '' ),
-				key='tidesandcurrents_station_id',
-				placeholder='Example: 8724580'
-			)
+			col_left, col_right = st.columns( 2, border=True )
 			
-			date_c1, date_c2 = st.columns( 2 )
-			
-			with date_c1:
-				tac_begin_date = st.date_input(
-					'Begin Date',
-					value=st.session_state.get(
-						'tidesandcurrents_begin_date',
-						dt.date.today( ) - dt.timedelta( days=1 )
+			with col_left:
+				envirofacts_table_name = st.selectbox(
+					'Table',
+					options=[
+							'TRI_FACILITY',
+							'TRI_RELEASE',
+							'EF_W_EMISSIONS_SOURCE_GHG'
+					],
+					index=[
+							'TRI_FACILITY',
+							'TRI_RELEASE',
+							'EF_W_EMISSIONS_SOURCE_GHG'
+					].index(
+						st.session_state.get( 'envirofacts_table_name', 'TRI_FACILITY' )
 					),
-					key='tidesandcurrents_begin_date',
-					disabled=(tac_mode == 'station')
+					key='envirofacts_table_name'
 				)
-			
-			with date_c2:
-				tac_end_date = st.date_input(
-					'End Date',
-					value=st.session_state.get(
-						'tidesandcurrents_end_date',
-						dt.date.today( )
-					),
-					key='tidesandcurrents_end_date',
-					disabled=(tac_mode == 'station')
-				)
-			
-			opt_c1, opt_c2 = st.columns( 2 )
-			
-			with opt_c1:
-				tac_datum = st.text_input(
-					'Datum',
-					value=st.session_state.get( 'tidesandcurrents_datum', 'MLLW' ),
-					key='tidesandcurrents_datum',
-					disabled=(tac_mode == 'station')
-				)
-			
-			with opt_c2:
-				tac_units = st.selectbox(
-					'Units',
-					options=[ 'metric', 'english' ],
-					index=[ 'metric', 'english' ].index(
-						st.session_state.get( 'tidesandcurrents_units', 'metric' )
-					),
-					key='tidesandcurrents_units',
-					disabled=(tac_mode == 'station')
-				)
-			
-			opt_c3, opt_c4 = st.columns( 2 )
-			
-			with opt_c3:
-				tac_time_zone = st.selectbox(
-					'Time Zone',
-					options=[ 'gmt', 'lst', 'lst_ldt' ],
-					index=[ 'gmt', 'lst', 'lst_ldt' ].index(
-						st.session_state.get( 'tidesandcurrents_time_zone', 'gmt' )
-					),
-					key='tidesandcurrents_time_zone',
-					disabled=(tac_mode == 'station')
-				)
-			
-			with opt_c4:
-				tac_interval = st.selectbox(
-					'Prediction Interval',
-					options=[ 'hilo', 'h' ],
-					index=[ 'hilo', 'h' ].index(
-						st.session_state.get( 'tidesandcurrents_interval', 'hilo' )
-					),
-					key='tidesandcurrents_interval',
-					disabled=(tac_mode != 'tide-predictions')
-				)
-			
-			tac_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'tidesandcurrents_timeout', 20 ) ),
-				step=1,
-				key='tidesandcurrents_timeout'
-			)
-			
-			st.caption(
-				'Station mode returns metadata. Water-level mode returns observations. '
-				'Tide-predictions mode returns predicted tides.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				tac_submit = st.button(
-					'Submit',
-					key='tidesandcurrents_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='tidesandcurrents_clear',
-					on_click=_clear_tidesandcurrents_state
-				)
-		
-		with col_right:
-			if tac_submit:
-				try:
-					f = TidesAndCurrents( )
-					result = f.fetch(
-						mode=str( tac_mode ),
-						station_id=str( tac_station_id ).strip( ),
-						begin_date=dt.datetime.strftime( tac_begin_date, '%Y%m%d' ),
-						end_date=dt.datetime.strftime( tac_end_date, '%Y%m%d' ),
-						datum=str( tac_datum ).strip( ),
-						units=str( tac_units ).strip( ),
-						time_zone=str( tac_time_zone ).strip( ),
-						interval=str( tac_interval ).strip( ),
-						time=int( tac_timeout )
-					)
-					
-					st.session_state[ 'tidesandcurrents_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'NOAA Tides & Currents request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'tidesandcurrents_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'station_id' in result:
-						st.markdown( f"**Station ID:** {result.get( 'station_id', '' )}" )
-				
-				with meta_c2:
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						first_station = str( summary.get( 'first_station', '' ) or '' )
-						if first_station:
-							st.markdown( f"**Station:** {first_station}" )
-						else:
-							st.markdown( '**Station:** N/A' )
-					
-					with sum_c3:
-						first_value = str( summary.get( 'first_value', '' ) or '' )
-						if first_value:
-							st.markdown( f"**Sample Value:** {first_value}" )
-						else:
-							st.markdown( '**Sample Value:** N/A' )
-					
-					first_time = str( summary.get( 'first_time', '' ) or '' )
-					if first_time:
-						st.markdown( f"**First Time:** {first_time}" )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### Tides & Currents Results' )
-					df_tac = pd.DataFrame( rows )
-					
-					if not df_tac.empty:
-						st.dataframe(
-							df_tac,
-							use_container_width=True,
-							hide_index=True
-						)
-						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Name', '' ) or
-								item.get( 'Time', '' ) or
-								item.get( 'T', '' ) or
-								f'Record {idx}'
-							)
-							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								st.json( item )
-					else:
-						st.info( 'No displayable Tides & Currents rows were found.' )
-				else:
-					st.info( 'No Tides & Currents records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- EPA UV Index
-	with st.expander( label='EPA UV Index', icon='☀️', expanded=False ):
-		if 'uvindex_results' not in st.session_state:
-			st.session_state[ 'uvindex_results' ] = { }
-		
-		if 'uvindex_clear_request' not in st.session_state:
-			st.session_state[ 'uvindex_clear_request' ] = False
-		
-		if st.session_state.get( 'uvindex_clear_request', False ):
-			st.session_state[ 'uvindex_mode' ] = 'daily-zip'
-			st.session_state[ 'uvindex_zip_code' ] = ''
-			st.session_state[ 'uvindex_city' ] = ''
-			st.session_state[ 'uvindex_state' ] = ''
-			st.session_state[ 'uvindex_timeout' ] = 20
-			st.session_state[ 'uvindex_results' ] = { }
-			st.session_state[ 'uvindex_clear_request' ] = False
-		
-		def _clear_uvindex_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the EPA UV Index expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'uvindex_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			uvindex_mode = st.selectbox(
-				'Mode',
-				options=[
-						'daily-zip',
-						'daily-city-state',
-						'hourly-zip',
-						'hourly-city-state'
-				],
-				index=[
-						'daily-zip',
-						'daily-city-state',
-						'hourly-zip',
-						'hourly-city-state'
-				].index(
-					st.session_state.get( 'uvindex_mode', 'daily-zip' )
-				),
-				key='uvindex_mode'
-			)
-			
-			uvindex_zip_code = st.text_input(
-				'Zip Code',
-				value=st.session_state.get( 'uvindex_zip_code', '' ),
-				key='uvindex_zip_code',
-				disabled=(uvindex_mode not in [ 'daily-zip', 'hourly-zip' ]),
-				placeholder='Example: 22201'
-			)
-			
-			city_c1, city_c2 = st.columns( 2 )
-			
-			with city_c1:
-				uvindex_city = st.text_input(
-					'City',
-					value=st.session_state.get( 'uvindex_city', '' ),
-					key='uvindex_city',
-					disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state' ]),
-					placeholder='Example: Arlington'
-				)
-			
-			with city_c2:
-				uvindex_state = st.text_input(
-					'State',
-					value=st.session_state.get( 'uvindex_state', '' ),
-					key='uvindex_state',
-					disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state' ]),
-					placeholder='Example: VA'
-				)
-			
-			uvindex_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'uvindex_timeout', 20 ) ),
-				step=1,
-				key='uvindex_timeout'
-			)
-			
-			st.caption(
-				'UV Index forecasts can be retrieved hourly or daily, by ZIP code or '
-				'by city and state.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				uvindex_submit = st.button(
-					'Submit',
-					key='uvindex_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='uvindex_clear',
-					on_click=_clear_uvindex_state
-				)
-		
-		with col_right:
-			if uvindex_submit:
-				try:
-					f = UvIndex( )
-					result = f.fetch(
-						mode=str( uvindex_mode ),
-						zip_code=str( uvindex_zip_code ).strip( ),
-						city=str( uvindex_city ).strip( ),
-						state=str( uvindex_state ).strip( ),
-						time=int( uvindex_timeout )
-					)
-					
-					st.session_state[ 'uvindex_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'EPA UV Index request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'uvindex_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					params = result.get( 'params', { } ) or { }
-					if 'zip_code' in params:
-						st.markdown( f"**Zip Code:** {params.get( 'zip_code', '' )}" )
-					if 'city' in params:
-						st.markdown(
-							f"**City/State:** {params.get( 'city', '' )}, "
-							f"{params.get( 'state', '' )}"
-						)
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						max_uv = summary.get( 'max_uv', None )
-						st.metric(
-							'Peak UV',
-							'' if max_uv is None else str( max_uv )
-						)
-					
-					with sum_c3:
-						first_alert = str( summary.get( 'first_alert', '' ) or '' )
-						if first_alert:
-							st.markdown( f"**Alert:** {first_alert}" )
-						else:
-							st.markdown( '**Alert:** N/A' )
-					
-					first_location = str( summary.get( 'first_location', '' ) or '' )
-					if first_location:
-						st.markdown( f"**Location:** {first_location}" )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### UV Index Results' )
-					df_uvindex = pd.DataFrame( rows )
-					
-					if not df_uvindex.empty:
-						st.dataframe(
-							df_uvindex,
-							use_container_width=True,
-							hide_index=True
-						)
-						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'City', '' ) or
-								item.get( 'Zip', '' ) or
-								f'Record {idx}'
-							)
-							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								st.json( item )
-					else:
-						st.info( 'No displayable UV Index rows were found.' )
-				else:
-					st.info( 'No UV Index records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- PurpleAir
-	with st.expander( label='Purple Air', icon='🟣', expanded=False ):
-		if 'purpleair_results' not in st.session_state:
-			st.session_state[ 'purpleair_results' ] = { }
-		
-		if 'purpleair_clear_request' not in st.session_state:
-			st.session_state[ 'purpleair_clear_request' ] = False
-		
-		if st.session_state.get( 'purpleair_clear_request', False ):
-			st.session_state[ 'purpleair_mode' ] = 'sensors'
-			st.session_state[ 'purpleair_sensor_index' ] = ''
-			st.session_state[ 'purpleair_nwlng' ] = ''
-			st.session_state[ 'purpleair_nwlat' ] = ''
-			st.session_state[ 'purpleair_selng' ] = ''
-			st.session_state[ 'purpleair_selat' ] = ''
-			st.session_state[ 'purpleair_location_type' ] = 0
-			st.session_state[ 'purpleair_max_age' ] = 0
-			st.session_state[ 'purpleair_modified_since' ] = 0
-			st.session_state[ 'purpleair_timeout' ] = 20
-			st.session_state[ 'purpleair_results' ] = { }
-			st.session_state[ 'purpleair_clear_request' ] = False
-		
-		def _clear_purpleair_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the PurpleAir expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'purpleair_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			purpleair_mode = st.selectbox(
-				'Mode',
-				options=[ 'sensors', 'sensor' ],
-				index=[ 'sensors', 'sensor' ].index(
-					st.session_state.get( 'purpleair_mode', 'sensors' )
-				),
-				key='purpleair_mode'
-			)
-			
-			purpleair_sensor_index = st.text_input(
-				'Sensor Index',
-				value=st.session_state.get( 'purpleair_sensor_index', '' ),
-				key='purpleair_sensor_index',
-				disabled=(purpleair_mode != 'sensor'),
-				placeholder='Example: 78307'
-			)
-			
-			bbox_c1, bbox_c2 = st.columns( 2 )
-			
-			with bbox_c1:
-				purpleair_nwlng = st.text_input(
-					'NW Longitude',
-					value=st.session_state.get( 'purpleair_nwlng', '' ),
-					key='purpleair_nwlng',
-					disabled=(purpleair_mode != 'sensors')
-				)
-			
-			with bbox_c2:
-				purpleair_nwlat = st.text_input(
-					'NW Latitude',
-					value=st.session_state.get( 'purpleair_nwlat', '' ),
-					key='purpleair_nwlat',
-					disabled=(purpleair_mode != 'sensors')
-				)
-			
-			bbox_c3, bbox_c4 = st.columns( 2 )
-			
-			with bbox_c3:
-				purpleair_selng = st.text_input(
-					'SE Longitude',
-					value=st.session_state.get( 'purpleair_selng', '' ),
-					key='purpleair_selng',
-					disabled=(purpleair_mode != 'sensors')
-				)
-			
-			with bbox_c4:
-				purpleair_selat = st.text_input(
-					'SE Latitude',
-					value=st.session_state.get( 'purpleair_selat', '' ),
-					key='purpleair_selat',
-					disabled=(purpleair_mode != 'sensors')
-				)
-			
-			opt_c1, opt_c2 = st.columns( 2 )
-			
-			with opt_c1:
-				purpleair_location_type = st.number_input(
-					'Location Type',
-					min_value=0,
-					max_value=10,
-					value=int( st.session_state.get( 'purpleair_location_type', 0 ) ),
-					step=1,
-					key='purpleair_location_type',
-					disabled=(purpleair_mode != 'sensors')
-				)
-			
-			with opt_c2:
-				purpleair_max_age = st.number_input(
-					'Max Age',
-					min_value=0,
-					max_value=1000000,
-					value=int( st.session_state.get( 'purpleair_max_age', 0 ) ),
-					step=1,
-					key='purpleair_max_age',
-					disabled=(purpleair_mode != 'sensors')
-				)
-			
-			purpleair_modified_since = st.number_input(
-				'Modified Since',
-				min_value=0,
-				max_value=2147483647,
-				value=int( st.session_state.get( 'purpleair_modified_since', 0 ) ),
-				step=1,
-				key='purpleair_modified_since',
-				disabled=(purpleair_mode != 'sensors')
-			)
-			
-			purpleair_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'purpleair_timeout', 20 ) ),
-				step=1,
-				key='purpleair_timeout'
-			)
-			
-			st.caption(
-				'PurpleAir requires an API key and uses a points system. This wrapper '
-				'uses narrow field selection to keep calls focused and readable.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				purpleair_submit = st.button(
-					'Submit',
-					key='purpleair_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='purpleair_clear',
-					on_click=_clear_purpleair_state
-				)
-		
-		with col_right:
-			if purpleair_submit:
-				try:
-					f = PurpleAir( )
-					result = f.fetch(
-						mode=str( purpleair_mode ),
-						sensor_index=None if not str( purpleair_sensor_index ).strip( ) else int( purpleair_sensor_index ),
-						nwlng=None if not str( purpleair_nwlng ).strip( ) else float( purpleair_nwlng ),
-						nwlat=None if not str( purpleair_nwlat ).strip( ) else float( purpleair_nwlat ),
-						selng=None if not str( purpleair_selng ).strip( ) else float( purpleair_selng ),
-						selat=None if not str( purpleair_selat ).strip( ) else float( purpleair_selat ),
-						location_type=int( purpleair_location_type ),
-						max_age=int( purpleair_max_age ),
-						modified_since=int( purpleair_modified_since ),
-						time=int( purpleair_timeout )
-					)
-					
-					st.session_state[ 'purpleair_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'PurpleAir request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'purpleair_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					params = result.get( 'params', { } ) or { }
-					if 'sensor_index' in params:
-						st.markdown(
-							f"**Sensor Index:** {params.get( 'sensor_index', '' )}"
-						)
-					if 'fields' in params:
-						st.markdown(
-							f"**Fields:** {params.get( 'fields', '' )}"
-						)
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						max_pm25 = summary.get( 'max_pm25', None )
-						st.metric(
-							'Peak PM2.5',
-							'' if max_pm25 is None else str( max_pm25 )
-						)
-					
-					with sum_c3:
-						first_name = str( summary.get( 'first_name', '' ) or '' )
-						if first_name:
-							st.markdown( f"**First Sensor:** {first_name}" )
-						else:
-							st.markdown( '**First Sensor:** N/A' )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### PurpleAir Results' )
-					df_purpleair = pd.DataFrame( rows )
-					
-					if not df_purpleair.empty:
-						st.dataframe(
-							df_purpleair,
-							use_container_width=True,
-							hide_index=True
-						)
-						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Name', '' ) or
-								item.get( 'Sensor Index', '' ) or
-								f'Record {idx}'
-							)
-							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								st.json( item )
-					else:
-						st.info( 'No displayable PurpleAir rows were found.' )
-				else:
-					st.info( 'No PurpleAir records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- OpenAQ
-	with st.expander( label='Open Air Quality', icon='🌬️', expanded=False ):
-		if 'openaq_results' not in st.session_state:
-			st.session_state[ 'openaq_results' ] = { }
-		
-		if 'openaq_clear_request' not in st.session_state:
-			st.session_state[ 'openaq_clear_request' ] = False
-		
-		if st.session_state.get( 'openaq_clear_request', False ):
-			st.session_state[ 'openaq_mode' ] = 'locations'
-			st.session_state[ 'openaq_location_id' ] = ''
-			st.session_state[ 'openaq_country_id' ] = ''
-			st.session_state[ 'openaq_coordinates' ] = ''
-			st.session_state[ 'openaq_radius' ] = 25000
-			st.session_state[ 'openaq_providers_id' ] = ''
-			st.session_state[ 'openaq_parameters_id' ] = ''
-			st.session_state[ 'openaq_limit' ] = 25
-			st.session_state[ 'openaq_page' ] = 1
-			st.session_state[ 'openaq_timeout' ] = 20
-			st.session_state[ 'openaq_results' ] = { }
-			st.session_state[ 'openaq_clear_request' ] = False
-		
-		def _clear_openaq_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the OpenAQ expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'openaq_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			openaq_mode = st.selectbox(
-				'Mode',
-				options=[ 'locations', 'latest' ],
-				index=[ 'locations', 'latest' ].index(
-					st.session_state.get( 'openaq_mode', 'locations' )
-				),
-				key='openaq_mode'
-			)
-			
-			openaq_location_id = st.text_input(
-				'Location ID',
-				value=st.session_state.get( 'openaq_location_id', '' ),
-				key='openaq_location_id',
-				disabled=(openaq_mode != 'latest'),
-				placeholder='Example: 8118'
-			)
-			
-			openaq_country_id = st.text_input(
-				'Country ID',
-				value=st.session_state.get( 'openaq_country_id', '' ),
-				key='openaq_country_id',
-				disabled=(openaq_mode != 'locations'),
-				placeholder='Optional numeric country ID'
-			)
-			
-			openaq_coordinates = st.text_input(
-				'Coordinates',
-				value=st.session_state.get( 'openaq_coordinates', '' ),
-				key='openaq_coordinates',
-				disabled=(openaq_mode != 'locations'),
-				placeholder='latitude,longitude'
-			)
-			
-			openaq_radius = st.number_input(
-				'Radius (meters)',
-				min_value=1,
-				max_value=500000,
-				value=int( st.session_state.get( 'openaq_radius', 25000 ) ),
-				step=1,
-				key='openaq_radius',
-				disabled=(openaq_mode != 'locations')
-			)
-			
-			filter_c1, filter_c2 = st.columns( 2 )
-			
-			with filter_c1:
-				openaq_providers_id = st.text_input(
-					'Providers ID',
-					value=st.session_state.get( 'openaq_providers_id', '' ),
-					key='openaq_providers_id',
-					disabled=(openaq_mode != 'locations'),
-					placeholder='Optional provider ID'
-				)
-			
-			with filter_c2:
-				openaq_parameters_id = st.text_input(
-					'Parameters ID',
-					value=st.session_state.get( 'openaq_parameters_id', '' ),
-					key='openaq_parameters_id',
-					disabled=(openaq_mode != 'locations'),
-					placeholder='Optional parameter ID'
-				)
-			
-			page_c1, page_c2 = st.columns( 2 )
-			
-			with page_c1:
-				openaq_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'openaq_limit', 25 ) ),
-					step=1,
-					key='openaq_limit',
-					disabled=(openaq_mode != 'locations')
-				)
-			
-			with page_c2:
-				openaq_page = st.number_input(
-					'Page',
-					min_value=1,
-					max_value=10000,
-					value=int( st.session_state.get( 'openaq_page', 1 ) ),
-					step=1,
-					key='openaq_page',
-					disabled=(openaq_mode != 'locations')
-				)
-			
-			openaq_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'openaq_timeout', 20 ) ),
-				step=1,
-				key='openaq_timeout'
-			)
-			
-			st.caption(
-				'OpenAQ v3 requires an API key. Locations mode supports discovery. '
-				'Latest mode retrieves the latest measurements for one location.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				openaq_submit = st.button(
-					'Submit',
-					key='openaq_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='openaq_clear',
-					on_click=_clear_openaq_state
-				)
-		
-		with col_right:
-			if openaq_submit:
-				try:
-					f = OpenAQ( )
-					result = f.fetch(
-						mode=str( openaq_mode ),
-						location_id=None if not str( openaq_location_id ).strip( ) else int( openaq_location_id ),
-						country_id=None if not str( openaq_country_id ).strip( ) else int( openaq_country_id ),
-						coordinates=str( openaq_coordinates ).strip( ),
-						radius=int( openaq_radius ),
-						providers_id=str( openaq_providers_id ).strip( ),
-						parameters_id=str( openaq_parameters_id ).strip( ),
-						limit=int( openaq_limit ),
-						page=int( openaq_page ),
-						time=int( openaq_timeout )
-					)
-					
-					st.session_state[ 'openaq_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'OpenAQ request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'openaq_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					params = result.get( 'params', { } ) or { }
-					if 'location_id' in params:
-						st.markdown(
-							f"**Location ID:** {params.get( 'location_id', '' )}"
-						)
-					if 'country_id' in params:
-						st.markdown(
-							f"**Country ID:** {params.get( 'country_id', '' )}"
-						)
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						first_name = str( summary.get( 'first_name', '' ) or '' )
-						if first_name:
-							st.markdown( f"**First Result:** {first_name}" )
-						else:
-							st.markdown( '**First Result:** N/A' )
-					
-					with sum_c3:
-						first_parameter = str(
-							summary.get( 'first_parameter', '' ) or ''
-						)
-						if first_parameter:
-							st.markdown( f"**First Parameter:** {first_parameter}" )
-						else:
-							st.markdown( '**First Parameter:** N/A' )
-					
-					first_country = str( summary.get( 'first_country', '' ) or '' )
-					if first_country:
-						st.markdown( f"**Country:** {first_country}" )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### OpenAQ Results' )
-					df_openaq = pd.DataFrame( rows )
-					
-					if not df_openaq.empty:
-						st.dataframe(
-							df_openaq,
-							use_container_width=True,
-							hide_index=True
-						)
-						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Name', '' ) or
-								item.get( 'Location Id', '' ) or
-								item.get( 'Parameter', '' ) or
-								f'Record {idx}'
-							)
-							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								st.json( item )
-					else:
-						st.info( 'No displayable OpenAQ rows were found.' )
-				else:
-					st.info( 'No OpenAQ records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- NASA FIRMS
-	with st.expander( label='NASA FIRMS', icon='🔥', expanded=False ):
-		if 'firms_results' not in st.session_state:
-			st.session_state[ 'firms_results' ] = { }
-		
-		if 'firms_clear_request' not in st.session_state:
-			st.session_state[ 'firms_clear_request' ] = False
-		
-		if st.session_state.get( 'firms_clear_request', False ):
-			st.session_state[ 'firms_mode' ] = 'area'
-			st.session_state[ 'firms_source' ] = 'VIIRS_SNPP_NRT'
-			st.session_state[ 'firms_area_coordinates' ] = 'world'
-			st.session_state[ 'firms_day_range' ] = 1
-			st.session_state[ 'firms_date' ] = ''
-			st.session_state[ 'firms_sensor' ] = 'ALL'
-			st.session_state[ 'firms_timeout' ] = 20
-			st.session_state[ 'firms_results' ] = { }
-			st.session_state[ 'firms_clear_request' ] = False
-		
-		def _clear_firms_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the NASA FIRMS expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'firms_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			firms_mode = st.selectbox(
-				'Mode',
-				options=[ 'area', 'data-availability' ],
-				index=[ 'area', 'data-availability' ].index(
-					st.session_state.get( 'firms_mode', 'area' )
-				),
-				key='firms_mode'
-			)
-			
-			firms_source = st.selectbox(
-				'Source',
-				options=[
-						'LANDSAT_NRT',
-						'MODIS_NRT',
-						'MODIS_SP',
-						'VIIRS_NOAA20_NRT',
-						'VIIRS_NOAA20_SP',
-						'VIIRS_NOAA21_NRT',
-						'VIIRS_SNPP_NRT',
-						'VIIRS_SNPP_SP'
-				],
-				index=[
-						'LANDSAT_NRT',
-						'MODIS_NRT',
-						'MODIS_SP',
-						'VIIRS_NOAA20_NRT',
-						'VIIRS_NOAA20_SP',
-						'VIIRS_NOAA21_NRT',
-						'VIIRS_SNPP_NRT',
-						'VIIRS_SNPP_SP'
-				].index(
-					st.session_state.get( 'firms_source', 'VIIRS_SNPP_NRT' )
-				),
-				key='firms_source',
-				disabled=(firms_mode != 'area')
-			)
-			
-			firms_area_coordinates = st.text_input(
-				'Area Coordinates',
-				value=st.session_state.get( 'firms_area_coordinates', 'world' ),
-				key='firms_area_coordinates',
-				disabled=(firms_mode != 'area'),
-				placeholder='west,south,east,north or world'
-			)
-			
-			firms_day_range = st.number_input(
-				'Day Range',
-				min_value=1,
-				max_value=5,
-				value=int( st.session_state.get( 'firms_day_range', 1 ) ),
-				step=1,
-				key='firms_day_range',
-				disabled=(firms_mode != 'area')
-			)
-			
-			firms_date = st.text_input(
-				'Date',
-				value=st.session_state.get( 'firms_date', '' ),
-				key='firms_date',
-				disabled=(firms_mode != 'area'),
-				placeholder='Optional YYYY-MM-DD'
-			)
-			
-			firms_sensor = st.selectbox(
-				'Sensor',
-				options=[
-						'ALL',
-						'LANDSAT_NRT',
-						'MODIS_NRT',
-						'MODIS_SP',
-						'VIIRS_NOAA20_NRT',
-						'VIIRS_NOAA20_SP',
-						'VIIRS_NOAA21_NRT',
-						'VIIRS_SNPP_NRT',
-						'VIIRS_SNPP_SP'
-				],
-				index=[
-						'ALL',
-						'LANDSAT_NRT',
-						'MODIS_NRT',
-						'MODIS_SP',
-						'VIIRS_NOAA20_NRT',
-						'VIIRS_NOAA20_SP',
-						'VIIRS_NOAA21_NRT',
-						'VIIRS_SNPP_NRT',
-						'VIIRS_SNPP_SP'
-				].index(
-					st.session_state.get( 'firms_sensor', 'ALL' )
-				),
-				key='firms_sensor',
-				disabled=(firms_mode != 'data-availability')
-			)
-			
-			firms_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'firms_timeout', 20 ) ),
-				step=1,
-				key='firms_timeout'
-			)
-			
-			st.caption(
-				'FIRMS requires a MAP_KEY. Area mode retrieves fire detections for a '
-				'bounding box or world. Data-availability mode reports available dates.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				firms_submit = st.button(
-					'Submit',
-					key='firms_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='firms_clear',
-					on_click=_clear_firms_state
-				)
-		
-		with col_right:
-			if firms_submit:
-				try:
-					f = Firms( )
-					result = f.fetch(
-						mode=str( firms_mode ),
-						source=str( firms_source ).strip( ),
-						area_coordinates=str( firms_area_coordinates ).strip( ),
-						day_range=int( firms_day_range ),
-						date=str( firms_date ).strip( ),
-						sensor=str( firms_sensor ).strip( ),
-						time=int( firms_timeout )
-					)
-					
-					st.session_state[ 'firms_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'NASA FIRMS request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'firms_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					params = result.get( 'params', { } ) or { }
-					if 'source' in params:
-						st.markdown( f"**Source:** {params.get( 'source', '' )}" )
-					if 'sensor' in params:
-						st.markdown( f"**Sensor:** {params.get( 'sensor', '' )}" )
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
-					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						first_date = str( summary.get( 'first_date', '' ) or '' )
-						if first_date:
-							st.markdown( f"**First Date:** {first_date}" )
-						else:
-							st.markdown( '**First Date:** N/A' )
-					
-					with sum_c3:
-						first_lat = str( summary.get( 'first_lat', '' ) or '' )
-						first_lon = str( summary.get( 'first_lon', '' ) or '' )
-						if first_lat and first_lon:
-							st.markdown( f"**First Point:** {first_lat}, {first_lon}" )
-						else:
-							st.markdown( '**First Point:** N/A' )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### FIRMS Results' )
-					df_firms = pd.DataFrame( rows )
-					
-					if not df_firms.empty:
-						st.dataframe(
-							df_firms,
-							use_container_width=True,
-							hide_index=True
-						)
-						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Acq Date', '' ) or
-								item.get( 'Date', '' ) or
-								f'Record {idx}'
-							)
-							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								st.json( item )
-					else:
-						st.info( 'No displayable FIRMS rows were found.' )
-				else:
-					st.info( 'No FIRMS records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.text( str( result.get( 'raw', '' ) ) )
-	
-	# -------- USGS Water Data
-	with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
-		if 'usgswaterdata_results' not in st.session_state:
-			st.session_state[ 'usgswaterdata_results' ] = { }
-		
-		if 'usgswaterdata_clear_request' not in st.session_state:
-			st.session_state[ 'usgswaterdata_clear_request' ] = False
-		
-		if st.session_state.get( 'usgswaterdata_clear_request', False ):
-			st.session_state[ 'usgswaterdata_mode' ] = 'monitoring-locations'
-			st.session_state[ 'usgswaterdata_monitoring_location_id' ] = ''
-			st.session_state[ 'usgswaterdata_state_code' ] = ''
-			st.session_state[ 'usgswaterdata_county_code' ] = ''
-			st.session_state[ 'usgswaterdata_site_type' ] = ''
-			st.session_state[ 'usgswaterdata_parameter_code' ] = ''
-			st.session_state[ 'usgswaterdata_limit' ] = 25
-			st.session_state[ 'usgswaterdata_timeout' ] = 20
-			st.session_state[ 'usgswaterdata_results' ] = { }
-			st.session_state[ 'usgswaterdata_clear_request' ] = False
-		
-		def _clear_usgswaterdata_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the USGS Water Data expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'usgswaterdata_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			usgswd_mode = st.selectbox(
-				'Mode',
-				options=[
-						'monitoring-locations',
-						'time-series-metadata',
-						'latest-continuous',
-						'latest-daily'
-				],
-				index=[
-						'monitoring-locations',
-						'time-series-metadata',
-						'latest-continuous',
-						'latest-daily'
-				].index(
-					st.session_state.get(
-						'usgswaterdata_mode',
-						'monitoring-locations'
-					)
-				),
-				key='usgswaterdata_mode'
-			)
-			
-			usgswd_monitoring_location_id = st.text_input(
-				'Monitoring Location ID',
-				value=st.session_state.get(
-					'usgswaterdata_monitoring_location_id',
-					''
-				),
-				key='usgswaterdata_monitoring_location_id',
-				placeholder='Example: USGS-01491000'
-			)
-			
-			meta_c1, meta_c2 = st.columns( 2 )
-			
-			with meta_c1:
-				usgswd_state_code = st.text_input(
+				envirofacts_state_code = st.text_input(
 					'State Code',
-					value=st.session_state.get( 'usgswaterdata_state_code', '' ),
-					key='usgswaterdata_state_code',
-					disabled=(usgswd_mode != 'monitoring-locations'),
+					value=st.session_state.get( 'envirofacts_state_code', '' ),
+					key='envirofacts_state_code',
 					placeholder='Example: VA'
 				)
-			
-			with meta_c2:
-				usgswd_county_code = st.text_input(
-					'County Code',
-					value=st.session_state.get( 'usgswaterdata_county_code', '' ),
-					key='usgswaterdata_county_code',
-					disabled=(usgswd_mode != 'monitoring-locations'),
-					placeholder='Optional'
-				)
-			
-			usgswd_site_type = st.text_input(
-				'Site Type',
-				value=st.session_state.get( 'usgswaterdata_site_type', '' ),
-				key='usgswaterdata_site_type',
-				disabled=(usgswd_mode != 'monitoring-locations'),
-				placeholder='Examples: ST, LK, GW'
-			)
-			
-			usgswd_parameter_code = st.text_input(
-				'Parameter Code',
-				value=st.session_state.get( 'usgswaterdata_parameter_code', '' ),
-				key='usgswaterdata_parameter_code',
-				disabled=(usgswd_mode == 'monitoring-locations'),
-				placeholder='Example: 00060'
-			)
-			
-			usgswd_limit = st.number_input(
-				'Limit',
-				min_value=1,
-				max_value=200,
-				value=int( st.session_state.get( 'usgswaterdata_limit', 25 ) ),
-				step=1,
-				key='usgswaterdata_limit'
-			)
-			
-			usgswd_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'usgswaterdata_timeout', 20 ) ),
-				step=1,
-				key='usgswaterdata_timeout'
-			)
-			
-			st.caption(
-				'Monitoring Locations supports site discovery. The other modes '
-				'focus on parameter metadata and latest reported values.'
-			)
-			
-			btn_c1, btn_c2 = st.columns( 2 )
-			
-			with btn_c1:
-				usgswd_submit = st.button(
-					'Submit',
-					key='usgswaterdata_submit'
-				)
-			
-			with btn_c2:
-				st.button(
-					'Clear',
-					key='usgswaterdata_clear',
-					on_click=_clear_usgswaterdata_state
-				)
-		
-		with col_right:
-			if usgswd_submit:
-				try:
-					f = USGSWaterData( )
-					result = f.fetch(
-						mode=str( usgswd_mode ),
-						monitoring_location_id=str(
-							usgswd_monitoring_location_id
-						).strip( ),
-						state_code=str( usgswd_state_code ).strip( ),
-						county_code=str( usgswd_county_code ).strip( ),
-						site_type=str( usgswd_site_type ).strip( ),
-						parameter_code=str( usgswd_parameter_code ).strip( ),
-						limit=int( usgswd_limit ),
-						time=int( usgswd_timeout )
-					)
-					
-					st.session_state[ 'usgswaterdata_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'USGS Water Data request failed.' )
-					st.exception( exc )
+				envirofacts_facility_name = st.text_input(
+					'Facility Name Prefix',
+					value=st.session_state.get( 'envirofacts_facility_name', '' ),
+					key='envirofacts_facility_name',
+					placeholder='Optional facility-name prefix'
+				)
+				
+				envirofacts_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=500,
+					value=int( st.session_state.get( 'envirofacts_limit', 25 ) ),
+					step=1,
+					key='envirofacts_limit'
+				)
+				
+				envirofacts_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'envirofacts_timeout', 20 ) ),
+					step=1,
+					key='envirofacts_timeout'
+				)
+				
+				st.caption(
+					'This first-pass Envirofacts wrapper focuses on a constrained set of '
+					'common tables so the output remains human-readable and easy to use.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					envirofacts_submit = st.button(
+						'Submit',
+						key='envirofacts_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='envirofacts_clear',
+						on_click=_clear_envirofacts_state
+					)
 			
-			result = st.session_state.get( 'usgswaterdata_results', { } )
+			with col_right:
+				if envirofacts_submit:
+					try:
+						f = EnviroFacts( )
+						result = f.fetch(
+							table_name=str( envirofacts_table_name ).strip( ),
+							state_code=str( envirofacts_state_code ).strip( ),
+							facility_name=str( envirofacts_facility_name ).strip( ),
+							limit=int( envirofacts_limit ),
+							time=int( envirofacts_timeout )
+						)
+						
+						st.session_state[ 'envirofacts_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Envirofacts request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'envirofacts_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'table_name' in result:
+							st.markdown( f"**Table:** {result.get( 'table_name', '' )}" )
+					
+					with meta_c2:
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							first_facility = str(
+								summary.get( 'first_facility', '' ) or ''
+							)
+							if first_facility:
+								st.markdown( f"**First Facility:** {first_facility}" )
+							else:
+								st.markdown( '**First Facility:** N/A' )
+						
+						with sum_c3:
+							first_state = str( summary.get( 'first_state', '' ) or '' )
+							if first_state:
+								st.markdown( f"**First State:** {first_state}" )
+							else:
+								st.markdown( '**First State:** N/A' )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### Envirofacts Results' )
+						df_envirofacts = pd.DataFrame( rows )
+						
+						if not df_envirofacts.empty:
+							st.dataframe(
+								df_envirofacts,
+								use_container_width=True,
+								hide_index=True
+							)
+							
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Facility Name', '' ) or
+									item.get( 'Primary Name', '' ) or
+									item.get( 'Name', '' ) or
+									f'Record {idx}'
+								)
+								
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
+						else:
+							st.info( 'No displayable Envirofacts rows were found.' )
+					else:
+						st.info( 'No Envirofacts records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- NOAA Tides & Currents
+		with st.expander( label='NOAA Tides & Currents', icon='🌊', expanded=False ):
+			if 'tidesandcurrents_results' not in st.session_state:
+				st.session_state[ 'tidesandcurrents_results' ] = { }
 			
-			if not result:
-				st.text( 'No results.' )
-			else:
+			if 'tidesandcurrents_clear_request' not in st.session_state:
+				st.session_state[ 'tidesandcurrents_clear_request' ] = False
+			
+			if st.session_state.get( 'tidesandcurrents_clear_request', False ):
+				st.session_state[ 'tidesandcurrents_mode' ] = 'water-level'
+				st.session_state[ 'tidesandcurrents_station_id' ] = ''
+				st.session_state[
+					'tidesandcurrents_begin_date' ] = dt.date.today( ) - dt.timedelta( days=1 )
+				st.session_state[ 'tidesandcurrents_end_date' ] = dt.date.today( )
+				st.session_state[ 'tidesandcurrents_datum' ] = 'MLLW'
+				st.session_state[ 'tidesandcurrents_units' ] = 'metric'
+				st.session_state[ 'tidesandcurrents_time_zone' ] = 'gmt'
+				st.session_state[ 'tidesandcurrents_interval' ] = 'hilo'
+				st.session_state[ 'tidesandcurrents_timeout' ] = 20
+				st.session_state[ 'tidesandcurrents_results' ] = { }
+				st.session_state[ 'tidesandcurrents_clear_request' ] = False
+			
+			def _clear_tidesandcurrents_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the NOAA Tides & Currents expander state for reset on the next
+					rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'tidesandcurrents_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				tac_mode = st.selectbox(
+					'Mode',
+					options=[ 'station', 'water-level', 'tide-predictions' ],
+					index=[ 'station', 'water-level', 'tide-predictions' ].index(
+						st.session_state.get( 'tidesandcurrents_mode', 'water-level' )
+					),
+					key='tidesandcurrents_mode'
+				)
+				
+				tac_station_id = st.text_input(
+					'Station ID',
+					value=st.session_state.get( 'tidesandcurrents_station_id', '' ),
+					key='tidesandcurrents_station_id',
+					placeholder='Example: 8724580'
+				)
+				
+				date_c1, date_c2 = st.columns( 2 )
+				
+				with date_c1:
+					tac_begin_date = st.date_input(
+						'Begin Date',
+						value=st.session_state.get(
+							'tidesandcurrents_begin_date',
+							dt.date.today( ) - dt.timedelta( days=1 )
+						),
+						key='tidesandcurrents_begin_date',
+						disabled=(tac_mode == 'station')
+					)
+				
+				with date_c2:
+					tac_end_date = st.date_input(
+						'End Date',
+						value=st.session_state.get(
+							'tidesandcurrents_end_date',
+							dt.date.today( )
+						),
+						key='tidesandcurrents_end_date',
+						disabled=(tac_mode == 'station')
+					)
+				
+				opt_c1, opt_c2 = st.columns( 2 )
+				
+				with opt_c1:
+					tac_datum = st.text_input(
+						'Datum',
+						value=st.session_state.get( 'tidesandcurrents_datum', 'MLLW' ),
+						key='tidesandcurrents_datum',
+						disabled=(tac_mode == 'station')
+					)
+				
+				with opt_c2:
+					tac_units = st.selectbox(
+						'Units',
+						options=[ 'metric', 'english' ],
+						index=[ 'metric', 'english' ].index(
+							st.session_state.get( 'tidesandcurrents_units', 'metric' )
+						),
+						key='tidesandcurrents_units',
+						disabled=(tac_mode == 'station')
+					)
+				
+				opt_c3, opt_c4 = st.columns( 2 )
+				
+				with opt_c3:
+					tac_time_zone = st.selectbox(
+						'Time Zone',
+						options=[ 'gmt', 'lst', 'lst_ldt' ],
+						index=[ 'gmt', 'lst', 'lst_ldt' ].index(
+							st.session_state.get( 'tidesandcurrents_time_zone', 'gmt' )
+						),
+						key='tidesandcurrents_time_zone',
+						disabled=(tac_mode == 'station')
+					)
+				
+				with opt_c4:
+					tac_interval = st.selectbox(
+						'Prediction Interval',
+						options=[ 'hilo', 'h' ],
+						index=[ 'hilo', 'h' ].index(
+							st.session_state.get( 'tidesandcurrents_interval', 'hilo' )
+						),
+						key='tidesandcurrents_interval',
+						disabled=(tac_mode != 'tide-predictions')
+					)
+				
+				tac_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'tidesandcurrents_timeout', 20 ) ),
+					step=1,
+					key='tidesandcurrents_timeout'
+				)
+				
+				st.caption(
+					'Station mode returns metadata. Water-level mode returns observations. '
+					'Tide-predictions mode returns predicted tides.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					tac_submit = st.button(
+						'Submit',
+						key='tidesandcurrents_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='tidesandcurrents_clear',
+						on_click=_clear_tidesandcurrents_state
+					)
+			
+			with col_right:
+				if tac_submit:
+					try:
+						f = TidesAndCurrents( )
+						result = f.fetch(
+							mode=str( tac_mode ),
+							station_id=str( tac_station_id ).strip( ),
+							begin_date=dt.datetime.strftime( tac_begin_date, '%Y%m%d' ),
+							end_date=dt.datetime.strftime( tac_end_date, '%Y%m%d' ),
+							datum=str( tac_datum ).strip( ),
+							units=str( tac_units ).strip( ),
+							time_zone=str( tac_time_zone ).strip( ),
+							interval=str( tac_interval ).strip( ),
+							time=int( tac_timeout )
+						)
+						
+						st.session_state[ 'tidesandcurrents_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'NOAA Tides & Currents request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'tidesandcurrents_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'station_id' in result:
+							st.markdown( f"**Station ID:** {result.get( 'station_id', '' )}" )
+					
+					with meta_c2:
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							first_station = str( summary.get( 'first_station', '' ) or '' )
+							if first_station:
+								st.markdown( f"**Station:** {first_station}" )
+							else:
+								st.markdown( '**Station:** N/A' )
+						
+						with sum_c3:
+							first_value = str( summary.get( 'first_value', '' ) or '' )
+							if first_value:
+								st.markdown( f"**Sample Value:** {first_value}" )
+							else:
+								st.markdown( '**Sample Value:** N/A' )
+						
+						first_time = str( summary.get( 'first_time', '' ) or '' )
+						if first_time:
+							st.markdown( f"**First Time:** {first_time}" )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### Tides & Currents Results' )
+						df_tac = pd.DataFrame( rows )
+						
+						if not df_tac.empty:
+							st.dataframe(
+								df_tac,
+								use_container_width=True,
+								hide_index=True
+							)
+							
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Name', '' ) or
+									item.get( 'Time', '' ) or
+									item.get( 'T', '' ) or
+									f'Record {idx}'
+								)
+								
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
+						else:
+							st.info( 'No displayable Tides & Currents rows were found.' )
+					else:
+						st.info( 'No Tides & Currents records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- EPA UV Index
+		with st.expander( label='EPA UV Index', icon='☀️', expanded=False ):
+			if 'uvindex_results' not in st.session_state:
+				st.session_state[ 'uvindex_results' ] = { }
+			
+			if 'uvindex_clear_request' not in st.session_state:
+				st.session_state[ 'uvindex_clear_request' ] = False
+			
+			if st.session_state.get( 'uvindex_clear_request', False ):
+				st.session_state[ 'uvindex_mode' ] = 'daily-zip'
+				st.session_state[ 'uvindex_zip_code' ] = ''
+				st.session_state[ 'uvindex_city' ] = ''
+				st.session_state[ 'uvindex_state' ] = ''
+				st.session_state[ 'uvindex_timeout' ] = 20
+				st.session_state[ 'uvindex_results' ] = { }
+				st.session_state[ 'uvindex_clear_request' ] = False
+			
+			def _clear_uvindex_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the EPA UV Index expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'uvindex_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				uvindex_mode = st.selectbox(
+					'Mode',
+					options=[
+							'daily-zip',
+							'daily-city-state',
+							'hourly-zip',
+							'hourly-city-state'
+					],
+					index=[
+							'daily-zip',
+							'daily-city-state',
+							'hourly-zip',
+							'hourly-city-state'
+					].index(
+						st.session_state.get( 'uvindex_mode', 'daily-zip' )
+					),
+					key='uvindex_mode'
+				)
+				
+				uvindex_zip_code = st.text_input(
+					'Zip Code',
+					value=st.session_state.get( 'uvindex_zip_code', '' ),
+					key='uvindex_zip_code',
+					disabled=(uvindex_mode not in [ 'daily-zip', 'hourly-zip' ]),
+					placeholder='Example: 22201'
+				)
+				
+				city_c1, city_c2 = st.columns( 2 )
+				
+				with city_c1:
+					uvindex_city = st.text_input(
+						'City',
+						value=st.session_state.get( 'uvindex_city', '' ),
+						key='uvindex_city',
+						disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state' ]),
+						placeholder='Example: Arlington'
+					)
+				
+				with city_c2:
+					uvindex_state = st.text_input(
+						'State',
+						value=st.session_state.get( 'uvindex_state', '' ),
+						key='uvindex_state',
+						disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state' ]),
+						placeholder='Example: VA'
+					)
+				
+				uvindex_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'uvindex_timeout', 20 ) ),
+					step=1,
+					key='uvindex_timeout'
+				)
+				
+				st.caption(
+					'UV Index forecasts can be retrieved hourly or daily, by ZIP code or '
+					'by city and state.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					uvindex_submit = st.button(
+						'Submit',
+						key='uvindex_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='uvindex_clear',
+						on_click=_clear_uvindex_state
+					)
+			
+			with col_right:
+				if uvindex_submit:
+					try:
+						f = UvIndex( )
+						result = f.fetch(
+							mode=str( uvindex_mode ),
+							zip_code=str( uvindex_zip_code ).strip( ),
+							city=str( uvindex_city ).strip( ),
+							state=str( uvindex_state ).strip( ),
+							time=int( uvindex_timeout )
+						)
+						
+						st.session_state[ 'uvindex_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'EPA UV Index request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'uvindex_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'zip_code' in params:
+							st.markdown( f"**Zip Code:** {params.get( 'zip_code', '' )}" )
+						if 'city' in params:
+							st.markdown(
+								f"**City/State:** {params.get( 'city', '' )}, "
+								f"{params.get( 'state', '' )}"
+							)
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							max_uv = summary.get( 'max_uv', None )
+							st.metric(
+								'Peak UV',
+								'' if max_uv is None else str( max_uv )
+							)
+						
+						with sum_c3:
+							first_alert = str( summary.get( 'first_alert', '' ) or '' )
+							if first_alert:
+								st.markdown( f"**Alert:** {first_alert}" )
+							else:
+								st.markdown( '**Alert:** N/A' )
+						
+						first_location = str( summary.get( 'first_location', '' ) or '' )
+						if first_location:
+							st.markdown( f"**Location:** {first_location}" )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### UV Index Results' )
+						df_uvindex = pd.DataFrame( rows )
+						
+						if not df_uvindex.empty:
+							st.dataframe(
+								df_uvindex,
+								use_container_width=True,
+								hide_index=True
+							)
+							
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'City', '' ) or
+									item.get( 'Zip', '' ) or
+									f'Record {idx}'
+								)
+								
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
+						else:
+							st.info( 'No displayable UV Index rows were found.' )
+					else:
+						st.info( 'No UV Index records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- PurpleAir
+		with st.expander( label='Purple Air', icon='🟣', expanded=False ):
+			if 'purpleair_results' not in st.session_state:
+				st.session_state[ 'purpleair_results' ] = { }
+			
+			if 'purpleair_clear_request' not in st.session_state:
+				st.session_state[ 'purpleair_clear_request' ] = False
+			
+			if st.session_state.get( 'purpleair_clear_request', False ):
+				st.session_state[ 'purpleair_mode' ] = 'sensors'
+				st.session_state[ 'purpleair_sensor_index' ] = ''
+				st.session_state[ 'purpleair_nwlng' ] = ''
+				st.session_state[ 'purpleair_nwlat' ] = ''
+				st.session_state[ 'purpleair_selng' ] = ''
+				st.session_state[ 'purpleair_selat' ] = ''
+				st.session_state[ 'purpleair_location_type' ] = 0
+				st.session_state[ 'purpleair_max_age' ] = 0
+				st.session_state[ 'purpleair_modified_since' ] = 0
+				st.session_state[ 'purpleair_timeout' ] = 20
+				st.session_state[ 'purpleair_results' ] = { }
+				st.session_state[ 'purpleair_clear_request' ] = False
+			
+			def _clear_purpleair_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the PurpleAir expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'purpleair_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				purpleair_mode = st.selectbox(
+					'Mode',
+					options=[ 'sensors', 'sensor' ],
+					index=[ 'sensors', 'sensor' ].index(
+						st.session_state.get( 'purpleair_mode', 'sensors' )
+					),
+					key='purpleair_mode'
+				)
+				
+				purpleair_sensor_index = st.text_input(
+					'Sensor Index',
+					value=st.session_state.get( 'purpleair_sensor_index', '' ),
+					key='purpleair_sensor_index',
+					disabled=(purpleair_mode != 'sensor'),
+					placeholder='Example: 78307'
+				)
+				
+				bbox_c1, bbox_c2 = st.columns( 2 )
+				
+				with bbox_c1:
+					purpleair_nwlng = st.text_input(
+						'NW Longitude',
+						value=st.session_state.get( 'purpleair_nwlng', '' ),
+						key='purpleair_nwlng',
+						disabled=(purpleair_mode != 'sensors')
+					)
+				
+				with bbox_c2:
+					purpleair_nwlat = st.text_input(
+						'NW Latitude',
+						value=st.session_state.get( 'purpleair_nwlat', '' ),
+						key='purpleair_nwlat',
+						disabled=(purpleair_mode != 'sensors')
+					)
+				
+				bbox_c3, bbox_c4 = st.columns( 2 )
+				
+				with bbox_c3:
+					purpleair_selng = st.text_input(
+						'SE Longitude',
+						value=st.session_state.get( 'purpleair_selng', '' ),
+						key='purpleair_selng',
+						disabled=(purpleair_mode != 'sensors')
+					)
+				
+				with bbox_c4:
+					purpleair_selat = st.text_input(
+						'SE Latitude',
+						value=st.session_state.get( 'purpleair_selat', '' ),
+						key='purpleair_selat',
+						disabled=(purpleair_mode != 'sensors')
+					)
+				
+				opt_c1, opt_c2 = st.columns( 2 )
+				
+				with opt_c1:
+					purpleair_location_type = st.number_input(
+						'Location Type',
+						min_value=0,
+						max_value=10,
+						value=int( st.session_state.get( 'purpleair_location_type', 0 ) ),
+						step=1,
+						key='purpleair_location_type',
+						disabled=(purpleair_mode != 'sensors')
+					)
+				
+				with opt_c2:
+					purpleair_max_age = st.number_input(
+						'Max Age',
+						min_value=0,
+						max_value=1000000,
+						value=int( st.session_state.get( 'purpleair_max_age', 0 ) ),
+						step=1,
+						key='purpleair_max_age',
+						disabled=(purpleair_mode != 'sensors')
+					)
+				
+				purpleair_modified_since = st.number_input(
+					'Modified Since',
+					min_value=0,
+					max_value=2147483647,
+					value=int( st.session_state.get( 'purpleair_modified_since', 0 ) ),
+					step=1,
+					key='purpleair_modified_since',
+					disabled=(purpleair_mode != 'sensors')
+				)
+				
+				purpleair_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'purpleair_timeout', 20 ) ),
+					step=1,
+					key='purpleair_timeout'
+				)
+				
+				st.caption(
+					'PurpleAir requires an API key and uses a points system. This wrapper '
+					'uses narrow field selection to keep calls focused and readable.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					purpleair_submit = st.button(
+						'Submit',
+						key='purpleair_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='purpleair_clear',
+						on_click=_clear_purpleair_state
+					)
+			
+			with col_right:
+				if purpleair_submit:
+					try:
+						f = PurpleAir( )
+						result = f.fetch(
+							mode=str( purpleair_mode ),
+							sensor_index=None if not str( purpleair_sensor_index ).strip( ) else int( purpleair_sensor_index ),
+							nwlng=None if not str( purpleair_nwlng ).strip( ) else float( purpleair_nwlng ),
+							nwlat=None if not str( purpleair_nwlat ).strip( ) else float( purpleair_nwlat ),
+							selng=None if not str( purpleair_selng ).strip( ) else float( purpleair_selng ),
+							selat=None if not str( purpleair_selat ).strip( ) else float( purpleair_selat ),
+							location_type=int( purpleair_location_type ),
+							max_age=int( purpleair_max_age ),
+							modified_since=int( purpleair_modified_since ),
+							time=int( purpleair_timeout )
+						)
+						
+						st.session_state[ 'purpleair_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'PurpleAir request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'purpleair_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'sensor_index' in params:
+							st.markdown(
+								f"**Sensor Index:** {params.get( 'sensor_index', '' )}"
+							)
+						if 'fields' in params:
+							st.markdown(
+								f"**Fields:** {params.get( 'fields', '' )}"
+							)
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							max_pm25 = summary.get( 'max_pm25', None )
+							st.metric(
+								'Peak PM2.5',
+								'' if max_pm25 is None else str( max_pm25 )
+							)
+						
+						with sum_c3:
+							first_name = str( summary.get( 'first_name', '' ) or '' )
+							if first_name:
+								st.markdown( f"**First Sensor:** {first_name}" )
+							else:
+								st.markdown( '**First Sensor:** N/A' )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### PurpleAir Results' )
+						df_purpleair = pd.DataFrame( rows )
+						
+						if not df_purpleair.empty:
+							st.dataframe(
+								df_purpleair,
+								use_container_width=True,
+								hide_index=True
+							)
+							
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Name', '' ) or
+									item.get( 'Sensor Index', '' ) or
+									f'Record {idx}'
+								)
+								
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
+						else:
+							st.info( 'No displayable PurpleAir rows were found.' )
+					else:
+						st.info( 'No PurpleAir records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- OpenAQ
+		with st.expander( label='Open Air Quality', icon='🌬️', expanded=False ):
+			if 'openaq_results' not in st.session_state:
+				st.session_state[ 'openaq_results' ] = { }
+			
+			if 'openaq_clear_request' not in st.session_state:
+				st.session_state[ 'openaq_clear_request' ] = False
+			
+			if st.session_state.get( 'openaq_clear_request', False ):
+				st.session_state[ 'openaq_mode' ] = 'locations'
+				st.session_state[ 'openaq_location_id' ] = ''
+				st.session_state[ 'openaq_country_id' ] = ''
+				st.session_state[ 'openaq_coordinates' ] = ''
+				st.session_state[ 'openaq_radius' ] = 25000
+				st.session_state[ 'openaq_providers_id' ] = ''
+				st.session_state[ 'openaq_parameters_id' ] = ''
+				st.session_state[ 'openaq_limit' ] = 25
+				st.session_state[ 'openaq_page' ] = 1
+				st.session_state[ 'openaq_timeout' ] = 20
+				st.session_state[ 'openaq_results' ] = { }
+				st.session_state[ 'openaq_clear_request' ] = False
+			
+			def _clear_openaq_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the OpenAQ expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'openaq_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				openaq_mode = st.selectbox(
+					'Mode',
+					options=[ 'locations', 'latest' ],
+					index=[ 'locations', 'latest' ].index(
+						st.session_state.get( 'openaq_mode', 'locations' )
+					),
+					key='openaq_mode'
+				)
+				
+				openaq_location_id = st.text_input(
+					'Location ID',
+					value=st.session_state.get( 'openaq_location_id', '' ),
+					key='openaq_location_id',
+					disabled=(openaq_mode != 'latest'),
+					placeholder='Example: 8118'
+				)
+				
+				openaq_country_id = st.text_input(
+					'Country ID',
+					value=st.session_state.get( 'openaq_country_id', '' ),
+					key='openaq_country_id',
+					disabled=(openaq_mode != 'locations'),
+					placeholder='Optional numeric country ID'
+				)
+				
+				openaq_coordinates = st.text_input(
+					'Coordinates',
+					value=st.session_state.get( 'openaq_coordinates', '' ),
+					key='openaq_coordinates',
+					disabled=(openaq_mode != 'locations'),
+					placeholder='latitude,longitude'
+				)
+				
+				openaq_radius = st.number_input(
+					'Radius (meters)',
+					min_value=1,
+					max_value=500000,
+					value=int( st.session_state.get( 'openaq_radius', 25000 ) ),
+					step=1,
+					key='openaq_radius',
+					disabled=(openaq_mode != 'locations')
+				)
+				
+				filter_c1, filter_c2 = st.columns( 2 )
+				
+				with filter_c1:
+					openaq_providers_id = st.text_input(
+						'Providers ID',
+						value=st.session_state.get( 'openaq_providers_id', '' ),
+						key='openaq_providers_id',
+						disabled=(openaq_mode != 'locations'),
+						placeholder='Optional provider ID'
+					)
+				
+				with filter_c2:
+					openaq_parameters_id = st.text_input(
+						'Parameters ID',
+						value=st.session_state.get( 'openaq_parameters_id', '' ),
+						key='openaq_parameters_id',
+						disabled=(openaq_mode != 'locations'),
+						placeholder='Optional parameter ID'
+					)
+				
+				page_c1, page_c2 = st.columns( 2 )
+				
+				with page_c1:
+					openaq_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=500,
+						value=int( st.session_state.get( 'openaq_limit', 25 ) ),
+						step=1,
+						key='openaq_limit',
+						disabled=(openaq_mode != 'locations')
+					)
+				
+				with page_c2:
+					openaq_page = st.number_input(
+						'Page',
+						min_value=1,
+						max_value=10000,
+						value=int( st.session_state.get( 'openaq_page', 1 ) ),
+						step=1,
+						key='openaq_page',
+						disabled=(openaq_mode != 'locations')
+					)
+				
+				openaq_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'openaq_timeout', 20 ) ),
+					step=1,
+					key='openaq_timeout'
+				)
+				
+				st.caption(
+					'OpenAQ v3 requires an API key. Locations mode supports discovery. '
+					'Latest mode retrieves the latest measurements for one location.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					openaq_submit = st.button(
+						'Submit',
+						key='openaq_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='openaq_clear',
+						on_click=_clear_openaq_state
+					)
+			
+			with col_right:
+				if openaq_submit:
+					try:
+						f = OpenAQ( )
+						result = f.fetch(
+							mode=str( openaq_mode ),
+							location_id=None if not str( openaq_location_id ).strip( ) else int( openaq_location_id ),
+							country_id=None if not str( openaq_country_id ).strip( ) else int( openaq_country_id ),
+							coordinates=str( openaq_coordinates ).strip( ),
+							radius=int( openaq_radius ),
+							providers_id=str( openaq_providers_id ).strip( ),
+							parameters_id=str( openaq_parameters_id ).strip( ),
+							limit=int( openaq_limit ),
+							page=int( openaq_page ),
+							time=int( openaq_timeout )
+						)
+						
+						st.session_state[ 'openaq_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'OpenAQ request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'openaq_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'location_id' in params:
+							st.markdown(
+								f"**Location ID:** {params.get( 'location_id', '' )}"
+							)
+						if 'country_id' in params:
+							st.markdown(
+								f"**Country ID:** {params.get( 'country_id', '' )}"
+							)
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							first_name = str( summary.get( 'first_name', '' ) or '' )
+							if first_name:
+								st.markdown( f"**First Result:** {first_name}" )
+							else:
+								st.markdown( '**First Result:** N/A' )
+						
+						with sum_c3:
+							first_parameter = str(
+								summary.get( 'first_parameter', '' ) or ''
+							)
+							if first_parameter:
+								st.markdown( f"**First Parameter:** {first_parameter}" )
+							else:
+								st.markdown( '**First Parameter:** N/A' )
+						
+						first_country = str( summary.get( 'first_country', '' ) or '' )
+						if first_country:
+							st.markdown( f"**Country:** {first_country}" )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### OpenAQ Results' )
+						df_openaq = pd.DataFrame( rows )
+						
+						if not df_openaq.empty:
+							st.dataframe(
+								df_openaq,
+								use_container_width=True,
+								hide_index=True
+							)
+							
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Name', '' ) or
+									item.get( 'Location Id', '' ) or
+									item.get( 'Parameter', '' ) or
+									f'Record {idx}'
+								)
+								
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
+						else:
+							st.info( 'No displayable OpenAQ rows were found.' )
+					else:
+						st.info( 'No OpenAQ records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- NASA FIRMS
+		with st.expander( label='NASA FIRMS', icon='🔥', expanded=False ):
+			if 'firms_results' not in st.session_state:
+				st.session_state[ 'firms_results' ] = { }
+			
+			if 'firms_clear_request' not in st.session_state:
+				st.session_state[ 'firms_clear_request' ] = False
+			
+			if st.session_state.get( 'firms_clear_request', False ):
+				st.session_state[ 'firms_mode' ] = 'area'
+				st.session_state[ 'firms_source' ] = 'VIIRS_SNPP_NRT'
+				st.session_state[ 'firms_area_coordinates' ] = 'world'
+				st.session_state[ 'firms_day_range' ] = 1
+				st.session_state[ 'firms_date' ] = ''
+				st.session_state[ 'firms_sensor' ] = 'ALL'
+				st.session_state[ 'firms_timeout' ] = 20
+				st.session_state[ 'firms_results' ] = { }
+				st.session_state[ 'firms_clear_request' ] = False
+			
+			def _clear_firms_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the NASA FIRMS expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'firms_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				firms_mode = st.selectbox(
+					'Mode',
+					options=[ 'area', 'data-availability' ],
+					index=[ 'area', 'data-availability' ].index(
+						st.session_state.get( 'firms_mode', 'area' )
+					),
+					key='firms_mode'
+				)
+				
+				firms_source = st.selectbox(
+					'Source',
+					options=[
+							'LANDSAT_NRT',
+							'MODIS_NRT',
+							'MODIS_SP',
+							'VIIRS_NOAA20_NRT',
+							'VIIRS_NOAA20_SP',
+							'VIIRS_NOAA21_NRT',
+							'VIIRS_SNPP_NRT',
+							'VIIRS_SNPP_SP'
+					],
+					index=[
+							'LANDSAT_NRT',
+							'MODIS_NRT',
+							'MODIS_SP',
+							'VIIRS_NOAA20_NRT',
+							'VIIRS_NOAA20_SP',
+							'VIIRS_NOAA21_NRT',
+							'VIIRS_SNPP_NRT',
+							'VIIRS_SNPP_SP'
+					].index(
+						st.session_state.get( 'firms_source', 'VIIRS_SNPP_NRT' )
+					),
+					key='firms_source',
+					disabled=(firms_mode != 'area')
+				)
+				
+				firms_area_coordinates = st.text_input(
+					'Area Coordinates',
+					value=st.session_state.get( 'firms_area_coordinates', 'world' ),
+					key='firms_area_coordinates',
+					disabled=(firms_mode != 'area'),
+					placeholder='west,south,east,north or world'
+				)
+				
+				firms_day_range = st.number_input(
+					'Day Range',
+					min_value=1,
+					max_value=5,
+					value=int( st.session_state.get( 'firms_day_range', 1 ) ),
+					step=1,
+					key='firms_day_range',
+					disabled=(firms_mode != 'area')
+				)
+				
+				firms_date = st.text_input(
+					'Date',
+					value=st.session_state.get( 'firms_date', '' ),
+					key='firms_date',
+					disabled=(firms_mode != 'area'),
+					placeholder='Optional YYYY-MM-DD'
+				)
+				
+				firms_sensor = st.selectbox(
+					'Sensor',
+					options=[
+							'ALL',
+							'LANDSAT_NRT',
+							'MODIS_NRT',
+							'MODIS_SP',
+							'VIIRS_NOAA20_NRT',
+							'VIIRS_NOAA20_SP',
+							'VIIRS_NOAA21_NRT',
+							'VIIRS_SNPP_NRT',
+							'VIIRS_SNPP_SP'
+					],
+					index=[
+							'ALL',
+							'LANDSAT_NRT',
+							'MODIS_NRT',
+							'MODIS_SP',
+							'VIIRS_NOAA20_NRT',
+							'VIIRS_NOAA20_SP',
+							'VIIRS_NOAA21_NRT',
+							'VIIRS_SNPP_NRT',
+							'VIIRS_SNPP_SP'
+					].index(
+						st.session_state.get( 'firms_sensor', 'ALL' )
+					),
+					key='firms_sensor',
+					disabled=(firms_mode != 'data-availability')
+				)
+				
+				firms_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'firms_timeout', 20 ) ),
+					step=1,
+					key='firms_timeout'
+				)
+				
+				st.caption(
+					'FIRMS requires a MAP_KEY. Area mode retrieves fire detections for a '
+					'bounding box or world. Data-availability mode reports available dates.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					firms_submit = st.button(
+						'Submit',
+						key='firms_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='firms_clear',
+						on_click=_clear_firms_state
+					)
+			
+			with col_right:
+				if firms_submit:
+					try:
+						f = Firms( )
+						result = f.fetch(
+							mode=str( firms_mode ),
+							source=str( firms_source ).strip( ),
+							area_coordinates=str( firms_area_coordinates ).strip( ),
+							day_range=int( firms_day_range ),
+							date=str( firms_date ).strip( ),
+							sensor=str( firms_sensor ).strip( ),
+							time=int( firms_timeout )
+						)
+						
+						st.session_state[ 'firms_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'NASA FIRMS request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'firms_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'source' in params:
+							st.markdown( f"**Source:** {params.get( 'source', '' )}" )
+						if 'sensor' in params:
+							st.markdown( f"**Sensor:** {params.get( 'sensor', '' )}" )
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							first_date = str( summary.get( 'first_date', '' ) or '' )
+							if first_date:
+								st.markdown( f"**First Date:** {first_date}" )
+							else:
+								st.markdown( '**First Date:** N/A' )
+						
+						with sum_c3:
+							first_lat = str( summary.get( 'first_lat', '' ) or '' )
+							first_lon = str( summary.get( 'first_lon', '' ) or '' )
+							if first_lat and first_lon:
+								st.markdown( f"**First Point:** {first_lat}, {first_lon}" )
+							else:
+								st.markdown( '**First Point:** N/A' )
+					
+					params = result.get( 'params', { } ) or { }
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### FIRMS Results' )
+						df_firms = pd.DataFrame( rows )
+						
+						if not df_firms.empty:
+							st.dataframe(
+								df_firms,
+								use_container_width=True,
+								hide_index=True
+							)
+							
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Acq Date', '' ) or
+									item.get( 'Date', '' ) or
+									f'Record {idx}'
+								)
+								
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
+						else:
+							st.info( 'No displayable FIRMS rows were found.' )
+					else:
+						st.info( 'No FIRMS records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.text( str( result.get( 'raw', '' ) ) )
+		
+		# -------- USGS Water Data
+		with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
+			if 'usgswaterdata_results' not in st.session_state:
+				st.session_state[ 'usgswaterdata_results' ] = { }
+			
+			if 'usgswaterdata_clear_request' not in st.session_state:
+				st.session_state[ 'usgswaterdata_clear_request' ] = False
+			
+			if st.session_state.get( 'usgswaterdata_clear_request', False ):
+				st.session_state[ 'usgswaterdata_mode' ] = 'monitoring-locations'
+				st.session_state[ 'usgswaterdata_monitoring_location_id' ] = ''
+				st.session_state[ 'usgswaterdata_state_code' ] = ''
+				st.session_state[ 'usgswaterdata_county_code' ] = ''
+				st.session_state[ 'usgswaterdata_site_type' ] = ''
+				st.session_state[ 'usgswaterdata_parameter_code' ] = ''
+				st.session_state[ 'usgswaterdata_limit' ] = 25
+				st.session_state[ 'usgswaterdata_timeout' ] = 20
+				st.session_state[ 'usgswaterdata_results' ] = { }
+				st.session_state[ 'usgswaterdata_clear_request' ] = False
+			
+			def _clear_usgswaterdata_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the USGS Water Data expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'usgswaterdata_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				usgswd_mode = st.selectbox(
+					'Mode',
+					options=[
+							'monitoring-locations',
+							'time-series-metadata',
+							'latest-continuous',
+							'latest-daily'
+					],
+					index=[
+							'monitoring-locations',
+							'time-series-metadata',
+							'latest-continuous',
+							'latest-daily'
+					].index(
+						st.session_state.get(
+							'usgswaterdata_mode',
+							'monitoring-locations'
+						)
+					),
+					key='usgswaterdata_mode'
+				)
+				
+				usgswd_monitoring_location_id = st.text_input(
+					'Monitoring Location ID',
+					value=st.session_state.get(
+						'usgswaterdata_monitoring_location_id',
+						''
+					),
+					key='usgswaterdata_monitoring_location_id',
+					placeholder='Example: USGS-01491000'
+				)
+				
 				meta_c1, meta_c2 = st.columns( 2 )
 				
 				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					usgswd_state_code = st.text_input(
+						'State Code',
+						value=st.session_state.get( 'usgswaterdata_state_code', '' ),
+						key='usgswaterdata_state_code',
+						disabled=(usgswd_mode != 'monitoring-locations'),
+						placeholder='Example: VA'
+					)
 				
 				with meta_c2:
+					usgswd_county_code = st.text_input(
+						'County Code',
+						value=st.session_state.get( 'usgswaterdata_county_code', '' ),
+						key='usgswaterdata_county_code',
+						disabled=(usgswd_mode != 'monitoring-locations'),
+						placeholder='Optional'
+					)
+				
+				usgswd_site_type = st.text_input(
+					'Site Type',
+					value=st.session_state.get( 'usgswaterdata_site_type', '' ),
+					key='usgswaterdata_site_type',
+					disabled=(usgswd_mode != 'monitoring-locations'),
+					placeholder='Examples: ST, LK, GW'
+				)
+				
+				usgswd_parameter_code = st.text_input(
+					'Parameter Code',
+					value=st.session_state.get( 'usgswaterdata_parameter_code', '' ),
+					key='usgswaterdata_parameter_code',
+					disabled=(usgswd_mode == 'monitoring-locations'),
+					placeholder='Example: 00060'
+				)
+				
+				usgswd_limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=200,
+					value=int( st.session_state.get( 'usgswaterdata_limit', 25 ) ),
+					step=1,
+					key='usgswaterdata_limit'
+				)
+				
+				usgswd_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'usgswaterdata_timeout', 20 ) ),
+					step=1,
+					key='usgswaterdata_timeout'
+				)
+				
+				st.caption(
+					'Monitoring Locations supports site discovery. The other modes '
+					'focus on parameter metadata and latest reported values.'
+				)
+				
+				btn_c1, btn_c2 = st.columns( 2 )
+				
+				with btn_c1:
+					usgswd_submit = st.button(
+						'Submit',
+						key='usgswaterdata_submit'
+					)
+				
+				with btn_c2:
+					st.button(
+						'Clear',
+						key='usgswaterdata_clear',
+						on_click=_clear_usgswaterdata_state
+					)
+			
+			with col_right:
+				if usgswd_submit:
+					try:
+						f = USGSWaterData( )
+						result = f.fetch(
+							mode=str( usgswd_mode ),
+							monitoring_location_id=str(
+								usgswd_monitoring_location_id
+							).strip( ),
+							state_code=str( usgswd_state_code ).strip( ),
+							county_code=str( usgswd_county_code ).strip( ),
+							site_type=str( usgswd_site_type ).strip( ),
+							parameter_code=str( usgswd_parameter_code ).strip( ),
+							limit=int( usgswd_limit ),
+							time=int( usgswd_timeout )
+						)
+						
+						st.session_state[ 'usgswaterdata_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'USGS Water Data request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'usgswaterdata_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						params = result.get( 'params', { } ) or { }
+						if 'monitoring_location_id' in params:
+							st.markdown(
+								f"**Monitoring Location ID:** "
+								f"{params.get( 'monitoring_location_id', '' )}"
+							)
+						if 'parameter_code' in params:
+							st.markdown(
+								f"**Parameter Code:** {params.get( 'parameter_code', '' )}"
+							)
+					
+					summary = result.get( 'summary', { } ) or { }
+					if summary:
+						st.markdown( '#### Result Summary' )
+						
+						sum_c1, sum_c2, sum_c3 = st.columns( 3 )
+						
+						with sum_c1:
+							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
+						
+						with sum_c2:
+							first_site = str( summary.get( 'first_site', '' ) or '' )
+							if first_site:
+								st.markdown( f"**First Site:** {first_site}" )
+							else:
+								st.markdown( '**First Site:** N/A' )
+						
+						with sum_c3:
+							first_parameter = str(
+								summary.get( 'first_parameter', '' ) or ''
+							)
+							first_value = str( summary.get( 'first_value', '' ) or '' )
+							
+							if first_parameter and first_value:
+								st.markdown(
+									f"**Sample Value:** {first_parameter} = {first_value}"
+								)
+							elif first_parameter:
+								st.markdown(
+									f"**Sample Parameter:** {first_parameter}"
+								)
+							else:
+								st.markdown( '**Sample Value:** N/A' )
+					
 					params = result.get( 'params', { } ) or { }
-					if 'monitoring_location_id' in params:
-						st.markdown(
-							f"**Monitoring Location ID:** "
-							f"{params.get( 'monitoring_location_id', '' )}"
-						)
-					if 'parameter_code' in params:
-						st.markdown(
-							f"**Parameter Code:** {params.get( 'parameter_code', '' )}"
-						)
-				
-				summary = result.get( 'summary', { } ) or { }
-				if summary:
-					st.markdown( '#### Result Summary' )
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
 					
-					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
-					with sum_c1:
-						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
-					
-					with sum_c2:
-						first_site = str( summary.get( 'first_site', '' ) or '' )
-						if first_site:
-							st.markdown( f"**First Site:** {first_site}" )
-						else:
-							st.markdown( '**First Site:** N/A' )
-					
-					with sum_c3:
-						first_parameter = str(
-							summary.get( 'first_parameter', '' ) or ''
-						)
-						first_value = str( summary.get( 'first_value', '' ) or '' )
+					rows = result.get( 'rows', [ ] ) or [ ]
+					if rows:
+						st.markdown( '#### Results' )
+						df_usgswd = pd.DataFrame( rows )
 						
-						if first_parameter and first_value:
-							st.markdown(
-								f"**Sample Value:** {first_parameter} = {first_value}"
-							)
-						elif first_parameter:
-							st.markdown(
-								f"**Sample Parameter:** {first_parameter}"
-							)
-						else:
-							st.markdown( '**Sample Value:** N/A' )
-				
-				params = result.get( 'params', { } ) or { }
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				rows = result.get( 'rows', [ ] ) or [ ]
-				if rows:
-					st.markdown( '#### Results' )
-					df_usgswd = pd.DataFrame( rows )
-					
-					if not df_usgswd.empty:
-						st.dataframe(
-							df_usgswd,
-							use_container_width=True,
-							hide_index=True
-						)
-						
-						top_rows = rows[ : min( 10, len( rows ) ) ]
-						for idx, item in enumerate( top_rows, start=1 ):
-							label = str(
-								item.get( 'Name', '' ) or
-								item.get( 'Monitoring Location ID', '' ) or
-								f'Record {idx}'
+						if not df_usgswd.empty:
+							st.dataframe(
+								df_usgswd,
+								use_container_width=True,
+								hide_index=True
 							)
 							
-							with st.expander(
-									f'Record {idx}: {label}',
-									expanded=False
-							):
-								st.json( item )
+							top_rows = rows[ : min( 10, len( rows ) ) ]
+							for idx, item in enumerate( top_rows, start=1 ):
+								label = str(
+									item.get( 'Name', '' ) or
+									item.get( 'Monitoring Location ID', '' ) or
+									f'Record {idx}'
+								)
+								
+								with st.expander(
+										f'Record {idx}: {label}',
+										expanded=False
+								):
+									st.json( item )
+						else:
+							st.info( 'No displayable USGS Water Data rows were found.' )
 					else:
-						st.info( 'No displayable USGS Water Data rows were found.' )
-				else:
-					st.info( 'No water data records were returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
+						st.info( 'No water data records were returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 
 # ==============================================================================
 # ASTRONOMICAL MODE
 # ==============================================================================
 elif mode == 'Astronomical':
-	st.subheader( f'🌌 Physics & Astronomical Data' )
-	st.divider( )
+	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	with center:
+		st.subheader( f'🌌 Physics & Astronomical Data' )
+		st.divider( )
+		
+		# -------- Naval Observatory
+		with st.expander( label='US Naval Observatory', icon='⚓', expanded=False ):
+			if 'navalobservatory_results' not in st.session_state:
+				st.session_state[ 'navalobservatory_results' ] = { }
+			
+			if 'navalobservatory_clear_request' not in st.session_state:
+				st.session_state[ 'navalobservatory_clear_request' ] = False
+			
+			if st.session_state.get( 'navalobservatory_clear_request', False ):
+				st.session_state[ 'navalobservatory_date' ] = dt.date.today( )
+				st.session_state[ 'navalobservatory_time' ] = dt.time( 12, 0 )
+				st.session_state[ 'navalobservatory_latitude' ] = 38.9072
+				st.session_state[ 'navalobservatory_longitude' ] = -77.0369
+				st.session_state[ 'navalobservatory_location_label' ] = ''
+				st.session_state[ 'navalobservatory_timeout' ] = 20
+				st.session_state[ 'navalobservatory_results' ] = { }
+				st.session_state[ 'navalobservatory_clear_request' ] = False
+			
+			def _clear_navalobservatory_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Naval Observatory expander state for reset on the next rerun.
 	
-	# -------- Naval Observatory
-	with st.expander( label='US Naval Observatory', icon='⚓', expanded=False ):
-		if 'navalobservatory_results' not in st.session_state:
-			st.session_state[ 'navalobservatory_results' ] = { }
-		
-		if 'navalobservatory_clear_request' not in st.session_state:
-			st.session_state[ 'navalobservatory_clear_request' ] = False
-		
-		if st.session_state.get( 'navalobservatory_clear_request', False ):
-			st.session_state[ 'navalobservatory_date' ] = dt.date.today( )
-			st.session_state[ 'navalobservatory_time' ] = dt.time( 12, 0 )
-			st.session_state[ 'navalobservatory_latitude' ] = 38.9072
-			st.session_state[ 'navalobservatory_longitude' ] = -77.0369
-			st.session_state[ 'navalobservatory_location_label' ] = ''
-			st.session_state[ 'navalobservatory_timeout' ] = 20
-			st.session_state[ 'navalobservatory_results' ] = { }
-			st.session_state[ 'navalobservatory_clear_request' ] = False
-		
-		def _clear_navalobservatory_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Naval Observatory expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'navalobservatory_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			naval_date = st.date_input(
-				'Date',
-				value=st.session_state.get(
-					'navalobservatory_date',
-					dt.date.today( )
-				),
-				key='navalobservatory_date',
-				help='USNO date parameter in YYYY-MM-DD format.'
-			)
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'navalobservatory_clear_request' ] = True
 			
-			naval_time = st.time_input(
-				'Time (UTC)',
-				value=st.session_state.get(
-					'navalobservatory_time',
-					dt.time( 12, 0 )
-				),
-				key='navalobservatory_time',
-				help='USNO time parameter in 24-hour format.'
-			)
+			col_left, col_right = st.columns( 2, border=True )
 			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				naval_latitude = st.number_input(
-					'Latitude',
-					min_value=-90.0,
-					max_value=90.0,
-					value=float(
-						st.session_state.get( 'navalobservatory_latitude', 38.9072 )
+			with col_left:
+				naval_date = st.date_input(
+					'Date',
+					value=st.session_state.get(
+						'navalobservatory_date',
+						dt.date.today( )
 					),
-					step=0.0001,
-					format='%.6f',
-					key='navalobservatory_latitude',
-					help='Decimal degrees. North positive.'
-				)
-			
-			with c2:
-				naval_longitude = st.number_input(
-					'Longitude',
-					min_value=-180.0,
-					max_value=180.0,
-					value=float(
-						st.session_state.get( 'navalobservatory_longitude', -77.0369 )
-					),
-					step=0.0001,
-					format='%.6f',
-					key='navalobservatory_longitude',
-					help='Decimal degrees. East positive, west negative.'
-				)
-			
-			naval_location_label = st.text_input(
-				'Location Label',
-				value=st.session_state.get( 'navalobservatory_location_label', '' ),
-				key='navalobservatory_location_label',
-				placeholder='Example: Washington, DC'
-			)
-			
-			naval_timeout = st.number_input(
-				'Timeout (seconds)',
-				min_value=5,
-				max_value=120,
-				value=int( st.session_state.get( 'navalobservatory_timeout', 20 ) ),
-				step=1,
-				key='navalobservatory_timeout'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				naval_submit = st.button(
-					'Submit',
-					key='navalobservatory_submit',
-					use_container_width=True
-				)
-			with b2:
-				naval_clear = st.button(
-					'Clear',
-					key='navalobservatory_clear',
-					on_click=_clear_navalobservatory_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			naval_output = st.empty( )
-		
-		if naval_submit:
-			try:
-				f = NavalObservatory( )
-				
-				result = f.fetch(
-					mode='celnav',
-					date_value=naval_date.strftime( '%Y-%m-%d' ),
-					time_value=naval_time.strftime( '%H:%M:%S' ),
-					latitude=float( naval_latitude ),
-					longitude=float( naval_longitude ),
-					location_label=naval_location_label,
-					time=int( naval_timeout )
+					key='navalobservatory_date',
+					help='USNO date parameter in YYYY-MM-DD format.'
 				)
 				
-				st.session_state[ 'navalobservatory_results' ] = result or { }
-				st.rerun( )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-		
-		result = st.session_state.get( 'navalobservatory_results', { } )
-		
-		if not result:
-			naval_output.text( 'No results.' )
-		else:
-			data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-			params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+				naval_time = st.time_input(
+					'Time (UTC)',
+					value=st.session_state.get(
+						'navalobservatory_time',
+						dt.time( 12, 0 )
+					),
+					key='navalobservatory_time',
+					help='USNO time parameter in 24-hour format.'
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					naval_latitude = st.number_input(
+						'Latitude',
+						min_value=-90.0,
+						max_value=90.0,
+						value=float(
+							st.session_state.get( 'navalobservatory_latitude', 38.9072 )
+						),
+						step=0.0001,
+						format='%.6f',
+						key='navalobservatory_latitude',
+						help='Decimal degrees. North positive.'
+					)
+				
+				with c2:
+					naval_longitude = st.number_input(
+						'Longitude',
+						min_value=-180.0,
+						max_value=180.0,
+						value=float(
+							st.session_state.get( 'navalobservatory_longitude', -77.0369 )
+						),
+						step=0.0001,
+						format='%.6f',
+						key='navalobservatory_longitude',
+						help='Decimal degrees. East positive, west negative.'
+					)
+				
+				naval_location_label = st.text_input(
+					'Location Label',
+					value=st.session_state.get( 'navalobservatory_location_label', '' ),
+					key='navalobservatory_location_label',
+					placeholder='Example: Washington, DC'
+				)
+				
+				naval_timeout = st.number_input(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=120,
+					value=int( st.session_state.get( 'navalobservatory_timeout', 20 ) ),
+					step=1,
+					key='navalobservatory_timeout'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					naval_submit = st.button(
+						'Submit',
+						key='navalobservatory_submit',
+						use_container_width=True
+					)
+				with b2:
+					naval_clear = st.button(
+						'Clear',
+						key='navalobservatory_clear',
+						on_click=_clear_navalobservatory_state,
+						use_container_width=True
+					)
 			
 			with col_right:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': result.get( 'mode', '' ),
-							'url': result.get( 'url', '' ),
-							'params': params,
-							'location_label': result.get( 'location_label', '' ),
-					}
-				)
-				
-				if not data:
-					st.info( 'No results returned.' )
-				else:
-					st.markdown( '#### Observation Summary' )
-					
-					c1, c2 = st.columns( 2 )
-					
-					with c1:
-						if params.get( 'date', '' ):
-							st.markdown( f"**Date:** {params.get( 'date', '' )}" )
-						if params.get( 'time', '' ):
-							st.markdown( f"**Time:** {params.get( 'time', '' )}" )
-						if result.get( 'location_label', '' ):
-							st.markdown(
-								f"**Location Label:** {result.get( 'location_label', '' )}"
-							)
-					
-					with c2:
-						if params.get( 'coords', '' ):
-							st.markdown( f"**Coordinates:** {params.get( 'coords', '' )}" )
-					
-					bodies: List[ Dict[ str, Any ] ] = [ ]
-					
-					if isinstance( data, dict ):
-						for key in [ 'data', 'bodies', 'results', 'celestialBodies',
-						             'celestial_bodies' ]:
-							value = data.get( key, None )
-							if isinstance( value, list ):
-								bodies = [ item for item in value if isinstance( item, dict ) ]
-								break
-					
-					if bodies:
-						st.markdown( '#### Celestial Bodies' )
-						df_bodies = pd.DataFrame( bodies )
-						if not df_bodies.empty:
-							st.dataframe( df_bodies, use_container_width=True, hide_index=True )
-						else:
-							st.info( 'No displayable celestial body rows were found.' )
-					else:
-						top_fields = { }
-						
-						if isinstance( data, dict ):
-							for key in [
-									'gha', 'dec', 'hc', 'zn', 'altitude', 'azimuth',
-									'sunrise', 'sunset', 'moonrise', 'moonset'
-							]:
-								if key in data:
-									top_fields[ key ] = data.get( key )
-						
-						if top_fields:
-							st.markdown( '#### Key Values' )
-							st.json( top_fields )
-						else:
-							st.markdown( '#### Result' )
-							st.json( data )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- Satellite Center
-	with st.expander( label='Satellite Center', icon='🛰️', expanded=False ):
-		if 'satellitecenter_results' not in st.session_state:
-			st.session_state[ 'satellitecenter_results' ] = { }
-		
-		if 'satellitecenter_clear_request' not in st.session_state:
-			st.session_state[ 'satellitecenter_clear_request' ] = False
-		
-		if st.session_state.get( 'satellitecenter_clear_request', False ):
-			st.session_state[ 'satellitecenter_mode' ] = 'observatories'
-			st.session_state[ 'satellitecenter_query' ] = ''
-			st.session_state[ 'satellitecenter_start_time' ] = ''
-			st.session_state[ 'satellitecenter_end_time' ] = ''
-			st.session_state[ 'satellitecenter_coordinate_systems' ] = 'gse'
-			st.session_state[ 'satellitecenter_resolution_factor' ] = 1
-			st.session_state[ 'satellitecenter_timeout' ] = 20
-			st.session_state[ 'satellitecenter_results' ] = { }
-			st.session_state[ 'satellitecenter_clear_request' ] = False
-		
-		def _clear_satellitecenter_state( ) -> None:
-			st.session_state[ 'satellitecenter_clear_request' ] = True
-		
-		def _safe_dataframe( rows: Any ) -> pd.DataFrame:
-			try:
-				if isinstance( rows, pd.DataFrame ):
-					return rows
-				
-				if isinstance( rows, list ):
-					if rows and all( isinstance( x, dict ) for x in rows ):
-						return pd.DataFrame( rows )
-					return pd.DataFrame( { 'Value': [ str( x ) for x in rows ] } )
-				
-				if isinstance( rows, dict ):
-					return pd.json_normalize( rows )
-				
-				return pd.DataFrame( { 'Value': [ str( rows ) ] } )
-			except Exception:
-				return pd.DataFrame( )
-		
-		def _render_satellite_table( title: str, rows: Any ) -> None:
-			df_local = _safe_dataframe( rows )
-			if not df_local.empty:
-				st.markdown( title )
-				st.dataframe( df_local, use_container_width=True, hide_index=True )
-			else:
-				st.info( 'No displayable rows were found.' )
-		
-		col_left, col_right = st.columns( 2, border=True )
-		with col_left:
-			satellite_mode = st.selectbox(
-				'Mode',
-				options=[ 'observatories', 'ground_stations', 'locations' ],
-				index=[ 'observatories', 'ground_stations', 'locations' ].index(
-					st.session_state.get( 'satellitecenter_mode', 'observatories' )
-				),
-				key='satellitecenter_mode'
-			)
+				naval_output = st.empty( )
 			
-			satellite_query = st.text_area(
-				'Observatory Query',
-				height=90,
-				key='satellitecenter_query',
-				placeholder=(
-						'Examples:\n'
-						'iss\n'
-						'mms1,mms2\n'
-						'themisb\n'
-						'\n'
-						'Used for locations mode only. Leave blank for observatories '
-						'and ground stations.'
-				),
-				disabled=(satellite_mode != 'locations')
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				satellite_start_time = st.text_input(
-					'Start Time (UTC)',
-					value=st.session_state.get( 'satellitecenter_start_time', '' ),
-					key='satellitecenter_start_time',
-					placeholder='2026-03-15T00:00:00Z',
-					disabled=(satellite_mode != 'locations')
-				)
-			
-			with c2:
-				satellite_end_time = st.text_input(
-					'End Time (UTC)',
-					value=st.session_state.get( 'satellitecenter_end_time', '' ),
-					key='satellitecenter_end_time',
-					placeholder='2026-03-15T02:00:00Z',
-					disabled=(satellite_mode != 'locations')
-				)
-			
-			c3, c4, c5 = st.columns( 3 )
-			
-			with c3:
-				satellite_coordinate_systems = st.text_input(
-					'Coordinate Systems',
-					value=st.session_state.get( 'satellitecenter_coordinate_systems', 'gse' ),
-					key='satellitecenter_coordinate_systems',
-					placeholder='gse or geo,gsm',
-					disabled=(satellite_mode != 'locations')
-				)
-			
-			with c4:
-				satellite_resolution_factor = st.number_input(
-					'Resolution Factor',
-					min_value=1,
-					max_value=1000,
-					value=int( st.session_state.get( 'satellitecenter_resolution_factor', 1 ) ),
-					step=1,
-					key='satellitecenter_resolution_factor',
-					disabled=(satellite_mode != 'locations')
-				)
-			
-			with c5:
-				satellite_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'satellitecenter_timeout', 20 ) ),
-					step=1,
-					key='satellitecenter_timeout'
-				)
-			
-			st.caption(
-				'No API key is required for SSCWeb. For locations mode, use UTC ISO '
-				'8601 timestamps and observatory IDs returned by the observatories '
-				'service.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				satellite_submit = st.button(
-					'Submit',
-					key='satellitecenter_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='satellitecenter_clear',
-					on_click=_clear_satellitecenter_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if satellite_submit:
+			if naval_submit:
 				try:
-					f = SatelliteCenter( )
+					f = NavalObservatory( )
+					
 					result = f.fetch(
-						mode=satellite_mode,
-						query=satellite_query,
-						start_time=satellite_start_time,
-						end_time=satellite_end_time,
-						coordinate_systems=satellite_coordinate_systems,
-						resolution_factor=int( satellite_resolution_factor ),
-						time=int( satellite_timeout )
+						mode='celnav',
+						date_value=naval_date.strftime( '%Y-%m-%d' ),
+						time_value=naval_time.strftime( '%H:%M:%S' ),
+						latitude=float( naval_latitude ),
+						longitude=float( naval_longitude ),
+						location_label=naval_location_label,
+						time=int( naval_timeout )
 					)
 					
-					st.session_state[ 'satellitecenter_results' ] = {
-							'request': {
-									'mode': satellite_mode,
-									'query': satellite_query,
-									'start_time': satellite_start_time,
-									'end_time': satellite_end_time,
-									'coordinate_systems': satellite_coordinate_systems,
-									'resolution_factor': int( satellite_resolution_factor ),
-									'timeout': int( satellite_timeout ),
-							},
-							'data': result or { },
-					}
+					st.session_state[ 'navalobservatory_results' ] = result or { }
 					st.rerun( )
 				
 				except Exception as exc:
-					st.error( 'Satellite Center request failed.' )
-					st.exception( exc )
+					st.error( str( exc ) )
 			
-			result_wrapper = st.session_state.get( 'satellitecenter_results', { } )
-			
-			if not result_wrapper:
-				st.text( 'No results.' )
-			else:
-				if (
-						isinstance( result_wrapper, dict )
-						and 'request' in result_wrapper
-						and 'data' in result_wrapper
-				):
-					request_meta = result_wrapper.get( 'request', { } )
-					result = result_wrapper.get( 'data', { } )
-				else:
-					request_meta = {
-							'mode': satellite_mode,
-							'query': satellite_query,
-							'start_time': satellite_start_time,
-							'end_time': satellite_end_time,
-							'coordinate_systems': satellite_coordinate_systems,
-							'resolution_factor': int( satellite_resolution_factor ),
-							'timeout': int( satellite_timeout ),
-					}
-					result = result_wrapper if isinstance( result_wrapper, dict ) else { }
-				
-				render_mode = str( request_meta.get( 'mode', 'observatories' ) )
-				
-				st.markdown( '#### Request Metadata' )
-				st.json( request_meta )
-				
-				if render_mode == 'observatories':
-					items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
-					
-					if items:
-						summary_rows: List[ Dict[ str, Any ] ] = [ ]
-						
-						for item in items:
-							if isinstance( item, dict ):
-								location_value = ''
-								geo_value = item.get( 'GeoLocation', { } )
-								
-								if isinstance( geo_value, dict ):
-									lat_value = geo_value.get( 'Latitude', '' )
-									lon_value = geo_value.get( 'Longitude', '' )
-									if str( lat_value ).strip( ) or str( lon_value ).strip( ):
-										location_value = f'{lat_value}, {lon_value}'
-								
-								summary_rows.append(
-									{
-											'Id': item.get( 'Id', '' ),
-											'Name': item.get( 'Name', '' ),
-											'Resolution': item.get( 'Resolution', '' ),
-											'StartTime': item.get( 'StartTime', '' ),
-											'EndTime': item.get( 'EndTime', '' ),
-											'GeoLocation': location_value,
-									}
-								)
-						
-						_render_satellite_table(
-							f'#### Observatories ({len( summary_rows )})',
-							summary_rows )
-					else:
-						st.info( 'No observatories were returned.' )
-				
-				elif render_mode == 'ground_stations':
-					items = [ ]
-					
-					if isinstance( result, dict ):
-						items = result.get( 'GroundStation', [ ] )
-						if not items:
-							items = result.get( 'GroundStations', [ ] )
-					
-					if items:
-						summary_rows: List[ Dict[ str, Any ] ] = [ ]
-						
-						for item in items:
-							if isinstance( item, dict ):
-								coords = item.get( 'Location', { } )
-								location_value = ''
-								
-								if isinstance( coords, dict ):
-									lat_value = coords.get( 'Latitude', '' )
-									lon_value = coords.get( 'Longitude', '' )
-									if str( lat_value ).strip( ) or str( lon_value ).strip( ):
-										location_value = f'{lat_value}, {lon_value}'
-								
-								summary_rows.append(
-									{
-											'Id': item.get( 'Id', '' ),
-											'Name': item.get( 'Name', '' ),
-											'Code': item.get( 'Code', '' ),
-											'Location': location_value,
-									}
-								)
-						
-						_render_satellite_table(
-							f'#### Ground Stations ({len( summary_rows )})',
-							summary_rows )
-					else:
-						st.markdown( '#### Ground Stations' )
-						st.json( result )
-				
-				elif render_mode == 'locations':
-					st.markdown( '#### Locations' )
-					
-					if isinstance( result, dict ):
-						if 'Data' in result and isinstance( result.get( 'Data' ), list ):
-							_render_satellite_table( '##### Position Samples', result.get( 'Data', [ ] ) )
-						elif 'Coordinates' in result and isinstance( result.get( 'Coordinates' ), list ):
-							_render_satellite_table(
-								'##### Coordinates',
-								result.get( 'Coordinates', [ ] ) )
-						else:
-							flat_rows: List[ Dict[ str, Any ] ] = [ ]
-							for key, value in result.items( ):
-								if isinstance( value, (str, int, float, bool) ) or value is None:
-									flat_rows.append( { 'Field': key, 'Value': value } )
-							
-							if flat_rows:
-								_render_satellite_table( '##### Summary', flat_rows )
-							else:
-								st.json( result )
-					else:
-						st.write( result )
-				
-				else:
-					st.json( result )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- Astro Catalog
-	with st.expander( label='Astro Catalog', icon='✨', expanded=False ):
-		if 'astrocatalog_results' not in st.session_state:
-			st.session_state[ 'astrocatalog_results' ] = { }
-		
-		if 'astrocatalog_clear_request' not in st.session_state:
-			st.session_state[ 'astrocatalog_clear_request' ] = False
-		
-		if st.session_state.get( 'astrocatalog_clear_request', False ):
-			st.session_state[ 'astrocatalog_mode' ] = 'object_query'
-			st.session_state[ 'astrocatalog_query' ] = ''
-			st.session_state[ 'astrocatalog_quantity' ] = ''
-			st.session_state[ 'astrocatalog_attributes' ] = ''
-			st.session_state[ 'astrocatalog_arguments' ] = ''
-			st.session_state[ 'astrocatalog_ra' ] = ''
-			st.session_state[ 'astrocatalog_dec' ] = ''
-			st.session_state[ 'astrocatalog_radius' ] = 2
-			st.session_state[ 'astrocatalog_format' ] = 'json'
-			st.session_state[ 'astrocatalog_timeout' ] = 20
-			st.session_state[ 'astrocatalog_results' ] = { }
-			st.session_state[ 'astrocatalog_clear_request' ] = False
-		
-		def _clear_astrocatalog_state( ) -> None:
-			st.session_state[ 'astrocatalog_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			astro_mode = st.selectbox(
-				'Mode',
-				options=[ 'object_query', 'cone_search' ],
-				index=[ 'object_query', 'cone_search' ].index(
-					st.session_state.get( 'astrocatalog_mode', 'object_query' )
-				),
-				key='astrocatalog_mode'
-			)
-			
-			astro_query = st.text_area(
-				'Object Query',
-				height=80,
-				key='astrocatalog_query',
-				placeholder=(
-						'Examples:\n'
-						'SN1987A\n'
-						'AT2024abc\n'
-						'GW170817\n'
-						'\n'
-						'Used for object_query mode.'
-				),
-				disabled=(astro_mode != 'object_query')
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				astro_quantity = st.text_input(
-					'Quantity',
-					value=st.session_state.get( 'astrocatalog_quantity', '' ),
-					key='astrocatalog_quantity',
-					placeholder='Example: photometry',
-					disabled=(astro_mode != 'object_query')
-				)
-			
-			with c2:
-				astro_attributes = st.text_input(
-					'Attributes',
-					value=st.session_state.get( 'astrocatalog_attributes', '' ),
-					key='astrocatalog_attributes',
-					placeholder='Example: time,magnitude,band',
-					disabled=(astro_mode != 'object_query')
-				)
-			
-			astro_arguments = st.text_area(
-				'Arguments',
-				height=80,
-				key='astrocatalog_arguments',
-				placeholder=(
-						'Optional query arguments.\n'
-						'Examples:\n'
-						'time=2450000\n'
-						'band=V'
-				),
-				disabled=(astro_mode != 'object_query')
-			)
-			
-			c3, c4, c5 = st.columns( 3 )
-			
-			with c3:
-				astro_ra = st.text_input(
-					'RA',
-					value=st.session_state.get( 'astrocatalog_ra', '' ),
-					key='astrocatalog_ra',
-					placeholder='13:09:48.09',
-					disabled=(astro_mode != 'cone_search')
-				)
-			
-			with c4:
-				astro_dec = st.text_input(
-					'Dec',
-					value=st.session_state.get( 'astrocatalog_dec', '' ),
-					key='astrocatalog_dec',
-					placeholder='+27:57:34.8',
-					disabled=(astro_mode != 'cone_search')
-				)
-			
-			with c5:
-				astro_radius = st.number_input(
-					'Radius (arcsec)',
-					min_value=1,
-					max_value=3600,
-					value=int( st.session_state.get( 'astrocatalog_radius', 2 ) ),
-					step=1,
-					key='astrocatalog_radius',
-					disabled=(astro_mode != 'cone_search')
-				)
-			
-			c6, c7 = st.columns( 2 )
-			
-			with c6:
-				astro_format = st.selectbox(
-					'Format',
-					options=[ 'json', 'csv', 'tsv' ],
-					index=[ 'json', 'csv', 'tsv' ].index(
-						st.session_state.get( 'astrocatalog_format', 'json' )
-					),
-					key='astrocatalog_format'
-				)
-			
-			with c7:
-				astro_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'astrocatalog_timeout', 20 ) ),
-					step=1,
-					key='astrocatalog_timeout'
-				)
-			
-			st.caption(
-				'No API key is required for Open Astronomy Catalog. '
-				'Use object_query for named events and cone_search for coordinate searches.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				astro_submit = st.button(
-					'Submit',
-					key='astrocatalog_submit',
-					use_container_width=True
-				)
-			with b2:
-				st.button(
-					'Clear',
-					key='astrocatalog_clear',
-					on_click=_clear_astrocatalog_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if astro_submit:
-				try:
-					f = AstroCatalog( )
-					result = f.fetch(
-						mode=astro_mode,
-						query=astro_query,
-						quantity=astro_quantity,
-						attributes=astro_attributes,
-						arguments=astro_arguments,
-						ra=astro_ra,
-						dec=astro_dec,
-						radius=int( astro_radius ),
-						data_format=astro_format,
-						time=int( astro_timeout )
-					)
-					
-					st.session_state[ 'astrocatalog_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Astronomy Catalog request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'astrocatalog_results', { } )
+			result = st.session_state.get( 'navalobservatory_results', { } )
 			
 			if not result:
-				st.text( 'No results.' )
+				naval_output.text( 'No results.' )
 			else:
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': astro_mode,
-							'query': astro_query,
-							'quantity': astro_quantity,
-							'attributes': astro_attributes,
-							'arguments': astro_arguments,
-							'ra': astro_ra,
-							'dec': astro_dec,
-							'radius': int( astro_radius ),
-							'format': astro_format,
-					}
+				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+				
+				with col_right:
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': result.get( 'mode', '' ),
+								'url': result.get( 'url', '' ),
+								'params': params,
+								'location_label': result.get( 'location_label', '' ),
+						}
+					)
+					
+					if not data:
+						st.info( 'No results returned.' )
+					else:
+						st.markdown( '#### Observation Summary' )
+						
+						c1, c2 = st.columns( 2 )
+						
+						with c1:
+							if params.get( 'date', '' ):
+								st.markdown( f"**Date:** {params.get( 'date', '' )}" )
+							if params.get( 'time', '' ):
+								st.markdown( f"**Time:** {params.get( 'time', '' )}" )
+							if result.get( 'location_label', '' ):
+								st.markdown(
+									f"**Location Label:** {result.get( 'location_label', '' )}"
+								)
+						
+						with c2:
+							if params.get( 'coords', '' ):
+								st.markdown( f"**Coordinates:** {params.get( 'coords', '' )}" )
+						
+						bodies: List[ Dict[ str, Any ] ] = [ ]
+						
+						if isinstance( data, dict ):
+							for key in [ 'data', 'bodies', 'results', 'celestialBodies',
+							             'celestial_bodies' ]:
+								value = data.get( key, None )
+								if isinstance( value, list ):
+									bodies = [ item for item in value if isinstance( item, dict ) ]
+									break
+						
+						if bodies:
+							st.markdown( '#### Celestial Bodies' )
+							df_bodies = pd.DataFrame( bodies )
+							if not df_bodies.empty:
+								st.dataframe( df_bodies, use_container_width=True, hide_index=True )
+							else:
+								st.info( 'No displayable celestial body rows were found.' )
+						else:
+							top_fields = { }
+							
+							if isinstance( data, dict ):
+								for key in [
+										'gha', 'dec', 'hc', 'zn', 'altitude', 'azimuth',
+										'sunrise', 'sunset', 'moonrise', 'moonset'
+								]:
+									if key in data:
+										top_fields[ key ] = data.get( key )
+							
+							if top_fields:
+								st.markdown( '#### Key Values' )
+								st.json( top_fields )
+							else:
+								st.markdown( '#### Result' )
+								st.json( data )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- Satellite Center
+		with st.expander( label='Satellite Center', icon='🛰️', expanded=False ):
+			if 'satellitecenter_results' not in st.session_state:
+				st.session_state[ 'satellitecenter_results' ] = { }
+			
+			if 'satellitecenter_clear_request' not in st.session_state:
+				st.session_state[ 'satellitecenter_clear_request' ] = False
+			
+			if st.session_state.get( 'satellitecenter_clear_request', False ):
+				st.session_state[ 'satellitecenter_mode' ] = 'observatories'
+				st.session_state[ 'satellitecenter_query' ] = ''
+				st.session_state[ 'satellitecenter_start_time' ] = ''
+				st.session_state[ 'satellitecenter_end_time' ] = ''
+				st.session_state[ 'satellitecenter_coordinate_systems' ] = 'gse'
+				st.session_state[ 'satellitecenter_resolution_factor' ] = 1
+				st.session_state[ 'satellitecenter_timeout' ] = 20
+				st.session_state[ 'satellitecenter_results' ] = { }
+				st.session_state[ 'satellitecenter_clear_request' ] = False
+			
+			def _clear_satellitecenter_state( ) -> None:
+				st.session_state[ 'satellitecenter_clear_request' ] = True
+			
+			def _safe_dataframe( rows: Any ) -> pd.DataFrame:
+				try:
+					if isinstance( rows, pd.DataFrame ):
+						return rows
+					
+					if isinstance( rows, list ):
+						if rows and all( isinstance( x, dict ) for x in rows ):
+							return pd.DataFrame( rows )
+						return pd.DataFrame( { 'Value': [ str( x ) for x in rows ] } )
+					
+					if isinstance( rows, dict ):
+						return pd.json_normalize( rows )
+					
+					return pd.DataFrame( { 'Value': [ str( rows ) ] } )
+				except Exception:
+					return pd.DataFrame( )
+			
+			def _render_satellite_table( title: str, rows: Any ) -> None:
+				df_local = _safe_dataframe( rows )
+				if not df_local.empty:
+					st.markdown( title )
+					st.dataframe( df_local, use_container_width=True, hide_index=True )
+				else:
+					st.info( 'No displayable rows were found.' )
+			
+			col_left, col_right = st.columns( 2, border=True )
+			with col_left:
+				satellite_mode = st.selectbox(
+					'Mode',
+					options=[ 'observatories', 'ground_stations', 'locations' ],
+					index=[ 'observatories', 'ground_stations', 'locations' ].index(
+						st.session_state.get( 'satellitecenter_mode', 'observatories' )
+					),
+					key='satellitecenter_mode'
 				)
 				
-				parsed_result = result
+				satellite_query = st.text_area(
+					'Observatory Query',
+					height=90,
+					key='satellitecenter_query',
+					placeholder=(
+							'Examples:\n'
+							'iss\n'
+							'mms1,mms2\n'
+							'themisb\n'
+							'\n'
+							'Used for locations mode only. Leave blank for observatories '
+							'and ground stations.'
+					),
+					disabled=(satellite_mode != 'locations')
+				)
 				
-				if isinstance( result, str ):
-					text_value = result.strip( )
-					
-					if astro_format == 'json':
-						try:
-							parsed_result = json.loads( text_value )
-						except Exception:
-							parsed_result = result
-					else:
-						parsed_result = result
+				c1, c2 = st.columns( 2 )
 				
-				if isinstance( parsed_result, list ):
-					st.markdown( f'#### Result Rows ({len( parsed_result )})' )
-					
-					df_catalog = pd.DataFrame( parsed_result )
-					if not df_catalog.empty:
-						st.dataframe(
-							df_catalog,
-							use_container_width=True,
-							hide_index=True
+				with c1:
+					satellite_start_time = st.text_input(
+						'Start Time (UTC)',
+						value=st.session_state.get( 'satellitecenter_start_time', '' ),
+						key='satellitecenter_start_time',
+						placeholder='2026-03-15T00:00:00Z',
+						disabled=(satellite_mode != 'locations')
+					)
+				
+				with c2:
+					satellite_end_time = st.text_input(
+						'End Time (UTC)',
+						value=st.session_state.get( 'satellitecenter_end_time', '' ),
+						key='satellitecenter_end_time',
+						placeholder='2026-03-15T02:00:00Z',
+						disabled=(satellite_mode != 'locations')
+					)
+				
+				c3, c4, c5 = st.columns( 3 )
+				
+				with c3:
+					satellite_coordinate_systems = st.text_input(
+						'Coordinate Systems',
+						value=st.session_state.get( 'satellitecenter_coordinate_systems', 'gse' ),
+						key='satellitecenter_coordinate_systems',
+						placeholder='gse or geo,gsm',
+						disabled=(satellite_mode != 'locations')
+					)
+				
+				with c4:
+					satellite_resolution_factor = st.number_input(
+						'Resolution Factor',
+						min_value=1,
+						max_value=1000,
+						value=int( st.session_state.get( 'satellitecenter_resolution_factor', 1 ) ),
+						step=1,
+						key='satellitecenter_resolution_factor',
+						disabled=(satellite_mode != 'locations')
+					)
+				
+				with c5:
+					satellite_timeout = st.number_input(
+						'Timeout',
+						min_value=1,
+						max_value=120,
+						value=int( st.session_state.get( 'satellitecenter_timeout', 20 ) ),
+						step=1,
+						key='satellitecenter_timeout'
+					)
+				
+				st.caption(
+					'No API key is required for SSCWeb. For locations mode, use UTC ISO '
+					'8601 timestamps and observatory IDs returned by the observatories '
+					'service.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					satellite_submit = st.button(
+						'Submit',
+						key='satellitecenter_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='satellitecenter_clear',
+						on_click=_clear_satellitecenter_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				st.markdown( 'Results' )
+				
+				if satellite_submit:
+					try:
+						f = SatelliteCenter( )
+						result = f.fetch(
+							mode=satellite_mode,
+							query=satellite_query,
+							start_time=satellite_start_time,
+							end_time=satellite_end_time,
+							coordinate_systems=satellite_coordinate_systems,
+							resolution_factor=int( satellite_resolution_factor ),
+							time=int( satellite_timeout )
 						)
-					else:
-						st.text_area(
-							'Results',
-							value=str( parsed_result ),
-							height=320
-						)
-				
-				elif isinstance( parsed_result, dict ):
-					candidate_rows: List[ Dict[ str, Any ] ] = [ ]
-					
-					for key in [ 'results', 'items', 'data', 'objects' ]:
-						value = parsed_result.get( key, None )
-						if isinstance( value, list ) and value:
-							candidate_rows = [
-									item for item in value
-									if isinstance( item, dict )
-							]
-							break
-					
-					if candidate_rows:
-						st.markdown( f'#### Result Rows ({len( candidate_rows )})' )
-						df_catalog = pd.DataFrame( candidate_rows )
 						
+						st.session_state[ 'satellitecenter_results' ] = {
+								'request': {
+										'mode': satellite_mode,
+										'query': satellite_query,
+										'start_time': satellite_start_time,
+										'end_time': satellite_end_time,
+										'coordinate_systems': satellite_coordinate_systems,
+										'resolution_factor': int( satellite_resolution_factor ),
+										'timeout': int( satellite_timeout ),
+								},
+								'data': result or { },
+						}
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Satellite Center request failed.' )
+						st.exception( exc )
+				
+				result_wrapper = st.session_state.get( 'satellitecenter_results', { } )
+				
+				if not result_wrapper:
+					st.text( 'No results.' )
+				else:
+					if (
+							isinstance( result_wrapper, dict )
+							and 'request' in result_wrapper
+							and 'data' in result_wrapper
+					):
+						request_meta = result_wrapper.get( 'request', { } )
+						result = result_wrapper.get( 'data', { } )
+					else:
+						request_meta = {
+								'mode': satellite_mode,
+								'query': satellite_query,
+								'start_time': satellite_start_time,
+								'end_time': satellite_end_time,
+								'coordinate_systems': satellite_coordinate_systems,
+								'resolution_factor': int( satellite_resolution_factor ),
+								'timeout': int( satellite_timeout ),
+						}
+						result = result_wrapper if isinstance( result_wrapper, dict ) else { }
+					
+					render_mode = str( request_meta.get( 'mode', 'observatories' ) )
+					
+					st.markdown( '#### Request Metadata' )
+					st.json( request_meta )
+					
+					if render_mode == 'observatories':
+						items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
+						
+						if items:
+							summary_rows: List[ Dict[ str, Any ] ] = [ ]
+							
+							for item in items:
+								if isinstance( item, dict ):
+									location_value = ''
+									geo_value = item.get( 'GeoLocation', { } )
+									
+									if isinstance( geo_value, dict ):
+										lat_value = geo_value.get( 'Latitude', '' )
+										lon_value = geo_value.get( 'Longitude', '' )
+										if str( lat_value ).strip( ) or str( lon_value ).strip( ):
+											location_value = f'{lat_value}, {lon_value}'
+									
+									summary_rows.append(
+										{
+												'Id': item.get( 'Id', '' ),
+												'Name': item.get( 'Name', '' ),
+												'Resolution': item.get( 'Resolution', '' ),
+												'StartTime': item.get( 'StartTime', '' ),
+												'EndTime': item.get( 'EndTime', '' ),
+												'GeoLocation': location_value,
+										}
+									)
+							
+							_render_satellite_table(
+								f'#### Observatories ({len( summary_rows )})',
+								summary_rows )
+						else:
+							st.info( 'No observatories were returned.' )
+					
+					elif render_mode == 'ground_stations':
+						items = [ ]
+						
+						if isinstance( result, dict ):
+							items = result.get( 'GroundStation', [ ] )
+							if not items:
+								items = result.get( 'GroundStations', [ ] )
+						
+						if items:
+							summary_rows: List[ Dict[ str, Any ] ] = [ ]
+							
+							for item in items:
+								if isinstance( item, dict ):
+									coords = item.get( 'Location', { } )
+									location_value = ''
+									
+									if isinstance( coords, dict ):
+										lat_value = coords.get( 'Latitude', '' )
+										lon_value = coords.get( 'Longitude', '' )
+										if str( lat_value ).strip( ) or str( lon_value ).strip( ):
+											location_value = f'{lat_value}, {lon_value}'
+									
+									summary_rows.append(
+										{
+												'Id': item.get( 'Id', '' ),
+												'Name': item.get( 'Name', '' ),
+												'Code': item.get( 'Code', '' ),
+												'Location': location_value,
+										}
+									)
+							
+							_render_satellite_table(
+								f'#### Ground Stations ({len( summary_rows )})',
+								summary_rows )
+						else:
+							st.markdown( '#### Ground Stations' )
+							st.json( result )
+					
+					elif render_mode == 'locations':
+						st.markdown( '#### Locations' )
+						
+						if isinstance( result, dict ):
+							if 'Data' in result and isinstance( result.get( 'Data' ), list ):
+								_render_satellite_table( '##### Position Samples', result.get( 'Data', [ ] ) )
+							elif 'Coordinates' in result and isinstance( result.get( 'Coordinates' ), list ):
+								_render_satellite_table(
+									'##### Coordinates',
+									result.get( 'Coordinates', [ ] ) )
+							else:
+								flat_rows: List[ Dict[ str, Any ] ] = [ ]
+								for key, value in result.items( ):
+									if isinstance( value, (str, int, float, bool) ) or value is None:
+										flat_rows.append( { 'Field': key, 'Value': value } )
+								
+								if flat_rows:
+									_render_satellite_table( '##### Summary', flat_rows )
+								else:
+									st.json( result )
+						else:
+							st.write( result )
+					
+					else:
+						st.json( result )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- Astro Catalog
+		with st.expander( label='Astro Catalog', icon='✨', expanded=False ):
+			if 'astrocatalog_results' not in st.session_state:
+				st.session_state[ 'astrocatalog_results' ] = { }
+			
+			if 'astrocatalog_clear_request' not in st.session_state:
+				st.session_state[ 'astrocatalog_clear_request' ] = False
+			
+			if st.session_state.get( 'astrocatalog_clear_request', False ):
+				st.session_state[ 'astrocatalog_mode' ] = 'object_query'
+				st.session_state[ 'astrocatalog_query' ] = ''
+				st.session_state[ 'astrocatalog_quantity' ] = ''
+				st.session_state[ 'astrocatalog_attributes' ] = ''
+				st.session_state[ 'astrocatalog_arguments' ] = ''
+				st.session_state[ 'astrocatalog_ra' ] = ''
+				st.session_state[ 'astrocatalog_dec' ] = ''
+				st.session_state[ 'astrocatalog_radius' ] = 2
+				st.session_state[ 'astrocatalog_format' ] = 'json'
+				st.session_state[ 'astrocatalog_timeout' ] = 20
+				st.session_state[ 'astrocatalog_results' ] = { }
+				st.session_state[ 'astrocatalog_clear_request' ] = False
+			
+			def _clear_astrocatalog_state( ) -> None:
+				st.session_state[ 'astrocatalog_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				astro_mode = st.selectbox(
+					'Mode',
+					options=[ 'object_query', 'cone_search' ],
+					index=[ 'object_query', 'cone_search' ].index(
+						st.session_state.get( 'astrocatalog_mode', 'object_query' )
+					),
+					key='astrocatalog_mode'
+				)
+				
+				astro_query = st.text_area(
+					'Object Query',
+					height=80,
+					key='astrocatalog_query',
+					placeholder=(
+							'Examples:\n'
+							'SN1987A\n'
+							'AT2024abc\n'
+							'GW170817\n'
+							'\n'
+							'Used for object_query mode.'
+					),
+					disabled=(astro_mode != 'object_query')
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					astro_quantity = st.text_input(
+						'Quantity',
+						value=st.session_state.get( 'astrocatalog_quantity', '' ),
+						key='astrocatalog_quantity',
+						placeholder='Example: photometry',
+						disabled=(astro_mode != 'object_query')
+					)
+				
+				with c2:
+					astro_attributes = st.text_input(
+						'Attributes',
+						value=st.session_state.get( 'astrocatalog_attributes', '' ),
+						key='astrocatalog_attributes',
+						placeholder='Example: time,magnitude,band',
+						disabled=(astro_mode != 'object_query')
+					)
+				
+				astro_arguments = st.text_area(
+					'Arguments',
+					height=80,
+					key='astrocatalog_arguments',
+					placeholder=(
+							'Optional query arguments.\n'
+							'Examples:\n'
+							'time=2450000\n'
+							'band=V'
+					),
+					disabled=(astro_mode != 'object_query')
+				)
+				
+				c3, c4, c5 = st.columns( 3 )
+				
+				with c3:
+					astro_ra = st.text_input(
+						'RA',
+						value=st.session_state.get( 'astrocatalog_ra', '' ),
+						key='astrocatalog_ra',
+						placeholder='13:09:48.09',
+						disabled=(astro_mode != 'cone_search')
+					)
+				
+				with c4:
+					astro_dec = st.text_input(
+						'Dec',
+						value=st.session_state.get( 'astrocatalog_dec', '' ),
+						key='astrocatalog_dec',
+						placeholder='+27:57:34.8',
+						disabled=(astro_mode != 'cone_search')
+					)
+				
+				with c5:
+					astro_radius = st.number_input(
+						'Radius (arcsec)',
+						min_value=1,
+						max_value=3600,
+						value=int( st.session_state.get( 'astrocatalog_radius', 2 ) ),
+						step=1,
+						key='astrocatalog_radius',
+						disabled=(astro_mode != 'cone_search')
+					)
+				
+				c6, c7 = st.columns( 2 )
+				
+				with c6:
+					astro_format = st.selectbox(
+						'Format',
+						options=[ 'json', 'csv', 'tsv' ],
+						index=[ 'json', 'csv', 'tsv' ].index(
+							st.session_state.get( 'astrocatalog_format', 'json' )
+						),
+						key='astrocatalog_format'
+					)
+				
+				with c7:
+					astro_timeout = st.number_input(
+						'Timeout',
+						min_value=1,
+						max_value=120,
+						value=int( st.session_state.get( 'astrocatalog_timeout', 20 ) ),
+						step=1,
+						key='astrocatalog_timeout'
+					)
+				
+				st.caption(
+					'No API key is required for Open Astronomy Catalog. '
+					'Use object_query for named events and cone_search for coordinate searches.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					astro_submit = st.button(
+						'Submit',
+						key='astrocatalog_submit',
+						use_container_width=True
+					)
+				with b2:
+					st.button(
+						'Clear',
+						key='astrocatalog_clear',
+						on_click=_clear_astrocatalog_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				st.markdown( 'Results' )
+				
+				if astro_submit:
+					try:
+						f = AstroCatalog( )
+						result = f.fetch(
+							mode=astro_mode,
+							query=astro_query,
+							quantity=astro_quantity,
+							attributes=astro_attributes,
+							arguments=astro_arguments,
+							ra=astro_ra,
+							dec=astro_dec,
+							radius=int( astro_radius ),
+							data_format=astro_format,
+							time=int( astro_timeout )
+						)
+						
+						st.session_state[ 'astrocatalog_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Astronomy Catalog request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'astrocatalog_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': astro_mode,
+								'query': astro_query,
+								'quantity': astro_quantity,
+								'attributes': astro_attributes,
+								'arguments': astro_arguments,
+								'ra': astro_ra,
+								'dec': astro_dec,
+								'radius': int( astro_radius ),
+								'format': astro_format,
+						}
+					)
+					
+					parsed_result = result
+					
+					if isinstance( result, str ):
+						text_value = result.strip( )
+						
+						if astro_format == 'json':
+							try:
+								parsed_result = json.loads( text_value )
+							except Exception:
+								parsed_result = result
+						else:
+							parsed_result = result
+					
+					if isinstance( parsed_result, list ):
+						st.markdown( f'#### Result Rows ({len( parsed_result )})' )
+						
+						df_catalog = pd.DataFrame( parsed_result )
 						if not df_catalog.empty:
 							st.dataframe(
 								df_catalog,
@@ -13279,4565 +13257,4598 @@ elif mode == 'Astronomical':
 								hide_index=True
 							)
 						else:
-							st.json( parsed_result )
+							st.text_area(
+								'Results',
+								value=str( parsed_result ),
+								height=320
+							)
 					
-					else:
-						title_value = (
-								parsed_result.get( 'name' )
-								or parsed_result.get( 'alias' )
-								or parsed_result.get( 'event' )
-								or parsed_result.get( 'id' )
-								or 'Catalog Result'
+					elif isinstance( parsed_result, dict ):
+						candidate_rows: List[ Dict[ str, Any ] ] = [ ]
+						
+						for key in [ 'results', 'items', 'data', 'objects' ]:
+							value = parsed_result.get( key, None )
+							if isinstance( value, list ) and value:
+								candidate_rows = [
+										item for item in value
+										if isinstance( item, dict )
+								]
+								break
+						
+						if candidate_rows:
+							st.markdown( f'#### Result Rows ({len( candidate_rows )})' )
+							df_catalog = pd.DataFrame( candidate_rows )
+							
+							if not df_catalog.empty:
+								st.dataframe(
+									df_catalog,
+									use_container_width=True,
+									hide_index=True
+								)
+							else:
+								st.json( parsed_result )
+						
+						else:
+							title_value = (
+									parsed_result.get( 'name' )
+									or parsed_result.get( 'alias' )
+									or parsed_result.get( 'event' )
+									or parsed_result.get( 'id' )
+									or 'Catalog Result'
+							)
+							
+							st.markdown( f'### {title_value}' )
+							
+							top_fields: Dict[ str, Any ] = { }
+							for key in [
+									'name',
+									'alias',
+									'ra',
+									'dec',
+									'redshift',
+									'type',
+									'claimedtype',
+									'schema'
+							]:
+								if key in parsed_result:
+									top_fields[ key ] = parsed_result.get( key )
+							
+							if top_fields:
+								st.json( top_fields )
+							
+							for key in [ 'summary', 'description', 'comments' ]:
+								if key in parsed_result and str( parsed_result.get( key ) ).strip( ):
+									st.markdown( f'#### {key.title( )}' )
+									st.write( str( parsed_result.get( key ) ) )
+							
+							if not top_fields:
+								st.json( parsed_result )
+					
+					elif isinstance( parsed_result, str ):
+						st.markdown( '#### Result Text' )
+						st.text_area(
+							'Results',
+							value=parsed_result,
+							height=320
 						)
-						
-						st.markdown( f'### {title_value}' )
-						
-						top_fields: Dict[ str, Any ] = { }
-						for key in [
-								'name',
-								'alias',
-								'ra',
-								'dec',
-								'redshift',
-								'type',
-								'claimedtype',
-								'schema'
-						]:
-							if key in parsed_result:
-								top_fields[ key ] = parsed_result.get( key )
-						
-						if top_fields:
-							st.json( top_fields )
-						
-						for key in [ 'summary', 'description', 'comments' ]:
-							if key in parsed_result and str( parsed_result.get( key ) ).strip( ):
-								st.markdown( f'#### {key.title( )}' )
-								st.write( str( parsed_result.get( key ) ) )
-						
-						if not top_fields:
-							st.json( parsed_result )
-				
-				elif isinstance( parsed_result, str ):
-					st.markdown( '#### Result Text' )
-					st.text_area(
-						'Results',
-						value=parsed_result,
-						height=320
-					)
-				
-				else:
-					st.text_area(
-						'Results',
-						value=str( parsed_result ),
-						height=320
-					)
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					if isinstance( result, (dict, list) ):
-						st.json( result )
+					
 					else:
 						st.text_area(
-							'Raw',
-							value=str( result ),
-							height=240
+							'Results',
+							value=str( parsed_result ),
+							height=320
 						)
-	
-	# -------- Astro Query
-	with st.expander( label='Astro Query', icon='🔭', expanded=False ):
-		if 'astroquery_results' not in st.session_state:
-			st.session_state[ 'astroquery_results' ] = { }
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						if isinstance( result, (dict, list) ):
+							st.json( result )
+						else:
+							st.text_area(
+								'Raw',
+								value=str( result ),
+								height=240
+							)
 		
-		if 'astroquery_clear_request' not in st.session_state:
-			st.session_state[ 'astroquery_clear_request' ] = False
-		
-		if st.session_state.get( 'astroquery_clear_request', False ):
-			st.session_state[ 'astroquery_mode' ] = 'object_search'
-			st.session_state[ 'astroquery_query' ] = ''
-			st.session_state[ 'astroquery_ra' ] = ''
-			st.session_state[ 'astroquery_dec' ] = ''
-			st.session_state[ 'astroquery_radius' ] = 0.5
-			st.session_state[ 'astroquery_radius_unit' ] = 'deg'
-			st.session_state[ 'astroquery_row_limit' ] = 100
-			st.session_state[ 'astroquery_results' ] = { }
-			st.session_state[ 'astroquery_clear_request' ] = False
-		
-		def _clear_astroquery_state( ) -> None:
-			st.session_state[ 'astroquery_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			astroquery_mode = st.selectbox(
-				'Mode',
-				options=[ 'object_search', 'object_ids', 'region_search' ],
-				index=[ 'object_search', 'object_ids', 'region_search' ].index(
-					st.session_state.get( 'astroquery_mode', 'object_search' )
-				),
-				key='astroquery_mode'
-			)
+		# -------- Astro Query
+		with st.expander( label='Astro Query', icon='🔭', expanded=False ):
+			if 'astroquery_results' not in st.session_state:
+				st.session_state[ 'astroquery_results' ] = { }
 			
-			astroquery_query = st.text_area(
-				'Object Query',
-				height=80,
-				key='astroquery_query',
-				placeholder=(
-						'Examples:\n'
-						'M81\n'
-						'Sirius\n'
-						'NGC 1300\n'
-						'\n'
-						'Used for object_search and object_ids.'
-				),
-				disabled=(astroquery_mode == 'region_search')
-			)
+			if 'astroquery_clear_request' not in st.session_state:
+				st.session_state[ 'astroquery_clear_request' ] = False
 			
-			c1, c2, c3 = st.columns( 3 )
+			if st.session_state.get( 'astroquery_clear_request', False ):
+				st.session_state[ 'astroquery_mode' ] = 'object_search'
+				st.session_state[ 'astroquery_query' ] = ''
+				st.session_state[ 'astroquery_ra' ] = ''
+				st.session_state[ 'astroquery_dec' ] = ''
+				st.session_state[ 'astroquery_radius' ] = 0.5
+				st.session_state[ 'astroquery_radius_unit' ] = 'deg'
+				st.session_state[ 'astroquery_row_limit' ] = 100
+				st.session_state[ 'astroquery_results' ] = { }
+				st.session_state[ 'astroquery_clear_request' ] = False
 			
-			with c1:
-				astroquery_ra = st.text_input(
-					'RA',
-					value=st.session_state.get( 'astroquery_ra', '' ),
-					key='astroquery_ra',
-					placeholder='13:09:48.09',
-					disabled=(astroquery_mode != 'region_search'),
-					help='Right Ascension of the search center, e.g. 13:09:48.09.'
-				)
+			def _clear_astroquery_state( ) -> None:
+				st.session_state[ 'astroquery_clear_request' ] = True
 			
-			with c2:
-				astroquery_dec = st.text_input(
-					'Dec',
-					value=st.session_state.get( 'astroquery_dec', '' ),
-					key='astroquery_dec',
-					placeholder='-23:22:53.3',
-					disabled=(astroquery_mode != 'region_search'),
-					help='Declination of the search center, e.g. -23:22:53.3.'
-				)
+			col_left, col_right = st.columns( 2, border=True )
 			
-			with c3:
-				astroquery_radius = st.number_input(
-					'Radius',
-					min_value=0.001,
-					max_value=60.0,
-					value=float( st.session_state.get( 'astroquery_radius', 0.5 ) ),
-					step=0.1,
-					key='astroquery_radius',
-					disabled=(astroquery_mode != 'region_search'),
-					help='Cone-search radius around the RA/Dec sky position.'
-				)
-			
-			c4, c5 = st.columns( 2 )
-			
-			with c4:
-				astroquery_radius_unit = st.selectbox(
-					'Radius Unit',
-					options=[ 'deg', 'arcmin', 'arcsec' ],
-					index=[ 'deg', 'arcmin', 'arcsec' ].index(
-						st.session_state.get( 'astroquery_radius_unit', 'deg' )
+			with col_left:
+				astroquery_mode = st.selectbox(
+					'Mode',
+					options=[ 'object_search', 'object_ids', 'region_search' ],
+					index=[ 'object_search', 'object_ids', 'region_search' ].index(
+						st.session_state.get( 'astroquery_mode', 'object_search' )
 					),
-					key='astroquery_radius_unit',
-					disabled=(astroquery_mode != 'region_search')
+					key='astroquery_mode'
 				)
-			
-			with c5:
-				astroquery_row_limit = st.number_input(
-					'Row Limit',
-					min_value=1,
-					max_value=10000,
-					value=int( st.session_state.get( 'astroquery_row_limit', 100 ) ),
-					step=1,
-					key='astroquery_row_limit'
+				
+				astroquery_query = st.text_area(
+					'Object Query',
+					height=80,
+					key='astroquery_query',
+					placeholder=(
+							'Examples:\n'
+							'M81\n'
+							'Sirius\n'
+							'NGC 1300\n'
+							'\n'
+							'Used for object_search and object_ids.'
+					),
+					disabled=(astroquery_mode == 'region_search')
 				)
-			
-			st.caption(
-				'No API key is required for basic astroquery SIMBAD queries. '
-				'Use object_search for a named object, object_ids for alternate names, '
-				'and region_search for a cone search around RA/Dec.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				astroquery_submit = st.button(
-					'Submit',
-					key='astroquery_submit',
-					use_container_width=True
-				)
-			with b2:
-				st.button(
-					'Clear',
-					key='astroquery_clear',
-					on_click=_clear_astroquery_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if astroquery_submit:
-				try:
-					f = AstroQuery( )
-					result = f.fetch(
-						mode=astroquery_mode,
-						query=astroquery_query,
-						ra=astroquery_ra,
-						dec=astroquery_dec,
-						radius=float( astroquery_radius ),
-						radius_unit=astroquery_radius_unit,
-						row_limit=int( astroquery_row_limit )
+				
+				c1, c2, c3 = st.columns( 3 )
+				
+				with c1:
+					astroquery_ra = st.text_input(
+						'RA',
+						value=st.session_state.get( 'astroquery_ra', '' ),
+						key='astroquery_ra',
+						placeholder='13:09:48.09',
+						disabled=(astroquery_mode != 'region_search'),
+						help='Right Ascension of the search center, e.g. 13:09:48.09.'
 					)
-					
-					st.session_state[ 'astroquery_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'Astro Query request failed.' )
-					st.exception( exc )
+				with c2:
+					astroquery_dec = st.text_input(
+						'Dec',
+						value=st.session_state.get( 'astroquery_dec', '' ),
+						key='astroquery_dec',
+						placeholder='-23:22:53.3',
+						disabled=(astroquery_mode != 'region_search'),
+						help='Declination of the search center, e.g. -23:22:53.3.'
+					)
+				
+				with c3:
+					astroquery_radius = st.number_input(
+						'Radius',
+						min_value=0.001,
+						max_value=60.0,
+						value=float( st.session_state.get( 'astroquery_radius', 0.5 ) ),
+						step=0.1,
+						key='astroquery_radius',
+						disabled=(astroquery_mode != 'region_search'),
+						help='Cone-search radius around the RA/Dec sky position.'
+					)
+				
+				c4, c5 = st.columns( 2 )
+				
+				with c4:
+					astroquery_radius_unit = st.selectbox(
+						'Radius Unit',
+						options=[ 'deg', 'arcmin', 'arcsec' ],
+						index=[ 'deg', 'arcmin', 'arcsec' ].index(
+							st.session_state.get( 'astroquery_radius_unit', 'deg' )
+						),
+						key='astroquery_radius_unit',
+						disabled=(astroquery_mode != 'region_search')
+					)
+				
+				with c5:
+					astroquery_row_limit = st.number_input(
+						'Row Limit',
+						min_value=1,
+						max_value=10000,
+						value=int( st.session_state.get( 'astroquery_row_limit', 100 ) ),
+						step=1,
+						key='astroquery_row_limit'
+					)
+				
+				st.caption(
+					'No API key is required for basic astroquery SIMBAD queries. '
+					'Use object_search for a named object, object_ids for alternate names, '
+					'and region_search for a cone search around RA/Dec.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					astroquery_submit = st.button(
+						'Submit',
+						key='astroquery_submit',
+						use_container_width=True
+					)
+				with b2:
+					st.button(
+						'Clear',
+						key='astroquery_clear',
+						on_click=_clear_astroquery_state,
+						use_container_width=True
+					)
 			
-			result = st.session_state.get( 'astroquery_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_col1, meta_col2 = st.columns( 2 )
+			with col_right:
+				st.markdown( 'Results' )
 				
-				with meta_col1:
-					if isinstance( result, dict ) and 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if isinstance( result, dict ) and 'query' in result:
-						st.markdown( f"**Query:** {result.get( 'query', '' )}" )
-					if isinstance( result, dict ) and 'ra' in result:
-						st.markdown( f"**RA:** {result.get( 'ra', '' )}" )
-				
-				with meta_col2:
-					if isinstance( result, dict ) and 'row_limit' in result:
-						st.markdown( f"**Row Limit:** {result.get( 'row_limit', '' )}" )
-					if isinstance( result, dict ) and 'dec' in result:
-						st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
-					if isinstance( result, dict ) and 'radius' in result:
-						st.markdown(
-							f"**Radius:** {result.get( 'radius', '' )} "
-							f"{result.get( 'radius_unit', '' )}"
+				if astroquery_submit:
+					try:
+						f = AstroQuery( )
+						result = f.fetch(
+							mode=astroquery_mode,
+							query=astroquery_query,
+							ra=astroquery_ra,
+							dec=astroquery_dec,
+							radius=float( astroquery_radius ),
+							radius_unit=astroquery_radius_unit,
+							row_limit=int( astroquery_row_limit )
 						)
+						
+						st.session_state[ 'astroquery_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Astro Query request failed.' )
+						st.exception( exc )
 				
-				rows = result.get( 'rows', [ ] ) if isinstance( result, dict ) else [ ]
-				columns = result.get( 'columns', [ ] ) if isinstance( result, dict ) else [ ]
+				result = st.session_state.get( 'astroquery_results', { } )
 				
-				if columns:
-					st.markdown( '#### Columns' )
-					st.write( ', '.join( [ str( c ) for c in columns ] ) )
-				
-				if not rows:
-					st.info( 'No rows returned.' )
+				if not result:
+					st.text( 'No results.' )
 				else:
-					df_rows = pd.DataFrame( rows )
+					meta_col1, meta_col2 = st.columns( 2 )
 					
-					if not df_rows.empty and columns:
-						ordered_columns = [ c for c in columns if c in df_rows.columns ]
-						if ordered_columns:
-							df_rows = df_rows[ ordered_columns ]
+					with meta_col1:
+						if isinstance( result, dict ) and 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if isinstance( result, dict ) and 'query' in result:
+							st.markdown( f"**Query:** {result.get( 'query', '' )}" )
+						if isinstance( result, dict ) and 'ra' in result:
+							st.markdown( f"**RA:** {result.get( 'ra', '' )}" )
 					
-					st.markdown( f'#### Result Rows ({len( df_rows )})' )
+					with meta_col2:
+						if isinstance( result, dict ) and 'row_limit' in result:
+							st.markdown( f"**Row Limit:** {result.get( 'row_limit', '' )}" )
+						if isinstance( result, dict ) and 'dec' in result:
+							st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
+						if isinstance( result, dict ) and 'radius' in result:
+							st.markdown(
+								f"**Radius:** {result.get( 'radius', '' )} "
+								f"{result.get( 'radius_unit', '' )}"
+							)
 					
-					if not df_rows.empty:
-						st.dataframe(
-							df_rows,
-							use_container_width=True,
-							hide_index=True
-						)
+					rows = result.get( 'rows', [ ] ) if isinstance( result, dict ) else [ ]
+					columns = result.get( 'columns', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if columns:
+						st.markdown( '#### Columns' )
+						st.write( ', '.join( [ str( c ) for c in columns ] ) )
+					
+					if not rows:
+						st.info( 'No rows returned.' )
 					else:
-						st.info( 'No displayable rows were returned.' )
+						df_rows = pd.DataFrame( rows )
+						
+						if not df_rows.empty and columns:
+							ordered_columns = [ c for c in columns if c in df_rows.columns ]
+							if ordered_columns:
+								df_rows = df_rows[ ordered_columns ]
+						
+						st.markdown( f'#### Result Rows ({len( df_rows )})' )
+						
+						if not df_rows.empty:
+							st.dataframe(
+								df_rows,
+								use_container_width=True,
+								hide_index=True
+							)
+						else:
+							st.info( 'No displayable rows were returned.' )
+						
+						with st.expander( 'Row Details', expanded=False ):
+							for idx, row in enumerate( rows, start=1 ):
+								label = row.get( 'MAIN_ID', f'Row {idx}' )
+								with st.expander( f'Row {idx}: {label}', expanded=False ):
+									st.json( row )
 					
-					with st.expander( 'Row Details', expanded=False ):
-						for idx, row in enumerate( rows, start=1 ):
-							label = row.get( 'MAIN_ID', f'Row {idx}' )
-							with st.expander( f'Row {idx}: {label}', expanded=False ):
-								st.json( row )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- Star Map
-	with st.expander( label='Star Map', icon='⭐',expanded=False ):
-		if 'starmap_results' not in st.session_state:
-			st.session_state[ 'starmap_results' ] = { }
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 		
-		if 'starmap_clear_request' not in st.session_state:
-			st.session_state[ 'starmap_clear_request' ] = False
-		
-		if st.session_state.get( 'starmap_clear_request', False ):
-			st.session_state[ 'starmap_mode' ] = 'object_link'
-			st.session_state[ 'starmap_query' ] = ''
-			st.session_state[ 'starmap_ra' ] = 15.2976
-			st.session_state[ 'starmap_dec' ] = -17.5892
-			st.session_state[ 'starmap_zoom' ] = 5
-			st.session_state[ 'starmap_image_source' ] = 'DSS2'
-			st.session_state[ 'starmap_box_color' ] = 'yellow'
-			st.session_state[ 'starmap_show_box' ] = True
-			st.session_state[ 'starmap_show_grid' ] = True
-			st.session_state[ 'starmap_show_lines' ] = True
-			st.session_state[ 'starmap_show_boundaries' ] = True
-			st.session_state[ 'starmap_show_const_names' ] = False
-			st.session_state[ 'starmap_timeout' ] = 20
-			st.session_state[ 'starmap_results' ] = { }
-			st.session_state[ 'starmap_clear_request' ] = False
-		
-		def _clear_starmap_state( ) -> None:
-			st.session_state[ 'starmap_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			starmap_mode = st.selectbox(
-				'Mode',
-				options=[ 'object_link', 'coordinate_link', 'snapshot' ],
-				index=[ 'object_link', 'coordinate_link', 'snapshot' ].index(
-					st.session_state.get( 'starmap_mode', 'object_link' ) ),
-				key='starmap_mode'
-			)
+		# -------- Star Map
+		with st.expander( label='Star Map', icon='⭐',expanded=False ):
+			if 'starmap_results' not in st.session_state:
+				st.session_state[ 'starmap_results' ] = { }
 			
-			starmap_query = st.text_area(
-				'Object Query',
-				height=80,
-				key='starmap_query',
-				placeholder='Examples: Polaris, M31, NGC 1300, Used for object_link mode only.',
-				disabled=(starmap_mode != 'object_link')
-			)
+			if 'starmap_clear_request' not in st.session_state:
+				st.session_state[ 'starmap_clear_request' ] = False
 			
-			c1, c2, c3 = st.columns( 3 )
+			if st.session_state.get( 'starmap_clear_request', False ):
+				st.session_state[ 'starmap_mode' ] = 'object_link'
+				st.session_state[ 'starmap_query' ] = ''
+				st.session_state[ 'starmap_ra' ] = 15.2976
+				st.session_state[ 'starmap_dec' ] = -17.5892
+				st.session_state[ 'starmap_zoom' ] = 5
+				st.session_state[ 'starmap_image_source' ] = 'DSS2'
+				st.session_state[ 'starmap_box_color' ] = 'yellow'
+				st.session_state[ 'starmap_show_box' ] = True
+				st.session_state[ 'starmap_show_grid' ] = True
+				st.session_state[ 'starmap_show_lines' ] = True
+				st.session_state[ 'starmap_show_boundaries' ] = True
+				st.session_state[ 'starmap_show_const_names' ] = False
+				st.session_state[ 'starmap_timeout' ] = 20
+				st.session_state[ 'starmap_results' ] = { }
+				st.session_state[ 'starmap_clear_request' ] = False
 			
-			with c1:
-				starmap_ra = st.number_input(
-					'RA (hours)',
-					min_value=0.0,
-					max_value=24.0,
-					value=float( st.session_state.get( 'starmap_ra', 15.2976 ) ),
-					step=0.0001,
-					format='%.4f',
-					key='starmap_ra',
-					disabled=(starmap_mode == 'object_link'),
-					help='Right Ascension of the sky center in hours. Example: 15.2976'
+			def _clear_starmap_state( ) -> None:
+				st.session_state[ 'starmap_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				starmap_mode = st.selectbox(
+					'Mode',
+					options=[ 'object_link', 'coordinate_link', 'snapshot' ],
+					index=[ 'object_link', 'coordinate_link', 'snapshot' ].index(
+						st.session_state.get( 'starmap_mode', 'object_link' ) ),
+					key='starmap_mode'
 				)
-			
-			with c2:
-				starmap_dec = st.number_input(
-					'Dec (degrees)',
-					min_value=-90.0,
-					max_value=90.0,
-					value=float( st.session_state.get( 'starmap_dec', -17.5892 ) ),
-					step=0.0001,
-					format='%.4f',
-					key='starmap_dec',
-					disabled=(starmap_mode == 'object_link'),
-					help='Declination of the sky center in degrees. Example: -17.5892'
+				
+				starmap_query = st.text_area(
+					'Object Query',
+					height=80,
+					key='starmap_query',
+					placeholder='Examples: Polaris, M31, NGC 1300, Used for object_link mode only.',
+					disabled=(starmap_mode != 'object_link')
 				)
-			
-			with c3:
-				starmap_zoom = st.number_input(
-					'Zoom',
-					min_value=1,
-					max_value=18,
-					value=int( st.session_state.get( 'starmap_zoom', 5 ) ),
-					step=1,
-					key='starmap_zoom',
-					help='Smaller values show a wider field; larger values zoom in.'
-				)
-			
-			c4, c5 = st.columns( 2 )
-			
-			with c4:
-				starmap_image_source = st.selectbox(
-					'Image Source',
-					options=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS', 'H-Alpha' ],
-					index=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS', 'H-Alpha' ].index(
-						st.session_state.get( 'starmap_image_source', 'DSS2' ) ),
-					key='starmap_image_source',
-					disabled=(starmap_mode != 'snapshot'),
-					help='Sky survey source used for snapshot generation.'
-				)
-			
-			with c5:
-				starmap_box_color = st.text_input(
-					'Box Color',
-					value=st.session_state.get( 'starmap_box_color', 'yellow' ),
-					key='starmap_box_color',
-					placeholder='yellow',
-					disabled=(starmap_mode == 'snapshot')
-				)
-			
-			c6, c7 = st.columns( 2 )
-			
-			with c6:
-				starmap_show_box = st.checkbox(
-					'Show Box',
-					value=st.session_state.get( 'starmap_show_box', True ),
-					key='starmap_show_box',
-					disabled=(starmap_mode == 'snapshot')
-				)
-			
-			with c7:
-				starmap_show_grid = st.checkbox(
-					'Show Grid',
-					value=st.session_state.get( 'starmap_show_grid', True ),
-					key='starmap_show_grid',
-					disabled=(starmap_mode == 'object_link')
-				)
-			
-			c8, c9 = st.columns( 2 )
-			
-			with c8:
-				starmap_show_lines = st.checkbox(
-					'Show Constellation Lines',
-					value=st.session_state.get( 'starmap_show_lines', True ),
-					key='starmap_show_lines',
-					disabled=False
-				)
-			
-			with c9:
-				starmap_show_boundaries = st.checkbox(
-					'Show Constellation Boundaries',
-					value=st.session_state.get( 'starmap_show_boundaries', True ),
-					key='starmap_show_boundaries',
-					disabled=False
-				)
-			
-			starmap_show_const_names = st.checkbox(
-				'Show Constellation Names',
-				value=st.session_state.get( 'starmap_show_const_names', False ),
-				key='starmap_show_const_names',
-				disabled=(starmap_mode != 'snapshot')
-			)
-			
-			starmap_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=120,
-				value=int( st.session_state.get( 'starmap_timeout', 20 ) ),
-				step=1,
-				key='starmap_timeout'
-			)
-			
-			st.caption(
-				'No API key is required. '
-				'Use object_link for a named object, coordinate_link for RA/Dec-centered interactive maps, '
-				'and snapshot for a static sky image page.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				starmap_submit = st.button( 'Submit', key='starmap_submit' )
-			with b2:
-				st.button( 'Clear', key='starmap_clear', on_click=_clear_starmap_state )
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if starmap_submit:
-				try:
-					f = StarMap( )
-					result = f.fetch(
-						mode=starmap_mode,
-						query=starmap_query,
-						ra=float( starmap_ra ),
-						dec=float( starmap_dec ),
-						zoom=int( starmap_zoom ),
-						image_source=starmap_image_source,
-						box_color=starmap_box_color,
-						show_box=bool( starmap_show_box ),
-						show_grid=bool( starmap_show_grid ),
-						show_lines=bool( starmap_show_lines ),
-						show_boundaries=bool( starmap_show_boundaries ),
-						show_const_names=bool( starmap_show_const_names ),
-						time=int( starmap_timeout ) )
-					
-					st.session_state[ 'starmap_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'Star Map request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'starmap_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_col1, meta_col2 = st.columns( 2 )
+				c1, c2, c3 = st.columns( 3 )
 				
-				with meta_col1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'object' in result:
-						st.markdown( f"**Object:** {result.get( 'object', '' )}" )
-					if 'ra' in result:
-						st.markdown( f"**RA:** {result.get( 'ra', '' )}" )
-				
-				with meta_col2:
-					if 'zoom' in result:
-						st.markdown( f"**Zoom:** {result.get( 'zoom', '' )}" )
-					if 'dec' in result:
-						st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
-					if 'image_source' in result:
-						st.markdown( f"**Image Source:** {result.get( 'image_source', '' )}" )
-				
-				if result.get( 'interactive_url', '' ):
-					st.markdown( f"**Interactive URL:** {result.get( 'interactive_url', '' )}" )
-				
-				if result.get( 'snapshot_page_url', '' ):
-					st.markdown( f"**Snapshot Page URL:** {result.get( 'snapshot_page_url', '' )}" )
-				
-				preferred_image_url = result.get( 'preferred_image_url', '' )
-				if preferred_image_url:
-					st.markdown( '#### Preferred Image' )
-					st.image( preferred_image_url, use_container_width=True )
-				
-				image_links = result.get( 'image_links', { } ) or { }
-				if image_links:
-					st.markdown( '#### Available Image Links' )
-					st.json( image_links )
-				
-				if result.get( 'params', { } ):
-					st.markdown( '#### Request Parameters' )
-					st.json( result.get( 'params', { } ) )
-				
-				if result.get( 'html_preview', '' ):
-					st.markdown( '#### HTML Preview' )
-					st.text_area(
-						'',
-						value=result.get( 'html_preview', '' ),
-						height=220,
-						key='starmap_html_preview'
+				with c1:
+					starmap_ra = st.number_input(
+						'RA (hours)',
+						min_value=0.0,
+						max_value=24.0,
+						value=float( st.session_state.get( 'starmap_ra', 15.2976 ) ),
+						step=0.0001,
+						format='%.4f',
+						key='starmap_ra',
+						disabled=(starmap_mode == 'object_link'),
+						help='Right Ascension of the sky center in hours. Example: 15.2976'
 					)
-	
-	# -------- SIMBAD
-	with st.expander( label='SIMBAD', icon='🌌', expanded=False ):
-		if 'simbad_results' not in st.session_state:
-			st.session_state[ 'simbad_results' ] = { }
-		
-		if 'simbad_clear_request' not in st.session_state:
-			st.session_state[ 'simbad_clear_request' ] = False
-		
-		if st.session_state.get( 'simbad_clear_request', False ):
-			st.session_state[ 'simbad_mode' ] = 'object_search'
-			st.session_state[ 'simbad_query' ] = 'Polaris'
-			st.session_state[ 'simbad_ra' ] = '02:31:49.09'
-			st.session_state[ 'simbad_dec' ] = '+89:15:50.8'
-			st.session_state[ 'simbad_radius' ] = 0.5
-			st.session_state[ 'simbad_radius_unit' ] = 'deg'
-			st.session_state[ 'simbad_row_limit' ] = 100
-			st.session_state[ 'simbad_results' ] = { }
-			st.session_state[ 'simbad_clear_request' ] = False
-		
-		def _clear_simbad_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the SIMBAD expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'simbad_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			simbad_mode = st.selectbox(
-				'Mode',
-				options=[ 'object_search', 'object_ids', 'region_search' ],
-				index=[ 'object_search', 'object_ids', 'region_search' ].index(
-					st.session_state.get( 'simbad_mode', 'object_search' )
-				),
-				key='simbad_mode',
-				help='Choose named-object lookup, alternate identifiers, or cone search.'
-			)
-			
-			simbad_query = st.text_area(
-				'Object Name',
-				height=80,
-				key='simbad_query',
-				placeholder=(
-						'Examples:\n'
-						'Polaris\n'
-						'M 31\n'
-						'NGC 1300\n'
-						'\n'
-						'Used for object_search and object_ids.'
-				),
-				disabled=(simbad_mode == 'region_search')
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				simbad_ra = st.text_input(
-					'Right Ascension',
-					value=st.session_state.get( 'simbad_ra', '02:31:49.09' ),
-					key='simbad_ra',
-					placeholder='13:09:48.09',
-					disabled=(simbad_mode != 'region_search'),
-					help='Hourangle format recommended for this wrapper.'
-				)
-			
-			with c2:
-				simbad_dec = st.text_input(
-					'Declination',
-					value=st.session_state.get( 'simbad_dec', '+89:15:50.8' ),
-					key='simbad_dec',
-					placeholder='-23:22:53.3',
-					disabled=(simbad_mode != 'region_search')
-				)
-			
-			c3, c4, c5 = st.columns( 3 )
-			
-			with c3:
-				simbad_radius = st.number_input(
-					'Radius',
-					min_value=0.001,
-					max_value=60.0,
-					value=float( st.session_state.get( 'simbad_radius', 0.5 ) ),
-					step=0.1,
-					key='simbad_radius',
-					disabled=(simbad_mode != 'region_search'),
-					help='Cone-search radius around the RA/Dec position.'
-				)
-			
-			with c4:
-				simbad_radius_unit = st.selectbox(
-					'Radius Unit',
-					options=[ 'deg', 'arcmin', 'arcsec' ],
-					index=[ 'deg', 'arcmin', 'arcsec' ].index(
-						st.session_state.get( 'simbad_radius_unit', 'deg' )
-					),
-					key='simbad_radius_unit',
-					disabled=(simbad_mode != 'region_search')
-				)
-			
-			with c5:
-				simbad_row_limit = st.number_input(
-					'Row Limit',
-					min_value=1,
-					max_value=10000,
-					value=int( st.session_state.get( 'simbad_row_limit', 100 ) ),
-					step=1,
-					key='simbad_row_limit'
-				)
-			
-			st.caption(
-				'SIMBAD named-object queries do not require an API key. '
-				'Use object_search for a record lookup, object_ids for aliases, '
-				'and region_search for a cone search around sky coordinates.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				simbad_submit = st.button(
-					'Submit',
-					key='simbad_submit'
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='simbad_clear',
-					on_click=_clear_simbad_state
-				)
-		
-		with col_right:
-			st.markdown( 'Results' )
-			
-			if simbad_submit:
-				try:
-					f = AstroQuery( )
-					result = f.fetch(
-						mode=simbad_mode,
-						query=simbad_query,
-						ra=simbad_ra,
-						dec=simbad_dec,
-						radius=float( simbad_radius ),
-						radius_unit=simbad_radius_unit,
-						row_limit=int( simbad_row_limit )
+				
+				with c2:
+					starmap_dec = st.number_input(
+						'Dec (degrees)',
+						min_value=-90.0,
+						max_value=90.0,
+						value=float( st.session_state.get( 'starmap_dec', -17.5892 ) ),
+						step=0.0001,
+						format='%.4f',
+						key='starmap_dec',
+						disabled=(starmap_mode == 'object_link'),
+						help='Declination of the sky center in degrees. Example: -17.5892'
 					)
-					
-					st.session_state[ 'simbad_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'SIMBAD request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'simbad_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
+				with c3:
+					starmap_zoom = st.number_input(
+						'Zoom',
+						min_value=1,
+						max_value=18,
+						value=int( st.session_state.get( 'starmap_zoom', 5 ) ),
+						step=1,
+						key='starmap_zoom',
+						help='Smaller values show a wider field; larger values zoom in.'
+					)
 				
-				with meta_c1:
-					if isinstance( result, dict ) and 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if isinstance( result, dict ) and 'query' in result:
-						st.markdown( f"**Query:** {result.get( 'query', '' )}" )
-					if isinstance( result, dict ) and 'ra' in result:
-						st.markdown( f"**RA:** {result.get( 'ra', '' )}" )
+				c4, c5 = st.columns( 2 )
 				
-				with meta_c2:
-					if isinstance( result, dict ) and 'row_limit' in result:
-						st.markdown( f"**Row Limit:** {result.get( 'row_limit', '' )}" )
-					if isinstance( result, dict ) and 'dec' in result:
-						st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
-					if isinstance( result, dict ) and 'radius' in result:
-						st.markdown(
-							f"**Radius:** {result.get( 'radius', '' )} "
-							f"{result.get( 'radius_unit', '' )}"
-						)
+				with c4:
+					starmap_image_source = st.selectbox(
+						'Image Source',
+						options=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS', 'H-Alpha' ],
+						index=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS', 'H-Alpha' ].index(
+							st.session_state.get( 'starmap_image_source', 'DSS2' ) ),
+						key='starmap_image_source',
+						disabled=(starmap_mode != 'snapshot'),
+						help='Sky survey source used for snapshot generation.'
+					)
 				
-				columns = result.get( 'columns', [ ] ) if isinstance( result, dict ) else [ ]
-				rows = result.get( 'rows', [ ] ) if isinstance( result, dict ) else [ ]
+				with c5:
+					starmap_box_color = st.text_input(
+						'Box Color',
+						value=st.session_state.get( 'starmap_box_color', 'yellow' ),
+						key='starmap_box_color',
+						placeholder='yellow',
+						disabled=(starmap_mode == 'snapshot')
+					)
 				
-				if columns:
-					st.markdown( '#### Columns' )
-					st.write( columns )
+				c6, c7 = st.columns( 2 )
 				
-				if rows:
-					st.markdown( '#### Rows' )
-					df_simbad = pd.DataFrame( rows )
-					st.dataframe( df_simbad, use_container_width=True, hide_index=True )
-				else:
-					st.text( 'No rows returned.' )
+				with c6:
+					starmap_show_box = st.checkbox(
+						'Show Box',
+						value=st.session_state.get( 'starmap_show_box', True ),
+						key='starmap_show_box',
+						disabled=(starmap_mode == 'snapshot')
+					)
 				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
-	
-	# -------- Space Weather
-	with st.expander( label='Space Weather', icon='☄️', expanded=False ):
-		if 'spaceweather_results' not in st.session_state:
-			st.session_state[ 'spaceweather_results' ] = { }
-		
-		if 'spaceweather_clear_request' not in st.session_state:
-			st.session_state[ 'spaceweather_clear_request' ] = False
-		
-		if st.session_state.get( 'spaceweather_clear_request', False ):
-			st.session_state[ 'spaceweather_mode' ] = 'cme'
-			st.session_state[ 'spaceweather_start_date' ] = '2026-03-01'
-			st.session_state[ 'spaceweather_end_date' ] = '2026-03-15'
-			st.session_state[ 'spaceweather_location' ] = 'ALL'
-			st.session_state[ 'spaceweather_catalog' ] = 'ALL'
-			st.session_state[ 'spaceweather_notification_type' ] = 'all'
-			st.session_state[ 'spaceweather_most_accurate_only' ] = True
-			st.session_state[ 'spaceweather_complete_entry_only' ] = True
-			st.session_state[ 'spaceweather_speed' ] = 0
-			st.session_state[ 'spaceweather_half_angle' ] = 0
-			st.session_state[ 'spaceweather_keyword' ] = ''
-			st.session_state[ 'spaceweather_timeout' ] = 20
-			st.session_state[ 'spaceweather_results' ] = { }
-			st.session_state[ 'spaceweather_clear_request' ] = False
-		
-		def _clear_spaceweather_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Space Weather expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'spaceweather_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			spaceweather_mode = st.selectbox(
-				'Mode',
-				options=[
-						'cme', 'cme_analysis', 'gst', 'ips', 'flr',
-						'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', 'notifications'
-				],
-				index=[
-						'cme', 'cme_analysis', 'gst', 'ips', 'flr',
-						'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', 'notifications'
-				].index(
-					st.session_state.get( 'spaceweather_mode', 'cme' )
-				),
-				key='spaceweather_mode',
-				help='Choose the documented DONKI endpoint to query.'
-			)
-			
-			d1, d2 = st.columns( 2 )
-			
-			with d1:
-				spaceweather_start_date = st.text_input(
-					'Start Date',
-					value=st.session_state.get( 'spaceweather_start_date', '2026-03-01' ),
-					key='spaceweather_start_date',
-					placeholder='2026-03-01'
+				with c7:
+					starmap_show_grid = st.checkbox(
+						'Show Grid',
+						value=st.session_state.get( 'starmap_show_grid', True ),
+						key='starmap_show_grid',
+						disabled=(starmap_mode == 'object_link')
+					)
+				
+				c8, c9 = st.columns( 2 )
+				
+				with c8:
+					starmap_show_lines = st.checkbox(
+						'Show Constellation Lines',
+						value=st.session_state.get( 'starmap_show_lines', True ),
+						key='starmap_show_lines',
+						disabled=False
+					)
+				
+				with c9:
+					starmap_show_boundaries = st.checkbox(
+						'Show Constellation Boundaries',
+						value=st.session_state.get( 'starmap_show_boundaries', True ),
+						key='starmap_show_boundaries',
+						disabled=False
+					)
+				
+				starmap_show_const_names = st.checkbox(
+					'Show Constellation Names',
+					value=st.session_state.get( 'starmap_show_const_names', False ),
+					key='starmap_show_const_names',
+					disabled=(starmap_mode != 'snapshot')
 				)
-			
-			with d2:
-				spaceweather_end_date = st.text_input(
-					'End Date',
-					value=st.session_state.get( 'spaceweather_end_date', '2026-03-15' ),
-					key='spaceweather_end_date',
-					placeholder='2026-03-15'
-				)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				spaceweather_location = st.text_input(
-					'Location',
-					value=st.session_state.get( 'spaceweather_location', 'ALL' ),
-					key='spaceweather_location',
-					placeholder='ALL or Earth',
-					disabled=(spaceweather_mode != 'ips')
-				)
-			
-			with c2:
-				spaceweather_catalog = st.text_input(
-					'Catalog',
-					value=st.session_state.get( 'spaceweather_catalog', 'ALL' ),
-					key='spaceweather_catalog',
-					placeholder='ALL or SWRC_CATALOG',
-					disabled=(spaceweather_mode not in [ 'ips', 'cme_analysis' ])
-				)
-			
-			c3, c4 = st.columns( 2 )
-			
-			with c3:
-				spaceweather_notification_type = st.text_input(
-					'Notification Type',
-					value=st.session_state.get( 'spaceweather_notification_type', 'all' ),
-					key='spaceweather_notification_type',
-					placeholder='all or FLR',
-					disabled=(spaceweather_mode != 'notifications')
-				)
-			
-			with c4:
-				spaceweather_keyword = st.text_input(
-					'Keyword',
-					value=st.session_state.get( 'spaceweather_keyword', '' ),
-					key='spaceweather_keyword',
-					placeholder='swpc_annex',
-					disabled=(spaceweather_mode != 'cme_analysis')
-				)
-			
-			c5, c6 = st.columns( 2 )
-			
-			with c5:
-				spaceweather_speed = st.number_input(
-					'Speed',
-					min_value=0,
-					max_value=5000,
-					value=int( st.session_state.get( 'spaceweather_speed', 0 ) ),
-					step=10,
-					key='spaceweather_speed',
-					disabled=(spaceweather_mode != 'cme_analysis')
-				)
-			
-			with c6:
-				spaceweather_half_angle = st.number_input(
-					'Half Angle',
-					min_value=0,
-					max_value=180,
-					value=int( st.session_state.get( 'spaceweather_half_angle', 0 ) ),
-					step=1,
-					key='spaceweather_half_angle',
-					disabled=(spaceweather_mode != 'cme_analysis')
-				)
-			
-			c7, c8, c9 = st.columns( 3 )
-			
-			with c7:
-				spaceweather_most_accurate_only = st.checkbox(
-					'Most Accurate Only',
-					value=bool( st.session_state.get( 'spaceweather_most_accurate_only', True ) ),
-					key='spaceweather_most_accurate_only',
-					disabled=(spaceweather_mode != 'cme_analysis')
-				)
-			
-			with c8:
-				spaceweather_complete_entry_only = st.checkbox(
-					'Complete Entry Only',
-					value=bool( st.session_state.get( 'spaceweather_complete_entry_only', True ) ),
-					key='spaceweather_complete_entry_only',
-					disabled=(spaceweather_mode != 'cme_analysis')
-				)
-			
-			with c9:
-				spaceweather_timeout = st.number_input(
+				
+				starmap_timeout = st.number_input(
 					'Timeout',
 					min_value=1,
 					max_value=120,
-					value=int( st.session_state.get( 'spaceweather_timeout', 20 ) ),
+					value=int( st.session_state.get( 'starmap_timeout', 20 ) ),
 					step=1,
-					key='spaceweather_timeout'
+					key='starmap_timeout'
 				)
-			
-			st.caption(
-				'Examples: cme for coronal mass ejections, gst for geomagnetic storms, '
-				'ips with Location=Earth, notifications with Type=all, or '
-				'cme_analysis with Catalog=ALL and Speed=500.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				spaceweather_submit = st.button(
-					'Submit',
-					key='spaceweather_submit'
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='spaceweather_clear',
-					on_click=_clear_spaceweather_state
-				)
-		
-		with col_right:
-			if spaceweather_submit:
-				try:
-					f = SpaceWeather( )
-					result = f.fetch(
-						mode=spaceweather_mode,
-						start_date=str( spaceweather_start_date ),
-						end_date=str( spaceweather_end_date ),
-						location=str( spaceweather_location or 'ALL' ),
-						catalog=str( spaceweather_catalog or 'ALL' ),
-						notification_type=str( spaceweather_notification_type or 'all' ),
-						most_accurate_only=bool( spaceweather_most_accurate_only ),
-						complete_entry_only=bool( spaceweather_complete_entry_only ),
-						speed=int( spaceweather_speed ),
-						half_angle=int( spaceweather_half_angle ),
-						keyword=str( spaceweather_keyword or '' ),
-						time=int( spaceweather_timeout )
-					)
-					
-					st.session_state[ 'spaceweather_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'Space Weather request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'satellitecenter_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				st.markdown( '#### Result Summary' )
+				st.caption(
+					'No API key is required. '
+					'Use object_link for a named object, coordinate_link for RA/Dec-centered interactive maps, '
+					'and snapshot for a static sky image page.'
+				)
 				
-				if satellite_mode == 'observatories':
-					items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
-					
-					if items:
-						df_sat = pd.DataFrame( items )
-						if not df_sat.empty:
-							st.caption( f'Observatories returned: {len( df_sat )}' )
-							st.dataframe( df_sat, use_container_width=True, hide_index=True )
-						else:
-							st.info( 'No displayable observatory rows were found.' )
+				b1, b2 = st.columns( 2 )
+				with b1:
+					starmap_submit = st.button( 'Submit', key='starmap_submit' )
+				with b2:
+					st.button( 'Clear', key='starmap_clear', on_click=_clear_starmap_state )
+			
+			with col_right:
+				st.markdown( 'Results' )
+				
+				if starmap_submit:
+					try:
+						f = StarMap( )
+						result = f.fetch(
+							mode=starmap_mode,
+							query=starmap_query,
+							ra=float( starmap_ra ),
+							dec=float( starmap_dec ),
+							zoom=int( starmap_zoom ),
+							image_source=starmap_image_source,
+							box_color=starmap_box_color,
+							show_box=bool( starmap_show_box ),
+							show_grid=bool( starmap_show_grid ),
+							show_lines=bool( starmap_show_lines ),
+							show_boundaries=bool( starmap_show_boundaries ),
+							show_const_names=bool( starmap_show_const_names ),
+							time=int( starmap_timeout ) )
 						
-						for idx, item in enumerate( items, start=1 ):
-							label = item.get( 'Id', f'Observatory {idx}' )
-							with st.expander( f'Observatory {idx}: {label}', expanded=False ):
-								st.json( item )
-					else:
-						st.info( 'No observatories returned.' )
-				
-				elif satellite_mode == 'ground_stations':
-					items = result.get( 'GroundStation', [ ] ) if isinstance( result, dict ) else [ ]
+						st.session_state[ 'starmap_results' ] = result or { }
+						st.rerun( )
 					
-					if items:
-						df_sat = pd.DataFrame( items )
-						if not df_sat.empty:
-							st.caption( f'Ground stations returned: {len( df_sat )}' )
-							st.dataframe( df_sat, use_container_width=True, hide_index=True )
-						else:
-							st.info( 'No displayable ground-station rows were found.' )
-						
-						for idx, item in enumerate( items, start=1 ):
-							label = item.get( 'Id', f'Ground Station {idx}' )
-							with st.expander( f'Ground Station {idx}: {label}', expanded=False ):
-								st.json( item )
-					else:
-						st.info( 'No ground stations returned.' )
+					except Exception as exc:
+						st.error( 'Star Map request failed.' )
+						st.exception( exc )
 				
+				result = st.session_state.get( 'starmap_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
 				else:
-					data_items = result.get( 'Data', [ ] ) if isinstance( result, dict ) else [ ]
+					meta_col1, meta_col2 = st.columns( 2 )
 					
-					if data_items:
-						summary_rows: List[ Dict[ str, Any ] ] = [ ]
-						
-						for item in data_items:
-							if isinstance( item, dict ):
-								summary_rows.append(
-									{
-											'Id': item.get( 'Id', '' ),
-											'CoordinateSystem': item.get( 'CoordinateSystem', '' ),
-											'Start': item.get( 'StartTime', '' ),
-											'End': item.get( 'EndTime', '' )
-									}
-								)
-						
-						df_sat = pd.DataFrame( summary_rows )
-						if not df_sat.empty:
-							st.caption( f'Location sets returned: {len( df_sat )}' )
-							st.dataframe( df_sat, use_container_width=True, hide_index=True )
-						else:
-							st.info( 'No displayable location-set summary rows were found.' )
-						
-						for idx, item in enumerate( data_items, start=1 ):
-							label = item.get( 'Id', f'Trajectory {idx}' )
-							with st.expander( f'Location Set {idx}: {label}', expanded=False ):
-								st.json( item )
-					else:
-						st.info( 'No location data returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
+					with meta_col1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'object' in result:
+							st.markdown( f"**Object:** {result.get( 'object', '' )}" )
+						if 'ra' in result:
+							st.markdown( f"**RA:** {result.get( 'ra', '' )}" )
+					
+					with meta_col2:
+						if 'zoom' in result:
+							st.markdown( f"**Zoom:** {result.get( 'zoom', '' )}" )
+						if 'dec' in result:
+							st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
+						if 'image_source' in result:
+							st.markdown( f"**Image Source:** {result.get( 'image_source', '' )}" )
+					
+					if result.get( 'interactive_url', '' ):
+						st.markdown( f"**Interactive URL:** {result.get( 'interactive_url', '' )}" )
+					
+					if result.get( 'snapshot_page_url', '' ):
+						st.markdown( f"**Snapshot Page URL:** {result.get( 'snapshot_page_url', '' )}" )
+					
+					preferred_image_url = result.get( 'preferred_image_url', '' )
+					if preferred_image_url:
+						st.markdown( '#### Preferred Image' )
+						st.image( preferred_image_url, use_container_width=True )
+					
+					image_links = result.get( 'image_links', { } ) or { }
+					if image_links:
+						st.markdown( '#### Available Image Links' )
+						st.json( image_links )
+					
+					if result.get( 'params', { } ):
+						st.markdown( '#### Request Parameters' )
+						st.json( result.get( 'params', { } ) )
+					
+					if result.get( 'html_preview', '' ):
+						st.markdown( '#### HTML Preview' )
+						st.text_area(
+							'',
+							value=result.get( 'html_preview', '' ),
+							height=220,
+							key='starmap_html_preview'
+						)
+		
+		# -------- SIMBAD
+		with st.expander( label='SIMBAD', icon='🌌', expanded=False ):
+			if 'simbad_results' not in st.session_state:
+				st.session_state[ 'simbad_results' ] = { }
+			
+			if 'simbad_clear_request' not in st.session_state:
+				st.session_state[ 'simbad_clear_request' ] = False
+			
+			if st.session_state.get( 'simbad_clear_request', False ):
+				st.session_state[ 'simbad_mode' ] = 'object_search'
+				st.session_state[ 'simbad_query' ] = 'Polaris'
+				st.session_state[ 'simbad_ra' ] = '02:31:49.09'
+				st.session_state[ 'simbad_dec' ] = '+89:15:50.8'
+				st.session_state[ 'simbad_radius' ] = 0.5
+				st.session_state[ 'simbad_radius_unit' ] = 'deg'
+				st.session_state[ 'simbad_row_limit' ] = 100
+				st.session_state[ 'simbad_results' ] = { }
+				st.session_state[ 'simbad_clear_request' ] = False
+			
+			def _clear_simbad_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the SIMBAD expander state for reset on the next rerun.
 	
-	# -------- Star Chart
-	with st.expander( label='Star Chart', icon='🪐', expanded=False ):
-		if 'starchart_results' not in st.session_state:
-			st.session_state[ 'starchart_results' ] = { }
-		
-		if 'starchart_clear_request' not in st.session_state:
-			st.session_state[ 'starchart_clear_request' ] = False
-		
-		if st.session_state.get( 'starchart_clear_request', False ):
-			st.session_state[ 'starchart_mode' ] = 'object_chart'
-			st.session_state[ 'starchart_query' ] = 'Polaris'
-			st.session_state[ 'starchart_ra' ] = 2.5302
-			st.session_state[ 'starchart_dec' ] = 89.2642
-			st.session_state[ 'starchart_zoom' ] = 5
-			st.session_state[ 'starchart_image_source' ] = 'DSS2'
-			st.session_state[ 'starchart_box_color' ] = 'yellow'
-			st.session_state[ 'starchart_show_box' ] = True
-			st.session_state[ 'starchart_show_grid' ] = True
-			st.session_state[ 'starchart_show_lines' ] = True
-			st.session_state[ 'starchart_show_boundaries' ] = True
-			st.session_state[ 'starchart_show_const_names' ] = False
-			st.session_state[ 'starchart_width' ] = 900
-			st.session_state[ 'starchart_height' ] = 450
-			st.session_state[ 'starchart_magnitude' ] = 7.5
-			st.session_state[ 'starchart_timeout' ] = 20
-			st.session_state[ 'starchart_results' ] = { }
-			st.session_state[ 'starchart_clear_request' ] = False
-		
-		def _clear_starchart_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Star Chart expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'starchart_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			starchart_mode = st.selectbox(
-				'Mode',
-				options=[ 'object_search', 'object_chart', 'coordinate_chart', 'static_chart' ],
-				index=[ 'object_search', 'object_chart', 'coordinate_chart', 'static_chart' ].index(
-					st.session_state.get( 'starchart_mode', 'object_chart' )
-				),
-				key='starchart_mode'
-			)
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'simbad_clear_request' ] = True
 			
-			starchart_query = st.text_area(
-				'Object Query',
-				height=80,
-				key='starchart_query',
-				placeholder=(
-						'Examples:\n'
-						'Polaris\n'
-						'M31\n'
-						'NGC 1300\n'
-						'\n'
-						'Used for object_search and object_chart.'
-				),
-				disabled=(starchart_mode not in [ 'object_search', 'object_chart' ])
-			)
+			col_left, col_right = st.columns( 2, border=True )
 			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				starchart_ra = st.number_input(
-					'RA',
-					value=float( st.session_state.get( 'starchart_ra', 2.5302 ) ),
-					format='%.4f',
-					key='starchart_ra',
-					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-				)
-			
-			with c2:
-				starchart_dec = st.number_input(
-					'Dec',
-					value=float( st.session_state.get( 'starchart_dec', 89.2642 ) ),
-					format='%.4f',
-					key='starchart_dec',
-					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-				)
-			
-			c3, c4, c5 = st.columns( 3 )
-			
-			with c3:
-				starchart_zoom = st.number_input(
-					'Zoom',
-					min_value=0,
-					max_value=18,
-					value=int( st.session_state.get( 'starchart_zoom', 5 ) ),
-					step=1,
-					key='starchart_zoom'
-				)
-			
-			with c4:
-				starchart_width = st.number_input(
-					'Width',
-					min_value=100,
-					max_value=2400,
-					value=int( st.session_state.get( 'starchart_width', 900 ) ),
-					step=50,
-					key='starchart_width',
-					disabled=(starchart_mode != 'static_chart')
-				)
-			
-			with c5:
-				starchart_height = st.number_input(
-					'Height',
-					min_value=100,
-					max_value=2400,
-					value=int( st.session_state.get( 'starchart_height', 450 ) ),
-					step=50,
-					key='starchart_height',
-					disabled=(starchart_mode != 'static_chart')
-				)
-			
-			c6, c7, c8 = st.columns( 3 )
-			
-			with c6:
-				starchart_image_source = st.selectbox(
-					'Image Source',
-					options=[ 'DSS2', 'SDSS' ],
-					index=[ 'DSS2', 'SDSS' ].index(
-						st.session_state.get( 'starchart_image_source', 'DSS2' )
+			with col_left:
+				simbad_mode = st.selectbox(
+					'Mode',
+					options=[ 'object_search', 'object_ids', 'region_search' ],
+					index=[ 'object_search', 'object_ids', 'region_search' ].index(
+						st.session_state.get( 'simbad_mode', 'object_search' )
 					),
-					key='starchart_image_source'
+					key='simbad_mode',
+					help='Choose named-object lookup, alternate identifiers, or cone search.'
 				)
-			
-			with c7:
-				starchart_box_color = st.text_input(
-					'Box Color',
-					value=st.session_state.get( 'starchart_box_color', 'yellow' ),
-					key='starchart_box_color',
-					disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ])
+				
+				simbad_query = st.text_area(
+					'Object Name',
+					height=80,
+					key='simbad_query',
+					placeholder=(
+							'Examples:\n'
+							'Polaris\n'
+							'M 31\n'
+							'NGC 1300\n'
+							'\n'
+							'Used for object_search and object_ids.'
+					),
+					disabled=(simbad_mode == 'region_search')
 				)
-			
-			with c8:
-				starchart_magnitude = st.number_input(
-					'Magnitude',
-					min_value=0.0,
-					max_value=20.0,
-					value=float( st.session_state.get( 'starchart_magnitude', 7.5 ) ),
-					step=0.1,
-					key='starchart_magnitude',
-					disabled=(starchart_mode != 'static_chart')
-				)
-			
-			c9, c10 = st.columns( 2 )
-			
-			with c9:
-				starchart_show_box = st.checkbox(
-					'Show Box',
-					value=bool( st.session_state.get( 'starchart_show_box', True ) ),
-					key='starchart_show_box',
-					disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ])
-				)
-			
-			with c10:
-				starchart_show_grid = st.checkbox(
-					'Show Grid',
-					value=bool( st.session_state.get( 'starchart_show_grid', True ) ),
-					key='starchart_show_grid',
-					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-				)
-			
-			c11, c12 = st.columns( 2 )
-			
-			with c11:
-				starchart_show_lines = st.checkbox(
-					'Show Lines',
-					value=bool( st.session_state.get( 'starchart_show_lines', True ) ),
-					key='starchart_show_lines',
-					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-				)
-			
-			with c12:
-				starchart_show_boundaries = st.checkbox(
-					'Show Boundaries',
-					value=bool( st.session_state.get( 'starchart_show_boundaries', True ) ),
-					key='starchart_show_boundaries',
-					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-				)
-			
-			starchart_show_const_names = st.checkbox(
-				'Show Constellation Names',
-				value=bool( st.session_state.get( 'starchart_show_const_names', False ) ),
-				key='starchart_show_const_names',
-				disabled=(starchart_mode != 'static_chart')
-			)
-			
-			starchart_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=120,
-				value=int( st.session_state.get( 'starchart_timeout', 20 ) ),
-				step=1,
-				key='starchart_timeout'
-			)
-			
-			st.caption(
-				'Examples: object_search with Polaris, object_chart with M31, '
-				'coordinate_chart with RA=2.5302 and Dec=89.2642, or '
-				'static_chart with DSS2 and 900x450 output.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				starchart_submit = st.button(
-					'Submit',
-					key='starchart_submit'
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='starchart_clear',
-					on_click=_clear_starchart_state
-				)
-		
-		with col_right:
-			if starchart_submit:
-				try:
-					f = StarChart( )
-					result = f.fetch(
-						mode=starchart_mode,
-						query=str( starchart_query or '' ),
-						ra=float( starchart_ra ),
-						dec=float( starchart_dec ),
-						zoom=int( starchart_zoom ),
-						image_source=str( starchart_image_source ),
-						box_color=str( starchart_box_color or 'yellow' ),
-						show_box=bool( starchart_show_box ),
-						show_grid=bool( starchart_show_grid ),
-						show_lines=bool( starchart_show_lines ),
-						show_boundaries=bool( starchart_show_boundaries ),
-						show_const_names=bool( starchart_show_const_names ),
-						width=int( starchart_width ),
-						height=int( starchart_height ),
-						magnitude=float( starchart_magnitude ),
-						time=int( starchart_timeout )
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					simbad_ra = st.text_input(
+						'Right Ascension',
+						value=st.session_state.get( 'simbad_ra', '02:31:49.09' ),
+						key='simbad_ra',
+						placeholder='13:09:48.09',
+						disabled=(simbad_mode != 'region_search'),
+						help='Hourangle format recommended for this wrapper.'
 					)
+				
+				with c2:
+					simbad_dec = st.text_input(
+						'Declination',
+						value=st.session_state.get( 'simbad_dec', '+89:15:50.8' ),
+						key='simbad_dec',
+						placeholder='-23:22:53.3',
+						disabled=(simbad_mode != 'region_search')
+					)
+				
+				c3, c4, c5 = st.columns( 3 )
+				
+				with c3:
+					simbad_radius = st.number_input(
+						'Radius',
+						min_value=0.001,
+						max_value=60.0,
+						value=float( st.session_state.get( 'simbad_radius', 0.5 ) ),
+						step=0.1,
+						key='simbad_radius',
+						disabled=(simbad_mode != 'region_search'),
+						help='Cone-search radius around the RA/Dec position.'
+					)
+				
+				with c4:
+					simbad_radius_unit = st.selectbox(
+						'Radius Unit',
+						options=[ 'deg', 'arcmin', 'arcsec' ],
+						index=[ 'deg', 'arcmin', 'arcsec' ].index(
+							st.session_state.get( 'simbad_radius_unit', 'deg' )
+						),
+						key='simbad_radius_unit',
+						disabled=(simbad_mode != 'region_search')
+					)
+				
+				with c5:
+					simbad_row_limit = st.number_input(
+						'Row Limit',
+						min_value=1,
+						max_value=10000,
+						value=int( st.session_state.get( 'simbad_row_limit', 100 ) ),
+						step=1,
+						key='simbad_row_limit'
+					)
+				
+				st.caption(
+					'SIMBAD named-object queries do not require an API key. '
+					'Use object_search for a record lookup, object_ids for aliases, '
+					'and region_search for a cone search around sky coordinates.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					simbad_submit = st.button(
+						'Submit',
+						key='simbad_submit'
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='simbad_clear',
+						on_click=_clear_simbad_state
+					)
+			
+			with col_right:
+				st.markdown( 'Results' )
+				
+				if simbad_submit:
+					try:
+						f = AstroQuery( )
+						result = f.fetch(
+							mode=simbad_mode,
+							query=simbad_query,
+							ra=simbad_ra,
+							dec=simbad_dec,
+							radius=float( simbad_radius ),
+							radius_unit=simbad_radius_unit,
+							row_limit=int( simbad_row_limit )
+						)
+						
+						st.session_state[ 'simbad_results' ] = result or { }
+						st.rerun( )
 					
-					st.session_state[ 'starchart_results' ] = result or { }
-					st.rerun( )
+					except Exception as exc:
+						st.error( 'SIMBAD request failed.' )
+						st.exception( exc )
 				
-				except Exception as exc:
-					st.error( 'Star Chart request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'starchart_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
-				search_payload = result.get( 'search', { } ) if isinstance( result, dict ) else { }
-				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-				chart_url = result.get( 'chart_url', '' ) if isinstance( result, dict ) else ''
-				image_url = result.get( 'image_url', '' ) if isinstance( result, dict ) else ''
+				result = st.session_state.get( 'simbad_results', { } )
 				
-				st.markdown( '#### Chart Summary' )
-				
-				meta_c1, meta_c2 = st.columns( 2 )
-				
-				with meta_c1:
-					if mode_value:
-						st.markdown( f'**Mode:** {mode_value}' )
-					if result.get( 'url', '' ):
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-					if params:
-						if 'query' in params and params.get( 'query', '' ):
-							st.markdown( f"**Query:** {params.get( 'query', '' )}" )
-						if 'ra' in params and 'dec' in params:
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if isinstance( result, dict ) and 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if isinstance( result, dict ) and 'query' in result:
+							st.markdown( f"**Query:** {result.get( 'query', '' )}" )
+						if isinstance( result, dict ) and 'ra' in result:
+							st.markdown( f"**RA:** {result.get( 'ra', '' )}" )
+					
+					with meta_c2:
+						if isinstance( result, dict ) and 'row_limit' in result:
+							st.markdown( f"**Row Limit:** {result.get( 'row_limit', '' )}" )
+						if isinstance( result, dict ) and 'dec' in result:
+							st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
+						if isinstance( result, dict ) and 'radius' in result:
 							st.markdown(
-								f"**Coordinates:** RA={params.get( 'ra', '' )}, "
-								f"Dec={params.get( 'dec', '' )}"
+								f"**Radius:** {result.get( 'radius', '' )} "
+								f"{result.get( 'radius_unit', '' )}"
 							)
-				
-				with meta_c2:
-					if chart_url:
-						st.markdown( f'**Chart Link:** {chart_url}' )
-					if image_url:
-						st.markdown( f'**Image URL:** {image_url}' )
-					if 'zoom' in params:
-						st.markdown( f"**Zoom:** {params.get( 'zoom', '' )}" )
-				
-				if image_url:
-					st.markdown( '#### Preview' )
-					st.image( image_url, use_container_width=True )
-				
-				if search_payload:
-					st.markdown( '#### Object Search' )
 					
-					if isinstance( search_payload, list ):
-						items = [ item for item in search_payload if isinstance( item, dict ) ]
-					elif isinstance( search_payload, dict ):
-						items = [ search_payload ]
-					else:
-						items = [ ]
+					columns = result.get( 'columns', [ ] ) if isinstance( result, dict ) else [ ]
+					rows = result.get( 'rows', [ ] ) if isinstance( result, dict ) else [ ]
 					
-					if items:
-						for idx, item in enumerate( items, start=1 ):
-							title_value = (
-									item.get( 'name' )
-									or item.get( 'title' )
-									or item.get( 'object' )
-									or f'Result {idx}'
-							)
-							
-							with st.expander( f'Result {idx}: {title_value}', expanded=False ):
-								summary_parts: List[ str ] = [ ]
-								
-								for key in [ 'ra', 'dec', 'type', 'constellation', 'magnitude' ]:
-									if key in item and str( item.get( key ) ).strip( ):
-										summary_parts.append( f'{key}={item.get( key )}' )
-								
-								if summary_parts:
-									st.caption( ' | '.join( summary_parts ) )
-								
-								st.json( item )
-					else:
-						st.json( search_payload )
-				
-				if data:
-					st.markdown( '#### Chart Data' )
+					if columns:
+						st.markdown( '#### Columns' )
+						st.write( columns )
 					
-					if isinstance( data, list ):
-						df_chart = pd.DataFrame( data )
-						if not df_chart.empty:
-							st.dataframe( df_chart, use_container_width=True, hide_index=True )
-						else:
-							st.json( data )
-					elif isinstance( data, dict ):
-						key_fields = { }
-						for key in [ 'name', 'title', 'ra', 'dec', 'type', 'constellation',
-						             'magnitude' ]:
-							if key in data:
-								key_fields[ key ] = data.get( key )
-						
-						if key_fields:
-							st.json( key_fields )
-						else:
-							st.json( data )
+					if rows:
+						st.markdown( '#### Rows' )
+						df_simbad = pd.DataFrame( rows )
+						st.dataframe( df_simbad, use_container_width=True, hide_index=True )
 					else:
-						st.write( data )
-				
-				if params:
-					with st.expander( 'Request Parameters', expanded=False ):
-						st.json( params )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
+						st.text( 'No rows returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- Space Weather
+		with st.expander( label='Space Weather', icon='☄️', expanded=False ):
+			if 'spaceweather_results' not in st.session_state:
+				st.session_state[ 'spaceweather_results' ] = { }
+			
+			if 'spaceweather_clear_request' not in st.session_state:
+				st.session_state[ 'spaceweather_clear_request' ] = False
+			
+			if st.session_state.get( 'spaceweather_clear_request', False ):
+				st.session_state[ 'spaceweather_mode' ] = 'cme'
+				st.session_state[ 'spaceweather_start_date' ] = '2026-03-01'
+				st.session_state[ 'spaceweather_end_date' ] = '2026-03-15'
+				st.session_state[ 'spaceweather_location' ] = 'ALL'
+				st.session_state[ 'spaceweather_catalog' ] = 'ALL'
+				st.session_state[ 'spaceweather_notification_type' ] = 'all'
+				st.session_state[ 'spaceweather_most_accurate_only' ] = True
+				st.session_state[ 'spaceweather_complete_entry_only' ] = True
+				st.session_state[ 'spaceweather_speed' ] = 0
+				st.session_state[ 'spaceweather_half_angle' ] = 0
+				st.session_state[ 'spaceweather_keyword' ] = ''
+				st.session_state[ 'spaceweather_timeout' ] = 20
+				st.session_state[ 'spaceweather_results' ] = { }
+				st.session_state[ 'spaceweather_clear_request' ] = False
+			
+			def _clear_spaceweather_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Space Weather expander state for reset on the next rerun.
 	
-	# -------- Nearby Objects
-	with st.expander( label='Near Earth Objects', icon='☄️', expanded=False ):
-		if 'nearbyobjects_results' not in st.session_state:
-			st.session_state[ 'nearbyobjects_results' ] = { }
-		
-		if 'nearbyobjects_clear_request' not in st.session_state:
-			st.session_state[ 'nearbyobjects_clear_request' ] = False
-		
-		if st.session_state.get( 'nearbyobjects_clear_request', False ):
-			st.session_state[ 'nearbyobjects_mode' ] = 'close_approaches'
-			st.session_state[ 'nearbyobjects_start_date' ] = '2026-03-01'
-			st.session_state[ 'nearbyobjects_end_date' ] = '2026-03-31'
-			st.session_state[ 'nearbyobjects_query' ] = 'Apophis'
-			st.session_state[ 'nearbyobjects_query_type' ] = 'sstr'
-			st.session_state[ 'nearbyobjects_dist_max' ] = '10LD'
-			st.session_state[ 'nearbyobjects_body' ] = 'Earth'
-			st.session_state[ 'nearbyobjects_sort' ] = 'date'
-			st.session_state[ 'nearbyobjects_limit' ] = 20
-			st.session_state[ 'nearbyobjects_dv' ] = 6.0
-			st.session_state[ 'nearbyobjects_dur' ] = 360
-			st.session_state[ 'nearbyobjects_stay' ] = 8
-			st.session_state[ 'nearbyobjects_launch' ] = '2020-2045'
-			st.session_state[ 'nearbyobjects_h' ] = 26.0
-			st.session_state[ 'nearbyobjects_occ' ] = 7
-			st.session_state[ 'nearbyobjects_include_physical' ] = True
-			st.session_state[ 'nearbyobjects_include_close_approaches' ] = True
-			st.session_state[ 'nearbyobjects_ca_body' ] = 'Earth'
-			st.session_state[ 'nearbyobjects_include_discovery' ] = True
-			st.session_state[ 'nearbyobjects_timeout' ] = 20
-			st.session_state[ 'nearbyobjects_results' ] = { }
-			st.session_state[ 'nearbyobjects_clear_request' ] = False
-		
-		def _clear_nearbyobjects_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Near Earth Objects expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'nearbyobjects_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			nearby_mode = st.selectbox(
-				'Mode',
-				options=[
-						'close_approaches',
-						'object_lookup',
-						'nhats_summary',
-						'nhats_object',
-						'fireballs'
-				],
-				index=[
-						'close_approaches',
-						'object_lookup',
-						'nhats_summary',
-						'nhats_object',
-						'fireballs'
-				].index(
-					st.session_state.get( 'nearbyobjects_mode', 'close_approaches' )
-				),
-				key='nearbyobjects_mode',
-				help='Choose close approaches, single-object lookup, NHATS screening, or fireball data.'
-			)
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'spaceweather_clear_request' ] = True
 			
-			d1, d2 = st.columns( 2 )
+			col_left, col_right = st.columns( 2, border=True )
 			
-			with d1:
-				nearby_start_date = st.text_input(
-					'Start Date',
-					value=st.session_state.get( 'nearbyobjects_start_date', '2026-03-01' ),
-					key='nearbyobjects_start_date',
-					placeholder='2026-03-01',
-					disabled=(nearby_mode not in [ 'close_approaches', 'fireballs' ])
-				)
-			
-			with d2:
-				nearby_end_date = st.text_input(
-					'End Date',
-					value=st.session_state.get( 'nearbyobjects_end_date', '2026-03-31' ),
-					key='nearbyobjects_end_date',
-					placeholder='2026-03-31',
-					disabled=(nearby_mode != 'close_approaches')
-				)
-			
-			nearby_query = st.text_area(
-				'Object Query / Designation',
-				height=80,
-				key='nearbyobjects_query',
-				placeholder=(
-						'Examples:\n'
-						'Apophis\n'
-						'Eros\n'
-						'99942\n'
-						'2000 SG344'
-				),
-				disabled=(nearby_mode not in [ 'object_lookup', 'nhats_object' ])
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				nearby_query_type = st.selectbox(
-					'Query Type',
-					options=[ 'sstr', 'spk', 'des' ],
-					index=[ 'sstr', 'spk', 'des' ].index(
-						st.session_state.get( 'nearbyobjects_query_type', 'sstr' )
+			with col_left:
+				spaceweather_mode = st.selectbox(
+					'Mode',
+					options=[
+							'cme', 'cme_analysis', 'gst', 'ips', 'flr',
+							'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', 'notifications'
+					],
+					index=[
+							'cme', 'cme_analysis', 'gst', 'ips', 'flr',
+							'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', 'notifications'
+					].index(
+						st.session_state.get( 'spaceweather_mode', 'cme' )
 					),
-					key='nearbyobjects_query_type',
-					disabled=(nearby_mode != 'object_lookup')
+					key='spaceweather_mode',
+					help='Choose the documented DONKI endpoint to query.'
 				)
-			
-			with c2:
-				nearby_dist_max = st.text_input(
-					'Distance Max',
-					value=st.session_state.get( 'nearbyobjects_dist_max', '10LD' ),
-					key='nearbyobjects_dist_max',
-					placeholder='10LD or 0.05AU',
-					disabled=(nearby_mode != 'close_approaches')
-				)
-			
-			c3, c4, c5 = st.columns( 3 )
-			
-			with c3:
-				nearby_body = st.text_input(
-					'Body',
-					value=st.session_state.get( 'nearbyobjects_body', 'Earth' ),
-					key='nearbyobjects_body',
-					placeholder='Earth',
-					disabled=(nearby_mode != 'close_approaches')
-				)
-			
-			with c4:
-				nearby_sort = st.text_input(
-					'Sort',
-					value=st.session_state.get( 'nearbyobjects_sort', 'date' ),
-					key='nearbyobjects_sort',
-					placeholder='date or dist',
-					disabled=(nearby_mode != 'close_approaches')
-				)
-			
-			with c5:
-				nearby_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'nearbyobjects_limit', 20 ) ),
-					step=1,
-					key='nearbyobjects_limit'
-				)
-			
-			st.markdown( '#### NHATS Filters' )
-			
-			n1, n2, n3 = st.columns( 3 )
-			
-			with n1:
-				nearby_dv = st.number_input(
-					'ΔV',
-					min_value=0.0,
-					max_value=20.0,
-					value=float( st.session_state.get( 'nearbyobjects_dv', 6.0 ) ),
-					step=0.1,
-					key='nearbyobjects_dv',
-					disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
-				)
-			
-			with n2:
-				nearby_dur = st.number_input(
-					'Duration',
-					min_value=1,
-					max_value=3000,
-					value=int( st.session_state.get( 'nearbyobjects_dur', 360 ) ),
-					step=1,
-					key='nearbyobjects_dur',
-					disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
-				)
-			
-			with n3:
-				nearby_stay = st.number_input(
-					'Stay',
-					min_value=0,
-					max_value=365,
-					value=int( st.session_state.get( 'nearbyobjects_stay', 8 ) ),
-					step=1,
-					key='nearbyobjects_stay',
-					disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
-				)
-			
-			n4, n5, n6 = st.columns( 3 )
-			
-			with n4:
-				nearby_launch = st.text_input(
-					'Launch Window',
-					value=st.session_state.get( 'nearbyobjects_launch', '2020-2045' ),
-					key='nearbyobjects_launch',
-					placeholder='2020-2045',
-					disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
-				)
-			
-			with n5:
-				nearby_h = st.number_input(
-					'H Max',
-					min_value=0.0,
-					max_value=40.0,
-					value=float( st.session_state.get( 'nearbyobjects_h', 26.0 ) ),
-					step=0.1,
-					key='nearbyobjects_h',
-					disabled=(nearby_mode != 'nhats_summary')
-				)
-			
-			with n6:
-				nearby_occ = st.number_input(
-					'OCC Max',
-					min_value=0,
-					max_value=20,
-					value=int( st.session_state.get( 'nearbyobjects_occ', 7 ) ),
-					step=1,
-					key='nearbyobjects_occ',
-					disabled=(nearby_mode != 'nhats_summary')
-				)
-			
-			st.markdown( '#### SBDB Options' )
-			
-			s1, s2, s3 = st.columns( 3 )
-			
-			with s1:
-				nearby_include_physical = st.checkbox(
-					'Physical Params',
-					value=bool( st.session_state.get( 'nearbyobjects_include_physical', True ) ),
-					key='nearbyobjects_include_physical',
-					disabled=(nearby_mode != 'object_lookup')
-				)
-			
-			with s2:
-				nearby_include_close_approaches = st.checkbox(
-					'CA Data',
-					value=bool( st.session_state.get( 'nearbyobjects_include_close_approaches', True ) ),
-					key='nearbyobjects_include_close_approaches',
-					disabled=(nearby_mode != 'object_lookup')
-				)
-			
-			with s3:
-				nearby_include_discovery = st.checkbox(
-					'Discovery',
-					value=bool( st.session_state.get( 'nearbyobjects_include_discovery', True ) ),
-					key='nearbyobjects_include_discovery',
-					disabled=(nearby_mode != 'object_lookup')
-				)
-			
-			nearby_ca_body = st.text_input(
-				'CA Body',
-				value=st.session_state.get( 'nearbyobjects_ca_body', 'Earth' ),
-				key='nearbyobjects_ca_body',
-				placeholder='Earth',
-				disabled=(nearby_mode != 'object_lookup')
-			)
-			
-			nearby_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=120,
-				value=int( st.session_state.get( 'nearbyobjects_timeout', 20 ) ),
-				step=1,
-				key='nearbyobjects_timeout'
-			)
-			
-			st.caption(
-				'Examples: close_approaches with Distance Max=10LD and Body=Earth; '
-				'object_lookup with Query=Apophis and Query Type=sstr; '
-				'nhats_object with Query=99942; fireballs with Start Date=2014-01-01.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			
-			with b1:
-				nearby_submit = st.button(
-					'Submit',
-					key='nearbyobjects_submit'
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='nearbyobjects_clear',
-					on_click=_clear_nearbyobjects_state
-				)
-		
-		with col_right:
-			if nearby_submit:
-				try:
-					f = NearbyObjects( )
-					result = f.fetch(
-						mode=nearby_mode,
-						start_date=str( nearby_start_date ),
-						end_date=str( nearby_end_date ),
-						query=str( nearby_query or '' ).strip( ),
-						query_type=str( nearby_query_type ),
-						dist_max=str( nearby_dist_max or '10LD' ),
-						body=str( nearby_body or 'Earth' ),
-						sort=str( nearby_sort or 'date' ),
-						limit=int( nearby_limit ),
-						dv=float( nearby_dv ),
-						dur=int( nearby_dur ),
-						stay=int( nearby_stay ),
-						launch=str( nearby_launch or '2020-2045' ),
-						h=float( nearby_h ),
-						occ=int( nearby_occ ),
-						include_physical=bool( nearby_include_physical ),
-						include_close_approaches=bool( nearby_include_close_approaches ),
-						ca_body=str( nearby_ca_body or 'Earth' ),
-						include_discovery=bool( nearby_include_discovery ),
-						time=int( nearby_timeout )
+				
+				d1, d2 = st.columns( 2 )
+				
+				with d1:
+					spaceweather_start_date = st.text_input(
+						'Start Date',
+						value=st.session_state.get( 'spaceweather_start_date', '2026-03-01' ),
+						key='spaceweather_start_date',
+						placeholder='2026-03-01'
 					)
+				
+				with d2:
+					spaceweather_end_date = st.text_input(
+						'End Date',
+						value=st.session_state.get( 'spaceweather_end_date', '2026-03-15' ),
+						key='spaceweather_end_date',
+						placeholder='2026-03-15'
+					)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					spaceweather_location = st.text_input(
+						'Location',
+						value=st.session_state.get( 'spaceweather_location', 'ALL' ),
+						key='spaceweather_location',
+						placeholder='ALL or Earth',
+						disabled=(spaceweather_mode != 'ips')
+					)
+				
+				with c2:
+					spaceweather_catalog = st.text_input(
+						'Catalog',
+						value=st.session_state.get( 'spaceweather_catalog', 'ALL' ),
+						key='spaceweather_catalog',
+						placeholder='ALL or SWRC_CATALOG',
+						disabled=(spaceweather_mode not in [ 'ips', 'cme_analysis' ])
+					)
+				
+				c3, c4 = st.columns( 2 )
+				
+				with c3:
+					spaceweather_notification_type = st.text_input(
+						'Notification Type',
+						value=st.session_state.get( 'spaceweather_notification_type', 'all' ),
+						key='spaceweather_notification_type',
+						placeholder='all or FLR',
+						disabled=(spaceweather_mode != 'notifications')
+					)
+				
+				with c4:
+					spaceweather_keyword = st.text_input(
+						'Keyword',
+						value=st.session_state.get( 'spaceweather_keyword', '' ),
+						key='spaceweather_keyword',
+						placeholder='swpc_annex',
+						disabled=(spaceweather_mode != 'cme_analysis')
+					)
+				
+				c5, c6 = st.columns( 2 )
+				
+				with c5:
+					spaceweather_speed = st.number_input(
+						'Speed',
+						min_value=0,
+						max_value=5000,
+						value=int( st.session_state.get( 'spaceweather_speed', 0 ) ),
+						step=10,
+						key='spaceweather_speed',
+						disabled=(spaceweather_mode != 'cme_analysis')
+					)
+				
+				with c6:
+					spaceweather_half_angle = st.number_input(
+						'Half Angle',
+						min_value=0,
+						max_value=180,
+						value=int( st.session_state.get( 'spaceweather_half_angle', 0 ) ),
+						step=1,
+						key='spaceweather_half_angle',
+						disabled=(spaceweather_mode != 'cme_analysis')
+					)
+				
+				c7, c8, c9 = st.columns( 3 )
+				
+				with c7:
+					spaceweather_most_accurate_only = st.checkbox(
+						'Most Accurate Only',
+						value=bool( st.session_state.get( 'spaceweather_most_accurate_only', True ) ),
+						key='spaceweather_most_accurate_only',
+						disabled=(spaceweather_mode != 'cme_analysis')
+					)
+				
+				with c8:
+					spaceweather_complete_entry_only = st.checkbox(
+						'Complete Entry Only',
+						value=bool( st.session_state.get( 'spaceweather_complete_entry_only', True ) ),
+						key='spaceweather_complete_entry_only',
+						disabled=(spaceweather_mode != 'cme_analysis')
+					)
+				
+				with c9:
+					spaceweather_timeout = st.number_input(
+						'Timeout',
+						min_value=1,
+						max_value=120,
+						value=int( st.session_state.get( 'spaceweather_timeout', 20 ) ),
+						step=1,
+						key='spaceweather_timeout'
+					)
+				
+				st.caption(
+					'Examples: cme for coronal mass ejections, gst for geomagnetic storms, '
+					'ips with Location=Earth, notifications with Type=all, or '
+					'cme_analysis with Catalog=ALL and Speed=500.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					spaceweather_submit = st.button(
+						'Submit',
+						key='spaceweather_submit'
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='spaceweather_clear',
+						on_click=_clear_spaceweather_state
+					)
+			
+			with col_right:
+				if spaceweather_submit:
+					try:
+						f = SpaceWeather( )
+						result = f.fetch(
+							mode=spaceweather_mode,
+							start_date=str( spaceweather_start_date ),
+							end_date=str( spaceweather_end_date ),
+							location=str( spaceweather_location or 'ALL' ),
+							catalog=str( spaceweather_catalog or 'ALL' ),
+							notification_type=str( spaceweather_notification_type or 'all' ),
+							most_accurate_only=bool( spaceweather_most_accurate_only ),
+							complete_entry_only=bool( spaceweather_complete_entry_only ),
+							speed=int( spaceweather_speed ),
+							half_angle=int( spaceweather_half_angle ),
+							keyword=str( spaceweather_keyword or '' ),
+							time=int( spaceweather_timeout )
+						)
+						
+						st.session_state[ 'spaceweather_results' ] = result or { }
+						st.rerun( )
 					
-					st.session_state[ 'nearbyobjects_results' ] = result or { }
-					st.rerun( )
+					except Exception as exc:
+						st.error( 'Space Weather request failed.' )
+						st.exception( exc )
 				
-				except Exception as exc:
-					st.error( 'Near Earth Objects request failed.' )
-					st.exception( exc )
-			
-			result = st.session_state.get( 'nearbyobjects_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				meta_c1, meta_c2 = st.columns( 2 )
+				result = st.session_state.get( 'satellitecenter_results', { } )
 				
-				with meta_c1:
-					if 'mode' in result:
-						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
-					if 'url' in result:
-						st.markdown( f"**URL:** {result.get( 'url', '' )}" )
-				
-				with meta_c2:
-					if 'count' in result:
-						st.markdown( f"**Count:** {result.get( 'count', '' )}" )
-				
-				if result.get( 'params', { } ):
-					st.markdown( '#### Request Parameters' )
-					st.json( result.get( 'params', { } ) )
-				
-				if result.get( 'fields', [ ] ) and result.get( 'data', [ ] ):
-					st.markdown( '#### Results' )
-					df_nearby = pd.DataFrame(
-						result.get( 'data', [ ] ),
-						columns=result.get( 'fields', [ ] )
-					)
-					st.dataframe( df_nearby, use_container_width=True, hide_index=True )
-				
-				elif 'data' in result:
-					st.markdown( '#### Results' )
-					data = result.get( 'data', { } )
-					if isinstance( data, list ):
-						if data:
-							df_nearby = pd.DataFrame( data )
-							st.dataframe( df_nearby, use_container_width=True, hide_index=True )
+				if not result:
+					st.text( 'No results.' )
+				else:
+					st.markdown( '#### Result Summary' )
+					
+					if satellite_mode == 'observatories':
+						items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
+						
+						if items:
+							df_sat = pd.DataFrame( items )
+							if not df_sat.empty:
+								st.caption( f'Observatories returned: {len( df_sat )}' )
+								st.dataframe( df_sat, use_container_width=True, hide_index=True )
+							else:
+								st.info( 'No displayable observatory rows were found.' )
+							
+							for idx, item in enumerate( items, start=1 ):
+								label = item.get( 'Id', f'Observatory {idx}' )
+								with st.expander( f'Observatory {idx}: {label}', expanded=False ):
+									st.json( item )
 						else:
-							st.text( 'No rows returned.' )
+							st.info( 'No observatories returned.' )
+					
+					elif satellite_mode == 'ground_stations':
+						items = result.get( 'GroundStation', [ ] ) if isinstance( result, dict ) else [ ]
+						
+						if items:
+							df_sat = pd.DataFrame( items )
+							if not df_sat.empty:
+								st.caption( f'Ground stations returned: {len( df_sat )}' )
+								st.dataframe( df_sat, use_container_width=True, hide_index=True )
+							else:
+								st.info( 'No displayable ground-station rows were found.' )
+							
+							for idx, item in enumerate( items, start=1 ):
+								label = item.get( 'Id', f'Ground Station {idx}' )
+								with st.expander( f'Ground Station {idx}: {label}', expanded=False ):
+									st.json( item )
+						else:
+							st.info( 'No ground stations returned.' )
+					
 					else:
-						st.json( data )
+						data_items = result.get( 'Data', [ ] ) if isinstance( result, dict ) else [ ]
+						
+						if data_items:
+							summary_rows: List[ Dict[ str, Any ] ] = [ ]
+							
+							for item in data_items:
+								if isinstance( item, dict ):
+									summary_rows.append(
+										{
+												'Id': item.get( 'Id', '' ),
+												'CoordinateSystem': item.get( 'CoordinateSystem', '' ),
+												'Start': item.get( 'StartTime', '' ),
+												'End': item.get( 'EndTime', '' )
+										}
+									)
+							
+							df_sat = pd.DataFrame( summary_rows )
+							if not df_sat.empty:
+								st.caption( f'Location sets returned: {len( df_sat )}' )
+								st.dataframe( df_sat, use_container_width=True, hide_index=True )
+							else:
+								st.info( 'No displayable location-set summary rows were found.' )
+							
+							for idx, item in enumerate( data_items, start=1 ):
+								label = item.get( 'Id', f'Trajectory {idx}' )
+								with st.expander( f'Location Set {idx}: {label}', expanded=False ):
+									st.json( item )
+						else:
+							st.info( 'No location data returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- Star Chart
+		with st.expander( label='Star Chart', icon='🪐', expanded=False ):
+			if 'starchart_results' not in st.session_state:
+				st.session_state[ 'starchart_results' ] = { }
+			
+			if 'starchart_clear_request' not in st.session_state:
+				st.session_state[ 'starchart_clear_request' ] = False
+			
+			if st.session_state.get( 'starchart_clear_request', False ):
+				st.session_state[ 'starchart_mode' ] = 'object_chart'
+				st.session_state[ 'starchart_query' ] = 'Polaris'
+				st.session_state[ 'starchart_ra' ] = 2.5302
+				st.session_state[ 'starchart_dec' ] = 89.2642
+				st.session_state[ 'starchart_zoom' ] = 5
+				st.session_state[ 'starchart_image_source' ] = 'DSS2'
+				st.session_state[ 'starchart_box_color' ] = 'yellow'
+				st.session_state[ 'starchart_show_box' ] = True
+				st.session_state[ 'starchart_show_grid' ] = True
+				st.session_state[ 'starchart_show_lines' ] = True
+				st.session_state[ 'starchart_show_boundaries' ] = True
+				st.session_state[ 'starchart_show_const_names' ] = False
+				st.session_state[ 'starchart_width' ] = 900
+				st.session_state[ 'starchart_height' ] = 450
+				st.session_state[ 'starchart_magnitude' ] = 7.5
+				st.session_state[ 'starchart_timeout' ] = 20
+				st.session_state[ 'starchart_results' ] = { }
+				st.session_state[ 'starchart_clear_request' ] = False
+			
+			def _clear_starchart_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Star Chart expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'starchart_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				starchart_mode = st.selectbox(
+					'Mode',
+					options=[ 'object_search', 'object_chart', 'coordinate_chart', 'static_chart' ],
+					index=[ 'object_search', 'object_chart', 'coordinate_chart', 'static_chart' ].index(
+						st.session_state.get( 'starchart_mode', 'object_chart' )
+					),
+					key='starchart_mode'
+				)
 				
-				if result.get( 'signature', { } ):
-					with st.expander( 'Signature', expanded=False ):
-						st.json( result.get( 'signature', { } ) )
+				starchart_query = st.text_area(
+					'Object Query',
+					height=80,
+					key='starchart_query',
+					placeholder=(
+							'Examples:\n'
+							'Polaris\n'
+							'M31\n'
+							'NGC 1300\n'
+							'\n'
+							'Used for object_search and object_chart.'
+					),
+					disabled=(starchart_mode not in [ 'object_search', 'object_chart' ])
+				)
 				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					starchart_ra = st.number_input(
+						'RA',
+						value=float( st.session_state.get( 'starchart_ra', 2.5302 ) ),
+						format='%.4f',
+						key='starchart_ra',
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+					)
+				
+				with c2:
+					starchart_dec = st.number_input(
+						'Dec',
+						value=float( st.session_state.get( 'starchart_dec', 89.2642 ) ),
+						format='%.4f',
+						key='starchart_dec',
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+					)
+				
+				c3, c4, c5 = st.columns( 3 )
+				
+				with c3:
+					starchart_zoom = st.number_input(
+						'Zoom',
+						min_value=0,
+						max_value=18,
+						value=int( st.session_state.get( 'starchart_zoom', 5 ) ),
+						step=1,
+						key='starchart_zoom'
+					)
+				
+				with c4:
+					starchart_width = st.number_input(
+						'Width',
+						min_value=100,
+						max_value=2400,
+						value=int( st.session_state.get( 'starchart_width', 900 ) ),
+						step=50,
+						key='starchart_width',
+						disabled=(starchart_mode != 'static_chart')
+					)
+				
+				with c5:
+					starchart_height = st.number_input(
+						'Height',
+						min_value=100,
+						max_value=2400,
+						value=int( st.session_state.get( 'starchart_height', 450 ) ),
+						step=50,
+						key='starchart_height',
+						disabled=(starchart_mode != 'static_chart')
+					)
+				
+				c6, c7, c8 = st.columns( 3 )
+				
+				with c6:
+					starchart_image_source = st.selectbox(
+						'Image Source',
+						options=[ 'DSS2', 'SDSS' ],
+						index=[ 'DSS2', 'SDSS' ].index(
+							st.session_state.get( 'starchart_image_source', 'DSS2' )
+						),
+						key='starchart_image_source'
+					)
+				
+				with c7:
+					starchart_box_color = st.text_input(
+						'Box Color',
+						value=st.session_state.get( 'starchart_box_color', 'yellow' ),
+						key='starchart_box_color',
+						disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ])
+					)
+				
+				with c8:
+					starchart_magnitude = st.number_input(
+						'Magnitude',
+						min_value=0.0,
+						max_value=20.0,
+						value=float( st.session_state.get( 'starchart_magnitude', 7.5 ) ),
+						step=0.1,
+						key='starchart_magnitude',
+						disabled=(starchart_mode != 'static_chart')
+					)
+				
+				c9, c10 = st.columns( 2 )
+				
+				with c9:
+					starchart_show_box = st.checkbox(
+						'Show Box',
+						value=bool( st.session_state.get( 'starchart_show_box', True ) ),
+						key='starchart_show_box',
+						disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ])
+					)
+				
+				with c10:
+					starchart_show_grid = st.checkbox(
+						'Show Grid',
+						value=bool( st.session_state.get( 'starchart_show_grid', True ) ),
+						key='starchart_show_grid',
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+					)
+				
+				c11, c12 = st.columns( 2 )
+				
+				with c11:
+					starchart_show_lines = st.checkbox(
+						'Show Lines',
+						value=bool( st.session_state.get( 'starchart_show_lines', True ) ),
+						key='starchart_show_lines',
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+					)
+				
+				with c12:
+					starchart_show_boundaries = st.checkbox(
+						'Show Boundaries',
+						value=bool( st.session_state.get( 'starchart_show_boundaries', True ) ),
+						key='starchart_show_boundaries',
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
+					)
+				
+				starchart_show_const_names = st.checkbox(
+					'Show Constellation Names',
+					value=bool( st.session_state.get( 'starchart_show_const_names', False ) ),
+					key='starchart_show_const_names',
+					disabled=(starchart_mode != 'static_chart')
+				)
+				
+				starchart_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'starchart_timeout', 20 ) ),
+					step=1,
+					key='starchart_timeout'
+				)
+				
+				st.caption(
+					'Examples: object_search with Polaris, object_chart with M31, '
+					'coordinate_chart with RA=2.5302 and Dec=89.2642, or '
+					'static_chart with DSS2 and 900x450 output.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					starchart_submit = st.button(
+						'Submit',
+						key='starchart_submit'
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='starchart_clear',
+						on_click=_clear_starchart_state
+					)
+			
+			with col_right:
+				if starchart_submit:
+					try:
+						f = StarChart( )
+						result = f.fetch(
+							mode=starchart_mode,
+							query=str( starchart_query or '' ),
+							ra=float( starchart_ra ),
+							dec=float( starchart_dec ),
+							zoom=int( starchart_zoom ),
+							image_source=str( starchart_image_source ),
+							box_color=str( starchart_box_color or 'yellow' ),
+							show_box=bool( starchart_show_box ),
+							show_grid=bool( starchart_show_grid ),
+							show_lines=bool( starchart_show_lines ),
+							show_boundaries=bool( starchart_show_boundaries ),
+							show_const_names=bool( starchart_show_const_names ),
+							width=int( starchart_width ),
+							height=int( starchart_height ),
+							magnitude=float( starchart_magnitude ),
+							time=int( starchart_timeout )
+						)
+						
+						st.session_state[ 'starchart_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Star Chart request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'starchart_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+					params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+					search_payload = result.get( 'search', { } ) if isinstance( result, dict ) else { }
+					data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					chart_url = result.get( 'chart_url', '' ) if isinstance( result, dict ) else ''
+					image_url = result.get( 'image_url', '' ) if isinstance( result, dict ) else ''
+					
+					st.markdown( '#### Chart Summary' )
+					
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if mode_value:
+							st.markdown( f'**Mode:** {mode_value}' )
+						if result.get( 'url', '' ):
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+						if params:
+							if 'query' in params and params.get( 'query', '' ):
+								st.markdown( f"**Query:** {params.get( 'query', '' )}" )
+							if 'ra' in params and 'dec' in params:
+								st.markdown(
+									f"**Coordinates:** RA={params.get( 'ra', '' )}, "
+									f"Dec={params.get( 'dec', '' )}"
+								)
+					
+					with meta_c2:
+						if chart_url:
+							st.markdown( f'**Chart Link:** {chart_url}' )
+						if image_url:
+							st.markdown( f'**Image URL:** {image_url}' )
+						if 'zoom' in params:
+							st.markdown( f"**Zoom:** {params.get( 'zoom', '' )}" )
+					
+					if image_url:
+						st.markdown( '#### Preview' )
+						st.image( image_url, use_container_width=True )
+					
+					if search_payload:
+						st.markdown( '#### Object Search' )
+						
+						if isinstance( search_payload, list ):
+							items = [ item for item in search_payload if isinstance( item, dict ) ]
+						elif isinstance( search_payload, dict ):
+							items = [ search_payload ]
+						else:
+							items = [ ]
+						
+						if items:
+							for idx, item in enumerate( items, start=1 ):
+								title_value = (
+										item.get( 'name' )
+										or item.get( 'title' )
+										or item.get( 'object' )
+										or f'Result {idx}'
+								)
+								
+								with st.expander( f'Result {idx}: {title_value}', expanded=False ):
+									summary_parts: List[ str ] = [ ]
+									
+									for key in [ 'ra', 'dec', 'type', 'constellation', 'magnitude' ]:
+										if key in item and str( item.get( key ) ).strip( ):
+											summary_parts.append( f'{key}={item.get( key )}' )
+									
+									if summary_parts:
+										st.caption( ' | '.join( summary_parts ) )
+									
+									st.json( item )
+						else:
+							st.json( search_payload )
+					
+					if data:
+						st.markdown( '#### Chart Data' )
+						
+						if isinstance( data, list ):
+							df_chart = pd.DataFrame( data )
+							if not df_chart.empty:
+								st.dataframe( df_chart, use_container_width=True, hide_index=True )
+							else:
+								st.json( data )
+						elif isinstance( data, dict ):
+							key_fields = { }
+							for key in [ 'name', 'title', 'ra', 'dec', 'type', 'constellation',
+							             'magnitude' ]:
+								if key in data:
+									key_fields[ key ] = data.get( key )
+							
+							if key_fields:
+								st.json( key_fields )
+							else:
+								st.json( data )
+						else:
+							st.write( data )
+					
+					if params:
+						with st.expander( 'Request Parameters', expanded=False ):
+							st.json( params )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
+		
+		# -------- Nearby Objects
+		with st.expander( label='Near Earth Objects', icon='☄️', expanded=False ):
+			if 'nearbyobjects_results' not in st.session_state:
+				st.session_state[ 'nearbyobjects_results' ] = { }
+			
+			if 'nearbyobjects_clear_request' not in st.session_state:
+				st.session_state[ 'nearbyobjects_clear_request' ] = False
+			
+			if st.session_state.get( 'nearbyobjects_clear_request', False ):
+				st.session_state[ 'nearbyobjects_mode' ] = 'close_approaches'
+				st.session_state[ 'nearbyobjects_start_date' ] = '2026-03-01'
+				st.session_state[ 'nearbyobjects_end_date' ] = '2026-03-31'
+				st.session_state[ 'nearbyobjects_query' ] = 'Apophis'
+				st.session_state[ 'nearbyobjects_query_type' ] = 'sstr'
+				st.session_state[ 'nearbyobjects_dist_max' ] = '10LD'
+				st.session_state[ 'nearbyobjects_body' ] = 'Earth'
+				st.session_state[ 'nearbyobjects_sort' ] = 'date'
+				st.session_state[ 'nearbyobjects_limit' ] = 20
+				st.session_state[ 'nearbyobjects_dv' ] = 6.0
+				st.session_state[ 'nearbyobjects_dur' ] = 360
+				st.session_state[ 'nearbyobjects_stay' ] = 8
+				st.session_state[ 'nearbyobjects_launch' ] = '2020-2045'
+				st.session_state[ 'nearbyobjects_h' ] = 26.0
+				st.session_state[ 'nearbyobjects_occ' ] = 7
+				st.session_state[ 'nearbyobjects_include_physical' ] = True
+				st.session_state[ 'nearbyobjects_include_close_approaches' ] = True
+				st.session_state[ 'nearbyobjects_ca_body' ] = 'Earth'
+				st.session_state[ 'nearbyobjects_include_discovery' ] = True
+				st.session_state[ 'nearbyobjects_timeout' ] = 20
+				st.session_state[ 'nearbyobjects_results' ] = { }
+				st.session_state[ 'nearbyobjects_clear_request' ] = False
+			
+			def _clear_nearbyobjects_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Near Earth Objects expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'nearbyobjects_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				nearby_mode = st.selectbox(
+					'Mode',
+					options=[
+							'close_approaches',
+							'object_lookup',
+							'nhats_summary',
+							'nhats_object',
+							'fireballs'
+					],
+					index=[
+							'close_approaches',
+							'object_lookup',
+							'nhats_summary',
+							'nhats_object',
+							'fireballs'
+					].index(
+						st.session_state.get( 'nearbyobjects_mode', 'close_approaches' )
+					),
+					key='nearbyobjects_mode',
+					help='Choose close approaches, single-object lookup, NHATS screening, or fireball data.'
+				)
+				
+				d1, d2 = st.columns( 2 )
+				
+				with d1:
+					nearby_start_date = st.text_input(
+						'Start Date',
+						value=st.session_state.get( 'nearbyobjects_start_date', '2026-03-01' ),
+						key='nearbyobjects_start_date',
+						placeholder='2026-03-01',
+						disabled=(nearby_mode not in [ 'close_approaches', 'fireballs' ])
+					)
+				
+				with d2:
+					nearby_end_date = st.text_input(
+						'End Date',
+						value=st.session_state.get( 'nearbyobjects_end_date', '2026-03-31' ),
+						key='nearbyobjects_end_date',
+						placeholder='2026-03-31',
+						disabled=(nearby_mode != 'close_approaches')
+					)
+				
+				nearby_query = st.text_area(
+					'Object Query / Designation',
+					height=80,
+					key='nearbyobjects_query',
+					placeholder=(
+							'Examples:\n'
+							'Apophis\n'
+							'Eros\n'
+							'99942\n'
+							'2000 SG344'
+					),
+					disabled=(nearby_mode not in [ 'object_lookup', 'nhats_object' ])
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					nearby_query_type = st.selectbox(
+						'Query Type',
+						options=[ 'sstr', 'spk', 'des' ],
+						index=[ 'sstr', 'spk', 'des' ].index(
+							st.session_state.get( 'nearbyobjects_query_type', 'sstr' )
+						),
+						key='nearbyobjects_query_type',
+						disabled=(nearby_mode != 'object_lookup')
+					)
+				
+				with c2:
+					nearby_dist_max = st.text_input(
+						'Distance Max',
+						value=st.session_state.get( 'nearbyobjects_dist_max', '10LD' ),
+						key='nearbyobjects_dist_max',
+						placeholder='10LD or 0.05AU',
+						disabled=(nearby_mode != 'close_approaches')
+					)
+				
+				c3, c4, c5 = st.columns( 3 )
+				
+				with c3:
+					nearby_body = st.text_input(
+						'Body',
+						value=st.session_state.get( 'nearbyobjects_body', 'Earth' ),
+						key='nearbyobjects_body',
+						placeholder='Earth',
+						disabled=(nearby_mode != 'close_approaches')
+					)
+				
+				with c4:
+					nearby_sort = st.text_input(
+						'Sort',
+						value=st.session_state.get( 'nearbyobjects_sort', 'date' ),
+						key='nearbyobjects_sort',
+						placeholder='date or dist',
+						disabled=(nearby_mode != 'close_approaches')
+					)
+				
+				with c5:
+					nearby_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=500,
+						value=int( st.session_state.get( 'nearbyobjects_limit', 20 ) ),
+						step=1,
+						key='nearbyobjects_limit'
+					)
+				
+				st.markdown( '#### NHATS Filters' )
+				
+				n1, n2, n3 = st.columns( 3 )
+				
+				with n1:
+					nearby_dv = st.number_input(
+						'ΔV',
+						min_value=0.0,
+						max_value=20.0,
+						value=float( st.session_state.get( 'nearbyobjects_dv', 6.0 ) ),
+						step=0.1,
+						key='nearbyobjects_dv',
+						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
+					)
+				
+				with n2:
+					nearby_dur = st.number_input(
+						'Duration',
+						min_value=1,
+						max_value=3000,
+						value=int( st.session_state.get( 'nearbyobjects_dur', 360 ) ),
+						step=1,
+						key='nearbyobjects_dur',
+						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
+					)
+				
+				with n3:
+					nearby_stay = st.number_input(
+						'Stay',
+						min_value=0,
+						max_value=365,
+						value=int( st.session_state.get( 'nearbyobjects_stay', 8 ) ),
+						step=1,
+						key='nearbyobjects_stay',
+						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
+					)
+				
+				n4, n5, n6 = st.columns( 3 )
+				
+				with n4:
+					nearby_launch = st.text_input(
+						'Launch Window',
+						value=st.session_state.get( 'nearbyobjects_launch', '2020-2045' ),
+						key='nearbyobjects_launch',
+						placeholder='2020-2045',
+						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
+					)
+				
+				with n5:
+					nearby_h = st.number_input(
+						'H Max',
+						min_value=0.0,
+						max_value=40.0,
+						value=float( st.session_state.get( 'nearbyobjects_h', 26.0 ) ),
+						step=0.1,
+						key='nearbyobjects_h',
+						disabled=(nearby_mode != 'nhats_summary')
+					)
+				
+				with n6:
+					nearby_occ = st.number_input(
+						'OCC Max',
+						min_value=0,
+						max_value=20,
+						value=int( st.session_state.get( 'nearbyobjects_occ', 7 ) ),
+						step=1,
+						key='nearbyobjects_occ',
+						disabled=(nearby_mode != 'nhats_summary')
+					)
+				
+				st.markdown( '#### SBDB Options' )
+				
+				s1, s2, s3 = st.columns( 3 )
+				
+				with s1:
+					nearby_include_physical = st.checkbox(
+						'Physical Params',
+						value=bool( st.session_state.get( 'nearbyobjects_include_physical', True ) ),
+						key='nearbyobjects_include_physical',
+						disabled=(nearby_mode != 'object_lookup')
+					)
+				
+				with s2:
+					nearby_include_close_approaches = st.checkbox(
+						'CA Data',
+						value=bool( st.session_state.get( 'nearbyobjects_include_close_approaches', True ) ),
+						key='nearbyobjects_include_close_approaches',
+						disabled=(nearby_mode != 'object_lookup')
+					)
+				
+				with s3:
+					nearby_include_discovery = st.checkbox(
+						'Discovery',
+						value=bool( st.session_state.get( 'nearbyobjects_include_discovery', True ) ),
+						key='nearbyobjects_include_discovery',
+						disabled=(nearby_mode != 'object_lookup')
+					)
+				
+				nearby_ca_body = st.text_input(
+					'CA Body',
+					value=st.session_state.get( 'nearbyobjects_ca_body', 'Earth' ),
+					key='nearbyobjects_ca_body',
+					placeholder='Earth',
+					disabled=(nearby_mode != 'object_lookup')
+				)
+				
+				nearby_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'nearbyobjects_timeout', 20 ) ),
+					step=1,
+					key='nearbyobjects_timeout'
+				)
+				
+				st.caption(
+					'Examples: close_approaches with Distance Max=10LD and Body=Earth; '
+					'object_lookup with Query=Apophis and Query Type=sstr; '
+					'nhats_object with Query=99942; fireballs with Start Date=2014-01-01.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				
+				with b1:
+					nearby_submit = st.button(
+						'Submit',
+						key='nearbyobjects_submit'
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='nearbyobjects_clear',
+						on_click=_clear_nearbyobjects_state
+					)
+			
+			with col_right:
+				if nearby_submit:
+					try:
+						f = NearbyObjects( )
+						result = f.fetch(
+							mode=nearby_mode,
+							start_date=str( nearby_start_date ),
+							end_date=str( nearby_end_date ),
+							query=str( nearby_query or '' ).strip( ),
+							query_type=str( nearby_query_type ),
+							dist_max=str( nearby_dist_max or '10LD' ),
+							body=str( nearby_body or 'Earth' ),
+							sort=str( nearby_sort or 'date' ),
+							limit=int( nearby_limit ),
+							dv=float( nearby_dv ),
+							dur=int( nearby_dur ),
+							stay=int( nearby_stay ),
+							launch=str( nearby_launch or '2020-2045' ),
+							h=float( nearby_h ),
+							occ=int( nearby_occ ),
+							include_physical=bool( nearby_include_physical ),
+							include_close_approaches=bool( nearby_include_close_approaches ),
+							ca_body=str( nearby_ca_body or 'Earth' ),
+							include_discovery=bool( nearby_include_discovery ),
+							time=int( nearby_timeout )
+						)
+						
+						st.session_state[ 'nearbyobjects_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Near Earth Objects request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'nearbyobjects_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					meta_c1, meta_c2 = st.columns( 2 )
+					
+					with meta_c1:
+						if 'mode' in result:
+							st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
+						if 'url' in result:
+							st.markdown( f"**URL:** {result.get( 'url', '' )}" )
+					
+					with meta_c2:
+						if 'count' in result:
+							st.markdown( f"**Count:** {result.get( 'count', '' )}" )
+					
+					if result.get( 'params', { } ):
+						st.markdown( '#### Request Parameters' )
+						st.json( result.get( 'params', { } ) )
+					
+					if result.get( 'fields', [ ] ) and result.get( 'data', [ ] ):
+						st.markdown( '#### Results' )
+						df_nearby = pd.DataFrame(
+							result.get( 'data', [ ] ),
+							columns=result.get( 'fields', [ ] )
+						)
+						st.dataframe( df_nearby, use_container_width=True, hide_index=True )
+					
+					elif 'data' in result:
+						st.markdown( '#### Results' )
+						data = result.get( 'data', { } )
+						if isinstance( data, list ):
+							if data:
+								df_nearby = pd.DataFrame( data )
+								st.dataframe( df_nearby, use_container_width=True, hide_index=True )
+							else:
+								st.text( 'No rows returned.' )
+						else:
+							st.json( data )
+					
+					if result.get( 'signature', { } ):
+						with st.expander( 'Signature', expanded=False ):
+							st.json( result.get( 'signature', { } ) )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 
 # ==============================================================================
 # POPULATION MODE
 # ==============================================================================
 elif mode == 'Population':
-	st.subheader( f'⚕️ Population & Public Health Data' )
-	st.divider( )
+	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	with center:
+		st.subheader( f'⚕️ Population & Public Health Data' )
+		st.divider( )
+		
+		# -------- U.S. Census Bureau
+		with st.expander( label='U.S. Census Bureau', icon='📊', expanded=False ):
+			if 'census_results' not in st.session_state:
+				st.session_state[ 'census_results' ] = { }
+			
+			if 'census_clear_request' not in st.session_state:
+				st.session_state[ 'census_clear_request' ] = False
+			
+			if st.session_state.get( 'census_clear_request', False ):
+				st.session_state[ 'census_mode' ] = 'variables'
+				st.session_state[ 'census_year' ] = '2022'
+				st.session_state[ 'census_dataset' ] = 'acs/acs5'
+				st.session_state[ 'census_fields' ] = 'NAME,B01001_001E'
+				st.session_state[ 'census_for' ] = 'state:*'
+				st.session_state[ 'census_in' ] = ''
+				st.session_state[ 'census_predicates' ] = ''
+				st.session_state[ 'census_timeout' ] = 20
+				st.session_state[ 'census_results' ] = { }
+				st.session_state[ 'census_clear_request' ] = False
+			
+			def _clear_census_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Census expander state for reset on the next rerun.
 	
-	# -------- U.S. Census Bureau
-	with st.expander( label='U.S. Census Bureau', icon='📊', expanded=False ):
-		if 'census_results' not in st.session_state:
-			st.session_state[ 'census_results' ] = { }
-		
-		if 'census_clear_request' not in st.session_state:
-			st.session_state[ 'census_clear_request' ] = False
-		
-		if st.session_state.get( 'census_clear_request', False ):
-			st.session_state[ 'census_mode' ] = 'variables'
-			st.session_state[ 'census_year' ] = '2022'
-			st.session_state[ 'census_dataset' ] = 'acs/acs5'
-			st.session_state[ 'census_fields' ] = 'NAME,B01001_001E'
-			st.session_state[ 'census_for' ] = 'state:*'
-			st.session_state[ 'census_in' ] = ''
-			st.session_state[ 'census_predicates' ] = ''
-			st.session_state[ 'census_timeout' ] = 20
-			st.session_state[ 'census_results' ] = { }
-			st.session_state[ 'census_clear_request' ] = False
-		
-		def _clear_census_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Census expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'census_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			census_mode = st.selectbox(
-				'Mode',
-				options=[ 'variables', 'data' ],
-				index=[ 'variables', 'data' ].index(
-					st.session_state.get( 'census_mode', 'variables' )
-				),
-				key='census_mode',
-				help=(
-						'variables = dataset variable metadata; '
-						'data = tabular Census query using get/for/in.'
-				)
-			)
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'census_clear_request' ] = True
 			
-			census_year = st.text_input(
-				'Year',
-				value=st.session_state.get( 'census_year', '2022' ),
-				key='census_year',
-				placeholder='2022'
-			)
+			col_left, col_right = st.columns( 2, border=True )
 			
-			census_dataset = st.text_input(
-				'Dataset',
-				value=st.session_state.get( 'census_dataset', 'acs/acs5' ),
-				key='census_dataset',
-				placeholder='acs/acs5'
-			)
-			
-			census_fields = st.text_area(
-				'Fields (get)',
-				value=st.session_state.get( 'census_fields', 'NAME,B01001_001E' ),
-				height=90,
-				key='census_fields',
-				placeholder='NAME,B01001_001E',
-				disabled=(census_mode != 'data')
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				census_for = st.text_input(
-					'For',
-					value=st.session_state.get( 'census_for', 'state:*' ),
-					key='census_for',
-					placeholder='state:*',
-					disabled=(census_mode != 'data')
-				)
-			
-			with c2:
-				census_in = st.text_input(
-					'In',
-					value=st.session_state.get( 'census_in', '' ),
-					key='census_in',
-					placeholder='state:24',
-					disabled=(census_mode != 'data')
-				)
-			
-			census_predicates = st.text_area(
-				'Predicates',
-				value=st.session_state.get( 'census_predicates', '' ),
-				height=90,
-				key='census_predicates',
-				placeholder='SEX=1\nAGE=15',
-				disabled=(census_mode != 'data'),
-				help='Optional newline-delimited key=value filters.'
-			)
-			
-			census_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=120,
-				value=int( st.session_state.get( 'census_timeout', 20 ) ),
-				step=1,
-				key='census_timeout'
-			)
-			
-			st.caption(
-				'Examples: dataset = acs/acs5, fields = NAME,B01001_001E, '
-				'for = state:*'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				census_submit = st.button(
-					'Submit',
-					key='census_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='census_clear',
-					on_click=_clear_census_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			result = st.session_state.get( 'census_results', { } )
-			
-			if census_submit:
-				try:
-					f = CensusData( )
-					result = f.fetch(
-						mode=census_mode,
-						year=str( census_year ),
-						dataset=str( census_dataset ),
-						fields=str( census_fields ),
-						geography_for=str( census_for ),
-						geography_in=str( census_in ),
-						predicates=str( census_predicates ),
-						time=int( census_timeout )
+			with col_left:
+				census_mode = st.selectbox(
+					'Mode',
+					options=[ 'variables', 'data' ],
+					index=[ 'variables', 'data' ].index(
+						st.session_state.get( 'census_mode', 'variables' )
+					),
+					key='census_mode',
+					help=(
+							'variables = dataset variable metadata; '
+							'data = tabular Census query using get/for/in.'
 					)
-					
-					st.session_state[ 'census_results' ] = result or { }
-					st.rerun( )
+				)
 				
-				except Exception as exc:
-					st.error( 'Census request failed.' )
-					st.exception( exc )
+				census_year = st.text_input(
+					'Year',
+					value=st.session_state.get( 'census_year', '2022' ),
+					key='census_year',
+					placeholder='2022'
+				)
+				
+				census_dataset = st.text_input(
+					'Dataset',
+					value=st.session_state.get( 'census_dataset', 'acs/acs5' ),
+					key='census_dataset',
+					placeholder='acs/acs5'
+				)
+				
+				census_fields = st.text_area(
+					'Fields (get)',
+					value=st.session_state.get( 'census_fields', 'NAME,B01001_001E' ),
+					height=90,
+					key='census_fields',
+					placeholder='NAME,B01001_001E',
+					disabled=(census_mode != 'data')
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					census_for = st.text_input(
+						'For',
+						value=st.session_state.get( 'census_for', 'state:*' ),
+						key='census_for',
+						placeholder='state:*',
+						disabled=(census_mode != 'data')
+					)
+				
+				with c2:
+					census_in = st.text_input(
+						'In',
+						value=st.session_state.get( 'census_in', '' ),
+						key='census_in',
+						placeholder='state:24',
+						disabled=(census_mode != 'data')
+					)
+				
+				census_predicates = st.text_area(
+					'Predicates',
+					value=st.session_state.get( 'census_predicates', '' ),
+					height=90,
+					key='census_predicates',
+					placeholder='SEX=1\nAGE=15',
+					disabled=(census_mode != 'data'),
+					help='Optional newline-delimited key=value filters.'
+				)
+				
+				census_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'census_timeout', 20 ) ),
+					step=1,
+					key='census_timeout'
+				)
+				
+				st.caption(
+					'Examples: dataset = acs/acs5, fields = NAME,B01001_001E, '
+					'for = state:*'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					census_submit = st.button(
+						'Submit',
+						key='census_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='census_clear',
+						on_click=_clear_census_state,
+						use_container_width=True
+					)
 			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_result_metadata( result )
+			with col_right:
+				result = st.session_state.get( 'census_results', { } )
 				
-				if result.get( 'mode', '' ) == 'variables':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					variables = payload.get( 'variables', { } ) if isinstance( payload, dict ) else { }
+				if census_submit:
+					try:
+						f = CensusData( )
+						result = f.fetch(
+							mode=census_mode,
+							year=str( census_year ),
+							dataset=str( census_dataset ),
+							fields=str( census_fields ),
+							geography_for=str( census_for ),
+							geography_in=str( census_in ),
+							predicates=str( census_predicates ),
+							time=int( census_timeout )
+						)
+						
+						st.session_state[ 'census_results' ] = result or { }
+						st.rerun( )
 					
-					rows: List[ Dict[ str, Any ] ] = [ ]
-					if isinstance( variables, dict ):
-						for name, meta in variables.items( ):
-							if isinstance( meta, dict ):
+					except Exception as exc:
+						st.error( 'Census request failed.' )
+						st.exception( exc )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_result_metadata( result )
+					
+					if result.get( 'mode', '' ) == 'variables':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						variables = payload.get( 'variables', { } ) if isinstance( payload, dict ) else { }
+						
+						rows: List[ Dict[ str, Any ] ] = [ ]
+						if isinstance( variables, dict ):
+							for name, meta in variables.items( ):
+								if isinstance( meta, dict ):
+									rows.append(
+										{
+												'Name': name,
+												'Label': meta.get( 'label', '' ),
+												'Concept': meta.get( 'concept', '' ),
+												'PredicateType': meta.get( 'predicateType', '' ),
+												'Group': meta.get( 'group', '' ),
+												'Limit': meta.get( 'limit', '' ),
+										}
+									)
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Year': census_year,
+									'Dataset': census_dataset,
+									'VariableCount': len( rows ),
+							}
+						)
+						_render_rows_table( '#### Variables', rows )
+					
+					elif result.get( 'mode', '' ) == 'data':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						rows = payload.get( 'rows', [ ] ) if isinstance( payload, dict ) else [ ]
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Year': census_year,
+									'Dataset': census_dataset,
+									'Fields': census_fields,
+									'For': census_for,
+									'In': census_in,
+									'RowCount': len( rows ) if isinstance( rows, list ) else 0,
+							}
+						)
+						_render_rows_table( '#### Data Rows', rows if isinstance( rows, list ) else [ ] )
+					
+					_render_fallback_raw( result )
+		
+		# -------- CDC SOCRATA
+		with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
+			if 'socrata_results' not in st.session_state:
+				st.session_state[ 'socrata_results' ] = { }
+			
+			if 'socrata_clear_request' not in st.session_state:
+				st.session_state[ 'socrata_clear_request' ] = False
+			
+			if st.session_state.get( 'socrata_clear_request', False ):
+				st.session_state[ 'socrata_mode' ] = 'rows'
+				st.session_state[ 'socrata_domain' ] = 'data.cdc.gov'
+				st.session_state[ 'socrata_dataset_id' ] = 'q8xq-ygsk'
+				st.session_state[ 'socrata_select' ] = ''
+				st.session_state[ 'socrata_where' ] = ''
+				st.session_state[ 'socrata_order' ] = ''
+				st.session_state[ 'socrata_group' ] = ''
+				st.session_state[ 'socrata_limit' ] = 25
+				st.session_state[ 'socrata_offset' ] = 0
+				st.session_state[ 'socrata_timeout' ] = 20
+				st.session_state[ 'socrata_results' ] = { }
+				st.session_state[ 'socrata_clear_request' ] = False
+			
+			def _clear_socrata_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Socrata expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'socrata_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				socrata_mode = st.selectbox(
+					'Mode',
+					options=[ 'rows', 'metadata' ],
+					index=[ 'rows', 'metadata' ].index(
+						st.session_state.get( 'socrata_mode', 'rows' )
+					),
+					key='socrata_mode',
+					help='rows = query dataset rows; metadata = inspect dataset metadata.'
+				)
+				
+				socrata_domain = st.text_input(
+					'Domain',
+					value=st.session_state.get( 'socrata_domain', 'data.cdc.gov' ),
+					key='socrata_domain',
+					placeholder='data.cdc.gov'
+				)
+				
+				socrata_dataset_id = st.text_input(
+					'Dataset ID',
+					value=st.session_state.get( 'socrata_dataset_id', 'q8xq-ygsk' ),
+					key='socrata_dataset_id',
+					placeholder='q8xq-ygsk'
+				)
+				
+				socrata_select = st.text_area(
+					'Select',
+					value=st.session_state.get( 'socrata_select', '' ),
+					height=80,
+					key='socrata_select',
+					placeholder='locationname,datavaluetype,datavalue',
+					disabled=(socrata_mode != 'rows')
+				)
+				
+				socrata_where = st.text_area(
+					'Where',
+					value=st.session_state.get( 'socrata_where', '' ),
+					height=100,
+					key='socrata_where',
+					placeholder="year = '2020'",
+					disabled=(socrata_mode != 'rows')
+				)
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					socrata_order = st.text_input(
+						'Order',
+						value=st.session_state.get( 'socrata_order', '' ),
+						key='socrata_order',
+						placeholder='locationname ASC',
+						disabled=(socrata_mode != 'rows')
+					)
+				
+				with c2:
+					socrata_group = st.text_input(
+						'Group',
+						value=st.session_state.get( 'socrata_group', '' ),
+						key='socrata_group',
+						placeholder='locationname',
+						disabled=(socrata_mode != 'rows')
+					)
+				
+				c3, c4, c5 = st.columns( 3 )
+				
+				with c3:
+					socrata_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=50000,
+						value=int( st.session_state.get( 'socrata_limit', 25 ) ),
+						step=1,
+						key='socrata_limit',
+						disabled=(socrata_mode != 'rows')
+					)
+				
+				with c4:
+					socrata_offset = st.number_input(
+						'Offset',
+						min_value=0,
+						max_value=1000000,
+						value=int( st.session_state.get( 'socrata_offset', 0 ) ),
+						step=1,
+						key='socrata_offset',
+						disabled=(socrata_mode != 'rows')
+					)
+				
+				with c5:
+					socrata_timeout = st.number_input(
+						'Timeout',
+						min_value=1,
+						max_value=120,
+						value=int( st.session_state.get( 'socrata_timeout', 20 ) ),
+						step=1,
+						key='socrata_timeout'
+					)
+				
+				st.caption(
+					'Example dataset: q8xq-ygsk on data.cdc.gov. '
+					'Use SoQL clauses for select, where, order, and group.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					socrata_submit = st.button(
+						'Submit',
+						key='socrata_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='socrata_clear',
+						on_click=_clear_socrata_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				result = st.session_state.get( 'socrata_results', { } )
+				
+				if socrata_submit:
+					try:
+						f = Socrata( )
+						result = f.fetch(
+							mode=socrata_mode,
+							domain=str( socrata_domain ),
+							dataset_id=str( socrata_dataset_id ),
+							select=str( socrata_select ),
+							where=str( socrata_where ),
+							order=str( socrata_order ),
+							group=str( socrata_group ),
+							limit=int( socrata_limit ),
+							offset=int( socrata_offset ),
+							time=int( socrata_timeout )
+						)
+						
+						st.session_state[ 'socrata_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'Socrata request failed.' )
+						st.exception( exc )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_result_metadata( result )
+					
+					if result.get( 'mode', '' ) == 'metadata':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Name': payload.get( 'name', '' ) if isinstance( payload, dict ) else '',
+									'Description': payload.get( 'description', '' ) if isinstance( payload, dict ) else '',
+									'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance( payload, dict ) else '',
+									'ViewType': payload.get( 'viewType', '' ) if isinstance( payload, dict ) else '',
+									'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload, dict ) else 0,
+							}
+						)
+						
+						rows: List[ Dict[ str, Any ] ] = [ ]
+						columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload, dict ) else [ ]
+						for item in columns_payload:
+							if isinstance( item, dict ):
 								rows.append(
 									{
-											'Name': name,
-											'Label': meta.get( 'label', '' ),
-											'Concept': meta.get( 'concept', '' ),
-											'PredicateType': meta.get( 'predicateType', '' ),
-											'Group': meta.get( 'group', '' ),
-											'Limit': meta.get( 'limit', '' ),
+											'Name': item.get( 'name', '' ),
+											'FieldName': item.get( 'fieldName', '' ),
+											'DataType': item.get( 'dataTypeName', '' ),
+											'Description': item.get( 'description', '' ),
 									}
 								)
+						
+						_render_rows_table( '#### Columns', rows )
 					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Year': census_year,
-								'Dataset': census_dataset,
-								'VariableCount': len( rows ),
-						}
-					)
-					_render_rows_table( '#### Variables', rows )
-				
-				elif result.get( 'mode', '' ) == 'data':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					rows = payload.get( 'rows', [ ] ) if isinstance( payload, dict ) else [ ]
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Year': census_year,
-								'Dataset': census_dataset,
-								'Fields': census_fields,
-								'For': census_for,
-								'In': census_in,
-								'RowCount': len( rows ) if isinstance( rows, list ) else 0,
-						}
-					)
-					_render_rows_table( '#### Data Rows', rows if isinstance( rows, list ) else [ ] )
-				
-				_render_fallback_raw( result )
-	
-	# -------- CDC SOCRATA
-	with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
-		if 'socrata_results' not in st.session_state:
-			st.session_state[ 'socrata_results' ] = { }
-		
-		if 'socrata_clear_request' not in st.session_state:
-			st.session_state[ 'socrata_clear_request' ] = False
-		
-		if st.session_state.get( 'socrata_clear_request', False ):
-			st.session_state[ 'socrata_mode' ] = 'rows'
-			st.session_state[ 'socrata_domain' ] = 'data.cdc.gov'
-			st.session_state[ 'socrata_dataset_id' ] = 'q8xq-ygsk'
-			st.session_state[ 'socrata_select' ] = ''
-			st.session_state[ 'socrata_where' ] = ''
-			st.session_state[ 'socrata_order' ] = ''
-			st.session_state[ 'socrata_group' ] = ''
-			st.session_state[ 'socrata_limit' ] = 25
-			st.session_state[ 'socrata_offset' ] = 0
-			st.session_state[ 'socrata_timeout' ] = 20
-			st.session_state[ 'socrata_results' ] = { }
-			st.session_state[ 'socrata_clear_request' ] = False
-		
-		def _clear_socrata_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the Socrata expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'socrata_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			socrata_mode = st.selectbox(
-				'Mode',
-				options=[ 'rows', 'metadata' ],
-				index=[ 'rows', 'metadata' ].index(
-					st.session_state.get( 'socrata_mode', 'rows' )
-				),
-				key='socrata_mode',
-				help='rows = query dataset rows; metadata = inspect dataset metadata.'
-			)
-			
-			socrata_domain = st.text_input(
-				'Domain',
-				value=st.session_state.get( 'socrata_domain', 'data.cdc.gov' ),
-				key='socrata_domain',
-				placeholder='data.cdc.gov'
-			)
-			
-			socrata_dataset_id = st.text_input(
-				'Dataset ID',
-				value=st.session_state.get( 'socrata_dataset_id', 'q8xq-ygsk' ),
-				key='socrata_dataset_id',
-				placeholder='q8xq-ygsk'
-			)
-			
-			socrata_select = st.text_area(
-				'Select',
-				value=st.session_state.get( 'socrata_select', '' ),
-				height=80,
-				key='socrata_select',
-				placeholder='locationname,datavaluetype,datavalue',
-				disabled=(socrata_mode != 'rows')
-			)
-			
-			socrata_where = st.text_area(
-				'Where',
-				value=st.session_state.get( 'socrata_where', '' ),
-				height=100,
-				key='socrata_where',
-				placeholder="year = '2020'",
-				disabled=(socrata_mode != 'rows')
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				socrata_order = st.text_input(
-					'Order',
-					value=st.session_state.get( 'socrata_order', '' ),
-					key='socrata_order',
-					placeholder='locationname ASC',
-					disabled=(socrata_mode != 'rows')
-				)
-			
-			with c2:
-				socrata_group = st.text_input(
-					'Group',
-					value=st.session_state.get( 'socrata_group', '' ),
-					key='socrata_group',
-					placeholder='locationname',
-					disabled=(socrata_mode != 'rows')
-				)
-			
-			c3, c4, c5 = st.columns( 3 )
-			
-			with c3:
-				socrata_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=50000,
-					value=int( st.session_state.get( 'socrata_limit', 25 ) ),
-					step=1,
-					key='socrata_limit',
-					disabled=(socrata_mode != 'rows')
-				)
-			
-			with c4:
-				socrata_offset = st.number_input(
-					'Offset',
-					min_value=0,
-					max_value=1000000,
-					value=int( st.session_state.get( 'socrata_offset', 0 ) ),
-					step=1,
-					key='socrata_offset',
-					disabled=(socrata_mode != 'rows')
-				)
-			
-			with c5:
-				socrata_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'socrata_timeout', 20 ) ),
-					step=1,
-					key='socrata_timeout'
-				)
-			
-			st.caption(
-				'Example dataset: q8xq-ygsk on data.cdc.gov. '
-				'Use SoQL clauses for select, where, order, and group.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				socrata_submit = st.button(
-					'Submit',
-					key='socrata_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='socrata_clear',
-					on_click=_clear_socrata_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			result = st.session_state.get( 'socrata_results', { } )
-			
-			if socrata_submit:
-				try:
-					f = Socrata( )
-					result = f.fetch(
-						mode=socrata_mode,
-						domain=str( socrata_domain ),
-						dataset_id=str( socrata_dataset_id ),
-						select=str( socrata_select ),
-						where=str( socrata_where ),
-						order=str( socrata_order ),
-						group=str( socrata_group ),
-						limit=int( socrata_limit ),
-						offset=int( socrata_offset ),
-						time=int( socrata_timeout )
-					)
-					
-					st.session_state[ 'socrata_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'Socrata request failed.' )
-					st.exception( exc )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_result_metadata( result )
-				
-				if result.get( 'mode', '' ) == 'metadata':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Name': payload.get( 'name', '' ) if isinstance( payload, dict ) else '',
-								'Description': payload.get( 'description', '' ) if isinstance( payload, dict ) else '',
-								'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance( payload, dict ) else '',
-								'ViewType': payload.get( 'viewType', '' ) if isinstance( payload, dict ) else '',
-								'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload, dict ) else 0,
-						}
-					)
-					
-					rows: List[ Dict[ str, Any ] ] = [ ]
-					columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload, dict ) else [ ]
-					for item in columns_payload:
-						if isinstance( item, dict ):
-							rows.append(
-								{
-										'Name': item.get( 'name', '' ),
-										'FieldName': item.get( 'fieldName', '' ),
-										'DataType': item.get( 'dataTypeName', '' ),
-										'Description': item.get( 'description', '' ),
-								}
-							)
-					
-					_render_rows_table( '#### Columns', rows )
-				
-				elif result.get( 'mode', '' ) == 'rows':
-					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Domain': socrata_domain,
-								'DatasetId': socrata_dataset_id,
-								'Limit': int( socrata_limit ),
-								'Offset': int( socrata_offset ),
-								'RowCount': len( rows ) if isinstance( rows, list ) else 0,
-						}
-					)
-					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
-				
-				_render_fallback_raw( result )
-	
-	# -------- US Health Data
-	with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
-		if 'healthdata_results' not in st.session_state:
-			st.session_state[ 'healthdata_results' ] = { }
-		
-		if 'healthdata_clear_request' not in st.session_state:
-			st.session_state[ 'healthdata_clear_request' ] = False
-		
-		if st.session_state.get( 'healthdata_clear_request', False ):
-			st.session_state[ 'healthdata_mode' ] = 'rows'
-			st.session_state[ 'healthdata_domain' ] = 'healthdata.gov'
-			st.session_state[ 'healthdata_dataset_id' ] = ''
-			st.session_state[ 'healthdata_select' ] = ''
-			st.session_state[ 'healthdata_where' ] = ''
-			st.session_state[ 'healthdata_order' ] = ''
-			st.session_state[ 'healthdata_group' ] = ''
-			st.session_state[ 'healthdata_limit' ] = 25
-			st.session_state[ 'healthdata_offset' ] = 0
-			st.session_state[ 'healthdata_timeout' ] = 20
-			st.session_state[ 'healthdata_results' ] = { }
-			st.session_state[ 'healthdata_clear_request' ] = False
-		
-		def _clear_healthdata_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the HealthData expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'healthdata_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			healthdata_mode = st.selectbox(
-				'Mode',
-				options=[ 'rows', 'metadata' ],
-				index=[ 'rows', 'metadata' ].index(
-					st.session_state.get( 'healthdata_mode', 'rows' )
-				),
-				key='healthdata_mode',
-				help='rows = query dataset rows; metadata = inspect dataset metadata.'
-			)
-			
-			healthdata_domain = st.text_input(
-				'Domain',
-				value=st.session_state.get( 'healthdata_domain', 'healthdata.gov' ),
-				key='healthdata_domain',
-				placeholder='healthdata.gov'
-			)
-			
-			healthdata_dataset_id = st.text_input(
-				'Dataset ID',
-				value=st.session_state.get( 'healthdata_dataset_id', '' ),
-				key='healthdata_dataset_id',
-				placeholder='dataset id'
-			)
-			
-			healthdata_select = st.text_area(
-				'Select',
-				value=st.session_state.get( 'healthdata_select', '' ),
-				height=80,
-				key='healthdata_select',
-				placeholder='column1,column2',
-				disabled=(healthdata_mode != 'rows')
-			)
-			
-			healthdata_where = st.text_area(
-				'Where',
-				value=st.session_state.get( 'healthdata_where', '' ),
-				height=100,
-				key='healthdata_where',
-				placeholder="year = '2024'",
-				disabled=(healthdata_mode != 'rows')
-			)
-			
-			c1, c2 = st.columns( 2 )
-			
-			with c1:
-				healthdata_order = st.text_input(
-					'Order',
-					value=st.session_state.get( 'healthdata_order', '' ),
-					key='healthdata_order',
-					placeholder='column1 ASC',
-					disabled=(healthdata_mode != 'rows')
-				)
-			
-			with c2:
-				healthdata_group = st.text_input(
-					'Group',
-					value=st.session_state.get( 'healthdata_group', '' ),
-					key='healthdata_group',
-					placeholder='column1',
-					disabled=(healthdata_mode != 'rows')
-				)
-			
-			c3, c4, c5 = st.columns( 3 )
-			
-			with c3:
-				healthdata_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=50000,
-					value=int( st.session_state.get( 'healthdata_limit', 25 ) ),
-					step=1,
-					key='healthdata_limit',
-					disabled=(healthdata_mode != 'rows')
-				)
-			
-			with c4:
-				healthdata_offset = st.number_input(
-					'Offset',
-					min_value=0,
-					max_value=1000000,
-					value=int( st.session_state.get( 'healthdata_offset', 0 ) ),
-					step=1,
-					key='healthdata_offset',
-					disabled=(healthdata_mode != 'rows')
-				)
-			
-			with c5:
-				healthdata_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'healthdata_timeout', 20 ) ),
-					step=1,
-					key='healthdata_timeout'
-				)
-			
-			st.caption(
-				'HealthData.gov exposes developer tools and open API access. '
-				'Use SoQL-style clauses for select, where, order, and group.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				healthdata_submit = st.button(
-					'Submit',
-					key='healthdata_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='healthdata_clear',
-					on_click=_clear_healthdata_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			result = st.session_state.get( 'healthdata_results', { } )
-			
-			if healthdata_submit:
-				try:
-					f = HealthData( )
-					result = f.fetch(
-						mode=healthdata_mode,
-						domain=str( healthdata_domain ),
-						dataset_id=str( healthdata_dataset_id ),
-						select=str( healthdata_select ),
-						where=str( healthdata_where ),
-						order=str( healthdata_order ),
-						group=str( healthdata_group ),
-						limit=int( healthdata_limit ),
-						offset=int( healthdata_offset ),
-						time=int( healthdata_timeout )
-					)
-					
-					st.session_state[ 'healthdata_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'HealthData request failed.' )
-					st.exception( exc )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_result_metadata( result )
-				
-				if result.get( 'mode', '' ) == 'metadata':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Name': payload.get( 'name', '' ) if isinstance( payload, dict ) else '',
-								'Description': payload.get( 'description', '' ) if isinstance( payload, dict ) else '',
-								'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance( payload, dict ) else '',
-								'ViewType': payload.get( 'viewType', '' ) if isinstance( payload, dict ) else '',
-								'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload, dict ) else 0,
-						}
-					)
-					
-					rows: List[ Dict[ str, Any ] ] = [ ]
-					columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload, dict ) else [ ]
-					for item in columns_payload:
-						if isinstance( item, dict ):
-							rows.append(
-								{
-										'Name': item.get( 'name', '' ),
-										'FieldName': item.get( 'fieldName', '' ),
-										'DataType': item.get( 'dataTypeName', '' ),
-										'Description': item.get( 'description', '' ),
-								}
-							)
-					
-					_render_rows_table( '#### Columns', rows )
-				
-				elif result.get( 'mode', '' ) == 'rows':
-					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Domain': healthdata_domain,
-								'DatasetId': healthdata_dataset_id,
-								'Limit': int( healthdata_limit ),
-								'Offset': int( healthdata_offset ),
-								'RowCount': len( rows ) if isinstance( rows, list ) else 0,
-						}
-					)
-					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
-				
-				_render_fallback_raw( result )
-	
-	# -------- WHO Global Health
-	with st.expander( label='WHO Global', icon='🌍', expanded=False ):
-		if 'who_results' not in st.session_state:
-			st.session_state[ 'who_results' ] = { }
-		
-		if 'who_clear_request' not in st.session_state:
-			st.session_state[ 'who_clear_request' ] = False
-		
-		if st.session_state.get( 'who_clear_request', False ):
-			st.session_state[ 'who_mode' ] = 'indicator_registry'
-			st.session_state[ 'who_query_path' ] = ''
-			st.session_state[ 'who_format' ] = 'json'
-			st.session_state[ 'who_timeout' ] = 20
-			st.session_state[ 'who_results' ] = { }
-			st.session_state[ 'who_clear_request' ] = False
-		
-		def _clear_who_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the WHO Global Health expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'who_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			who_mode = st.selectbox(
-				'Mode',
-				options=[ 'indicator_registry', 'athena' ],
-				index=[ 'indicator_registry', 'athena' ].index(
-					st.session_state.get( 'who_mode', 'indicator_registry' )
-				),
-				key='who_mode',
-				help=(
-						'indicator_registry = WHO metadata landing content; '
-						'athena = configurable WHO GHO query path.'
-				)
-			)
-			
-			who_query_path = st.text_area(
-				'Query Path',
-				value=st.session_state.get( 'who_query_path', '' ),
-				height=100,
-				key='who_query_path',
-				placeholder='Indicator',
-				disabled=(who_mode != 'athena'),
-				help='Path appended after the WHO GHO API base endpoint.'
-			)
-			
-			who_format = st.selectbox(
-				'Format',
-				options=[ 'json', 'xml' ],
-				index=[ 'json', 'xml' ].index(
-					st.session_state.get( 'who_format', 'json' )
-				),
-				key='who_format',
-				disabled=(who_mode != 'athena')
-			)
-			
-			who_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=120,
-				value=int( st.session_state.get( 'who_timeout', 20 ) ),
-				step=1,
-				key='who_timeout'
-			)
-			
-			st.caption(
-				'WHO documents both GHO OData API and Athena API endpoints. '
-				'Use athena mode for direct query-path requests.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				who_submit = st.button(
-					'Submit',
-					key='who_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='who_clear',
-					on_click=_clear_who_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			result = st.session_state.get( 'who_results', { } )
-			
-			if who_submit:
-				try:
-					f = GlobalHealthData( )
-					result = f.fetch(
-						mode=who_mode,
-						query_path=str( who_query_path ),
-						fmt=str( who_format ),
-						time=int( who_timeout )
-					)
-					
-					st.session_state[ 'who_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'WHO Global Health request failed.' )
-					st.exception( exc )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_result_metadata( result )
-				
-				if result.get( 'mode', '' ) == 'indicator_registry':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'HasHtml': isinstance( payload, dict ) and bool( payload.get( 'html', '' ) ),
-						}
-					)
-					
-					if isinstance( payload, dict ) and payload.get( 'html', '' ):
-						_render_html_preview(
-							'#### Indicator Registry Preview',
-							str( payload.get( 'html', '' ) ) )
-					else:
-						st.json( payload )
-				
-				elif result.get( 'mode', '' ) == 'athena':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					if isinstance( payload, dict ) and isinstance( payload.get( 'value', [ ] ), list ):
-						rows = payload.get( 'value', [ ] )
+					elif result.get( 'mode', '' ) == 'rows':
+						rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
+						
 						_render_summary_kv(
 							'#### Summary',
 							{
-									'QueryPath': who_query_path,
-									'Format': who_format,
-									'ResultCount': len( rows ),
+									'Domain': socrata_domain,
+									'DatasetId': socrata_dataset_id,
+									'Limit': int( socrata_limit ),
+									'Offset': int( socrata_offset ),
+									'RowCount': len( rows ) if isinstance( rows, list ) else 0,
 							}
 						)
-						_render_rows_table( '#### Athena Results', rows )
-					elif isinstance( payload, dict ) and payload.get( 'text', '' ):
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'QueryPath': who_query_path,
-									'Format': who_format,
-									'HasText': True,
-							}
-						)
-						st.markdown( '#### Response' )
-						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
-					else:
-						st.json( payload )
-				
-				_render_fallback_raw( result )
+						_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
+					
+					_render_fallback_raw( result )
+		
+		# -------- US Health Data
+		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
+			if 'healthdata_results' not in st.session_state:
+				st.session_state[ 'healthdata_results' ] = { }
+			
+			if 'healthdata_clear_request' not in st.session_state:
+				st.session_state[ 'healthdata_clear_request' ] = False
+			
+			if st.session_state.get( 'healthdata_clear_request', False ):
+				st.session_state[ 'healthdata_mode' ] = 'rows'
+				st.session_state[ 'healthdata_domain' ] = 'healthdata.gov'
+				st.session_state[ 'healthdata_dataset_id' ] = ''
+				st.session_state[ 'healthdata_select' ] = ''
+				st.session_state[ 'healthdata_where' ] = ''
+				st.session_state[ 'healthdata_order' ] = ''
+				st.session_state[ 'healthdata_group' ] = ''
+				st.session_state[ 'healthdata_limit' ] = 25
+				st.session_state[ 'healthdata_offset' ] = 0
+				st.session_state[ 'healthdata_timeout' ] = 20
+				st.session_state[ 'healthdata_results' ] = { }
+				st.session_state[ 'healthdata_clear_request' ] = False
+			
+			def _clear_healthdata_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the HealthData expander state for reset on the next rerun.
 	
-	# -------- United Nations Data
-	with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
-		if 'un_results' not in st.session_state:
-			st.session_state[ 'un_results' ] = { }
-		
-		if 'un_clear_request' not in st.session_state:
-			st.session_state[ 'un_clear_request' ] = False
-		
-		if st.session_state.get( 'un_clear_request', False ):
-			st.session_state[ 'un_mode' ] = 'datasets'
-			st.session_state[ 'un_query_path' ] = ''
-			st.session_state[ 'un_timeout' ] = 20
-			st.session_state[ 'un_results' ] = { }
-			st.session_state[ 'un_clear_request' ] = False
-		
-		def _clear_un_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the United Nations expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'un_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			un_mode = st.selectbox(
-				'Mode',
-				options=[ 'datasets', 'sdmx_query' ],
-				index=[ 'datasets', 'sdmx_query' ].index(
-					st.session_state.get( 'un_mode', 'datasets' )
-				),
-				key='un_mode',
-				help=(
-						'datasets = UNdata dataset catalog landing content; '
-						'sdmx_query = direct REST SDMX query path.'
-				)
-			)
-			
-			un_query_path = st.text_area(
-				'Query Path',
-				value=st.session_state.get( 'un_query_path', '' ),
-				height=120,
-				key='un_query_path',
-				placeholder='data/DF_SDG_GLH/..SI_POV_DAY1...........?',
-				disabled=(un_mode != 'sdmx_query'),
-				help='Path appended after https://data.un.org/WS/rest/'
-			)
-			
-			un_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=120,
-				value=int( st.session_state.get( 'un_timeout', 20 ) ),
-				step=1,
-				key='un_timeout'
-			)
-			
-			st.caption(
-				'UNdata documents SDMX REST access and a public dataset catalog. '
-				'Use sdmx_query mode for direct REST query paths.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				un_submit = st.button(
-					'Submit',
-					key='un_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='un_clear',
-					on_click=_clear_un_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			result = st.session_state.get( 'un_results', { } )
-			
-			if un_submit:
-				try:
-					f = UnitedNations( )
-					result = f.fetch(
-						mode=un_mode,
-						query_path=str( un_query_path ),
-						time=int( un_timeout )
-					)
-					
-					st.session_state[ 'un_results' ] = result or { }
-					st.rerun( )
-				
-				except Exception as exc:
-					st.error( 'United Nations request failed.' )
-					st.exception( exc )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_result_metadata( result )
-				
-				if result.get( 'mode', '' ) == 'datasets':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'HasHtml': isinstance( payload, dict ) and bool( payload.get( 'html', '' ) ),
-						}
-					)
-					
-					if isinstance( payload, dict ) and payload.get( 'html', '' ):
-						_render_html_preview(
-							'#### Dataset Catalog Preview',
-							str( payload.get( 'html', '' ) ) )
-					else:
-						st.json( payload )
-				
-				elif result.get( 'mode', '' ) == 'sdmx_query':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'QueryPath': un_query_path,
-								'TextPayload': isinstance( payload, dict ) and bool( payload.get( 'text', '' ) ),
-						}
-					)
-					
-					if isinstance( payload, dict ) and payload.get( 'text', '' ):
-						st.markdown( '#### Query Response' )
-						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
-					else:
-						st.json( payload )
-				
-				_render_fallback_raw( result )
+					Parameters:
+					-----------
+					None
 	
-	# -------- World Population
-	with st.expander( label='World Population', icon='👥', expanded=False ):
-		if 'worldpop_results' not in st.session_state:
-			st.session_state[ 'worldpop_results' ] = { }
-		
-		if 'worldpop_clear_request' not in st.session_state:
-			st.session_state[ 'worldpop_clear_request' ] = False
-		
-		if st.session_state.get( 'worldpop_clear_request', False ):
-			st.session_state[ 'worldpop_mode' ] = 'catalog'
-			st.session_state[ 'worldpop_query' ] = ''
-			st.session_state[ 'worldpop_asset_path' ] = ''
-			st.session_state[ 'worldpop_page' ] = 1
-			st.session_state[ 'worldpop_page_size' ] = 25
-			st.session_state[ 'worldpop_timeout' ] = 20
-			st.session_state[ 'worldpop_results' ] = { }
-			st.session_state[ 'worldpop_clear_request' ] = False
-		
-		def _clear_worldpop_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the World Population expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'worldpop_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			worldpop_mode = st.selectbox(
-				'Mode',
-				options=[ 'catalog', 'search', 'raster_metadata' ],
-				index=[ 'catalog', 'search', 'raster_metadata' ].index(
-					st.session_state.get( 'worldpop_mode', 'catalog' )
-				),
-				key='worldpop_mode',
-				help=(
-						'catalog = API landing content; '
-						'search = catalog-style search; '
-						'raster_metadata = direct asset or metadata path.'
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'healthdata_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				healthdata_mode = st.selectbox(
+					'Mode',
+					options=[ 'rows', 'metadata' ],
+					index=[ 'rows', 'metadata' ].index(
+						st.session_state.get( 'healthdata_mode', 'rows' )
+					),
+					key='healthdata_mode',
+					help='rows = query dataset rows; metadata = inspect dataset metadata.'
 				)
-			)
-			
-			worldpop_query = st.text_area(
-				'Query',
-				value=st.session_state.get( 'worldpop_query', '' ),
-				height=90,
-				key='worldpop_query',
-				placeholder='population Ghana 2020',
-				disabled=(worldpop_mode != 'search')
-			)
-			
-			worldpop_asset_path = st.text_area(
-				'Asset Path',
-				value=st.session_state.get( 'worldpop_asset_path', '' ),
-				height=100,
-				key='worldpop_asset_path',
-				placeholder='data/pop/wpgp?iso3=GHA',
-				disabled=(worldpop_mode != 'raster_metadata')
-			)
-			
-			c1, c2, c3 = st.columns( 3 )
-			
-			with c1:
-				worldpop_page = st.number_input(
-					'Page',
-					min_value=1,
-					max_value=100000,
-					value=int( st.session_state.get( 'worldpop_page', 1 ) ),
-					step=1,
-					key='worldpop_page',
-					disabled=(worldpop_mode != 'search')
+				
+				healthdata_domain = st.text_input(
+					'Domain',
+					value=st.session_state.get( 'healthdata_domain', 'healthdata.gov' ),
+					key='healthdata_domain',
+					placeholder='healthdata.gov'
 				)
-			
-			with c2:
-				worldpop_page_size = st.number_input(
-					'Page Size',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'worldpop_page_size', 25 ) ),
-					step=1,
-					key='worldpop_page_size',
-					disabled=(worldpop_mode != 'search')
+				
+				healthdata_dataset_id = st.text_input(
+					'Dataset ID',
+					value=st.session_state.get( 'healthdata_dataset_id', '' ),
+					key='healthdata_dataset_id',
+					placeholder='dataset id'
 				)
-			
-			with c3:
-				worldpop_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'worldpop_timeout', 20 ) ),
-					step=1,
-					key='worldpop_timeout'
+				
+				healthdata_select = st.text_area(
+					'Select',
+					value=st.session_state.get( 'healthdata_select', '' ),
+					height=80,
+					key='healthdata_select',
+					placeholder='column1,column2',
+					disabled=(healthdata_mode != 'rows')
 				)
-			
-			st.caption(
-				'WorldPop publishes API-based access and STAC-oriented discovery. '
-				'Use raster_metadata mode for direct API paths.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				worldpop_submit = st.button(
-					'Submit',
-					key='worldpop_submit',
-					use_container_width=True
+				
+				healthdata_where = st.text_area(
+					'Where',
+					value=st.session_state.get( 'healthdata_where', '' ),
+					height=100,
+					key='healthdata_where',
+					placeholder="year = '2024'",
+					disabled=(healthdata_mode != 'rows')
 				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='worldpop_clear',
-					on_click=_clear_worldpop_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			result = st.session_state.get( 'worldpop_results', { } )
-			
-			if worldpop_submit:
-				try:
-					f = WorldPopulation( )
-					result = f.fetch(
-						mode=worldpop_mode,
-						query=str( worldpop_query ),
-						asset_path=str( worldpop_asset_path ),
-						page=int( worldpop_page ),
-						page_size=int( worldpop_page_size ),
-						time=int( worldpop_timeout )
+				
+				c1, c2 = st.columns( 2 )
+				
+				with c1:
+					healthdata_order = st.text_input(
+						'Order',
+						value=st.session_state.get( 'healthdata_order', '' ),
+						key='healthdata_order',
+						placeholder='column1 ASC',
+						disabled=(healthdata_mode != 'rows')
 					)
-					
-					st.session_state[ 'worldpop_results' ] = result or { }
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'World Population request failed.' )
-					st.exception( exc )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_result_metadata( result )
-				
-				if result.get( 'mode', '' ) == 'catalog':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'HasHtml': isinstance( payload, dict ) and bool( payload.get( 'html', '' ) ),
-						}
+				with c2:
+					healthdata_group = st.text_input(
+						'Group',
+						value=st.session_state.get( 'healthdata_group', '' ),
+						key='healthdata_group',
+						placeholder='column1',
+						disabled=(healthdata_mode != 'rows')
 					)
-					
-					if isinstance( payload, dict ) and payload.get( 'html', '' ):
-						_render_html_preview(
-							'#### Catalog Preview',
-							str( payload.get( 'html', '' ) ) )
-					else:
-						st.json( payload )
 				
-				elif result.get( 'mode', '' ) == 'search':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					if isinstance( payload, dict ) and isinstance( payload.get( 'results', [ ] ), list ):
-						rows = payload.get( 'results', [ ] )
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Query': worldpop_query,
-									'Page': worldpop_page,
-									'PageSize': worldpop_page_size,
-									'ResultCount': len( rows ),
-							}
-						)
-						_render_rows_table( '#### Search Results', rows )
-					else:
-						st.json( payload )
+				c3, c4, c5 = st.columns( 3 )
 				
-				elif result.get( 'mode', '' ) == 'raster_metadata':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'AssetPath': worldpop_asset_path,
-								'HasText': isinstance( payload, dict ) and bool( payload.get( 'text', '' ) ),
-						}
+				with c3:
+					healthdata_limit = st.number_input(
+						'Limit',
+						min_value=1,
+						max_value=50000,
+						value=int( st.session_state.get( 'healthdata_limit', 25 ) ),
+						step=1,
+						key='healthdata_limit',
+						disabled=(healthdata_mode != 'rows')
 					)
-					
-					if isinstance( payload, dict ) and payload.get( 'text', '' ):
-						st.markdown( '#### Metadata Response' )
-						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
-					else:
-						st.json( payload )
 				
-				_render_fallback_raw( result )
-	
-	# -------- CDC WONDER
-	with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
-		if 'wonder_results' not in st.session_state:
-			st.session_state[ 'wonder_results' ] = { }
-		
-		if 'wonder_clear_request' not in st.session_state:
-			st.session_state[ 'wonder_clear_request' ] = False
-		
-		if st.session_state.get( 'wonder_clear_request', False ):
-			st.session_state[ 'wonder_mode' ] = 'metadata_template'
-			st.session_state[ 'wonder_dataset_id' ] = 'D76'
-			st.session_state[ 'wonder_request_xml' ] = ''
-			st.session_state[ 'wonder_timeout' ] = 20
-			st.session_state[ 'wonder_results' ] = { }
-			st.session_state[ 'wonder_clear_request' ] = False
-		
-		def _clear_wonder_state( ) -> None:
-			'''
-				Purpose:
-				--------
-				Flag the CDC WONDER expander state for reset on the next rerun.
-
-				Parameters:
-				-----------
-				None
-
-				Returns:
-				--------
-				None
-			'''
-			st.session_state[ 'wonder_clear_request' ] = True
-		
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			wonder_mode = st.selectbox(
-				'Mode',
-				options=[ 'metadata_template', 'query_xml' ],
-				index=[ 'metadata_template', 'query_xml' ].index(
-					st.session_state.get( 'wonder_mode', 'metadata_template' )
-				),
-				key='wonder_mode',
-				help=(
-						'metadata_template = build a starter XML request; '
-						'query_xml = submit a raw XML request to CDC WONDER.'
-				)
-			)
-			
-			wonder_dataset_id = st.text_input(
-				'Dataset ID',
-				value=st.session_state.get( 'wonder_dataset_id', 'D76' ),
-				key='wonder_dataset_id',
-				placeholder='D76'
-			)
-			
-			wonder_request_xml = st.text_area(
-				'Request XML',
-				value=st.session_state.get( 'wonder_request_xml', '' ),
-				height=240,
-				key='wonder_request_xml',
-				placeholder='<request>...</request>',
-				disabled=(wonder_mode != 'query_xml')
-			)
-			
-			wonder_timeout = st.number_input(
-				'Timeout',
-				min_value=1,
-				max_value=120,
-				value=int( st.session_state.get( 'wonder_timeout', 20 ) ),
-				step=1,
-				key='wonder_timeout'
-			)
-			
-			st.caption(
-				'CDC WONDER requires POST requests with request_xml and '
-				'acceptance of data-use restrictions.'
-			)
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				wonder_submit = st.button(
-					'Submit',
-					key='wonder_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				st.button(
-					'Clear',
-					key='wonder_clear',
-					on_click=_clear_wonder_state,
-					use_container_width=True
-				)
-		
-		with col_right:
-			result = st.session_state.get( 'wonder_results', { } )
-			
-			if wonder_submit:
-				try:
-					f = Wonder( )
-					result = f.fetch(
-						mode=wonder_mode,
-						dataset_id=str( wonder_dataset_id ),
-						request_xml=str( wonder_request_xml ),
-						time=int( wonder_timeout )
+				with c4:
+					healthdata_offset = st.number_input(
+						'Offset',
+						min_value=0,
+						max_value=1000000,
+						value=int( st.session_state.get( 'healthdata_offset', 0 ) ),
+						step=1,
+						key='healthdata_offset',
+						disabled=(healthdata_mode != 'rows')
 					)
-					
-					st.session_state[ 'wonder_results' ] = result or { }
-					
-					if (
-							wonder_mode == 'metadata_template'
-							and isinstance( result, dict )
-							and isinstance( result.get( 'data', { } ), dict )
-					):
-						template_xml = result.get( 'data', { } ).get( 'request_xml', '' )
-						st.session_state[ 'wonder_request_xml' ] = template_xml
-					
-					st.rerun( )
 				
-				except Exception as exc:
-					st.error( 'CDC WONDER request failed.' )
-					st.exception( exc )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_result_metadata( result )
-				
-				if result.get( 'mode', '' ) == 'metadata_template':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					if isinstance( payload, dict ):
-						_render_summary_kv(
-							'#### Template Summary',
-							{
-									'DatasetId': payload.get( 'dataset_id', '' ),
-									'Notes': payload.get( 'notes', '' ),
-							}
-						)
-						
-						template_xml = str( payload.get( 'request_xml', '' ) )
-						if template_xml:
-							_render_xml_preview( '#### Starter XML', template_xml )
-						else:
-							st.info( 'No starter XML returned.' )
-				
-				elif result.get( 'mode', '' ) == 'query_xml':
-					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
-					if isinstance( payload, dict ):
-						xml_text = str( payload.get( 'xml', '' ) )
-						
-						_render_summary_kv(
-							'#### Response Summary',
-							{
-									'DatasetId': wonder_dataset_id,
-									'Characters': len( xml_text ),
-									'HasXml': bool( xml_text.strip( ) ),
-							}
-						)
-						
-						_render_xml_preview( '#### XML Response', xml_text )
-					else:
-						st.info( 'No XML response returned.' )
-				
-				_render_fallback_raw( result )
-			
-	# -------- Pub Med
-	with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
-		if 'pubmed_results' not in st.session_state:
-			st.session_state[ 'pubmed_results' ] = { }
-		
-		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-		
-		with col_left:
-			query = st.text_input(
-				'PubMed Query',
-				key='pubmed_query'
-			)
-			
-			max_docs = st.number_input(
-				'Max Documents',
-				min_value=1,
-				max_value=100,
-				value=5,
-				step=1,
-				key='pubmed_max_docs'
-			)
-			
-			b1, b2, b3 = st.columns( 3 )
-			
-			with b1:
-				pubmed_submit = st.button(
-					'Submit',
-					key='pubmed_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				pubmed_clear = st.button(
-					'Clear',
-					key='pubmed_clear',
-					use_container_width=True
-				)
-			
-			with b3:
-				can_save = ( st.session_state.get( 'active_loader' ) == 'PubMedSearchLoader'
-						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( ) )
-				
-				if can_save:
-					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
-						file_name='pubmed_loader_output.txt', mime='text/plain',
-						key='pubmed_save', use_container_width=True )
-				else:
-					st.button( 'Save', key='pubmed_save_disabled', disabled=True,
-						use_container_width=True )
-		
-		with col_right:
-			if pubmed_clear:
-				st.session_state[ 'pubmed_results' ] = { }
-				remaining = _clear_loader_documents( 'PubMedSearchLoader' )
-				st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
-			
-			if pubmed_submit:
-				if not query or not query.strip( ):
-					st.info( 'Enter a PubMed query.' )
-				else:
-					try:
-						loader = PubMedSearchLoader( )
-						documents = loader.load( query=query.strip( ),
-							max_docs=int( max_docs ) ) or [ ]
-						
-						count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
-						
-						items: list[ dict[ str, Any ] ] = [ ]
-						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
-							)
-							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Title': metadata.get( 'Title' )
-										         or metadata.get( 'title' )
-										         or '',
-										'Published': metadata.get( 'Published' )
-										             or metadata.get( 'published' )
-										             or '',
-										'Copyright': metadata.get( 'Copyright Information' )
-										             or metadata.get( 'copyright' )
-										             or '',
-										'Summary': content,
-										'Metadata': metadata,
-								}
-							)
-						
-						st.session_state[ 'pubmed_results' ] = {
-								'mode': 'pubmed',
-								'query': query.strip( ),
-								'max_docs': int( max_docs ),
-								'count': count,
-								'items': items,
-						}
-						
-						st.success( f'Loaded {count} PubMed document(s).' )
-					
-					except Exception as exc:
-						st.error( 'PubMed request failed.' )
-						st.exception( exc )
-			
-			result = st.session_state.get( 'pubmed_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'Query': result.get( 'query', '' ),
-							'MaxDocs': result.get( 'max_docs', 0 ),
-							'Returned': result.get( 'count', 0 ),
-					}
-				)
-				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-				
-				if items:
-					table_rows = [
-							{
-									'Index': item.get( 'Index', '' ),
-									'Title': item.get( 'Title', '' ),
-									'Published': item.get( 'Published', '' ),
-							}
-							for item in items
-					]
-					
-					st.markdown( '#### Results' )
-					st.dataframe( table_rows, use_container_width=True, hide_index=True )
-					
-					first = items[ 0 ]
-					_render_summary_kv(
-						'#### First Result',
-						{
-								'Title': first.get( 'Title', '' ),
-								'Published': first.get( 'Published', '' ),
-								'Copyright': first.get( 'Copyright', '' ),
-						}
+				with c5:
+					healthdata_timeout = st.number_input(
+						'Timeout',
+						min_value=1,
+						max_value=120,
+						value=int( st.session_state.get( 'healthdata_timeout', 20 ) ),
+						step=1,
+						key='healthdata_timeout'
 					)
-					
-					st.markdown( '#### Abstract Preview' )
-					st.code( str( first.get( 'Summary', '' ) )[ :8000 ] )
-				else:
-					st.info( 'No PubMed records returned.' )
 				
-				_render_fallback_raw( result )
-				
-	# -------- Open City
-	with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
-		if 'open_city_results' not in st.session_state:
-			st.session_state[ 'open_city_results' ] = { }
-		
-		col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-		
-		with col_left:
-			city_id = st.text_input(
-				'City ID',
-				value='data.sfgov.org',
-				key='open_city_id'
-			)
-			
-			dataset_id = st.text_input(
-				'Dataset ID',
-				key='open_city_dataset_id'
-			)
-			
-			limit = st.number_input(
-				'Limit',
-				min_value=1,
-				max_value=5000,
-				value=100,
-				step=10,
-				key='open_city_limit'
-			)
-			
-			b1, b2, b3 = st.columns( 3 )
-			
-			with b1:
-				open_city_submit = st.button(
-					'Submit',
-					key='open_city_submit',
-					use_container_width=True
-				)
-			
-			with b2:
-				open_city_clear = st.button(
-					'Clear',
-					key='open_city_clear',
-					use_container_width=True
-				)
-			
-			with b3:
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'OpenCityLoader'
-						and isinstance( st.session_state.get( 'raw_text' ), str )
-						and st.session_state.get( 'raw_text' ).strip( )
+				st.caption(
+					'HealthData.gov exposes developer tools and open API access. '
+					'Use SoQL-style clauses for select, where, order, and group.'
 				)
 				
-				if can_save:
-					st.download_button(
-						'Save',
-						data=st.session_state.get( 'raw_text' ),
-						file_name='open_city_loader_output.txt',
-						mime='text/plain',
-						key='open_city_save',
+				b1, b2 = st.columns( 2 )
+				with b1:
+					healthdata_submit = st.button(
+						'Submit',
+						key='healthdata_submit',
 						use_container_width=True
 					)
-				else:
+				
+				with b2:
 					st.button(
-						'Save',
-						key='open_city_save_disabled',
-						disabled=True,
+						'Clear',
+						key='healthdata_clear',
+						on_click=_clear_healthdata_state,
 						use_container_width=True
 					)
-		
-		with col_right:
-			if open_city_clear:
-				st.session_state[ 'open_city_results' ] = { }
-				remaining = _clear_loader_documents( 'OpenCityLoader' )
-				st.info( f'Open City Data Loader state cleared. Remaining documents: {remaining}.' )
 			
-			if open_city_submit:
-				if not city_id or not city_id.strip( ):
-					st.info( 'Enter a City ID.' )
-				elif not dataset_id or not dataset_id.strip( ):
-					st.info( 'Enter a Dataset ID.' )
-				else:
+			with col_right:
+				result = st.session_state.get( 'healthdata_results', { } )
+				
+				if healthdata_submit:
 					try:
-						loader = OpenCityLoader( )
-						documents = loader.load(
-							city_id=city_id.strip( ),
-							dataset_id=dataset_id.strip( ),
-							limit=int( limit )
-						) or [ ]
+						f = HealthData( )
+						result = f.fetch(
+							mode=healthdata_mode,
+							domain=str( healthdata_domain ),
+							dataset_id=str( healthdata_dataset_id ),
+							select=str( healthdata_select ),
+							where=str( healthdata_where ),
+							order=str( healthdata_order ),
+							group=str( healthdata_group ),
+							limit=int( healthdata_limit ),
+							offset=int( healthdata_offset ),
+							time=int( healthdata_timeout )
+						)
 						
-						count = _promote_loader_documents( documents, 'OpenCityLoader' )
-						
-						items: list[ dict[ str, Any ] ] = [ ]
-						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
-							)
-							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Source': metadata.get( 'source', '' ),
-										'Row': content,
-										'Metadata': metadata,
-								}
-							)
-						
-						st.session_state[ 'open_city_results' ] = {
-								'mode': 'open_city',
-								'city_id': city_id.strip( ),
-								'dataset_id': dataset_id.strip( ),
-								'limit': int( limit ),
-								'count': count,
-								'items': items,
-						}
-						
-						st.success( f'Loaded {count} Open City document(s).' )
+						st.session_state[ 'healthdata_results' ] = result or { }
+						st.rerun( )
 					
 					except Exception as exc:
-						st.error( 'Open City request failed.' )
+						st.error( 'HealthData request failed.' )
 						st.exception( exc )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_result_metadata( result )
+					
+					if result.get( 'mode', '' ) == 'metadata':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Name': payload.get( 'name', '' ) if isinstance( payload, dict ) else '',
+									'Description': payload.get( 'description', '' ) if isinstance( payload, dict ) else '',
+									'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance( payload, dict ) else '',
+									'ViewType': payload.get( 'viewType', '' ) if isinstance( payload, dict ) else '',
+									'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload, dict ) else 0,
+							}
+						)
+						
+						rows: List[ Dict[ str, Any ] ] = [ ]
+						columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload, dict ) else [ ]
+						for item in columns_payload:
+							if isinstance( item, dict ):
+								rows.append(
+									{
+											'Name': item.get( 'name', '' ),
+											'FieldName': item.get( 'fieldName', '' ),
+											'DataType': item.get( 'dataTypeName', '' ),
+											'Description': item.get( 'description', '' ),
+									}
+								)
+						
+						_render_rows_table( '#### Columns', rows )
+					
+					elif result.get( 'mode', '' ) == 'rows':
+						rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Domain': healthdata_domain,
+									'DatasetId': healthdata_dataset_id,
+									'Limit': int( healthdata_limit ),
+									'Offset': int( healthdata_offset ),
+									'RowCount': len( rows ) if isinstance( rows, list ) else 0,
+							}
+						)
+						_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
+					
+					_render_fallback_raw( result )
+		
+		# -------- WHO Global Health
+		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
+			if 'who_results' not in st.session_state:
+				st.session_state[ 'who_results' ] = { }
 			
-			result = st.session_state.get( 'open_city_results', { } )
+			if 'who_clear_request' not in st.session_state:
+				st.session_state[ 'who_clear_request' ] = False
 			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				_render_summary_kv(
-					'#### Summary',
-					{
-							'Mode': result.get( 'mode', '' ),
-							'CityId': result.get( 'city_id', '' ),
-							'DatasetId': result.get( 'dataset_id', '' ),
-							'Limit': result.get( 'limit', 0 ),
-							'Returned': result.get( 'count', 0 ),
-					}
+			if st.session_state.get( 'who_clear_request', False ):
+				st.session_state[ 'who_mode' ] = 'indicator_registry'
+				st.session_state[ 'who_query_path' ] = ''
+				st.session_state[ 'who_format' ] = 'json'
+				st.session_state[ 'who_timeout' ] = 20
+				st.session_state[ 'who_results' ] = { }
+				st.session_state[ 'who_clear_request' ] = False
+			
+			def _clear_who_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the WHO Global Health expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'who_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				who_mode = st.selectbox(
+					'Mode',
+					options=[ 'indicator_registry', 'athena' ],
+					index=[ 'indicator_registry', 'athena' ].index(
+						st.session_state.get( 'who_mode', 'indicator_registry' )
+					),
+					key='who_mode',
+					help=(
+							'indicator_registry = WHO metadata landing content; '
+							'athena = configurable WHO GHO query path.'
+					)
 				)
 				
-				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				who_query_path = st.text_area(
+					'Query Path',
+					value=st.session_state.get( 'who_query_path', '' ),
+					height=100,
+					key='who_query_path',
+					placeholder='Indicator',
+					disabled=(who_mode != 'athena'),
+					help='Path appended after the WHO GHO API base endpoint.'
+				)
 				
-				if items:
-					table_rows = [
-							{
-									'Index': item.get( 'Index', '' ),
-									'Source': item.get( 'Source', '' ),
-									'Preview': str( item.get( 'Row', '' ) )[ :200 ],
-							}
-							for item in items
-					]
+				who_format = st.selectbox(
+					'Format',
+					options=[ 'json', 'xml' ],
+					index=[ 'json', 'xml' ].index(
+						st.session_state.get( 'who_format', 'json' )
+					),
+					key='who_format',
+					disabled=(who_mode != 'athena')
+				)
+				
+				who_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'who_timeout', 20 ) ),
+					step=1,
+					key='who_timeout'
+				)
+				
+				st.caption(
+					'WHO documents both GHO OData API and Athena API endpoints. '
+					'Use athena mode for direct query-path requests.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					who_submit = st.button(
+						'Submit',
+						key='who_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='who_clear',
+						on_click=_clear_who_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				result = st.session_state.get( 'who_results', { } )
+				
+				if who_submit:
+					try:
+						f = GlobalHealthData( )
+						result = f.fetch(
+							mode=who_mode,
+							query_path=str( who_query_path ),
+							fmt=str( who_format ),
+							time=int( who_timeout )
+						)
+						
+						st.session_state[ 'who_results' ] = result or { }
+						st.rerun( )
 					
-					st.markdown( '#### Results' )
-					st.dataframe( table_rows, use_container_width=True, hide_index=True )
-					
-					first = items[ 0 ]
-					st.markdown( '#### First Row Preview' )
-					st.code( str( first.get( 'Row', '' ) )[ :8000 ] )
+					except Exception as exc:
+						st.error( 'WHO Global Health request failed.' )
+						st.exception( exc )
+				
+				if not result:
+					st.text( 'No results.' )
 				else:
-					st.info( 'No city records returned.' )
+					_render_result_metadata( result )
+					
+					if result.get( 'mode', '' ) == 'indicator_registry':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Mode': result.get( 'mode', '' ),
+									'HasHtml': isinstance( payload, dict ) and bool( payload.get( 'html', '' ) ),
+							}
+						)
+						
+						if isinstance( payload, dict ) and payload.get( 'html', '' ):
+							_render_html_preview(
+								'#### Indicator Registry Preview',
+								str( payload.get( 'html', '' ) ) )
+						else:
+							st.json( payload )
+					
+					elif result.get( 'mode', '' ) == 'athena':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						if isinstance( payload, dict ) and isinstance( payload.get( 'value', [ ] ), list ):
+							rows = payload.get( 'value', [ ] )
+							_render_summary_kv(
+								'#### Summary',
+								{
+										'QueryPath': who_query_path,
+										'Format': who_format,
+										'ResultCount': len( rows ),
+								}
+							)
+							_render_rows_table( '#### Athena Results', rows )
+						elif isinstance( payload, dict ) and payload.get( 'text', '' ):
+							_render_summary_kv(
+								'#### Summary',
+								{
+										'QueryPath': who_query_path,
+										'Format': who_format,
+										'HasText': True,
+								}
+							)
+							st.markdown( '#### Response' )
+							st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+						else:
+							st.json( payload )
+					
+					_render_fallback_raw( result )
+		
+		# -------- United Nations Data
+		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
+			if 'un_results' not in st.session_state:
+				st.session_state[ 'un_results' ] = { }
+			
+			if 'un_clear_request' not in st.session_state:
+				st.session_state[ 'un_clear_request' ] = False
+			
+			if st.session_state.get( 'un_clear_request', False ):
+				st.session_state[ 'un_mode' ] = 'datasets'
+				st.session_state[ 'un_query_path' ] = ''
+				st.session_state[ 'un_timeout' ] = 20
+				st.session_state[ 'un_results' ] = { }
+				st.session_state[ 'un_clear_request' ] = False
+			
+			def _clear_un_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the United Nations expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'un_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				un_mode = st.selectbox(
+					'Mode',
+					options=[ 'datasets', 'sdmx_query' ],
+					index=[ 'datasets', 'sdmx_query' ].index(
+						st.session_state.get( 'un_mode', 'datasets' )
+					),
+					key='un_mode',
+					help=(
+							'datasets = UNdata dataset catalog landing content; '
+							'sdmx_query = direct REST SDMX query path.'
+					)
+				)
 				
-				_render_fallback_raw( result )
+				un_query_path = st.text_area(
+					'Query Path',
+					value=st.session_state.get( 'un_query_path', '' ),
+					height=120,
+					key='un_query_path',
+					placeholder='data/DF_SDG_GLH/..SI_POV_DAY1...........?',
+					disabled=(un_mode != 'sdmx_query'),
+					help='Path appended after https://data.un.org/WS/rest/'
+				)
+				
+				un_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'un_timeout', 20 ) ),
+					step=1,
+					key='un_timeout'
+				)
+				
+				st.caption(
+					'UNdata documents SDMX REST access and a public dataset catalog. '
+					'Use sdmx_query mode for direct REST query paths.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					un_submit = st.button(
+						'Submit',
+						key='un_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='un_clear',
+						on_click=_clear_un_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				result = st.session_state.get( 'un_results', { } )
+				
+				if un_submit:
+					try:
+						f = UnitedNations( )
+						result = f.fetch(
+							mode=un_mode,
+							query_path=str( un_query_path ),
+							time=int( un_timeout )
+						)
+						
+						st.session_state[ 'un_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'United Nations request failed.' )
+						st.exception( exc )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_result_metadata( result )
+					
+					if result.get( 'mode', '' ) == 'datasets':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Mode': result.get( 'mode', '' ),
+									'HasHtml': isinstance( payload, dict ) and bool( payload.get( 'html', '' ) ),
+							}
+						)
+						
+						if isinstance( payload, dict ) and payload.get( 'html', '' ):
+							_render_html_preview(
+								'#### Dataset Catalog Preview',
+								str( payload.get( 'html', '' ) ) )
+						else:
+							st.json( payload )
+					
+					elif result.get( 'mode', '' ) == 'sdmx_query':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Mode': result.get( 'mode', '' ),
+									'QueryPath': un_query_path,
+									'TextPayload': isinstance( payload, dict ) and bool( payload.get( 'text', '' ) ),
+							}
+						)
+						
+						if isinstance( payload, dict ) and payload.get( 'text', '' ):
+							st.markdown( '#### Query Response' )
+							st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+						else:
+							st.json( payload )
+					
+					_render_fallback_raw( result )
+		
+		# -------- World Population
+		with st.expander( label='World Population', icon='👥', expanded=False ):
+			if 'worldpop_results' not in st.session_state:
+				st.session_state[ 'worldpop_results' ] = { }
+			
+			if 'worldpop_clear_request' not in st.session_state:
+				st.session_state[ 'worldpop_clear_request' ] = False
+			
+			if st.session_state.get( 'worldpop_clear_request', False ):
+				st.session_state[ 'worldpop_mode' ] = 'catalog'
+				st.session_state[ 'worldpop_query' ] = ''
+				st.session_state[ 'worldpop_asset_path' ] = ''
+				st.session_state[ 'worldpop_page' ] = 1
+				st.session_state[ 'worldpop_page_size' ] = 25
+				st.session_state[ 'worldpop_timeout' ] = 20
+				st.session_state[ 'worldpop_results' ] = { }
+				st.session_state[ 'worldpop_clear_request' ] = False
+			
+			def _clear_worldpop_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the World Population expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'worldpop_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				worldpop_mode = st.selectbox(
+					'Mode',
+					options=[ 'catalog', 'search', 'raster_metadata' ],
+					index=[ 'catalog', 'search', 'raster_metadata' ].index(
+						st.session_state.get( 'worldpop_mode', 'catalog' )
+					),
+					key='worldpop_mode',
+					help=(
+							'catalog = API landing content; '
+							'search = catalog-style search; '
+							'raster_metadata = direct asset or metadata path.'
+					)
+				)
+				
+				worldpop_query = st.text_area(
+					'Query',
+					value=st.session_state.get( 'worldpop_query', '' ),
+					height=90,
+					key='worldpop_query',
+					placeholder='population Ghana 2020',
+					disabled=(worldpop_mode != 'search')
+				)
+				
+				worldpop_asset_path = st.text_area(
+					'Asset Path',
+					value=st.session_state.get( 'worldpop_asset_path', '' ),
+					height=100,
+					key='worldpop_asset_path',
+					placeholder='data/pop/wpgp?iso3=GHA',
+					disabled=(worldpop_mode != 'raster_metadata')
+				)
+				
+				c1, c2, c3 = st.columns( 3 )
+				
+				with c1:
+					worldpop_page = st.number_input(
+						'Page',
+						min_value=1,
+						max_value=100000,
+						value=int( st.session_state.get( 'worldpop_page', 1 ) ),
+						step=1,
+						key='worldpop_page',
+						disabled=(worldpop_mode != 'search')
+					)
+				
+				with c2:
+					worldpop_page_size = st.number_input(
+						'Page Size',
+						min_value=1,
+						max_value=500,
+						value=int( st.session_state.get( 'worldpop_page_size', 25 ) ),
+						step=1,
+						key='worldpop_page_size',
+						disabled=(worldpop_mode != 'search')
+					)
+				
+				with c3:
+					worldpop_timeout = st.number_input(
+						'Timeout',
+						min_value=1,
+						max_value=120,
+						value=int( st.session_state.get( 'worldpop_timeout', 20 ) ),
+						step=1,
+						key='worldpop_timeout'
+					)
+				
+				st.caption(
+					'WorldPop publishes API-based access and STAC-oriented discovery. '
+					'Use raster_metadata mode for direct API paths.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					worldpop_submit = st.button(
+						'Submit',
+						key='worldpop_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='worldpop_clear',
+						on_click=_clear_worldpop_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				result = st.session_state.get( 'worldpop_results', { } )
+				
+				if worldpop_submit:
+					try:
+						f = WorldPopulation( )
+						result = f.fetch(
+							mode=worldpop_mode,
+							query=str( worldpop_query ),
+							asset_path=str( worldpop_asset_path ),
+							page=int( worldpop_page ),
+							page_size=int( worldpop_page_size ),
+							time=int( worldpop_timeout )
+						)
+						
+						st.session_state[ 'worldpop_results' ] = result or { }
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'World Population request failed.' )
+						st.exception( exc )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_result_metadata( result )
+					
+					if result.get( 'mode', '' ) == 'catalog':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Mode': result.get( 'mode', '' ),
+									'HasHtml': isinstance( payload, dict ) and bool( payload.get( 'html', '' ) ),
+							}
+						)
+						
+						if isinstance( payload, dict ) and payload.get( 'html', '' ):
+							_render_html_preview(
+								'#### Catalog Preview',
+								str( payload.get( 'html', '' ) ) )
+						else:
+							st.json( payload )
+					
+					elif result.get( 'mode', '' ) == 'search':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						if isinstance( payload, dict ) and isinstance( payload.get( 'results', [ ] ), list ):
+							rows = payload.get( 'results', [ ] )
+							_render_summary_kv(
+								'#### Summary',
+								{
+										'Query': worldpop_query,
+										'Page': worldpop_page,
+										'PageSize': worldpop_page_size,
+										'ResultCount': len( rows ),
+								}
+							)
+							_render_rows_table( '#### Search Results', rows )
+						else:
+							st.json( payload )
+					
+					elif result.get( 'mode', '' ) == 'raster_metadata':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'AssetPath': worldpop_asset_path,
+									'HasText': isinstance( payload, dict ) and bool( payload.get( 'text', '' ) ),
+							}
+						)
+						
+						if isinstance( payload, dict ) and payload.get( 'text', '' ):
+							st.markdown( '#### Metadata Response' )
+							st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+						else:
+							st.json( payload )
+					
+					_render_fallback_raw( result )
+		
+		# -------- CDC WONDER
+		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
+			if 'wonder_results' not in st.session_state:
+				st.session_state[ 'wonder_results' ] = { }
+			
+			if 'wonder_clear_request' not in st.session_state:
+				st.session_state[ 'wonder_clear_request' ] = False
+			
+			if st.session_state.get( 'wonder_clear_request', False ):
+				st.session_state[ 'wonder_mode' ] = 'metadata_template'
+				st.session_state[ 'wonder_dataset_id' ] = 'D76'
+				st.session_state[ 'wonder_request_xml' ] = ''
+				st.session_state[ 'wonder_timeout' ] = 20
+				st.session_state[ 'wonder_results' ] = { }
+				st.session_state[ 'wonder_clear_request' ] = False
+			
+			def _clear_wonder_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the CDC WONDER expander state for reset on the next rerun.
+	
+					Parameters:
+					-----------
+					None
+	
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'wonder_clear_request' ] = True
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				wonder_mode = st.selectbox(
+					'Mode',
+					options=[ 'metadata_template', 'query_xml' ],
+					index=[ 'metadata_template', 'query_xml' ].index(
+						st.session_state.get( 'wonder_mode', 'metadata_template' )
+					),
+					key='wonder_mode',
+					help=(
+							'metadata_template = build a starter XML request; '
+							'query_xml = submit a raw XML request to CDC WONDER.'
+					)
+				)
+				
+				wonder_dataset_id = st.text_input(
+					'Dataset ID',
+					value=st.session_state.get( 'wonder_dataset_id', 'D76' ),
+					key='wonder_dataset_id',
+					placeholder='D76'
+				)
+				
+				wonder_request_xml = st.text_area(
+					'Request XML',
+					value=st.session_state.get( 'wonder_request_xml', '' ),
+					height=240,
+					key='wonder_request_xml',
+					placeholder='<request>...</request>',
+					disabled=(wonder_mode != 'query_xml')
+				)
+				
+				wonder_timeout = st.number_input(
+					'Timeout',
+					min_value=1,
+					max_value=120,
+					value=int( st.session_state.get( 'wonder_timeout', 20 ) ),
+					step=1,
+					key='wonder_timeout'
+				)
+				
+				st.caption(
+					'CDC WONDER requires POST requests with request_xml and '
+					'acceptance of data-use restrictions.'
+				)
+				
+				b1, b2 = st.columns( 2 )
+				with b1:
+					wonder_submit = st.button(
+						'Submit',
+						key='wonder_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					st.button(
+						'Clear',
+						key='wonder_clear',
+						on_click=_clear_wonder_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				result = st.session_state.get( 'wonder_results', { } )
+				
+				if wonder_submit:
+					try:
+						f = Wonder( )
+						result = f.fetch(
+							mode=wonder_mode,
+							dataset_id=str( wonder_dataset_id ),
+							request_xml=str( wonder_request_xml ),
+							time=int( wonder_timeout )
+						)
+						
+						st.session_state[ 'wonder_results' ] = result or { }
+						
+						if (
+								wonder_mode == 'metadata_template'
+								and isinstance( result, dict )
+								and isinstance( result.get( 'data', { } ), dict )
+						):
+							template_xml = result.get( 'data', { } ).get( 'request_xml', '' )
+							st.session_state[ 'wonder_request_xml' ] = template_xml
+						
+						st.rerun( )
+					
+					except Exception as exc:
+						st.error( 'CDC WONDER request failed.' )
+						st.exception( exc )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_result_metadata( result )
+					
+					if result.get( 'mode', '' ) == 'metadata_template':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						if isinstance( payload, dict ):
+							_render_summary_kv(
+								'#### Template Summary',
+								{
+										'DatasetId': payload.get( 'dataset_id', '' ),
+										'Notes': payload.get( 'notes', '' ),
+								}
+							)
+							
+							template_xml = str( payload.get( 'request_xml', '' ) )
+							if template_xml:
+								_render_xml_preview( '#### Starter XML', template_xml )
+							else:
+								st.info( 'No starter XML returned.' )
+					
+					elif result.get( 'mode', '' ) == 'query_xml':
+						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+						
+						if isinstance( payload, dict ):
+							xml_text = str( payload.get( 'xml', '' ) )
+							
+							_render_summary_kv(
+								'#### Response Summary',
+								{
+										'DatasetId': wonder_dataset_id,
+										'Characters': len( xml_text ),
+										'HasXml': bool( xml_text.strip( ) ),
+								}
+							)
+							
+							_render_xml_preview( '#### XML Response', xml_text )
+						else:
+							st.info( 'No XML response returned.' )
+					
+					_render_fallback_raw( result )
+				
+		# -------- Pub Med
+		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
+			if 'pubmed_results' not in st.session_state:
+				st.session_state[ 'pubmed_results' ] = { }
+			
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			
+			with col_left:
+				query = st.text_input(
+					'PubMed Query',
+					key='pubmed_query'
+				)
+				
+				max_docs = st.number_input(
+					'Max Documents',
+					min_value=1,
+					max_value=100,
+					value=5,
+					step=1,
+					key='pubmed_max_docs'
+				)
+				
+				b1, b2, b3 = st.columns( 3 )
+				
+				with b1:
+					pubmed_submit = st.button(
+						'Submit',
+						key='pubmed_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					pubmed_clear = st.button(
+						'Clear',
+						key='pubmed_clear',
+						use_container_width=True
+					)
+				
+				with b3:
+					can_save = ( st.session_state.get( 'active_loader' ) == 'PubMedSearchLoader'
+							and isinstance( st.session_state.get( 'raw_text' ), str )
+							and st.session_state.get( 'raw_text' ).strip( ) )
+					
+					if can_save:
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='pubmed_loader_output.txt', mime='text/plain',
+							key='pubmed_save', use_container_width=True )
+					else:
+						st.button( 'Save', key='pubmed_save_disabled', disabled=True,
+							use_container_width=True )
+			
+			with col_right:
+				if pubmed_clear:
+					st.session_state[ 'pubmed_results' ] = { }
+					remaining = _clear_loader_documents( 'PubMedSearchLoader' )
+					st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
+				
+				if pubmed_submit:
+					if not query or not query.strip( ):
+						st.info( 'Enter a PubMed query.' )
+					else:
+						try:
+							loader = PubMedSearchLoader( )
+							documents = loader.load( query=query.strip( ),
+								max_docs=int( max_docs ) ) or [ ]
+							
+							count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
+							
+							items: list[ dict[ str, Any ] ] = [ ]
+							for i, doc in enumerate( documents, start=1 ):
+								metadata = (
+										doc.metadata
+										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										else { }
+								)
+								content = str( getattr( doc, 'page_content', '' ) or '' )
+								items.append(
+									{
+											'Index': i,
+											'Title': metadata.get( 'Title' )
+											         or metadata.get( 'title' )
+											         or '',
+											'Published': metadata.get( 'Published' )
+											             or metadata.get( 'published' )
+											             or '',
+											'Copyright': metadata.get( 'Copyright Information' )
+											             or metadata.get( 'copyright' )
+											             or '',
+											'Summary': content,
+											'Metadata': metadata,
+									}
+								)
+							
+							st.session_state[ 'pubmed_results' ] = {
+									'mode': 'pubmed',
+									'query': query.strip( ),
+									'max_docs': int( max_docs ),
+									'count': count,
+									'items': items,
+							}
+							
+							st.success( f'Loaded {count} PubMed document(s).' )
+						
+						except Exception as exc:
+							st.error( 'PubMed request failed.' )
+							st.exception( exc )
+				
+				result = st.session_state.get( 'pubmed_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'Query': result.get( 'query', '' ),
+								'MaxDocs': result.get( 'max_docs', 0 ),
+								'Returned': result.get( 'count', 0 ),
+						}
+					)
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						table_rows = [
+								{
+										'Index': item.get( 'Index', '' ),
+										'Title': item.get( 'Title', '' ),
+										'Published': item.get( 'Published', '' ),
+								}
+								for item in items
+						]
+						
+						st.markdown( '#### Results' )
+						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						
+						first = items[ 0 ]
+						_render_summary_kv(
+							'#### First Result',
+							{
+									'Title': first.get( 'Title', '' ),
+									'Published': first.get( 'Published', '' ),
+									'Copyright': first.get( 'Copyright', '' ),
+							}
+						)
+						
+						st.markdown( '#### Abstract Preview' )
+						st.code( str( first.get( 'Summary', '' ) )[ :8000 ] )
+					else:
+						st.info( 'No PubMed records returned.' )
+					
+					_render_fallback_raw( result )
+					
+		# -------- Open City
+		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
+			if 'open_city_results' not in st.session_state:
+				st.session_state[ 'open_city_results' ] = { }
+			
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			
+			with col_left:
+				city_id = st.text_input(
+					'City ID',
+					value='data.sfgov.org',
+					key='open_city_id'
+				)
+				
+				dataset_id = st.text_input(
+					'Dataset ID',
+					key='open_city_dataset_id'
+				)
+				
+				limit = st.number_input(
+					'Limit',
+					min_value=1,
+					max_value=5000,
+					value=100,
+					step=10,
+					key='open_city_limit'
+				)
+				
+				b1, b2, b3 = st.columns( 3 )
+				
+				with b1:
+					open_city_submit = st.button(
+						'Submit',
+						key='open_city_submit',
+						use_container_width=True
+					)
+				
+				with b2:
+					open_city_clear = st.button(
+						'Clear',
+						key='open_city_clear',
+						use_container_width=True
+					)
+				
+				with b3:
+					can_save = (
+							st.session_state.get( 'active_loader' ) == 'OpenCityLoader'
+							and isinstance( st.session_state.get( 'raw_text' ), str )
+							and st.session_state.get( 'raw_text' ).strip( )
+					)
+					
+					if can_save:
+						st.download_button(
+							'Save',
+							data=st.session_state.get( 'raw_text' ),
+							file_name='open_city_loader_output.txt',
+							mime='text/plain',
+							key='open_city_save',
+							use_container_width=True
+						)
+					else:
+						st.button(
+							'Save',
+							key='open_city_save_disabled',
+							disabled=True,
+							use_container_width=True
+						)
+			
+			with col_right:
+				if open_city_clear:
+					st.session_state[ 'open_city_results' ] = { }
+					remaining = _clear_loader_documents( 'OpenCityLoader' )
+					st.info( f'Open City Data Loader state cleared. Remaining documents: {remaining}.' )
+				
+				if open_city_submit:
+					if not city_id or not city_id.strip( ):
+						st.info( 'Enter a City ID.' )
+					elif not dataset_id or not dataset_id.strip( ):
+						st.info( 'Enter a Dataset ID.' )
+					else:
+						try:
+							loader = OpenCityLoader( )
+							documents = loader.load(
+								city_id=city_id.strip( ),
+								dataset_id=dataset_id.strip( ),
+								limit=int( limit )
+							) or [ ]
+							
+							count = _promote_loader_documents( documents, 'OpenCityLoader' )
+							
+							items: list[ dict[ str, Any ] ] = [ ]
+							for i, doc in enumerate( documents, start=1 ):
+								metadata = (
+										doc.metadata
+										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										else { }
+								)
+								content = str( getattr( doc, 'page_content', '' ) or '' )
+								items.append(
+									{
+											'Index': i,
+											'Source': metadata.get( 'source', '' ),
+											'Row': content,
+											'Metadata': metadata,
+									}
+								)
+							
+							st.session_state[ 'open_city_results' ] = {
+									'mode': 'open_city',
+									'city_id': city_id.strip( ),
+									'dataset_id': dataset_id.strip( ),
+									'limit': int( limit ),
+									'count': count,
+									'items': items,
+							}
+							
+							st.success( f'Loaded {count} Open City document(s).' )
+						
+						except Exception as exc:
+							st.error( 'Open City request failed.' )
+							st.exception( exc )
+				
+				result = st.session_state.get( 'open_city_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'CityId': result.get( 'city_id', '' ),
+								'DatasetId': result.get( 'dataset_id', '' ),
+								'Limit': result.get( 'limit', 0 ),
+								'Returned': result.get( 'count', 0 ),
+						}
+					)
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if items:
+						table_rows = [
+								{
+										'Index': item.get( 'Index', '' ),
+										'Source': item.get( 'Source', '' ),
+										'Preview': str( item.get( 'Row', '' ) )[ :200 ],
+								}
+								for item in items
+						]
+						
+						st.markdown( '#### Results' )
+						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						
+						first = items[ 0 ]
+						st.markdown( '#### First Row Preview' )
+						st.code( str( first.get( 'Row', '' ) )[ :8000 ] )
+					else:
+						st.info( 'No city records returned.' )
+					
+					_render_fallback_raw( result )
 				
 # ==============================================================================
 # TEXT GENERATION MODE
 # ==============================================================================
 elif mode == 'Generation':
-	st.subheader( f'🧠  Generative AI' )
-	st.divider( )
-	
-	# -------- ChatGPT
-	with st.expander( label='ChatGPT', expanded=True ):
-		col_left, col_right = st.columns( 2, border=True )
+	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	with center:
+		st.subheader( f'🧠  Generative AI' )
+		st.divider( )
 		
-		with col_left:
-			chat_prompt = st.text_area( 'Prompt', value='', height=120, key='chat_prompt' )
+		# -------- ChatGPT
+		with st.expander( label='ChatGPT', expanded=True ):
+			col_left, col_right = st.columns( 2, border=True )
 			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			p_row4 = st.columns( 2 )
-			p_row5 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				_chat_models = cfg.GPT_MODELS if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS else \
-					[ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1' ]
-				chat_model = _model_selector(
-					key_prefix='chat',
-					label='Model',
-					options=_chat_models,
-					default_model=(
-							'gpt-5-mini' if 'gpt-5-mini' in _chat_models else _chat_models[ 0 ]),
+			with col_left:
+				chat_prompt = st.text_area( 'Prompt', value='', height=120, key='chat_prompt' )
+				
+				p_row1 = st.columns( 2 )
+				p_row2 = st.columns( 2 )
+				p_row3 = st.columns( 2 )
+				p_row4 = st.columns( 2 )
+				p_row5 = st.columns( 2 )
+				
+				with p_row1[ 0 ]:
+					_chat_models = cfg.GPT_MODELS if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS else \
+						[ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1' ]
+					chat_model = _model_selector(
+						key_prefix='chat',
+						label='Model',
+						options=_chat_models,
+						default_model=(
+								'gpt-5-mini' if 'gpt-5-mini' in _chat_models else _chat_models[ 0 ]),
+					)
+				
+				with p_row1[ 1 ]:
+					chat_temperature = st.slider(
+						'Temperature',
+						min_value=0.0,
+						max_value=2.0,
+						value=0.7,
+						step=0.05,
+						key='chat_temperature',
+					)
+				
+				with p_row2[ 0 ]:
+					chat_max_tokens = st.number_input(
+						'Max Tokens',
+						min_value=1,
+						max_value=32768,
+						value=2048,
+						step=1,
+						key='chat_max_tokens',
+					)
+				
+				with p_row2[ 1 ]:
+					chat_top_p = st.slider(
+						'Top-P',
+						min_value=0.0,
+						max_value=1.0,
+						value=1.0,
+						step=0.01,
+						key='chat_top_p',
+					)
+				
+				with p_row3[ 0 ]:
+					chat_seed = st.number_input(
+						'Seed',
+						min_value=0,
+						max_value=2_147_483_647,
+						value=0,
+						step=1,
+						key='chat_seed',
+					)
+				
+				with p_row3[ 1 ]:
+					chat_json_mode = st.checkbox(
+						'JSON Mode',
+						value=False,
+						key='chat_json_mode',
+					)
+				
+				with p_row4[ 0 ]:
+					chat_reasoning = st.checkbox(
+						'Reasoning',
+						value=False,
+						key='chat_reasoning',
+					)
+				
+				with p_row4[ 1 ]:
+					chat_web_search = st.checkbox(
+						'Web Search',
+						value=False,
+						key='chat_web_search',
+					)
+				
+				with p_row5[ 0 ]:
+					chat_store = st.checkbox(
+						'Store',
+						value=True,
+						key='chat_store',
+					)
+				
+				with p_row5[ 1 ]:
+					chat_stream = st.checkbox(
+						'Stream',
+						value=False,
+						key='chat_stream',
+					)
+				
+				_chat_supports_reasoning = (
+						str( chat_model ).strip( ).lower( ).startswith( 'gpt-5' )
+						or str( chat_model ).strip( ).lower( ).startswith( 'o' )
 				)
-			
-			with p_row1[ 1 ]:
-				chat_temperature = st.slider(
-					'Temperature',
-					min_value=0.0,
-					max_value=2.0,
-					value=0.7,
-					step=0.05,
-					key='chat_temperature',
-				)
-			
-			with p_row2[ 0 ]:
-				chat_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=32768,
-					value=2048,
-					step=1,
-					key='chat_max_tokens',
-				)
-			
-			with p_row2[ 1 ]:
-				chat_top_p = st.slider(
-					'Top-P',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='chat_top_p',
-				)
-			
-			with p_row3[ 0 ]:
-				chat_seed = st.number_input(
-					'Seed',
-					min_value=0,
-					max_value=2_147_483_647,
-					value=0,
-					step=1,
-					key='chat_seed',
-				)
-			
-			with p_row3[ 1 ]:
-				chat_json_mode = st.checkbox(
-					'JSON Mode',
-					value=False,
-					key='chat_json_mode',
-				)
-			
-			with p_row4[ 0 ]:
-				chat_reasoning = st.checkbox(
-					'Reasoning',
-					value=False,
-					key='chat_reasoning',
-				)
-			
-			with p_row4[ 1 ]:
-				chat_web_search = st.checkbox(
-					'Web Search',
-					value=False,
-					key='chat_web_search',
-				)
-			
-			with p_row5[ 0 ]:
-				chat_store = st.checkbox(
-					'Store',
-					value=True,
-					key='chat_store',
-				)
-			
-			with p_row5[ 1 ]:
-				chat_stream = st.checkbox(
-					'Stream',
-					value=False,
-					key='chat_stream',
-				)
-			
-			_chat_supports_reasoning = (
-					str( chat_model ).strip( ).lower( ).startswith( 'gpt-5' )
-					or str( chat_model ).strip( ).lower( ).startswith( 'o' )
-			)
-			
-			if _chat_supports_reasoning and chat_reasoning:
-				chat_reasoning_effort = st.selectbox(
-					'Reasoning Effort',
-					options=[ 'minimal', 'low', 'medium', 'high' ],
-					index=1,
-					key='chat_reasoning_effort',
-				)
-			else:
-				chat_reasoning_effort = None
-			
-			chat_system = st.text_area(
-				'System',
-				value='',
-				height=120,
-				key='chat_system',
-			)
-			
-			if chat_web_search:
-				chat_domains = st.text_area(
-					'Preferred Search Domains (one per line or comma-separated)',
+				
+				if _chat_supports_reasoning and chat_reasoning:
+					chat_reasoning_effort = st.selectbox(
+						'Reasoning Effort',
+						options=[ 'minimal', 'low', 'medium', 'high' ],
+						index=1,
+						key='chat_reasoning_effort',
+					)
+				else:
+					chat_reasoning_effort = None
+				
+				chat_system = st.text_area(
+					'System',
 					value='',
-					height=90,
-					key='chat_domains',
-					help='Examples: openai.com, platform.openai.com, arxiv.org',
+					height=120,
+					key='chat_system',
 				)
-			else:
-				chat_domains = ''
+				
+				if chat_web_search:
+					chat_domains = st.text_area(
+						'Preferred Search Domains (one per line or comma-separated)',
+						value='',
+						height=90,
+						key='chat_domains',
+						help='Examples: openai.com, platform.openai.com, arxiv.org',
+					)
+				else:
+					chat_domains = ''
+				
+				btn_row = st.columns( 2 )
+				with btn_row[ 0 ]:
+					chat_submit = st.button( 'Submit', key='chat_submit' )
+				with btn_row[ 1 ]:
+					chat_clear = st.button( 'Clear', key='chat_clear' )
 			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				chat_submit = st.button( 'Submit', key='chat_submit' )
-			with btn_row[ 1 ]:
-				chat_clear = st.button( 'Clear', key='chat_clear' )
-		
-		with col_right:
-			chat_output = st.empty( )
-		
-		# -----------------------------
-		# Clear Button
-		# -----------------------------
-		if chat_clear:
-			st.session_state.update(
-				{
-						'chat_prompt': '',
-						'chat_system': '',
-						'chat_domains': '',
-						'chat_json_mode': False,
-						'chat_reasoning': False,
-						'chat_web_search': False,
-						'chat_store': True,
-						'chat_stream': False,
-						'chat_seed': 0,
-				}
-			)
-			st.rerun( )
-		
-		# -----------------------------
-		# Submit Button
-		# -----------------------------
-		if chat_submit:
-			try:
-				if not str( chat_prompt ).strip( ):
-					raise ValueError( 'Prompt cannot be empty.' )
-				
-				chat_domains_list = [ ]
-				if chat_domains and str( chat_domains ).strip( ):
-					_domain_entries = re.split( r'[\n,;]+', str( chat_domains ) )
-					for _entry in _domain_entries:
-						_value = str( _entry ).strip( ).lower( )
-						if not _value:
-							continue
-						
-						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-							_value = f'https://{_value}'
-						
-						_parsed = urlparse( _value )
-						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-						_domain = re.sub( r':\d+$', '', _domain )
-						_domain = _domain.lstrip( '.' )
-						
-						if _domain.startswith( 'www.' ):
-							_domain = _domain[ 4: ]
-						
-						if _domain and _domain not in chat_domains_list:
-							chat_domains_list.append( _domain )
-				
-				fetcher = Chat( )
-				params = \
+			with col_right:
+				chat_output = st.empty( )
+			
+			# -----------------------------
+			# Clear Button
+			# -----------------------------
+			if chat_clear:
+				st.session_state.update(
 					{
-							'model': chat_model,
-							'temperature': float( chat_temperature ),
-							'max_tokens': int( chat_max_tokens ),
-							'top_p': float( chat_top_p ),
-							'seed': int( chat_seed ) if int( chat_seed ) > 0 else None,
-							'system': chat_system if str( chat_system ).strip( ) else None,
-							'response_format': ('json' if chat_json_mode else None),
-							'reasoning_effort': (
-									chat_reasoning_effort
-									if _chat_supports_reasoning and chat_reasoning and chat_reasoning_effort
-									else None
-							),
-							'web_search': bool( chat_web_search ),
-							'search_domains': chat_domains_list if chat_domains_list else None,
-							'store': bool( chat_store ),
-							'stream': bool( chat_stream ),
-							'parallel_tool_calls': True,
-							'tool_choice': 'auto',
+							'chat_prompt': '',
+							'chat_system': '',
+							'chat_domains': '',
+							'chat_json_mode': False,
+							'chat_reasoning': False,
+							'chat_web_search': False,
+							'chat_store': True,
+							'chat_stream': False,
+							'chat_seed': 0,
 					}
+				)
+				st.rerun( )
+			
+			# -----------------------------
+			# Submit Button
+			# -----------------------------
+			if chat_submit:
+				try:
+					if not str( chat_prompt ).strip( ):
+						raise ValueError( 'Prompt cannot be empty.' )
+					
+					chat_domains_list = [ ]
+					if chat_domains and str( chat_domains ).strip( ):
+						_domain_entries = re.split( r'[\n,;]+', str( chat_domains ) )
+						for _entry in _domain_entries:
+							_value = str( _entry ).strip( ).lower( )
+							if not _value:
+								continue
+							
+							if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+								_value = f'https://{_value}'
+							
+							_parsed = urlparse( _value )
+							_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+							_domain = re.sub( r':\d+$', '', _domain )
+							_domain = _domain.lstrip( '.' )
+							
+							if _domain.startswith( 'www.' ):
+								_domain = _domain[ 4: ]
+							
+							if _domain and _domain not in chat_domains_list:
+								chat_domains_list.append( _domain )
+					
+					fetcher = Chat( )
+					params = \
+						{
+								'model': chat_model,
+								'temperature': float( chat_temperature ),
+								'max_tokens': int( chat_max_tokens ),
+								'top_p': float( chat_top_p ),
+								'seed': int( chat_seed ) if int( chat_seed ) > 0 else None,
+								'system': chat_system if str( chat_system ).strip( ) else None,
+								'response_format': ('json' if chat_json_mode else None),
+								'reasoning_effort': (
+										chat_reasoning_effort
+										if _chat_supports_reasoning and chat_reasoning and chat_reasoning_effort
+										else None
+								),
+								'web_search': bool( chat_web_search ),
+								'search_domains': chat_domains_list if chat_domains_list else None,
+								'store': bool( chat_store ),
+								'stream': bool( chat_stream ),
+								'parallel_tool_calls': True,
+								'tool_choice': 'auto',
+						}
+					
+					params = { k: v for k, v in params.items( ) if v is not None }
+					result = _invoke_provider( fetcher, chat_prompt, params )
+					_render_output( chat_output, result )
 				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				result = _invoke_provider( fetcher, chat_prompt, params )
-				_render_output( chat_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# -------- Groq
-	with st.expander( label='Grok', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
+				except Exception as exc:
+					st.error( str( exc ) )
 		
-		with col_left:
-			groq_prompt = st.text_area(
-				'Prompt',
-				value='',
-				height=120,
-				key='groq_prompt_chat',
-			)
+		# -------- Groq
+		with st.expander( label='Grok', expanded=False ):
+			col_left, col_right = st.columns( 2, border=True )
 			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			p_row4 = st.columns( 2 )
-			p_row5 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				_grok_models = cfg.GROK_MODELS if hasattr( cfg, 'GROK_MODELS' ) and cfg.GROK_MODELS else \
-					[ 'grok-4-1-fast-reasoning',
-					  'grok-4-fast-reasoning',
-					  'grok-4',
-					  'grok-code-fast-1',
-					  'grok-3-mini' ]
-				groq_model = _model_selector(
-					key_prefix='groq',
-					label='Model',
-					options=_grok_models,
-					default_model=(
-							'grok-4-fast-reasoning' if 'grok-4-fast-reasoning' in _grok_models else
-							_grok_models[ 0 ]),
-				)
-			
-			with p_row1[ 1 ]:
-				groq_temperature = st.slider(
-					'Temperature',
-					min_value=0.0,
-					max_value=2.0,
-					value=0.7,
-					step=0.05,
-					key='groq_temperature_chat',
-				)
-			
-			with p_row2[ 0 ]:
-				groq_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=32768,
-					value=2048,
-					step=1,
-					key='groq_max_tokens_chat',
-				)
-			
-			with p_row2[ 1 ]:
-				groq_top_p = st.slider(
-					'Top-P',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='groq_top_p_chat',
-				)
-			
-			with p_row3[ 0 ]:
-				groq_seed = st.number_input(
-					'Seed',
-					min_value=0,
-					max_value=2_147_483_647,
-					value=0,
-					step=1,
-					key='groq_seed_chat',
-				)
-			
-			with p_row3[ 1 ]:
-				groq_json_mode = st.checkbox(
-					'JSON Mode',
-					value=False,
-					key='groq_json_mode_chat',
-				)
-			
-			with p_row4[ 0 ]:
-				groq_reasoning = st.checkbox(
-					'Reasoning',
-					value=False,
-					key='groq_reasoning_chat',
-					help='Use for models that support explicit reasoning controls. Grok 4 models reason natively.',
-				)
-			
-			with p_row4[ 1 ]:
-				groq_web_search = st.checkbox(
-					'Web Search',
-					value=False,
-					key='groq_web_search_chat',
-				)
-			
-			with p_row5[ 0 ]:
-				groq_store = st.checkbox(
-					'Store',
-					value=True,
-					key='groq_store_chat',
-				)
-			
-			with p_row5[ 1 ]:
-				groq_stream = st.checkbox(
-					'Stream',
-					value=False,
-					key='groq_stream_chat',
-				)
-			
-			_groq_supports_reasoning_effort = 'grok-3-mini' in str( groq_model ).strip( ).lower( )
-			_groq_is_reasoning_model = (
-					'grok-4' in str( groq_model ).strip( ).lower( )
-					or 'reasoning' in str( groq_model ).strip( ).lower( )
-			)
-			
-			if _groq_supports_reasoning_effort and groq_reasoning:
-				groq_reasoning_effort = st.selectbox(
-					'Reasoning Effort',
-					options=[ 'low', 'high' ],
-					index=0,
-					key='groq_reasoning_effort_chat',
-				)
-			else:
-				groq_reasoning_effort = None
-			
-			groq_system = st.text_area(
-				'System',
-				value='',
-				height=120,
-				key='groq_system_chat',
-			)
-			
-			if not _groq_is_reasoning_model:
-				groq_stop = st.text_area(
-					'Stop Sequences (one per line)',
+			with col_left:
+				groq_prompt = st.text_area(
+					'Prompt',
 					value='',
-					height=90,
-					key='groq_stop_chat',
+					height=120,
+					key='groq_prompt_chat',
 				)
-			else:
-				groq_stop = ''
-				st.caption( 'Stop sequences are omitted for Grok reasoning models.' )
-			
-			if groq_web_search:
-				groq_domains = st.text_area(
-					'Allowed Search Domains (one per line or comma-separated)',
+				
+				p_row1 = st.columns( 2 )
+				p_row2 = st.columns( 2 )
+				p_row3 = st.columns( 2 )
+				p_row4 = st.columns( 2 )
+				p_row5 = st.columns( 2 )
+				
+				with p_row1[ 0 ]:
+					_grok_models = cfg.GROK_MODELS if hasattr( cfg, 'GROK_MODELS' ) and cfg.GROK_MODELS else \
+						[ 'grok-4-1-fast-reasoning',
+						  'grok-4-fast-reasoning',
+						  'grok-4',
+						  'grok-code-fast-1',
+						  'grok-3-mini' ]
+					groq_model = _model_selector(
+						key_prefix='groq',
+						label='Model',
+						options=_grok_models,
+						default_model=(
+								'grok-4-fast-reasoning' if 'grok-4-fast-reasoning' in _grok_models else
+								_grok_models[ 0 ]),
+					)
+				
+				with p_row1[ 1 ]:
+					groq_temperature = st.slider(
+						'Temperature',
+						min_value=0.0,
+						max_value=2.0,
+						value=0.7,
+						step=0.05,
+						key='groq_temperature_chat',
+					)
+				
+				with p_row2[ 0 ]:
+					groq_max_tokens = st.number_input(
+						'Max Tokens',
+						min_value=1,
+						max_value=32768,
+						value=2048,
+						step=1,
+						key='groq_max_tokens_chat',
+					)
+				
+				with p_row2[ 1 ]:
+					groq_top_p = st.slider(
+						'Top-P',
+						min_value=0.0,
+						max_value=1.0,
+						value=1.0,
+						step=0.01,
+						key='groq_top_p_chat',
+					)
+				
+				with p_row3[ 0 ]:
+					groq_seed = st.number_input(
+						'Seed',
+						min_value=0,
+						max_value=2_147_483_647,
+						value=0,
+						step=1,
+						key='groq_seed_chat',
+					)
+				
+				with p_row3[ 1 ]:
+					groq_json_mode = st.checkbox(
+						'JSON Mode',
+						value=False,
+						key='groq_json_mode_chat',
+					)
+				
+				with p_row4[ 0 ]:
+					groq_reasoning = st.checkbox(
+						'Reasoning',
+						value=False,
+						key='groq_reasoning_chat',
+						help='Use for models that support explicit reasoning controls. Grok 4 models reason natively.',
+					)
+				
+				with p_row4[ 1 ]:
+					groq_web_search = st.checkbox(
+						'Web Search',
+						value=False,
+						key='groq_web_search_chat',
+					)
+				
+				with p_row5[ 0 ]:
+					groq_store = st.checkbox(
+						'Store',
+						value=True,
+						key='groq_store_chat',
+					)
+				
+				with p_row5[ 1 ]:
+					groq_stream = st.checkbox(
+						'Stream',
+						value=False,
+						key='groq_stream_chat',
+					)
+				
+				_groq_supports_reasoning_effort = 'grok-3-mini' in str( groq_model ).strip( ).lower( )
+				_groq_is_reasoning_model = (
+						'grok-4' in str( groq_model ).strip( ).lower( )
+						or 'reasoning' in str( groq_model ).strip( ).lower( )
+				)
+				
+				if _groq_supports_reasoning_effort and groq_reasoning:
+					groq_reasoning_effort = st.selectbox(
+						'Reasoning Effort',
+						options=[ 'low', 'high' ],
+						index=0,
+						key='groq_reasoning_effort_chat',
+					)
+				else:
+					groq_reasoning_effort = None
+				
+				groq_system = st.text_area(
+					'System',
 					value='',
-					height=90,
-					key='groq_domains_chat',
-					help='Examples: x.ai, docs.x.ai, arxiv.org',
+					height=120,
+					key='groq_system_chat',
 				)
-			else:
-				groq_domains = ''
+				
+				if not _groq_is_reasoning_model:
+					groq_stop = st.text_area(
+						'Stop Sequences (one per line)',
+						value='',
+						height=90,
+						key='groq_stop_chat',
+					)
+				else:
+					groq_stop = ''
+					st.caption( 'Stop sequences are omitted for Grok reasoning models.' )
+				
+				if groq_web_search:
+					groq_domains = st.text_area(
+						'Allowed Search Domains (one per line or comma-separated)',
+						value='',
+						height=90,
+						key='groq_domains_chat',
+						help='Examples: x.ai, docs.x.ai, arxiv.org',
+					)
+				else:
+					groq_domains = ''
+				
+				btn_row = st.columns( 2 )
+				with btn_row[ 0 ]:
+					groq_submit = st.button( 'Submit', key='groq_submit_chat' )
+				with btn_row[ 1 ]:
+					groq_clear = st.button( 'Clear', key='groq_clear_chat' )
 			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				groq_submit = st.button( 'Submit', key='groq_submit_chat' )
-			with btn_row[ 1 ]:
-				groq_clear = st.button( 'Clear', key='groq_clear_chat' )
-		
-		with col_right:
-			groq_output = st.empty( )
-		
-		if groq_clear:
-			st.session_state.update(
-				{
-						'groq_prompt_chat': '',
-						'groq_system_chat': '',
-						'groq_stop_chat': '',
-						'groq_domains_chat': '',
-						'groq_json_mode_chat': False,
-						'groq_reasoning_chat': False,
-						'groq_web_search_chat': False,
-						'groq_store_chat': True,
-						'groq_stream_chat': False,
-						'groq_seed_chat': 0,
-				}
-			)
-			st.rerun( )
-		
-		if groq_submit:
-			try:
-				if not str( groq_prompt ).strip( ):
-					raise ValueError( 'Prompt cannot be empty.' )
-				
-				groq_domains_list = [ ]
-				if groq_domains and str( groq_domains ).strip( ):
-					_domain_entries = re.split( r'[\n,;]+', str( groq_domains ) )
-					for _entry in _domain_entries:
-						_value = str( _entry ).strip( ).lower( )
-						if not _value:
-							continue
-						
-						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-							_value = f'https://{_value}'
-						
-						_parsed = urlparse( _value )
-						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-						_domain = re.sub( r':\d+$', '', _domain )
-						_domain = _domain.lstrip( '.' )
-						
-						if _domain.startswith( 'www.' ):
-							_domain = _domain[ 4: ]
-						
-						if _domain and _domain not in groq_domains_list:
-							groq_domains_list.append( _domain )
-				
-				stop_lines = [ s.strip( ) for s in (groq_stop or '').splitlines( ) if s.strip( ) ]
-				
-				fetcher = Grok( )
-				params = \
+			with col_right:
+				groq_output = st.empty( )
+			
+			if groq_clear:
+				st.session_state.update(
 					{
-							'model': groq_model,
-							'temperature': float( groq_temperature ),
-							'max_tokens': int( groq_max_tokens ),
-							'top_p': float( groq_top_p ),
-							'seed': int( groq_seed ) if int( groq_seed ) > 0 else None,
-							'system': groq_system if str( groq_system ).strip( ) else None,
-							'response_format': ('json' if groq_json_mode else None),
-							'reasoning_effort': (
-									groq_reasoning_effort
-									if _groq_supports_reasoning_effort and groq_reasoning and groq_reasoning_effort
-									else None
-							),
-							'web_search': bool( groq_web_search ),
-							'search_domains': groq_domains_list if groq_domains_list else None,
-							'stop': stop_lines if stop_lines and not _groq_is_reasoning_model else None,
-							'stream': bool( groq_stream ),
-							'store': bool( groq_store ),
-							'parallel_tool_calls': True,
-							'tool_choice': 'auto',
+							'groq_prompt_chat': '',
+							'groq_system_chat': '',
+							'groq_stop_chat': '',
+							'groq_domains_chat': '',
+							'groq_json_mode_chat': False,
+							'groq_reasoning_chat': False,
+							'groq_web_search_chat': False,
+							'groq_store_chat': True,
+							'groq_stream_chat': False,
+							'groq_seed_chat': 0,
 					}
+				)
+				st.rerun( )
+			
+			if groq_submit:
+				try:
+					if not str( groq_prompt ).strip( ):
+						raise ValueError( 'Prompt cannot be empty.' )
+					
+					groq_domains_list = [ ]
+					if groq_domains and str( groq_domains ).strip( ):
+						_domain_entries = re.split( r'[\n,;]+', str( groq_domains ) )
+						for _entry in _domain_entries:
+							_value = str( _entry ).strip( ).lower( )
+							if not _value:
+								continue
+							
+							if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+								_value = f'https://{_value}'
+							
+							_parsed = urlparse( _value )
+							_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+							_domain = re.sub( r':\d+$', '', _domain )
+							_domain = _domain.lstrip( '.' )
+							
+							if _domain.startswith( 'www.' ):
+								_domain = _domain[ 4: ]
+							
+							if _domain and _domain not in groq_domains_list:
+								groq_domains_list.append( _domain )
+					
+					stop_lines = [ s.strip( ) for s in (groq_stop or '').splitlines( ) if s.strip( ) ]
+					
+					fetcher = Grok( )
+					params = \
+						{
+								'model': groq_model,
+								'temperature': float( groq_temperature ),
+								'max_tokens': int( groq_max_tokens ),
+								'top_p': float( groq_top_p ),
+								'seed': int( groq_seed ) if int( groq_seed ) > 0 else None,
+								'system': groq_system if str( groq_system ).strip( ) else None,
+								'response_format': ('json' if groq_json_mode else None),
+								'reasoning_effort': (
+										groq_reasoning_effort
+										if _groq_supports_reasoning_effort and groq_reasoning and groq_reasoning_effort
+										else None
+								),
+								'web_search': bool( groq_web_search ),
+								'search_domains': groq_domains_list if groq_domains_list else None,
+								'stop': stop_lines if stop_lines and not _groq_is_reasoning_model else None,
+								'stream': bool( groq_stream ),
+								'store': bool( groq_store ),
+								'parallel_tool_calls': True,
+								'tool_choice': 'auto',
+						}
+					
+					params = { k: v for k, v in params.items( ) if v is not None }
+					result = _invoke_provider( fetcher, groq_prompt, params )
+					_render_output( groq_output, result )
 				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				result = _invoke_provider( fetcher, groq_prompt, params )
-				_render_output( groq_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# -------- CLAUDE
-	with st.expander( label='Claude', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
+				except Exception as exc:
+					st.error( str( exc ) )
 		
-		with col_left:
-			claude_prompt = st.text_area(
-				'Prompt',
-				value='',
-				height=120,
-				key='claude_prompt_chat',
-			)
+		# -------- CLAUDE
+		with st.expander( label='Claude', expanded=False ):
+			col_left, col_right = st.columns( 2, border=True )
 			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			p_row4 = st.columns( 2 )
-			p_row5 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				_claude_models = (
-						cfg.CLAUDE_MODELS
-						if hasattr( cfg, 'CLAUDE_MODELS' ) and cfg.CLAUDE_MODELS
-						else [
-								'claude-opus-4-6',
-								'claude-sonnet-4-6',
-								'claude-haiku-4-5',
-								'claude-3-5-haiku-latest',
-						]
+			with col_left:
+				claude_prompt = st.text_area(
+					'Prompt',
+					value='',
+					height=120,
+					key='claude_prompt_chat',
 				)
-				claude_model = _model_selector(
-					key_prefix='claude',
-					label='Model',
-					options=_claude_models,
-					default_model=('claude-sonnet-4-6' if 'claude-sonnet-4-6' in _claude_models else
-					               _claude_models[ 0 ]),
-				)
+				
+				p_row1 = st.columns( 2 )
+				p_row2 = st.columns( 2 )
+				p_row3 = st.columns( 2 )
+				p_row4 = st.columns( 2 )
+				p_row5 = st.columns( 2 )
+				
+				with p_row1[ 0 ]:
+					_claude_models = (
+							cfg.CLAUDE_MODELS
+							if hasattr( cfg, 'CLAUDE_MODELS' ) and cfg.CLAUDE_MODELS
+							else [
+									'claude-opus-4-6',
+									'claude-sonnet-4-6',
+									'claude-haiku-4-5',
+									'claude-3-5-haiku-latest',
+							]
+					)
+					claude_model = _model_selector(
+						key_prefix='claude',
+						label='Model',
+						options=_claude_models,
+						default_model=('claude-sonnet-4-6' if 'claude-sonnet-4-6' in _claude_models else
+						               _claude_models[ 0 ]),
+					)
+				
+				with p_row1[ 1 ]:
+					claude_temperature = st.slider(
+						'Temperature',
+						min_value=0.0,
+						max_value=1.0,
+						value=0.7,
+						step=0.05,
+						key='claude_temperature_chat',
+					)
+				
+				with p_row2[ 0 ]:
+					claude_max_tokens = st.number_input(
+						'Max Tokens',
+						min_value=1,
+						max_value=65536,
+						value=2048,
+						step=1,
+						key='claude_max_tokens_chat',
+					)
+				
+				with p_row2[ 1 ]:
+					claude_top_p = st.slider(
+						'Top-P',
+						min_value=0.0,
+						max_value=1.0,
+						value=1.0,
+						step=0.01,
+						key='claude_top_p_chat',
+					)
+				
+				with p_row3[ 0 ]:
+					claude_top_k = st.number_input(
+						'Top-k',
+						min_value=0,
+						max_value=500,
+						value=0,
+						step=1,
+						key='claude_top_k_chat',
+					)
+				
+				with p_row3[ 1 ]:
+					claude_thinking = st.checkbox(
+						'Reasoning',
+						value=False,
+						key='claude_thinking_chat',
+						help='Anthropic exposes this as extended thinking with a token budget.',
+					)
+				
+				with p_row4[ 0 ]:
+					claude_web_search = st.checkbox(
+						'Web Search',
+						value=False,
+						key='claude_web_search_chat',
+					)
+				
+				with p_row4[ 1 ]:
+					claude_stop = st.text_area(
+						'Stop Sequences (one per line)',
+						value='',
+						height=80,
+						key='claude_stop_chat',
+					)
+				
+				with p_row5[ 0 ]:
+					if claude_thinking:
+						claude_thinking_budget = st.number_input(
+							'Thinking Budget',
+							min_value=1024,
+							max_value=64000,
+							value=1024,
+							step=1024,
+							key='claude_thinking_budget_chat',
+						)
+					else:
+						claude_thinking_budget = None
+				
+				with p_row5[ 1 ]:
+					claude_system = st.text_area(
+						'System',
+						value='',
+						height=100,
+						key='claude_system_chat',
+					)
+				
+				if claude_web_search:
+					claude_domains = st.text_area(
+						'Allowed Search Domains (one per line or comma-separated)',
+						value='',
+						height=90,
+						key='claude_domains_chat',
+						help='Examples: docs.anthropic.com, arxiv.org, github.com',
+					)
+					
+					claude_blocked_domains = st.text_area(
+						'Blocked Search Domains (one per line or comma-separated)',
+						value='',
+						height=90,
+						key='claude_blocked_domains_chat',
+						help='Optional denylist for domains you do not want Claude to use.',
+					)
+				else:
+					claude_domains = ''
+					claude_blocked_domains = ''
+				
+				if claude_thinking:
+					st.caption(
+						'When Reasoning is enabled, temperature and top-k are omitted to match Anthropic compatibility rules.'
+					)
+				
+				btn_row = st.columns( 2 )
+				with btn_row[ 0 ]:
+					claude_submit = st.button( 'Submit', key='claude_submit_chat' )
+				with btn_row[ 1 ]:
+					claude_clear = st.button( 'Clear', key='claude_clear_chat' )
 			
-			with p_row1[ 1 ]:
-				claude_temperature = st.slider(
-					'Temperature',
-					min_value=0.0,
-					max_value=1.0,
-					value=0.7,
-					step=0.05,
-					key='claude_temperature_chat',
-				)
+			with col_right:
+				claude_output = st.empty( )
 			
-			with p_row2[ 0 ]:
-				claude_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=65536,
-					value=2048,
-					step=1,
-					key='claude_max_tokens_chat',
+			if claude_clear:
+				st.session_state.update(
+					{
+							'claude_prompt_chat': '',
+							'claude_stop_chat': '',
+							'claude_system_chat': '',
+							'claude_domains_chat': '',
+							'claude_blocked_domains_chat': '',
+							'claude_thinking_chat': False,
+							'claude_web_search_chat': False,
+					}
 				)
+				st.rerun( )
 			
-			with p_row2[ 1 ]:
-				claude_top_p = st.slider(
-					'Top-P',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='claude_top_p_chat',
+			if claude_submit:
+				try:
+					if not str( claude_prompt ).strip( ):
+						raise ValueError( 'Prompt cannot be empty.' )
+					
+					claude_domains_list = [ ]
+					if claude_domains and str( claude_domains ).strip( ):
+						_domain_entries = re.split( r'[\n,;]+', str( claude_domains ) )
+						for _entry in _domain_entries:
+							_value = str( _entry ).strip( ).lower( )
+							if not _value:
+								continue
+							
+							if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+								_value = f'https://{_value}'
+							
+							_parsed = urlparse( _value )
+							_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+							_domain = re.sub( r':\d+$', '', _domain )
+							_domain = _domain.lstrip( '.' )
+							
+							if _domain.startswith( 'www.' ):
+								_domain = _domain[ 4: ]
+							
+							if _domain and _domain not in claude_domains_list:
+								claude_domains_list.append( _domain )
+					
+					claude_blocked_domains_list = [ ]
+					if claude_blocked_domains and str( claude_blocked_domains ).strip( ):
+						_block_entries = re.split( r'[\n,;]+', str( claude_blocked_domains ) )
+						for _entry in _block_entries:
+							_value = str( _entry ).strip( ).lower( )
+							if not _value:
+								continue
+							
+							if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+								_value = f'https://{_value}'
+							
+							_parsed = urlparse( _value )
+							_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+							_domain = re.sub( r':\d+$', '', _domain )
+							_domain = _domain.lstrip( '.' )
+							
+							if _domain.startswith( 'www.' ):
+								_domain = _domain[ 4: ]
+							
+							if _domain and _domain not in claude_blocked_domains_list:
+								claude_blocked_domains_list.append( _domain )
+					
+					stop_lines = [ s.strip( ) for s in (claude_stop or '').splitlines( ) if s.strip( ) ]
+					
+					fetcher = Claude( )
+					params = \
+						{
+								'model': claude_model,
+								'temperature': float( claude_temperature ),
+								'max_tokens': int( claude_max_tokens ),
+								'top_p': float( claude_top_p ),
+								'top_k': int( claude_top_k ) if int( claude_top_k ) > 0 else None,
+								'stop_sequences': stop_lines if stop_lines else None,
+								'system': claude_system if claude_system.strip( ) else None,
+								'thinking': bool( claude_thinking ),
+								'thinking_budget': int( claude_thinking_budget ) if claude_thinking and claude_thinking_budget else None,
+								'web_search': bool( claude_web_search ),
+								'search_domains': claude_domains_list if claude_domains_list else None,
+								'blocked_domains': claude_blocked_domains_list if claude_blocked_domains_list else None,
+						}
+					
+					if claude_thinking:
+						params.pop( 'temperature', None )
+						params.pop( 'top_k', None )
+					
+					params = { k: v for k, v in params.items( ) if v is not None }
+					result = _invoke_provider( fetcher, claude_prompt, params )
+					_render_output( claude_output, result )
+				
+				except Exception as exc:
+					st.error( str( exc ) )
+		
+		# -------- GEMINI
+		with st.expander( label='Gemini', expanded=False ):
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				gemini_prompt = st.text_area(
+					'Prompt',
+					value='',
+					height=160,
+					key='gemini_prompt_chat',
 				)
-			
-			with p_row3[ 0 ]:
-				claude_top_k = st.number_input(
-					'Top-k',
-					min_value=0,
-					max_value=500,
-					value=0,
-					step=1,
-					key='claude_top_k_chat',
-				)
-			
-			with p_row3[ 1 ]:
-				claude_thinking = st.checkbox(
-					'Reasoning',
-					value=False,
-					key='claude_thinking_chat',
-					help='Anthropic exposes this as extended thinking with a token budget.',
-				)
-			
-			with p_row4[ 0 ]:
-				claude_web_search = st.checkbox(
-					'Web Search',
-					value=False,
-					key='claude_web_search_chat',
-				)
-			
-			with p_row4[ 1 ]:
-				claude_stop = st.text_area(
+				
+				p_row1 = st.columns( 2 )
+				p_row2 = st.columns( 2 )
+				p_row3 = st.columns( 2 )
+				p_row4 = st.columns( 2 )
+				p_row5 = st.columns( 2 )
+				
+				with p_row1[ 0 ]:
+					_gemini_models = (
+							cfg.GEMINI_MODELS
+							if hasattr( cfg, 'GEMINI_MODELS' ) and cfg.GEMINI_MODELS
+							else [ 'gemini-2.5-flash', 'gemini-2.5-flash-lite' ]
+					)
+					gemini_model = _model_selector(
+						key_prefix='gemini',
+						label='Model',
+						options=_gemini_models,
+						default_model=('gemini-2.5-flash' if 'gemini-2.5-flash' in _gemini_models else
+						               _gemini_models[ 0 ]),
+					)
+				
+				with p_row1[ 1 ]:
+					gemini_temperature = st.slider(
+						'Temperature',
+						min_value=0.0,
+						max_value=2.0,
+						value=0.7,
+						step=0.05,
+						key='gemini_temperature_chat',
+					)
+				
+				with p_row2[ 0 ]:
+					gemini_max_tokens = st.number_input(
+						'Max Tokens',
+						min_value=1,
+						max_value=32768,
+						value=2048,
+						step=1,
+						key='gemini_max_tokens_chat',
+					)
+				
+				with p_row2[ 1 ]:
+					gemini_top_p = st.slider(
+						'Top-p',
+						min_value=0.0,
+						max_value=1.0,
+						value=1.0,
+						step=0.01,
+						key='gemini_top_p_chat',
+					)
+				
+				with p_row3[ 0 ]:
+					gemini_top_k = st.number_input(
+						'Top-k',
+						min_value=0,
+						max_value=500,
+						value=0,
+						step=1,
+						key='gemini_top_k_chat',
+					)
+				
+				with p_row3[ 1 ]:
+					gemini_candidate_count = st.number_input(
+						'Candidates',
+						min_value=1,
+						max_value=8,
+						value=1,
+						step=1,
+						key='gemini_candidate_count_chat',
+					)
+				
+				with p_row4[ 0 ]:
+					gemini_seed = st.number_input(
+						'Seed',
+						min_value=0,
+						max_value=2_147_483_647,
+						value=0,
+						step=1,
+						key='gemini_seed_chat',
+					)
+				
+				with p_row4[ 1 ]:
+					gemini_json_mode = st.checkbox(
+						'JSON Mode',
+						value=False,
+						key='gemini_json_mode_chat',
+					)
+				
+				with p_row5[ 0 ]:
+					gemini_grounding = st.checkbox(
+						'Grounding',
+						value=False,
+						key='gemini_grounding_chat',
+						help='Enable Google Search grounding for supported Gemini models.',
+					)
+				
+				with p_row5[ 1 ]:
+					gemini_reasoning = st.checkbox(
+						'Reasoning',
+						value=False,
+						key='gemini_reasoning_chat',
+						help='Uses Gemini thinking configuration where supported.',
+					)
+				
+				_gemini_supports_reasoning = str( gemini_model ).strip( ).lower( ).startswith( 'gemini-3' )
+				
+				if _gemini_supports_reasoning and gemini_reasoning:
+					r_row = st.columns( 2 )
+					
+					with r_row[ 0 ]:
+						gemini_thinking_level = st.selectbox(
+							'Thinking Level',
+							options=[ 'minimal', 'low', 'medium', 'high' ],
+							index=1,
+							key='gemini_thinking_level_chat',
+						)
+					
+					with r_row[ 1 ]:
+						gemini_include_thoughts = st.checkbox(
+							'Include Thoughts',
+							value=False,
+							key='gemini_include_thoughts_chat',
+						)
+				else:
+					gemini_thinking_level = None
+					gemini_include_thoughts = False
+				
+				gemini_stop = st.text_area(
 					'Stop Sequences (one per line)',
 					value='',
 					height=80,
-					key='claude_stop_chat',
+					key='gemini_stop_chat',
 				)
-			
-			with p_row5[ 0 ]:
-				if claude_thinking:
-					claude_thinking_budget = st.number_input(
-						'Thinking Budget',
-						min_value=1024,
-						max_value=64000,
-						value=1024,
-						step=1024,
-						key='claude_thinking_budget_chat',
+				
+				gemini_system = st.text_area(
+					'System',
+					value='',
+					height=110,
+					key='gemini_system_chat',
+				)
+				
+				if gemini_grounding:
+					gemini_domains = st.text_area(
+						'Preferred Search Domains (one per line or comma-separated)',
+						value='',
+						height=90,
+						key='gemini_domains_chat',
+						help='Used as preferred source guidance for grounded Gemini responses.',
 					)
 				else:
-					claude_thinking_budget = None
+					gemini_domains = ''
+				
+				if gemini_reasoning and not _gemini_supports_reasoning:
+					st.caption(
+						'Reasoning controls are only sent for Gemini 3 model names. Older Gemini models run without thinking_config.'
+					)
+				
+				btn_row = st.columns( 2 )
+				with btn_row[ 0 ]:
+					gemini_submit = st.button( 'Submit', key='gemini_submit_chat' )
+				with btn_row[ 1 ]:
+					gemini_clear = st.button( 'Clear', key='gemini_clear_chat' )
 			
-			with p_row5[ 1 ]:
-				claude_system = st.text_area(
+			with col_right:
+				gemini_output = st.empty( )
+			
+			if gemini_clear:
+				st.session_state.update(
+					{
+							'gemini_prompt_chat': '',
+							'gemini_system_chat': '',
+							'gemini_domains_chat': '',
+							'gemini_stop_chat': '',
+							'gemini_json_mode_chat': False,
+							'gemini_grounding_chat': False,
+							'gemini_reasoning_chat': False,
+							'gemini_include_thoughts_chat': False,
+							'gemini_seed_chat': 0,
+					}
+				)
+				st.rerun( )
+			
+			if gemini_submit:
+				try:
+					if not str( gemini_prompt ).strip( ):
+						raise ValueError( 'Prompt cannot be empty.' )
+					
+					gemini_domains_list = [ ]
+					if gemini_domains and str( gemini_domains ).strip( ):
+						_domain_entries = re.split( r'[\n,;]+', str( gemini_domains ) )
+						for _entry in _domain_entries:
+							_value = str( _entry ).strip( ).lower( )
+							if not _value:
+								continue
+							
+							if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
+								_value = f'https://{_value}'
+							
+							_parsed = urlparse( _value )
+							_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
+							_domain = re.sub( r':\d+$', '', _domain )
+							_domain = _domain.lstrip( '.' )
+							
+							if _domain.startswith( 'www.' ):
+								_domain = _domain[ 4: ]
+							
+							if _domain and _domain not in gemini_domains_list:
+								gemini_domains_list.append( _domain )
+					
+					stop_lines = [ s.strip( ) for s in (gemini_stop or '').splitlines( ) if s.strip( ) ]
+					
+					fetcher = Gemini( )
+					params = \
+						{
+								'model': gemini_model,
+								'temperature': float( gemini_temperature ),
+								'max_tokens': int( gemini_max_tokens ),
+								'top_p': float( gemini_top_p ),
+								'top_k': int( gemini_top_k ) if int( gemini_top_k ) > 0 else None,
+								'candidate_count': int( gemini_candidate_count ),
+								'seed': int( gemini_seed ) if int( gemini_seed ) > 0 else None,
+								'system': gemini_system if gemini_system.strip( ) else None,
+								'response_format': ('json' if gemini_json_mode else None),
+								'stop_sequences': stop_lines if stop_lines else None,
+								'grounding': bool( gemini_grounding ),
+								'search_domains': gemini_domains_list if gemini_domains_list else None,
+								'reasoning': bool( gemini_reasoning and _gemini_supports_reasoning ),
+								'thinking_level': gemini_thinking_level if _gemini_supports_reasoning and gemini_reasoning else None,
+								'include_thoughts': bool( gemini_include_thoughts ) if _gemini_supports_reasoning and gemini_reasoning else False,
+						}
+					
+					params = { k: v for k, v in params.items( ) if v is not None }
+					result = _invoke_provider( fetcher, gemini_prompt, params )
+					_render_output( gemini_output, result )
+				
+				except Exception as exc:
+					st.error( str( exc ) )
+		
+		# -------- Mistral
+		with st.expander( label='Mistral', expanded=False ):
+			col_left, col_right = st.columns( 2, border=True )
+			
+			with col_left:
+				mistral_prompt = st.text_area(
+					'Prompt',
+					value='',
+					height=40,
+					key='mistral_prompt_chat'
+				)
+				
+				p_row1 = st.columns( 2 )
+				p_row2 = st.columns( 2 )
+				p_row3 = st.columns( 2 )
+				
+				with p_row1[ 0 ]:
+					mistral_model = _model_selector(
+						key_prefix='mistral',
+						label='Model',
+						options=[
+								'mistral-large-latest',
+								'mistral-medium-latest',
+								'mistral-small-latest',
+								'open-mistral-7b',
+								'Custom...',
+						],
+						default_model='mistral-large-latest',
+					)
+				
+				with p_row1[ 1 ]:
+					mistral_temperature = st.slider(
+						'Temperature',
+						min_value=0.0,
+						max_value=2.0,
+						value=0.7,
+						step=0.05,
+						key='mistral_temperature_chat',
+					)
+				
+				with p_row2[ 0 ]:
+					mistral_max_tokens = st.number_input(
+						'Max Tokens',
+						min_value=1,
+						max_value=32768,
+						value=1024,
+						step=1,
+						key='mistral_max_tokens_chat',
+					)
+				
+				with p_row2[ 1 ]:
+					mistral_top_p = st.slider(
+						'Top-p',
+						min_value=0.0,
+						max_value=1.0,
+						value=1.0,
+						step=0.01,
+						key='mistral_top_p_chat',
+					)
+				
+				with p_row3[ 0 ]:
+					mistral_seed = st.number_input(
+						'Seed',
+						min_value=0,
+						max_value=2_147_483_647,
+						value=0,
+						step=1,
+						key='mistral_seed_chat',
+					)
+				
+				with p_row3[ 1 ]:
+					mistral_safe_mode = st.checkbox(
+						'Safe Mode',
+						value=False,
+						key='mistral_safe_mode_chat'
+					)
+				
+				mistral_system = st.text_area(
 					'System',
 					value='',
 					height=100,
-					key='claude_system_chat',
+					key='mistral_system_chat',
 				)
+				
+				btn_row = st.columns( 2 )
+				with btn_row[ 0 ]:
+					mistral_submit = st.button( 'Submit', key='mistral_submit_chat' )
+				with btn_row[ 1 ]:
+					mistral_clear = st.button( 'Clear', key='mistral_clear_chat' )
 			
-			if claude_web_search:
-				claude_domains = st.text_area(
-					'Allowed Search Domains (one per line or comma-separated)',
-					value='',
-					height=90,
-					key='claude_domains_chat',
-					help='Examples: docs.anthropic.com, arxiv.org, github.com',
-				)
-				
-				claude_blocked_domains = st.text_area(
-					'Blocked Search Domains (one per line or comma-separated)',
-					value='',
-					height=90,
-					key='claude_blocked_domains_chat',
-					help='Optional denylist for domains you do not want Claude to use.',
-				)
-			else:
-				claude_domains = ''
-				claude_blocked_domains = ''
+			with col_right:
+				mistral_output = st.empty( )
 			
-			if claude_thinking:
-				st.caption(
-					'When Reasoning is enabled, temperature and top-k are omitted to match Anthropic compatibility rules.'
-				)
+			if mistral_clear:
+				st.session_state.update( {
+						'mistral_prompt_chat': "",
+						'mistral_system_chat': "",
+				} )
+				st.rerun( )
 			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				claude_submit = st.button( 'Submit', key='claude_submit_chat' )
-			with btn_row[ 1 ]:
-				claude_clear = st.button( 'Clear', key='claude_clear_chat' )
-		
-		with col_right:
-			claude_output = st.empty( )
-		
-		if claude_clear:
-			st.session_state.update(
-				{
-						'claude_prompt_chat': '',
-						'claude_stop_chat': '',
-						'claude_system_chat': '',
-						'claude_domains_chat': '',
-						'claude_blocked_domains_chat': '',
-						'claude_thinking_chat': False,
-						'claude_web_search_chat': False,
-				}
-			)
-			st.rerun( )
-		
-		if claude_submit:
-			try:
-				if not str( claude_prompt ).strip( ):
-					raise ValueError( 'Prompt cannot be empty.' )
-				
-				claude_domains_list = [ ]
-				if claude_domains and str( claude_domains ).strip( ):
-					_domain_entries = re.split( r'[\n,;]+', str( claude_domains ) )
-					for _entry in _domain_entries:
-						_value = str( _entry ).strip( ).lower( )
-						if not _value:
-							continue
-						
-						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-							_value = f'https://{_value}'
-						
-						_parsed = urlparse( _value )
-						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-						_domain = re.sub( r':\d+$', '', _domain )
-						_domain = _domain.lstrip( '.' )
-						
-						if _domain.startswith( 'www.' ):
-							_domain = _domain[ 4: ]
-						
-						if _domain and _domain not in claude_domains_list:
-							claude_domains_list.append( _domain )
-				
-				claude_blocked_domains_list = [ ]
-				if claude_blocked_domains and str( claude_blocked_domains ).strip( ):
-					_block_entries = re.split( r'[\n,;]+', str( claude_blocked_domains ) )
-					for _entry in _block_entries:
-						_value = str( _entry ).strip( ).lower( )
-						if not _value:
-							continue
-						
-						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-							_value = f'https://{_value}'
-						
-						_parsed = urlparse( _value )
-						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-						_domain = re.sub( r':\d+$', '', _domain )
-						_domain = _domain.lstrip( '.' )
-						
-						if _domain.startswith( 'www.' ):
-							_domain = _domain[ 4: ]
-						
-						if _domain and _domain not in claude_blocked_domains_list:
-							claude_blocked_domains_list.append( _domain )
-				
-				stop_lines = [ s.strip( ) for s in (claude_stop or '').splitlines( ) if s.strip( ) ]
-				
-				fetcher = Claude( )
-				params = \
-					{
-							'model': claude_model,
-							'temperature': float( claude_temperature ),
-							'max_tokens': int( claude_max_tokens ),
-							'top_p': float( claude_top_p ),
-							'top_k': int( claude_top_k ) if int( claude_top_k ) > 0 else None,
-							'stop_sequences': stop_lines if stop_lines else None,
-							'system': claude_system if claude_system.strip( ) else None,
-							'thinking': bool( claude_thinking ),
-							'thinking_budget': int( claude_thinking_budget ) if claude_thinking and claude_thinking_budget else None,
-							'web_search': bool( claude_web_search ),
-							'search_domains': claude_domains_list if claude_domains_list else None,
-							'blocked_domains': claude_blocked_domains_list if claude_blocked_domains_list else None,
+			if mistral_submit:
+				try:
+					fetcher = Mistral( )
+					params = {
+							'model': mistral_model,
+							'temperature': float( mistral_temperature ),
+							'max_tokens': int( mistral_max_tokens ),
+							'top_p': float( mistral_top_p ),
+							'seed': int( mistral_seed ) if int( mistral_seed ) > 0 else None,
+							'safe_mode': bool( mistral_safe_mode ),
+							'system': mistral_system if mistral_system.strip( ) else None,
 					}
+					
+					params = { k: v for k, v in params.items( ) if v is not None }
+					
+					result = _invoke_provider( fetcher, mistral_prompt, params )
+					_render_output( mistral_output, result )
 				
-				if claude_thinking:
-					params.pop( 'temperature', None )
-					params.pop( 'top_k', None )
-				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				result = _invoke_provider( fetcher, claude_prompt, params )
-				_render_output( claude_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# -------- GEMINI
-	with st.expander( label='Gemini', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			gemini_prompt = st.text_area(
-				'Prompt',
-				value='',
-				height=160,
-				key='gemini_prompt_chat',
-			)
-			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			p_row4 = st.columns( 2 )
-			p_row5 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				_gemini_models = (
-						cfg.GEMINI_MODELS
-						if hasattr( cfg, 'GEMINI_MODELS' ) and cfg.GEMINI_MODELS
-						else [ 'gemini-2.5-flash', 'gemini-2.5-flash-lite' ]
-				)
-				gemini_model = _model_selector(
-					key_prefix='gemini',
-					label='Model',
-					options=_gemini_models,
-					default_model=('gemini-2.5-flash' if 'gemini-2.5-flash' in _gemini_models else
-					               _gemini_models[ 0 ]),
-				)
-			
-			with p_row1[ 1 ]:
-				gemini_temperature = st.slider(
-					'Temperature',
-					min_value=0.0,
-					max_value=2.0,
-					value=0.7,
-					step=0.05,
-					key='gemini_temperature_chat',
-				)
-			
-			with p_row2[ 0 ]:
-				gemini_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=32768,
-					value=2048,
-					step=1,
-					key='gemini_max_tokens_chat',
-				)
-			
-			with p_row2[ 1 ]:
-				gemini_top_p = st.slider(
-					'Top-p',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='gemini_top_p_chat',
-				)
-			
-			with p_row3[ 0 ]:
-				gemini_top_k = st.number_input(
-					'Top-k',
-					min_value=0,
-					max_value=500,
-					value=0,
-					step=1,
-					key='gemini_top_k_chat',
-				)
-			
-			with p_row3[ 1 ]:
-				gemini_candidate_count = st.number_input(
-					'Candidates',
-					min_value=1,
-					max_value=8,
-					value=1,
-					step=1,
-					key='gemini_candidate_count_chat',
-				)
-			
-			with p_row4[ 0 ]:
-				gemini_seed = st.number_input(
-					'Seed',
-					min_value=0,
-					max_value=2_147_483_647,
-					value=0,
-					step=1,
-					key='gemini_seed_chat',
-				)
-			
-			with p_row4[ 1 ]:
-				gemini_json_mode = st.checkbox(
-					'JSON Mode',
-					value=False,
-					key='gemini_json_mode_chat',
-				)
-			
-			with p_row5[ 0 ]:
-				gemini_grounding = st.checkbox(
-					'Grounding',
-					value=False,
-					key='gemini_grounding_chat',
-					help='Enable Google Search grounding for supported Gemini models.',
-				)
-			
-			with p_row5[ 1 ]:
-				gemini_reasoning = st.checkbox(
-					'Reasoning',
-					value=False,
-					key='gemini_reasoning_chat',
-					help='Uses Gemini thinking configuration where supported.',
-				)
-			
-			_gemini_supports_reasoning = str( gemini_model ).strip( ).lower( ).startswith( 'gemini-3' )
-			
-			if _gemini_supports_reasoning and gemini_reasoning:
-				r_row = st.columns( 2 )
-				
-				with r_row[ 0 ]:
-					gemini_thinking_level = st.selectbox(
-						'Thinking Level',
-						options=[ 'minimal', 'low', 'medium', 'high' ],
-						index=1,
-						key='gemini_thinking_level_chat',
-					)
-				
-				with r_row[ 1 ]:
-					gemini_include_thoughts = st.checkbox(
-						'Include Thoughts',
-						value=False,
-						key='gemini_include_thoughts_chat',
-					)
-			else:
-				gemini_thinking_level = None
-				gemini_include_thoughts = False
-			
-			gemini_stop = st.text_area(
-				'Stop Sequences (one per line)',
-				value='',
-				height=80,
-				key='gemini_stop_chat',
-			)
-			
-			gemini_system = st.text_area(
-				'System',
-				value='',
-				height=110,
-				key='gemini_system_chat',
-			)
-			
-			if gemini_grounding:
-				gemini_domains = st.text_area(
-					'Preferred Search Domains (one per line or comma-separated)',
-					value='',
-					height=90,
-					key='gemini_domains_chat',
-					help='Used as preferred source guidance for grounded Gemini responses.',
-				)
-			else:
-				gemini_domains = ''
-			
-			if gemini_reasoning and not _gemini_supports_reasoning:
-				st.caption(
-					'Reasoning controls are only sent for Gemini 3 model names. Older Gemini models run without thinking_config.'
-				)
-			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				gemini_submit = st.button( 'Submit', key='gemini_submit_chat' )
-			with btn_row[ 1 ]:
-				gemini_clear = st.button( 'Clear', key='gemini_clear_chat' )
-		
-		with col_right:
-			gemini_output = st.empty( )
-		
-		if gemini_clear:
-			st.session_state.update(
-				{
-						'gemini_prompt_chat': '',
-						'gemini_system_chat': '',
-						'gemini_domains_chat': '',
-						'gemini_stop_chat': '',
-						'gemini_json_mode_chat': False,
-						'gemini_grounding_chat': False,
-						'gemini_reasoning_chat': False,
-						'gemini_include_thoughts_chat': False,
-						'gemini_seed_chat': 0,
-				}
-			)
-			st.rerun( )
-		
-		if gemini_submit:
-			try:
-				if not str( gemini_prompt ).strip( ):
-					raise ValueError( 'Prompt cannot be empty.' )
-				
-				gemini_domains_list = [ ]
-				if gemini_domains and str( gemini_domains ).strip( ):
-					_domain_entries = re.split( r'[\n,;]+', str( gemini_domains ) )
-					for _entry in _domain_entries:
-						_value = str( _entry ).strip( ).lower( )
-						if not _value:
-							continue
-						
-						if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-							_value = f'https://{_value}'
-						
-						_parsed = urlparse( _value )
-						_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-						_domain = re.sub( r':\d+$', '', _domain )
-						_domain = _domain.lstrip( '.' )
-						
-						if _domain.startswith( 'www.' ):
-							_domain = _domain[ 4: ]
-						
-						if _domain and _domain not in gemini_domains_list:
-							gemini_domains_list.append( _domain )
-				
-				stop_lines = [ s.strip( ) for s in (gemini_stop or '').splitlines( ) if s.strip( ) ]
-				
-				fetcher = Gemini( )
-				params = \
-					{
-							'model': gemini_model,
-							'temperature': float( gemini_temperature ),
-							'max_tokens': int( gemini_max_tokens ),
-							'top_p': float( gemini_top_p ),
-							'top_k': int( gemini_top_k ) if int( gemini_top_k ) > 0 else None,
-							'candidate_count': int( gemini_candidate_count ),
-							'seed': int( gemini_seed ) if int( gemini_seed ) > 0 else None,
-							'system': gemini_system if gemini_system.strip( ) else None,
-							'response_format': ('json' if gemini_json_mode else None),
-							'stop_sequences': stop_lines if stop_lines else None,
-							'grounding': bool( gemini_grounding ),
-							'search_domains': gemini_domains_list if gemini_domains_list else None,
-							'reasoning': bool( gemini_reasoning and _gemini_supports_reasoning ),
-							'thinking_level': gemini_thinking_level if _gemini_supports_reasoning and gemini_reasoning else None,
-							'include_thoughts': bool( gemini_include_thoughts ) if _gemini_supports_reasoning and gemini_reasoning else False,
-					}
-				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				result = _invoke_provider( fetcher, gemini_prompt, params )
-				_render_output( gemini_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
-	
-	# -------- Mistral
-	with st.expander( label='Mistral', expanded=False ):
-		col_left, col_right = st.columns( 2, border=True )
-		
-		with col_left:
-			mistral_prompt = st.text_area(
-				'Prompt',
-				value='',
-				height=40,
-				key='mistral_prompt_chat'
-			)
-			
-			p_row1 = st.columns( 2 )
-			p_row2 = st.columns( 2 )
-			p_row3 = st.columns( 2 )
-			
-			with p_row1[ 0 ]:
-				mistral_model = _model_selector(
-					key_prefix='mistral',
-					label='Model',
-					options=[
-							'mistral-large-latest',
-							'mistral-medium-latest',
-							'mistral-small-latest',
-							'open-mistral-7b',
-							'Custom...',
-					],
-					default_model='mistral-large-latest',
-				)
-			
-			with p_row1[ 1 ]:
-				mistral_temperature = st.slider(
-					'Temperature',
-					min_value=0.0,
-					max_value=2.0,
-					value=0.7,
-					step=0.05,
-					key='mistral_temperature_chat',
-				)
-			
-			with p_row2[ 0 ]:
-				mistral_max_tokens = st.number_input(
-					'Max Tokens',
-					min_value=1,
-					max_value=32768,
-					value=1024,
-					step=1,
-					key='mistral_max_tokens_chat',
-				)
-			
-			with p_row2[ 1 ]:
-				mistral_top_p = st.slider(
-					'Top-p',
-					min_value=0.0,
-					max_value=1.0,
-					value=1.0,
-					step=0.01,
-					key='mistral_top_p_chat',
-				)
-			
-			with p_row3[ 0 ]:
-				mistral_seed = st.number_input(
-					'Seed',
-					min_value=0,
-					max_value=2_147_483_647,
-					value=0,
-					step=1,
-					key='mistral_seed_chat',
-				)
-			
-			with p_row3[ 1 ]:
-				mistral_safe_mode = st.checkbox(
-					'Safe Mode',
-					value=False,
-					key='mistral_safe_mode_chat'
-				)
-			
-			mistral_system = st.text_area(
-				'System',
-				value='',
-				height=100,
-				key='mistral_system_chat',
-			)
-			
-			btn_row = st.columns( 2 )
-			with btn_row[ 0 ]:
-				mistral_submit = st.button( 'Submit', key='mistral_submit_chat' )
-			with btn_row[ 1 ]:
-				mistral_clear = st.button( 'Clear', key='mistral_clear_chat' )
-		
-		with col_right:
-			mistral_output = st.empty( )
-		
-		if mistral_clear:
-			st.session_state.update( {
-					'mistral_prompt_chat': "",
-					'mistral_system_chat': "",
-			} )
-			st.rerun( )
-		
-		if mistral_submit:
-			try:
-				fetcher = Mistral( )
-				params = {
-						'model': mistral_model,
-						'temperature': float( mistral_temperature ),
-						'max_tokens': int( mistral_max_tokens ),
-						'top_p': float( mistral_top_p ),
-						'seed': int( mistral_seed ) if int( mistral_seed ) > 0 else None,
-						'safe_mode': bool( mistral_safe_mode ),
-						'system': mistral_system if mistral_system.strip( ) else None,
-				}
-				
-				params = { k: v for k, v in params.items( ) if v is not None }
-				
-				result = _invoke_provider( fetcher, mistral_prompt, params )
-				_render_output( mistral_output, result )
-			
-			except Exception as exc:
-				st.error( str( exc ) )
+				except Exception as exc:
+					st.error( str( exc ) )
 
 # ==============================================================================
 # DATA MANAGEMENT MODE
 # ==============================================================================
 elif mode == 'Management':
-	st.subheader( f'🏛️ Data Management', help=cfg.DATA_MANAGEMENT )
-	st.divider( )
-	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
+	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
 	with center:
+		st.subheader( f'🏛️ Data Management', help=cfg.DATA_MANAGEMENT )
+		st.divider( )
 		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
 		                  '🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
 		
