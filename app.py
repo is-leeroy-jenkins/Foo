@@ -9570,23 +9570,27 @@ elif mode == 'Geospatial':
 		
 		# -------- USGS The National Map
 		with st.expander( label='The National Map', icon='🗺️', expanded=False ):
-			if 'usgstnm_results' not in st.session_state:
-				st.session_state[ 'usgstnm_results' ] = { }
+			USGSTNM_MODES = [
+					'products',
+					'datasets' ]
 			
-			if 'usgstnm_clear_request' not in st.session_state:
-				st.session_state[ 'usgstnm_clear_request' ] = False
-			
-			if st.session_state.get( 'usgstnm_clear_request', False ):
-				st.session_state[ 'usgstnm_mode' ] = 'products'
-				st.session_state[ 'usgstnm_dataset' ] = ''
-				st.session_state[ 'usgstnm_q' ] = ''
-				st.session_state[ 'usgstnm_bbox' ] = ''
-				st.session_state[ 'usgstnm_prod_formats' ] = ''
-				st.session_state[ 'usgstnm_max_items' ] = 25
-				st.session_state[ 'usgstnm_offset' ] = 0
-				st.session_state[ 'usgstnm_timeout' ] = 20
-				st.session_state[ 'usgstnm_results' ] = { }
-				st.session_state[ 'usgstnm_clear_request' ] = False
+			USGSTNM_PRODUCT_FORMATS = [
+					'GeoTIFF',
+					'IMG',
+					'LAS',
+					'LAZ',
+					'GeoPackage',
+					'GeoJSON',
+					'Shapefile',
+					'FileGDB',
+					'PDF',
+					'KMZ',
+					'TXT',
+					'CSV',
+					'JPEG',
+					'PNG',
+					'XML',
+					'ZIP' ]
 			
 			def _clear_usgstnm_state( ) -> None:
 				'''
@@ -9594,24 +9598,120 @@ elif mode == 'Geospatial':
 					--------
 					Flag the USGS The National Map expander state for reset on the next
 					rerun.
-	
+
 					Parameters:
 					-----------
 					None
-	
+
 					Returns:
 					--------
 					None
 				'''
 				st.session_state[ 'usgstnm_clear_request' ] = True
 			
+			def _validate_usgstnm_bbox( value: str ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate an optional TNMAccess bounding box in minx,miny,maxx,maxy
+					order.
+
+					Parameters:
+					-----------
+					value (str):
+						Bounding-box text supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Validated bounding-box text, or an empty string when no bounding box
+						is supplied.
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					return ''
+				
+				parts = [ item.strip( ) for item in text.split( ',' ) if item.strip( ) ]
+				
+				if len( parts ) != 4:
+					raise ValueError(
+						'Bounding Box must contain four comma-separated values: '
+						'minx,miny,maxx,maxy.' )
+				
+				minx, miny, maxx, maxy = [ float( item ) for item in parts ]
+				
+				if minx < -180 or maxx > 180:
+					raise ValueError( 'Longitude values must be within -180 and 180.' )
+				
+				if miny < -90 or maxy > 90:
+					raise ValueError( 'Latitude values must be within -90 and 90.' )
+				
+				if minx >= maxx:
+					raise ValueError( 'Minimum longitude must be less than maximum longitude.' )
+				
+				if miny >= maxy:
+					raise ValueError( 'Minimum latitude must be less than maximum latitude.' )
+				
+				return f'{minx:g},{miny:g},{maxx:g},{maxy:g}'
+			
+			if 'usgstnm_results' not in st.session_state:
+				st.session_state[ 'usgstnm_results' ] = { }
+			
+			if 'usgstnm_clear_request' not in st.session_state:
+				st.session_state[ 'usgstnm_clear_request' ] = False
+			
+			if st.session_state.get( 'usgstnm_mode', 'products' ) not in USGSTNM_MODES:
+				st.session_state[ 'usgstnm_mode' ] = 'products'
+			
+			if 'usgstnm_dataset' not in st.session_state:
+				st.session_state[ 'usgstnm_dataset' ] = ''
+			
+			if 'usgstnm_q' not in st.session_state:
+				st.session_state[ 'usgstnm_q' ] = ''
+			
+			if 'usgstnm_bbox' not in st.session_state:
+				st.session_state[ 'usgstnm_bbox' ] = ''
+			
+			if 'usgstnm_prod_formats' not in st.session_state:
+				st.session_state[ 'usgstnm_prod_formats' ] = [ ]
+			
+			if isinstance( st.session_state.get( 'usgstnm_prod_formats' ), str ):
+				raw_formats = str( st.session_state.get( 'usgstnm_prod_formats', '' ) )
+				st.session_state[ 'usgstnm_prod_formats' ] = [
+						item.strip( )
+						for item in raw_formats.split( ',' )
+						if item.strip( ) in USGSTNM_PRODUCT_FORMATS
+				]
+			
+			if 'usgstnm_max_items' not in st.session_state:
+				st.session_state[ 'usgstnm_max_items' ] = 25
+			
+			if 'usgstnm_offset' not in st.session_state:
+				st.session_state[ 'usgstnm_offset' ] = 0
+			
+			if 'usgstnm_timeout' not in st.session_state:
+				st.session_state[ 'usgstnm_timeout' ] = 20
+			
+			if st.session_state.get( 'usgstnm_clear_request', False ):
+				st.session_state[ 'usgstnm_mode' ] = 'products'
+				st.session_state[ 'usgstnm_dataset' ] = ''
+				st.session_state[ 'usgstnm_q' ] = ''
+				st.session_state[ 'usgstnm_bbox' ] = ''
+				st.session_state[ 'usgstnm_prod_formats' ] = [ ]
+				st.session_state[ 'usgstnm_max_items' ] = 25
+				st.session_state[ 'usgstnm_offset' ] = 0
+				st.session_state[ 'usgstnm_timeout' ] = 20
+				st.session_state[ 'usgstnm_results' ] = { }
+				st.session_state[ 'usgstnm_clear_request' ] = False
+			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				usgstnm_mode = st.selectbox(
 					'Mode',
-					options=[ 'products', 'datasets' ],
-					index=[ 'products', 'datasets' ].index(
+					options=USGSTNM_MODES,
+					index=USGSTNM_MODES.index(
 						st.session_state.get( 'usgstnm_mode', 'products' )
 					),
 					key='usgstnm_mode'
@@ -9641,12 +9741,19 @@ elif mode == 'Geospatial':
 					placeholder='minx,miny,maxx,maxy'
 				)
 				
-				usgstnm_prod_formats = st.text_input(
+				usgstnm_prod_formats = st.multiselect(
 					'Product Formats',
-					value=st.session_state.get( 'usgstnm_prod_formats', '' ),
+					options=USGSTNM_PRODUCT_FORMATS,
+					default=[
+							value for value in st.session_state.get(
+								'usgstnm_prod_formats',
+								[ ]
+							)
+							if value in USGSTNM_PRODUCT_FORMATS
+					],
 					key='usgstnm_prod_formats',
 					disabled=(usgstnm_mode != 'products'),
-					placeholder='Examples: GeoTIFF, IMG, LAS, LAZ'
+					help='Optional TNM product-format filter.'
 				)
 				
 				page_c1, page_c2 = st.columns( 2 )
@@ -9705,13 +9812,16 @@ elif mode == 'Geospatial':
 			with col_right:
 				if usgstnm_submit:
 					try:
+						clean_bbox = _validate_usgstnm_bbox( usgstnm_bbox )
+						clean_product_formats = ','.join( usgstnm_prod_formats or [ ] )
+						
 						f = USGSTheNationalMap( )
 						result = f.fetch(
 							mode=str( usgstnm_mode ),
 							dataset=str( usgstnm_dataset ).strip( ),
 							q=str( usgstnm_q ).strip( ),
-							bbox=str( usgstnm_bbox ).strip( ),
-							prod_formats=str( usgstnm_prod_formats ).strip( ),
+							bbox=clean_bbox,
+							prod_formats=clean_product_formats,
 							max_items=int( usgstnm_max_items ),
 							offset=int( usgstnm_offset ),
 							time=int( usgstnm_timeout )
@@ -9746,6 +9856,10 @@ elif mode == 'Geospatial':
 						if 'bbox' in params:
 							st.markdown(
 								f"**Bounding Box:** {params.get( 'bbox', '' )}"
+							)
+						if 'prodFormats' in params:
+							st.markdown(
+								f"**Formats:** {params.get( 'prodFormats', '' )}"
 							)
 					
 					summary = result.get( 'summary', { } ) or { }
@@ -9793,6 +9907,7 @@ elif mode == 'Geospatial':
 								label = str(
 									item.get( 'Title', '' ) or
 									item.get( 'Name', '' ) or
+									item.get( 'Id', '' ) or
 									f'Record {idx}'
 								)
 								
@@ -9800,44 +9915,7 @@ elif mode == 'Geospatial':
 										f'Record {idx}: {label}',
 										expanded=False
 								):
-									left_c, right_c = st.columns( 2 )
-									
-									with left_c:
-										if 'Dataset' in item:
-											st.markdown(
-												f"**Dataset:** {item.get( 'Dataset', '' )}"
-											)
-										if 'Format' in item:
-											st.markdown(
-												f"**Format:** {item.get( 'Format', '' )}"
-											)
-										if 'Publication Date' in item:
-											st.markdown(
-												f"**Publication Date:** "
-												f"{item.get( 'Publication Date', '' )}"
-											)
-									
-									with right_c:
-										if 'Bounding Box' in item:
-											st.markdown(
-												f"**Bounding Box:** "
-												f"{item.get( 'Bounding Box', '' )}"
-											)
-										if 'Download URL' in item:
-											st.markdown(
-												f"**Download URL:** "
-												f"{item.get( 'Download URL', '' )}"
-											)
-										if 'Metadata URL' in item:
-											st.markdown(
-												f"**Metadata URL:** "
-												f"{item.get( 'Metadata URL', '' )}"
-											)
-									
-									if 'Description' in item and item.get( 'Description', '' ):
-										st.markdown(
-											f"**Description:** {item.get( 'Description', '' )}"
-										)
+									st.json( item )
 						else:
 							st.info( 'No displayable TNM rows were found.' )
 					else:
@@ -9845,25 +9923,30 @@ elif mode == 'Geospatial':
 					
 					with st.expander( 'Raw Result', expanded=False ):
 						st.json( result )
-		
+	
 		# -------- USGS ScienceBase
 		with st.expander( label='USGS Science Base', icon='🔬', expanded=False ):
-			if 'usgssb_results' not in st.session_state:
-				st.session_state[ 'usgssb_results' ] = { }
+			USGSSB_MODES = [ 'items', 'item' ]
 			
-			if 'usgssb_clear_request' not in st.session_state:
-				st.session_state[ 'usgssb_clear_request' ] = False
-			
-			if st.session_state.get( 'usgssb_clear_request', False ):
-				st.session_state[ 'usgssb_mode' ] = 'items'
-				st.session_state[ 'usgssb_q' ] = ''
-				st.session_state[ 'usgssb_item_id' ] = ''
-				st.session_state[ 'usgssb_max_items' ] = 25
-				st.session_state[ 'usgssb_offset' ] = 0
-				st.session_state[ 'usgssb_fields' ] = ''
-				st.session_state[ 'usgssb_timeout' ] = 20
-				st.session_state[ 'usgssb_results' ] = { }
-				st.session_state[ 'usgssb_clear_request' ] = False
+			USGSSB_FIELD_OPTIONS = [
+					'id',
+					'title',
+					'summary',
+					'body',
+					'itemType',
+					'dateCreated',
+					'dateUpdated',
+					'lastUpdated',
+					'contacts',
+					'tags',
+					'facets',
+					'spatial',
+					'files',
+					'webLinks',
+					'link',
+					'parentId',
+					'hasChildren',
+					'permissions' ]
 			
 			def _clear_usgssb_state( ) -> None:
 				'''
@@ -9881,12 +9964,59 @@ elif mode == 'Geospatial':
 				'''
 				st.session_state[ 'usgssb_clear_request' ] = True
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			if 'usgssb_results' not in st.session_state:
+				st.session_state[ 'usgssb_results' ] = { }
+			
+			if 'usgssb_clear_request' not in st.session_state:
+				st.session_state[ 'usgssb_clear_request' ] = False
+			
+			if st.session_state.get( 'usgssb_mode', 'items' ) not in USGSSB_MODES:
+				st.session_state[ 'usgssb_mode' ] = 'items'
+			
+			if 'usgssb_q' not in st.session_state:
+				st.session_state[ 'usgssb_q' ] = ''
+			
+			if 'usgssb_item_id' not in st.session_state:
+				st.session_state[ 'usgssb_item_id' ] = ''
+			
+			if 'usgssb_max_items' not in st.session_state:
+				st.session_state[ 'usgssb_max_items' ] = 25
+			
+			if 'usgssb_offset' not in st.session_state:
+				st.session_state[ 'usgssb_offset' ] = 0
+			
+			if 'usgssb_fields' not in st.session_state:
+				st.session_state[ 'usgssb_fields' ] = [ ]
+			
+			if isinstance( st.session_state.get( 'usgssb_fields' ), str ):
+				raw_fields = str( st.session_state.get( 'usgssb_fields', '' ) )
+				st.session_state[ 'usgssb_fields' ] = [
+						item.strip( )
+						for item in raw_fields.split( ',' )
+						if item.strip( ) in USGSSB_FIELD_OPTIONS
+				]
+			
+			if 'usgssb_timeout' not in st.session_state:
+				st.session_state[ 'usgssb_timeout' ] = 20
+			
+			if st.session_state.get( 'usgssb_clear_request', False ):
+				st.session_state[ 'usgssb_mode' ] = 'items'
+				st.session_state[ 'usgssb_q' ] = ''
+				st.session_state[ 'usgssb_item_id' ] = ''
+				st.session_state[ 'usgssb_max_items' ] = 25
+				st.session_state[ 'usgssb_offset' ] = 0
+				st.session_state[ 'usgssb_fields' ] = [ ]
+				st.session_state[ 'usgssb_timeout' ] = 20
+				st.session_state[ 'usgssb_results' ] = { }
+				st.session_state[ 'usgssb_clear_request' ] = False
+			
+			col_left, col_right = st.columns( 2, border=True )
+			
 			with col_left:
 				usgssb_mode = st.selectbox(
 					'Mode',
-					options=[ 'items', 'item' ],
-					index=[ 'items', 'item' ].index(
+					options=USGSSB_MODES,
+					index=USGSSB_MODES.index(
 						st.session_state.get( 'usgssb_mode', 'items' )
 					),
 					key='usgssb_mode'
@@ -9900,88 +10030,61 @@ elif mode == 'Geospatial':
 					placeholder='Optional keyword search'
 				)
 				
-				usgssb_item_id = st.text_input(
-					'Item ID',
+				usgssb_item_id = st.text_input( 'Item ID',
 					value=st.session_state.get( 'usgssb_item_id', '' ),
 					key='usgssb_item_id',
 					disabled=(usgssb_mode != 'item'),
-					placeholder='ScienceBase item identifier'
-				)
+					placeholder='ScienceBase item identifier' )
 				
 				page_c1, page_c2 = st.columns( 2 )
 				
 				with page_c1:
-					usgssb_max_items = st.number_input(
-						'Max Items',
-						min_value=1,
-						max_value=500,
+					usgssb_max_items = st.number_input( 'Max Items', min_value=5, max_value=1000,
 						value=int( st.session_state.get( 'usgssb_max_items', 25 ) ),
-						step=1,
-						key='usgssb_max_items',
-						disabled=(usgssb_mode != 'items')
-					)
+						step=5, key='usgssb_max_items', disabled=(usgssb_mode != 'items'),
+						help='ScienceBase search guidance limits max to 1000 and uses increments of 5.' )
 				
 				with page_c2:
-					usgssb_offset = st.number_input(
-						'Offset',
-						min_value=0,
-						max_value=10000,
+					usgssb_offset = st.number_input( 'Offset', min_value=0, max_value=150000,
 						value=int( st.session_state.get( 'usgssb_offset', 0 ) ),
-						step=1,
-						key='usgssb_offset',
-						disabled=(usgssb_mode != 'items')
-					)
+						step=5, key='usgssb_offset',
+						disabled=(usgssb_mode != 'items'),
+						help='Paging offset. Use increments of 5 for ScienceBase search requests.' )
 				
-				usgssb_fields = st.text_input(
-					'Fields',
-					value=st.session_state.get( 'usgssb_fields', '' ),
-					key='usgssb_fields',
+				usgssb_fields = st.multiselect( 'Fields', options=USGSSB_FIELD_OPTIONS,
+					default=[ value for value in st.session_state.get( 'usgssb_fields', [ ] )
+							if value in USGSSB_FIELD_OPTIONS ], key='usgssb_fields',
 					disabled=(usgssb_mode != 'items'),
-					placeholder='Optional fields selector'
-				)
+					help='Optional ScienceBase item fields to request.' )
 				
-				usgssb_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'usgssb_timeout', 20 ) ),
-					step=1,
-					key='usgssb_timeout'
-				)
+				usgssb_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'usgssb_timeout', 20 ) ), step=1,
+					key='usgssb_timeout' )
 				
-				st.caption(
-					'Items mode performs catalog discovery. Item mode retrieves a single '
-					'ScienceBase record by identifier.'
-				)
+				st.caption( 'Items mode performs catalog discovery.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					usgssb_submit = st.button(
-						'Submit',
-						key='usgssb_submit'
-					)
+					usgssb_submit = st.button( 'Submit', key='usgssb_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='usgssb_clear',
-						on_click=_clear_usgssb_state
-					)
+					st.button( 'Clear', key='usgssb_clear', on_click=_clear_usgssb_state )
 			
 			with col_right:
 				if usgssb_submit:
 					try:
+						if usgssb_mode == 'item' and not str( usgssb_item_id or '' ).strip( ):
+							raise ValueError(
+								'Item ID is required for ScienceBase item mode.' )
+						
+						selected_fields = ','.join( usgssb_fields or [ ] )
+						
 						f = USGSScienceBase( )
-						result = f.fetch(
-							mode=str( usgssb_mode ),
-							q=str( usgssb_q ).strip( ),
-							item_id=str( usgssb_item_id ).strip( ),
-							max_items=int( usgssb_max_items ),
-							offset=int( usgssb_offset ),
-							fields=str( usgssb_fields ).strip( ),
-							time=int( usgssb_timeout )
-						)
+						result = f.fetch( mode=str( usgssb_mode ), q=str( usgssb_q ).strip( ),
+							item_id=str( usgssb_item_id ).strip( ), max_items=int( usgssb_max_items ),
+							offset=int( usgssb_offset ), fields=selected_fields,
+							time=int( usgssb_timeout ) )
 						
 						st.session_state[ 'usgssb_results' ] = result or { }
 						st.rerun( )
@@ -10076,32 +10179,41 @@ elif mode == 'Geospatial':
 											st.markdown(
 												f"**Updated:** {item.get( 'Updated', '' )}"
 											)
-										if 'Has Spatial Metadata' in item:
-											st.markdown(
-												f"**Has Spatial Metadata:** "
-												f"{item.get( 'Has Spatial Metadata', '' )}"
-											)
-									
-									with right_c:
 										if 'File Count' in item:
 											st.markdown(
-												f"**File Count:** {item.get( 'File Count', '' )}"
+												f"**Files:** {item.get( 'File Count', '' )}"
 											)
 										if 'Web Link Count' in item:
 											st.markdown(
-												f"**Web Link Count:** "
+												f"**Web Links:** "
 												f"{item.get( 'Web Link Count', '' )}"
 											)
 										if 'Contact Count' in item:
 											st.markdown(
-												f"**Contact Count:** "
+												f"**Contacts:** "
 												f"{item.get( 'Contact Count', '' )}"
 											)
 									
-									if 'Summary' in item and item.get( 'Summary', '' ):
-										st.markdown(
-											f"**Summary:** {item.get( 'Summary', '' )}"
-										)
+									with right_c:
+										if 'Has Spatial Metadata' in item:
+											st.markdown(
+												f"**Spatial Metadata:** "
+												f"{item.get( 'Has Spatial Metadata', False )}"
+											)
+										if 'Id' in item:
+											st.markdown(
+												f"**ID:** `{item.get( 'Id', '' )}`"
+											)
+									
+									summary_text = str( item.get( 'Summary', '' ) or '' )
+									if summary_text:
+										st.markdown( '##### Summary' )
+										st.write( summary_text )
+									
+									raw_item = item.get( 'Raw Item', { } )
+									if raw_item:
+										with st.expander( 'Raw Item', expanded=False ):
+											st.json( raw_item )
 						else:
 							st.info( 'No displayable ScienceBase rows were found.' )
 					else:
@@ -10109,333 +10221,333 @@ elif mode == 'Geospatial':
 					
 					with st.expander( 'Raw Result', expanded=False ):
 						st.json( result )
-		
-		# -------- Open Sky
-		with st.expander( label='Open Sky', icon='✈️', expanded=False ):
-			def _clear_opensky_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Reset the OpenSky controls and result payload to their default values.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-
-				'''
-				st.session_state[ 'opensky_results' ] = { }
-				st.session_state[ 'opensky_mode' ] = 'states_bbox'
-				st.session_state[ 'opensky_icao24' ] = ''
-				st.session_state[ 'opensky_airport' ] = ''
-				st.session_state[ 'opensky_begin' ] = 0
-				st.session_state[ 'opensky_end' ] = 0
-				st.session_state[ 'opensky_time_value' ] = 0
-				st.session_state[ 'opensky_lamin' ] = 39.0
-				st.session_state[ 'opensky_lomin' ] = -77.5
-				st.session_state[ 'opensky_lamax' ] = 40.5
-				st.session_state[ 'opensky_lomax' ] = -75.0
-				st.session_state[ 'opensky_extended' ] = False
-				st.session_state[ 'opensky_client_id' ] = ''
-				st.session_state[ 'opensky_client_secret' ] = ''
-				st.session_state[ 'opensky_timeout' ] = 20
 			
-			def _coerce_opensky_time_value( mode_value: str, raw_value: int ) -> int | None:
-				'''
-					Purpose:
-					--------
-					Normalize the OpenSky time control before calling the wrapper. For live
-					state-vector requests, zero means omit the time parameter so OpenSky uses
-					current time. For aircraft track requests, zero remains valid because the
-					OpenSky track endpoint treats zero as a live/current-track request.
-
-					Parameters:
-					-----------
-					mode_value (str):
-						Selected OpenSky mode.
-
-					raw_value (int):
-						User-entered Unix timestamp value.
-
-					Returns:
-					--------
-					int | None:
-						Validated Unix timestamp or None when the API parameter should be
-						omitted.
-
-				'''
-				active_mode = str( mode_value or 'states_bbox' ).strip( ).lower( )
-				value = int( raw_value or 0 )
+			# -------- Open Sky
+			with st.expander( label='Open Sky', icon='✈️', expanded=False ):
+				def _clear_opensky_state( ) -> None:
+					'''
+						Purpose:
+						--------
+						Reset the OpenSky controls and result payload to their default values.
+	
+						Parameters:
+						-----------
+						None
+	
+						Returns:
+						--------
+						None
+	
+					'''
+					st.session_state[ 'opensky_results' ] = { }
+					st.session_state[ 'opensky_mode' ] = 'states_bbox'
+					st.session_state[ 'opensky_icao24' ] = ''
+					st.session_state[ 'opensky_airport' ] = ''
+					st.session_state[ 'opensky_begin' ] = 0
+					st.session_state[ 'opensky_end' ] = 0
+					st.session_state[ 'opensky_time_value' ] = 0
+					st.session_state[ 'opensky_lamin' ] = 39.0
+					st.session_state[ 'opensky_lomin' ] = -77.5
+					st.session_state[ 'opensky_lamax' ] = 40.5
+					st.session_state[ 'opensky_lomax' ] = -75.0
+					st.session_state[ 'opensky_extended' ] = False
+					st.session_state[ 'opensky_client_id' ] = ''
+					st.session_state[ 'opensky_client_secret' ] = ''
+					st.session_state[ 'opensky_timeout' ] = 20
 				
-				if active_mode == 'states_bbox' and value <= 0:
-					return None
-				
-				if active_mode == 'track_aircraft':
+				def _coerce_opensky_time_value( mode_value: str, raw_value: int ) -> int | None:
+					'''
+						Purpose:
+						--------
+						Normalize the OpenSky time control before calling the wrapper. For live
+						state-vector requests, zero means omit the time parameter so OpenSky uses
+						current time. For aircraft track requests, zero remains valid because the
+						OpenSky track endpoint treats zero as a live/current-track request.
+	
+						Parameters:
+						-----------
+						mode_value (str):
+							Selected OpenSky mode.
+	
+						raw_value (int):
+							User-entered Unix timestamp value.
+	
+						Returns:
+						--------
+						int | None:
+							Validated Unix timestamp or None when the API parameter should be
+							omitted.
+	
+					'''
+					active_mode = str( mode_value or 'states_bbox' ).strip( ).lower( )
+					value = int( raw_value or 0 )
+					
+					if active_mode == 'states_bbox' and value <= 0:
+						return None
+					
+					if active_mode == 'track_aircraft':
+						return value
+					
+					if value <= 0:
+						return None
+					
 					return value
 				
-				if value <= 0:
-					return None
+				if 'opensky_results' not in st.session_state:
+					st.session_state[ 'opensky_results' ] = { }
 				
-				return value
-			
-			if 'opensky_results' not in st.session_state:
-				st.session_state[ 'opensky_results' ] = { }
-			
-			if 'opensky_mode' not in st.session_state:
-				st.session_state[ 'opensky_mode' ] = 'states_bbox'
-			
-			if 'opensky_icao24' not in st.session_state:
-				st.session_state[ 'opensky_icao24' ] = ''
-			
-			if 'opensky_airport' not in st.session_state:
-				st.session_state[ 'opensky_airport' ] = ''
-			
-			if 'opensky_begin' not in st.session_state:
-				st.session_state[ 'opensky_begin' ] = 0
-			
-			if 'opensky_end' not in st.session_state:
-				st.session_state[ 'opensky_end' ] = 0
-			
-			if 'opensky_time_value' not in st.session_state:
-				st.session_state[ 'opensky_time_value' ] = 0
-			
-			if 'opensky_lamin' not in st.session_state:
-				st.session_state[ 'opensky_lamin' ] = 39.0
-			
-			if 'opensky_lomin' not in st.session_state:
-				st.session_state[ 'opensky_lomin' ] = -77.5
-			
-			if 'opensky_lamax' not in st.session_state:
-				st.session_state[ 'opensky_lamax' ] = 40.5
-			
-			if 'opensky_lomax' not in st.session_state:
-				st.session_state[ 'opensky_lomax' ] = -75.0
-			
-			if 'opensky_extended' not in st.session_state:
-				st.session_state[ 'opensky_extended' ] = False
-			
-			if 'opensky_client_id' not in st.session_state:
-				st.session_state[ 'opensky_client_id' ] = ''
-			
-			if 'opensky_client_secret' not in st.session_state:
-				st.session_state[ 'opensky_client_secret' ] = ''
-			
-			if 'opensky_timeout' not in st.session_state:
-				st.session_state[ 'opensky_timeout' ] = 20
-			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-			
-			with col_left:
-				mode = st.selectbox(
-					'Mode',
-					options=[
-							'states_bbox',
-							'flights_aircraft',
-							'arrivals_airport',
-							'departures_airport',
-							'track_aircraft',
-					],
-					key='opensky_mode',
-					help=(
-							'states_bbox = live aircraft inside a bounding box; '
-							'flights_aircraft = flights for one aircraft; '
-							'arrivals_airport / departures_airport = airport traffic; '
-							'track_aircraft = trajectory waypoints for one aircraft.'
-					)
-				)
+				if 'opensky_mode' not in st.session_state:
+					st.session_state[ 'opensky_mode' ] = 'states_bbox'
 				
-				icao24 = st.text_input(
-					'ICAO24 (Aircraft Hex ID)',
-					value='',
-					key='opensky_icao24',
-					help='Required for flights_aircraft and track_aircraft.'
-				)
+				if 'opensky_icao24' not in st.session_state:
+					st.session_state[ 'opensky_icao24' ] = ''
 				
-				airport = st.text_input(
-					'Airport ICAO',
-					value='',
-					key='opensky_airport',
-					help='Required for arrivals_airport and departures_airport.'
-				)
+				if 'opensky_airport' not in st.session_state:
+					st.session_state[ 'opensky_airport' ] = ''
 				
-				begin = st.number_input(
-					'Begin (Unix Time)',
-					min_value=0,
-					value=0,
-					step=60,
-					key='opensky_begin',
-					help='Required for aircraft and airport history queries.'
-				)
+				if 'opensky_begin' not in st.session_state:
+					st.session_state[ 'opensky_begin' ] = 0
 				
-				end = st.number_input(
-					'End (Unix Time)',
-					min_value=0,
-					value=0,
-					step=60,
-					key='opensky_end',
-					help='Required for aircraft and airport history queries.'
-				)
+				if 'opensky_end' not in st.session_state:
+					st.session_state[ 'opensky_end' ] = 0
 				
-				time_value = st.number_input(
-					'Time (Unix Time / 0 for Live Track)',
-					min_value=0,
-					value=0,
-					step=60,
-					key='opensky_time_value',
-					help=(
-							'Optional for states_bbox. Leave at 0 for current live state '
-							'vectors. Used by track_aircraft, where 0 requests the current '
-							'or latest available track.'
-					)
-				)
+				if 'opensky_time_value' not in st.session_state:
+					st.session_state[ 'opensky_time_value' ] = 0
 				
-				lamin = st.number_input( 'Min Latitude', value=39.0, key='opensky_lamin' )
-				lomin = st.number_input( 'Min Longitude', value=-77.5, key='opensky_lomin' )
-				lamax = st.number_input( 'Max Latitude', value=40.5, key='opensky_lamax' )
-				lomax = st.number_input( 'Max Longitude', value=-75.0, key='opensky_lomax' )
+				if 'opensky_lamin' not in st.session_state:
+					st.session_state[ 'opensky_lamin' ] = 39.0
 				
-				extended = st.checkbox(
-					'Extended Aircraft Categories',
-					value=False,
-					key='opensky_extended',
-					help='Only applies to states_bbox.'
-				)
+				if 'opensky_lomin' not in st.session_state:
+					st.session_state[ 'opensky_lomin' ] = -77.5
 				
-				client_id = st.text_input(
-					'Client ID (Optional)',
-					value='',
-					key='opensky_client_id'
-				)
+				if 'opensky_lamax' not in st.session_state:
+					st.session_state[ 'opensky_lamax' ] = 40.5
 				
-				client_secret = st.text_input(
-					'Client Secret (Optional)',
-					value='',
-					type='password',
-					key='opensky_client_secret'
-				)
+				if 'opensky_lomax' not in st.session_state:
+					st.session_state[ 'opensky_lomax' ] = -75.0
 				
-				timeout = st.slider(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=60,
-					value=20,
-					step=1,
-					key='opensky_timeout'
-				)
+				if 'opensky_extended' not in st.session_state:
+					st.session_state[ 'opensky_extended' ] = False
 				
-				b1, b2 = st.columns( 2 )
-				with b1:
-					opensky_submit = st.button(
-						'Submit',
-						key='opensky_submit',
-						use_container_width=True
-					)
-				with b2:
-					st.button(
-						'Clear',
-						key='opensky_clear',
-						on_click=_clear_opensky_state,
-						use_container_width=True
-					)
-			
-			with col_right:
-				if opensky_submit:
-					try:
-						normalized_time_value = _coerce_opensky_time_value(
-							mode_value=mode,
-							raw_value=int( time_value or 0 )
-						)
-						
-						client = OpenSky( )
-						result = client.fetch(
-							mode=mode,
-							icao24=icao24,
-							airport=airport,
-							begin=int( begin ) if int( begin or 0 ) > 0 else None,
-							end=int( end ) if int( end or 0 ) > 0 else None,
-							time_value=normalized_time_value,
-							lamin=float( lamin ) if lamin is not None else None,
-							lomin=float( lomin ) if lomin is not None else None,
-							lamax=float( lamax ) if lamax is not None else None,
-							lomax=float( lomax ) if lomax is not None else None,
-							extended=bool( extended ),
-							client_id=client_id.strip( ) or None,
-							client_secret=client_secret.strip( ) or None,
-							time=int( timeout ),
-						)
-						st.session_state[ 'opensky_results' ] = result or { }
-					except Exception as exc:
-						st.error( 'OpenSky request failed.' )
-						st.exception( exc )
+				if 'opensky_client_id' not in st.session_state:
+					st.session_state[ 'opensky_client_id' ] = ''
 				
-				result = st.session_state.get( 'opensky_results', { } )
+				if 'opensky_client_secret' not in st.session_state:
+					st.session_state[ 'opensky_client_secret' ] = ''
 				
-				if not result:
-					st.text( 'No results.' )
-				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'Returned': int( result.get( 'count', 0 ) or 0 ),
-								'Time': result.get( 'time', '' ) or result.get( 'start_time', '' ),
-								'ICAO24': result.get( 'icao24', '' ),
-								'Callsign': result.get( 'callsign', '' ),
-						}
-					)
-					
-					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-					
-					if result.get( 'mode' ) == 'states_bbox':
-						if items:
-							st.markdown( '#### Live State Vectors' )
-							st.dataframe( items, use_container_width=True, hide_index=True )
-							
-							map_rows = [
-									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-									for x in items
-									if x.get( 'latitude' ) is not None
-									   and x.get( 'longitude' ) is not None
-							]
-							if map_rows:
-								st.markdown( '#### Aircraft Positions' )
-								st.map( map_rows )
-						else:
-							st.info( 'No aircraft state vectors matched the requested filter.' )
-					
-					elif result.get( 'mode' ) in (
+				if 'opensky_timeout' not in st.session_state:
+					st.session_state[ 'opensky_timeout' ] = 20
+				
+				col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+				
+				with col_left:
+					mode = st.selectbox(
+						'Mode',
+						options=[
+								'states_bbox',
 								'flights_aircraft',
 								'arrivals_airport',
-								'departures_airport'
-					):
-						if items:
-							st.markdown( '#### Flights' )
-							st.dataframe( items, use_container_width=True, hide_index=True )
-						else:
-							st.info( 'No flight rows were returned for that query window.' )
+								'departures_airport',
+								'track_aircraft',
+						],
+						key='opensky_mode',
+						help=(
+								'states_bbox = live aircraft inside a bounding box; '
+								'flights_aircraft = flights for one aircraft; '
+								'arrivals_airport / departures_airport = airport traffic; '
+								'track_aircraft = trajectory waypoints for one aircraft.'
+						)
+					)
 					
-					elif result.get( 'mode' ) == 'track_aircraft':
-						if items:
-							st.markdown( '#### Aircraft Track' )
-							st.dataframe( items, use_container_width=True, hide_index=True )
+					icao24 = st.text_input(
+						'ICAO24 (Aircraft Hex ID)',
+						value='',
+						key='opensky_icao24',
+						help='Required for flights_aircraft and track_aircraft.'
+					)
+					
+					airport = st.text_input(
+						'Airport ICAO',
+						value='',
+						key='opensky_airport',
+						help='Required for arrivals_airport and departures_airport.'
+					)
+					
+					begin = st.number_input(
+						'Begin (Unix Time)',
+						min_value=0,
+						value=0,
+						step=60,
+						key='opensky_begin',
+						help='Required for aircraft and airport history queries.'
+					)
+					
+					end = st.number_input(
+						'End (Unix Time)',
+						min_value=0,
+						value=0,
+						step=60,
+						key='opensky_end',
+						help='Required for aircraft and airport history queries.'
+					)
+					
+					time_value = st.number_input(
+						'Time (Unix Time / 0 for Live Track)',
+						min_value=0,
+						value=0,
+						step=60,
+						key='opensky_time_value',
+						help=(
+								'Optional for states_bbox. Leave at 0 for current live state '
+								'vectors. Used by track_aircraft, where 0 requests the current '
+								'or latest available track.'
+						)
+					)
+					
+					lamin = st.number_input( 'Min Latitude', value=39.0, key='opensky_lamin' )
+					lomin = st.number_input( 'Min Longitude', value=-77.5, key='opensky_lomin' )
+					lamax = st.number_input( 'Max Latitude', value=40.5, key='opensky_lamax' )
+					lomax = st.number_input( 'Max Longitude', value=-75.0, key='opensky_lomax' )
+					
+					extended = st.checkbox(
+						'Extended Aircraft Categories',
+						value=False,
+						key='opensky_extended',
+						help='Only applies to states_bbox.'
+					)
+					
+					client_id = st.text_input(
+						'Client ID (Optional)',
+						value='',
+						key='opensky_client_id'
+					)
+					
+					client_secret = st.text_input(
+						'Client Secret (Optional)',
+						value='',
+						type='password',
+						key='opensky_client_secret'
+					)
+					
+					timeout = st.slider(
+						'Timeout (seconds)',
+						min_value=5,
+						max_value=60,
+						value=20,
+						step=1,
+						key='opensky_timeout'
+					)
+					
+					b1, b2 = st.columns( 2 )
+					with b1:
+						opensky_submit = st.button(
+							'Submit',
+							key='opensky_submit',
+							use_container_width=True
+						)
+					with b2:
+						st.button(
+							'Clear',
+							key='opensky_clear',
+							on_click=_clear_opensky_state,
+							use_container_width=True
+						)
+				
+				with col_right:
+					if opensky_submit:
+						try:
+							normalized_time_value = _coerce_opensky_time_value(
+								mode_value=mode,
+								raw_value=int( time_value or 0 )
+							)
 							
-							map_rows = [
-									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-									for x in items
-									if x.get( 'latitude' ) is not None
-									   and x.get( 'longitude' ) is not None
-							]
-							if map_rows:
-								st.markdown( '#### Track Map' )
-								st.map( map_rows )
-						else:
-							st.info( 'No track waypoints were returned for that aircraft.' )
+							client = OpenSky( )
+							result = client.fetch(
+								mode=mode,
+								icao24=icao24,
+								airport=airport,
+								begin=int( begin ) if int( begin or 0 ) > 0 else None,
+								end=int( end ) if int( end or 0 ) > 0 else None,
+								time_value=normalized_time_value,
+								lamin=float( lamin ) if lamin is not None else None,
+								lomin=float( lomin ) if lomin is not None else None,
+								lamax=float( lamax ) if lamax is not None else None,
+								lomax=float( lomax ) if lomax is not None else None,
+								extended=bool( extended ),
+								client_id=client_id.strip( ) or None,
+								client_secret=client_secret.strip( ) or None,
+								time=int( timeout ),
+							)
+							st.session_state[ 'opensky_results' ] = result or { }
+						except Exception as exc:
+							st.error( 'OpenSky request failed.' )
+							st.exception( exc )
 					
-					with st.expander( 'Raw Result', expanded=False ):
-						st.json( result )
+					result = st.session_state.get( 'opensky_results', { } )
+					
+					if not result:
+						st.text( 'No results.' )
+					else:
+						_render_summary_kv(
+							'#### Summary',
+							{
+									'Mode': result.get( 'mode', '' ),
+									'Returned': int( result.get( 'count', 0 ) or 0 ),
+									'Time': result.get( 'time', '' ) or result.get( 'start_time', '' ),
+									'ICAO24': result.get( 'icao24', '' ),
+									'Callsign': result.get( 'callsign', '' ),
+							}
+						)
+						
+						items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+						
+						if result.get( 'mode' ) == 'states_bbox':
+							if items:
+								st.markdown( '#### Live State Vectors' )
+								st.dataframe( items, use_container_width=True, hide_index=True )
+								
+								map_rows = [
+										{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+										for x in items
+										if x.get( 'latitude' ) is not None
+										   and x.get( 'longitude' ) is not None
+								]
+								if map_rows:
+									st.markdown( '#### Aircraft Positions' )
+									st.map( map_rows )
+							else:
+								st.info( 'No aircraft state vectors matched the requested filter.' )
+						
+						elif result.get( 'mode' ) in (
+									'flights_aircraft',
+									'arrivals_airport',
+									'departures_airport'
+						):
+							if items:
+								st.markdown( '#### Flights' )
+								st.dataframe( items, use_container_width=True, hide_index=True )
+							else:
+								st.info( 'No flight rows were returned for that query window.' )
+						
+						elif result.get( 'mode' ) == 'track_aircraft':
+							if items:
+								st.markdown( '#### Aircraft Track' )
+								st.dataframe( items, use_container_width=True, hide_index=True )
+								
+								map_rows = [
+										{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+										for x in items
+										if x.get( 'latitude' ) is not None
+										   and x.get( 'longitude' ) is not None
+								]
+								if map_rows:
+									st.markdown( '#### Track Map' )
+									st.map( map_rows )
+							else:
+								st.info( 'No track waypoints were returned for that aircraft.' )
+						
+						with st.expander( 'Raw Result', expanded=False ):
+							st.json( result )
 			
 # ==============================================================================
 # ENVIRONMENTAL MODE
@@ -11053,12 +11165,143 @@ elif mode == 'Environmental':
 						st.json( result )
 		
 		# -------- NASA EONET
-		with st.expander( label='NASA EONET', icon='🔥',expanded=False ):
+		with st.expander( label='NASA EONET', icon='🌎', expanded=False ):
+			EONET_MODES = [
+					'events',
+					'categories'
+			]
+			
+			EONET_STATUSES = [
+					'open',
+					'closed',
+					'all'
+			]
+			
+			def _clear_eonet_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the NASA EONET expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'eonet_clear_request' ] = True
+			
+			def _validate_eonet_date( name: str, value: str ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate an optional EONET ISO date value.
+
+					Parameters:
+					-----------
+					name (str):
+						Display name used for validation errors.
+
+					value (str):
+						Date value supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Validated date text, or an empty string when no value is supplied.
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					return ''
+				
+				dt.datetime.strptime( text, '%Y-%m-%d' )
+				return text
+			
+			def _validate_eonet_bbox( value: str ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate an optional EONET bounding box in min_lon,max_lat,max_lon,min_lat
+					order.
+
+					Parameters:
+					-----------
+					value (str):
+						Bounding-box text supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Validated bounding-box text, or an empty string when no value is
+						supplied.
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					return ''
+				
+				parts = [ item.strip( ) for item in text.split( ',' ) if item.strip( ) ]
+				
+				if len( parts ) != 4:
+					raise ValueError(
+						'Bounding Box must contain four comma-separated values: '
+						'min_lon,max_lat,max_lon,min_lat.'
+					)
+				
+				min_lon, max_lat, max_lon, min_lat = [ float( item ) for item in parts ]
+				
+				if min_lon < -180 or max_lon > 180:
+					raise ValueError( 'Longitude values must be within -180 and 180.' )
+				
+				if min_lat < -90 or max_lat > 90:
+					raise ValueError( 'Latitude values must be within -90 and 90.' )
+				
+				if min_lon >= max_lon:
+					raise ValueError( 'Minimum longitude must be less than maximum longitude.' )
+				
+				if min_lat >= max_lat:
+					raise ValueError( 'Minimum latitude must be less than maximum latitude.' )
+				
+				return f'{min_lon:g},{max_lat:g},{max_lon:g},{min_lat:g}'
+			
 			if 'eonet_results' not in st.session_state:
 				st.session_state[ 'eonet_results' ] = { }
 			
 			if 'eonet_clear_request' not in st.session_state:
 				st.session_state[ 'eonet_clear_request' ] = False
+			
+			if st.session_state.get( 'eonet_mode', 'events' ) not in EONET_MODES:
+				st.session_state[ 'eonet_mode' ] = 'events'
+			
+			if st.session_state.get( 'eonet_status', 'open' ) not in EONET_STATUSES:
+				st.session_state[ 'eonet_status' ] = 'open'
+			
+			if 'eonet_source' not in st.session_state:
+				st.session_state[ 'eonet_source' ] = ''
+			
+			if 'eonet_category' not in st.session_state:
+				st.session_state[ 'eonet_category' ] = ''
+			
+			if 'eonet_limit' not in st.session_state:
+				st.session_state[ 'eonet_limit' ] = 25
+			
+			if 'eonet_days' not in st.session_state:
+				st.session_state[ 'eonet_days' ] = 30
+			
+			if 'eonet_start_date' not in st.session_state:
+				st.session_state[ 'eonet_start_date' ] = ''
+			
+			if 'eonet_end_date' not in st.session_state:
+				st.session_state[ 'eonet_end_date' ] = ''
+			
+			if 'eonet_bbox' not in st.session_state:
+				st.session_state[ 'eonet_bbox' ] = ''
+			
+			if 'eonet_timeout' not in st.session_state:
+				st.session_state[ 'eonet_timeout' ] = 20
 			
 			if st.session_state.get( 'eonet_clear_request', False ):
 				st.session_state[ 'eonet_mode' ] = 'events'
@@ -11074,54 +11317,22 @@ elif mode == 'Environmental':
 				st.session_state[ 'eonet_results' ] = { }
 				st.session_state[ 'eonet_clear_request' ] = False
 			
-			def _clear_eonet_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the NASA EONET expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'eonet_clear_request' ] = True
-			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				eonet_mode = st.selectbox(
 					'Mode',
-					options=[ 'events', 'categories' ],
-					index=[ 'events', 'categories' ].index(
+					options=EONET_MODES,
+					index=EONET_MODES.index(
 						st.session_state.get( 'eonet_mode', 'events' )
 					),
 					key='eonet_mode'
 				)
 				
-				eonet_source = st.text_input(
-					'Source',
-					value=st.session_state.get( 'eonet_source', '' ),
-					key='eonet_source',
-					disabled=(eonet_mode != 'events'),
-					placeholder='Optional source ID or comma-separated source IDs'
-				)
-				
-				eonet_category = st.text_input(
-					'Category',
-					value=st.session_state.get( 'eonet_category', '' ),
-					key='eonet_category',
-					disabled=(eonet_mode != 'events'),
-					placeholder='Optional category ID or comma-separated category IDs'
-				)
-				
 				eonet_status = st.selectbox(
 					'Status',
-					options=[ 'open', 'closed', 'all' ],
-					index=[ 'open', 'closed', 'all' ].index(
+					options=EONET_STATUSES,
+					index=EONET_STATUSES.index(
 						st.session_state.get( 'eonet_status', 'open' )
 					),
 					key='eonet_status',
@@ -11131,6 +11342,26 @@ elif mode == 'Environmental':
 				filter_c1, filter_c2 = st.columns( 2 )
 				
 				with filter_c1:
+					eonet_source = st.text_input(
+						'Source',
+						value=st.session_state.get( 'eonet_source', '' ),
+						key='eonet_source',
+						disabled=(eonet_mode != 'events'),
+						placeholder='Optional source ID'
+					)
+				
+				with filter_c2:
+					eonet_category = st.text_input(
+						'Category',
+						value=st.session_state.get( 'eonet_category', '' ),
+						key='eonet_category',
+						disabled=(eonet_mode != 'events'),
+						placeholder='Optional category ID'
+					)
+				
+				count_c1, count_c2 = st.columns( 2 )
+				
+				with count_c1:
 					eonet_limit = st.number_input(
 						'Limit',
 						min_value=1,
@@ -11141,7 +11372,7 @@ elif mode == 'Environmental':
 						disabled=(eonet_mode != 'events')
 					)
 				
-				with filter_c2:
+				with count_c2:
 					eonet_days = st.number_input(
 						'Days',
 						min_value=1,
@@ -11212,6 +11443,38 @@ elif mode == 'Environmental':
 			with col_right:
 				if eonet_submit:
 					try:
+						clean_start_date = _validate_eonet_date(
+							'Start Date',
+							eonet_start_date
+						)
+						clean_end_date = _validate_eonet_date(
+							'End Date',
+							eonet_end_date
+						)
+						
+						if bool( clean_start_date ) != bool( clean_end_date ):
+							raise ValueError(
+								'Start Date and End Date must either both be supplied or '
+								'both be blank.'
+							)
+						
+						if clean_start_date and clean_end_date:
+							start_value = dt.datetime.strptime(
+								clean_start_date,
+								'%Y-%m-%d'
+							).date( )
+							end_value = dt.datetime.strptime(
+								clean_end_date,
+								'%Y-%m-%d'
+							).date( )
+							
+							if start_value > end_value:
+								raise ValueError(
+									'Start Date must be on or before End Date.'
+								)
+						
+						clean_bbox = _validate_eonet_bbox( eonet_bbox )
+						
 						f = EoNet( )
 						result = f.fetch(
 							mode=str( eonet_mode ),
@@ -11220,9 +11483,9 @@ elif mode == 'Environmental':
 							status=str( eonet_status ).strip( ),
 							limit=int( eonet_limit ),
 							days=int( eonet_days ),
-							start_date=str( eonet_start_date ).strip( ),
-							end_date=str( eonet_end_date ).strip( ),
-							bbox=str( eonet_bbox ).strip( ),
+							start_date=clean_start_date,
+							end_date=clean_end_date,
+							bbox=clean_bbox,
 							time=int( eonet_timeout )
 						)
 						
@@ -11249,7 +11512,9 @@ elif mode == 'Environmental':
 					with meta_c2:
 						params = result.get( 'params', { } ) or { }
 						if 'category' in params:
-							st.markdown( f"**Category Filter:** {params.get( 'category', '' )}" )
+							st.markdown(
+								f"**Category Filter:** {params.get( 'category', '' )}"
+							)
 						if 'status' in params:
 							st.markdown( f"**Status:** {params.get( 'status', '' )}" )
 					
@@ -11269,17 +11534,17 @@ elif mode == 'Environmental':
 							)
 						
 						with sum_c3:
-							first_categories = str(
-								summary.get( 'first_categories', '' ) or ''
-							)
-							if first_categories:
-								st.markdown( f"**First Categories:** {first_categories}" )
+							first_title = str( summary.get( 'first_title', '' ) or '' )
+							if first_title:
+								st.markdown( f"**First Event:** {first_title}" )
 							else:
-								st.markdown( '**First Categories:** N/A' )
+								st.markdown( '**First Event:** N/A' )
 						
-						first_title = str( summary.get( 'first_title', '' ) or '' )
-						if first_title:
-							st.markdown( f"**First Result:** {first_title}" )
+						first_categories = str(
+							summary.get( 'first_categories', '' ) or ''
+						)
+						if first_categories:
+							st.markdown( f"**Categories:** {first_categories}" )
 					
 					params = result.get( 'params', { } ) or { }
 					if params:
@@ -11298,10 +11563,35 @@ elif mode == 'Environmental':
 								hide_index=True
 							)
 							
+							map_rows = [ ]
+							for item in rows:
+								latitude = (
+										item.get( 'Latitude', None )
+										or item.get( 'lat', None )
+								)
+								longitude = (
+										item.get( 'Longitude', None )
+										or item.get( 'lon', None )
+								)
+								
+								if latitude is not None and longitude is not None:
+									map_rows.append(
+										{
+												'lat': float( latitude ),
+												'lon': float( longitude )
+										}
+									)
+							
+							if map_rows:
+								st.markdown( '#### Event Map' )
+								st.map( map_rows )
+							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
 								label = str(
 									item.get( 'Title', '' ) or
+									item.get( 'Category', '' ) or
+									item.get( 'ID', '' ) or
 									f'Record {idx}'
 								)
 								
@@ -11309,37 +11599,7 @@ elif mode == 'Environmental':
 										f'Record {idx}: {label}',
 										expanded=False
 								):
-									left_c, right_c = st.columns( 2 )
-									
-									with left_c:
-										if 'Status' in item:
-											st.markdown( f"**Status:** {item.get( 'Status', '' )}" )
-										if 'Categories' in item:
-											st.markdown(
-												f"**Categories:** {item.get( 'Categories', '' )}"
-											)
-										if 'Sources' in item:
-											st.markdown(
-												f"**Sources:** {item.get( 'Sources', '' )}"
-											)
-									
-									with right_c:
-										if 'Geometry Count' in item:
-											st.markdown(
-												f"**Geometry Count:** "
-												f"{item.get( 'Geometry Count', '' )}"
-											)
-										if 'Last Geometry Date' in item:
-											st.markdown(
-												f"**Last Geometry Date:** "
-												f"{item.get( 'Last Geometry Date', '' )}"
-											)
-										if 'Link' in item:
-											st.markdown( f"**Link:** {item.get( 'Link', '' )}" )
-									
-									description = str( item.get( 'Description', '' ) or '' )
-									if description:
-										st.markdown( f"**Description:** {description}" )
+									st.json( item )
 						else:
 							st.info( 'No displayable EONET rows were found.' )
 					else:
@@ -13485,11 +13745,157 @@ elif mode == 'Environmental':
 		
 		# -------- USGS Water Data
 		with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
+			USGSWATERDATA_MODES = [
+					'monitoring-locations',
+					'time-series-metadata',
+					'latest-continuous',
+					'latest-daily' ]
+			
+			USGSWATERDATA_STATE_CODES = [
+					'',
+					'AL',
+					'AK',
+					'AZ',
+					'AR',
+					'CA',
+					'CO',
+					'CT',
+					'DE',
+					'DC',
+					'FL',
+					'GA',
+					'HI',
+					'ID',
+					'IL',
+					'IN',
+					'IA',
+					'KS',
+					'KY',
+					'LA',
+					'ME',
+					'MD',
+					'MA',
+					'MI',
+					'MN',
+					'MS',
+					'MO',
+					'MT',
+					'NE',
+					'NV',
+					'NH',
+					'NJ',
+					'NM',
+					'NY',
+					'NC',
+					'ND',
+					'OH',
+					'OK',
+					'OR',
+					'PA',
+					'RI',
+					'SC',
+					'SD',
+					'TN',
+					'TX',
+					'UT',
+					'VT',
+					'VA',
+					'WA',
+					'WV',
+					'WI',
+					'WY',
+					'AS',
+					'GU',
+					'MP',
+					'PR',
+					'VI' ]
+			
+			USGSWATERDATA_SITE_TYPES = [ '',
+					'AG',
+					'AT',
+					'ES',
+					'FA',
+					'FA-CI',
+					'FA-CS',
+					'FA-DV',
+					'FA-FON',
+					'FA-GC',
+					'FA-HP',
+					'FA-LF',
+					'FA-OIL',
+					'FA-QC',
+					'FA-SEW',
+					'FA-SPS',
+					'FA-TEP',
+					'FA-WDS',
+					'FA-WIW',
+					'GL',
+					'GW',
+					'GW-CR',
+					'GW-EX',
+					'GW-HZ',
+					'GW-IW',
+					'GW-MW',
+					'GW-TH',
+					'LK',
+					'OC',
+					'OC-CO',
+					'SB',
+					'SP',
+					'ST',
+					'ST-CA',
+					'ST-DCH',
+					'ST-TS',
+					'WE' ]
+			
+			def _clear_usgswaterdata_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the USGS Water Data expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'usgswaterdata_clear_request' ] = True
+			
 			if 'usgswaterdata_results' not in st.session_state:
 				st.session_state[ 'usgswaterdata_results' ] = { }
 			
 			if 'usgswaterdata_clear_request' not in st.session_state:
 				st.session_state[ 'usgswaterdata_clear_request' ] = False
+			
+			if st.session_state.get( 'usgswaterdata_mode',
+					'monitoring-locations' ) not in USGSWATERDATA_MODES:
+				st.session_state[ 'usgswaterdata_mode' ] = 'monitoring-locations'
+			
+			if st.session_state.get( 'usgswaterdata_state_code',
+					'' ) not in USGSWATERDATA_STATE_CODES:
+				st.session_state[ 'usgswaterdata_state_code' ] = ''
+			
+			if st.session_state.get( 'usgswaterdata_site_type',
+					'' ) not in USGSWATERDATA_SITE_TYPES:
+				st.session_state[ 'usgswaterdata_site_type' ] = ''
+			
+			if 'usgswaterdata_monitoring_location_id' not in st.session_state:
+				st.session_state[ 'usgswaterdata_monitoring_location_id' ] = ''
+			
+			if 'usgswaterdata_county_code' not in st.session_state:
+				st.session_state[ 'usgswaterdata_county_code' ] = ''
+			
+			if 'usgswaterdata_parameter_code' not in st.session_state:
+				st.session_state[ 'usgswaterdata_parameter_code' ] = ''
+			
+			if 'usgswaterdata_limit' not in st.session_state:
+				st.session_state[ 'usgswaterdata_limit' ] = 25
+			
+			if 'usgswaterdata_timeout' not in st.session_state:
+				st.session_state[ 'usgswaterdata_timeout' ] = 20
 			
 			if st.session_state.get( 'usgswaterdata_clear_request', False ):
 				st.session_state[ 'usgswaterdata_mode' ] = 'monitoring-locations'
@@ -13503,39 +13909,13 @@ elif mode == 'Environmental':
 				st.session_state[ 'usgswaterdata_results' ] = { }
 				st.session_state[ 'usgswaterdata_clear_request' ] = False
 			
-			def _clear_usgswaterdata_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the USGS Water Data expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'usgswaterdata_clear_request' ] = True
-			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				usgswd_mode = st.selectbox(
 					'Mode',
-					options=[
-							'monitoring-locations',
-							'time-series-metadata',
-							'latest-continuous',
-							'latest-daily'
-					],
-					index=[
-							'monitoring-locations',
-							'time-series-metadata',
-							'latest-continuous',
-							'latest-daily'
-					].index(
+					options=USGSWATERDATA_MODES,
+					index=USGSWATERDATA_MODES.index(
 						st.session_state.get(
 							'usgswaterdata_mode',
 							'monitoring-locations'
@@ -13557,12 +13937,15 @@ elif mode == 'Environmental':
 				meta_c1, meta_c2 = st.columns( 2 )
 				
 				with meta_c1:
-					usgswd_state_code = st.text_input(
+					usgswd_state_code = st.selectbox(
 						'State Code',
-						value=st.session_state.get( 'usgswaterdata_state_code', '' ),
+						options=USGSWATERDATA_STATE_CODES,
+						index=USGSWATERDATA_STATE_CODES.index(
+							st.session_state.get( 'usgswaterdata_state_code', '' )
+						),
 						key='usgswaterdata_state_code',
 						disabled=(usgswd_mode != 'monitoring-locations'),
-						placeholder='Example: VA'
+						format_func=lambda value: 'All' if value == '' else value
 					)
 				
 				with meta_c2:
@@ -13571,15 +13954,19 @@ elif mode == 'Environmental':
 						value=st.session_state.get( 'usgswaterdata_county_code', '' ),
 						key='usgswaterdata_county_code',
 						disabled=(usgswd_mode != 'monitoring-locations'),
-						placeholder='Optional'
+						placeholder='Optional county code'
 					)
 				
-				usgswd_site_type = st.text_input(
+				usgswd_site_type = st.selectbox(
 					'Site Type',
-					value=st.session_state.get( 'usgswaterdata_site_type', '' ),
+					options=USGSWATERDATA_SITE_TYPES,
+					index=USGSWATERDATA_SITE_TYPES.index(
+						st.session_state.get( 'usgswaterdata_site_type', '' )
+					),
 					key='usgswaterdata_site_type',
 					disabled=(usgswd_mode != 'monitoring-locations'),
-					placeholder='Examples: ST, LK, GW'
+					format_func=lambda value: 'All' if value == '' else value,
+					help='USGS site type code, such as ST for stream or GW for well.'
 				)
 				
 				usgswd_parameter_code = st.text_input(
@@ -13593,7 +13980,7 @@ elif mode == 'Environmental':
 				usgswd_limit = st.number_input(
 					'Limit',
 					min_value=1,
-					max_value=200,
+					max_value=50000,
 					value=int( st.session_state.get( 'usgswaterdata_limit', 25 ) ),
 					step=1,
 					key='usgswaterdata_limit'
@@ -13609,8 +13996,9 @@ elif mode == 'Environmental':
 				)
 				
 				st.caption(
-					'Monitoring Locations supports site discovery. The other modes '
-					'focus on parameter metadata and latest reported values.'
+					'USGS Water Data uses the modern OGC API collections for monitoring '
+					'locations, time-series metadata, latest continuous values, and latest '
+					'daily values.'
 				)
 				
 				btn_c1, btn_c2 = st.columns( 2 )
@@ -13631,6 +14019,26 @@ elif mode == 'Environmental':
 			with col_right:
 				if usgswd_submit:
 					try:
+						if usgswd_mode in [
+								'time-series-metadata',
+								'latest-continuous',
+								'latest-daily'
+						]:
+							if not str( usgswd_monitoring_location_id or '' ).strip( ):
+								raise ValueError(
+									'Monitoring Location ID is required for time-series '
+									'metadata and latest-value modes.'
+								)
+						
+						if str( usgswd_parameter_code or '' ).strip( ):
+							if not re.fullmatch(
+									r'\d{5}',
+									str( usgswd_parameter_code ).strip( )
+							):
+								raise ValueError(
+									'Parameter Code must be a 5-digit USGS parameter code.'
+								)
+						
 						f = USGSWaterData( )
 						result = f.fetch(
 							mode=str( usgswd_mode ),
@@ -13669,12 +14077,12 @@ elif mode == 'Environmental':
 						params = result.get( 'params', { } ) or { }
 						if 'monitoring_location_id' in params:
 							st.markdown(
-								f"**Monitoring Location ID:** "
+								f"**Location:** "
 								f"{params.get( 'monitoring_location_id', '' )}"
 							)
 						if 'parameter_code' in params:
 							st.markdown(
-								f"**Parameter Code:** {params.get( 'parameter_code', '' )}"
+								f"**Parameter:** {params.get( 'parameter_code', '' )}"
 							)
 					
 					summary = result.get( 'summary', { } ) or { }
@@ -13687,28 +14095,24 @@ elif mode == 'Environmental':
 							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
 						
 						with sum_c2:
-							first_site = str( summary.get( 'first_site', '' ) or '' )
-							if first_site:
-								st.markdown( f"**First Site:** {first_site}" )
+							first_location = str(
+								summary.get( 'first_location', '' ) or ''
+							)
+							if first_location:
+								st.markdown( f"**First Location:** {first_location}" )
 							else:
-								st.markdown( '**First Site:** N/A' )
+								st.markdown( '**First Location:** N/A' )
 						
 						with sum_c3:
-							first_parameter = str(
-								summary.get( 'first_parameter', '' ) or ''
-							)
 							first_value = str( summary.get( 'first_value', '' ) or '' )
-							
-							if first_parameter and first_value:
-								st.markdown(
-									f"**Sample Value:** {first_parameter} = {first_value}"
-								)
-							elif first_parameter:
-								st.markdown(
-									f"**Sample Parameter:** {first_parameter}"
-								)
+							if first_value:
+								st.markdown( f"**Sample Value:** {first_value}" )
 							else:
 								st.markdown( '**Sample Value:** N/A' )
+						
+						first_time = str( summary.get( 'first_time', '' ) or '' )
+						if first_time:
+							st.markdown( f"**First Time:** {first_time}" )
 					
 					params = result.get( 'params', { } ) or { }
 					if params:
@@ -13717,21 +14121,48 @@ elif mode == 'Environmental':
 					
 					rows = result.get( 'rows', [ ] ) or [ ]
 					if rows:
-						st.markdown( '#### Results' )
-						df_usgswd = pd.DataFrame( rows )
+						st.markdown( '#### USGS Water Data Results' )
+						df_usgswaterdata = pd.DataFrame( rows )
 						
-						if not df_usgswd.empty:
+						if not df_usgswaterdata.empty:
 							st.dataframe(
-								df_usgswd,
+								df_usgswaterdata,
 								use_container_width=True,
 								hide_index=True
 							)
 							
+							map_rows = [ ]
+							for item in rows:
+								latitude = (
+										item.get( 'Latitude', None )
+										or item.get( 'lat', None )
+										or item.get( 'latitude', None )
+								)
+								longitude = (
+										item.get( 'Longitude', None )
+										or item.get( 'lon', None )
+										or item.get( 'longitude', None )
+								)
+								
+								if latitude is not None and longitude is not None:
+									map_rows.append(
+										{
+												'lat': float( latitude ),
+												'lon': float( longitude )
+										}
+									)
+							
+							if map_rows:
+								st.markdown( '#### Monitoring Location Map' )
+								st.map( map_rows )
+							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
 								label = str(
-									item.get( 'Name', '' ) or
 									item.get( 'Monitoring Location ID', '' ) or
+									item.get( 'Location ID', '' ) or
+									item.get( 'Monitoring Location Name', '' ) or
+									item.get( 'Time', '' ) or
 									f'Record {idx}'
 								)
 								
@@ -13743,7 +14174,7 @@ elif mode == 'Environmental':
 						else:
 							st.info( 'No displayable USGS Water Data rows were found.' )
 					else:
-						st.info( 'No water data records were returned.' )
+						st.info( 'No USGS Water Data records were returned.' )
 					
 					with st.expander( 'Raw Result', expanded=False ):
 						st.json( result )
