@@ -7626,7 +7626,7 @@ elif mode == 'Geospatial':
 			def _clear_googlegeocoding_state( ) -> None:
 				st.session_state[ 'googlegeocoding_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				googlegeocoding_mode = st.selectbox(
@@ -7872,44 +7872,495 @@ elif mode == 'Geospatial':
 		
 		# -------- Google Maps
 		with st.expander( label='Google Maps', icon='🗺️', expanded=False ):
-			col_left, col_right = st.columns( 2, border=True )
+			GOOGLEMAPS_MODES = [
+					'geocode_location',
+					'geocode_coordinates',
+					'validate_address',
+					'request_directions'
+			]
+			
+			GOOGLEMAPS_TRAVEL_MODES = [
+					'driving',
+					'walking',
+					'bicycling',
+					'transit'
+			]
+			
+			def _clear_googlemaps_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Google Maps expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+
+				'''
+				st.session_state[ 'googlemaps_clear_request' ] = True
+			
+			def _split_googlemaps_address_lines( value: str ) -> List[ str ]:
+				'''
+					Purpose:
+					--------
+					Convert a multiline address text value into non-empty address lines for
+					the Google Address Validation API wrapper method.
+
+					Parameters:
+					-----------
+					value (str):
+						Multiline address text supplied by the user.
+
+					Returns:
+					--------
+					List[str]:
+						Non-empty address lines.
+
+				'''
+				lines = [
+						str( line or '' ).strip( )
+						for line in str( value or '' ).splitlines( )
+						if str( line or '' ).strip( ) ]
+				
+				return lines
+			
+			if 'googlemaps_results' not in st.session_state:
+				st.session_state[ 'googlemaps_results' ] = { }
+			
+			if 'googlemaps_clear_request' not in st.session_state:
+				st.session_state[ 'googlemaps_clear_request' ] = False
+			
+			if st.session_state.get( 'googlemaps_mode',
+					'geocode_location' ) not in GOOGLEMAPS_MODES:
+				st.session_state[ 'googlemaps_mode' ] = 'geocode_location'
+			
+			if st.session_state.get( 'googlemaps_travel_mode',
+					'driving' ) not in GOOGLEMAPS_TRAVEL_MODES:
+				st.session_state[ 'googlemaps_travel_mode' ] = 'driving'
+			
+			if 'googlemaps_query' not in st.session_state:
+				st.session_state[ 'googlemaps_query' ] = ''
+			
+			if 'googlemaps_radius' not in st.session_state:
+				st.session_state[ 'googlemaps_radius' ] = 5000
+			
+			if 'googlemaps_latitude' not in st.session_state:
+				st.session_state[ 'googlemaps_latitude' ] = 38.8895
+			
+			if 'googlemaps_longitude' not in st.session_state:
+				st.session_state[ 'googlemaps_longitude' ] = -77.0353
+			
+			if 'googlemaps_address_lines' not in st.session_state:
+				st.session_state[ 'googlemaps_address_lines' ] = ''
+			
+			if 'googlemaps_origin' not in st.session_state:
+				st.session_state[ 'googlemaps_origin' ] = ''
+			
+			if 'googlemaps_destination' not in st.session_state:
+				st.session_state[ 'googlemaps_destination' ] = ''
+			
+			if st.session_state.get( 'googlemaps_clear_request', False ):
+				st.session_state[ 'googlemaps_mode' ] = 'geocode_location'
+				st.session_state[ 'googlemaps_query' ] = ''
+				st.session_state[ 'googlemaps_radius' ] = 5000
+				st.session_state[ 'googlemaps_latitude' ] = 38.8895
+				st.session_state[ 'googlemaps_longitude' ] = -77.0353
+				st.session_state[ 'googlemaps_address_lines' ] = ''
+				st.session_state[ 'googlemaps_origin' ] = ''
+				st.session_state[ 'googlemaps_destination' ] = ''
+				st.session_state[ 'googlemaps_travel_mode' ] = 'driving'
+				st.session_state[ 'googlemaps_results' ] = { }
+				st.session_state[ 'googlemaps_clear_request' ] = False
+			
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				gm_query = st.text_area( "Address", value='',
-					height=40, key='googlemaps_query' )
+				googlemaps_mode = st.selectbox(
+					'Mode',
+					options=GOOGLEMAPS_MODES,
+					index=GOOGLEMAPS_MODES.index(
+						st.session_state.get( 'googlemaps_mode', 'geocode_location' )
+					),
+					key='googlemaps_mode',
+					help='Select the Google Maps wrapper operation to run.'
+				)
 				
-				gm_radius = st.number_input( 'Radius (meters)', min_value=1,
-					max_value=50000, value=5000, step=100, key='googlemaps_radius' )
+				googlemaps_query = st.text_area(
+					'Address',
+					value=st.session_state.get( 'googlemaps_query', '' ),
+					height=70,
+					key='googlemaps_query',
+					disabled=(googlemaps_mode != 'geocode_location'),
+					placeholder='1600 Pennsylvania Ave NW, Washington, DC'
+				)
+				
+				coord_c1, coord_c2 = st.columns( 2 )
+				
+				with coord_c1:
+					googlemaps_latitude = st.number_input(
+						'Latitude',
+						value=float( st.session_state.get( 'googlemaps_latitude', 38.8895 ) ),
+						step=0.0001,
+						format='%.6f',
+						key='googlemaps_latitude',
+						disabled=(googlemaps_mode != 'geocode_coordinates')
+					)
+				
+				with coord_c2:
+					googlemaps_longitude = st.number_input(
+						'Longitude',
+						value=float( st.session_state.get( 'googlemaps_longitude', -77.0353 ) ),
+						step=0.0001,
+						format='%.6f',
+						key='googlemaps_longitude',
+						disabled=(googlemaps_mode != 'geocode_coordinates')
+					)
+				
+				googlemaps_address_lines = st.text_area(
+					'Address Lines',
+					value=st.session_state.get( 'googlemaps_address_lines', '' ),
+					height=90,
+					key='googlemaps_address_lines',
+					disabled=(googlemaps_mode != 'validate_address'),
+					placeholder=(
+							'1600 Pennsylvania Ave NW\n'
+							'Washington, DC 20500'
+					)
+				)
+				
+				route_c1, route_c2 = st.columns( 2 )
+				
+				with route_c1:
+					googlemaps_origin = st.text_input(
+						'Origin',
+						value=st.session_state.get( 'googlemaps_origin', '' ),
+						key='googlemaps_origin',
+						disabled=(googlemaps_mode != 'request_directions'),
+						placeholder='Arlington, VA'
+					)
+				
+				with route_c2:
+					googlemaps_destination = st.text_input(
+						'Destination',
+						value=st.session_state.get( 'googlemaps_destination', '' ),
+						key='googlemaps_destination',
+						disabled=(googlemaps_mode != 'request_directions'),
+						placeholder='Washington, DC'
+					)
+				
+				opt_c1, opt_c2 = st.columns( 2 )
+				
+				with opt_c1:
+					googlemaps_travel_mode = st.selectbox(
+						'Travel Mode',
+						options=GOOGLEMAPS_TRAVEL_MODES,
+						index=GOOGLEMAPS_TRAVEL_MODES.index(
+							st.session_state.get( 'googlemaps_travel_mode', 'driving' )
+						),
+						key='googlemaps_travel_mode',
+						disabled=(googlemaps_mode != 'request_directions')
+					)
+				
+				with opt_c2:
+					googlemaps_radius = st.number_input(
+						'Radius (meters)',
+						min_value=1,
+						max_value=50000,
+						value=int( st.session_state.get( 'googlemaps_radius', 5000 ) ),
+						step=100,
+						key='googlemaps_radius',
+						help='Preserved legacy control. The current GoogleMaps wrapper does not consume radius.'
+					)
+				
+				st.caption(
+					'Google Maps uses GOOGLE_API_KEY from config. This section now exposes '
+					'forward geocoding, reverse geocoding, address validation, and directions.'
+				)
 				
 				m1, m2 = st.columns( 2 )
+				
 				with m1:
-					gm_submit = st.button( 'Submit', key='googlemaps_submit' )
+					googlemaps_submit = st.button(
+						'Submit',
+						key='googlemaps_submit',
+						use_container_width=True
+					)
+				
 				with m2:
-					gm_clear = st.button( 'Clear', key='googlemaps_clear' )
+					st.button(
+						'Clear',
+						key='googlemaps_clear',
+						on_click=_clear_googlemaps_state,
+						use_container_width=True
+					)
 			
 			with col_right:
-				gm_output = st.empty( )
+				st.markdown( 'Results' )
 				
-				if gm_clear:
-					st.session_state.update( { 'googlemaps_query': '', 'googlemaps_radius': 5000 } )
-					st.rerun( )
-				
-				if gm_submit:
+				if googlemaps_submit:
 					try:
 						gm = GoogleMaps( )
-						loc = gm.geocode_location( gm_query )
-						coords = f'{loc[ 0 ]}, {loc[ 1 ]}'
-						gm_output.text_area( 'Coords', value=coords, height=300 )
+						
+						if googlemaps_mode == 'geocode_location':
+							if not str( googlemaps_query or '' ).strip( ):
+								raise ValueError( 'Address is required for geocode_location mode.' )
+							
+							coords = gm.geocode_location( str( googlemaps_query ).strip( ) )
+							result = {
+									'mode': googlemaps_mode,
+									'query': str( googlemaps_query ).strip( ),
+									'radius': int( googlemaps_radius ),
+									'latitude': coords[ 0 ],
+									'longitude': coords[ 1 ],
+									'coordinates': f'{coords[ 0 ]}, {coords[ 1 ]}',
+							}
+						
+						elif googlemaps_mode == 'geocode_coordinates':
+							address = gm.geocode_coordinates(
+								lat=float( googlemaps_latitude ),
+								long=float( googlemaps_longitude )
+							)
+							result = {
+									'mode': googlemaps_mode,
+									'latitude': float( googlemaps_latitude ),
+									'longitude': float( googlemaps_longitude ),
+									'address': address,
+							}
+						
+						elif googlemaps_mode == 'validate_address':
+							address_lines = _split_googlemaps_address_lines(
+								googlemaps_address_lines
+							)
+							
+							if not address_lines:
+								raise ValueError(
+									'At least one address line is required for validate_address mode.'
+								)
+							
+							payload = gm.validate_address( address_lines )
+							result = {
+									'mode': googlemaps_mode,
+									'address_lines': address_lines,
+									'data': payload or { },
+							}
+						
+						else:
+							if not str( googlemaps_origin or '' ).strip( ):
+								raise ValueError(
+									'Origin is required for request_directions mode.'
+								)
+							
+							if not str( googlemaps_destination or '' ).strip( ):
+								raise ValueError(
+									'Destination is required for request_directions mode.'
+								)
+							
+							payload = gm.request_directions(
+								origin=str( googlemaps_origin ).strip( ),
+								destination=str( googlemaps_destination ).strip( ),
+								mode=str( googlemaps_travel_mode ).strip( )
+							)
+							result = {
+									'mode': googlemaps_mode,
+									'origin': str( googlemaps_origin ).strip( ),
+									'destination': str( googlemaps_destination ).strip( ),
+									'travel_mode': str( googlemaps_travel_mode ).strip( ),
+									'data': payload or { },
+							}
+						
+						st.session_state[ 'googlemaps_results' ] = result
+						st.rerun( )
+					
 					except Exception as exc:
-						st.error( exc )
+						st.error( 'Google Maps request failed.' )
+						st.exception( exc )
+				
+				result = st.session_state.get( 'googlemaps_results', { } )
+				
+				if not result:
+					st.text( 'No results.' )
+				else:
+					st.markdown( '#### Request Summary' )
+					summary_rows = [ ]
+					
+					for key, value in result.items( ):
+						if key == 'data':
+							continue
+						
+						if isinstance( value, (str, int, float, bool) ) or value is None:
+							summary_rows.append(
+								{
+										'Field': key,
+										'Value': value
+								}
+							)
+					
+					if summary_rows:
+						st.dataframe(
+							pd.DataFrame( summary_rows ),
+							use_container_width=True,
+							hide_index=True
+						)
+					
+					if result.get( 'mode' ) == 'geocode_location':
+						lat_value = result.get( 'latitude', None )
+						lon_value = result.get( 'longitude', None )
+						
+						if lat_value is not None and lon_value is not None:
+							st.markdown( '#### Coordinates' )
+							st.text_area(
+								'Coords',
+								value=str( result.get( 'coordinates', '' ) ),
+								height=90
+							)
+							
+							st.markdown( '#### Map' )
+							st.map(
+								[
+										{
+												'lat': float( lat_value ),
+												'lon': float( lon_value )
+										}
+								]
+							)
+					
+					elif result.get( 'mode' ) == 'geocode_coordinates':
+						st.markdown( '#### Address' )
+						st.text_area(
+							'Formatted Address',
+							value=str( result.get( 'address', '' ) ),
+							height=120
+						)
+						
+						st.markdown( '#### Map' )
+						st.map(
+							[
+									{
+											'lat': float( result.get( 'latitude', 0.0 ) ),
+											'lon': float( result.get( 'longitude', 0.0 ) )
+									}
+							]
+						)
+					
+					else:
+						data = result.get( 'data', { } )
+						
+						if isinstance( data, dict ) and data:
+							status_value = data.get( 'status', '' )
+							if status_value:
+								st.markdown( f"**Status:** `{status_value}`" )
+							
+							routes = data.get( 'routes', [ ] )
+							if isinstance( routes, list ) and routes:
+								route_rows = [ ]
+								
+								for idx, route in enumerate( routes, start=1 ):
+									legs = route.get( 'legs', [ ] ) if isinstance( route,
+										dict ) else [ ]
+									first_leg = legs[ 0 ] if legs else { }
+									
+									route_rows.append(
+										{
+												'Route': idx,
+												'Summary': route.get( 'summary', '' ),
+												'Start': first_leg.get( 'start_address', '' ),
+												'End': first_leg.get( 'end_address', '' ),
+												'Distance': (
+														first_leg.get( 'distance', { } )
+														.get( 'text', '' )
+												),
+												'Duration': (
+														first_leg.get( 'duration', { } )
+														.get( 'text', '' )
+												),
+										}
+									)
+								
+								st.markdown( '#### Routes' )
+								st.dataframe(
+									pd.DataFrame( route_rows ),
+									use_container_width=True,
+									hide_index=True
+								)
+							
+							result_payload = data.get( 'result', { } )
+							if isinstance( result_payload, dict ) and result_payload:
+								st.markdown( '#### Address Validation Result' )
+								st.json( result_payload )
+							
+							with st.expander( 'Raw Payload', expanded=False ):
+								st.json( data )
+						else:
+							st.info( 'No Google Maps payload was returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 		
 		# -------- Google Weather
 		with st.expander( label='Google Weather', icon='🌤️', expanded=False ):
+			GOOGLEWEATHER_MODES = [
+					'current',
+					'hourly_forecast',
+					'daily_forecast',
+					'hourly_history',
+					'alerts'
+			]
+			
+			GOOGLEWEATHER_UNITS = [
+					'METRIC',
+					'IMPERIAL'
+			]
+			
+			def _clear_googleweather_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Google Weather expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+
+				'''
+				st.session_state[ 'googleweather_clear_request' ] = True
+			
 			if 'googleweather_results' not in st.session_state:
 				st.session_state[ 'googleweather_results' ] = { }
 			
 			if 'googleweather_clear_request' not in st.session_state:
 				st.session_state[ 'googleweather_clear_request' ] = False
+			
+			if st.session_state.get( 'googleweather_mode', 'current' ) not in GOOGLEWEATHER_MODES:
+				st.session_state[ 'googleweather_mode' ] = 'current'
+			
+			if st.session_state.get( 'googleweather_units', 'METRIC' ) not in GOOGLEWEATHER_UNITS:
+				st.session_state[ 'googleweather_units' ] = 'METRIC'
+			
+			if 'googleweather_location' not in st.session_state:
+				st.session_state[ 'googleweather_location' ] = ''
+			
+			if 'googleweather_language' not in st.session_state:
+				st.session_state[ 'googleweather_language' ] = 'en'
+			
+			if 'googleweather_hours' not in st.session_state:
+				st.session_state[ 'googleweather_hours' ] = 24
+			
+			if 'googleweather_history_hours' not in st.session_state:
+				st.session_state[ 'googleweather_history_hours' ] = 24
+			
+			if 'googleweather_days' not in st.session_state:
+				st.session_state[ 'googleweather_days' ] = 5
+			
+			if 'googleweather_timeout' not in st.session_state:
+				st.session_state[ 'googleweather_timeout' ] = 10
 			
 			if st.session_state.get( 'googleweather_clear_request', False ):
 				st.session_state[ 'googleweather_location' ] = ''
@@ -7917,15 +8368,13 @@ elif mode == 'Geospatial':
 				st.session_state[ 'googleweather_units' ] = 'METRIC'
 				st.session_state[ 'googleweather_language' ] = 'en'
 				st.session_state[ 'googleweather_hours' ] = 24
+				st.session_state[ 'googleweather_history_hours' ] = 24
 				st.session_state[ 'googleweather_days' ] = 5
 				st.session_state[ 'googleweather_timeout' ] = 10
 				st.session_state[ 'googleweather_results' ] = { }
 				st.session_state[ 'googleweather_clear_request' ] = False
 			
-			def _clear_googleweather_state( ) -> None:
-				st.session_state[ 'googleweather_clear_request' ] = True
-			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				gw_location = st.text_area(
@@ -7945,18 +8394,21 @@ elif mode == 'Geospatial':
 				with c1:
 					gw_mode = st.selectbox(
 						'Mode',
-						options=[ 'current', 'hourly_forecast', 'daily_forecast', 'alerts' ],
-						index=[ 'current', 'hourly_forecast', 'daily_forecast', 'alerts' ].index(
-							st.session_state.get( 'googleweather_mode', 'current' ) ),
-						key='googleweather_mode'
+						options=GOOGLEWEATHER_MODES,
+						index=GOOGLEWEATHER_MODES.index(
+							st.session_state.get( 'googleweather_mode', 'current' )
+						),
+						key='googleweather_mode',
+						help='Choose the Google Weather API operation to run.'
 					)
 				
 				with c2:
 					gw_units = st.selectbox(
 						'Units',
-						options=[ 'METRIC', 'IMPERIAL' ],
-						index=[ 'METRIC', 'IMPERIAL' ].index(
-							st.session_state.get( 'googleweather_units', 'METRIC' ) ),
+						options=GOOGLEWEATHER_UNITS,
+						index=GOOGLEWEATHER_UNITS.index(
+							st.session_state.get( 'googleweather_units', 'METRIC' )
+						),
 						key='googleweather_units'
 					)
 				
@@ -7972,7 +8424,7 @@ elif mode == 'Geospatial':
 				
 				with c4:
 					gw_hours = st.number_input(
-						'Hours',
+						'Forecast Hours',
 						min_value=1,
 						max_value=240,
 						value=int( st.session_state.get( 'googleweather_hours', 24 ) ),
@@ -7983,7 +8435,7 @@ elif mode == 'Geospatial':
 				
 				with c5:
 					gw_days = st.number_input(
-						'Days',
+						'Forecast Days',
 						min_value=1,
 						max_value=10,
 						value=int( st.session_state.get( 'googleweather_days', 5 ) ),
@@ -7992,14 +8444,29 @@ elif mode == 'Geospatial':
 						disabled=(gw_mode != 'daily_forecast')
 					)
 				
-				gw_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=60,
-					value=int( st.session_state.get( 'googleweather_timeout', 10 ) ),
-					step=1,
-					key='googleweather_timeout'
-				)
+				h1, h2 = st.columns( 2 )
+				
+				with h1:
+					gw_history_hours = st.number_input(
+						'History Hours',
+						min_value=1,
+						max_value=24,
+						value=int( st.session_state.get( 'googleweather_history_hours', 24 ) ),
+						step=1,
+						key='googleweather_history_hours',
+						disabled=(gw_mode != 'hourly_history'),
+						help='Google Weather hourly history supports up to 24 hours.'
+					)
+				
+				with h2:
+					gw_timeout = st.number_input(
+						'Timeout',
+						min_value=1,
+						max_value=60,
+						value=int( st.session_state.get( 'googleweather_timeout', 10 ) ),
+						step=1,
+						key='googleweather_timeout'
+					)
 				
 				st.caption(
 					'Required key: GOOGLE_WEATHER_API_KEY. '
@@ -8007,16 +8474,25 @@ elif mode == 'Geospatial':
 				)
 				
 				b1, b2 = st.columns( 2 )
+				
 				with b1:
 					gw_submit = st.button( 'Submit', key='googleweather_submit' )
+				
 				with b2:
-					st.button( 'Clear', key='googleweather_clear', on_click=_clear_googleweather_state )
+					st.button(
+						'Clear',
+						key='googleweather_clear',
+						on_click=_clear_googleweather_state
+					)
 			
 			with col_right:
 				st.markdown( 'Results' )
 				
 				if gw_submit:
 					try:
+						if not str( gw_location or '' ).strip( ):
+							raise ValueError( 'Location is required for Google Weather.' )
+						
 						f = GoogleWeather( )
 						
 						if gw_mode == 'current':
@@ -8024,26 +8500,38 @@ elif mode == 'Geospatial':
 								address=gw_location,
 								units_system=gw_units,
 								language_code=gw_language,
-								time=int( gw_timeout ) )
+								time=int( gw_timeout )
+							)
 						elif gw_mode == 'hourly_forecast':
 							result = f.fetch_hourly_forecast(
 								address=gw_location,
 								hours=int( gw_hours ),
 								units_system=gw_units,
 								language_code=gw_language,
-								time=int( gw_timeout ) )
+								time=int( gw_timeout )
+							)
 						elif gw_mode == 'daily_forecast':
 							result = f.fetch_daily_forecast(
 								address=gw_location,
 								days=int( gw_days ),
 								units_system=gw_units,
 								language_code=gw_language,
-								time=int( gw_timeout ) )
+								time=int( gw_timeout )
+							)
+						elif gw_mode == 'hourly_history':
+							result = f.fetch_hourly_history(
+								address=gw_location,
+								hours=int( gw_history_hours ),
+								units_system=gw_units,
+								language_code=gw_language,
+								time=int( gw_timeout )
+							)
 						else:
 							result = f.fetch_alerts(
 								address=gw_location,
 								language_code=gw_language,
-								time=int( gw_timeout ) )
+								time=int( gw_timeout )
+							)
 						
 						st.session_state[ 'googleweather_results' ] = result or { }
 						st.rerun( )
@@ -8051,148 +8539,111 @@ elif mode == 'Geospatial':
 					except Exception as exc:
 						st.error( 'Google Weather request failed.' )
 						st.exception( exc )
-						
-			result = st.session_state.get( 'googleweather_results', { } )
-			
-			if not result:
-				st.text( 'No results.' )
-			else:
-				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
-				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 				
-				st.markdown( '#### Request Metadata' )
-				st.json(
-					{
-							'mode': mode_value,
-							'url': result.get( 'url', '' ),
-							'params': params,
-					}
-				)
+				result = st.session_state.get( 'googleweather_results', { } )
 				
-				if isinstance( data, dict ) and data:
-					current = (
-							data.get( 'currentWeather' )
-							or data.get( 'current_weather' )
-							or data.get( 'currentConditions' )
-							or data.get( 'current_conditions' )
-							or { }
-					)
-					
-					hourly = (
-							data.get( 'hourlyForecasts' )
-							or data.get( 'hourly_forecasts' )
-							or data.get( 'hours' )
-							or [ ]
-					)
-					
-					daily = (
-							data.get( 'dailyForecasts' )
-							or data.get( 'daily_forecasts' )
-							or data.get( 'days' )
-							or [ ]
-					)
-					
-					alerts = (
-							data.get( 'weatherAlerts' )
-							or data.get( 'alerts' )
-							or [ ]
-					)
-					
-					location_bits: List[ str ] = [ ]
-					for key in [ 'address', 'resolvedAddress', 'location', 'displayName', 'name' ]:
-						value = data.get( key, '' )
-						if value:
-							location_bits.append( str( value ) )
-							break
-					
-					if location_bits:
-						st.markdown( '#### Location' )
-						st.write( location_bits[ 0 ] )
-					
-					if current:
-						st.markdown( '#### Current Conditions' )
-						
-						c1, c2, c3 = st.columns( 3 )
-						
-						with c1:
-							for key in [ 'temperature', 'temp', 'temperature_f', 'temperature_c' ]:
-								if key in current:
-									st.metric( 'Temperature', current.get( key ) )
-									break
-						
-						with c2:
-							for key in [ 'humidity', 'relativeHumidity', 'relative_humidity' ]:
-								if key in current:
-									st.metric( 'Humidity', current.get( key ) )
-									break
-						
-						with c3:
-							for key in [ 'weatherCondition', 'condition', 'description', 'icon' ]:
-								if key in current:
-									st.metric( 'Condition', current.get( key ) )
-									break
-						
-						with st.expander( 'Current Conditions Detail', expanded=False ):
-							st.json( current )
-					
-					if isinstance( hourly, list ) and hourly:
-						st.markdown( '#### Hourly Forecast' )
-						df_hourly = pd.DataFrame( hourly )
-						if not df_hourly.empty:
-							st.dataframe( df_hourly.head( 24 ), use_container_width=True, hide_index=True )
-						else:
-							st.info( 'Hourly forecast returned no displayable rows.' )
-					
-					if isinstance( daily, list ) and daily:
-						st.markdown( '#### Daily Forecast' )
-						df_daily = pd.DataFrame( daily )
-						if not df_daily.empty:
-							st.dataframe( df_daily, use_container_width=True, hide_index=True )
-						else:
-							st.info( 'Daily forecast returned no displayable rows.' )
-					
-					if isinstance( alerts, list ) and alerts:
-						st.markdown( '#### Alerts' )
-						for idx, alert in enumerate( alerts, start=1 ):
-							with st.expander( f'Alert {idx}', expanded=False ):
-								if isinstance( alert, dict ):
-									title_value = (
-											alert.get( 'headline' )
-											or alert.get( 'title' )
-											or alert.get( 'event' )
-											or f'Alert {idx}'
-									)
-									st.markdown( f'**{title_value}**' )
-									
-									desc_value = (
-											alert.get( 'description' )
-											or alert.get( 'summary' )
-											or ''
-									)
-									if desc_value:
-										st.write( str( desc_value ) )
-									
-									st.json( alert )
-								else:
-									st.write( alert )
-					
-					if not current and not hourly and not daily and not alerts:
-						st.markdown( '#### Result' )
-						st.json( data )
-				
-				elif isinstance( data, list ) and data:
-					st.markdown( '#### Results' )
-					df_weather = pd.DataFrame( data )
-					if not df_weather.empty:
-						st.dataframe( df_weather, use_container_width=True, hide_index=True )
-					else:
-						st.json( data )
+				if not result:
+					st.text( 'No results.' )
 				else:
-					st.info( 'No results returned.' )
-				
-				with st.expander( 'Raw Result', expanded=False ):
-					st.json( result )
+					mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
+					data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
+					
+					st.markdown( '#### Request Metadata' )
+					st.json(
+						{
+								'mode': mode_value,
+								'url': result.get( 'url', '' ),
+								'params': params,
+						}
+					)
+					
+					if isinstance( data, dict ) and data:
+						current = (
+								data.get( 'currentWeather' )
+								or data.get( 'current_weather' )
+								or data.get( 'currentConditions' )
+								or data.get( 'current_conditions' )
+								or { }
+						)
+						
+						hourly = (
+								data.get( 'hourlyForecasts' )
+								or data.get( 'hourly_forecasts' )
+								or data.get( 'forecastHours' )
+								or data.get( 'hours' )
+								or [ ]
+						)
+						
+						history = (
+								data.get( 'historyHours' )
+								or data.get( 'history_hours' )
+								or [ ]
+						)
+						
+						daily = (
+								data.get( 'dailyForecasts' )
+								or data.get( 'daily_forecasts' )
+								or data.get( 'forecastDays' )
+								or data.get( 'days' )
+								or [ ]
+						)
+						
+						alerts = (
+								data.get( 'weatherAlerts' )
+								or data.get( 'weather_alerts' )
+								or data.get( 'alerts' )
+								or [ ]
+						)
+						
+						if current:
+							st.markdown( '#### Current Conditions' )
+							st.json( current )
+						
+						if hourly:
+							st.markdown( '#### Hourly Forecast' )
+							df_googleweather_hourly = pd.DataFrame( hourly )
+							st.dataframe(
+								df_googleweather_hourly,
+								use_container_width=True,
+								hide_index=True
+							)
+						
+						if history:
+							st.markdown( '#### Hourly History' )
+							df_googleweather_history = pd.DataFrame( history )
+							st.dataframe(
+								df_googleweather_history,
+								use_container_width=True,
+								hide_index=True
+							)
+						
+						if daily:
+							st.markdown( '#### Daily Forecast' )
+							df_googleweather_daily = pd.DataFrame( daily )
+							st.dataframe(
+								df_googleweather_daily,
+								use_container_width=True,
+								hide_index=True
+							)
+						
+						if alerts:
+							st.markdown( '#### Weather Alerts' )
+							df_googleweather_alerts = pd.DataFrame( alerts )
+							st.dataframe(
+								df_googleweather_alerts,
+								use_container_width=True,
+								hide_index=True
+							)
+						
+						with st.expander( 'Raw Payload', expanded=False ):
+							st.json( data )
+					
+					else:
+						st.info( 'No Google Weather payload was returned.' )
+					
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 		
 		# -------- Open Weather
 		with st.expander( label='Open Weather', icon='🌦️', expanded=False ):
@@ -8230,7 +8681,7 @@ elif mode == 'Geospatial':
 				'''
 				st.session_state[ 'openweather_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				openweather_location = st.text_area(
@@ -8408,7 +8859,7 @@ elif mode == 'Geospatial':
 				'''
 				st.session_state[ 'historicalweather_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				historicalweather_location = st.text_area(
@@ -8569,7 +9020,7 @@ elif mode == 'Geospatial':
 				'''
 				st.session_state[ 'usgsearthquakes_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				usgseq_mode = st.selectbox(
@@ -8934,7 +9385,7 @@ elif mode == 'Geospatial':
 				'''
 				st.session_state[ 'earthobservatory_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				earth_mode = st.selectbox(
@@ -9154,7 +9605,7 @@ elif mode == 'Geospatial':
 				'''
 				st.session_state[ 'usgstnm_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				usgstnm_mode = st.selectbox(
@@ -9430,7 +9881,7 @@ elif mode == 'Geospatial':
 				'''
 				st.session_state[ 'usgssb_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			with col_left:
 				usgssb_mode = st.selectbox(
 					'Mode',
@@ -9662,6 +10113,20 @@ elif mode == 'Geospatial':
 		# -------- Open Sky
 		with st.expander( label='Open Sky', icon='✈️', expanded=False ):
 			def _clear_opensky_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Reset the OpenSky controls and result payload to their default values.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+
+				'''
 				st.session_state[ 'opensky_results' ] = { }
 				st.session_state[ 'opensky_mode' ] = 'states_bbox'
 				st.session_state[ 'opensky_icao24' ] = ''
@@ -9677,9 +10142,89 @@ elif mode == 'Geospatial':
 				st.session_state[ 'opensky_client_id' ] = ''
 				st.session_state[ 'opensky_client_secret' ] = ''
 				st.session_state[ 'opensky_timeout' ] = 20
+			
+			def _coerce_opensky_time_value( mode_value: str, raw_value: int ) -> int | None:
+				'''
+					Purpose:
+					--------
+					Normalize the OpenSky time control before calling the wrapper. For live
+					state-vector requests, zero means omit the time parameter so OpenSky uses
+					current time. For aircraft track requests, zero remains valid because the
+					OpenSky track endpoint treats zero as a live/current-track request.
+
+					Parameters:
+					-----------
+					mode_value (str):
+						Selected OpenSky mode.
+
+					raw_value (int):
+						User-entered Unix timestamp value.
+
+					Returns:
+					--------
+					int | None:
+						Validated Unix timestamp or None when the API parameter should be
+						omitted.
+
+				'''
+				active_mode = str( mode_value or 'states_bbox' ).strip( ).lower( )
+				value = int( raw_value or 0 )
 				
+				if active_mode == 'states_bbox' and value <= 0:
+					return None
+				
+				if active_mode == 'track_aircraft':
+					return value
+				
+				if value <= 0:
+					return None
+				
+				return value
+			
 			if 'opensky_results' not in st.session_state:
 				st.session_state[ 'opensky_results' ] = { }
+			
+			if 'opensky_mode' not in st.session_state:
+				st.session_state[ 'opensky_mode' ] = 'states_bbox'
+			
+			if 'opensky_icao24' not in st.session_state:
+				st.session_state[ 'opensky_icao24' ] = ''
+			
+			if 'opensky_airport' not in st.session_state:
+				st.session_state[ 'opensky_airport' ] = ''
+			
+			if 'opensky_begin' not in st.session_state:
+				st.session_state[ 'opensky_begin' ] = 0
+			
+			if 'opensky_end' not in st.session_state:
+				st.session_state[ 'opensky_end' ] = 0
+			
+			if 'opensky_time_value' not in st.session_state:
+				st.session_state[ 'opensky_time_value' ] = 0
+			
+			if 'opensky_lamin' not in st.session_state:
+				st.session_state[ 'opensky_lamin' ] = 39.0
+			
+			if 'opensky_lomin' not in st.session_state:
+				st.session_state[ 'opensky_lomin' ] = -77.5
+			
+			if 'opensky_lamax' not in st.session_state:
+				st.session_state[ 'opensky_lamax' ] = 40.5
+			
+			if 'opensky_lomax' not in st.session_state:
+				st.session_state[ 'opensky_lomax' ] = -75.0
+			
+			if 'opensky_extended' not in st.session_state:
+				st.session_state[ 'opensky_extended' ] = False
+			
+			if 'opensky_client_id' not in st.session_state:
+				st.session_state[ 'opensky_client_id' ] = ''
+			
+			if 'opensky_client_secret' not in st.session_state:
+				st.session_state[ 'opensky_client_secret' ] = ''
+			
+			if 'opensky_timeout' not in st.session_state:
+				st.session_state[ 'opensky_timeout' ] = 20
 			
 			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
 			
@@ -9740,7 +10285,11 @@ elif mode == 'Geospatial':
 					value=0,
 					step=60,
 					key='opensky_time_value',
-					help='Optional for states_bbox; used by track_aircraft.'
+					help=(
+							'Optional for states_bbox. Leave at 0 for current live state '
+							'vectors. Used by track_aircraft, where 0 requests the current '
+							'or latest available track.'
+					)
 				)
 				
 				lamin = st.number_input( 'Min Latitude', value=39.0, key='opensky_lamin' )
@@ -9795,19 +10344,24 @@ elif mode == 'Geospatial':
 			with col_right:
 				if opensky_submit:
 					try:
+						normalized_time_value = _coerce_opensky_time_value(
+							mode_value=mode,
+							raw_value=int( time_value or 0 )
+						)
+						
 						client = OpenSky( )
 						result = client.fetch(
 							mode=mode,
 							icao24=icao24,
 							airport=airport,
-							begin=int( begin ) if begin else None,
-							end=int( end ) if end else None,
-							time_value=int( time_value ) if time_value is not None else None,
+							begin=int( begin ) if int( begin or 0 ) > 0 else None,
+							end=int( end ) if int( end or 0 ) > 0 else None,
+							time_value=normalized_time_value,
 							lamin=float( lamin ) if lamin is not None else None,
 							lomin=float( lomin ) if lomin is not None else None,
 							lamax=float( lamax ) if lamax is not None else None,
 							lomax=float( lomax ) if lomax is not None else None,
-							extended=extended,
+							extended=bool( extended ),
 							client_id=client_id.strip( ) or None,
 							client_secret=client_secret.strip( ) or None,
 							time=int( timeout ),
@@ -9843,7 +10397,8 @@ elif mode == 'Geospatial':
 							map_rows = [
 									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
 									for x in items
-									if x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
+									if x.get( 'latitude' ) is not None
+									   and x.get( 'longitude' ) is not None
 							]
 							if map_rows:
 								st.markdown( '#### Aircraft Positions' )
@@ -9864,21 +10419,23 @@ elif mode == 'Geospatial':
 					
 					elif result.get( 'mode' ) == 'track_aircraft':
 						if items:
-							st.markdown( '#### Track Waypoints' )
+							st.markdown( '#### Aircraft Track' )
 							st.dataframe( items, use_container_width=True, hide_index=True )
 							
 							map_rows = [
 									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
 									for x in items
-									if x.get( 'latitude' ) is not None and x.get( 'longitude' ) is not None
+									if x.get( 'latitude' ) is not None
+									   and x.get( 'longitude' ) is not None
 							]
 							if map_rows:
 								st.markdown( '#### Track Map' )
 								st.map( map_rows )
 						else:
-							st.info( 'No track waypoints were returned for that aircraft/time.' )
+							st.info( 'No track waypoints were returned for that aircraft.' )
 					
-					_render_fallback_raw( result )
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 			
 # ==============================================================================
 # ENVIRONMENTAL MODE
@@ -9924,7 +10481,7 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'airnow_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				airnow_mode = st.selectbox(
@@ -10216,7 +10773,7 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'climatedata_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				climatedata_mode = st.selectbox(
@@ -10478,7 +11035,7 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'eonet_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				eonet_mode = st.selectbox(
@@ -10769,7 +11326,7 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'envirofacts_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				envirofacts_table_name = st.selectbox(
@@ -10980,7 +11537,7 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'tidesandcurrents_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				tac_mode = st.selectbox(
@@ -11236,7 +11793,7 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'uvindex_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				uvindex_mode = st.selectbox(
@@ -11424,11 +11981,140 @@ elif mode == 'Environmental':
 		
 		# -------- PurpleAir
 		with st.expander( label='Purple Air', icon='🟣', expanded=False ):
+			PURPLEAIR_MODES = [
+					'sensors',
+					'sensor'
+			]
+			
+			PURPLEAIR_FIELD_OPTIONS = [
+					'name',
+					'pm2.5',
+					'temperature',
+					'humidity',
+					'latitude',
+					'longitude',
+					'last_seen',
+					'location_type',
+					'model',
+					'hardware',
+					'pm2.5_cf_1_a',
+					'pm2.5_cf_1_b',
+					'pressure',
+					'firmware_version',
+					'rssi'
+			]
+			
+			PURPLEAIR_SENSOR_LIST_DEFAULT_FIELDS = [
+					'name',
+					'pm2.5',
+					'temperature',
+					'humidity',
+					'latitude',
+					'longitude',
+					'last_seen',
+					'location_type'
+			]
+			
+			PURPLEAIR_SENSOR_DETAIL_DEFAULT_FIELDS = [
+					'name',
+					'model',
+					'hardware',
+					'pm2.5_cf_1_a',
+					'pm2.5_cf_1_b',
+					'temperature',
+					'humidity',
+					'pressure',
+					'latitude',
+					'longitude',
+					'last_seen',
+					'firmware_version',
+					'rssi'
+			]
+			
+			PURPLEAIR_LOCATION_TYPES = {
+					'Outdoor': 0,
+					'Indoor': 1
+			}
+			
+			def _clear_purpleair_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the PurpleAir expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+
+				'''
+				st.session_state[ 'purpleair_clear_request' ] = True
+			
+			def _coerce_optional_float( value: object ) -> float | None:
+				'''
+					Purpose:
+					--------
+					Convert an optional UI value into a float or None.
+
+					Parameters:
+					-----------
+					value (object):
+						Value supplied by a Streamlit input control.
+
+					Returns:
+					--------
+					float | None:
+						Float value when supplied; otherwise None.
+
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					return None
+				
+				return float( text )
+			
 			if 'purpleair_results' not in st.session_state:
 				st.session_state[ 'purpleair_results' ] = { }
 			
 			if 'purpleair_clear_request' not in st.session_state:
 				st.session_state[ 'purpleair_clear_request' ] = False
+			
+			if st.session_state.get( 'purpleair_mode', 'sensors' ) not in PURPLEAIR_MODES:
+				st.session_state[ 'purpleair_mode' ] = 'sensors'
+			
+			if 'purpleair_sensor_index' not in st.session_state:
+				st.session_state[ 'purpleair_sensor_index' ] = ''
+			
+			if 'purpleair_nwlng' not in st.session_state:
+				st.session_state[ 'purpleair_nwlng' ] = ''
+			
+			if 'purpleair_nwlat' not in st.session_state:
+				st.session_state[ 'purpleair_nwlat' ] = ''
+			
+			if 'purpleair_selng' not in st.session_state:
+				st.session_state[ 'purpleair_selng' ] = ''
+			
+			if 'purpleair_selat' not in st.session_state:
+				st.session_state[ 'purpleair_selat' ] = ''
+			
+			if 'purpleair_location_type_label' not in st.session_state:
+				st.session_state[ 'purpleair_location_type_label' ] = 'Outdoor'
+			
+			if 'purpleair_max_age' not in st.session_state:
+				st.session_state[ 'purpleair_max_age' ] = 0
+			
+			if 'purpleair_modified_since' not in st.session_state:
+				st.session_state[ 'purpleair_modified_since' ] = 0
+			
+			if 'purpleair_fields' not in st.session_state:
+				st.session_state[ 'purpleair_fields' ] = PURPLEAIR_SENSOR_LIST_DEFAULT_FIELDS
+			
+			if 'purpleair_timeout' not in st.session_state:
+				st.session_state[ 'purpleair_timeout' ] = 20
 			
 			if st.session_state.get( 'purpleair_clear_request', False ):
 				st.session_state[ 'purpleair_mode' ] = 'sensors'
@@ -11437,40 +12123,34 @@ elif mode == 'Environmental':
 				st.session_state[ 'purpleair_nwlat' ] = ''
 				st.session_state[ 'purpleair_selng' ] = ''
 				st.session_state[ 'purpleair_selat' ] = ''
-				st.session_state[ 'purpleair_location_type' ] = 0
+				st.session_state[ 'purpleair_location_type_label' ] = 'Outdoor'
 				st.session_state[ 'purpleair_max_age' ] = 0
 				st.session_state[ 'purpleair_modified_since' ] = 0
+				st.session_state[ 'purpleair_fields' ] = PURPLEAIR_SENSOR_LIST_DEFAULT_FIELDS
 				st.session_state[ 'purpleair_timeout' ] = 20
 				st.session_state[ 'purpleair_results' ] = { }
 				st.session_state[ 'purpleair_clear_request' ] = False
 			
-			def _clear_purpleair_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the PurpleAir expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'purpleair_clear_request' ] = True
-			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				purpleair_mode = st.selectbox(
 					'Mode',
-					options=[ 'sensors', 'sensor' ],
-					index=[ 'sensors', 'sensor' ].index(
+					options=PURPLEAIR_MODES,
+					index=PURPLEAIR_MODES.index(
 						st.session_state.get( 'purpleair_mode', 'sensors' )
 					),
 					key='purpleair_mode'
 				)
+				
+				default_fields = (
+						PURPLEAIR_SENSOR_DETAIL_DEFAULT_FIELDS
+						if purpleair_mode == 'sensor'
+						else PURPLEAIR_SENSOR_LIST_DEFAULT_FIELDS
+				)
+				
+				if not st.session_state.get( 'purpleair_fields', [ ] ):
+					st.session_state[ 'purpleair_fields' ] = default_fields
 				
 				purpleair_sensor_index = st.text_input(
 					'Sensor Index',
@@ -11478,6 +12158,20 @@ elif mode == 'Environmental':
 					key='purpleair_sensor_index',
 					disabled=(purpleair_mode != 'sensor'),
 					placeholder='Example: 78307'
+				)
+				
+				purpleair_fields = st.multiselect(
+					'Fields',
+					options=PURPLEAIR_FIELD_OPTIONS,
+					default=[
+							field for field in st.session_state.get(
+								'purpleair_fields',
+								default_fields
+							)
+							if field in PURPLEAIR_FIELD_OPTIONS
+					],
+					key='purpleair_fields',
+					help='Select only the PurpleAir fields needed for the request.'
 				)
 				
 				bbox_c1, bbox_c2 = st.columns( 2 )
@@ -11519,13 +12213,20 @@ elif mode == 'Environmental':
 				opt_c1, opt_c2 = st.columns( 2 )
 				
 				with opt_c1:
-					purpleair_location_type = st.number_input(
+					location_labels = list( PURPLEAIR_LOCATION_TYPES.keys( ) )
+					current_location_label = st.session_state.get(
+						'purpleair_location_type_label',
+						'Outdoor'
+					)
+					
+					if current_location_label not in location_labels:
+						current_location_label = 'Outdoor'
+					
+					purpleair_location_type_label = st.selectbox(
 						'Location Type',
-						min_value=0,
-						max_value=10,
-						value=int( st.session_state.get( 'purpleair_location_type', 0 ) ),
-						step=1,
-						key='purpleair_location_type',
+						options=location_labels,
+						index=location_labels.index( current_location_label ),
+						key='purpleair_location_type_label',
 						disabled=(purpleair_mode != 'sensors')
 					)
 				
@@ -11537,7 +12238,8 @@ elif mode == 'Environmental':
 						value=int( st.session_state.get( 'purpleair_max_age', 0 ) ),
 						step=1,
 						key='purpleair_max_age',
-						disabled=(purpleair_mode != 'sensors')
+						disabled=(purpleair_mode != 'sensors'),
+						help='Maximum age filter in seconds. Use 0 to preserve broad behavior.'
 					)
 				
 				purpleair_modified_since = st.number_input(
@@ -11547,7 +12249,8 @@ elif mode == 'Environmental':
 					value=int( st.session_state.get( 'purpleair_modified_since', 0 ) ),
 					step=1,
 					key='purpleair_modified_since',
-					disabled=(purpleair_mode != 'sensors')
+					disabled=(purpleair_mode != 'sensors'),
+					help='Unix timestamp filter. Use 0 to disable the filter.'
 				)
 				
 				purpleair_timeout = st.number_input(
@@ -11560,8 +12263,8 @@ elif mode == 'Environmental':
 				)
 				
 				st.caption(
-					'PurpleAir requires an API key and uses a points system. This wrapper '
-					'uses narrow field selection to keep calls focused and readable.'
+					'PurpleAir requires an API key and uses a points system. Select only '
+					'the fields needed for the request.'
 				)
 				
 				btn_c1, btn_c2 = st.columns( 2 )
@@ -11582,17 +12285,46 @@ elif mode == 'Environmental':
 			with col_right:
 				if purpleair_submit:
 					try:
+						selected_fields = ','.join( purpleair_fields or default_fields )
+						
+						if purpleair_mode == 'sensor' and not str(
+								purpleair_sensor_index ).strip( ):
+							raise ValueError( 'Sensor Index is required for sensor mode.' )
+						
+						if purpleair_mode == 'sensors':
+							if not str( purpleair_nwlng ).strip( ):
+								raise ValueError( 'NW Longitude is required for sensors mode.' )
+							
+							if not str( purpleair_nwlat ).strip( ):
+								raise ValueError( 'NW Latitude is required for sensors mode.' )
+							
+							if not str( purpleair_selng ).strip( ):
+								raise ValueError( 'SE Longitude is required for sensors mode.' )
+							
+							if not str( purpleair_selat ).strip( ):
+								raise ValueError( 'SE Latitude is required for sensors mode.' )
+						
 						f = PurpleAir( )
 						result = f.fetch(
 							mode=str( purpleair_mode ),
-							sensor_index=None if not str( purpleair_sensor_index ).strip( ) else int( purpleair_sensor_index ),
-							nwlng=None if not str( purpleair_nwlng ).strip( ) else float( purpleair_nwlng ),
-							nwlat=None if not str( purpleair_nwlat ).strip( ) else float( purpleair_nwlat ),
-							selng=None if not str( purpleair_selng ).strip( ) else float( purpleair_selng ),
-							selat=None if not str( purpleair_selat ).strip( ) else float( purpleair_selat ),
-							location_type=int( purpleair_location_type ),
+							sensor_index=(
+									None
+									if not str( purpleair_sensor_index ).strip( )
+									else int( purpleair_sensor_index )
+							),
+							nwlng=_coerce_optional_float( purpleair_nwlng ),
+							nwlat=_coerce_optional_float( purpleair_nwlat ),
+							selng=_coerce_optional_float( purpleair_selng ),
+							selat=_coerce_optional_float( purpleair_selat ),
+							location_type=int(
+								PURPLEAIR_LOCATION_TYPES.get(
+									purpleair_location_type_label,
+									0
+								)
+							),
 							max_age=int( purpleair_max_age ),
 							modified_since=int( purpleair_modified_since ),
+							fields=selected_fields,
 							time=int( purpleair_timeout )
 						)
 						
@@ -11667,6 +12399,23 @@ elif mode == 'Environmental':
 								hide_index=True
 							)
 							
+							map_rows = [ ]
+							for item in rows:
+								latitude = item.get( 'Latitude', None )
+								longitude = item.get( 'Longitude', None )
+								
+								if latitude is not None and longitude is not None:
+									map_rows.append(
+										{
+												'lat': latitude,
+												'lon': longitude
+										}
+									)
+							
+							if map_rows:
+								st.markdown( '#### Sensor Map' )
+								st.map( map_rows )
+							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
 								label = str(
@@ -11690,15 +12439,99 @@ elif mode == 'Environmental':
 		
 		# -------- OpenAQ
 		with st.expander( label='Open Air Quality', icon='🌬️', expanded=False ):
+			OPENAQ_MODES = [
+					'countries',
+					'providers',
+					'parameters',
+					'locations',
+					'latest',
+					'parameter_latest'
+			]
+			
+			def _clear_openaq_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the OpenAQ expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+
+				'''
+				st.session_state[ 'openaq_clear_request' ] = True
+			
+			def _coerce_optional_integer( value: object ) -> int | None:
+				'''
+					Purpose:
+					--------
+					Convert an optional UI value into an integer or None.
+
+					Parameters:
+					-----------
+					value (object):
+						Value supplied by a Streamlit input control.
+
+					Returns:
+					--------
+					int | None:
+						Integer value when supplied; otherwise None.
+
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					return None
+				
+				return int( text )
+			
 			if 'openaq_results' not in st.session_state:
 				st.session_state[ 'openaq_results' ] = { }
 			
 			if 'openaq_clear_request' not in st.session_state:
 				st.session_state[ 'openaq_clear_request' ] = False
 			
+			if st.session_state.get( 'openaq_mode', 'locations' ) not in OPENAQ_MODES:
+				st.session_state[ 'openaq_mode' ] = 'locations'
+			
+			if 'openaq_location_id' not in st.session_state:
+				st.session_state[ 'openaq_location_id' ] = ''
+			
+			if 'openaq_parameter_id' not in st.session_state:
+				st.session_state[ 'openaq_parameter_id' ] = ''
+			
+			if 'openaq_country_id' not in st.session_state:
+				st.session_state[ 'openaq_country_id' ] = ''
+			
+			if 'openaq_coordinates' not in st.session_state:
+				st.session_state[ 'openaq_coordinates' ] = ''
+			
+			if 'openaq_radius' not in st.session_state:
+				st.session_state[ 'openaq_radius' ] = 25000
+			
+			if 'openaq_providers_id' not in st.session_state:
+				st.session_state[ 'openaq_providers_id' ] = ''
+			
+			if 'openaq_parameters_id' not in st.session_state:
+				st.session_state[ 'openaq_parameters_id' ] = ''
+			
+			if 'openaq_limit' not in st.session_state:
+				st.session_state[ 'openaq_limit' ] = 25
+			
+			if 'openaq_page' not in st.session_state:
+				st.session_state[ 'openaq_page' ] = 1
+			
+			if 'openaq_timeout' not in st.session_state:
+				st.session_state[ 'openaq_timeout' ] = 20
+			
 			if st.session_state.get( 'openaq_clear_request', False ):
 				st.session_state[ 'openaq_mode' ] = 'locations'
 				st.session_state[ 'openaq_location_id' ] = ''
+				st.session_state[ 'openaq_parameter_id' ] = ''
 				st.session_state[ 'openaq_country_id' ] = ''
 				st.session_state[ 'openaq_coordinates' ] = ''
 				st.session_state[ 'openaq_radius' ] = 25000
@@ -11710,32 +12543,21 @@ elif mode == 'Environmental':
 				st.session_state[ 'openaq_results' ] = { }
 				st.session_state[ 'openaq_clear_request' ] = False
 			
-			def _clear_openaq_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the OpenAQ expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'openaq_clear_request' ] = True
-			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				openaq_mode = st.selectbox(
 					'Mode',
-					options=[ 'locations', 'latest' ],
-					index=[ 'locations', 'latest' ].index(
+					options=OPENAQ_MODES,
+					index=OPENAQ_MODES.index(
 						st.session_state.get( 'openaq_mode', 'locations' )
 					),
-					key='openaq_mode'
+					key='openaq_mode',
+					help=(
+							'Select one of the wrapper-supported OpenAQ v3 modes. '
+							'Discovery modes return lookup tables; latest modes return '
+							'measurement records.'
+					)
 				)
 				
 				openaq_location_id = st.text_input(
@@ -11744,6 +12566,14 @@ elif mode == 'Environmental':
 					key='openaq_location_id',
 					disabled=(openaq_mode != 'latest'),
 					placeholder='Example: 8118'
+				)
+				
+				openaq_parameter_id = st.text_input(
+					'Parameter ID',
+					value=st.session_state.get( 'openaq_parameter_id', '' ),
+					key='openaq_parameter_id',
+					disabled=(openaq_mode != 'parameter_latest'),
+					placeholder='Example: 2'
 				)
 				
 				openaq_country_id = st.text_input(
@@ -11779,7 +12609,7 @@ elif mode == 'Environmental':
 						'Providers ID',
 						value=st.session_state.get( 'openaq_providers_id', '' ),
 						key='openaq_providers_id',
-						disabled=(openaq_mode != 'locations'),
+						disabled=(openaq_mode not in [ 'countries', 'locations' ]),
 						placeholder='Optional provider ID'
 					)
 				
@@ -11788,7 +12618,7 @@ elif mode == 'Environmental':
 						'Parameters ID',
 						value=st.session_state.get( 'openaq_parameters_id', '' ),
 						key='openaq_parameters_id',
-						disabled=(openaq_mode != 'locations'),
+						disabled=(openaq_mode not in [ 'countries', 'locations' ]),
 						placeholder='Optional parameter ID'
 					)
 				
@@ -11802,7 +12632,7 @@ elif mode == 'Environmental':
 						value=int( st.session_state.get( 'openaq_limit', 25 ) ),
 						step=1,
 						key='openaq_limit',
-						disabled=(openaq_mode != 'locations')
+						disabled=(openaq_mode == 'latest')
 					)
 				
 				with page_c2:
@@ -11813,7 +12643,7 @@ elif mode == 'Environmental':
 						value=int( st.session_state.get( 'openaq_page', 1 ) ),
 						step=1,
 						key='openaq_page',
-						disabled=(openaq_mode != 'locations')
+						disabled=(openaq_mode == 'latest')
 					)
 				
 				openaq_timeout = st.number_input(
@@ -11826,8 +12656,9 @@ elif mode == 'Environmental':
 				)
 				
 				st.caption(
-					'OpenAQ v3 requires an API key. Locations mode supports discovery. '
-					'Latest mode retrieves the latest measurements for one location.'
+					'OpenAQ v3 requires an API key. Discovery modes return countries, '
+					'providers, parameters, or locations. Latest modes retrieve current '
+					'measurements by location or parameter.'
 				)
 				
 				btn_c1, btn_c2 = st.columns( 2 )
@@ -11848,11 +12679,20 @@ elif mode == 'Environmental':
 			with col_right:
 				if openaq_submit:
 					try:
+						if openaq_mode == 'latest' and not str( openaq_location_id ).strip( ):
+							raise ValueError( 'Location ID is required for latest mode.' )
+						
+						if openaq_mode == 'parameter_latest' and not str(
+								openaq_parameter_id ).strip( ):
+							raise ValueError(
+								'Parameter ID is required for parameter_latest mode.' )
+						
 						f = OpenAQ( )
 						result = f.fetch(
 							mode=str( openaq_mode ),
-							location_id=None if not str( openaq_location_id ).strip( ) else int( openaq_location_id ),
-							country_id=None if not str( openaq_country_id ).strip( ) else int( openaq_country_id ),
+							location_id=_coerce_optional_integer( openaq_location_id ),
+							parameter_id=_coerce_optional_integer( openaq_parameter_id ),
+							country_id=_coerce_optional_integer( openaq_country_id ),
 							coordinates=str( openaq_coordinates ).strip( ),
 							radius=int( openaq_radius ),
 							providers_id=str( openaq_providers_id ).strip( ),
@@ -11887,6 +12727,10 @@ elif mode == 'Environmental':
 						if 'location_id' in params:
 							st.markdown(
 								f"**Location ID:** {params.get( 'location_id', '' )}"
+							)
+						if 'parameter_id' in params:
+							st.markdown(
+								f"**Parameter ID:** {params.get( 'parameter_id', '' )}"
 							)
 						if 'country_id' in params:
 							st.markdown(
@@ -11939,12 +12783,31 @@ elif mode == 'Environmental':
 								hide_index=True
 							)
 							
+							map_rows = [ ]
+							for item in rows:
+								latitude = item.get( 'Latitude', None )
+								longitude = item.get( 'Longitude', None )
+								
+								if latitude is not None and longitude is not None:
+									map_rows.append(
+										{
+												'lat': latitude,
+												'lon': longitude
+										}
+									)
+							
+							if map_rows:
+								st.markdown( '#### Location Map' )
+								st.map( map_rows )
+							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
 								label = str(
 									item.get( 'Name', '' ) or
 									item.get( 'Location Id', '' ) or
 									item.get( 'Parameter', '' ) or
+									item.get( 'Display Name', '' ) or
+									item.get( 'Id', '' ) or
 									f'Record {idx}'
 								)
 								
@@ -11996,7 +12859,7 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'firms_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				firms_mode = st.selectbox(
@@ -12260,7 +13123,7 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'usgswaterdata_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				usgswd_mode = st.selectbox(
@@ -12532,7 +13395,7 @@ elif mode == 'Astronomical':
 				'''
 				st.session_state[ 'navalobservatory_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				naval_date = st.date_input(
@@ -12764,7 +13627,7 @@ elif mode == 'Astronomical':
 				else:
 					st.info( 'No displayable rows were found.' )
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			with col_left:
 				satellite_mode = st.selectbox(
 					'Mode',
@@ -13054,7 +13917,7 @@ elif mode == 'Astronomical':
 			def _clear_astrocatalog_state( ) -> None:
 				st.session_state[ 'astrocatalog_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				astro_mode = st.selectbox(
@@ -13371,7 +14234,7 @@ elif mode == 'Astronomical':
 			def _clear_astroquery_state( ) -> None:
 				st.session_state[ 'astroquery_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				astroquery_mode = st.selectbox(
@@ -13590,7 +14453,7 @@ elif mode == 'Astronomical':
 			def _clear_starmap_state( ) -> None:
 				st.session_state[ 'starmap_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				starmap_mode = st.selectbox(
@@ -13849,7 +14712,7 @@ elif mode == 'Astronomical':
 				'''
 				st.session_state[ 'simbad_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				simbad_mode = st.selectbox(
@@ -14060,7 +14923,7 @@ elif mode == 'Astronomical':
 				'''
 				st.session_state[ 'spaceweather_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				spaceweather_mode = st.selectbox(
@@ -14357,7 +15220,7 @@ elif mode == 'Astronomical':
 				'''
 				st.session_state[ 'starchart_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				starchart_mode = st.selectbox(
@@ -14725,7 +15588,7 @@ elif mode == 'Astronomical':
 				'''
 				st.session_state[ 'nearbyobjects_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				nearby_mode = st.selectbox(
@@ -15099,7 +15962,7 @@ elif mode == 'Population':
 				'''
 				st.session_state[ 'census_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				census_mode = st.selectbox(
@@ -15313,7 +16176,7 @@ elif mode == 'Population':
 				'''
 				st.session_state[ 'socrata_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				socrata_mode = st.selectbox(
@@ -15548,7 +16411,7 @@ elif mode == 'Population':
 				'''
 				st.session_state[ 'healthdata_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				healthdata_mode = st.selectbox(
@@ -15777,7 +16640,7 @@ elif mode == 'Population':
 				'''
 				st.session_state[ 'who_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				who_mode = st.selectbox(
@@ -15947,7 +16810,7 @@ elif mode == 'Population':
 				'''
 				st.session_state[ 'un_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				un_mode = st.selectbox(
@@ -16099,7 +16962,7 @@ elif mode == 'Population':
 				'''
 				st.session_state[ 'worldpop_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				worldpop_mode = st.selectbox(
@@ -16303,7 +17166,7 @@ elif mode == 'Population':
 				'''
 				st.session_state[ 'wonder_clear_request' ] = True
 			
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				wonder_mode = st.selectbox(
@@ -16764,7 +17627,7 @@ elif mode == 'Generation':
 		
 		# -------- ChatGPT
 		with st.expander( label='ChatGPT', expanded=True ):
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				chat_prompt = st.text_area( 'Prompt', value='', height=120, key='chat_prompt' )
@@ -16984,7 +17847,7 @@ elif mode == 'Generation':
 		
 		# -------- Groq
 		with st.expander( label='Grok', expanded=False ):
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				groq_prompt = st.text_area(
@@ -17225,7 +18088,7 @@ elif mode == 'Generation':
 		
 		# -------- CLAUDE
 		with st.expander( label='Claude', expanded=False ):
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				claude_prompt = st.text_area(
@@ -17473,7 +18336,7 @@ elif mode == 'Generation':
 		
 		# -------- GEMINI
 		with st.expander( label='Gemini', expanded=False ):
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				gemini_prompt = st.text_area(
@@ -17722,7 +18585,7 @@ elif mode == 'Generation':
 		
 		# -------- Mistral
 		with st.expander( label='Mistral', expanded=False ):
-			col_left, col_right = st.columns( 2, border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				mistral_prompt = st.text_area(
