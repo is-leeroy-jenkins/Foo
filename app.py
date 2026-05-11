@@ -11963,20 +11963,71 @@ elif mode == 'Environmental':
 		
 		# -------- EPA UV Index
 		with st.expander( label='EPA UV Index', icon='☀️', expanded=False ):
-			if 'uvindex_results' not in st.session_state:
-				st.session_state[ 'uvindex_results' ] = { }
+			UVINDEX_MODES = [
+					'daily-zip',
+					'daily-city-state',
+					'hourly-zip',
+					'hourly-city-state'
+			]
 			
-			if 'uvindex_clear_request' not in st.session_state:
-				st.session_state[ 'uvindex_clear_request' ] = False
-			
-			if st.session_state.get( 'uvindex_clear_request', False ):
-				st.session_state[ 'uvindex_mode' ] = 'daily-zip'
-				st.session_state[ 'uvindex_zip_code' ] = ''
-				st.session_state[ 'uvindex_city' ] = ''
-				st.session_state[ 'uvindex_state' ] = ''
-				st.session_state[ 'uvindex_timeout' ] = 20
-				st.session_state[ 'uvindex_results' ] = { }
-				st.session_state[ 'uvindex_clear_request' ] = False
+			UVINDEX_STATE_CODES = [
+					'AL',
+					'AK',
+					'AZ',
+					'AR',
+					'CA',
+					'CO',
+					'CT',
+					'DE',
+					'DC',
+					'FL',
+					'GA',
+					'HI',
+					'ID',
+					'IL',
+					'IN',
+					'IA',
+					'KS',
+					'KY',
+					'LA',
+					'ME',
+					'MD',
+					'MA',
+					'MI',
+					'MN',
+					'MS',
+					'MO',
+					'MT',
+					'NE',
+					'NV',
+					'NH',
+					'NJ',
+					'NM',
+					'NY',
+					'NC',
+					'ND',
+					'OH',
+					'OK',
+					'OR',
+					'PA',
+					'RI',
+					'SC',
+					'SD',
+					'TN',
+					'TX',
+					'UT',
+					'VT',
+					'VA',
+					'WA',
+					'WV',
+					'WI',
+					'WY',
+					'AS',
+					'GU',
+					'MP',
+					'PR',
+					'VI'
+			]
 			
 			def _clear_uvindex_state( ) -> None:
 				'''
@@ -11994,23 +12045,43 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'uvindex_clear_request' ] = True
 			
+			if 'uvindex_results' not in st.session_state:
+				st.session_state[ 'uvindex_results' ] = { }
+			
+			if 'uvindex_clear_request' not in st.session_state:
+				st.session_state[ 'uvindex_clear_request' ] = False
+			
+			if st.session_state.get( 'uvindex_mode', 'daily-zip' ) not in UVINDEX_MODES:
+				st.session_state[ 'uvindex_mode' ] = 'daily-zip'
+			
+			if st.session_state.get( 'uvindex_state', 'VA' ) not in UVINDEX_STATE_CODES:
+				st.session_state[ 'uvindex_state' ] = 'VA'
+			
+			if 'uvindex_zip_code' not in st.session_state:
+				st.session_state[ 'uvindex_zip_code' ] = ''
+			
+			if 'uvindex_city' not in st.session_state:
+				st.session_state[ 'uvindex_city' ] = ''
+			
+			if 'uvindex_timeout' not in st.session_state:
+				st.session_state[ 'uvindex_timeout' ] = 20
+			
+			if st.session_state.get( 'uvindex_clear_request', False ):
+				st.session_state[ 'uvindex_mode' ] = 'daily-zip'
+				st.session_state[ 'uvindex_zip_code' ] = ''
+				st.session_state[ 'uvindex_city' ] = ''
+				st.session_state[ 'uvindex_state' ] = 'VA'
+				st.session_state[ 'uvindex_timeout' ] = 20
+				st.session_state[ 'uvindex_results' ] = { }
+				st.session_state[ 'uvindex_clear_request' ] = False
+			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				uvindex_mode = st.selectbox(
 					'Mode',
-					options=[
-							'daily-zip',
-							'daily-city-state',
-							'hourly-zip',
-							'hourly-city-state'
-					],
-					index=[
-							'daily-zip',
-							'daily-city-state',
-							'hourly-zip',
-							'hourly-city-state'
-					].index(
+					options=UVINDEX_MODES,
+					index=UVINDEX_MODES.index(
 						st.session_state.get( 'uvindex_mode', 'daily-zip' )
 					),
 					key='uvindex_mode'
@@ -12036,12 +12107,14 @@ elif mode == 'Environmental':
 					)
 				
 				with city_c2:
-					uvindex_state = st.text_input(
+					uvindex_state = st.selectbox(
 						'State',
-						value=st.session_state.get( 'uvindex_state', '' ),
+						options=UVINDEX_STATE_CODES,
+						index=UVINDEX_STATE_CODES.index(
+							st.session_state.get( 'uvindex_state', 'VA' )
+						),
 						key='uvindex_state',
-						disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state' ]),
-						placeholder='Example: VA'
+						disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state' ])
 					)
 				
 				uvindex_timeout = st.number_input(
@@ -12076,6 +12149,29 @@ elif mode == 'Environmental':
 			with col_right:
 				if uvindex_submit:
 					try:
+						if uvindex_mode in [ 'daily-zip', 'hourly-zip' ]:
+							if not str( uvindex_zip_code or '' ).strip( ):
+								raise ValueError(
+									'Zip Code is required for ZIP-based UV Index modes.'
+								)
+							
+							if not re.fullmatch( r'\d{5}(?:-\d{4})?',
+									str( uvindex_zip_code ).strip( ) ):
+								raise ValueError(
+									'Zip Code must be a valid 5-digit ZIP or ZIP+4 value.'
+								)
+						
+						if uvindex_mode in [ 'daily-city-state', 'hourly-city-state' ]:
+							if not str( uvindex_city or '' ).strip( ):
+								raise ValueError(
+									'City is required for city/state UV Index modes.'
+								)
+							
+							if not str( uvindex_state or '' ).strip( ):
+								raise ValueError(
+									'State is required for city/state UV Index modes.'
+								)
+						
 						f = UvIndex( )
 						result = f.fetch(
 							mode=str( uvindex_mode ),
