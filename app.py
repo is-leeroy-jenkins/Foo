@@ -11350,11 +11350,108 @@ elif mode == 'Environmental':
 		
 		# -------- EPA Envirofacts
 		with st.expander( label='EPA Envirofacts', icon='♻️', expanded=False ):
+			ENVIROFACTS_TABLES = [
+					'TRI_FACILITY',
+					'TRI_RELEASE',
+					'EF_W_EMISSIONS_SOURCE_GHG'
+			]
+			
+			ENVIROFACTS_STATE_CODES = [
+					'',
+					'AL',
+					'AK',
+					'AZ',
+					'AR',
+					'CA',
+					'CO',
+					'CT',
+					'DE',
+					'DC',
+					'FL',
+					'GA',
+					'HI',
+					'ID',
+					'IL',
+					'IN',
+					'IA',
+					'KS',
+					'KY',
+					'LA',
+					'ME',
+					'MD',
+					'MA',
+					'MI',
+					'MN',
+					'MS',
+					'MO',
+					'MT',
+					'NE',
+					'NV',
+					'NH',
+					'NJ',
+					'NM',
+					'NY',
+					'NC',
+					'ND',
+					'OH',
+					'OK',
+					'OR',
+					'PA',
+					'RI',
+					'SC',
+					'SD',
+					'TN',
+					'TX',
+					'UT',
+					'VT',
+					'VA',
+					'WA',
+					'WV',
+					'WI',
+					'WY',
+					'AS',
+					'GU',
+					'MP',
+					'PR',
+					'VI'
+			]
+			
+			def _clear_envirofacts_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Envirofacts expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'envirofacts_clear_request' ] = True
+			
 			if 'envirofacts_results' not in st.session_state:
 				st.session_state[ 'envirofacts_results' ] = { }
 			
 			if 'envirofacts_clear_request' not in st.session_state:
 				st.session_state[ 'envirofacts_clear_request' ] = False
+			
+			if st.session_state.get( 'envirofacts_table_name', 'TRI_FACILITY' ) not in ENVIROFACTS_TABLES:
+				st.session_state[ 'envirofacts_table_name' ] = 'TRI_FACILITY'
+			
+			if st.session_state.get( 'envirofacts_state_code', '' ) not in ENVIROFACTS_STATE_CODES:
+				st.session_state[ 'envirofacts_state_code' ] = ''
+			
+			if 'envirofacts_facility_name' not in st.session_state:
+				st.session_state[ 'envirofacts_facility_name' ] = ''
+			
+			if 'envirofacts_limit' not in st.session_state:
+				st.session_state[ 'envirofacts_limit' ] = 25
+			
+			if 'envirofacts_timeout' not in st.session_state:
+				st.session_state[ 'envirofacts_timeout' ] = 20
 			
 			if st.session_state.get( 'envirofacts_clear_request', False ):
 				st.session_state[ 'envirofacts_table_name' ] = 'TRI_FACILITY'
@@ -11365,47 +11462,27 @@ elif mode == 'Environmental':
 				st.session_state[ 'envirofacts_results' ] = { }
 				st.session_state[ 'envirofacts_clear_request' ] = False
 			
-			def _clear_envirofacts_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Envirofacts expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'envirofacts_clear_request' ] = True
-			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				envirofacts_table_name = st.selectbox(
 					'Table',
-					options=[
-							'TRI_FACILITY',
-							'TRI_RELEASE',
-							'EF_W_EMISSIONS_SOURCE_GHG'
-					],
-					index=[
-							'TRI_FACILITY',
-							'TRI_RELEASE',
-							'EF_W_EMISSIONS_SOURCE_GHG'
-					].index(
+					options=ENVIROFACTS_TABLES,
+					index=ENVIROFACTS_TABLES.index(
 						st.session_state.get( 'envirofacts_table_name', 'TRI_FACILITY' )
 					),
 					key='envirofacts_table_name'
 				)
 				
-				envirofacts_state_code = st.text_input(
+				envirofacts_state_code = st.selectbox(
 					'State Code',
-					value=st.session_state.get( 'envirofacts_state_code', '' ),
+					options=ENVIROFACTS_STATE_CODES,
+					index=ENVIROFACTS_STATE_CODES.index(
+						st.session_state.get( 'envirofacts_state_code', '' )
+					),
 					key='envirofacts_state_code',
-					placeholder='Example: VA'
+					format_func=lambda value: 'All' if value == '' else value,
+					help='Optional state or territory filter.'
 				)
 				
 				envirofacts_facility_name = st.text_input(
@@ -11555,17 +11632,98 @@ elif mode == 'Environmental':
 		
 		# -------- NOAA Tides & Currents
 		with st.expander( label='NOAA Tides & Currents', icon='🌊', expanded=False ):
+			TIDESANDCURRENTS_MODES = [
+					'station',
+					'water-level',
+					'tide-predictions' ]
+			
+			TIDESANDCURRENTS_DATUMS = [
+					'MLLW',
+					'MHHW',
+					'MHW',
+					'MTL',
+					'MSL',
+					'MLW',
+					'NAVD',
+					'STND' ]
+			
+			TIDESANDCURRENTS_UNITS = [
+					'metric',
+					'english' ]
+			
+			TIDESANDCURRENTS_TIME_ZONES = [
+					'gmt',
+					'lst',
+					'lst_ldt' ]
+			
+			TIDESANDCURRENTS_INTERVALS = [
+					'hilo',
+					'h',
+					'1',
+					'5',
+					'6',
+					'10',
+					'15',
+					'30',
+					'60'
+			]
+			
+			def _clear_tidesandcurrents_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the NOAA Tides & Currents expander state for reset on the next
+					rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'tidesandcurrents_clear_request' ] = True
+			
 			if 'tidesandcurrents_results' not in st.session_state:
 				st.session_state[ 'tidesandcurrents_results' ] = { }
 			
 			if 'tidesandcurrents_clear_request' not in st.session_state:
 				st.session_state[ 'tidesandcurrents_clear_request' ] = False
 			
+			if st.session_state.get( 'tidesandcurrents_mode', 'water-level' ) not in TIDESANDCURRENTS_MODES:
+				st.session_state[ 'tidesandcurrents_mode' ] = 'water-level'
+			
+			if st.session_state.get( 'tidesandcurrents_datum', 'MLLW' ) not in TIDESANDCURRENTS_DATUMS:
+				st.session_state[ 'tidesandcurrents_datum' ] = 'MLLW'
+			
+			if st.session_state.get( 'tidesandcurrents_units', 'metric' ) not in TIDESANDCURRENTS_UNITS:
+				st.session_state[ 'tidesandcurrents_units' ] = 'metric'
+			
+			if st.session_state.get( 'tidesandcurrents_time_zone', 'gmt' ) not in TIDESANDCURRENTS_TIME_ZONES:
+				st.session_state[ 'tidesandcurrents_time_zone' ] = 'gmt'
+			
+			if st.session_state.get( 'tidesandcurrents_interval', 'hilo' ) not in TIDESANDCURRENTS_INTERVALS:
+				st.session_state[ 'tidesandcurrents_interval' ] = 'hilo'
+			
+			if 'tidesandcurrents_station_id' not in st.session_state:
+				st.session_state[ 'tidesandcurrents_station_id' ] = ''
+			
+			if 'tidesandcurrents_begin_date' not in st.session_state:
+				st.session_state[ 'tidesandcurrents_begin_date' ] = (
+						dt.date.today( ) - dt.timedelta( days=1 ) )
+			
+			if 'tidesandcurrents_end_date' not in st.session_state:
+				st.session_state[ 'tidesandcurrents_end_date' ] = dt.date.today( )
+			
+			if 'tidesandcurrents_timeout' not in st.session_state:
+				st.session_state[ 'tidesandcurrents_timeout' ] = 20
+			
 			if st.session_state.get( 'tidesandcurrents_clear_request', False ):
 				st.session_state[ 'tidesandcurrents_mode' ] = 'water-level'
 				st.session_state[ 'tidesandcurrents_station_id' ] = ''
-				st.session_state[
-					'tidesandcurrents_begin_date' ] = dt.date.today( ) - dt.timedelta( days=1 )
+				st.session_state[ 'tidesandcurrents_begin_date' ] = (
+						dt.date.today( ) - dt.timedelta( days=1 ) )
 				st.session_state[ 'tidesandcurrents_end_date' ] = dt.date.today( )
 				st.session_state[ 'tidesandcurrents_datum' ] = 'MLLW'
 				st.session_state[ 'tidesandcurrents_units' ] = 'metric'
@@ -11575,41 +11733,16 @@ elif mode == 'Environmental':
 				st.session_state[ 'tidesandcurrents_results' ] = { }
 				st.session_state[ 'tidesandcurrents_clear_request' ] = False
 			
-			def _clear_tidesandcurrents_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the NOAA Tides & Currents expander state for reset on the next
-					rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'tidesandcurrents_clear_request' ] = True
-			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				tac_mode = st.selectbox(
-					'Mode',
-					options=[ 'station', 'water-level', 'tide-predictions' ],
-					index=[ 'station', 'water-level', 'tide-predictions' ].index(
-						st.session_state.get( 'tidesandcurrents_mode', 'water-level' )
-					),
-					key='tidesandcurrents_mode'
-				)
+				tac_mode = st.selectbox( 'Mode', options=TIDESANDCURRENTS_MODES,
+					index=TIDESANDCURRENTS_MODES.index( st.session_state.get( 'tidesandcurrents_mode',
+							'water-level' ) ), key='tidesandcurrents_mode' )
 				
-				tac_station_id = st.text_input(
-					'Station ID',
+				tac_station_id = st.text_input( 'Station ID',
 					value=st.session_state.get( 'tidesandcurrents_station_id', '' ),
-					key='tidesandcurrents_station_id',
-					placeholder='Example: 8724580'
-				)
+					key='tidesandcurrents_station_id', placeholder='Example: 8724580' )
 				
 				date_c1, date_c2 = st.columns( 2 )
 				
@@ -11635,45 +11768,48 @@ elif mode == 'Environmental':
 						disabled=(tac_mode == 'station')
 					)
 				
-				opt_c1, opt_c2 = st.columns( 2 )
+				option_c1, option_c2 = st.columns( 2 )
 				
-				with opt_c1:
-					tac_datum = st.text_input(
+				with option_c1:
+					tac_datum = st.selectbox(
 						'Datum',
-						value=st.session_state.get( 'tidesandcurrents_datum', 'MLLW' ),
+						options=TIDESANDCURRENTS_DATUMS,
+						index=TIDESANDCURRENTS_DATUMS.index(
+							st.session_state.get( 'tidesandcurrents_datum', 'MLLW' )
+						),
 						key='tidesandcurrents_datum',
 						disabled=(tac_mode == 'station')
 					)
 				
-				with opt_c2:
+				with option_c2:
 					tac_units = st.selectbox(
 						'Units',
-						options=[ 'metric', 'english' ],
-						index=[ 'metric', 'english' ].index(
+						options=TIDESANDCURRENTS_UNITS,
+						index=TIDESANDCURRENTS_UNITS.index(
 							st.session_state.get( 'tidesandcurrents_units', 'metric' )
 						),
 						key='tidesandcurrents_units',
 						disabled=(tac_mode == 'station')
 					)
 				
-				opt_c3, opt_c4 = st.columns( 2 )
+				option_c3, option_c4 = st.columns( 2 )
 				
-				with opt_c3:
+				with option_c3:
 					tac_time_zone = st.selectbox(
 						'Time Zone',
-						options=[ 'gmt', 'lst', 'lst_ldt' ],
-						index=[ 'gmt', 'lst', 'lst_ldt' ].index(
+						options=TIDESANDCURRENTS_TIME_ZONES,
+						index=TIDESANDCURRENTS_TIME_ZONES.index(
 							st.session_state.get( 'tidesandcurrents_time_zone', 'gmt' )
 						),
 						key='tidesandcurrents_time_zone',
 						disabled=(tac_mode == 'station')
 					)
 				
-				with opt_c4:
+				with option_c4:
 					tac_interval = st.selectbox(
-						'Prediction Interval',
-						options=[ 'hilo', 'h' ],
-						index=[ 'hilo', 'h' ].index(
+						'Interval',
+						options=TIDESANDCURRENTS_INTERVALS,
+						index=TIDESANDCURRENTS_INTERVALS.index(
 							st.session_state.get( 'tidesandcurrents_interval', 'hilo' )
 						),
 						key='tidesandcurrents_interval',
@@ -11690,8 +11826,8 @@ elif mode == 'Environmental':
 				)
 				
 				st.caption(
-					'Station mode returns metadata. Water-level mode returns observations. '
-					'Tide-predictions mode returns predicted tides.'
+					'NOAA CO-OPS station metadata uses Station ID only. Water-level and '
+					'tide-prediction requests require Station ID plus begin and end dates.'
 				)
 				
 				btn_c1, btn_c2 = st.columns( 2 )
@@ -11712,9 +11848,19 @@ elif mode == 'Environmental':
 			with col_right:
 				if tac_submit:
 					try:
+						if not str( tac_station_id or '' ).strip( ):
+							raise ValueError(
+								'Station ID is required for NOAA Tides & Currents.'
+							)
+						
+						if tac_mode != 'station' and tac_begin_date > tac_end_date:
+							raise ValueError(
+								'Begin Date must be on or before End Date.'
+							)
+						
 						f = TidesAndCurrents( )
 						result = f.fetch(
-							mode=str( tac_mode ),
+							mode=str( tac_mode ).strip( ),
 							station_id=str( tac_station_id ).strip( ),
 							begin_date=dt.datetime.strftime( tac_begin_date, '%Y%m%d' ),
 							end_date=dt.datetime.strftime( tac_end_date, '%Y%m%d' ),
