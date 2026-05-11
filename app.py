@@ -99,7 +99,7 @@ from fetchers import (
 	USGSEarthquakes, USGSWaterData, USGSTheNationalMap, USGSScienceBase,
 	AirNow, ClimateData, EoNet, EnviroFacts, TidesAndCurrents, UvIndex, PurpleAir,
 	OpenAQ, Firms, CensusData, Socrata, HealthData, GlobalHealthData,
-	UnitedNations, WorldPopulation, Wonder)
+	UnitedNations, WorldPopulation, Wonder, OpenSky )
 
 import nltk
 from nltk import sent_tokenize
@@ -1803,6 +1803,9 @@ def clear_if_active( loader_name: str ) -> None:
 
 # -------- Expander Utilities
 
+def set_blue_divider( ) -> None:
+	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+
 def _promote_loader_documents( documents: List[ Document ] | None, active_loader: str ) -> int:
 	'''
 		Purpose:
@@ -1893,16 +1896,18 @@ col_left, col_center, col_right = st.columns( [ 1, 2, 1 ], vertical_alignment='t
 # SIDEBAR
 # ===========================================================================
 modes = list( cfg.MODE_MAP.keys( ) )
+mode = ''
 with st.sidebar:
 	st.divider( )
 	
 	# ------------- Modes -------------
 	st.text( '🕹️ Mode' )
-	mode = st.sidebar.radio( label='Mode', options=modes, label_visibility='collapsed' )
-	if mode:
-		st.session_state[ 'mode' ] = mode
-	else:
-		st.session_state[ 'mode' ] = 'Loaders'
+	with st.expander( label='Functionality', expanded=True ):
+		mode = st.radio( label='Mode', options=modes, label_visibility='collapsed' )
+		if mode:
+			st.session_state[ 'mode' ] = mode
+		else:
+			st.session_state[ 'mode' ] = 'Loaders'
 	
 	st.divider( )
 
@@ -2080,9 +2085,6 @@ if mode == 'Loading':
 				files = st.file_uploader( 'Upload TXT files', type=[ 'txt' ],
 					accept_multiple_files=True, key='txt_upload' )
 				
-				# ------------------------------------------------------------------
-				# Buttons: Load / Clear / Save (same placement + interaction model)
-				# ------------------------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
 				load_txt = col_load.button( 'Load', key='txt_load' )
 				clear_txt = col_clear.button( 'Clear', key='txt_clear' )
@@ -2097,14 +2099,14 @@ if mode == 'Loading':
 					col_save.button( 'Save', key='txt_save_disabled', disabled=True )
 				
 				# ------------------------------------------------------------------
-				# Clear (unchanged behavior)
+				# Clear
 				# ------------------------------------------------------------------
 				if clear_txt:
 					clear_if_active( 'TextLoader' )
 					st.info( 'Text Loader state cleared.' )
 				
 				# ------------------------------------------------------------------
-				# Load (unchanged behavior)
+				# Load
 				# ------------------------------------------------------------------
 				if load_txt and files:
 					documents = [ ]
@@ -6416,18 +6418,13 @@ elif mode == 'Retrieval':
 									f.write( notebook_file.read( ) )
 								
 								loader = JupyterNotebookLoader( )
-								documents = loader.load(
-									path=path,
-									include_outputs=include_outputs,
+								documents = loader.load( path=path, include_outputs=include_outputs,
 									max_output_length=int( max_output_length ),
 									remove_newline=remove_newline,
-									traceback=include_traceback
-								) or [ ]
+									traceback=include_traceback ) or [ ]
 							
-							count = _promote_loader_documents(
-								documents,
-								'JupyterNotebookLoader'
-							)
+							count = _promote_loader_documents( documents,
+								'JupyterNotebookLoader' )
 							
 							items: list[ dict[ str, Any ] ] = [ ]
 							for i, doc in enumerate( documents, start=1 ):

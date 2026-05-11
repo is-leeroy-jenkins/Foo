@@ -80,16 +80,22 @@ O365_CLIENT_SECRET = os.getenv( 'O365_CLIENT_SECRET ' )
 OPENSKY_API_CLIENT_ID = os.getenv( 'OPENSKY_API_CLIENT_ID' )
 OPENSKY_API_CREDENTIALS = os.getenv( 'OPENSKY_API_CREDENTIALS' )
 
+AIRNOW_API_KEY = os.getenv( 'AIRNOW_API_KEY' )
+OPENAQ_API_KEY = os.getenv( 'OPENAQ_API_KEY' )
+GOVINFO_API_KEY = os.getenv( 'GOVINFO_API_KEY' )
+FIRMS_MAP_KEY = os.getenv( 'FIRMS_MAP_KEY' )
+PURPLEAIR_API_KEY = os.getenv( 'PURPLEAIR_API_KEY' )
+SKYMAP_TOKEN = '''06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d7b5edd56e8d57766aa3
+		7cb6d16dff82d6ccae1625233b27b05483fd534173bcae659e7edf7b083bb18b7786d03e874d921374dec9287626047f7e49637b701bf9420faee5cadffa46b1501c47366d9693e'''
+
 # ---------------- CONSTANTS -----------------------
 APP_TITLE = 'Foo'
-BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 0 10px 0;'></div>"
+BLUE_DIVIDER = "<div style='height:2px;align:left;background:#0078FC;margin:6px 30px 30px 0;'></div>"
 SQLSERVER_DRIVER = r'DRIVER={ ODBC Driver 17 for SQL Server };SERVER=.\SQLExpress;'
 BASE_DIR = Path( __file__ ).resolve( ).parent
 DB_PATH = BASE_DIR / 'stores' / 'sqlite' / 'datamodels' / 'Data.db'
 AGENTS ='''Mozilla/5.0 Windows NT 10.0; Win64; x64; AppleWebKit/537.36 (KHTML, like Gecko)
 		Chrome/124.0 Safari/537.36'''
-SKYMAP_TOKEN = '''06f556f517061802aab305e26066233926a41785fddafd2867d5dc6d6a917d7b5edd56e8d57766aa3
-		7cb6d16dff82d6ccae1625233b27b05483fd534173bcae659e7edf7b083bb18b7786d03e874d921374dec9287626047f7e49637b701bf9420faee5cadffa46b1501c47366d9693e'''
 FAVICON = r'resources/images/favicon.ico'
 LOGO = r'resources/images/foo_logo.png'
 DB = r'stores/sqlite/datamodels/Data.db'
