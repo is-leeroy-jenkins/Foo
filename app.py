@@ -10736,18 +10736,80 @@ elif mode == 'Environmental':
 		
 		# -------- NOAA Climate Data
 		with st.expander( label='NOAA Climate Data', icon='🌡️', expanded=False ):
+			CLIMATEDATA_MODES = [
+					'datasets',
+					'data'
+			]
+			
+			CLIMATEDATA_DATASETS = [
+					'daily-summaries',
+					'global-summary-of-the-day',
+					'global-hourly',
+					'local-climatological-data',
+					'normals-daily',
+					'normals-monthly',
+					'normals-annualseasonal'
+			]
+			
+			def _clear_climatedata_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the NOAA Climate Data expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'climatedata_clear_request' ] = True
+			
 			if 'climatedata_results' not in st.session_state:
 				st.session_state[ 'climatedata_results' ] = { }
 			
 			if 'climatedata_clear_request' not in st.session_state:
 				st.session_state[ 'climatedata_clear_request' ] = False
 			
+			if st.session_state.get( 'climatedata_mode', 'datasets' ) not in CLIMATEDATA_MODES:
+				st.session_state[ 'climatedata_mode' ] = 'datasets'
+			
+			if st.session_state.get( 'climatedata_dataset', 'daily-summaries' ) not in CLIMATEDATA_DATASETS:
+				st.session_state[ 'climatedata_dataset' ] = 'daily-summaries'
+			
+			if 'climatedata_keyword' not in st.session_state:
+				st.session_state[ 'climatedata_keyword' ] = ''
+			
+			if 'climatedata_start_date' not in st.session_state:
+				st.session_state[ 'climatedata_start_date' ] = dt.date.today( ) - dt.timedelta( days=30 )
+			
+			if 'climatedata_end_date' not in st.session_state:
+				st.session_state[ 'climatedata_end_date' ] = dt.date.today( )
+			
+			if 'climatedata_stations' not in st.session_state:
+				st.session_state[ 'climatedata_stations' ] = ''
+			
+			if 'climatedata_data_types' not in st.session_state:
+				st.session_state[ 'climatedata_data_types' ] = ''
+			
+			if 'climatedata_limit' not in st.session_state:
+				st.session_state[ 'climatedata_limit' ] = 25
+			
+			if 'climatedata_offset' not in st.session_state:
+				st.session_state[ 'climatedata_offset' ] = 0
+			
+			if 'climatedata_timeout' not in st.session_state:
+				st.session_state[ 'climatedata_timeout' ] = 20
+			
 			if st.session_state.get( 'climatedata_clear_request', False ):
 				st.session_state[ 'climatedata_mode' ] = 'datasets'
 				st.session_state[ 'climatedata_keyword' ] = ''
 				st.session_state[ 'climatedata_dataset' ] = 'daily-summaries'
-				st.session_state[
-					'climatedata_start_date' ] = dt.date.today( ) - dt.timedelta( days=30 )
+				st.session_state[ 'climatedata_start_date' ] = (
+						dt.date.today( ) - dt.timedelta( days=30 )
+				)
 				st.session_state[ 'climatedata_end_date' ] = dt.date.today( )
 				st.session_state[ 'climatedata_stations' ] = ''
 				st.session_state[ 'climatedata_data_types' ] = ''
@@ -10757,29 +10819,13 @@ elif mode == 'Environmental':
 				st.session_state[ 'climatedata_results' ] = { }
 				st.session_state[ 'climatedata_clear_request' ] = False
 			
-			def _clear_climatedata_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the NOAA Climate Data expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'climatedata_clear_request' ] = True
-			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				climatedata_mode = st.selectbox(
 					'Mode',
-					options=[ 'datasets', 'data' ],
-					index=[ 'datasets', 'data' ].index(
+					options=CLIMATEDATA_MODES,
+					index=CLIMATEDATA_MODES.index(
 						st.session_state.get( 'climatedata_mode', 'datasets' )
 					),
 					key='climatedata_mode'
@@ -10790,15 +10836,18 @@ elif mode == 'Environmental':
 					value=st.session_state.get( 'climatedata_keyword', '' ),
 					key='climatedata_keyword',
 					disabled=(climatedata_mode != 'datasets'),
-					placeholder='Optional dataset discovery keyword'
+					placeholder='Example: precipitation'
 				)
 				
-				climatedata_dataset = st.text_input(
+				climatedata_dataset = st.selectbox(
 					'Dataset',
-					value=st.session_state.get( 'climatedata_dataset', 'daily-summaries' ),
+					options=CLIMATEDATA_DATASETS,
+					index=CLIMATEDATA_DATASETS.index(
+						st.session_state.get( 'climatedata_dataset', 'daily-summaries' )
+					),
 					key='climatedata_dataset',
 					disabled=(climatedata_mode != 'data'),
-					placeholder='Example: daily-summaries'
+					help='NCEI dataset identifier passed to the Access Data Service.'
 				)
 				
 				date_c1, date_c2 = st.columns( 2 )
@@ -10894,6 +10943,12 @@ elif mode == 'Environmental':
 			with col_right:
 				if climatedata_submit:
 					try:
+						if climatedata_start_date > climatedata_end_date:
+							raise ValueError( 'Start Date must be on or before End Date.' )
+						
+						if climatedata_mode == 'data' and not str( climatedata_dataset ).strip( ):
+							raise ValueError( 'Dataset is required for data mode.' )
+						
 						f = ClimateData( )
 						result = f.fetch(
 							mode=str( climatedata_mode ),
@@ -10990,9 +11045,9 @@ elif mode == 'Environmental':
 								):
 									st.json( item )
 						else:
-							st.info( 'No displayable climate data rows were found.' )
+							st.info( 'No displayable NOAA climate rows were found.' )
 					else:
-						st.info( 'No climate records were returned.' )
+						st.info( 'No NOAA climate records were returned.' )
 					
 					with st.expander( 'Raw Result', expanded=False ):
 						st.json( result )
@@ -12826,22 +12881,33 @@ elif mode == 'Environmental':
 		
 		# -------- NASA FIRMS
 		with st.expander( label='NASA FIRMS', icon='🔥', expanded=False ):
-			if 'firms_results' not in st.session_state:
-				st.session_state[ 'firms_results' ] = { }
+			FIRMS_MODES = [
+					'area',
+					'data-availability'
+			]
 			
-			if 'firms_clear_request' not in st.session_state:
-				st.session_state[ 'firms_clear_request' ] = False
+			FIRMS_SOURCES = [
+					'LANDSAT_NRT',
+					'MODIS_NRT',
+					'MODIS_SP',
+					'VIIRS_NOAA20_NRT',
+					'VIIRS_NOAA20_SP',
+					'VIIRS_NOAA21_NRT',
+					'VIIRS_SNPP_NRT',
+					'VIIRS_SNPP_SP'
+			]
 			
-			if st.session_state.get( 'firms_clear_request', False ):
-				st.session_state[ 'firms_mode' ] = 'area'
-				st.session_state[ 'firms_source' ] = 'VIIRS_SNPP_NRT'
-				st.session_state[ 'firms_area_coordinates' ] = 'world'
-				st.session_state[ 'firms_day_range' ] = 1
-				st.session_state[ 'firms_date' ] = ''
-				st.session_state[ 'firms_sensor' ] = 'ALL'
-				st.session_state[ 'firms_timeout' ] = 20
-				st.session_state[ 'firms_results' ] = { }
-				st.session_state[ 'firms_clear_request' ] = False
+			FIRMS_SENSORS = [
+					'ALL',
+					'LANDSAT_NRT',
+					'MODIS_NRT',
+					'MODIS_SP',
+					'VIIRS_NOAA20_NRT',
+					'VIIRS_NOAA20_SP',
+					'VIIRS_NOAA21_NRT',
+					'VIIRS_SNPP_NRT',
+					'VIIRS_SNPP_SP'
+			]
 			
 			def _clear_firms_state( ) -> None:
 				'''
@@ -12859,13 +12925,102 @@ elif mode == 'Environmental':
 				'''
 				st.session_state[ 'firms_clear_request' ] = True
 			
+			def _validate_firms_area_coordinates( value: str ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate NASA FIRMS area coordinates as either "world" or
+					"west,south,east,north".
+	
+					Parameters:
+					-----------
+					value (str):
+						Area coordinate value supplied by the user.
+	
+					Returns:
+					--------
+					str:
+						Validated coordinate string.
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					raise ValueError(
+						'Area Coordinates must be "world" or west,south,east,north.'
+					)
+				
+				if text.lower( ) == 'world':
+					return 'world'
+				
+				parts = [ item.strip( ) for item in text.split( ',' ) if item.strip( ) ]
+				
+				if len( parts ) != 4:
+					raise ValueError(
+						'Area Coordinates must be "world" or four comma-separated values: '
+						'west,south,east,north.'
+					)
+				
+				west, south, east, north = [ float( item ) for item in parts ]
+				
+				if west < -180 or east > 180:
+					raise ValueError( 'Longitude bounds must be within -180 and 180.' )
+				
+				if south < -90 or north > 90:
+					raise ValueError( 'Latitude bounds must be within -90 and 90.' )
+				
+				if west >= east:
+					raise ValueError( 'West longitude must be less than east longitude.' )
+				
+				if south >= north:
+					raise ValueError( 'South latitude must be less than north latitude.' )
+				
+				return f'{west:g},{south:g},{east:g},{north:g}'
+			
+			if 'firms_results' not in st.session_state:
+				st.session_state[ 'firms_results' ] = { }
+			
+			if 'firms_clear_request' not in st.session_state:
+				st.session_state[ 'firms_clear_request' ] = False
+			
+			if st.session_state.get( 'firms_mode', 'area' ) not in FIRMS_MODES:
+				st.session_state[ 'firms_mode' ] = 'area'
+			
+			if st.session_state.get( 'firms_source', 'VIIRS_SNPP_NRT' ) not in FIRMS_SOURCES:
+				st.session_state[ 'firms_source' ] = 'VIIRS_SNPP_NRT'
+			
+			if st.session_state.get( 'firms_sensor', 'ALL' ) not in FIRMS_SENSORS:
+				st.session_state[ 'firms_sensor' ] = 'ALL'
+			
+			if 'firms_area_coordinates' not in st.session_state:
+				st.session_state[ 'firms_area_coordinates' ] = 'world'
+			
+			if 'firms_day_range' not in st.session_state:
+				st.session_state[ 'firms_day_range' ] = 1
+			
+			if 'firms_date' not in st.session_state:
+				st.session_state[ 'firms_date' ] = ''
+			
+			if 'firms_timeout' not in st.session_state:
+				st.session_state[ 'firms_timeout' ] = 20
+			
+			if st.session_state.get( 'firms_clear_request', False ):
+				st.session_state[ 'firms_mode' ] = 'area'
+				st.session_state[ 'firms_source' ] = 'VIIRS_SNPP_NRT'
+				st.session_state[ 'firms_area_coordinates' ] = 'world'
+				st.session_state[ 'firms_day_range' ] = 1
+				st.session_state[ 'firms_date' ] = ''
+				st.session_state[ 'firms_sensor' ] = 'ALL'
+				st.session_state[ 'firms_timeout' ] = 20
+				st.session_state[ 'firms_results' ] = { }
+				st.session_state[ 'firms_clear_request' ] = False
+			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				firms_mode = st.selectbox(
 					'Mode',
-					options=[ 'area', 'data-availability' ],
-					index=[ 'area', 'data-availability' ].index(
+					options=FIRMS_MODES,
+					index=FIRMS_MODES.index(
 						st.session_state.get( 'firms_mode', 'area' )
 					),
 					key='firms_mode'
@@ -12873,26 +13028,8 @@ elif mode == 'Environmental':
 				
 				firms_source = st.selectbox(
 					'Source',
-					options=[
-							'LANDSAT_NRT',
-							'MODIS_NRT',
-							'MODIS_SP',
-							'VIIRS_NOAA20_NRT',
-							'VIIRS_NOAA20_SP',
-							'VIIRS_NOAA21_NRT',
-							'VIIRS_SNPP_NRT',
-							'VIIRS_SNPP_SP'
-					],
-					index=[
-							'LANDSAT_NRT',
-							'MODIS_NRT',
-							'MODIS_SP',
-							'VIIRS_NOAA20_NRT',
-							'VIIRS_NOAA20_SP',
-							'VIIRS_NOAA21_NRT',
-							'VIIRS_SNPP_NRT',
-							'VIIRS_SNPP_SP'
-					].index(
+					options=FIRMS_SOURCES,
+					index=FIRMS_SOURCES.index(
 						st.session_state.get( 'firms_source', 'VIIRS_SNPP_NRT' )
 					),
 					key='firms_source',
@@ -12914,7 +13051,8 @@ elif mode == 'Environmental':
 					value=int( st.session_state.get( 'firms_day_range', 1 ) ),
 					step=1,
 					key='firms_day_range',
-					disabled=(firms_mode != 'area')
+					disabled=(firms_mode != 'area'),
+					help='NASA FIRMS Area API supports 1 through 5 days per request.'
 				)
 				
 				firms_date = st.text_input(
@@ -12922,33 +13060,13 @@ elif mode == 'Environmental':
 					value=st.session_state.get( 'firms_date', '' ),
 					key='firms_date',
 					disabled=(firms_mode != 'area'),
-					placeholder='Optional YYYY-MM-DD'
+					placeholder='YYYY-MM-DD or blank for most recent'
 				)
 				
 				firms_sensor = st.selectbox(
 					'Sensor',
-					options=[
-							'ALL',
-							'LANDSAT_NRT',
-							'MODIS_NRT',
-							'MODIS_SP',
-							'VIIRS_NOAA20_NRT',
-							'VIIRS_NOAA20_SP',
-							'VIIRS_NOAA21_NRT',
-							'VIIRS_SNPP_NRT',
-							'VIIRS_SNPP_SP'
-					],
-					index=[
-							'ALL',
-							'LANDSAT_NRT',
-							'MODIS_NRT',
-							'MODIS_SP',
-							'VIIRS_NOAA20_NRT',
-							'VIIRS_NOAA20_SP',
-							'VIIRS_NOAA21_NRT',
-							'VIIRS_SNPP_NRT',
-							'VIIRS_SNPP_SP'
-					].index(
+					options=FIRMS_SENSORS,
+					index=FIRMS_SENSORS.index(
 						st.session_state.get( 'firms_sensor', 'ALL' )
 					),
 					key='firms_sensor',
@@ -12965,8 +13083,9 @@ elif mode == 'Environmental':
 				)
 				
 				st.caption(
-					'FIRMS requires a MAP_KEY. Area mode retrieves fire detections for a '
-					'bounding box or world. Data-availability mode reports available dates.'
+					'NASA FIRMS requires a MAP_KEY in FIRMS_MAP_KEY or NASA_FIRMS_MAP_KEY. '
+					'Area mode retrieves active fire detections. Data availability mode '
+					'returns supported date ranges by sensor.'
 				)
 				
 				btn_c1, btn_c2 = st.columns( 2 )
@@ -12987,14 +13106,22 @@ elif mode == 'Environmental':
 			with col_right:
 				if firms_submit:
 					try:
+						clean_area_coordinates = _validate_firms_area_coordinates(
+							firms_area_coordinates
+						)
+						
+						clean_date = str( firms_date or '' ).strip( )
+						if clean_date:
+							dt.datetime.strptime( clean_date, '%Y-%m-%d' )
+						
 						f = Firms( )
 						result = f.fetch(
 							mode=str( firms_mode ),
-							source=str( firms_source ).strip( ),
-							area_coordinates=str( firms_area_coordinates ).strip( ),
+							source=str( firms_source ),
+							area_coordinates=clean_area_coordinates,
 							day_range=int( firms_day_range ),
-							date=str( firms_date ).strip( ),
-							sensor=str( firms_sensor ).strip( ),
+							date=clean_date,
+							sensor=str( firms_sensor ),
 							time=int( firms_timeout )
 						)
 						
@@ -13024,6 +13151,10 @@ elif mode == 'Environmental':
 							st.markdown( f"**Source:** {params.get( 'source', '' )}" )
 						if 'sensor' in params:
 							st.markdown( f"**Sensor:** {params.get( 'sensor', '' )}" )
+						if 'area_coordinates' in params:
+							st.markdown(
+								f"**Area:** {params.get( 'area_coordinates', '' )}"
+							)
 					
 					summary = result.get( 'summary', { } ) or { }
 					if summary:
@@ -13042,12 +13173,11 @@ elif mode == 'Environmental':
 								st.markdown( '**First Date:** N/A' )
 						
 						with sum_c3:
-							first_lat = str( summary.get( 'first_lat', '' ) or '' )
-							first_lon = str( summary.get( 'first_lon', '' ) or '' )
-							if first_lat and first_lon:
-								st.markdown( f"**First Point:** {first_lat}, {first_lon}" )
+							first_sensor = str( summary.get( 'first_sensor', '' ) or '' )
+							if first_sensor:
+								st.markdown( f"**Sensor:** {first_sensor}" )
 							else:
-								st.markdown( '**First Point:** N/A' )
+								st.markdown( '**Sensor:** N/A' )
 					
 					params = result.get( 'params', { } ) or { }
 					if params:
@@ -13066,11 +13196,35 @@ elif mode == 'Environmental':
 								hide_index=True
 							)
 							
+							map_rows = [ ]
+							for item in rows:
+								latitude = (
+										item.get( 'latitude', None )
+										or item.get( 'Latitude', None )
+								)
+								longitude = (
+										item.get( 'longitude', None )
+										or item.get( 'Longitude', None )
+								)
+								
+								if latitude is not None and longitude is not None:
+									map_rows.append(
+										{
+												'lat': float( latitude ),
+												'lon': float( longitude )
+										}
+									)
+							
+							if map_rows:
+								st.markdown( '#### Fire Detection Map' )
+								st.map( map_rows )
+							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
 								label = str(
-									item.get( 'Acq Date', '' ) or
-									item.get( 'Date', '' ) or
+									item.get( 'acq_date', '' ) or
+									item.get( 'data_id', '' ) or
+									item.get( 'sensor', '' ) or
 									f'Record {idx}'
 								)
 								
@@ -13085,7 +13239,7 @@ elif mode == 'Environmental':
 						st.info( 'No FIRMS records were returned.' )
 					
 					with st.expander( 'Raw Result', expanded=False ):
-						st.text( str( result.get( 'raw', '' ) ) )
+						st.json( result )
 		
 		# -------- USGS Water Data
 		with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
