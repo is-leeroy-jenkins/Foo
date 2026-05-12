@@ -16872,16 +16872,179 @@ elif mode == 'Astronomical':
 elif mode == 'Population':
 	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
 	with center:
-		st.subheader( f'⚕️ Population & Public Health Data' )
+		st.subheader( f'🩺 Demographics & Health Data' )
 		st.divider( )
 		
 		# -------- U.S. Census Bureau
 		with st.expander( label='U.S. Census Bureau', icon='📊', expanded=False ):
+			CENSUS_MODES = [ 'variables', 'data' ]
+			
+			def _clear_census_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Census expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'census_clear_request' ] = True
+			
+			def _validate_census_year( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a Census API vintage year value.
+
+					Parameters:
+					-----------
+					value (object):
+						Year value supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Four-digit year value.
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not re.fullmatch( r'\d{4}', text ):
+					raise ValueError( 'Year must be a four-digit Census API vintage year.' )
+				
+				return text
+			
+			def _validate_census_dataset( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a Census API dataset path.
+
+					Parameters:
+					-----------
+					value (object):
+						Dataset path supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Cleaned dataset path without leading or trailing slashes.
+				'''
+				text = str( value or '' ).strip( ).strip( '/' )
+				
+				if not text:
+					raise ValueError( 'Dataset is required.' )
+				
+				if not re.fullmatch( r'[A-Za-z0-9_\-/]+', text ):
+					raise ValueError(
+						'Dataset may only contain letters, numbers, underscores, hyphens, '
+						'and forward slashes.'
+					)
+				
+				return text
+			
+			def _validate_census_fields( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate the Census API get fields expression.
+
+					Parameters:
+					-----------
+					value (object):
+						Comma-delimited field list supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Clean comma-delimited field list.
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					raise ValueError( 'Fields are required for Census data mode.' )
+				
+				fields = [ item.strip( ) for item in text.split( ',' ) if item.strip( ) ]
+				
+				if not fields:
+					raise ValueError( 'Fields are required for Census data mode.' )
+				
+				for field in fields:
+					if not re.fullmatch( r'[A-Za-z0-9_]+', field ):
+						raise ValueError(
+							f'Invalid Census field name: {field}'
+						)
+				
+				return ','.join( fields )
+			
+			def _validate_census_geography_clause( name: str, value: object,
+					required: bool = False ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a Census API geography clause such as state:* or county:*.
+
+					Parameters:
+					-----------
+					name (str):
+						Display name used in error messages.
+
+					value (object):
+						Geography clause supplied by the user.
+
+					required (bool):
+						Whether a non-empty value is required.
+
+					Returns:
+					--------
+					str:
+						Cleaned geography clause.
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					if required:
+						raise ValueError( f'{name} is required.' )
+					return ''
+				
+				if ':' not in text:
+					raise ValueError( f'{name} must use Census geography syntax such as state:*.' )
+				
+				return text
+			
 			if 'census_results' not in st.session_state:
 				st.session_state[ 'census_results' ] = { }
 			
 			if 'census_clear_request' not in st.session_state:
 				st.session_state[ 'census_clear_request' ] = False
+			
+			if st.session_state.get( 'census_mode', 'variables' ) not in CENSUS_MODES:
+				st.session_state[ 'census_mode' ] = 'variables'
+			
+			if 'census_year' not in st.session_state:
+				st.session_state[ 'census_year' ] = '2022'
+			
+			if 'census_dataset' not in st.session_state:
+				st.session_state[ 'census_dataset' ] = 'acs/acs5'
+			
+			if 'census_fields' not in st.session_state:
+				st.session_state[ 'census_fields' ] = 'NAME,B01001_001E'
+			
+			if 'census_for' not in st.session_state:
+				st.session_state[ 'census_for' ] = 'state:*'
+			
+			if 'census_in' not in st.session_state:
+				st.session_state[ 'census_in' ] = ''
+			
+			if 'census_predicates' not in st.session_state:
+				st.session_state[ 'census_predicates' ] = ''
+			
+			if 'census_timeout' not in st.session_state:
+				st.session_state[ 'census_timeout' ] = 20
 			
 			if st.session_state.get( 'census_clear_request', False ):
 				st.session_state[ 'census_mode' ] = 'variables'
@@ -16895,29 +17058,13 @@ elif mode == 'Population':
 				st.session_state[ 'census_results' ] = { }
 				st.session_state[ 'census_clear_request' ] = False
 			
-			def _clear_census_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Census expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'census_clear_request' ] = True
-			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				census_mode = st.selectbox(
 					'Mode',
-					options=[ 'variables', 'data' ],
-					index=[ 'variables', 'data' ].index(
+					options=CENSUS_MODES,
+					index=CENSUS_MODES.index(
 						st.session_state.get( 'census_mode', 'variables' )
 					),
 					key='census_mode',
@@ -16995,6 +17142,7 @@ elif mode == 'Population':
 				)
 				
 				b1, b2 = st.columns( 2 )
+				
 				with b1:
 					census_submit = st.button(
 						'Submit',
@@ -17015,15 +17163,35 @@ elif mode == 'Population':
 				
 				if census_submit:
 					try:
+						clean_year = _validate_census_year( census_year )
+						clean_dataset = _validate_census_dataset( census_dataset )
+						
+						if census_mode == 'data':
+							clean_fields = _validate_census_fields( census_fields )
+							clean_for = _validate_census_geography_clause(
+								name='For',
+								value=census_for,
+								required=True
+							)
+							clean_in = _validate_census_geography_clause(
+								name='In',
+								value=census_in,
+								required=False
+							)
+						else:
+							clean_fields = str( census_fields or '' ).strip( )
+							clean_for = str( census_for or '' ).strip( )
+							clean_in = str( census_in or '' ).strip( )
+						
 						f = CensusData( )
 						result = f.fetch(
-							mode=census_mode,
-							year=str( census_year ),
-							dataset=str( census_dataset ),
-							fields=str( census_fields ),
-							geography_for=str( census_for ),
-							geography_in=str( census_in ),
-							predicates=str( census_predicates ),
+							mode=str( census_mode ),
+							year=clean_year,
+							dataset=clean_dataset,
+							fields=clean_fields,
+							geography_for=clean_for,
+							geography_in=clean_in,
+							predicates=str( census_predicates or '' ).strip( ),
 							time=int( census_timeout )
 						)
 						
@@ -17041,7 +17209,8 @@ elif mode == 'Population':
 					
 					if result.get( 'mode', '' ) == 'variables':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						variables = payload.get( 'variables', { } ) if isinstance( payload, dict ) else { }
+						variables = payload.get( 'variables', { } ) if isinstance( payload,
+							dict ) else { }
 						
 						rows: List[ Dict[ str, Any ] ] = [ ]
 						if isinstance( variables, dict ):
@@ -17052,7 +17221,10 @@ elif mode == 'Population':
 												'Name': name,
 												'Label': meta.get( 'label', '' ),
 												'Concept': meta.get( 'concept', '' ),
-												'PredicateType': meta.get( 'predicateType', '' ),
+												'PredicateType': meta.get(
+													'predicateType',
+													''
+												),
 												'Group': meta.get( 'group', '' ),
 												'Limit': meta.get( 'limit', '' ),
 										}
@@ -17083,17 +17255,105 @@ elif mode == 'Population':
 									'RowCount': len( rows ) if isinstance( rows, list ) else 0,
 							}
 						)
-						_render_rows_table( '#### Data Rows', rows if isinstance( rows, list ) else [ ] )
+						_render_rows_table(
+							'#### Data Rows',
+							rows if isinstance( rows, list ) else [ ]
+						)
 					
 					_render_fallback_raw( result )
 		
 		# -------- CDC SOCRATA
 		with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
+			SOCRATA_MODES = [
+					'rows',
+					'metadata'
+			]
+			
+			SOCRATA_CDC_DOMAINS = [
+					'data.cdc.gov',
+					'chronicdata.cdc.gov'
+			]
+			
+			def _clear_socrata_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the CDC Socrata expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'socrata_clear_request' ] = True
+			
+			def _validate_socrata_dataset_id( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a Socrata four-by-four dataset identifier.
+
+					Parameters:
+					-----------
+					value (object):
+						Dataset identifier supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Validated dataset identifier without a trailing .json suffix.
+				'''
+				text = str( value or '' ).strip( ).replace( '.json', '' ).strip( '/' )
+				
+				if not text:
+					raise ValueError( 'Dataset ID is required.' )
+				
+				if not re.fullmatch( r'[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}', text ):
+					raise ValueError(
+						'Dataset ID must use the Socrata four-by-four format, '
+						'such as q8xq-ygsk.'
+					)
+				
+				return text.lower( )
+			
 			if 'socrata_results' not in st.session_state:
 				st.session_state[ 'socrata_results' ] = { }
 			
 			if 'socrata_clear_request' not in st.session_state:
 				st.session_state[ 'socrata_clear_request' ] = False
+			
+			if st.session_state.get( 'socrata_mode', 'rows' ) not in SOCRATA_MODES:
+				st.session_state[ 'socrata_mode' ] = 'rows'
+			
+			if st.session_state.get( 'socrata_domain', 'data.cdc.gov' ) not in SOCRATA_CDC_DOMAINS:
+				st.session_state[ 'socrata_domain' ] = 'data.cdc.gov'
+			
+			if 'socrata_dataset_id' not in st.session_state:
+				st.session_state[ 'socrata_dataset_id' ] = 'q8xq-ygsk'
+			
+			if 'socrata_select' not in st.session_state:
+				st.session_state[ 'socrata_select' ] = ''
+			
+			if 'socrata_where' not in st.session_state:
+				st.session_state[ 'socrata_where' ] = ''
+			
+			if 'socrata_order' not in st.session_state:
+				st.session_state[ 'socrata_order' ] = ''
+			
+			if 'socrata_group' not in st.session_state:
+				st.session_state[ 'socrata_group' ] = ''
+			
+			if 'socrata_limit' not in st.session_state:
+				st.session_state[ 'socrata_limit' ] = 25
+			
+			if 'socrata_offset' not in st.session_state:
+				st.session_state[ 'socrata_offset' ] = 0
+			
+			if 'socrata_timeout' not in st.session_state:
+				st.session_state[ 'socrata_timeout' ] = 20
 			
 			if st.session_state.get( 'socrata_clear_request', False ):
 				st.session_state[ 'socrata_mode' ] = 'rows'
@@ -17109,40 +17369,27 @@ elif mode == 'Population':
 				st.session_state[ 'socrata_results' ] = { }
 				st.session_state[ 'socrata_clear_request' ] = False
 			
-			def _clear_socrata_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Socrata expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'socrata_clear_request' ] = True
-			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				socrata_mode = st.selectbox(
 					'Mode',
-					options=[ 'rows', 'metadata' ],
-					index=[ 'rows', 'metadata' ].index(
+					options=SOCRATA_MODES,
+					index=SOCRATA_MODES.index(
 						st.session_state.get( 'socrata_mode', 'rows' )
 					),
 					key='socrata_mode',
 					help='rows = query dataset rows; metadata = inspect dataset metadata.'
 				)
 				
-				socrata_domain = st.text_input(
+				socrata_domain = st.selectbox(
 					'Domain',
-					value=st.session_state.get( 'socrata_domain', 'data.cdc.gov' ),
+					options=SOCRATA_CDC_DOMAINS,
+					index=SOCRATA_CDC_DOMAINS.index(
+						st.session_state.get( 'socrata_domain', 'data.cdc.gov' )
+					),
 					key='socrata_domain',
-					placeholder='data.cdc.gov'
+					help='CDC Socrata portal domain.'
 				)
 				
 				socrata_dataset_id = st.text_input(
@@ -17200,7 +17447,8 @@ elif mode == 'Population':
 						value=int( st.session_state.get( 'socrata_limit', 25 ) ),
 						step=1,
 						key='socrata_limit',
-						disabled=(socrata_mode != 'rows')
+						disabled=(socrata_mode != 'rows'),
+						help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.'
 					)
 				
 				with c4:
@@ -17230,6 +17478,7 @@ elif mode == 'Population':
 				)
 				
 				b1, b2 = st.columns( 2 )
+				
 				with b1:
 					socrata_submit = st.button(
 						'Submit',
@@ -17250,11 +17499,15 @@ elif mode == 'Population':
 				
 				if socrata_submit:
 					try:
+						clean_dataset_id = _validate_socrata_dataset_id(
+							socrata_dataset_id
+						)
+						
 						f = Socrata( )
 						result = f.fetch(
-							mode=socrata_mode,
+							mode=str( socrata_mode ),
 							domain=str( socrata_domain ),
-							dataset_id=str( socrata_dataset_id ),
+							dataset_id=clean_dataset_id,
 							select=str( socrata_select ),
 							where=str( socrata_where ),
 							order=str( socrata_order ),
@@ -17268,7 +17521,7 @@ elif mode == 'Population':
 						st.rerun( )
 					
 					except Exception as exc:
-						st.error( 'Socrata request failed.' )
+						st.error( 'CDC Socrata request failed.' )
 						st.exception( exc )
 				
 				if not result:
@@ -17282,8 +17535,10 @@ elif mode == 'Population':
 						_render_summary_kv(
 							'#### Summary',
 							{
-									'Name': payload.get( 'name', '' ) if isinstance( payload, dict ) else '',
-									'Description': payload.get( 'description', '' ) if isinstance( payload, dict ) else '',
+									'Name': payload.get( 'name', '' ) if isinstance( payload,
+										dict ) else '',
+									'Description': payload.get( 'description', '' ) if isinstance(
+										payload, dict ) else '',
 									'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance( payload, dict ) else '',
 									'ViewType': payload.get( 'viewType', '' ) if isinstance( payload, dict ) else '',
 									'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload, dict ) else 0,
@@ -17324,11 +17579,95 @@ elif mode == 'Population':
 		
 		# -------- US Health Data
 		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
+			HEALTHDATA_MODES = [
+					'rows',
+					'metadata'
+			]
+			
+			HEALTHDATA_DOMAINS = [
+					'healthdata.gov'
+			]
+			
+			def _clear_healthdata_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the HealthData expander state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'healthdata_clear_request' ] = True
+			
+			def _validate_healthdata_dataset_id( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a HealthData.gov Socrata dataset identifier.
+
+					Parameters:
+					-----------
+					value (object):
+						Dataset identifier supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Validated dataset identifier without a trailing .json suffix.
+				'''
+				text = str( value or '' ).strip( ).replace( '.json', '' ).strip( '/' )
+				
+				if not text:
+					raise ValueError( 'Dataset ID is required.' )
+				
+				if not re.fullmatch( r'[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}', text ):
+					raise ValueError(
+						'Dataset ID must use the Socrata four-by-four format, '
+						'such as abcd-1234.'
+					)
+				
+				return text.lower( )
+			
 			if 'healthdata_results' not in st.session_state:
 				st.session_state[ 'healthdata_results' ] = { }
 			
 			if 'healthdata_clear_request' not in st.session_state:
 				st.session_state[ 'healthdata_clear_request' ] = False
+			
+			if st.session_state.get( 'healthdata_mode', 'rows' ) not in HEALTHDATA_MODES:
+				st.session_state[ 'healthdata_mode' ] = 'rows'
+			
+			if st.session_state.get( 'healthdata_domain', 'healthdata.gov' ) not in HEALTHDATA_DOMAINS:
+				st.session_state[ 'healthdata_domain' ] = 'healthdata.gov'
+			
+			if 'healthdata_dataset_id' not in st.session_state:
+				st.session_state[ 'healthdata_dataset_id' ] = ''
+			
+			if 'healthdata_select' not in st.session_state:
+				st.session_state[ 'healthdata_select' ] = ''
+			
+			if 'healthdata_where' not in st.session_state:
+				st.session_state[ 'healthdata_where' ] = ''
+			
+			if 'healthdata_order' not in st.session_state:
+				st.session_state[ 'healthdata_order' ] = ''
+			
+			if 'healthdata_group' not in st.session_state:
+				st.session_state[ 'healthdata_group' ] = ''
+			
+			if 'healthdata_limit' not in st.session_state:
+				st.session_state[ 'healthdata_limit' ] = 25
+			
+			if 'healthdata_offset' not in st.session_state:
+				st.session_state[ 'healthdata_offset' ] = 0
+			
+			if 'healthdata_timeout' not in st.session_state:
+				st.session_state[ 'healthdata_timeout' ] = 20
 			
 			if st.session_state.get( 'healthdata_clear_request', False ):
 				st.session_state[ 'healthdata_mode' ] = 'rows'
@@ -17344,47 +17683,34 @@ elif mode == 'Population':
 				st.session_state[ 'healthdata_results' ] = { }
 				st.session_state[ 'healthdata_clear_request' ] = False
 			
-			def _clear_healthdata_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the HealthData expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
-				st.session_state[ 'healthdata_clear_request' ] = True
-			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				healthdata_mode = st.selectbox(
 					'Mode',
-					options=[ 'rows', 'metadata' ],
-					index=[ 'rows', 'metadata' ].index(
+					options=HEALTHDATA_MODES,
+					index=HEALTHDATA_MODES.index(
 						st.session_state.get( 'healthdata_mode', 'rows' )
 					),
 					key='healthdata_mode',
 					help='rows = query dataset rows; metadata = inspect dataset metadata.'
 				)
 				
-				healthdata_domain = st.text_input(
+				healthdata_domain = st.selectbox(
 					'Domain',
-					value=st.session_state.get( 'healthdata_domain', 'healthdata.gov' ),
+					options=HEALTHDATA_DOMAINS,
+					index=HEALTHDATA_DOMAINS.index(
+						st.session_state.get( 'healthdata_domain', 'healthdata.gov' )
+					),
 					key='healthdata_domain',
-					placeholder='healthdata.gov'
+					help='HealthData.gov Socrata portal domain.'
 				)
 				
 				healthdata_dataset_id = st.text_input(
 					'Dataset ID',
 					value=st.session_state.get( 'healthdata_dataset_id', '' ),
 					key='healthdata_dataset_id',
-					placeholder='dataset id'
+					placeholder='abcd-1234'
 				)
 				
 				healthdata_select = st.text_area(
@@ -17435,7 +17761,8 @@ elif mode == 'Population':
 						value=int( st.session_state.get( 'healthdata_limit', 25 ) ),
 						step=1,
 						key='healthdata_limit',
-						disabled=(healthdata_mode != 'rows')
+						disabled=(healthdata_mode != 'rows'),
+						help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.'
 					)
 				
 				with c4:
@@ -17460,11 +17787,12 @@ elif mode == 'Population':
 					)
 				
 				st.caption(
-					'HealthData.gov exposes developer tools and open API access. '
+					'HealthData.gov exposes open API access through Socrata. '
 					'Use SoQL-style clauses for select, where, order, and group.'
 				)
 				
 				b1, b2 = st.columns( 2 )
+				
 				with b1:
 					healthdata_submit = st.button(
 						'Submit',
@@ -17485,11 +17813,15 @@ elif mode == 'Population':
 				
 				if healthdata_submit:
 					try:
+						clean_dataset_id = _validate_healthdata_dataset_id(
+							healthdata_dataset_id
+						)
+						
 						f = HealthData( )
 						result = f.fetch(
-							mode=healthdata_mode,
+							mode=str( healthdata_mode ),
 							domain=str( healthdata_domain ),
-							dataset_id=str( healthdata_dataset_id ),
+							dataset_id=clean_dataset_id,
 							select=str( healthdata_select ),
 							where=str( healthdata_where ),
 							order=str( healthdata_order ),
@@ -18085,43 +18417,162 @@ elif mode == 'Population':
 		
 		# -------- CDC WONDER
 		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
-			if 'wonder_results' not in st.session_state:
-				st.session_state[ 'wonder_results' ] = { }
+			WONDER_MODES = [
+					'metadata_template',
+					'query_xml'
+			]
 			
-			if 'wonder_clear_request' not in st.session_state:
-				st.session_state[ 'wonder_clear_request' ] = False
-			
-			if st.session_state.get( 'wonder_clear_request', False ):
-				st.session_state[ 'wonder_mode' ] = 'metadata_template'
-				st.session_state[ 'wonder_dataset_id' ] = 'D76'
-				st.session_state[ 'wonder_request_xml' ] = ''
-				st.session_state[ 'wonder_timeout' ] = 20
-				st.session_state[ 'wonder_results' ] = { }
-				st.session_state[ 'wonder_clear_request' ] = False
+			WONDER_DATASETS = [
+					'D76',
+					'D140',
+					'D176',
+					'D158',
+					'D159',
+					'D160',
+					'D161',
+					'D162',
+					'D163',
+					'D164',
+					'D165',
+					'D166',
+					'D167',
+					'D168',
+					'D169',
+					'D170',
+					'D171',
+					'D172',
+					'D173',
+					'D174',
+					'D175',
+					'Other'
+			]
 			
 			def _clear_wonder_state( ) -> None:
 				'''
 					Purpose:
 					--------
 					Flag the CDC WONDER expander state for reset on the next rerun.
-	
+
 					Parameters:
 					-----------
 					None
-	
+
 					Returns:
 					--------
 					None
 				'''
 				st.session_state[ 'wonder_clear_request' ] = True
 			
+			def _validate_wonder_dataset_id( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a CDC WONDER database identifier.
+
+					Parameters:
+					-----------
+					value (object):
+						Dataset identifier supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Validated CDC WONDER database identifier.
+				'''
+				text = str( value or '' ).strip( ).upper( )
+				
+				if not text:
+					raise ValueError( 'CDC WONDER Dataset ID is required.' )
+				
+				if not re.fullmatch( r'D\d{1,4}', text ):
+					raise ValueError(
+						'CDC WONDER Dataset ID must use the format D followed by digits, '
+						'such as D76.'
+					)
+				
+				return text
+			
+			def _validate_wonder_xml( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate the CDC WONDER XML request payload before submission.
+
+					Parameters:
+					-----------
+					value (object):
+						XML request text supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Validated XML request text.
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					raise ValueError( 'Request XML is required for query_xml mode.' )
+				
+				if '<request-parameters>' not in text and '<query-parameters>' not in text:
+					raise ValueError(
+						'Request XML should contain CDC WONDER request/query parameters.'
+					)
+				
+				return text
+			
+			if 'wonder_results' not in st.session_state:
+				st.session_state[ 'wonder_results' ] = { }
+			
+			if 'wonder_clear_request' not in st.session_state:
+				st.session_state[ 'wonder_clear_request' ] = False
+			
+			if st.session_state.get( 'wonder_mode', 'metadata_template' ) not in WONDER_MODES:
+				st.session_state[ 'wonder_mode' ] = 'metadata_template'
+			
+			if 'wonder_dataset_id' not in st.session_state:
+				st.session_state[ 'wonder_dataset_id' ] = 'D76'
+			
+			if st.session_state.get( 'wonder_dataset_id', 'D76' ) in WONDER_DATASETS:
+				default_dataset_choice = st.session_state.get( 'wonder_dataset_id', 'D76' )
+			else:
+				default_dataset_choice = 'Other'
+			
+			if 'wonder_dataset_choice' not in st.session_state:
+				st.session_state[ 'wonder_dataset_choice' ] = default_dataset_choice
+			
+			if st.session_state.get( 'wonder_dataset_choice', 'D76' ) not in WONDER_DATASETS:
+				st.session_state[ 'wonder_dataset_choice' ] = default_dataset_choice
+			
+			if 'wonder_custom_dataset_id' not in st.session_state:
+				st.session_state[ 'wonder_custom_dataset_id' ] = (
+						''
+						if default_dataset_choice != 'Other'
+						else st.session_state.get( 'wonder_dataset_id', '' )
+				)
+			
+			if 'wonder_request_xml' not in st.session_state:
+				st.session_state[ 'wonder_request_xml' ] = ''
+			
+			if 'wonder_timeout' not in st.session_state:
+				st.session_state[ 'wonder_timeout' ] = 20
+			
+			if st.session_state.get( 'wonder_clear_request', False ):
+				st.session_state[ 'wonder_mode' ] = 'metadata_template'
+				st.session_state[ 'wonder_dataset_id' ] = 'D76'
+				st.session_state[ 'wonder_dataset_choice' ] = 'D76'
+				st.session_state[ 'wonder_custom_dataset_id' ] = ''
+				st.session_state[ 'wonder_request_xml' ] = ''
+				st.session_state[ 'wonder_timeout' ] = 20
+				st.session_state[ 'wonder_results' ] = { }
+				st.session_state[ 'wonder_clear_request' ] = False
+			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				wonder_mode = st.selectbox(
 					'Mode',
-					options=[ 'metadata_template', 'query_xml' ],
-					index=[ 'metadata_template', 'query_xml' ].index(
+					options=WONDER_MODES,
+					index=WONDER_MODES.index(
 						st.session_state.get( 'wonder_mode', 'metadata_template' )
 					),
 					key='wonder_mode',
@@ -18131,11 +18582,22 @@ elif mode == 'Population':
 					)
 				)
 				
-				wonder_dataset_id = st.text_input(
+				wonder_dataset_choice = st.selectbox(
 					'Dataset ID',
-					value=st.session_state.get( 'wonder_dataset_id', 'D76' ),
-					key='wonder_dataset_id',
-					placeholder='D76'
+					options=WONDER_DATASETS,
+					index=WONDER_DATASETS.index(
+						st.session_state.get( 'wonder_dataset_choice', 'D76' )
+					),
+					key='wonder_dataset_choice',
+					help='Common CDC WONDER database identifiers. Use Other for newer IDs.'
+				)
+				
+				wonder_custom_dataset_id = st.text_input(
+					'Custom Dataset ID',
+					value=st.session_state.get( 'wonder_custom_dataset_id', '' ),
+					key='wonder_custom_dataset_id',
+					placeholder='D76',
+					disabled=(wonder_dataset_choice != 'Other')
 				)
 				
 				wonder_request_xml = st.text_area(
@@ -18143,7 +18605,7 @@ elif mode == 'Population':
 					value=st.session_state.get( 'wonder_request_xml', '' ),
 					height=240,
 					key='wonder_request_xml',
-					placeholder='<request>...</request>',
+					placeholder='<request-parameters>...</request-parameters>',
 					disabled=(wonder_mode != 'query_xml')
 				)
 				
@@ -18157,11 +18619,13 @@ elif mode == 'Population':
 				)
 				
 				st.caption(
-					'CDC WONDER requires POST requests with request_xml and '
-					'acceptance of data-use restrictions.'
+					'CDC WONDER requires POST requests with request_xml and acceptance '
+					'of data-use restrictions. The wrapper submits '
+					'accept_datause_restrictions=true.'
 				)
 				
 				b1, b2 = st.columns( 2 )
+				
 				with b1:
 					wonder_submit = st.button(
 						'Submit',
@@ -18182,14 +18646,31 @@ elif mode == 'Population':
 				
 				if wonder_submit:
 					try:
+						selected_dataset_id = (
+								wonder_custom_dataset_id
+								if wonder_dataset_choice == 'Other'
+								else wonder_dataset_choice
+						)
+						clean_dataset_id = _validate_wonder_dataset_id(
+							selected_dataset_id
+						)
+						
+						if wonder_mode == 'query_xml':
+							clean_request_xml = _validate_wonder_xml(
+								wonder_request_xml
+							)
+						else:
+							clean_request_xml = str( wonder_request_xml or '' ).strip( )
+						
 						f = Wonder( )
 						result = f.fetch(
-							mode=wonder_mode,
-							dataset_id=str( wonder_dataset_id ),
-							request_xml=str( wonder_request_xml ),
+							mode=str( wonder_mode ),
+							dataset_id=clean_dataset_id,
+							request_xml=clean_request_xml,
 							time=int( wonder_timeout )
 						)
 						
+						st.session_state[ 'wonder_dataset_id' ] = clean_dataset_id
 						st.session_state[ 'wonder_results' ] = result or { }
 						
 						if (
@@ -18238,7 +18719,10 @@ elif mode == 'Population':
 							_render_summary_kv(
 								'#### Response Summary',
 								{
-										'DatasetId': wonder_dataset_id,
+										'DatasetId': st.session_state.get(
+											'wonder_dataset_id',
+											''
+										),
 										'Characters': len( xml_text ),
 										'HasXml': bool( xml_text.strip( ) ),
 								}
@@ -18249,27 +18733,65 @@ elif mode == 'Population':
 							st.info( 'No XML response returned.' )
 					
 					_render_fallback_raw( result )
-				
+		
 		# -------- Pub Med
 		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
+			def _clear_pubmed_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the PubMed loader state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'pubmed_clear_request' ] = True
+			
 			if 'pubmed_results' not in st.session_state:
 				st.session_state[ 'pubmed_results' ] = { }
+			
+			if 'pubmed_clear_request' not in st.session_state:
+				st.session_state[ 'pubmed_clear_request' ] = False
+			
+			if 'pubmed_query' not in st.session_state:
+				st.session_state[ 'pubmed_query' ] = ''
+			
+			if 'pubmed_max_docs' not in st.session_state:
+				st.session_state[ 'pubmed_max_docs' ] = 5
+			
+			if st.session_state.get( 'pubmed_clear_request', False ):
+				st.session_state[ 'pubmed_results' ] = { }
+				st.session_state[ 'pubmed_query' ] = ''
+				st.session_state[ 'pubmed_max_docs' ] = 5
+				st.session_state[ 'pubmed_clear_request' ] = False
 			
 			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
 			
 			with col_left:
-				query = st.text_input(
+				pubmed_query = st.text_input(
 					'PubMed Query',
-					key='pubmed_query'
+					value=st.session_state.get( 'pubmed_query', '' ),
+					key='pubmed_query',
+					placeholder='Example: machine learning cancer diagnosis'
 				)
 				
-				max_docs = st.number_input(
+				pubmed_max_docs = st.number_input(
 					'Max Documents',
 					min_value=1,
 					max_value=100,
-					value=5,
+					value=int( st.session_state.get( 'pubmed_max_docs', 5 ) ),
 					step=1,
 					key='pubmed_max_docs'
+				)
+				
+				st.caption(
+					'PubMed search uses the LangChain PubMedSearchLoader and promotes '
+					'returned documents into the shared loader state for downstream use.'
 				)
 				
 				b1, b2, b3 = st.columns( 3 )
@@ -18285,59 +18807,90 @@ elif mode == 'Population':
 					pubmed_clear = st.button(
 						'Clear',
 						key='pubmed_clear',
+						on_click=_clear_pubmed_state,
 						use_container_width=True
 					)
 				
 				with b3:
-					can_save = ( st.session_state.get( 'active_loader' ) == 'PubMedSearchLoader'
+					can_save = (
+							st.session_state.get( 'active_loader' ) == 'PubMedSearchLoader'
 							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( ) )
+							and st.session_state.get( 'raw_text' ).strip( )
+					)
 					
 					if can_save:
-						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
-							file_name='pubmed_loader_output.txt', mime='text/plain',
-							key='pubmed_save', use_container_width=True )
+						st.download_button(
+							'Save',
+							data=st.session_state.get( 'raw_text' ),
+							file_name='pubmed_loader_output.txt',
+							mime='text/plain',
+							key='pubmed_save',
+							use_container_width=True
+						)
 					else:
-						st.button( 'Save', key='pubmed_save_disabled', disabled=True,
-							use_container_width=True )
+						st.button(
+							'Save',
+							key='pubmed_save_disabled',
+							disabled=True,
+							use_container_width=True
+						)
 			
 			with col_right:
 				if pubmed_clear:
-					st.session_state[ 'pubmed_results' ] = { }
 					remaining = _clear_loader_documents( 'PubMedSearchLoader' )
-					st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
+					st.info(
+						f'PubMed Loader state cleared. Remaining documents: {remaining}.'
+					)
 				
 				if pubmed_submit:
-					if not query or not query.strip( ):
+					if not pubmed_query or not pubmed_query.strip( ):
 						st.info( 'Enter a PubMed query.' )
 					else:
 						try:
 							loader = PubMedSearchLoader( )
-							documents = loader.load( query=query.strip( ),
-								max_docs=int( max_docs ) ) or [ ]
+							documents = loader.load(
+								query=pubmed_query.strip( ),
+								max_docs=int( pubmed_max_docs )
+							) or [ ]
 							
-							count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
+							count = _promote_loader_documents(
+								documents,
+								'PubMedSearchLoader'
+							)
 							
 							items: list[ dict[ str, Any ] ] = [ ]
+							
 							for i, doc in enumerate( documents, start=1 ):
 								metadata = (
 										doc.metadata
-										if isinstance( getattr( doc, 'metadata', { } ), dict )
+										if isinstance(
+											getattr( doc, 'metadata', { } ),
+											dict
+										)
 										else { }
 								)
-								content = str( getattr( doc, 'page_content', '' ) or '' )
+								content = str(
+									getattr( doc, 'page_content', '' ) or ''
+								)
+								
 								items.append(
 									{
 											'Index': i,
-											'Title': metadata.get( 'Title' )
-											         or metadata.get( 'title' )
-											         or '',
-											'Published': metadata.get( 'Published' )
-											             or metadata.get( 'published' )
-											             or '',
-											'Copyright': metadata.get( 'Copyright Information' )
-											             or metadata.get( 'copyright' )
-											             or '',
+											'Title': (
+													metadata.get( 'Title' )
+													or metadata.get( 'title' )
+													or ''
+											),
+											'Published': (
+													metadata.get( 'Published' )
+													or metadata.get( 'published' )
+													or ''
+											),
+											'Copyright': (
+													metadata.get( 'Copyright Information' )
+													or metadata.get( 'copyright' )
+													or ''
+											),
 											'Summary': content,
 											'Metadata': metadata,
 									}
@@ -18345,8 +18898,8 @@ elif mode == 'Population':
 							
 							st.session_state[ 'pubmed_results' ] = {
 									'mode': 'pubmed',
-									'query': query.strip( ),
-									'max_docs': int( max_docs ),
+									'query': pubmed_query.strip( ),
+									'max_docs': int( pubmed_max_docs ),
 									'count': count,
 									'items': items,
 							}
@@ -18384,8 +18937,14 @@ elif mode == 'Population':
 								for item in items
 						]
 						
+						df_pubmed = pd.DataFrame( table_rows )
+						
 						st.markdown( '#### Results' )
-						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						st.dataframe(
+							df_pubmed,
+							use_container_width=True,
+							hide_index=True
+						)
 						
 						first = items[ 0 ]
 						_render_summary_kv(
@@ -18399,6 +18958,31 @@ elif mode == 'Population':
 						
 						st.markdown( '#### Abstract Preview' )
 						st.code( str( first.get( 'Summary', '' ) )[ :8000 ] )
+						
+						with st.expander( 'Records', expanded=False ):
+							for item in items:
+								record_label = str(
+									item.get( 'Title', '' )
+									or f"Record {item.get( 'Index', '' )}"
+								)
+								
+								with st.expander(
+										f"Record {item.get( 'Index', '' )}: {record_label}",
+										expanded=False
+								):
+									st.markdown(
+										f"**Published:** {item.get( 'Published', '' )}"
+									)
+									st.markdown(
+										f"**Copyright:** {item.get( 'Copyright', '' )}"
+									)
+									st.markdown( '##### Summary' )
+									st.code( str( item.get( 'Summary', '' ) )[ :8000 ] )
+									
+									metadata = item.get( 'Metadata', { } )
+									if metadata:
+										with st.expander( 'Metadata', expanded=False ):
+											st.json( metadata )
 					else:
 						st.info( 'No PubMed records returned.' )
 					
