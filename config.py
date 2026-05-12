@@ -99,8 +99,9 @@ AGENTS ='''Mozilla/5.0 Windows NT 10.0; Win64; x64; AppleWebKit/537.36 (KHTML, l
 FAVICON = r'resources/images/favicon.ico'
 LOGO = r'resources/images/foo_logo.png'
 DB = r'stores/sqlite/datamodels/Data.db'
-MODES = [ 'Data Loading', 'Data Scraping', 'Data Retrieval',
-          'Data Generation', 'Geospatial Data', 'Data Management' ]
+MODES = [ 'Loading', 'Scraping', 'Retrieval',
+          'Geospatial', 'Demographic', 'Environmntal',
+          'Astronomical', 'Generation', 'Data Management' ]
 
 MODE_MAP = \
 {
@@ -108,7 +109,7 @@ MODE_MAP = \
 		'Scraping': 'Data Scraping',
 		'Retrieval': 'Data Collections & Public Archives',
 		'Geospatial': 'Weather & Geospatial Information',
-		'Population': 'Health & Population Data',
+		'Demographic': 'Health & Population Data',
 		'Environmental': 'Environmental Information',
 		'Astronomical': 'Physics & Astronomical Data',
 		'Generation': 'AI Generation',

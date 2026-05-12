@@ -9247,7 +9247,7 @@ elif mode == 'Geospatial':
 					key='usgsearthquakes_max_radius_km',
 					disabled=(usgseq_mode != 'search') )
 				
-				usgseq_timeout = st.number_input( 'Timeout (seconds)', in_value=5,
+				usgseq_timeout = st.number_input( 'Timeout (seconds)', min_value=5,
 					max_value=120, value=int( st.session_state.get( 'usgsearthquakes_timeout', 5 ) ),
 					step=1, key='usgsearthquakes_timeout' )
 				
@@ -16869,7 +16869,7 @@ elif mode == 'Astronomical':
 # ==============================================================================
 # POPULATION MODE
 # ==============================================================================
-elif mode == 'Population':
+elif mode == 'Demographic':
 	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
 	with center:
 		st.subheader( f'🩺 Demographics & Health Data' )
@@ -21340,10 +21340,10 @@ elif mode == 'Generation':
 # ==============================================================================
 # DATA MANAGEMENT MODE
 # ==============================================================================
-elif mode == 'Management':
+elif mode == 'Data Management':
 	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
 	with center:
-		st.subheader( f'🏛️ Data Management', help=cfg.DATA_MANAGEMENT )
+		st.subheader( f'🏛️ Data Management' )
 		st.divider( )
 		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
 		                  '🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
