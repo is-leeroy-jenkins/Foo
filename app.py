@@ -9248,7 +9248,7 @@ elif mode == 'Geospatial':
 					disabled=(usgseq_mode != 'search') )
 				
 				usgseq_timeout = st.number_input( 'Timeout (seconds)', in_value=5,
-					max_value=120, value=int( st.session_state.get( 'usgsearthquakes_timeout', 20 ) ),
+					max_value=120, value=int( st.session_state.get( 'usgsearthquakes_timeout', 5 ) ),
 					step=1, key='usgsearthquakes_timeout' )
 				
 				st.caption(
