@@ -6582,7 +6582,7 @@ elif mode == 'Retrieval':
 						st.info( 'Enter a Blob.' )
 					else:
 						try:
-							loader = GoogleCloudStorageFileLoader( )
+							loader = GoogleCloudFileLoader( )
 							documents = loader.load(
 								project_name=project_name.strip( ),
 								bucket=bucket.strip( ),
@@ -7320,7 +7320,7 @@ elif mode == 'Retrieval':
 						st.info( 'Enter a Bucket.' )
 					else:
 						try:
-							loader = AmazonBucketLoader( )
+							loader = AwsBucketLoader( )
 							documents = loader.load(
 								bucket=bucket_name.strip( ),
 								prefix=prefix.strip( ) or None,
