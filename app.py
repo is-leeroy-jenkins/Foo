@@ -20071,17 +20071,16 @@ elif mode == 'Generation':
 				claude_prompt = st.text_area(
 					'Prompt',
 					value=st.session_state.get( 'claude_prompt_chat', '' ),
-					height=120,
+					height=140,
 					key='claude_prompt_chat',
 				)
 				
-				p_row1 = st.columns( 2 )
-				p_row2 = st.columns( 2 )
-				p_row3 = st.columns( 2 )
-				p_row4 = st.columns( 2 )
-				p_row5 = st.columns( 2 )
+				# -----------------------------
+				# Model / Output Controls
+				# -----------------------------
+				model_row = st.columns( [ 0.55, 0.45 ] )
 				
-				with p_row1[ 0 ]:
+				with model_row[ 0 ]:
 					_claude_models = (
 							cfg.CLAUDE_MODELS
 							if hasattr( cfg, 'CLAUDE_MODELS' ) and cfg.CLAUDE_MODELS
@@ -20104,17 +20103,7 @@ elif mode == 'Generation':
 						),
 					)
 				
-				with p_row1[ 1 ]:
-					claude_temperature = st.slider(
-						'Temperature',
-						min_value=0.0,
-						max_value=1.0,
-						value=0.7,
-						step=0.05,
-						key='claude_temperature_chat',
-					)
-				
-				with p_row2[ 0 ]:
+				with model_row[ 1 ]:
 					claude_max_tokens = st.number_input(
 						'Max Tokens',
 						min_value=1,
@@ -20124,7 +20113,22 @@ elif mode == 'Generation':
 						key='claude_max_tokens_chat',
 					)
 				
-				with p_row2[ 1 ]:
+				# -----------------------------
+				# Sampling Controls
+				# -----------------------------
+				sampling_row = st.columns( 3 )
+				
+				with sampling_row[ 0 ]:
+					claude_temperature = st.slider(
+						'Temperature',
+						min_value=0.0,
+						max_value=1.0,
+						value=0.7,
+						step=0.05,
+						key='claude_temperature_chat',
+					)
+				
+				with sampling_row[ 1 ]:
 					claude_top_p = st.slider(
 						'Top-P',
 						min_value=0.0,
@@ -20134,7 +20138,7 @@ elif mode == 'Generation':
 						key='claude_top_p_chat',
 					)
 				
-				with p_row3[ 0 ]:
+				with sampling_row[ 2 ]:
 					claude_top_k = st.number_input(
 						'Top-k',
 						min_value=0,
@@ -20144,7 +20148,12 @@ elif mode == 'Generation':
 						key='claude_top_k_chat',
 					)
 				
-				with p_row3[ 1 ]:
+				# -----------------------------
+				# Feature Toggles
+				# -----------------------------
+				option_row = st.columns( 2 )
+				
+				with option_row[ 0 ]:
 					claude_thinking = st.checkbox(
 						'Reasoning',
 						value=bool( st.session_state.get( 'claude_thinking_chat', False ) ),
@@ -20152,182 +20161,100 @@ elif mode == 'Generation':
 						help='Anthropic exposes this as extended thinking with a token budget.',
 					)
 				
-				with p_row4[ 0 ]:
+				with option_row[ 1 ]:
 					claude_web_search = st.checkbox(
 						'Web Search',
 						value=bool( st.session_state.get( 'claude_web_search_chat', False ) ),
 						key='claude_web_search_chat',
 					)
 				
-				with p_row4[ 1 ]:
-					claude_stop = st.text_area(
-						'Stop Sequences (one per line)',
-						value=st.session_state.get( 'claude_stop_chat', '' ),
-						height=80,
-						key='claude_stop_chat',
-					)
-				
-				with p_row5[ 0 ]:
-					if claude_thinking:
-						claude_thinking_budget = st.number_input(
-							'Thinking Budget',
-							min_value=1024,
-							max_value=max( 1024, int( claude_max_tokens ) - 1 ),
-							value=min(
-								int( st.session_state.get(
+				# -----------------------------
+				# Reasoning Budget
+				# -----------------------------
+				if claude_thinking:
+					claude_thinking_budget = st.number_input(
+						'Thinking Budget',
+						min_value=1024,
+						max_value=max( 1024, int( claude_max_tokens ) - 1 ),
+						value=min(
+							int(
+								st.session_state.get(
 									'claude_thinking_budget_chat',
 									1024
-								) ),
-								max( 1024, int( claude_max_tokens ) - 1 )
+								)
 							),
-							step=1024,
-							key='claude_thinking_budget_chat',
-							help='Must be less than Max Tokens.'
-						)
-					else:
-						claude_thinking_budget = None
-				
-				with p_row5[ 1 ]:
-					claude_system = st.text_area(
-						'System',
-						value=st.session_state.get( 'claude_system_chat', '' ),
-						height=100,
-						key='claude_system_chat',
+							max( 1024, int( claude_max_tokens ) - 1 )
+						),
+						step=1024,
+						key='claude_thinking_budget_chat',
+						help='Must be less than Max Tokens.'
 					)
+				else:
+					claude_thinking_budget = None
 				
+				# -----------------------------
+				# Instruction Controls
+				# -----------------------------
+				claude_system = st.text_area(
+					'System',
+					value=st.session_state.get( 'claude_system_chat', '' ),
+					height=110,
+					key='claude_system_chat',
+				)
+				
+				claude_stop = st.text_area(
+					'Stop Sequences (one per line)',
+					value=st.session_state.get( 'claude_stop_chat', '' ),
+					height=80,
+					key='claude_stop_chat',
+				)
+				
+				# -----------------------------
+				# Web Search Controls
+				# -----------------------------
 				if claude_web_search:
-					claude_domains = st.text_area(
-						'Allowed Search Domains',
-						value=st.session_state.get( 'claude_domains_chat', '' ),
-						height=80,
-						key='claude_domains_chat',
-						help='Optional allowlist, one domain per line or comma-separated.'
-					)
+					search_row = st.columns( 2 )
 					
-					claude_blocked_domains = st.text_area(
-						'Blocked Search Domains',
-						value=st.session_state.get( 'claude_blocked_domains_chat', '' ),
-						height=80,
-						key='claude_blocked_domains_chat',
-						help='Optional blocklist, one domain per line or comma-separated.'
-					)
+					with search_row[ 0 ]:
+						claude_domains = st.text_area(
+							'Allowed Search Domains',
+							value=st.session_state.get( 'claude_domains_chat', '' ),
+							height=90,
+							key='claude_domains_chat',
+							help='Optional allowlist, one domain per line or comma-separated.'
+						)
+					
+					with search_row[ 1 ]:
+						claude_blocked_domains = st.text_area(
+							'Blocked Search Domains',
+							value=st.session_state.get( 'claude_blocked_domains_chat', '' ),
+							height=90,
+							key='claude_blocked_domains_chat',
+							help='Optional blocklist, one domain per line or comma-separated.'
+						)
 				else:
 					claude_domains = ''
 					claude_blocked_domains = ''
 				
+				# -----------------------------
+				# Action Controls
+				# -----------------------------
 				btn_row = st.columns( 2 )
 				
 				with btn_row[ 0 ]:
 					claude_submit = st.button(
 						'Submit',
-						key='claude_submit_chat'
+						key='claude_submit_chat',
+						use_container_width=True
 					)
 				
 				with btn_row[ 1 ]:
 					st.button(
 						'Clear',
 						key='claude_clear_chat',
-						on_click=_clear_claude_state
+						on_click=_clear_claude_state,
+						use_container_width=True
 					)
-			
-			with col_right:
-				claude_output = st.empty( )
-			
-			# -----------------------------
-			# Submit Button
-			# -----------------------------
-			if claude_submit:
-				try:
-					if not str( claude_prompt or '' ).strip( ):
-						raise ValueError( 'Prompt cannot be empty.' )
-					
-					if claude_thinking:
-						if int( claude_thinking_budget or 0 ) < 1024:
-							raise ValueError(
-								'Thinking Budget must be at least 1024 tokens.'
-							)
-						
-						if int( claude_thinking_budget ) >= int( claude_max_tokens ):
-							raise ValueError(
-								'Thinking Budget must be less than Max Tokens.'
-							)
-					
-					claude_domains_list = (
-							_normalize_claude_domains( claude_domains )
-							if claude_web_search
-							else [ ]
-					)
-					
-					claude_blocked_domains_list = (
-							_normalize_claude_domains( claude_blocked_domains )
-							if claude_web_search
-							else [ ]
-					)
-					
-					overlap = sorted(
-						set( claude_domains_list ).intersection(
-							set( claude_blocked_domains_list )
-						)
-					)
-					
-					if overlap:
-						raise ValueError(
-							'The same domain cannot be both allowed and blocked: '
-							+ ', '.join( overlap )
-						)
-					
-					stop_lines = _normalize_claude_stop_lines( claude_stop )
-					
-					fetcher = Claude( )
-					params = {
-							'model': claude_model,
-							'temperature': float( claude_temperature ),
-							'max_tokens': int( claude_max_tokens ),
-							'top_p': float( claude_top_p ),
-							'top_k': int( claude_top_k ) if int( claude_top_k ) > 0 else None,
-							'stop_sequences': stop_lines if stop_lines else None,
-							'system': (
-									claude_system
-									if str( claude_system or '' ).strip( )
-									else None
-							),
-							'thinking': bool( claude_thinking ),
-							'thinking_budget': (
-									int( claude_thinking_budget )
-									if claude_thinking and claude_thinking_budget
-									else None
-							),
-							'web_search': bool( claude_web_search ),
-							'search_domains': (
-									claude_domains_list
-									if claude_domains_list
-									else None
-							),
-							'blocked_domains': (
-									claude_blocked_domains_list
-									if claude_blocked_domains_list
-									else None
-							),
-					}
-					
-					if claude_thinking:
-						params.pop( 'temperature', None )
-						params.pop( 'top_k', None )
-						
-						if float( claude_top_p ) < 0.95:
-							params[ 'top_p' ] = 0.95
-					
-					params = {
-							key: value
-							for key, value in params.items( )
-							if value is not None
-					}
-					
-					result = _invoke_provider( fetcher, claude_prompt, params )
-					_render_output( claude_output, result )
-				
-				except Exception as exc:
-					st.error( str( exc ) )
 		
 		# -------- GEMINI
 		with st.expander( label='Gemini', expanded=False ):
