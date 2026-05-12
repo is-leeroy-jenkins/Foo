@@ -17891,43 +17891,136 @@ elif mode == 'Population':
 		
 		# -------- WHO Global Health
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
-			if 'who_results' not in st.session_state:
-				st.session_state[ 'who_results' ] = { }
+			WHO_MODES = [
+					'indicator_registry',
+					'athena'
+			]
 			
-			if 'who_clear_request' not in st.session_state:
-				st.session_state[ 'who_clear_request' ] = False
+			WHO_QUERY_PRESETS = [
+					'Indicator',
+					'Dimension',
+					'DIMENSION/COUNTRY/DimensionValues',
+					'DIMENSION/REGION',
+					'WHOSIS_000001',
+					'Custom...'
+			]
 			
-			if st.session_state.get( 'who_clear_request', False ):
-				st.session_state[ 'who_mode' ] = 'indicator_registry'
-				st.session_state[ 'who_query_path' ] = ''
-				st.session_state[ 'who_format' ] = 'json'
-				st.session_state[ 'who_timeout' ] = 20
-				st.session_state[ 'who_results' ] = { }
-				st.session_state[ 'who_clear_request' ] = False
+			WHO_FORMATS = [
+					'json',
+					'xml',
+					'csv',
+					'csv&profile=text',
+					'csv&profile=verbose'
+			]
 			
 			def _clear_who_state( ) -> None:
 				'''
 					Purpose:
 					--------
 					Flag the WHO Global Health expander state for reset on the next rerun.
-	
+
 					Parameters:
 					-----------
 					None
-	
+
 					Returns:
 					--------
 					None
 				'''
 				st.session_state[ 'who_clear_request' ] = True
 			
+			def _validate_who_query_path( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a WHO GHO Athena/OData query path before passing it to the
+					GlobalHealthData wrapper.
+
+					Parameters:
+					-----------
+					value (object):
+						Query path supplied by the user or selected from presets.
+
+					Returns:
+					--------
+					str:
+						Cleaned query path without a leading slash.
+				'''
+				text = str( value or '' ).strip( ).lstrip( '/' )
+				
+				if not text:
+					raise ValueError( 'Query Path is required for WHO Athena mode.' )
+				
+				if text.startswith( 'http://' ) or text.startswith( 'https://' ):
+					raise ValueError(
+						'Query Path must be a path segment only, not a full URL.'
+					)
+				
+				if '..' in text:
+					raise ValueError( 'Query Path cannot contain parent-directory markers.' )
+				
+				if not re.fullmatch( r"[A-Za-z0-9_\-/$(),.'% =]+(?:\?.*)?", text ):
+					raise ValueError(
+						'Query Path contains unsupported characters for this request.'
+					)
+				
+				return text
+			
+			if 'who_results' not in st.session_state:
+				st.session_state[ 'who_results' ] = { }
+			
+			if 'who_clear_request' not in st.session_state:
+				st.session_state[ 'who_clear_request' ] = False
+			
+			if st.session_state.get( 'who_mode', 'indicator_registry' ) not in WHO_MODES:
+				st.session_state[ 'who_mode' ] = 'indicator_registry'
+			
+			if 'who_query_path' not in st.session_state:
+				st.session_state[ 'who_query_path' ] = ''
+			
+			if st.session_state.get( 'who_query_path', '' ) in WHO_QUERY_PRESETS:
+				default_who_query_choice = st.session_state.get( 'who_query_path', 'Indicator' )
+			elif str( st.session_state.get( 'who_query_path', '' ) ).strip( ):
+				default_who_query_choice = 'Custom...'
+			else:
+				default_who_query_choice = 'Indicator'
+			
+			if 'who_query_choice' not in st.session_state:
+				st.session_state[ 'who_query_choice' ] = default_who_query_choice
+			
+			if st.session_state.get( 'who_query_choice', 'Indicator' ) not in WHO_QUERY_PRESETS:
+				st.session_state[ 'who_query_choice' ] = default_who_query_choice
+			
+			if 'who_custom_query_path' not in st.session_state:
+				st.session_state[ 'who_custom_query_path' ] = (
+						''
+						if default_who_query_choice != 'Custom...'
+						else st.session_state.get( 'who_query_path', '' )
+				)
+			
+			if st.session_state.get( 'who_format', 'json' ) not in WHO_FORMATS:
+				st.session_state[ 'who_format' ] = 'json'
+			
+			if 'who_timeout' not in st.session_state:
+				st.session_state[ 'who_timeout' ] = 20
+			
+			if st.session_state.get( 'who_clear_request', False ):
+				st.session_state[ 'who_mode' ] = 'indicator_registry'
+				st.session_state[ 'who_query_path' ] = ''
+				st.session_state[ 'who_query_choice' ] = 'Indicator'
+				st.session_state[ 'who_custom_query_path' ] = ''
+				st.session_state[ 'who_format' ] = 'json'
+				st.session_state[ 'who_timeout' ] = 20
+				st.session_state[ 'who_results' ] = { }
+				st.session_state[ 'who_clear_request' ] = False
+			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				who_mode = st.selectbox(
 					'Mode',
-					options=[ 'indicator_registry', 'athena' ],
-					index=[ 'indicator_registry', 'athena' ].index(
+					options=WHO_MODES,
+					index=WHO_MODES.index(
 						st.session_state.get( 'who_mode', 'indicator_registry' )
 					),
 					key='who_mode',
@@ -17937,20 +18030,31 @@ elif mode == 'Population':
 					)
 				)
 				
-				who_query_path = st.text_area(
-					'Query Path',
-					value=st.session_state.get( 'who_query_path', '' ),
-					height=100,
-					key='who_query_path',
-					placeholder='Indicator',
+				who_query_choice = st.selectbox(
+					'Query Path Preset',
+					options=WHO_QUERY_PRESETS,
+					index=WHO_QUERY_PRESETS.index(
+						st.session_state.get( 'who_query_choice', 'Indicator' )
+					),
+					key='who_query_choice',
 					disabled=(who_mode != 'athena'),
+					help='Common WHO GHO OData query paths.'
+				)
+				
+				who_custom_query_path = st.text_area(
+					'Custom Query Path',
+					value=st.session_state.get( 'who_custom_query_path', '' ),
+					height=100,
+					key='who_custom_query_path',
+					placeholder="WHOSIS_000001?$filter=Dim1 eq 'MLE'",
+					disabled=(who_mode != 'athena' or who_query_choice != 'Custom...'),
 					help='Path appended after the WHO GHO API base endpoint.'
 				)
 				
 				who_format = st.selectbox(
 					'Format',
-					options=[ 'json', 'xml' ],
-					index=[ 'json', 'xml' ].index(
+					options=WHO_FORMATS,
+					index=WHO_FORMATS.index(
 						st.session_state.get( 'who_format', 'json' )
 					),
 					key='who_format',
@@ -17967,11 +18071,12 @@ elif mode == 'Population':
 				)
 				
 				st.caption(
-					'WHO documents both GHO OData API and Athena API endpoints. '
-					'Use athena mode for direct query-path requests.'
+					'WHO supports GHO OData paths such as Indicator, Dimension, '
+					'DIMENSION/COUNTRY/DimensionValues, and direct indicator-code queries.'
 				)
 				
 				b1, b2 = st.columns( 2 )
+				
 				with b1:
 					who_submit = st.button(
 						'Submit',
@@ -17992,14 +18097,27 @@ elif mode == 'Population':
 				
 				if who_submit:
 					try:
+						if who_mode == 'athena':
+							selected_query_path = (
+									who_custom_query_path
+									if who_query_choice == 'Custom...'
+									else who_query_choice
+							)
+							clean_query_path = _validate_who_query_path(
+								selected_query_path
+							)
+						else:
+							clean_query_path = ''
+						
 						f = GlobalHealthData( )
 						result = f.fetch(
-							mode=who_mode,
-							query_path=str( who_query_path ),
+							mode=str( who_mode ),
+							query_path=clean_query_path,
 							fmt=str( who_format ),
 							time=int( who_timeout )
 						)
 						
+						st.session_state[ 'who_query_path' ] = clean_query_path
 						st.session_state[ 'who_results' ] = result or { }
 						st.rerun( )
 					
@@ -18019,26 +18137,36 @@ elif mode == 'Population':
 							'#### Summary',
 							{
 									'Mode': result.get( 'mode', '' ),
-									'HasHtml': isinstance( payload, dict ) and bool( payload.get( 'html', '' ) ),
+									'HasHtml': (
+											isinstance( payload, dict )
+											and bool( payload.get( 'html', '' ) )
+									),
 							}
 						)
 						
 						if isinstance( payload, dict ) and payload.get( 'html', '' ):
 							_render_html_preview(
 								'#### Indicator Registry Preview',
-								str( payload.get( 'html', '' ) ) )
+								str( payload.get( 'html', '' ) )
+							)
 						else:
 							st.json( payload )
 					
 					elif result.get( 'mode', '' ) == 'athena':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						if isinstance( payload, dict ) and isinstance( payload.get( 'value', [ ] ), list ):
+						if isinstance( payload, dict ) and isinstance(
+								payload.get( 'value', [ ] ),
+								list
+						):
 							rows = payload.get( 'value', [ ] )
 							_render_summary_kv(
 								'#### Summary',
 								{
-										'QueryPath': who_query_path,
+										'QueryPath': st.session_state.get(
+											'who_query_path',
+											''
+										),
 										'Format': who_format,
 										'ResultCount': len( rows ),
 								}
@@ -18048,7 +18176,10 @@ elif mode == 'Population':
 							_render_summary_kv(
 								'#### Summary',
 								{
-										'QueryPath': who_query_path,
+										'QueryPath': st.session_state.get(
+											'who_query_path',
+											''
+										),
 										'Format': who_format,
 										'HasText': True,
 								}
@@ -18062,42 +18193,127 @@ elif mode == 'Population':
 		
 		# -------- United Nations Data
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
-			if 'un_results' not in st.session_state:
-				st.session_state[ 'un_results' ] = { }
+			UN_MODES = [
+					'datasets',
+					'sdmx_query'
+			]
 			
-			if 'un_clear_request' not in st.session_state:
-				st.session_state[ 'un_clear_request' ] = False
-			
-			if st.session_state.get( 'un_clear_request', False ):
-				st.session_state[ 'un_mode' ] = 'datasets'
-				st.session_state[ 'un_query_path' ] = ''
-				st.session_state[ 'un_timeout' ] = 20
-				st.session_state[ 'un_results' ] = { }
-				st.session_state[ 'un_clear_request' ] = False
+			UN_QUERY_PRESETS = [
+					'dataflow',
+					'datastructure',
+					'codelist',
+					'conceptscheme',
+					'dataflow/all/all/latest',
+					'datastructure/all/all/latest',
+					'codelist/all/all/latest',
+					'conceptscheme/all/all/latest',
+					'Custom...'
+			]
 			
 			def _clear_un_state( ) -> None:
 				'''
 					Purpose:
 					--------
 					Flag the United Nations expander state for reset on the next rerun.
-	
+
 					Parameters:
 					-----------
 					None
-	
+
 					Returns:
 					--------
 					None
 				'''
 				st.session_state[ 'un_clear_request' ] = True
 			
+			def _validate_un_query_path( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a UNdata SDMX REST query path before calling the United Nations
+					wrapper.
+
+					Parameters:
+					-----------
+					value (object):
+						Query path supplied by the user or selected from presets.
+
+					Returns:
+					--------
+					str:
+						Clean query path without leading slash.
+				'''
+				text = str( value or '' ).strip( ).lstrip( '/' )
+				
+				if not text:
+					raise ValueError( 'Query Path is required for sdmx_query mode.' )
+				
+				if text.startswith( 'http://' ) or text.startswith( 'https://' ):
+					raise ValueError(
+						'Query Path must be a path segment only, not a full URL.'
+					)
+				
+				if '..' in text:
+					raise ValueError( 'Query Path cannot contain parent-directory markers.' )
+				
+				if not re.fullmatch( r'[A-Za-z0-9_\-./(),:*?=&%]+', text ):
+					raise ValueError(
+						'Query Path contains unsupported characters for a UNdata REST request.'
+					)
+				
+				return text
+			
+			if 'un_results' not in st.session_state:
+				st.session_state[ 'un_results' ] = { }
+			
+			if 'un_clear_request' not in st.session_state:
+				st.session_state[ 'un_clear_request' ] = False
+			
+			if st.session_state.get( 'un_mode', 'datasets' ) not in UN_MODES:
+				st.session_state[ 'un_mode' ] = 'datasets'
+			
+			if 'un_query_path' not in st.session_state:
+				st.session_state[ 'un_query_path' ] = ''
+			
+			if st.session_state.get( 'un_query_path', '' ) in UN_QUERY_PRESETS:
+				default_un_query_choice = st.session_state.get( 'un_query_path', 'dataflow' )
+			elif str( st.session_state.get( 'un_query_path', '' ) ).strip( ):
+				default_un_query_choice = 'Custom...'
+			else:
+				default_un_query_choice = 'dataflow'
+			
+			if 'un_query_choice' not in st.session_state:
+				st.session_state[ 'un_query_choice' ] = default_un_query_choice
+			
+			if st.session_state.get( 'un_query_choice', 'dataflow' ) not in UN_QUERY_PRESETS:
+				st.session_state[ 'un_query_choice' ] = default_un_query_choice
+			
+			if 'un_custom_query_path' not in st.session_state:
+				st.session_state[ 'un_custom_query_path' ] = (
+						''
+						if default_un_query_choice != 'Custom...'
+						else st.session_state.get( 'un_query_path', '' )
+				)
+			
+			if 'un_timeout' not in st.session_state:
+				st.session_state[ 'un_timeout' ] = 20
+			
+			if st.session_state.get( 'un_clear_request', False ):
+				st.session_state[ 'un_mode' ] = 'datasets'
+				st.session_state[ 'un_query_path' ] = ''
+				st.session_state[ 'un_query_choice' ] = 'dataflow'
+				st.session_state[ 'un_custom_query_path' ] = ''
+				st.session_state[ 'un_timeout' ] = 20
+				st.session_state[ 'un_results' ] = { }
+				st.session_state[ 'un_clear_request' ] = False
+			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				un_mode = st.selectbox(
 					'Mode',
-					options=[ 'datasets', 'sdmx_query' ],
-					index=[ 'datasets', 'sdmx_query' ].index(
+					options=UN_MODES,
+					index=UN_MODES.index(
 						st.session_state.get( 'un_mode', 'datasets' )
 					),
 					key='un_mode',
@@ -18107,13 +18323,24 @@ elif mode == 'Population':
 					)
 				)
 				
-				un_query_path = st.text_area(
-					'Query Path',
-					value=st.session_state.get( 'un_query_path', '' ),
-					height=120,
-					key='un_query_path',
-					placeholder='data/DF_SDG_GLH/..SI_POV_DAY1...........?',
+				un_query_choice = st.selectbox(
+					'Query Path Preset',
+					options=UN_QUERY_PRESETS,
+					index=UN_QUERY_PRESETS.index(
+						st.session_state.get( 'un_query_choice', 'dataflow' )
+					),
+					key='un_query_choice',
 					disabled=(un_mode != 'sdmx_query'),
+					help='Common UNdata SDMX REST artifact paths.'
+				)
+				
+				un_custom_query_path = st.text_area(
+					'Custom Query Path',
+					value=st.session_state.get( 'un_custom_query_path', '' ),
+					height=120,
+					key='un_custom_query_path',
+					placeholder='data/DF_SDG_GLH/..SI_POV_DAY1...........?',
+					disabled=(un_mode != 'sdmx_query' or un_query_choice != 'Custom...'),
 					help='Path appended after https://data.un.org/WS/rest/'
 				)
 				
@@ -18127,11 +18354,12 @@ elif mode == 'Population':
 				)
 				
 				st.caption(
-					'UNdata documents SDMX REST access and a public dataset catalog. '
-					'Use sdmx_query mode for direct REST query paths.'
+					'UNdata exposes SDMX REST artifacts such as dataflow, datastructure, '
+					'codelist, and conceptscheme. Use Custom for dataset-specific paths.'
 				)
 				
 				b1, b2 = st.columns( 2 )
+				
 				with b1:
 					un_submit = st.button(
 						'Submit',
@@ -18152,13 +18380,26 @@ elif mode == 'Population':
 				
 				if un_submit:
 					try:
+						if un_mode == 'sdmx_query':
+							selected_query_path = (
+									un_custom_query_path
+									if un_query_choice == 'Custom...'
+									else un_query_choice
+							)
+							clean_query_path = _validate_un_query_path(
+								selected_query_path
+							)
+						else:
+							clean_query_path = ''
+						
 						f = UnitedNations( )
 						result = f.fetch(
-							mode=un_mode,
-							query_path=str( un_query_path ),
+							mode=str( un_mode ),
+							query_path=clean_query_path,
 							time=int( un_timeout )
 						)
 						
+						st.session_state[ 'un_query_path' ] = clean_query_path
 						st.session_state[ 'un_results' ] = result or { }
 						st.rerun( )
 					
@@ -18178,14 +18419,18 @@ elif mode == 'Population':
 							'#### Summary',
 							{
 									'Mode': result.get( 'mode', '' ),
-									'HasHtml': isinstance( payload, dict ) and bool( payload.get( 'html', '' ) ),
+									'HasHtml': (
+											isinstance( payload, dict )
+											and bool( payload.get( 'html', '' ) )
+									),
 							}
 						)
 						
 						if isinstance( payload, dict ) and payload.get( 'html', '' ):
 							_render_html_preview(
 								'#### Dataset Catalog Preview',
-								str( payload.get( 'html', '' ) ) )
+								str( payload.get( 'html', '' ) )
+							)
 						else:
 							st.json( payload )
 					
@@ -18196,14 +18441,26 @@ elif mode == 'Population':
 							'#### Summary',
 							{
 									'Mode': result.get( 'mode', '' ),
-									'QueryPath': un_query_path,
-									'TextPayload': isinstance( payload, dict ) and bool( payload.get( 'text', '' ) ),
+									'QueryPath': st.session_state.get(
+										'un_query_path',
+										''
+									),
+									'TextPayload': (
+											isinstance( payload, dict )
+											and bool( payload.get( 'text', '' ) )
+									),
+									'JsonPayload': isinstance( payload, (dict, list) ),
 							}
 						)
 						
 						if isinstance( payload, dict ) and payload.get( 'text', '' ):
 							st.markdown( '#### Query Response' )
 							st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+						elif isinstance( payload, dict ) and payload.get( 'html', '' ):
+							_render_html_preview(
+								'#### Query Response',
+								str( payload.get( 'html', '' ) )
+							)
 						else:
 							st.json( payload )
 					
