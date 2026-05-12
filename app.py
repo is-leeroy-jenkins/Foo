@@ -18468,45 +18468,173 @@ elif mode == 'Population':
 		
 		# -------- World Population
 		with st.expander( label='World Population', icon='👥', expanded=False ):
-			if 'worldpop_results' not in st.session_state:
-				st.session_state[ 'worldpop_results' ] = { }
+			WORLDPOP_MODES = [
+					'catalog',
+					'search',
+					'raster_metadata'
+			]
 			
-			if 'worldpop_clear_request' not in st.session_state:
-				st.session_state[ 'worldpop_clear_request' ] = False
-			
-			if st.session_state.get( 'worldpop_clear_request', False ):
-				st.session_state[ 'worldpop_mode' ] = 'catalog'
-				st.session_state[ 'worldpop_query' ] = ''
-				st.session_state[ 'worldpop_asset_path' ] = ''
-				st.session_state[ 'worldpop_page' ] = 1
-				st.session_state[ 'worldpop_page_size' ] = 25
-				st.session_state[ 'worldpop_timeout' ] = 20
-				st.session_state[ 'worldpop_results' ] = { }
-				st.session_state[ 'worldpop_clear_request' ] = False
+			WORLDPOP_ASSET_PRESETS = [
+					'data/pop',
+					'data/pop/wpgp',
+					'data/pop/wpgp?iso3=GHA',
+					'data/pop/wpgp?iso3=AUS',
+					'data/pop/wpgp?iso3=USA',
+					'data/pop/wpgp?iso3=GBR',
+					'data/pop/wpgp?iso3=NGA',
+					'data/pop/wpgp?iso3=KEN',
+					'data/pop/wpgp?iso3=IND',
+					'data/pop/wpgp?iso3=BRA',
+					'Custom...'
+			]
 			
 			def _clear_worldpop_state( ) -> None:
 				'''
 					Purpose:
 					--------
 					Flag the World Population expander state for reset on the next rerun.
-	
+
 					Parameters:
 					-----------
 					None
-	
+
 					Returns:
 					--------
 					None
 				'''
 				st.session_state[ 'worldpop_clear_request' ] = True
 			
+			def _validate_worldpop_query( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a free-text WorldPop catalog/STAC search query.
+
+					Parameters:
+					-----------
+					value (object):
+						Query supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Cleaned query text.
+				'''
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					raise ValueError( 'Query is required for World Population search mode.' )
+				
+				return text
+			
+			def _validate_worldpop_asset_path( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a WorldPop metadata or asset path before passing it to the
+					WorldPopulation wrapper.
+
+					Parameters:
+					-----------
+					value (object):
+						Asset path supplied by the user or selected from presets.
+
+					Returns:
+					--------
+					str:
+						Clean path without a leading slash.
+				'''
+				text = str( value or '' ).strip( ).lstrip( '/' )
+				
+				if not text:
+					raise ValueError(
+						'Asset Path is required for raster_metadata mode.'
+					)
+				
+				if text.startswith( 'http://' ) or text.startswith( 'https://' ):
+					raise ValueError(
+						'Asset Path must be a path segment only, not a full URL.'
+					)
+				
+				if '..' in text:
+					raise ValueError( 'Asset Path cannot contain parent-directory markers.' )
+				
+				if not re.fullmatch( r'[A-Za-z0-9_\-./?=&%]+', text ):
+					raise ValueError(
+						'Asset Path contains unsupported characters for a WorldPop request.'
+					)
+				
+				return text
+			
+			if 'worldpop_results' not in st.session_state:
+				st.session_state[ 'worldpop_results' ] = { }
+			
+			if 'worldpop_clear_request' not in st.session_state:
+				st.session_state[ 'worldpop_clear_request' ] = False
+			
+			if st.session_state.get( 'worldpop_mode', 'catalog' ) not in WORLDPOP_MODES:
+				st.session_state[ 'worldpop_mode' ] = 'catalog'
+			
+			if 'worldpop_query' not in st.session_state:
+				st.session_state[ 'worldpop_query' ] = ''
+			
+			if 'worldpop_asset_path' not in st.session_state:
+				st.session_state[ 'worldpop_asset_path' ] = ''
+			
+			if st.session_state.get( 'worldpop_asset_path', '' ) in WORLDPOP_ASSET_PRESETS:
+				default_asset_choice = st.session_state.get(
+					'worldpop_asset_path',
+					'data/pop/wpgp?iso3=GHA'
+				)
+			elif str( st.session_state.get( 'worldpop_asset_path', '' ) ).strip( ):
+				default_asset_choice = 'Custom...'
+			else:
+				default_asset_choice = 'data/pop/wpgp?iso3=GHA'
+			
+			if 'worldpop_asset_choice' not in st.session_state:
+				st.session_state[ 'worldpop_asset_choice' ] = default_asset_choice
+			
+			if st.session_state.get(
+					'worldpop_asset_choice',
+					'data/pop/wpgp?iso3=GHA'
+			) not in WORLDPOP_ASSET_PRESETS:
+				st.session_state[ 'worldpop_asset_choice' ] = default_asset_choice
+			
+			if 'worldpop_custom_asset_path' not in st.session_state:
+				st.session_state[ 'worldpop_custom_asset_path' ] = (
+						''
+						if default_asset_choice != 'Custom...'
+						else st.session_state.get( 'worldpop_asset_path', '' )
+				)
+			
+			if 'worldpop_page' not in st.session_state:
+				st.session_state[ 'worldpop_page' ] = 1
+			
+			if 'worldpop_page_size' not in st.session_state:
+				st.session_state[ 'worldpop_page_size' ] = 25
+			
+			if 'worldpop_timeout' not in st.session_state:
+				st.session_state[ 'worldpop_timeout' ] = 20
+			
+			if st.session_state.get( 'worldpop_clear_request', False ):
+				st.session_state[ 'worldpop_mode' ] = 'catalog'
+				st.session_state[ 'worldpop_query' ] = ''
+				st.session_state[ 'worldpop_asset_path' ] = ''
+				st.session_state[ 'worldpop_asset_choice' ] = 'data/pop/wpgp?iso3=GHA'
+				st.session_state[ 'worldpop_custom_asset_path' ] = ''
+				st.session_state[ 'worldpop_page' ] = 1
+				st.session_state[ 'worldpop_page_size' ] = 25
+				st.session_state[ 'worldpop_timeout' ] = 20
+				st.session_state[ 'worldpop_results' ] = { }
+				st.session_state[ 'worldpop_clear_request' ] = False
+			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
 				worldpop_mode = st.selectbox(
 					'Mode',
-					options=[ 'catalog', 'search', 'raster_metadata' ],
-					index=[ 'catalog', 'search', 'raster_metadata' ].index(
+					options=WORLDPOP_MODES,
+					index=WORLDPOP_MODES.index(
 						st.session_state.get( 'worldpop_mode', 'catalog' )
 					),
 					key='worldpop_mode',
@@ -18526,13 +18654,30 @@ elif mode == 'Population':
 					disabled=(worldpop_mode != 'search')
 				)
 				
-				worldpop_asset_path = st.text_area(
-					'Asset Path',
-					value=st.session_state.get( 'worldpop_asset_path', '' ),
+				worldpop_asset_choice = st.selectbox(
+					'Asset Path Preset',
+					options=WORLDPOP_ASSET_PRESETS,
+					index=WORLDPOP_ASSET_PRESETS.index(
+						st.session_state.get(
+							'worldpop_asset_choice',
+							'data/pop/wpgp?iso3=GHA'
+						)
+					),
+					key='worldpop_asset_choice',
+					disabled=(worldpop_mode != 'raster_metadata'),
+					help='Common WorldPop API metadata paths. Use Custom for another path.'
+				)
+				
+				worldpop_custom_asset_path = st.text_area(
+					'Custom Asset Path',
+					value=st.session_state.get( 'worldpop_custom_asset_path', '' ),
 					height=100,
-					key='worldpop_asset_path',
+					key='worldpop_custom_asset_path',
 					placeholder='data/pop/wpgp?iso3=GHA',
-					disabled=(worldpop_mode != 'raster_metadata')
+					disabled=(
+							worldpop_mode != 'raster_metadata'
+							or worldpop_asset_choice != 'Custom...'
+					)
 				)
 				
 				c1, c2, c3 = st.columns( 3 )
@@ -18570,11 +18715,13 @@ elif mode == 'Population':
 					)
 				
 				st.caption(
-					'WorldPop publishes API-based access and STAC-oriented discovery. '
-					'Use raster_metadata mode for direct API paths.'
+					'WorldPop exposes API access to population and demographic datasets. '
+					'Raster metadata mode appends a selected path to the current wrapper '
+					'base URL.'
 				)
 				
 				b1, b2 = st.columns( 2 )
+				
 				with b1:
 					worldpop_submit = st.button(
 						'Submit',
@@ -18595,16 +18742,35 @@ elif mode == 'Population':
 				
 				if worldpop_submit:
 					try:
+						if worldpop_mode == 'search':
+							clean_query = _validate_worldpop_query( worldpop_query )
+							clean_asset_path = ''
+						elif worldpop_mode == 'raster_metadata':
+							selected_asset_path = (
+									worldpop_custom_asset_path
+									if worldpop_asset_choice == 'Custom...'
+									else worldpop_asset_choice
+							)
+							clean_asset_path = _validate_worldpop_asset_path(
+								selected_asset_path
+							)
+							clean_query = ''
+						else:
+							clean_query = ''
+							clean_asset_path = ''
+						
 						f = WorldPopulation( )
 						result = f.fetch(
-							mode=worldpop_mode,
-							query=str( worldpop_query ),
-							asset_path=str( worldpop_asset_path ),
+							mode=str( worldpop_mode ),
+							query=clean_query,
+							asset_path=clean_asset_path,
 							page=int( worldpop_page ),
 							page_size=int( worldpop_page_size ),
 							time=int( worldpop_timeout )
 						)
 						
+						st.session_state[ 'worldpop_query' ] = clean_query
+						st.session_state[ 'worldpop_asset_path' ] = clean_asset_path
 						st.session_state[ 'worldpop_results' ] = result or { }
 						st.rerun( )
 					
@@ -18624,26 +18790,36 @@ elif mode == 'Population':
 							'#### Summary',
 							{
 									'Mode': result.get( 'mode', '' ),
-									'HasHtml': isinstance( payload, dict ) and bool( payload.get( 'html', '' ) ),
+									'HasHtml': (
+											isinstance( payload, dict )
+											and bool( payload.get( 'html', '' ) )
+									),
 							}
 						)
 						
 						if isinstance( payload, dict ) and payload.get( 'html', '' ):
 							_render_html_preview(
 								'#### Catalog Preview',
-								str( payload.get( 'html', '' ) ) )
+								str( payload.get( 'html', '' ) )
+							)
 						else:
 							st.json( payload )
 					
 					elif result.get( 'mode', '' ) == 'search':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						if isinstance( payload, dict ) and isinstance( payload.get( 'results', [ ] ), list ):
+						if isinstance( payload, dict ) and isinstance(
+								payload.get( 'results', [ ] ),
+								list
+						):
 							rows = payload.get( 'results', [ ] )
 							_render_summary_kv(
 								'#### Summary',
 								{
-										'Query': worldpop_query,
+										'Query': st.session_state.get(
+											'worldpop_query',
+											''
+										),
 										'Page': worldpop_page,
 										'PageSize': worldpop_page_size,
 										'ResultCount': len( rows ),
@@ -18659,8 +18835,14 @@ elif mode == 'Population':
 						_render_summary_kv(
 							'#### Summary',
 							{
-									'AssetPath': worldpop_asset_path,
-									'HasText': isinstance( payload, dict ) and bool( payload.get( 'text', '' ) ),
+									'AssetPath': st.session_state.get(
+										'worldpop_asset_path',
+										''
+									),
+									'HasText': (
+											isinstance( payload, dict )
+											and bool( payload.get( 'text', '' ) )
+									),
 							}
 						)
 						
