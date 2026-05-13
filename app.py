@@ -19426,33 +19426,187 @@ elif mode == 'Demographic':
 						st.info( 'No PubMed records returned.' )
 					
 					_render_fallback_raw( result )
-					
+		
 		# -------- Open City
 		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
+			OPEN_CITY_DOMAINS = [
+					'data.sfgov.org',
+					'data.cityofnewyork.us',
+					'data.cityofchicago.org',
+					'data.lacity.org',
+					'data.seattle.gov',
+					'data.austintexas.gov',
+					'data.cincinnati-oh.gov',
+					'data.baltimorecity.gov',
+					'data.cityofboston.gov',
+					'data.nashville.gov',
+					'Other'
+			]
+			
+			def _clear_open_city_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Flag the Open City Data loader state for reset on the next rerun.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+				'''
+				st.session_state[ 'open_city_clear_request' ] = True
+			
+			def _validate_open_city_domain( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a Socrata city data portal domain.
+
+					Parameters:
+					-----------
+					value (object):
+						City portal domain supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Validated domain without protocol or path.
+				'''
+				text = str( value or '' ).strip( ).lower( )
+				text = text.replace( 'https://', '' ).replace( 'http://', '' )
+				text = text.strip( '/' )
+				
+				if not text:
+					raise ValueError( 'City ID is required.' )
+				
+				if '/' in text:
+					raise ValueError( 'City ID must be a domain only, not a URL path.' )
+				
+				if not re.fullmatch( r'[a-z0-9][a-z0-9.-]+\.[a-z]{2,}', text ):
+					raise ValueError(
+						'City ID must be a valid Socrata portal domain, such as '
+						'data.sfgov.org.'
+					)
+				
+				return text
+			
+			def _validate_open_city_dataset_id( value: object ) -> str:
+				'''
+					Purpose:
+					--------
+					Validate a Socrata dataset identifier.
+
+					Parameters:
+					-----------
+					value (object):
+						Dataset identifier supplied by the user.
+
+					Returns:
+					--------
+					str:
+						Validated dataset identifier without a trailing .json suffix.
+				'''
+				text = str( value or '' ).strip( ).replace( '.json', '' ).strip( '/' )
+				
+				if not text:
+					raise ValueError( 'Dataset ID is required.' )
+				
+				if not re.fullmatch( r'[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}', text ):
+					raise ValueError(
+						'Dataset ID must use the Socrata four-by-four format, '
+						'such as vw6y-z8j6.'
+					)
+				
+				return text.lower( )
+			
 			if 'open_city_results' not in st.session_state:
 				st.session_state[ 'open_city_results' ] = { }
+			
+			if 'open_city_clear_request' not in st.session_state:
+				st.session_state[ 'open_city_clear_request' ] = False
+			
+			if 'open_city_id' not in st.session_state:
+				st.session_state[ 'open_city_id' ] = 'data.sfgov.org'
+			
+			if st.session_state.get( 'open_city_id', 'data.sfgov.org' ) in OPEN_CITY_DOMAINS:
+				default_open_city_choice = st.session_state.get(
+					'open_city_id',
+					'data.sfgov.org'
+				)
+			else:
+				default_open_city_choice = 'Other'
+			
+			if 'open_city_choice' not in st.session_state:
+				st.session_state[ 'open_city_choice' ] = default_open_city_choice
+			
+			if st.session_state.get( 'open_city_choice', 'data.sfgov.org' ) not in OPEN_CITY_DOMAINS:
+				st.session_state[ 'open_city_choice' ] = default_open_city_choice
+			
+			if 'open_city_custom_id' not in st.session_state:
+				st.session_state[ 'open_city_custom_id' ] = (
+						''
+						if default_open_city_choice != 'Other'
+						else st.session_state.get( 'open_city_id', '' )
+				)
+			
+			if 'open_city_dataset_id' not in st.session_state:
+				st.session_state[ 'open_city_dataset_id' ] = ''
+			
+			if 'open_city_limit' not in st.session_state:
+				st.session_state[ 'open_city_limit' ] = 100
+			
+			if st.session_state.get( 'open_city_clear_request', False ):
+				st.session_state[ 'open_city_results' ] = { }
+				st.session_state[ 'open_city_id' ] = 'data.sfgov.org'
+				st.session_state[ 'open_city_choice' ] = 'data.sfgov.org'
+				st.session_state[ 'open_city_custom_id' ] = ''
+				st.session_state[ 'open_city_dataset_id' ] = ''
+				st.session_state[ 'open_city_limit' ] = 100
+				st.session_state[ 'open_city_clear_request' ] = False
 			
 			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
 			
 			with col_left:
-				city_id = st.text_input(
+				open_city_choice = st.selectbox(
 					'City ID',
-					value='data.sfgov.org',
-					key='open_city_id'
+					options=OPEN_CITY_DOMAINS,
+					index=OPEN_CITY_DOMAINS.index(
+						st.session_state.get( 'open_city_choice', 'data.sfgov.org' )
+					),
+					key='open_city_choice',
+					help='Common Socrata open-data city domains. Use Other for a custom portal.'
+				)
+				
+				open_city_custom_id = st.text_input(
+					'Custom City ID',
+					value=st.session_state.get( 'open_city_custom_id', '' ),
+					key='open_city_custom_id',
+					disabled=(open_city_choice != 'Other'),
+					placeholder='data.example.gov'
 				)
 				
 				dataset_id = st.text_input(
 					'Dataset ID',
-					key='open_city_dataset_id'
+					value=st.session_state.get( 'open_city_dataset_id', '' ),
+					key='open_city_dataset_id',
+					placeholder='vw6y-z8j6'
 				)
 				
 				limit = st.number_input(
 					'Limit',
 					min_value=1,
 					max_value=5000,
-					value=100,
+					value=int( st.session_state.get( 'open_city_limit', 100 ) ),
 					step=10,
 					key='open_city_limit'
+				)
+				
+				st.caption(
+					'Open City Data uses LangChain OpenCityDataLoader backed by Socrata. '
+					'Use the API tab on the city dataset page to find the dataset ID.'
 				)
 				
 				b1, b2, b3 = st.columns( 3 )
@@ -19468,6 +19622,7 @@ elif mode == 'Demographic':
 					open_city_clear = st.button(
 						'Clear',
 						key='open_city_clear',
+						on_click=_clear_open_city_state,
 						use_container_width=True
 					)
 				
@@ -19497,57 +19652,62 @@ elif mode == 'Demographic':
 			
 			with col_right:
 				if open_city_clear:
-					st.session_state[ 'open_city_results' ] = { }
 					remaining = _clear_loader_documents( 'OpenCityLoader' )
-					st.info( f'Open City Data Loader state cleared. Remaining documents: {remaining}.' )
+					st.info(
+						f'Open City Data Loader state cleared. Remaining documents: {remaining}.'
+					)
 				
 				if open_city_submit:
-					if not city_id or not city_id.strip( ):
-						st.info( 'Enter a City ID.' )
-					elif not dataset_id or not dataset_id.strip( ):
-						st.info( 'Enter a Dataset ID.' )
-					else:
-						try:
-							loader = OpenCityLoader( )
-							documents = loader.load(
-								city_id=city_id.strip( ),
-								dataset_id=dataset_id.strip( ),
-								limit=int( limit )
-							) or [ ]
-							
-							count = _promote_loader_documents( documents, 'OpenCityLoader' )
-							
-							items: list[ dict[ str, Any ] ] = [ ]
-							for i, doc in enumerate( documents, start=1 ):
-								metadata = (
-										doc.metadata
-										if isinstance( getattr( doc, 'metadata', { } ), dict )
-										else { }
-								)
-								content = str( getattr( doc, 'page_content', '' ) or '' )
-								items.append(
-									{
-											'Index': i,
-											'Source': metadata.get( 'source', '' ),
-											'Row': content,
-											'Metadata': metadata,
-									}
-								)
-							
-							st.session_state[ 'open_city_results' ] = {
-									'mode': 'open_city',
-									'city_id': city_id.strip( ),
-									'dataset_id': dataset_id.strip( ),
-									'limit': int( limit ),
-									'count': count,
-									'items': items,
-							}
-							
-							st.success( f'Loaded {count} Open City document(s).' )
+					try:
+						selected_city_id = (
+								open_city_custom_id
+								if open_city_choice == 'Other'
+								else open_city_choice
+						)
+						clean_city_id = _validate_open_city_domain( selected_city_id )
+						clean_dataset_id = _validate_open_city_dataset_id( dataset_id )
 						
-						except Exception as exc:
-							st.error( 'Open City request failed.' )
-							st.exception( exc )
+						loader = OpenCityLoader( )
+						documents = loader.load(
+							city_id=clean_city_id,
+							dataset_id=clean_dataset_id,
+							limit=int( limit )
+						) or [ ]
+						
+						count = _promote_loader_documents( documents, 'OpenCityLoader' )
+						
+						items: list[ dict[ str, Any ] ] = [ ]
+						for i, doc in enumerate( documents, start=1 ):
+							metadata = (
+									doc.metadata
+									if isinstance( getattr( doc, 'metadata', { } ), dict )
+									else { }
+							)
+							content = str( getattr( doc, 'page_content', '' ) or '' )
+							items.append(
+								{
+										'Index': i,
+										'Source': metadata.get( 'source', '' ),
+										'Row': content,
+										'Metadata': metadata,
+								}
+							)
+						
+						st.session_state[ 'open_city_id' ] = clean_city_id
+						st.session_state[ 'open_city_results' ] = {
+								'mode': 'open_city',
+								'city_id': clean_city_id,
+								'dataset_id': clean_dataset_id,
+								'limit': int( limit ),
+								'count': count,
+								'items': items,
+						}
+						
+						st.success( f'Loaded {count} Open City document(s).' )
+					
+					except Exception as exc:
+						st.error( 'Open City request failed.' )
+						st.exception( exc )
 				
 				result = st.session_state.get( 'open_city_results', { } )
 				
@@ -19577,12 +19737,35 @@ elif mode == 'Demographic':
 								for item in items
 						]
 						
+						df_open_city = pd.DataFrame( table_rows )
+						
 						st.markdown( '#### Results' )
-						st.dataframe( table_rows, use_container_width=True, hide_index=True )
+						st.dataframe(
+							df_open_city,
+							use_container_width=True,
+							hide_index=True
+						)
 						
 						first = items[ 0 ]
 						st.markdown( '#### First Row Preview' )
 						st.code( str( first.get( 'Row', '' ) )[ :8000 ] )
+						
+						with st.expander( 'Records', expanded=False ):
+							for item in items:
+								with st.expander(
+										f"Record {item.get( 'Index', '' )}",
+										expanded=False
+								):
+									st.markdown(
+										f"**Source:** {item.get( 'Source', '' )}"
+									)
+									st.markdown( '##### Row' )
+									st.code( str( item.get( 'Row', '' ) )[ :8000 ] )
+									
+									metadata = item.get( 'Metadata', { } )
+									if metadata:
+										with st.expander( 'Metadata', expanded=False ):
+											st.json( metadata )
 					else:
 						st.info( 'No city records returned.' )
 					

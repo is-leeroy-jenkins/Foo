@@ -49,6 +49,8 @@ from boogr import Error
 from core import Result
 import config as cfg
 from google import genai
+from google import genai
+from google.genai import types
 from openai import OpenAI
 from pathlib import Path
 from typing import Any, Dict, Optional, Pattern, List, Tuple
@@ -186,38 +188,82 @@ class Generator:
 
 class Grok( Generator ):
 	'''
-	
+
 		Purpose:
-		---------
-		Class providing xAI Grok text-generation and search functionality through
-		the OpenAI-compatible xAI Responses API.
-	
-		Attribues:
+		--------
+		Class providing xAI Grok text generation and web-search functionality through
+		the xAI Responses API.
+
+		Attributes:
 		-----------
-		client - Grok
-		model - str
-		response - Any
-		api_key - str
-		query - str
-		params - Dict[ str, Any ]
-		temperature - float
-		max_tokens - int
-		top_p - float
-		reasoning_effort - str | None
-		stream - bool
-		store - bool
-		messages - List[ Dict[ str, Any ] ]
-	
+		client (Xai):
+			Initialized xAI SDK client.
+
+		model (str):
+			Selected Grok model identifier.
+
+		response (Any):
+			Last xAI response object.
+
+		api_key (str):
+			xAI API key from configuration.
+
+		query (str | None):
+			Last user prompt.
+
+		params (Dict[str, Any] | None):
+			Last xAI request payload.
+
+		temperature (float):
+			Sampling temperature.
+
+		max_tokens (int):
+			Maximum output token count.
+
+		top_p (float):
+			Nucleus sampling value.
+
+		reasoning_effort (str | None):
+			Optional xAI reasoning-effort setting.
+
+		stream (bool):
+			Whether streaming is enabled.
+
+		store (bool):
+			Whether server-side response storage is enabled.
+
+		messages (List[Dict[str, Any]] | None):
+			Message-style compatibility field.
+
+		system_instructions (str | None):
+			Final instruction block used for the request.
+
+		web_search (bool):
+			Whether xAI web search is enabled.
+
+		search_domains (List[str]):
+			Optional allowed domains for xAI web search.
+
+		parallel_tool_calls (bool):
+			Whether parallel tool calls are enabled.
+
+		tool_choice (str):
+			Tool-choice behavior.
+
+		tools (List[Dict[str, Any]]):
+			xAI Responses API tool declarations.
+
 		Methods:
-		-----------
-		fetch( ) -> str
-		generate_text( ) -> str
-		search_web( ) -> str
-	
+		--------
+		fetch( self, query, ... ) -> str | None
+		generate_text( self, query, ... ) -> str | None
+		search_web( self, query, ... ) -> str | None
+
 	'''
+	
 	client: Optional[ Xai ]
 	model: Optional[ str ]
-	response: Optional[ Response ]
+	response: Optional[ Any ]
 	api_key: Optional[ str ]
 	query: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
@@ -239,15 +285,16 @@ class Grok( Generator ):
 		'''
 		
 			Purpose:
-			-----------
-			Initialize xAI Grok via the OpenAI-compatible Responses API.
-			
+			--------
+			Initialize the xAI Grok generator with defaults used by the Foo
+			application.
+
 			Parameters:
 			-----------
 			None
-			
+
 			Returns:
-			-----------
+			--------
 			None
 			
 		'''
@@ -264,74 +311,84 @@ class Grok( Generator ):
 		self.timeout = None
 		self.file_path = None
 		self.content = None
+		self.query = None
 		self.params = None
 		self.response = None
-		self.query = None
 		self.system_instructions = None
 		self.web_search = False
 		self.search_domains = [ ]
 		self.parallel_tool_calls = True
 		self.tool_choice = 'auto'
 		self.tools = [ ]
-		self.agents = cfg.AGENTS
-		
-		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ] = self.agents
+		self.store = True
+		self.stream = False
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
 		
 			Purpose:
-			-----------
-			Grok list of members.
-			
+			--------
+			Return a stable ordered member list for introspection.
+
 			Parameters:
 			-----------
 			None
-			
+
 			Returns:
-			-----------
-			list[str]: Ordered attribute/method names.
+			--------
+			List[str]:
+				Ordered attribute and method names.
 			
 		'''
-		return [ 'content',
-		         'url',
-		         'client',
-		         'timeout',
-		         'headers',
-		         'fetch',
-		         'file_path',
-		         'messages',
-		         'content',
-		         'temperature',
-		         'top_p',
-		         'reasoning_effort',
-		         'max_tokens',
-		         'api_key',
-		         'response',
-		         'params',
-		         'agents',
-		         'system_instructions',
-		         'web_search',
-		         'search_domains',
-		         'parallel_tool_calls',
-		         'tool_choice',
-		         'tools' ]
+		return [
+				'client',
+				'model',
+				'response',
+				'api_key',
+				'query',
+				'params',
+				'temperature',
+				'max_tokens',
+				'top_p',
+				'reasoning_effort',
+				'stream',
+				'store',
+				'messages',
+				'system_instructions',
+				'web_search',
+				'search_domains',
+				'parallel_tool_calls',
+				'tool_choice',
+				'tools',
+				'normalize_domains',
+				'supports_reasoning_effort',
+				'is_reasoning_model',
+				'build_instructions',
+				'build_tools',
+				'build_response_format',
+				'extract_output_text',
+				'fetch',
+				'generate_text',
+				'search_web'
+		]
 	
-	def _normalize_domains( self, domains: Any ) -> List[ str ]:
+	def normalize_domains( self, domains: Any ) -> List[ str ]:
 		'''
 		
 			Purpose:
-			-----------
-			Normalize domain input into a canonical, de-duplicated list.
-			
+			--------
+			Normalize user-supplied domain input into canonical, de-duplicated xAI
+			web-search domains.
+
 			Parameters:
 			-----------
-			domains (Any): String, list, tuple, set, or None.
-			
+			domains (Any):
+				String, list, tuple, set, scalar, or None containing domain values.
+
 			Returns:
-			-----------
-			List[str]
+			--------
+			List[str]:
+				Clean domain names without protocol, path, port, or leading www.
 			
 		'''
 		try:
@@ -339,173 +396,535 @@ class Grok( Generator ):
 				return [ ]
 			
 			if isinstance( domains, str ):
-				_parts = re.split( r'[\n,;]+', domains )
+				parts = re.split( r'[\n,;]+', domains )
 			elif isinstance( domains, (list, tuple, set) ):
-				_parts = [ str( x ) for x in domains if x is not None ]
+				parts = [ str( item ) for item in domains if item is not None ]
 			else:
-				_parts = [ str( domains ) ]
+				parts = [ str( domains ) ]
 			
-			_values = [ ]
-			for _entry in _parts:
-				_value = str( _entry ).strip( ).lower( )
-				if not _value:
+			values: List[ str ] = [ ]
+			
+			for entry in parts:
+				value = str( entry ).strip( ).lower( )
+				
+				if not value:
 					continue
 				
-				if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-					_value = f'https://{_value}'
+				value = re.sub( r'^https?://', '', value )
+				value = value.split( '/' )[ 0 ]
+				value = re.sub( r':\d+$', '', value )
+				value = value.lstrip( '.' )
 				
-				_parsed = urllib.parse.urlparse( _value )
-				_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-				_domain = re.sub( r':\d+$', '', _domain )
-				_domain = _domain.lstrip( '.' )
+				if value.startswith( 'www.' ):
+					value = value[ 4: ]
 				
-				if _domain.startswith( 'www.' ):
-					_domain = _domain[ 4: ]
+				if not re.fullmatch( r'[a-z0-9][a-z0-9.-]*\.[a-z]{2,}', value ):
+					raise ValueError( f'Invalid xAI web-search domain: {value}' )
 				
-				if _domain and _domain not in _values:
-					_values.append( _domain )
+				if value not in values:
+					values.append( value )
 			
-			return _values
+			if len( values ) > 5:
+				raise ValueError(
+					'xAI web-search allowed domains are limited to five domains.'
+				)
+			
+			return values
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Grok'
-			exception.method = '_normalize_domains( self, domains: Any ) -> List[ str ]'
+			exception.method = 'normalize_domains( self, domains: Any ) -> List[ str ]'
 			raise exception
 	
-	def _supports_reasoning_effort( self, model: str ) -> bool:
+	def supports_reasoning_effort( self, model: str ) -> bool:
 		'''
 		
 			Purpose:
-			-----------
-			Determine whether the selected xAI model accepts the reasoning_effort
-			parameter.
-			
+			--------
+			Determine whether the selected Grok model supports explicit
+			reasoning_effort.
+
 			Parameters:
 			-----------
-			model (str): Model name.
-			
+			model (str):
+				Grok model identifier.
+
 			Returns:
-			-----------
-			bool
+			--------
+			bool:
+				True when the model supports the reasoning_effort request field.
 			
 		'''
 		try:
 			throw_if( 'model', model )
-			_name = str( model ).strip( ).lower( )
-			return 'grok-3-mini' in _name
+			name = str( model ).strip( ).lower( )
+			return name == 'grok-4.3'
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Grok'
-			exception.method = '_supports_reasoning_effort( self, model: str ) -> bool'
+			exception.method = 'supports_reasoning_effort( self, model: str ) -> bool'
 			raise exception
 	
-	def _is_reasoning_model( self, model: str ) -> bool:
+	def supports_reasoning_object( self, model: str ) -> bool:
 		'''
 		
 			Purpose:
-			-----------
-			Identify models where reasoning is native or otherwise model-defined.
-			
+			--------
+			Determine whether the selected Grok model supports the Responses API
+			reasoning object.
+
 			Parameters:
 			-----------
-			model (str): Model name.
-			
+			model (str):
+				Grok model identifier.
+
 			Returns:
-			-----------
-			bool
+			--------
+			bool:
+				True when the model supports a reasoning object in the request.
 			
 		'''
 		try:
 			throw_if( 'model', model )
-			_name = str( model ).strip( ).lower( )
-			return 'grok-4' in _name or 'reasoning' in _name
+			name = str( model ).strip( ).lower( )
+			return name == 'grok-4.20-multi-agent'
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Grok'
-			exception.method = '_is_reasoning_model( self, model: str ) -> bool'
+			exception.method = 'supports_reasoning_object( self, model: str ) -> bool'
 			raise exception
 	
-	def _build_instructions( self, system: str | None = None, response_format: str | None = None ) -> str | None:
+	def is_reasoning_model( self, model: str ) -> bool:
 		'''
 		
 			Purpose:
+			--------
+			Identify models where reasoning is native, automatic, or explicitly
+			configurable.
+
+			Parameters:
 			-----------
+			model (str):
+				Grok model identifier.
+
+			Returns:
+			--------
+			bool:
+				True when the model is a reasoning model.
+			
+		'''
+		try:
+			throw_if( 'model', model )
+			name = str( model ).strip( ).lower( )
+			return (
+					'reasoning' in name
+					or name.startswith( 'grok-4' )
+					or name.startswith( 'grok-4.3' )
+					or name.startswith( 'grok-4.20' )
+			)
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Grok'
+			exception.method = 'is_reasoning_model( self, model: str ) -> bool'
+			raise exception
+	
+	def build_instructions( self, system: str=None,
+			response_format: str=None ) -> str | None:
+		'''
+		
+			Purpose:
+			--------
 			Build the final instruction block sent to xAI.
-			
+
 			Parameters:
 			-----------
-			system (str | None): Optional system instructions.
-			response_format (str | None): Optional output mode.
-			
+			system (str | None):
+				Optional system instructions.
+
+			response_format (str | None):
+				Optional output mode.
+
 			Returns:
-			-----------
-			str | None
+			--------
+			str | None:
+				Instruction block or None.
 			
 		'''
 		try:
-			_parts = [ ]
-			if system and str( system ).strip( ):
-				_parts.append( str( system ).strip( ) )
-			if response_format and str( response_format ).strip( ).lower( ) == 'json':
-				_parts.append( 'Return valid JSON only. Do not include markdown fences or commentary.' )
+			parts: List[ str ] = [ ]
 			
-			if _parts:
-				return '\n\n'.join( _parts )
+			if system and str( system ).strip( ):
+				parts.append( str( system ).strip( ) )
+			
+			if response_format and str( response_format ).strip( ).lower( ) == 'json':
+				parts.append(
+					'Return valid JSON only. Do not include markdown fences, prose, '
+					'or commentary outside the JSON value.'
+				)
+			
+			if parts:
+				return '\n\n'.join( parts )
 			
 			return None
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Grok'
-			exception.method = ('_build_instructions( self, system: str | None=None, '
-			                    'response_format: str | None=None ) -> str | None')
+			exception.method = (
+					'build_instructions( self, system: str | None=None, '
+					'response_format: str | None=None ) -> str | None'
+			)
 			raise exception
 	
-	def fetch( self, query: str, model: str='grok-4-fast-reasoning', temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, seed: int | None = None,
-			system: str | None = None, response_format: str | None = None,
-			reasoning_effort: str | None = None, web_search: bool = False,
-			search_domains: Any = None, stop: List[ str ] | None = None, stream: bool = False,
-			store: bool = True, parallel_tool_calls: bool = True,
-			tool_choice: str='auto' ) -> str | None:
+	def build_tools( self, web_search: bool = False, search_domains: Any = None ) -> List[
+		Dict[ str, Any ] ]:
 		'''
 		
 			Purpose:
-			-------
-			Send an xAI Responses API request for Grok text generation, optional
-			reasoning effort, and optional server-side web search with domain filtering.
-			
+			--------
+			Build the xAI Responses API hosted-tool list.
+
 			Parameters:
 			-----------
-			query (str): User prompt.
-			model (str): Grok model name.
-			temperature (float): Sampling temperature.
-			max_tokens (int): Max output tokens.
-			top_p (float): Top-p nucleus sampling parameter.
-			seed (int | None): Optional deterministic seed.
-			system (str | None): Optional system prompt.
-			response_format (str | None): Optional output mode.
-			reasoning_effort (str | None): Optional xAI reasoning effort.
-			web_search (bool): Enable xAI web search.
-			search_domains (Any): Optional domain filter input.
-			stop (List[str] | None): Optional stop sequences.
-			stream (bool): Stream response.
-			store (bool): Store response server-side.
-			parallel_tool_calls (bool): Allow server-side parallel tool calls.
-			tool_choice (str): Tool choice behavior.
-			
+			web_search (bool):
+				Whether to enable the xAI web-search tool.
+
+			search_domains (Any):
+				Optional allowed domains for xAI web search.
+
 			Returns:
-			---------
-			str | None
+			--------
+			List[Dict[str, Any]]:
+				xAI Responses API tool declarations.
+			
+		'''
+		try:
+			tools: List[ Dict[ str, Any ] ] = [ ]
+			
+			if not web_search:
+				return tools
+			
+			domains = self.normalize_domains( search_domains )
+			tool: Dict[ str, Any ] = { 'type': 'web_search' }
+			
+			if domains:
+				tool[ 'filters' ] = { 'allowed_domains': domains }
+			
+			tools.append( tool )
+			return tools
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Grok'
+			exception.method = (
+					'build_tools( self, web_search: bool=False, '
+					'search_domains: Any=None ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def build_response_format( self, response_format: str=None ) -> Dict[
+		                                                                         str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Build the xAI/OpenAI-compatible response_format payload.
+
+			Parameters:
+			-----------
+			response_format (str | None):
+				Response format selector, such as json.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				Response-format object or None.
+			
+		'''
+		try:
+			mode = str( response_format or '' ).strip( ).lower( )
+			
+			if not mode or mode == 'auto':
+				return None
+			
+			if mode in [ 'json', 'json_object' ]:
+				return { 'type': 'json_object' }
+			
+			if mode == 'text':
+				return { 'type': 'text' }
+			
+			return None
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Grok'
+			exception.method = (
+					'build_response_format( self, response_format: str | None=None ) '
+					'-> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def extract_output_text( self, response: Any ) -> str:
+		'''
+		
+			Purpose:
+			--------
+			Extract response text from xAI SDK Responses API results, OpenAI-compatible
+			response objects, dictionaries, or streams.
+
+			Parameters:
+			-----------
+			response (Any):
+				xAI response object, stream, dictionary, or scalar fallback.
+
+			Returns:
+			--------
+			str:
+				Best available output text.
+			
+		'''
+		try:
+			if response is None:
+				return ''
+			
+			if hasattr( response, 'output_text' ) and response.output_text:
+				return str( response.output_text )
+			
+			if hasattr( response, 'text' ) and response.text:
+				return str( response.text )
+			
+			if isinstance( response, dict ):
+				if response.get( 'output_text' ):
+					return str( response.get( 'output_text' ) )
+				
+				if response.get( 'text' ):
+					return str( response.get( 'text' ) )
+				
+				output = response.get( 'output', [ ] )
+				if isinstance( output, list ):
+					parts: List[ str ] = [ ]
+					
+					for item in output:
+						if not isinstance( item, dict ):
+							continue
+						
+						content = item.get( 'content', [ ] )
+						if isinstance( content, list ):
+							for block in content:
+								if isinstance( block, dict ) and block.get( 'text' ):
+									parts.append( str( block.get( 'text' ) ) )
+					
+					if parts:
+						return '\n'.join( parts ).strip( )
+			
+			if hasattr( response, '__iter__' ) and not isinstance( response, (str, bytes, dict) ):
+				parts: List[ str ] = [ ]
+				
+				for event in response:
+					event_type = getattr( event, 'type', '' )
+					
+					if event_type == 'response.output_text.delta':
+						delta = getattr( event, 'delta', '' )
+						if delta:
+							parts.append( str( delta ) )
+					
+					elif event_type == 'response.completed':
+						final_response = getattr( event, 'response', None )
+						if final_response is not None:
+							text = self.extract_output_text( final_response )
+							if text:
+								return text
+				
+				if parts:
+					return ''.join( parts )
+			
+			output = getattr( response, 'output', None )
+			if output:
+				parts: List[ str ] = [ ]
+				
+				for item in output:
+					content = getattr( item, 'content', None )
+					
+					if content:
+						for block in content:
+							text = getattr( block, 'text', None )
+							
+							if text:
+								parts.append( str( text ) )
+				
+				if parts:
+					return '\n'.join( parts ).strip( )
+			
+			return str( response )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Grok'
+			exception.method = 'extract_output_text( self, response: Any ) -> str'
+			raise exception
+	
+	def create_response( self, payload: Dict[ str, Any ] ) -> Any:
+		'''
+		
+			Purpose:
+			--------
+			Call the xAI Responses API using the available SDK surface.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any]):
+				Complete Responses API request payload.
+
+			Returns:
+			--------
+			Any:
+				xAI response object.
+			
+		'''
+		try:
+			throw_if( 'payload', payload )
+			
+			if hasattr( self.client, 'responses' ) and hasattr( self.client.responses, 'create' ):
+				return self.client.responses.create( **payload )
+			
+			if hasattr( self.client, 'chat' ) and hasattr( self.client.chat, 'create' ):
+				messages = payload.get( 'input', [ ] )
+				
+				if isinstance( messages, str ):
+					messages = [ { 'role': 'user', 'content': messages } ]
+				
+				chat_payload = {
+						'model': payload.get( 'model' ),
+						'messages': messages,
+						'stream': payload.get( 'stream', False )
+				}
+				
+				if payload.get( 'temperature' ) is not None:
+					chat_payload[ 'temperature' ] = payload.get( 'temperature' )
+				
+				if payload.get( 'top_p' ) is not None:
+					chat_payload[ 'top_p' ] = payload.get( 'top_p' )
+				
+				if payload.get( 'max_output_tokens' ) is not None:
+					chat_payload[ 'max_tokens' ] = payload.get( 'max_output_tokens' )
+				
+				if payload.get( 'tools' ):
+					chat_payload[ 'tools' ] = payload.get( 'tools' )
+				
+				if payload.get( 'tool_choice' ):
+					chat_payload[ 'tool_choice' ] = payload.get( 'tool_choice' )
+				
+				if payload.get( 'stop' ):
+					chat_payload[ 'stop' ] = payload.get( 'stop' )
+				
+				if payload.get( 'response_format' ):
+					chat_payload[ 'response_format' ] = payload.get( 'response_format' )
+				
+				if payload.get( 'reasoning_effort' ):
+					chat_payload[ 'reasoning_effort' ] = payload.get( 'reasoning_effort' )
+				
+				if payload.get( 'reasoning' ):
+					chat_payload[ 'reasoning' ] = payload.get( 'reasoning' )
+				
+				return self.client.chat.create( **chat_payload )
+			
+			raise RuntimeError( 'The xAI client does not expose responses.create or chat.create.' )
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Grok'
+			exception.method = 'create_response( self, payload: Dict[ str, Any ] ) -> Any'
+			raise exception
+	
+	def fetch( self, query: str, model: str = 'grok-4-fast-reasoning',
+			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
+			seed: int | None = None, system: str=None,
+			response_format: str=None, reasoning_effort: str=None,
+			web_search: bool = False, search_domains: Any = None,
+			stop: List[ str ]=None, stream: bool = False, store: bool = True,
+			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str | None:
+		'''
+		
+			Purpose:
+			--------
+			Send an xAI Responses API request for Grok text generation, optional JSON
+			mode, optional reasoning controls, optional web search, and optional stop
+			sequences.
+
+			Parameters:
+			-----------
+			query (str):
+				User prompt.
+
+			model (str):
+				Grok model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output-token count.
+
+			top_p (float):
+				Nucleus sampling value.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system instructions.
+
+			response_format (str | None):
+				Optional output format. Use json for JSON object mode.
+
+			reasoning_effort (str | None):
+				Optional reasoning effort, only sent to models that support it.
+
+			web_search (bool):
+				Whether to enable xAI web search.
+
+			search_domains (Any):
+				Optional allowed domains for xAI web search.
+
+			stop (List[str] | None):
+				Optional stop sequences for non-reasoning models.
+
+			stream (bool):
+				Whether to stream the response.
+
+			store (bool):
+				Whether xAI should store the response server-side.
+
+			parallel_tool_calls (bool):
+				Whether parallel tool calls are enabled.
+
+			tool_choice (str):
+				Tool-choice behavior.
+
+			Returns:
+			--------
+			str | None:
+				Generated response text.
 			
 		'''
 		try:
 			throw_if( 'query', query )
 			throw_if( 'model', model )
-			self.query = query
+			
+			self.query = str( query )
 			self.model = str( model ).strip( )
 			self.temperature = float( temperature )
 			self.max_tokens = int( max_tokens )
@@ -514,52 +933,79 @@ class Grok( Generator ):
 			self.stream = bool( stream )
 			self.store = bool( store )
 			self.web_search = bool( web_search )
-			self.search_domains = self._normalize_domains( search_domains )
+			self.search_domains = self.normalize_domains( search_domains )
 			self.parallel_tool_calls = bool( parallel_tool_calls )
 			self.tool_choice = tool_choice or 'auto'
-			self.system_instructions = self._build_instructions( system=system,
-				response_format=response_format, )
+			self.system_instructions = self.build_instructions(
+				system=system,
+				response_format=response_format
+			)
+			self.tools = self.build_tools(
+				web_search=self.web_search,
+				search_domains=self.search_domains
+			)
 			
-			self.tools = [ ]
-			if self.web_search:
-				_web_tool = { 'type': 'web_search' }
-				if self.search_domains:
-					_web_tool[ 'allowed_domains' ] = self.search_domains
-				self.tools.append( _web_tool )
+			input_messages: List[ Dict[ str, str ] ] = [ ]
 			
-			self.request = \
-			{
-				'model': self.model,
-				'input': self.query,
-				'max_output_tokens': self.max_tokens,
-				'temperature': self.temperature,
-				'top_p': self.top_p,
-				'stream': self.stream,
-				'store': self.store,
-				'parallel_tool_calls': self.parallel_tool_calls,
+			if self.system_instructions:
+				input_messages.append(
+					{
+							'role': 'system',
+							'content': self.system_instructions
+					}
+				)
+			
+			input_messages.append(
+				{
+						'role': 'user',
+						'content': self.query
+				}
+			)
+			
+			self.params = {
+					'model': self.model,
+					'input': input_messages,
+					'max_output_tokens': self.max_tokens,
+					'stream': self.stream,
+					'store': self.store,
+					'parallel_tool_calls': self.parallel_tool_calls
 			}
 			
 			if seed is not None:
-				self.request[ 'seed' ] = int( seed )
+				self.params[ 'seed' ] = int( seed )
 			
-			if self.system_instructions:
-				self.request[ 'instructions' ] = self.system_instructions
+			format_payload = self.build_response_format( response_format )
+			if format_payload:
+				self.params[ 'response_format' ] = format_payload
 			
 			if self.tools:
-				self.request[ 'tools' ] = self.tools
-				self.request[ 'tool_choice' ] = self.tool_choice
+				self.params[ 'tools' ] = self.tools
+				self.params[ 'tool_choice' ] = self.tool_choice
 			
-			if self._supports_reasoning_effort( self.model ) and self.reasoning_effort:
-				self.request[ 'reasoning_effort' ] = self.reasoning_effort
+			is_reasoning = self.is_reasoning_model( self.model )
 			
-			if stop and not self._is_reasoning_model( self.model ):
-				self.request[ 'stop' ] = stop
+			if self.supports_reasoning_effort( self.model ) and self.reasoning_effort:
+				self.params[ 'reasoning_effort' ] = self.reasoning_effort
+			elif self.supports_reasoning_object( self.model ) and self.reasoning_effort:
+				self.params[ 'reasoning' ] = { 'effort': self.reasoning_effort }
 			
-			self.response = self.client.responses.create( **self.request )
-			return self.response.output_text
+			if not is_reasoning:
+				self.params[ 'temperature' ] = self.temperature
+				self.params[ 'top_p' ] = self.top_p
+				
+				if stop:
+					self.params[ 'stop' ] = [
+							str( item )
+							for item in stop
+							if str( item ).strip( )
+					]
+			
+			self.response = self.create_response( self.params )
+			return self.extract_output_text( self.response )
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Grok'
 			exception.method = (
 					'fetch( self, query: str, model: str="grok-4-fast-reasoning", '
@@ -567,36 +1013,88 @@ class Grok( Generator ):
 					'seed: int | None=None, system: str | None=None, '
 					'response_format: str | None=None, reasoning_effort: str | None=None, '
 					'web_search: bool=False, search_domains: Any=None, '
-					'stop: List[ str ] | None=None, stream: bool=False, store: bool=True, '
-					'parallel_tool_calls: bool=True, tool_choice: str="auto" ) -> str | None'
+					'stop: List[ str ] | None=None, stream: bool=False, '
+					'store: bool=True, parallel_tool_calls: bool=True, '
+					'tool_choice: str="auto" ) -> str | None'
 			)
 			raise exception
 	
-	def generate_text( self, query: str, model: str='grok-4-fast-reasoning', temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, seed: int | None = None,
-			system: str | None = None, response_format: str | None = None,
-			reasoning_effort: str | None = None, web_search: bool = False,
-			search_domains: Any = None, stop: List[ str ] | None = None, stream: bool = False,
-			store: bool = True, parallel_tool_calls: bool = True,
-			tool_choice: str='auto' ) -> str | None:
+	def generate_text( self, query: str, model: str = 'grok-4-fast-reasoning',
+			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
+			seed: int | None = None, system: str=None,
+			response_format: str=None, reasoning_effort: str=None,
+			web_search: bool = False, search_domains: Any = None,
+			stop: List[ str ]=None, stream: bool = False, store: bool = True,
+			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str | None:
 		'''
 		
 			Purpose:
-			-----------
-			Convenience wrapper around fetch for text generation.
-			
+			--------
+			Convenience wrapper around fetch for Grok text generation.
+
 			Parameters:
 			-----------
-			query (str): User prompt.
-			
+			query (str):
+				User prompt.
+
+			model (str):
+				Grok model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output-token count.
+
+			top_p (float):
+				Nucleus sampling value.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system instructions.
+
+			response_format (str | None):
+				Optional output format.
+
+			reasoning_effort (str | None):
+				Optional reasoning effort.
+
+			web_search (bool):
+				Whether xAI web search is enabled.
+
+			search_domains (Any):
+				Optional allowed domains.
+
+			stop (List[str] | None):
+				Optional stop sequences.
+
+			stream (bool):
+				Whether to stream the response.
+
+			store (bool):
+				Whether to store the response server-side.
+
+			parallel_tool_calls (bool):
+				Whether parallel tool calls are enabled.
+
+			tool_choice (str):
+				Tool-choice behavior.
+
 			Returns:
-			-----------
-			str | None
+			--------
+			str | None:
+				Generated response text.
 			
 		'''
 		try:
-			return self.fetch( query=query, model=model, temperature=temperature,
-				max_tokens=max_tokens, top_p=top_p,
+			return self.fetch(
+				query=query,
+				model=model,
+				temperature=temperature,
+				max_tokens=max_tokens,
+				top_p=top_p,
 				seed=seed,
 				system=system,
 				response_format=response_format,
@@ -607,34 +1105,76 @@ class Grok( Generator ):
 				stream=stream,
 				store=store,
 				parallel_tool_calls=parallel_tool_calls,
-				tool_choice=tool_choice,
+				tool_choice=tool_choice
 			)
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Grok'
 			exception.method = 'generate_text( self, query: str, ... ) -> str | None'
 			raise exception
 	
-	def search_web( self, query: str, model: str='grok-4-fast-reasoning', temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, seed: int | None = None,
-			system: str | None = None, response_format: str | None = None,
-			reasoning_effort: str | None = None, search_domains: Any = None,
-			stream: bool = False, store: bool = True, parallel_tool_calls: bool = True,
-			tool_choice: str='auto' ) -> str | None:
+	def search_web( self, query: str, model: str = 'grok-4-fast-reasoning',
+			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
+			seed: int | None = None, system: str=None,
+			response_format: str=None, reasoning_effort: str=None,
+			search_domains: Any = None, stream: bool = False, store: bool = True,
+			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str | None:
 		'''
 		
 			Purpose:
-			-----------
-			Convenience wrapper around fetch with web search enabled.
-			
+			--------
+			Convenience wrapper around fetch with xAI web search enabled.
+
 			Parameters:
 			-----------
-			query (str): User prompt.
-			
+			query (str):
+				User prompt.
+
+			model (str):
+				Grok model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output-token count.
+
+			top_p (float):
+				Nucleus sampling value.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system instructions.
+
+			response_format (str | None):
+				Optional output format.
+
+			reasoning_effort (str | None):
+				Optional reasoning effort.
+
+			search_domains (Any):
+				Optional allowed domains.
+
+			stream (bool):
+				Whether to stream the response.
+
+			store (bool):
+				Whether to store the response server-side.
+
+			parallel_tool_calls (bool):
+				Whether parallel tool calls are enabled.
+
+			tool_choice (str):
+				Tool-choice behavior.
+
 			Returns:
-			-----------
-			str | None
+			--------
+			str | None:
+				Web-search-augmented response text.
 			
 		'''
 		try:
@@ -654,11 +1194,12 @@ class Grok( Generator ):
 				stream=stream,
 				store=store,
 				parallel_tool_calls=parallel_tool_calls,
-				tool_choice=tool_choice,
+				tool_choice=tool_choice
 			)
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Grok'
 			exception.method = 'search_web( self, query: str, ... ) -> str | None'
 			raise exception
@@ -667,214 +1208,220 @@ class Gemini( Generator ):
 	'''
 
 		Purpose:
-		---------
-		Class providing Google's Gemini API text generation, optional grounding
-		with Google Search, optional JSON output, and optional reasoning through
-		thinking configuration.
+		--------
+		Class providing Google Gemini text generation, JSON output, Google Search
+		grounding, stop sequences, and Gemini thinking controls.
 
-		Attribues:
+		Attributes:
 		-----------
-		client - genai.Client
-		prompt - str
-		response - Any
-		api_key - str
-		id - str
-		location - str
-		use_vertex - bool
-		model - str
-		params - Dict[ str, Any ]
-		temperature - float
-		max_tokens - int
-		top_p - float
-		top_k - int | None
-		candidate_count - int
-		thinking_level - str | None
-		include_thoughts - bool
-		system_instructions - str | None
-		grounding - bool
-		search_domains - List[ str ]
+		api_key (str):
+			Google Gemini API key from configuration.
+
+		client (Any):
+			Initialized Google GenAI client.
+
+		model (str):
+			Selected Gemini model identifier.
+
+		response (Any):
+			Last Gemini response object.
+
+		query (str | None):
+			Last user prompt.
+
+		params (Dict[str, Any] | None):
+			Last request payload.
+
+		temperature (float):
+			Sampling temperature.
+
+		max_tokens (int):
+			Maximum output-token count.
+
+		top_p (float):
+			Nucleus sampling parameter.
+
+		top_k (int | None):
+			Top-k sampling parameter.
+
+		candidate_count (int):
+			Number of candidate responses.
+
+		seed (int | None):
+			Optional deterministic seed.
+
+		system_instructions (str | None):
+			Optional system prompt.
+
+		response_format (str | None):
+			Output response format selector.
+
+		stop_sequences (List[str]):
+			Optional stop sequences.
+
+		grounding (bool):
+			Whether Google Search grounding is enabled.
+
+		search_domains (List[str]):
+			Optional preferred grounding domains used as instruction guidance.
+
+		reasoning (bool):
+			Whether Gemini thinking is enabled.
+
+		thinking_level (str | None):
+			Gemini 3 thinking level.
+
+		thinking_budget (int | None):
+			Gemini 2.5 thinking token budget.
+
+		include_thoughts (bool):
+			Whether Gemini should include thought summaries where supported.
 
 		Methods:
-		-----------
-		fetch( ) -> str | None
-		generate_text( ) -> str | None
-		search_web( ) -> str | None
+		--------
+		fetch( self, prompt, ... ) -> str | None
+		generate_text( self, prompt, ... ) -> str | None
+		search_web( self, prompt, ... ) -> str | None
 
 	'''
-	client: Optional[ genai.Client ]
-	prompt: Optional[ str ]
-	response: Optional[ Response ]
+	
 	api_key: Optional[ str ]
-	id: Optional[ str ]
-	location: Optional[ str ]
-	use_vertex: Optional[ bool ]
+	client: Optional[ Any ]
 	model: Optional[ str ]
+	response: Optional[ Any ]
+	query: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	temperature: Optional[ float ]
 	max_tokens: Optional[ int ]
 	top_p: Optional[ float ]
 	top_k: Optional[ int ]
 	candidate_count: Optional[ int ]
-	thinking_level: Optional[ str ]
-	include_thoughts: Optional[ bool ]
+	seed: Optional[ int ]
 	system_instructions: Optional[ str ]
+	response_format: Optional[ str ]
+	stop_sequences: Optional[ List[ str ] ]
 	grounding: Optional[ bool ]
 	search_domains: Optional[ List[ str ] ]
-	http_options: Optional[ Dict[ str, Any ] ]
-	messages: Optional[ List[ Dict[ str, Any ] ] ]
+	reasoning: Optional[ bool ]
+	thinking_level: Optional[ str ]
+	thinking_budget: Optional[ int ]
+	include_thoughts: Optional[ bool ]
+	tools: Optional[ List[ Any ] ]
+	config: Optional[ Any ]
 	
 	def __init__( self ) -> None:
 		'''
 		
 			Purpose:
+			--------
+			Initialize the Gemini generator with defaults used by the Foo application.
+
+			Parameters:
 			-----------
-			Initialize the Gemini class.
+			None
+
+			Returns:
+			--------
+			None
 			
 		'''
 		super( ).__init__( )
-		self.api_key = cfg.GEMINI_API_KEY
-		self.id = cfg.GOOGLE_PROJECT_ID
-		self.location = cfg.GOOGLE_CLOUD_LOCATION
-		self.use_vertex = self._to_bool( cfg.GOOGLE_GENAI_USE_VERTEXAI )
+		self.api_key = cfg.GOOGLE_API_KEY
+		self.client = genai.Client( api_key=self.api_key )
 		self.model = 'gemini-2.5-flash'
-		self.headers = { }
-		self.client = self._create_client( )
-		self.timeout = None
-		self.params = None
 		self.response = None
-		self.agents = cfg.AGENTS
+		self.query = None
+		self.params = None
 		self.temperature = 0.7
 		self.max_tokens = 2048
 		self.top_p = 1.0
 		self.top_k = None
 		self.candidate_count = 1
-		self.thinking_level = None
-		self.include_thoughts = False
+		self.seed = None
 		self.system_instructions = None
+		self.response_format = None
+		self.stop_sequences = [ ]
 		self.grounding = False
 		self.search_domains = [ ]
-		self.http_options = None
-		self.messages = None
-		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ] = self.agents
+		self.reasoning = False
+		self.thinking_level = None
+		self.thinking_budget = None
+		self.include_thoughts = False
+		self.tools = [ ]
+		self.config = None
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
-
+		
 			Purpose:
-			-----------
-			Gemini list of members.
+			--------
+			Return a stable ordered member list for introspection.
 
 			Parameters:
 			-----------
 			None
 
 			Returns:
-			-----------
-			list[str]: Ordered attribute/method names.
+			--------
+			List[str]:
+				Ordered attribute and method names.
+			
+		'''
+		return [
+				'api_key',
+				'client',
+				'model',
+				'response',
+				'query',
+				'params',
+				'temperature',
+				'max_tokens',
+				'top_p',
+				'top_k',
+				'candidate_count',
+				'seed',
+				'system_instructions',
+				'response_format',
+				'stop_sequences',
+				'grounding',
+				'search_domains',
+				'reasoning',
+				'thinking_level',
+				'thinking_budget',
+				'include_thoughts',
+				'tools',
+				'config',
+				'normalize_domains',
+				'normalize_stop_sequences',
+				'supports_thinking_level',
+				'supports_thinking_budget',
+				'build_system_instruction',
+				'build_thinking_config',
+				'build_tools',
+				'build_config',
+				'extract_text',
+				'fetch',
+				'generate_text',
+				'search_web'
+		]
+	
+	def normalize_domains( self, domains: Any ) -> List[ str ]:
+		'''
+		
+			Purpose:
+			--------
+			Normalize user-supplied grounding domains into canonical, de-duplicated
+			domain names.
 
-		'''
-		return [ 'client',
-		         'prompt',
-		         'response',
-		         'api_key',
-		         'id',
-		         'location',
-		         'use_vertex',
-		         'model',
-		         'params',
-		         'temperature',
-		         'max_tokens',
-		         'top_p',
-		         'top_k',
-		         'candidate_count',
-		         'thinking_level',
-		         'include_thoughts',
-		         'system_instructions',
-		         'grounding',
-		         'search_domains',
-		         'fetch',
-		         'generate_text',
-		         'search_web' ]
-	
-	def _to_bool( self, value: Any ) -> bool:
-		'''
-		
-			Purpose:
-			-----------
-			Convert configuration values into a stable boolean.
-			
 			Parameters:
 			-----------
-			value (Any): Source value.
-			
+			domains (Any):
+				String, list, tuple, set, scalar, or None containing domain values.
+
 			Returns:
-			-----------
-			bool
-			
-		'''
-		try:
-			if isinstance( value, bool ):
-				return value
-			
-			if value is None:
-				return False
-			
-			return str( value ).strip( ).lower( ) in [ '1', 'true', 'yes', 'y', 'on' ]
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'Gemini'
-			exception.method = '_to_bool( self, value: Any ) -> bool'
-			raise exception
-	
-	def _create_client( self ) -> genai.Client:
-		'''
-		
-			Purpose:
-			-----------
-			Create a Gemini client against either the Gemini Developer API or
-			Vertex AI, depending on configuration.
-			
-			Parameters:
-			-----------
-			None
-			
-			Returns:
-			-----------
-			genai.Client
-			
-		'''
-		try:
-			if self.use_vertex:
-				return genai.Client(
-					vertexai=True,
-					project=self.id,
-					location=self.location,
-				)
-			
-			return genai.Client( api_key=self.api_key )
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'Gemini'
-			exception.method = '_create_client( self ) -> genai.Client'
-			raise exception
-	
-	def _normalize_domains( self, domains: Any ) -> List[ str ]:
-		'''
-		
-			Purpose:
-			-----------
-			Normalize domain input into a canonical, de-duplicated list.
-			
-			Parameters:
-			-----------
-			domains (Any): String, list, tuple, set, or None.
-			
-			Returns:
-			-----------
-			List[str]
+			--------
+			List[str]:
+				Clean domain names without protocol, path, port, or leading www.
 			
 		'''
 		try:
@@ -882,129 +1429,477 @@ class Gemini( Generator ):
 				return [ ]
 			
 			if isinstance( domains, str ):
-				_parts = re.split( r'[\n,;]+', domains )
+				parts = re.split( r'[\n,;]+', domains )
 			elif isinstance( domains, (list, tuple, set) ):
-				_parts = [ str( x ) for x in domains if x is not None ]
+				parts = [ str( item ) for item in domains if item is not None ]
 			else:
-				_parts = [ str( domains ) ]
+				parts = [ str( domains ) ]
 			
-			_values = [ ]
-			for _entry in _parts:
-				_value = str( _entry ).strip( ).lower( )
-				if not _value:
+			values: List[ str ] = [ ]
+			
+			for entry in parts:
+				value = str( entry ).strip( ).lower( )
+				
+				if not value:
 					continue
 				
-				if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-					_value = f'https://{_value}'
+				if not value.startswith( 'http://' ) and not value.startswith( 'https://' ):
+					value = f'https://{value}'
 				
-				_parsed = urllib.parse.urlparse( _value )
-				_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-				_domain = re.sub( r':\d+$', '', _domain )
-				_domain = _domain.lstrip( '.' )
+				parsed = urllib.parse.urlparse( value )
+				domain = (parsed.netloc or parsed.path or '').strip( ).lower( )
+				domain = re.sub( r':\d+$', '', domain )
+				domain = domain.lstrip( '.' )
 				
-				if _domain.startswith( 'www.' ):
-					_domain = _domain[ 4: ]
+				if domain.startswith( 'www.' ):
+					domain = domain[ 4: ]
 				
-				if _domain and _domain not in _values:
-					_values.append( _domain )
+				if not re.fullmatch( r'[a-z0-9][a-z0-9.-]*\.[a-z]{2,}', domain ):
+					raise ValueError( f'Invalid Gemini grounding domain: {domain}' )
+				
+				if domain not in values:
+					values.append( domain )
 			
-			return _values
+			return values
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Gemini'
-			exception.method = '_normalize_domains( self, domains: Any ) -> List[ str ]'
+			exception.method = 'normalize_domains( self, domains: Any ) -> List[ str ]'
 			raise exception
 	
-	def _supports_thinking( self, model: str ) -> bool:
+	def normalize_stop_sequences( self, stop_sequences: Any ) -> List[ str ]:
 		'''
 		
 			Purpose:
-			-----------
-			Determine whether the selected Gemini model should receive a thinking
-			configuration.
-			
+			--------
+			Normalize stop sequences supplied as a string or iterable.
+
 			Parameters:
 			-----------
-			model (str): Model name.
-			
+			stop_sequences (Any):
+				String, list, tuple, set, scalar, or None containing stop sequences.
+
 			Returns:
+			--------
+			List[str]:
+				Non-empty stop sequences.
+			
+		'''
+		try:
+			if stop_sequences is None:
+				return [ ]
+			
+			if isinstance( stop_sequences, str ):
+				parts = stop_sequences.splitlines( )
+			elif isinstance( stop_sequences, (list, tuple, set) ):
+				parts = [ str( item ) for item in stop_sequences if item is not None ]
+			else:
+				parts = [ str( stop_sequences ) ]
+			
+			return [
+					str( item ).strip( )
+					for item in parts
+					if str( item ).strip( )
+			]
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Gemini'
+			exception.method = (
+					'normalize_stop_sequences( self, stop_sequences: Any ) -> List[ str ]'
+			)
+			raise exception
+	
+	def supports_thinking_level( self, model: str ) -> bool:
+		'''
+		
+			Purpose:
+			--------
+			Determine whether the selected model supports Gemini 3 thinkingLevel.
+
+			Parameters:
 			-----------
-			bool
+			model (str):
+				Gemini model identifier.
+
+			Returns:
+			--------
+			bool:
+				True when the model is a Gemini 3 family model.
 			
 		'''
 		try:
 			throw_if( 'model', model )
-			_name = str( model ).strip( ).lower( )
-			return _name.startswith( 'gemini-3' )
+			return str( model ).strip( ).lower( ).startswith( 'gemini-3' )
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Gemini'
-			exception.method = '_supports_thinking( self, model: str ) -> bool'
+			exception.method = 'supports_thinking_level( self, model: str ) -> bool'
 			raise exception
 	
-	def _build_system_instruction( self, system: str | None = None, response_format: str | None = None,
-			search_domains: Any = None ) -> str | None:
+	def supports_thinking_budget( self, model: str ) -> bool:
 		'''
 		
 			Purpose:
-			-----------
-			Build the final Gemini system instruction string.
-			
+			--------
+			Determine whether the selected model supports Gemini 2.5 thinkingBudget.
+
 			Parameters:
 			-----------
-			system (str | None): Optional system prompt.
-			response_format (str | None): Optional output mode.
-			search_domains (Any): Optional domain preference input.
-			
+			model (str):
+				Gemini model identifier.
+
 			Returns:
-			-----------
-			str | None
+			--------
+			bool:
+				True when the model is a Gemini 2.5 family model.
 			
 		'''
 		try:
-			_parts = [ ]
-			
-			if system and str( system ).strip( ):
-				_parts.append( str( system ).strip( ) )
-			
-			if response_format and str( response_format ).strip( ).lower( ) == 'json':
-				_parts.append( 'Return valid JSON only. Do not include markdown fences or commentary.' )
-			
-			_domains = self._normalize_domains( search_domains )
-			if _domains:
-				_parts.append(
-					'When grounding or searching the web, prefer sources from these domains '
-					f'when relevant and available: {", ".join( _domains )}.'
-				)
-			
-			if _parts:
-				return '\n\n'.join( _parts )
-			
-			return None
+			throw_if( 'model', model )
+			return str( model ).strip( ).lower( ).startswith( 'gemini-2.5' )
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Gemini'
-			exception.method = ('_build_system_instruction( self, system: str | None=None, '
-			                    'response_format: str | None=None, search_domains: Any=None ) -> str | None')
+			exception.method = 'supports_thinking_budget( self, model: str ) -> bool'
 			raise exception
 	
-	def _extract_text( self, response: Any ) -> str:
+	def build_system_instruction( self, system: str=None, response_format: str=None, 
+			grounding: bool = False, search_domains: Any = None ) -> str | None:
 		'''
 		
 			Purpose:
-			-----------
-			Extract plain text from a Gemini response.
-			
+			--------
+			Build the Gemini system instruction.
+
 			Parameters:
 			-----------
-			response (Any): Gemini response object.
-			
+			system (str | None):
+				Optional system instruction.
+
+			response_format (str | None):
+				Optional response-format selector.
+
+			grounding (bool):
+				Whether grounding is enabled.
+
+			search_domains (Any):
+				Optional preferred grounding domains.
+
 			Returns:
+			--------
+			str | None:
+				Final system instruction or None.
+			
+		'''
+		try:
+			parts: List[ str ] = [ ]			
+			if system and str( system ).strip( ):
+				parts.append( str( system ).strip( ) )
+			
+			if response_format and str( response_format ).strip( ).lower( ) == 'json':
+				parts.append( 'Return valid JSON only. Do not include markdown fences, prose, '
+					'or commentary outside the JSON value.' )
+			
+			domains = self.normalize_domains( search_domains )
+			if grounding and domains:
+				parts.append( 'When using Google Search grounding, strongly prefer relevant '
+					f'sources from these domains when available: {", ".join( domains )}.' )
+			
+			if parts:
+				return '\n\n'.join( parts )
+			
+			return None
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Gemini'
+			exception.method = (
+					'build_system_instruction( self, system: str | None=None, '
+					'response_format: str | None=None, grounding: bool=False, '
+					'search_domains: Any=None ) -> str | None'
+			)
+			raise exception
+	
+	def build_thinking_config( self, model: str, reasoning: bool = False,
+			thinking_level: str=None, thinking_budget: int | None = None,
+			include_thoughts: bool = False ) -> Any:
+		'''
+		
+			Purpose:
+			--------
+			Build Gemini thinking configuration for Gemini 3 thinkingLevel or
+			Gemini 2.5 thinkingBudget.
+
+			Parameters:
 			-----------
-			str
+			model (str):
+				Gemini model identifier.
+
+			reasoning (bool):
+				Whether thinking controls should be enabled.
+
+			thinking_level (str | None):
+				Gemini 3 thinking level.
+
+			thinking_budget (int | None):
+				Gemini 2.5 thinking budget.
+
+			include_thoughts (bool):
+				Whether to include thought summaries where supported.
+
+			Returns:
+			--------
+			Any:
+				Google GenAI ThinkingConfig-compatible object or None.
+			
+		'''
+		try:
+			if not reasoning:
+				return None
+			
+			thinking_data: Dict[ str, Any ] = { }
+			
+			if self.supports_thinking_level( model ):
+				level = str( thinking_level or 'low' ).strip( ).lower( )
+				
+				if level not in [ 'minimal', 'low', 'medium', 'high' ]:
+					level = 'low'
+				
+				thinking_data[ 'thinking_level' ] = level
+			
+			elif self.supports_thinking_budget( model ):
+				if thinking_budget is not None:
+					thinking_data[ 'thinking_budget' ] = int( thinking_budget )
+				else:
+					thinking_data[ 'thinking_budget' ] = -1
+			
+			else:
+				return None
+			
+			if include_thoughts:
+				thinking_data[ 'include_thoughts' ] = True
+			
+			if hasattr( types, 'ThinkingConfig' ):
+				return types.ThinkingConfig( **thinking_data )
+			
+			return thinking_data
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Gemini'
+			exception.method = (
+					'build_thinking_config( self, model: str, reasoning: bool=False, '
+					'thinking_level: str | None=None, thinking_budget: int | None=None, '
+					'include_thoughts: bool=False ) -> Any'
+			)
+			raise exception
+	
+	def build_tools( self, grounding: bool = False ) -> List[ Any ]:
+		'''
+		
+			Purpose:
+			--------
+			Build Gemini tool configuration for Google Search grounding.
+
+			Parameters:
+			-----------
+			grounding (bool):
+				Whether to enable Google Search grounding.
+
+			Returns:
+			--------
+			List[Any]:
+				Google GenAI tool definitions.
+			
+		'''
+		try:
+			if not grounding:
+				return [ ]
+			
+			if hasattr( types, 'Tool' ) and hasattr( types, 'GoogleSearch' ):
+				return [ types.Tool( google_search=types.GoogleSearch( ) ) ]
+			
+			return [ { 'google_search': { } } ]
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Gemini'
+			exception.method = 'build_tools( self, grounding: bool=False ) -> List[ Any ]'
+			raise exception
+	
+	def build_config( self, model: str, temperature: float = 0.7,
+			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
+			candidate_count: int = 1, seed: int | None = None,
+			system: str=None, response_format: str=None,
+			stop_sequences: Any = None, grounding: bool = False, search_domains: Any = None,
+			reasoning: bool = False, thinking_level: str=None,
+			thinking_budget: int | None = None, include_thoughts: bool = False,
+			response_json_schema: Dict[ str, Any ]=None ) -> Any:
+		'''
+		
+			Purpose:
+			--------
+			Build a Google GenAI GenerateContentConfig-compatible configuration.
+
+			Parameters:
+			-----------
+			model (str):
+				Gemini model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output-token count.
+
+			top_p (float):
+				Nucleus sampling parameter.
+
+			top_k (int | None):
+				Top-k sampling parameter.
+
+			candidate_count (int):
+				Number of candidates to generate.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system instruction.
+
+			response_format (str | None):
+				Optional output format selector.
+
+			stop_sequences (Any):
+				Optional stop sequences.
+
+			grounding (bool):
+				Whether Google Search grounding is enabled.
+
+			search_domains (Any):
+				Optional preferred grounding domains.
+
+			reasoning (bool):
+				Whether thinking is enabled.
+
+			thinking_level (str | None):
+				Gemini 3 thinking level.
+
+			thinking_budget (int | None):
+				Gemini 2.5 thinking budget.
+
+			include_thoughts (bool):
+				Whether thought summaries are requested.
+
+			response_json_schema (Dict[str, Any] | None):
+				Optional JSON schema for structured output.
+
+			Returns:
+			--------
+			Any:
+				GenerateContentConfig object or dictionary fallback.
+			
+		'''
+		try:
+			config_data: Dict[ str, Any ] = {
+					'temperature': float( temperature ),
+					'max_output_tokens': int( max_tokens ),
+					'top_p': float( top_p ),
+					'candidate_count': int( candidate_count )
+			}
+			
+			if top_k is not None and int( top_k ) > 0:
+				config_data[ 'top_k' ] = int( top_k )
+			
+			if seed is not None:
+				config_data[ 'seed' ] = int( seed )
+			
+			system_instruction = self.build_system_instruction(
+				system=system,
+				response_format=response_format,
+				grounding=grounding,
+				search_domains=search_domains
+			)
+			
+			if system_instruction:
+				config_data[ 'system_instruction' ] = system_instruction
+			
+			clean_stop = self.normalize_stop_sequences( stop_sequences )
+			if clean_stop:
+				config_data[ 'stop_sequences' ] = clean_stop
+			
+			if response_format and str( response_format ).strip( ).lower( ) == 'json':
+				config_data[ 'response_mime_type' ] = 'application/json'
+			
+			if response_json_schema:
+				config_data[ 'response_mime_type' ] = 'application/json'
+				config_data[ 'response_json_schema' ] = response_json_schema
+			
+			tools_value = self.build_tools( grounding=grounding )
+			if tools_value:
+				config_data[ 'tools' ] = tools_value
+			
+			thinking_config = self.build_thinking_config(
+				model=model,
+				reasoning=reasoning,
+				thinking_level=thinking_level,
+				thinking_budget=thinking_budget,
+				include_thoughts=include_thoughts
+			)
+			
+			if thinking_config:
+				config_data[ 'thinking_config' ] = thinking_config
+			
+			if hasattr( types, 'GenerateContentConfig' ):
+				return types.GenerateContentConfig( **config_data )
+			
+			return config_data
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'generators'
+			exception.cause = 'Gemini'
+			exception.method = (
+					'build_config( self, model: str, temperature: float=0.7, '
+					'max_tokens: int=2048, top_p: float=1.0, top_k: int | None=None, '
+					'candidate_count: int=1, seed: int | None=None, '
+					'system: str | None=None, response_format: str | None=None, '
+					'stop_sequences: Any=None, grounding: bool=False, '
+					'search_domains: Any=None, reasoning: bool=False, '
+					'thinking_level: str | None=None, thinking_budget: int | None=None, '
+					'include_thoughts: bool=False, '
+					'response_json_schema: Dict[ str, Any ] | None=None ) -> Any'
+			)
+			raise exception
+	
+	def extract_text( self, response: Any ) -> str:
+		'''
+		
+			Purpose:
+			--------
+			Extract final text from a Gemini response object, dictionary, or fallback
+			value.
+
+			Parameters:
+			-----------
+			response (Any):
+				Gemini response object.
+
+			Returns:
+			--------
+			str:
+				Best available response text.
 			
 		'''
 		try:
@@ -1014,237 +1909,341 @@ class Gemini( Generator ):
 			if hasattr( response, 'text' ) and response.text:
 				return str( response.text )
 			
-			if hasattr( response, 'candidates' ) and response.candidates:
-				_parts = [ ]
-				for _candidate in response.candidates:
-					_content = getattr( _candidate, 'content', None )
-					if _content is None:
+			if isinstance( response, dict ):
+				if response.get( 'text' ):
+					return str( response.get( 'text' ) )
+			
+			candidates = getattr( response, 'candidates', None )
+			if candidates:
+				parts: List[ str ] = [ ]
+				
+				for candidate in candidates:
+					content = getattr( candidate, 'content', None )
+					candidate_parts = getattr( content, 'parts', None ) if content else None
+					
+					if not candidate_parts:
 						continue
 					
-					for _part in getattr( _content, 'parts', [ ] ):
-						_text = getattr( _part, 'text', None )
-						if _text:
-							_parts.append( str( _text ) )
+					for part in candidate_parts:
+						text = getattr( part, 'text', None )
+						
+						if text:
+							parts.append( str( text ) )
 				
-				if _parts:
-					return '\n'.join( _parts ).strip( )
+				if parts:
+					return '\n'.join( parts ).strip( )
 			
 			return str( response )
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Gemini'
-			exception.method = '_extract_text( self, response: Any ) -> str'
+			exception.method = 'extract_text( self, response: Any ) -> str'
 			raise exception
 	
-	def fetch( self, prompt: str, model: str='gemini-2.5-flash', temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			candidate_count: int = 1, seed: int | None = None, system: str | None = None,
-			response_format: str | None = None, stop_sequences: List[ str ] | None = None,
-			grounding: bool = False, search_domains: Any = None, reasoning: bool = False,
-			thinking_level: str | None = None, include_thoughts: bool = False ) -> str | None:
+	def fetch( self, prompt: str, model: str = 'gemini-2.5-flash',
+			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
+			top_k: int | None = None, candidate_count: int = 1,
+			seed: int | None = None, system: str=None,
+			response_format: str=None, stop_sequences: Any = None,
+			grounding: bool = False, search_domains: Any = None,
+			reasoning: bool = False, thinking_level: str=None,
+			thinking_budget: int | None = None, include_thoughts: bool = False,
+			response_json_schema: Dict[ str, Any ]=None ) -> str | None:
 		'''
 		
 			Purpose:
-			-------
-			Send a Gemini GenerateContent request for text generation with optional
-			grounding, JSON output, and thinking configuration.
-			
+			--------
+			Send a Gemini generate_content request for text generation, JSON output,
+			Google Search grounding, stop sequences, and model-appropriate thinking
+			configuration.
+
 			Parameters:
 			-----------
-			prompt (str): User prompt.
-			model (str): Gemini model name.
-			temperature (float): Sampling temperature.
-			max_tokens (int): Max output tokens.
-			top_p (float): Top-p nucleus sampling parameter.
-			top_k (int | None): Top-k sampling parameter.
-			candidate_count (int): Number of candidates.
-			seed (int | None): Optional deterministic seed.
-			system (str | None): Optional system prompt.
-			response_format (str | None): Optional output mode.
-			stop_sequences (List[str] | None): Optional stop sequences.
-			grounding (bool): Enable grounding with Google Search.
-			search_domains (Any): Optional preferred domains.
-			reasoning (bool): Enable thinking configuration where supported.
-			thinking_level (str | None): Optional Gemini thinking level.
-			include_thoughts (bool): Include thoughts in response where available.
-			
+			prompt (str):
+				User prompt.
+
+			model (str):
+				Gemini model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output-token count.
+
+			top_p (float):
+				Nucleus sampling parameter.
+
+			top_k (int | None):
+				Top-k sampling parameter.
+
+			candidate_count (int):
+				Number of candidates to generate.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system instruction.
+
+			response_format (str | None):
+				Optional output format selector. Use json for JSON mode.
+
+			stop_sequences (Any):
+				Optional stop sequences.
+
+			grounding (bool):
+				Whether Google Search grounding is enabled.
+
+			search_domains (Any):
+				Optional preferred grounding domains.
+
+			reasoning (bool):
+				Whether Gemini thinking is enabled.
+
+			thinking_level (str | None):
+				Gemini 3 thinking level.
+
+			thinking_budget (int | None):
+				Gemini 2.5 thinking budget.
+
+			include_thoughts (bool):
+				Whether thought summaries are requested.
+
+			response_json_schema (Dict[str, Any] | None):
+				Optional JSON schema for structured output.
+
 			Returns:
-			---------
-			str | None
+			--------
+			str | None:
+				Generated response text.
 			
 		'''
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			self.prompt = prompt
+			
+			self.query = str( prompt )
 			self.model = str( model ).strip( )
 			self.temperature = float( temperature )
 			self.max_tokens = int( max_tokens )
 			self.top_p = float( top_p )
 			self.top_k = int( top_k ) if top_k is not None else None
 			self.candidate_count = int( candidate_count )
-			self.thinking_level = thinking_level if thinking_level else None
-			self.include_thoughts = bool( include_thoughts )
+			self.seed = int( seed ) if seed is not None else None
+			self.system_instructions = ( str( system ).strip( )
+					if system and str( system ).strip( )
+					else None )
+			self.response_format = response_format
+			self.stop_sequences = self.normalize_stop_sequences( stop_sequences )
 			self.grounding = bool( grounding )
-			self.search_domains = self._normalize_domains( search_domains )
-			self.system_instructions = self._build_system_instruction(
-				system=system,
-				response_format=response_format,
-				search_domains=self.search_domains,
-			)
+			self.search_domains = self.normalize_domains( search_domains )
+			self.reasoning = bool( reasoning )
+			self.thinking_level = thinking_level
+			self.thinking_budget = thinking_budget
+			self.include_thoughts = bool( include_thoughts )
+			self.config = self.build_config( model=self.model, temperature=self.temperature,
+				max_tokens=self.max_tokens, top_p=self.top_p, top_k=self.top_k,
+				candidate_count=self.candidate_count, seed=self.seed,
+				system=self.system_instructions, response_format=self.response_format,
+				stop_sequences=self.stop_sequences, grounding=self.grounding,
+				search_domains=self.search_domains, reasoning=self.reasoning,
+				thinking_level=self.thinking_level, thinking_budget=self.thinking_budget,
+				include_thoughts=self.include_thoughts, response_json_schema=response_json_schema )
+			self.params = {
+					'model': self.model,
+					'contents': self.query,
+					'config': self.config
+			}
 			
-			self.tools = [ ]
-			if self.grounding:
-				self.tools.append(
-					genai.types.Tool(
-						google_search=genai.types.GoogleSearch( )
-					)
-				)
-			
-			self.config = genai.types.GenerateContentConfig(
-				max_output_tokens=self.max_tokens,
-				temperature=self.temperature,
-				top_p=self.top_p,
-				candidate_count=self.candidate_count,
-			)
-			
-			if self.top_k is not None and self.top_k > 0:
-				self.config.top_k = self.top_k
-			
-			if seed is not None:
-				self.config.seed = int( seed )
-			
-			if stop_sequences:
-				self.config.stop_sequences = stop_sequences
-			
-			if response_format and str( response_format ).strip( ).lower( ) == 'json':
-				self.config.response_mime_type = 'application/json'
-			
-			if self.system_instructions:
-				self.config.system_instruction = self.system_instructions
-			
-			if self.tools:
-				self.config.tools = self.tools
-			
-			if reasoning and self._supports_thinking( self.model ):
-				self.config.thinking_config = genai.types.ThinkingConfig(
-					thinking_level=(self.thinking_level or 'low'),
-					include_thoughts=self.include_thoughts,
-				)
-			
-			self.response = self.client.models.generate_content(
-				model=self.model,
-				contents=self.prompt,
-				config=self.config,
-			)
-			
-			return self._extract_text( self.response )
+			self.response = self.client.models.generate_content( **self.params )
+			return self.extract_text( self.response )
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Gemini'
-			exception.method = (
-					'fetch( self, prompt: str, model: str="gemini-2.5-flash", '
-					'temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0, '
-					'top_k: int | None=None, candidate_count: int=1, seed: int | None=None, '
-					'system: str | None=None, response_format: str | None=None, '
-					'stop_sequences: List[ str ] | None=None, grounding: bool=False, '
-					'search_domains: Any=None, reasoning: bool=False, '
-					'thinking_level: str | None=None, include_thoughts: bool=False ) -> str | None'
-			)
+			exception.method = 'fetch( self, *args ) -> str | None'
 			raise exception
 	
-	def generate_text( self, prompt: str, model: str='gemini-2.5-flash', temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			candidate_count: int = 1, seed: int | None = None, system: str | None = None,
-			response_format: str | None = None, stop_sequences: List[ str ] | None = None,
-			grounding: bool = False, search_domains: Any = None, reasoning: bool = False,
-			thinking_level: str | None = None, include_thoughts: bool = False ) -> str | None:
+	def generate_text( self, prompt: str, model: str = 'gemini-2.5-flash',
+			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
+			top_k: int | None = None, candidate_count: int = 1,
+			seed: int | None = None, system: str=None,
+			response_format: str=None, stop_sequences: Any = None,
+			grounding: bool = False, search_domains: Any = None,
+			reasoning: bool = False, thinking_level: str=None,
+			thinking_budget: int | None = None, include_thoughts: bool = False,
+			response_json_schema: Dict[ str, Any ]=None ) -> str | None:
 		'''
 		
 			Purpose:
-			-----------
-			Convenience wrapper around fetch for text generation.
-			
+			--------
+			Convenience wrapper around fetch for Gemini text generation.
+
 			Parameters:
 			-----------
-			prompt (str): User prompt.
-			
+			prompt (str):
+				User prompt.
+
+			model (str):
+				Gemini model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output-token count.
+
+			top_p (float):
+				Nucleus sampling parameter.
+
+			top_k (int | None):
+				Top-k sampling parameter.
+
+			candidate_count (int):
+				Number of candidates to generate.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system instruction.
+
+			response_format (str | None):
+				Optional output format selector.
+
+			stop_sequences (Any):
+				Optional stop sequences.
+
+			grounding (bool):
+				Whether Google Search grounding is enabled.
+
+			search_domains (Any):
+				Optional preferred grounding domains.
+
+			reasoning (bool):
+				Whether Gemini thinking is enabled.
+
+			thinking_level (str | None):
+				Gemini 3 thinking level.
+
+			thinking_budget (int | None):
+				Gemini 2.5 thinking budget.
+
+			include_thoughts (bool):
+				Whether thought summaries are requested.
+
+			response_json_schema (Dict[str, Any] | None):
+				Optional JSON schema for structured output.
+
 			Returns:
-			-----------
-			str | None
+			--------
+			str | None:
+				Generated response text.
 			
 		'''
 		try:
-			return self.fetch(
-				prompt=prompt,
-				model=model,
-				temperature=temperature,
-				max_tokens=max_tokens,
-				top_p=top_p,
-				top_k=top_k,
-				candidate_count=candidate_count,
-				seed=seed,
-				system=system,
-				response_format=response_format,
-				stop_sequences=stop_sequences,
-				grounding=grounding,
-				search_domains=search_domains,
-				reasoning=reasoning,
-				thinking_level=thinking_level,
-				include_thoughts=include_thoughts,
-			)
+			return self.fetch( prompt=prompt, model=model, temperature=temperature,
+				max_tokens=max_tokens, top_p=top_p, top_k=top_k,
+				candidate_count=candidate_count, seed=seed, system=system,
+				response_format=response_format, stop_sequences=stop_sequences,
+				grounding=grounding, search_domains=search_domains, reasoning=reasoning,
+				thinking_level=thinking_level, thinking_budget=thinking_budget,
+				include_thoughts=include_thoughts, response_json_schema=response_json_schema )
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Gemini'
 			exception.method = 'generate_text( self, prompt: str, ... ) -> str | None'
 			raise exception
 	
-	def search_web( self, prompt: str, model: str='gemini-2.5-flash', temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			candidate_count: int = 1, seed: int | None = None, system: str | None = None,
-			response_format: str | None = None, stop_sequences: List[ str ] | None = None,
-			search_domains: Any = None, reasoning: bool = False, thinking_level: str | None = None,
-			include_thoughts: bool = False ) -> str | None:
+	def search_web( self, prompt: str, model: str = 'gemini-2.5-flash',
+			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
+			top_k: int | None = None, candidate_count: int = 1,
+			seed: int | None = None, system: str=None,
+			response_format: str=None, stop_sequences: Any = None,
+			search_domains: Any = None, reasoning: bool = False,
+			thinking_level: str=None, thinking_budget: int | None = None,
+			include_thoughts: bool = False,
+			response_json_schema: Dict[ str, Any ]=None ) -> str | None:
 		'''
 		
 			Purpose:
-			-----------
-			Convenience wrapper around fetch with grounding enabled.
-			
+			--------
+			Convenience wrapper around fetch with Google Search grounding enabled.
+
 			Parameters:
 			-----------
-			prompt (str): User prompt.
-			
+			prompt (str):
+				User prompt.
+
+			model (str):
+				Gemini model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output-token count.
+
+			top_p (float):
+				Nucleus sampling parameter.
+
+			top_k (int | None):
+				Top-k sampling parameter.
+
+			candidate_count (int):
+				Number of candidates to generate.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system instruction.
+
+			response_format (str | None):
+				Optional output format selector.
+
+			stop_sequences (Any):
+				Optional stop sequences.
+
+			search_domains (Any):
+				Optional preferred grounding domains.
+
+			reasoning (bool):
+				Whether Gemini thinking is enabled.
+
+			thinking_level (str | None):
+				Gemini 3 thinking level.
+
+			thinking_budget (int | None):
+				Gemini 2.5 thinking budget.
+
+			include_thoughts (bool):
+				Whether thought summaries are requested.
+
+			response_json_schema (Dict[str, Any] | None):
+				Optional JSON schema for structured output.
+
 			Returns:
-			-----------
-			str | None
+			--------
+			str | None:
+				Web-grounded Gemini response text.
 			
 		'''
 		try:
-			return self.fetch(
-				prompt=prompt,
-				model=model,
-				temperature=temperature,
-				max_tokens=max_tokens,
-				top_p=top_p,
-				top_k=top_k,
-				candidate_count=candidate_count,
-				seed=seed,
-				system=system,
-				response_format=response_format,
-				stop_sequences=stop_sequences,
-				grounding=True,
-				search_domains=search_domains,
-				reasoning=reasoning,
-				thinking_level=thinking_level,
-				include_thoughts=include_thoughts,
-			)
+			return self.fetch( prompt=prompt, model=model, temperature=temperature,
+				max_tokens=max_tokens, top_p=top_p, top_k=top_k, candidate_count=candidate_count,
+				seed=seed, system=system, response_format=response_format, 
+				stop_sequences=stop_sequences, grounding=True, search_domains=search_domains,
+				reasoning=reasoning, thinking_level=thinking_level, thinking_budget=thinking_budget,
+				include_thoughts=include_thoughts, response_json_schema=response_json_schema )
+		
 		except Exception as exc:
 			exception = Error( exc )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Gemini'
 			exception.method = 'search_web( self, prompt: str, ... ) -> str | None'
 			raise exception
@@ -1498,7 +2497,7 @@ class Claude( Generator ):
 	
 	def fetch( self, query: str, model: str='claude-sonnet-4-6', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			system: str | None = None, stop_sequences: List[ str ] | None = None,
+			system: str=None, stop_sequences: List[ str ]=None,
 			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
 			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
 		'''
@@ -1614,7 +2613,7 @@ class Claude( Generator ):
 	
 	def generate_text( self, query: str, model: str='claude-sonnet-4-6', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			system: str | None = None, stop_sequences: List[ str ] | None = None,
+			system: str=None, stop_sequences: List[ str ]=None,
 			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
 			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
 		'''
@@ -1657,7 +2656,7 @@ class Claude( Generator ):
 	
 	def search_web( self, query: str, model: str='claude-sonnet-4-6', temperature: float = 0.7,
 			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			system: str | None = None, stop_sequences: List[ str ] | None = None,
+			system: str=None, stop_sequences: List[ str ]=None,
 			thinking: bool = False, thinking_budget: int | None = None,
 			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
 		'''
@@ -1867,7 +2866,6 @@ class Mistral( Generator ):
 								return '\n'.join( parts ).strip( )
 						
 						return str( content ).strip( )
-			
 			return str( response )
 		except Exception as exc:
 			exception = Error( exc )
@@ -1878,7 +2876,7 @@ class Mistral( Generator ):
 	
 	def fetch( self, query: str, model: str='mistral-large-latest', temperature: float = 0.7,
 			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
-			safe_mode: bool = False, system: str | None = None ) -> str | None:
+			safe_mode: bool = False, system: str=None ) -> str | None:
 		'''
 
 			Purpose:
@@ -1904,7 +2902,6 @@ class Mistral( Generator ):
 		try:
 			throw_if( 'query', query )
 			throw_if( 'model', model )
-			
 			self.query = str( query ).strip( )
 			self.model = str( model ).strip( )
 			self.temperature = float( temperature )
@@ -1916,20 +2913,15 @@ class Mistral( Generator ):
 			self.client = MistralAI( api_key=self.api_key )
 			self.messages = [ ]
 			if self.system_instructions:
-				self.messages.append(
-					{
+				self.messages.append( {
 							'role': 'system',
 							'content': self.system_instructions,
-					}
-				)
+					} )
 			
-			self.messages.append(
-				{
+			self.messages.append( {
 						'role': 'user',
 						'content': self.query,
-				}
-			)
-			
+				} )
 			self.params = {
 					'model': self.model,
 					'messages': self.messages,
@@ -1950,12 +2942,7 @@ class Mistral( Generator ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'Mistral'
-			exception.method = (
-					'fetch( self, query: str, model: str="mistral-large-latest", '
-					'temperature: float=0.7, max_tokens: int=1024, top_p: float=1.0, '
-					'seed: int | None=None, safe_mode: bool=False, '
-					'system: str | None=None ) -> str | None'
-			)
+			exception.method = 'fetch( self, *args ) -> str | None'
 			raise exception
 	
 	def create_schema( self, function: str, tool: str,
@@ -2044,44 +3031,165 @@ class Mistral( Generator ):
 			raise exception
 
 class Chat( Generator ):
-	"""
-	
-	    Purpose
-	    ___________
-	    Class used for interacting with OpenAI text-generation and reasoning models
-	    through the Responses API, including optional built-in web search support.
-	
-	
-	    Parameters
-	    ------------
-	    num: int=1
-	    temp: float=0.8
-	    top: float=0.9
-	    freq: float=0.0
-	    pres: float=0.0
-	    iters: int=10000
-	    store: bool=True
-	    stream: bool=True
-	
-	
-	    Methods
-	    ------------
-	    fetch( self, prompt: str, ... ) -> str
-	    get_model_options( self ) -> List[ str ]
-	    get_effort_options( self ) -> List[ str ]
-	    generate_text( self, prompt: str, ... ) -> str
-	    analyze_image( self, prompt: str, url: str ) -> str
-	    summarize_document( self, prompt: str, path: str ) -> str
-	    search_web( self, prompt: str, ... ) -> str
-	    search_files( self, prompt: str ) -> str
-	    dump( self ) -> str
-	    get_data( self ) -> Dict[ str, Any ]
+	'''
 
-    """
+		Purpose:
+		--------
+		Class used for interacting with OpenAI text-generation, reasoning, image,
+		vision, file-search, and web-search capabilities through the Responses API.
+
+		Attributes:
+		-----------
+		api_key (str):
+			OpenAI API key from configuration.
+
+		client (OpenAI):
+			Initialized OpenAI SDK client.
+
+		system_instructions (str | None):
+			Final instruction block supplied to the Responses API.
+
+		model (str):
+			Selected OpenAI model identifier.
+
+		number (int):
+			Default response count retained for compatibility.
+
+		temperature (float):
+			Default sampling temperature.
+
+		top_percent (float):
+			Default nucleus sampling value.
+
+		frequency_penalty (float):
+			Compatibility member retained for older UI paths.
+
+		presence_penalty (float):
+			Compatibility member retained for older UI paths.
+
+		max_completion_tokens (int):
+			Default output-token limit.
+
+		store (bool):
+			Whether Responses API results should be stored server-side.
+
+		stream (bool):
+			Whether the Responses API request should stream.
+
+		response_format (str):
+			Current response-format mode.
+
+		reasoning_effort (str | None):
+			Optional reasoning-effort setting for reasoning-capable models.
+
+		web_search (bool):
+			Whether built-in web search is enabled.
+
+		search_domains (List[str]):
+			Optional preferred web-search domains.
+
+		vector_store_ids (List[str]):
+			Configured OpenAI vector store identifiers for file search.
+
+		request (Dict[str, Any] | None):
+			Last Responses API request payload.
+
+		response (Any):
+			Last OpenAI SDK response object.
+
+		Methods:
+		--------
+		fetch( self, prompt, ... ) -> str
+		generate_text( self, prompt, ... ) -> str
+		generate_image( self, prompt ) -> str
+		analyze_image( self, prompt, url ) -> str
+		summarize_document( self, prompt, path ) -> str
+		search_web( self, prompt, ... ) -> str
+		search_files( self, prompt ) -> str
+		translate( self, text ) -> str
+		transcribe( self, text ) -> str
+		get_format_options( self ) -> List[str]
+		get_model_options( self ) -> List[str]
+		get_effort_options( self ) -> List[str]
+		get_data( self ) -> Dict[str, Any]
+		dump( self ) -> str
+
+	'''
+	
+	api_key: Optional[ str ]
+	client: Optional[ OpenAI ]
+	system_instructions: Optional[ str ]
+	model: Optional[ str ]
+	number: Optional[ int ]
+	temperature: Optional[ float ]
+	top_percent: Optional[ float ]
+	frequency_penalty: Optional[ float ]
+	presence_penalty: Optional[ float ]
+	max_completion_tokens: Optional[ int ]
+	store: Optional[ bool ]
+	stream: Optional[ bool ]
+	modalities: Optional[ List[ str ] ]
+	stops: Optional[ List[ str ] ]
+	response_format: Optional[ str ]
+	reasoning_effort: Optional[ str ]
+	input_text: Optional[ str ]
+	id: Optional[ str ]
+	vector_store_ids: Optional[ List[ str ] ]
+	metadata: Optional[ Dict[ str, Any ] ]
+	tools: Optional[ List[ Dict[ str, Any ] ] ]
+	vector_stores: Optional[ Dict[ str, str ] ]
+	web_search: Optional[ bool ]
+	search_domains: Optional[ List[ str ] ]
+	parallel_tool_calls: Optional[ bool ]
+	tool_choice: Optional[ str ]
+	request: Optional[ Dict[ str, Any ] ]
+	response: Optional[ Any ]
+	query: Optional[ str ]
+	image_url: Optional[ str ]
+	input: Optional[ Any ]
+	messages: Optional[ Any ]
 	
 	def __init__( self, num: int = 1, temp: float = 0.8, top: float = 0.9,
-			freq: float = 0.0, pres: float = 0.0, iters: int = 10000, store: bool = True,
-			stream: bool = True ):
+			freq: float = 0.0, pres: float = 0.0, iters: int = 10000,
+			store: bool = True, stream: bool = True ) -> None:
+		'''
+		
+			Purpose:
+			--------
+			Initialize the OpenAI Chat generator with defaults used by the Foo
+			application.
+
+			Parameters:
+			-----------
+			num (int):
+				Default response count retained for compatibility.
+
+			temp (float):
+				Default sampling temperature.
+
+			top (float):
+				Default top-p value.
+
+			freq (float):
+				Default frequency-penalty value retained for compatibility.
+
+			pres (float):
+				Default presence-penalty value retained for compatibility.
+
+			iters (int):
+				Default maximum completion/output token count.
+
+			store (bool):
+				Default Responses API store setting.
+
+			stream (bool):
+				Default Responses API stream setting.
+
+			Returns:
+			--------
+			None
+			
+		'''
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = OpenAI( api_key=self.api_key )
@@ -2102,371 +3210,764 @@ class Chat( Generator ):
 		self.reasoning_effort = None
 		self.input_text = None
 		self.id = 'asst_2Yu2yfINGD5en4e0aUXAKxyu'
-		self.vector_store_ids = [ 'vs_67e83bdf8abc81918bda0d6b39a19372', ]
+		self.vector_store_ids = [ 'vs_67e83bdf8abc81918bda0d6b39a19372' ]
 		self.metadata = { }
 		self.tools = [ ]
-		self.vector_stores = { 'Code': 'vs_67e83bdf8abc81918bda0d6b39a19372', }
+		self.vector_stores = { 'Code': 'vs_67e83bdf8abc81918bda0d6b39a19372' }
 		self.web_search = False
 		self.search_domains = [ ]
 		self.parallel_tool_calls = True
 		self.tool_choice = 'auto'
+		self.request = None
+		self.response = None
+		self.query = None
+		self.image_url = None
+		self.input = None
+		self.messages = None
 	
-	def _supports_reasoning( self, model: str ) -> bool:
-		"""
-	
-	        Purpose
-	        _______
-	        Indicates whether the selected model family should receive
-	        reasoning options.
-	
-	
-	        Parameters
-	        ----------
-	        model: str
-	
-	
-	        Returns
-	        -------
-	        bool
+	def __dir__( self ) -> List[ str ]:
+		'''
+		
+			Purpose:
+			--------
+			Return a stable ordered member list for introspection.
 
-        """
-		try:
-			throw_if( 'model', model )
-			_name = model.strip( ).lower( )
-			return _name.startswith( 'gpt-5' ) or _name.startswith( 'o' )
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Chat'
-			exception.method = '_supports_reasoning( self, model: str ) -> bool'
-			raise exception
-	
-	def _normalize_domains( self, domains: Any ) -> List[ str ]:
-		"""
-	
-	        Purpose
-	        _______
-	        Normalize a string or list of domain entries into a canonical,
-	        de-duplicated list suitable for provider routing.
-	
-	
-	        Parameters
-	        ----------
-	        domains: Any
-	
-	
-	        Returns
-	        -------
-	        List[ str ]
+			Parameters:
+			-----------
+			None
 
-        """
+			Returns:
+			--------
+			List[str]:
+				Ordered attribute and method names.
+			
+		'''
+		return [
+				'api_key',
+				'client',
+				'system_instructions',
+				'model',
+				'number',
+				'temperature',
+				'top_percent',
+				'frequency_penalty',
+				'presence_penalty',
+				'max_completion_tokens',
+				'store',
+				'stream',
+				'response_format',
+				'reasoning_effort',
+				'web_search',
+				'search_domains',
+				'parallel_tool_calls',
+				'tool_choice',
+				'tools',
+				'vector_store_ids',
+				'request',
+				'response',
+				'fetch',
+				'generate_text',
+				'generate_image',
+				'analyze_image',
+				'summarize_document',
+				'search_web',
+				'search_files',
+				'translate',
+				'transcribe',
+				'get_format_options',
+				'get_model_options',
+				'get_effort_options',
+				'get_data',
+				'dump'
+		]
+	
+	def normalize_domains( self, domains: Any ) -> List[ str ]:
+		'''
+		
+			Purpose:
+			--------
+			Normalize user-supplied domain input into canonical, de-duplicated
+			domain names.
+
+			Parameters:
+			-----------
+			domains (Any):
+				String, list, tuple, set, scalar, or None containing domain values.
+
+			Returns:
+			--------
+			List[str]:
+				Clean domain names without protocol, path, port, or leading www.
+			
+		'''
 		try:
 			if domains is None:
 				return [ ]
 			
 			if isinstance( domains, str ):
-				_parts = re.split( r'[\n,;]+', domains )
-			elif isinstance( domains, list ) or isinstance( domains, tuple ) or isinstance( domains, set ):
-				_parts = [ str( x ) for x in domains if x is not None ]
+				parts = re.split( r'[\n,;]+', domains )
+			elif isinstance( domains, (list, tuple, set) ):
+				parts = [ str( item ) for item in domains if item is not None ]
 			else:
-				_parts = [ str( domains ) ]
+				parts = [ str( domains ) ]
 			
-			_values = [ ]
-			for _entry in _parts:
-				_value = str( _entry ).strip( ).lower( )
-				if not _value:
+			values: List[ str ] = [ ]
+			
+			for entry in parts:
+				value = str( entry ).strip( ).lower( )
+				
+				if not value:
 					continue
 				
-				if not _value.startswith( 'http://' ) and not _value.startswith( 'https://' ):
-					_value = f'https://{_value}'
+				if not value.startswith( 'http://' ) and not value.startswith( 'https://' ):
+					value = f'https://{value}'
 				
-				_parsed = urllib.parse.urlparse( _value )
-				_domain = (_parsed.netloc or _parsed.path or '').strip( ).lower( )
-				_domain = re.sub( r':\d+$', '', _domain )
-				_domain = _domain.lstrip( '.' )
+				parsed = urllib.parse.urlparse( value )
+				domain = (parsed.netloc or parsed.path or '').strip( ).lower( )
+				domain = re.sub( r':\d+$', '', domain )
+				domain = domain.lstrip( '.' )
 				
-				if _domain.startswith( 'www.' ):
-					_domain = _domain[ 4: ]
+				if domain.startswith( 'www.' ):
+					domain = domain[ 4: ]
 				
-				if _domain and _domain not in _values:
-					_values.append( _domain )
+				if not domain:
+					continue
+				
+				if not re.fullmatch( r'[a-z0-9][a-z0-9.-]*\.[a-z]{2,}', domain ):
+					raise ValueError( f'Invalid domain: {domain}' )
+				
+				if domain not in values:
+					values.append( domain )
 			
-			return _values
+			return values
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
-			exception.method = '_normalize_domains( self, domains: Any ) -> List[ str ]'
+			exception.method = 'normalize_domains( self, domains: Any ) -> List[ str ]'
 			raise exception
 	
-	def _build_instructions( self, system: str | None = None, response_format: str | None = None,
-			web_search: bool = False, search_domains: Any = None ) -> str | None:
-		"""
-	
-	        Purpose
-	        _______
-	        Build the final instruction block sent to the OpenAI Responses API.
-	
-	
-	        Parameters
-	        ----------
-	        system: str | None=None
-	        response_format: str | None=None
-	        web_search: bool=False
-	        search_domains: Any=None
-	
-	
-	        Returns
-	        -------
-	        str | None
+	def supports_reasoning( self, model: str ) -> bool:
+		'''
+		
+			Purpose:
+			--------
+			Determine whether the selected OpenAI model should receive a reasoning
+			configuration.
 
-        """
+			Parameters:
+			-----------
+			model (str):
+				OpenAI model identifier.
+
+			Returns:
+			--------
+			bool:
+				True when the model name indicates a reasoning-capable family.
+			
+		'''
 		try:
-			_parts = [ ]
+			throw_if( 'model', model )
+			name = str( model ).strip( ).lower( )
+			return name.startswith( 'gpt-5' ) or name.startswith( 'o' )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'generators'
+			exception.cause = 'Chat'
+			exception.method = 'supports_reasoning( self, model: str ) -> bool'
+			raise exception
+	
+	def build_instructions( self, system: str=None,
+			response_format: str=None, web_search: bool = False,
+			search_domains: Any = None ) -> str | None:
+		'''
+		
+			Purpose:
+			--------
+			Build the final instruction block sent to the OpenAI Responses API.
+
+			Parameters:
+			-----------
+			system (str | None):
+				Optional user-provided system/developer instructions.
+
+			response_format (str | None):
+				Optional response-format mode, such as json.
+
+			web_search (bool):
+				Whether web search is enabled for this request.
+
+			search_domains (Any):
+				Optional preferred source domains.
+
+			Returns:
+			--------
+			str | None:
+				Instruction block or None when no instructions are required.
+			
+		'''
+		try:
+			parts: List[ str ] = [ ]
 			
 			if system and str( system ).strip( ):
-				_parts.append( str( system ).strip( ) )
+				parts.append( str( system ).strip( ) )
 			
 			if response_format and str( response_format ).strip( ).lower( ) == 'json':
-				_parts.append( 'Return valid JSON only. Do not include markdown fences or commentary.' )
-			
-			_domains = self._normalize_domains( search_domains )
-			if web_search and _domains:
-				_parts.append(
-					'When using web search, strongly prefer sources from the following domains '
-					f'when they are relevant and available: {", ".join( _domains )}.'
+				parts.append(
+					'Return valid JSON only. Do not include markdown fences, prose, '
+					'or commentary outside the JSON value.'
 				)
 			
-			if _parts:
-				return '\n\n'.join( _parts )
+			domains = self.normalize_domains( search_domains )
+			if web_search and domains:
+				parts.append(
+					'When using web search, strongly prefer sources from the following '
+					f'domains when they are relevant and available: {", ".join( domains )}.'
+				)
+			
+			if parts:
+				return '\n\n'.join( parts )
 			
 			return None
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
-			exception.method = ('_build_instructions( self, system: str | None=None, '
-			                    'response_format: str | None=None, web_search: bool=False, '
-			                    'search_domains: Any=None ) -> str | None')
+			exception.method = (
+					'build_instructions( self, system: str | None=None, '
+					'response_format: str | None=None, web_search: bool=False, '
+					'search_domains: Any=None ) -> str | None'
+			)
 			raise exception
 	
-	def fetch( self, prompt: str, model: str='gpt-5-mini', temperature: float = 0.7,
-			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
-			system: str | None = None, response_format: str | None = None,
-			reasoning_effort: str | None = None, web_search: bool = False,
-			search_domains: Any = None, store: bool = True, stream: bool = False,
-			parallel_tool_calls: bool = True, tool_choice: str='auto' ) -> str:
-		"""
-	
-	        Purpose
-	        _______
-	        Primary provider entry point used by the UI. Executes text generation
-	        or reasoning through OpenAI's Responses API with optional built-in
-	        web search.
-	
-	
-	        Parameters
-	        ----------
-	        prompt: str
-	        model: str='gpt-5-mini'
-	        temperature: float=0.7
-	        max_tokens: int=1024
-	        top_p: float=1.0
-	        seed: int | None=None
-	        system: str | None=None
-	        response_format: str | None=None
-	        reasoning_effort: str | None=None
-	        web_search: bool=False
-	        search_domains: Any=None
-	        store: bool=True
-	        stream: bool=False
-	        parallel_tool_calls: bool=True
-	        tool_choice: str='auto'
-	
-	
-	        Returns
-	        -------
-	        str
+	def build_text_format( self, response_format: str | Dict[ str, Any ]=None,
+			json_schema: Dict[ str, Any ]=None, schema_name: str = 'structured_response',
+			schema_description: str = 'Structured JSON response.' ) -> Dict[ str, Any ] | None:
+		'''
+		
+			Purpose:
+			--------
+			Build the Responses API text.format payload for text, JSON object mode,
+			or JSON schema structured output.
 
-        """
+			Parameters:
+			-----------
+			response_format (str | Dict[str, Any] | None):
+				Output format selector. Accepted strings are auto, text, json,
+				json_object, json_schema, and schema.
+
+			json_schema (Dict[str, Any] | None):
+				Optional JSON Schema object for structured outputs.
+
+			schema_name (str):
+				Response-format name used when json_schema is supplied.
+
+			schema_description (str):
+				Description used when json_schema is supplied.
+
+			Returns:
+			--------
+			Dict[str, Any] | None:
+				Responses API text-format object or None to omit the field.
+			
+		'''
+		try:
+			if isinstance( response_format, dict ):
+				return response_format
+			
+			mode = str( response_format or '' ).strip( ).lower( )
+			
+			if not mode or mode == 'auto':
+				return None
+			
+			if mode == 'text':
+				return { 'type': 'text' }
+			
+			if mode in [ 'json', 'json_object' ]:
+				return { 'type': 'json_object' }
+			
+			if mode in [ 'json_schema', 'schema' ]:
+				throw_if( 'json_schema', json_schema )
+				return {
+						'type': 'json_schema',
+						'name': schema_name,
+						'description': schema_description,
+						'strict': True,
+						'schema': json_schema
+				}
+			
+			return None
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'generators'
+			exception.cause = 'Chat'
+			exception.method = (
+					'build_text_format( self, response_format: str | Dict[ str, Any ] | None=None, '
+					'json_schema: Dict[ str, Any ] | None=None, schema_name: str=structured_response, '
+					'schema_description: str=Structured JSON response. ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def build_tools( self, web_search: bool = False, search_domains: Any = None,
+			file_search: bool = False, vector_store_ids: List[ str ]=None,
+			max_file_results: int = 20 ) -> List[ Dict[ str, Any ] ]:
+		'''
+		
+			Purpose:
+			--------
+			Build the Responses API hosted-tool list for web search and file search.
+
+			Parameters:
+			-----------
+			web_search (bool):
+				Whether to enable the built-in web-search tool.
+
+			search_domains (Any):
+				Optional preferred domains. Current behavior keeps these domains in
+				instructions for compatibility and does not force unsupported filters.
+
+			file_search (bool):
+				Whether to enable the built-in file-search tool.
+
+			vector_store_ids (List[str] | None):
+				Vector store identifiers for file search.
+
+			max_file_results (int):
+				Maximum number of file-search results.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]:
+				Responses API tool definitions.
+			
+		'''
+		try:
+			tools: List[ Dict[ str, Any ] ] = [ ]
+			
+			if web_search:
+				tools.append( { 'type': 'web_search' } )
+			
+			if file_search:
+				store_ids = vector_store_ids or self.vector_store_ids
+				throw_if( 'vector_store_ids', store_ids )
+				tools.append(
+					{
+							'type': 'file_search',
+							'vector_store_ids': store_ids,
+							'max_num_results': int( max_file_results )
+					}
+				)
+			
+			return tools
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'generators'
+			exception.cause = 'Chat'
+			exception.method = (
+					'build_tools( self, web_search: bool=False, search_domains: Any=None, '
+					'file_search: bool=False, vector_store_ids: List[ str ] | None=None, '
+					'max_file_results: int=20 ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def extract_output_text( self, response: Any ) -> str:
+		'''
+		
+			Purpose:
+			--------
+			Extract text from an OpenAI SDK response or streaming response.
+
+			Parameters:
+			-----------
+			response (Any):
+				OpenAI response object, stream, dictionary, or scalar fallback.
+
+			Returns:
+			--------
+			str:
+				Best available output text.
+			
+		'''
+		try:
+			if response is None:
+				return ''
+			
+			if hasattr( response, 'output_text' ) and response.output_text:
+				return str( response.output_text )
+			
+			if isinstance( response, dict ):
+				if response.get( 'output_text' ):
+					return str( response.get( 'output_text' ) )
+				if response.get( 'text' ):
+					return str( response.get( 'text' ) )
+			
+			if hasattr( response, '__iter__' ) and not isinstance( response, (str, bytes, dict) ):
+				parts: List[ str ] = [ ]
+				
+				for event in response:
+					event_type = getattr( event, 'type', '' )
+					
+					if event_type == 'response.output_text.delta':
+						delta = getattr( event, 'delta', '' )
+						if delta:
+							parts.append( str( delta ) )
+					
+					elif event_type == 'response.completed':
+						final_response = getattr( event, 'response', None )
+						if final_response is not None and hasattr( final_response, 'output_text' ):
+							text = str( final_response.output_text or '' )
+							if text:
+								return text
+				
+				if parts:
+					return ''.join( parts )
+			
+			output = getattr( response, 'output', None )
+			if output:
+				parts: List[ str ] = [ ]
+				for item in output:
+					content = getattr( item, 'content', None )
+					if content:
+						for block in content:
+							text = getattr( block, 'text', None )
+							if text:
+								parts.append( str( text ) )
+				
+				if parts:
+					return '\n'.join( parts ).strip( )
+			
+			return str( response )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'generators'
+			exception.cause = 'Chat'
+			exception.method = 'extract_output_text( self, response: Any ) -> str'
+			raise exception
+	
+	def fetch( self, prompt: str, model: str = 'gpt-5-mini', temperature: float = 0.7,
+			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
+			system: str=None, response_format: str | Dict[ str, Any ]=None,
+			reasoning_effort: str=None, web_search: bool = False,
+			search_domains: Any = None, store: bool = True, stream: bool = False,
+			parallel_tool_calls: bool = True, tool_choice: str = 'auto',
+			json_schema: Dict[ str, Any ]=None,
+			schema_name: str = 'structured_response',
+			schema_description: str = 'Structured JSON response.' ) -> str:
+		'''
+		
+			Purpose:
+			--------
+			Send an OpenAI Responses API request for text generation, optional JSON
+			mode, optional structured output, optional reasoning, and optional web
+			search.
+
+			Parameters:
+			-----------
+			prompt (str):
+				User prompt.
+
+			model (str):
+				OpenAI model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output tokens.
+
+			top_p (float):
+				Nucleus sampling parameter.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system/developer instructions.
+
+			response_format (str | Dict[str, Any] | None):
+				Output format. Use json for JSON object mode, or json_schema/schema
+				with json_schema for structured output.
+
+			reasoning_effort (str | None):
+				Optional reasoning effort for reasoning-capable models.
+
+			web_search (bool):
+				Whether to enable OpenAI built-in web search.
+
+			search_domains (Any):
+				Optional preferred domains used in instruction guidance.
+
+			store (bool):
+				Whether to store the response server-side.
+
+			stream (bool):
+				Whether to stream the response.
+
+			parallel_tool_calls (bool):
+				Whether parallel tool calls are allowed.
+
+			tool_choice (str):
+				Tool-choice behavior, normally auto.
+
+			json_schema (Dict[str, Any] | None):
+				Optional JSON Schema object for structured output.
+
+			schema_name (str):
+				Schema response-format name.
+
+			schema_description (str):
+				Schema response-format description.
+
+			Returns:
+			--------
+			str:
+				Generated response text.
+			
+		'''
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
 			
+			self.query = prompt
 			self.model = str( model ).strip( )
-			self.input_text = str( prompt )
 			self.temperature = float( temperature )
-			self.top_percent = float( top_p )
 			self.max_completion_tokens = int( max_tokens )
-			self.response_format = response_format or 'auto'
-			self.reasoning_effort = reasoning_effort if reasoning_effort else None
+			self.top_percent = float( top_p )
 			self.store = bool( store )
 			self.stream = bool( stream )
 			self.web_search = bool( web_search )
-			self.search_domains = self._normalize_domains( search_domains )
+			self.search_domains = self.normalize_domains( search_domains )
 			self.parallel_tool_calls = bool( parallel_tool_calls )
 			self.tool_choice = tool_choice or 'auto'
-			self.system_instructions = self._build_instructions(
+			self.response_format = (
+					str( response_format ).strip( ).lower( )
+					if isinstance( response_format, str )
+					else response_format
+			)
+			self.reasoning_effort = reasoning_effort if reasoning_effort else None
+			self.system_instructions = self.build_instructions(
 				system=system,
-				response_format=self.response_format,
+				response_format=(
+						response_format
+						if isinstance( response_format, str )
+						else None
+				),
+				web_search=self.web_search,
+				search_domains=self.search_domains
+			)
+			self.tools = self.build_tools(
 				web_search=self.web_search,
 				search_domains=self.search_domains,
+				file_search=False
 			)
 			
-			self.tools = [ ]
-			if self.web_search:
-				self.tools.append( { 'type': 'web_search_preview' } )
+			self.request = {
+					'model': self.model,
+					'input': self.query,
+					'max_output_tokens': self.max_completion_tokens,
+					'store': self.store,
+					'stream': self.stream,
+					'parallel_tool_calls': self.parallel_tool_calls
+			}
 			
-			self.request = \
-				{
-						'model': self.model,
-						'input': self.input_text,
-						'max_output_tokens': self.max_completion_tokens,
-						'store': self.store,
-						'stream': self.stream,
-						'parallel_tool_calls': self.parallel_tool_calls,
-				}
+			text_format = self.build_text_format( response_format=response_format,
+				json_schema=json_schema, schema_name=schema_name,
+				schema_description=schema_description )
+			
+			if text_format:
+				self.request[ 'text' ] = { 'format': text_format }
 			
 			if self.system_instructions:
 				self.request[ 'instructions' ] = self.system_instructions
+			
+			if seed is not None:
+				self.request[ 'seed' ] = int( seed )
 			
 			if self.tools:
 				self.request[ 'tools' ] = self.tools
 				self.request[ 'tool_choice' ] = self.tool_choice
 			
-			if self.temperature is not None:
+			if self.supports_reasoning( self.model ) and self.reasoning_effort:
+				self.request[ 'reasoning' ] = { 'effort': self.reasoning_effort }
+			else:
 				self.request[ 'temperature' ] = self.temperature
-			
-			if self.top_percent is not None:
 				self.request[ 'top_p' ] = self.top_percent
 			
-			if seed is not None:
-				self.request[ 'seed' ] = int( seed )
-			
-			if self._supports_reasoning( self.model ) and self.reasoning_effort:
-				self.request[ 'reasoning' ] = { 'effort': self.reasoning_effort }
-			
 			self.response = self.client.responses.create( **self.request )
-			return self.response.output_text
+			return self.extract_output_text( self.response )
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = (
-					'fetch( self, prompt: str, model: str="gpt-5-mini", temperature: float=0.7, '
-					'max_tokens: int=1024, top_p: float=1.0, seed: int | None=None, '
-					'system: str | None=None, response_format: str | None=None, '
+					'fetch( self, prompt: str, model: str="gpt-5-mini", '
+					'temperature: float=0.7, max_tokens: int=1024, top_p: float=1.0, '
+					'seed: int | None=None, system: str | None=None, '
+					'response_format: str | Dict[ str, Any ] | None=None, '
 					'reasoning_effort: str | None=None, web_search: bool=False, '
 					'search_domains: Any=None, store: bool=True, stream: bool=False, '
-					'parallel_tool_calls: bool=True, tool_choice: str="auto" ) -> str'
+					'parallel_tool_calls: bool=True, tool_choice: str="auto", '
+					'json_schema: Dict[ str, Any ] | None=None, '
+					'schema_name: str="structured_response", '
+					'schema_description: str="Structured JSON response." ) -> str'
 			)
 			raise exception
 	
-	def generate_text( self, prompt: str, model: str='gpt-5-mini', temperature: float = 0.7,
-			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
-			system: str | None = None, response_format: str | None = None,
-			reasoning_effort: str | None = None, web_search: bool = False,
+	def generate_text( self, prompt: str, model: str = 'gpt-5-mini',
+			temperature: float = 0.7, max_tokens: int = 1024, top_p: float = 1.0,
+			seed: int | None = None, system: str=None,
+			response_format: str | Dict[ str, Any ]=None,
+			reasoning_effort: str=None, web_search: bool = False,
 			search_domains: Any = None, store: bool = True, stream: bool = False,
-			parallel_tool_calls: bool = True, tool_choice: str='auto' ) -> str:
-		"""
-	
-	        Purpose
-	        _______
-	        Convenience wrapper around fetch for text generation.
-	
-	
-	        Parameters
-	        ----------
-	        prompt: str
-	
-	
-	        Returns
-	        -------
-	        str
+			parallel_tool_calls: bool = True, tool_choice: str = 'auto',
+			json_schema: Dict[ str, Any ]=None ) -> str:
+		'''
+		
+			Purpose:
+			--------
+			Convenience wrapper around fetch for text generation.
 
-        """
+			Parameters:
+			-----------
+			prompt (str):
+				User prompt.
+
+			model (str):
+				OpenAI model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output tokens.
+
+			top_p (float):
+				Nucleus sampling parameter.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system/developer instructions.
+
+			response_format (str | Dict[str, Any] | None):
+				Output format selector or complete text.format object.
+
+			reasoning_effort (str | None):
+				Optional reasoning effort.
+
+			web_search (bool):
+				Whether to enable web search.
+
+			search_domains (Any):
+				Optional preferred source domains.
+
+			store (bool):
+				Whether to store the response.
+
+			stream (bool):
+				Whether to stream the response.
+
+			parallel_tool_calls (bool):
+				Whether parallel tool calls are enabled.
+
+			tool_choice (str):
+				Tool-choice behavior.
+
+			json_schema (Dict[str, Any] | None):
+				Optional JSON Schema for structured output.
+
+			Returns:
+			--------
+			str:
+				Generated response text.
+			
+		'''
 		try:
-			return self.fetch(
-				prompt=prompt,
-				model=model,
-				temperature=temperature,
-				max_tokens=max_tokens,
-				top_p=top_p,
-				seed=seed,
-				system=system,
-				response_format=response_format,
-				reasoning_effort=reasoning_effort,
-				web_search=web_search,
-				search_domains=search_domains,
-				store=store,
-				stream=stream,
-				parallel_tool_calls=parallel_tool_calls,
-				tool_choice=tool_choice,
-			)
+			return self.fetch( prompt=prompt, model=model, temperature=temperature,
+				max_tokens=max_tokens, top_p=top_p, seed=seed, system=system,
+				response_format=response_format, reasoning_effort=reasoning_effort,
+				web_search=web_search, search_domains=search_domains, store=store,
+				stream=stream, parallel_tool_calls=parallel_tool_calls,
+				tool_choice=tool_choice, json_schema=json_schema )
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = 'generate_text( self, prompt: str, ... ) -> str'
 			raise exception
 	
 	def generate_image( self, prompt: str ) -> str:
-		"""
-	
-	        Purpose
-	        _______
-	        Generate an image using the OpenAI image API.
-	
-	
-	        Parameters
-	        ----------
-	        prompt: str
-	
-	
-	        Returns
-	        -------
-	        str
+		'''
+		
+			Purpose:
+			--------
+			Generate an image using the OpenAI image API.
 
-        """
+			Parameters:
+			-----------
+			prompt (str):
+				Image-generation prompt.
+
+			Returns:
+			--------
+			str:
+				Image URL or serialized response fallback.
+			
+		'''
 		try:
 			throw_if( 'prompt', prompt )
 			self.input_text = prompt
 			self.response = self.client.images.generate(
 				model='gpt-image-1',
 				prompt=self.input_text,
-				size='1024x1024',
+				size='1024x1024'
 			)
+			
 			if hasattr( self.response, 'data' ) and self.response.data:
-				_image = self.response.data[ 0 ]
-				if hasattr( _image, 'url' ) and _image.url:
-					return _image.url
+				image = self.response.data[ 0 ]
+				
+				if hasattr( image, 'url' ) and image.url:
+					return image.url
+			
 			return str( self.response )
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = 'generate_image( self, prompt: str ) -> str'
 			raise exception
 	
 	def analyze_image( self, prompt: str, url: str ) -> str:
-		"""
-	
-	        Purpose
-	        _______
-	        Analyze an image using a multimodal OpenAI model.
-	
-	
-	        Parameters
-	        ----------
-	        prompt: str
-	        url: str
-	
-	
-	        Returns
-	        -------
-	        str
+		'''
+		
+			Purpose:
+			--------
+			Analyze an image using a multimodal OpenAI model.
 
-        """
+			Parameters:
+			-----------
+			prompt (str):
+				User analysis prompt.
+
+			url (str):
+				Image URL or data URL.
+
+			Returns:
+			--------
+			str:
+				Image analysis result text.
+			
+		'''
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'url', url )
@@ -2478,107 +3979,154 @@ class Chat( Generator ):
 							'content': [
 									{
 											'type': 'input_text',
-											'text': self.input_text,
+											'text': self.input_text
 									},
 									{
 											'type': 'input_image',
-											'image_url': self.image_url,
-									}, ],
-					} ]
+											'image_url': self.image_url
+									}
+							]
+					}
+			]
 			self.response = self.client.responses.create(
 				model=self.model,
-				input=self.input,
+				input=self.input
 			)
-			return self.response.output_text
+			return self.extract_output_text( self.response )
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = 'analyze_image( self, prompt: str, url: str ) -> str'
 			raise exception
 	
 	def summarize_document( self, prompt: str, path: str ) -> str:
-		"""
-	
-	        Purpose
-	        _______
-	        Summarize a document provided by file path.
-	
-	
-	        Parameters
-	        ----------
-	        prompt: str
-	        path: str
-	
-	
-	        Returns
-	        -------
-	        str
+		'''
+		
+			Purpose:
+			--------
+			Upload or reference a document path and summarize it through the Responses
+			API.
 
-        """
+			Parameters:
+			-----------
+			prompt (str):
+				Summarization prompt.
+
+			path (str):
+				Local path to the document.
+
+			Returns:
+			--------
+			str:
+				Summary text.
+			
+		'''
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'path', path )
-			self.input_text = prompt
-			self.file_path = path
+			file_path = Path( path )
 			
-			with open( self.file_path, 'rb' ) as _handle:
-				self.file = self.client.files.create( file=_handle, purpose='user_data' )
+			if not file_path.exists( ):
+				raise FileNotFoundError( str( file_path ) )
+			
+			with file_path.open( 'rb' ) as stream:
+				uploaded = self.client.files.create(
+					file=stream,
+					purpose='assistants'
+				)
 			
 			self.messages = [
 					{
 							'role': 'user',
 							'content': [
 									{
-											'type': 'input_file',
-											'file_id': self.file.id,
+											'type': 'input_text',
+											'text': prompt
 									},
 									{
-											'type': 'input_text',
-											'text': self.input_text,
-									}, ],
-					} ]
-			
-			self.response = self.client.responses.create(
-				model=self.model,
-				input=self.messages,
-			)
-			return self.response.output_text
+											'type': 'input_file',
+											'file_id': uploaded.id
+									}
+							]
+					}
+			]
+			self.response = self.client.responses.create( model=self.model, input=self.messages )
+			return self.extract_output_text( self.response )
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = 'summarize_document( self, prompt: str, path: str ) -> str'
 			raise exception
 	
-	def search_web( self, prompt: str, model: str='gpt-5-mini', temperature: float = 0.7,
-			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
-			system: str | None = None, response_format: str | None = None,
-			reasoning_effort: str | None = None, search_domains: Any = None,
+	def search_web( self, prompt: str, model: str = 'gpt-5-mini',
+			temperature: float = 0.7, max_tokens: int = 1024, top_p: float = 1.0,
+			seed: int | None = None, system: str=None,
+			response_format: str | Dict[ str, Any ]=None,
+			reasoning_effort: str=None, search_domains: Any = None,
 			store: bool = True, stream: bool = False, parallel_tool_calls: bool = True,
-			tool_choice: str='auto' ) -> str:
-		"""
-	
-	        Purpose
-	        _______
-	        Execute a Responses API request with the built-in web search tool enabled.
-	
-	
-	        Parameters
-	        ----------
-	        prompt: str
-	
-	
-	        Returns
-	        -------
-	        str
+			tool_choice: str = 'auto' ) -> str:
+		'''
+		
+			Purpose:
+			--------
+			Execute a Responses API request with the built-in web-search tool enabled.
 
-        """
+			Parameters:
+			-----------
+			prompt (str):
+				User prompt.
+
+			model (str):
+				OpenAI model identifier.
+
+			temperature (float):
+				Sampling temperature.
+
+			max_tokens (int):
+				Maximum output tokens.
+
+			top_p (float):
+				Nucleus sampling value.
+
+			seed (int | None):
+				Optional deterministic seed.
+
+			system (str | None):
+				Optional system/developer instructions.
+
+			response_format (str | Dict[str, Any] | None):
+				Optional output format.
+
+			reasoning_effort (str | None):
+				Optional reasoning effort.
+
+			search_domains (Any):
+				Optional preferred source domains.
+
+			store (bool):
+				Whether to store the response.
+
+			stream (bool):
+				Whether to stream the response.
+
+			parallel_tool_calls (bool):
+				Whether parallel tool calls are enabled.
+
+			tool_choice (str):
+				Tool-choice behavior.
+
+			Returns:
+			--------
+			str:
+				Web-search-augmented response text.
+			
+		'''
 		try:
-			return self.fetch(
-				prompt=prompt,
-				model=model,
-				temperature=temperature,
+			return self.fetch( prompt=prompt, model=model, temperature=temperature,
 				max_tokens=max_tokens,
 				top_p=top_p,
 				seed=seed,
@@ -2590,74 +4138,77 @@ class Chat( Generator ):
 				store=store,
 				stream=stream,
 				parallel_tool_calls=parallel_tool_calls,
-				tool_choice=tool_choice,
+				tool_choice=tool_choice
 			)
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = 'search_web( self, prompt: str, ... ) -> str'
 			raise exception
 	
 	def search_files( self, prompt: str ) -> str:
-		"""
-	
-	        Purpose
-	        _______
-	        Run a file-search tool call against configured vector stores using
-	        the Responses API, and return the textual result.
-	
-	
-	        Parameters
-	        ----------
-	        prompt: str
-	
-	
-	        Returns
-	        -------
-	        str
+		'''
+		
+			Purpose:
+			--------
+			Run a file-search tool call against configured vector stores using the
+			Responses API.
 
-        """
+			Parameters:
+			-----------
+			prompt (str):
+				User query for file search.
+
+			Returns:
+			--------
+			str:
+				File-search-grounded response text.
+			
+		'''
 		try:
 			throw_if( 'prompt', prompt )
 			self.query = prompt
-			self.tools = [
-					{
-							'type': 'file_search',
-							'vector_store_ids': self.vector_store_ids,
-							'max_num_results': 20,
-					} ]
-			self.response = self.client.responses.create(
-				model=self.model,
-				tools=self.tools,
-				input=prompt,
+			self.tools = self.build_tools(
+				web_search=False,
+				file_search=True,
+				vector_store_ids=self.vector_store_ids,
+				max_file_results=20
 			)
-			return self.response.output_text
+			self.request = {
+					'model': self.model,
+					'tools': self.tools,
+					'input': prompt
+			}
+			self.response = self.client.responses.create( **self.request )
+			return self.extract_output_text( self.response )
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = 'search_files( self, prompt: str ) -> str'
 			raise exception
 	
 	def translate( self, text: str ) -> str:
-		"""
-	
-	        Purpose
-	        _______
-	        Translate text using the currently selected text model.
-	
-	
-	        Parameters
-	        ----------
-	        text: str
-	
-	
-	        Returns
-	        -------
-	        str
+		'''
+		
+			Purpose:
+			--------
+			Translate text using the currently selected OpenAI text model.
 
-        """
+			Parameters:
+			-----------
+			text (str):
+				Source text to translate.
+
+			Returns:
+			--------
+			str:
+				Translated text.
+			
+		'''
 		try:
 			throw_if( 'text', text )
 			return self.fetch(
@@ -2666,124 +4217,175 @@ class Chat( Generator ):
 				temperature=0.2,
 				max_tokens=self.max_completion_tokens,
 				top_p=self.top_percent,
-				system=self.system_instructions,
+				system=self.system_instructions
 			)
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = 'translate( self, text: str ) -> str'
 			raise exception
 	
 	def transcribe( self, text: str ) -> str:
-		"""
-	
-	        Purpose
-	        _______
-	        Placeholder passthrough for compatibility until audio transcription
-	        is split into its own provider path.
-	
-	
-	        Parameters
-	        ----------
-	        text: str
-	
-	
-	        Returns
-	        -------
-	        str
+		'''
+		
+			Purpose:
+			--------
+			Compatibility passthrough until audio transcription is split into its own
+			provider path.
 
-        """
+			Parameters:
+			-----------
+			text (str):
+				Text value to pass through.
+
+			Returns:
+			--------
+			str:
+				The original text value.
+			
+		'''
 		try:
 			throw_if( 'text', text )
 			return text
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = 'transcribe( self, text: str ) -> str'
 			raise exception
 	
 	def get_format_options( self ) -> List[ str ]:
 		'''
-	
-	        Purpose:
-	        ---------
-	        Method that returns a list of formatting options
+		
+			Purpose:
+			--------
+			Return supported formatting options for UI selectors.
 
-        '''
-		return [ 'auto', 'text', 'json' ]
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]:
+				Available response-format labels.
+			
+		'''
+		return [ 'auto', 'text', 'json', 'json_schema' ]
 	
 	def get_model_options( self ) -> List[ str ]:
 		'''
-	
-	        Purpose:
-	        ---------
-	        Method that returns a list of available models
+		
+			Purpose:
+			--------
+			Return available OpenAI model options from configuration or fallback
+			defaults.
 
-        '''
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]:
+				Available model identifiers.
+			
+		'''
 		if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS:
 			return list( cfg.GPT_MODELS )
 		
-		return [ 'gpt-5.4',
-		         'gpt-5',
-		         'gpt-5-mini',
-		         'gpt-5-nano',
-		         'gpt-5.1',
-		         'gpt-5.2',
-		         'gpt-4.1', ]
+		return [
+				'gpt-5.4',
+				'gpt-5',
+				'gpt-5-mini',
+				'gpt-5-nano',
+				'gpt-5.1',
+				'gpt-5.2',
+				'gpt-4.1'
+		]
 	
 	def get_effort_options( self ) -> List[ str ]:
 		'''
-	
-	        Purpose:
-	        ---------
-	        Method that returns a list of available reasoning effort levels
+		
+			Purpose:
+			--------
+			Return available reasoning-effort options.
 
-        '''
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]:
+				Available reasoning-effort labels.
+			
+		'''
 		return [ 'minimal', 'low', 'medium', 'high' ]
 	
 	def get_data( self ) -> Dict[ str, Any ]:
 		'''
-	
-	        Purpose:
-	        ---------
-	        Returns: dict[ str, Any ] of members
+		
+			Purpose:
+			--------
+			Return the current Chat generator state as a dictionary.
 
-        '''
-		return \
-			{
-					'num': self.number,
-					'model': self.model,
-					'temperature': self.temperature,
-					'top_percent': self.top_percent,
-					'frequency_penalty': self.frequency_penalty,
-					'presence_penalty': self.presence_penalty,
-					'max_completion_tokens': self.max_completion_tokens,
-					'store': self.store,
-					'stream': self.stream,
-					'response_format': self.response_format,
-					'reasoning_effort': self.reasoning_effort,
-					'web_search': self.web_search,
-					'search_domains': self.search_domains,
-					'parallel_tool_calls': self.parallel_tool_calls,
-					'tool_choice': self.tool_choice,
-					'vector_store_ids': self.vector_store_ids,
-			}
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			Dict[str, Any]:
+				Serializable state dictionary.
+			
+		'''
+		return {
+				'num': self.number,
+				'model': self.model,
+				'temperature': self.temperature,
+				'top_percent': self.top_percent,
+				'frequency_penalty': self.frequency_penalty,
+				'presence_penalty': self.presence_penalty,
+				'max_completion_tokens': self.max_completion_tokens,
+				'store': self.store,
+				'stream': self.stream,
+				'response_format': self.response_format,
+				'reasoning_effort': self.reasoning_effort,
+				'web_search': self.web_search,
+				'search_domains': self.search_domains,
+				'parallel_tool_calls': self.parallel_tool_calls,
+				'tool_choice': self.tool_choice,
+				'vector_store_ids': self.vector_store_ids,
+				'request': self.request
+		}
 	
 	def dump( self ) -> str:
 		'''
-	
-	        Purpose:
-	        ---------
-	        Returns: JSON-like string representation of members
+		
+			Purpose:
+			--------
+			Return a string representation of the current Chat generator state.
 
-        '''
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			str:
+				String representation of get_data().
+			
+		'''
 		try:
 			return str( self.get_data( ) )
+		
 		except Exception as e:
 			exception = Error( e )
-			exception.module = 'fetchers'
+			exception.module = 'generators'
 			exception.cause = 'Chat'
 			exception.method = 'dump( self ) -> str'
 			raise exception
