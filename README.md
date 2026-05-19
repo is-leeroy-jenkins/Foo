@@ -6,7 +6,8 @@ Foo is designed to give users explicit, hands-on control over how data is retrie
 
 Foo is modular by design, allowing individual capabilities—loaders, scrapers, fetchers, mappers, and databases to operate independently while remaining composable within a single, cohesive workspace.
 
-##🎥 Demo
+## 🎥 Demo
+
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo-demo.gif)
 
 
