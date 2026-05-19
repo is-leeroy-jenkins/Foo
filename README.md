@@ -24,7 +24,7 @@ Foo is modular by design, allowing individual capabilities—loaders, scrapers, 
 - [Gov Data](https://www.govinfo.gov/api-signup)
 - [NASA](https://api.nasa.gov/)
 - [The News API](https://www.thenewsapi.com/register)
-- 
+- [Google Weather](https://developers.google.com/maps/documentation/weather/get-api-key)
 
 ## 📚 Table of Contents
 
