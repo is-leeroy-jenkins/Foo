@@ -1,485 +1,433 @@
 ###### foo
+
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
+Foo is a Streamlit-based data loading, scraping, retrieval, geospatial, environmental,
+astronomical, demographic, generative-AI, and SQLite data-management workspace. It is designed
+to give users explicit, hands-on control over how content is loaded, extracted, queried, fetched,
+cleaned, analyzed, visualized, and routed into downstream machine-learning or agentic workflows.
 
-Foo is designed to give users explicit, hands-on control over how data is retrieved, loaded, extracted, queried, and explored from a variety of sources. Through a tab-based interface, users can load content from URLs, raw text, and local files; selectively scrape structured elements from web pages; fetch information from external services; interact with conversational analysis tools; and perform location-based workflows such as geocoding and weather lookups. 
+Foo is modular by design. Loaders, scrapers, fetchers, generators, databases, and external APIs can
+operate independently while remaining composable inside one cohesive interface. The application
+supports local files, web pages, public archives, Google services, government data sources,
+geospatial APIs, environmental APIs, astronomical APIs, demographic APIs, and multiple LLM
+providers.
 
-Foo is modular by design, allowing individual capabilities—loaders, scrapers, fetchers, mappers, and databases to operate independently while remaining composable within a single, cohesive workspace.
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
 
-## 🎥 Demo
-
-![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo-demo.gif)
-
-
-### 🕸️ Web Application
-
-[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://fooo-py.streamlit.app/)
-
-
-## 🔑 API KEY SETUP
-
-- [OpenAI](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
-- [Geolocation](https://developers.google.com/maps/documentation/geolocation/get-api-key)
-- [Google Maps](https://developers.google.com/maps/documentation/embed/get-api-key)
-- [Gov Data](https://www.govinfo.gov/api-signup)
-- [NASA](https://api.nasa.gov/)
-- [The News API](https://www.thenewsapi.com/register)
-- [Google Weather](https://developers.google.com/maps/documentation/weather/get-api-key)
-- [Grokipedia](https://pypi.org/project/grokipedia-api/)
-- [CDC](https://data.cdc.gov/login)
-- [Purple Air](https://develop.purpleair.com/)
-- [FIRMS](https://firms.modaps.eosdis.nasa.gov/usfs/api/map_key/)
+![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/Foo-streamlit.gif)
 
 ## 📚 Table of Contents
 
-* [Features](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-features)
-* [Architecture](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-installation)
-* [Directory Structure](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-directory-structure)
-* [Installation](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-installation)
-* [Quick Start](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-quick-start)
-* [Usage Examples](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-example-usage)
-* [Loaders](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-loader)
-* [Fetchers](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-fetcher)
-* [Scrapers](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-scrapers)
-* [Dependencies](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#-dependencies)
-* [Technical Notes](https://github.com/is-leeroy-jenkins/Foo?tab=readme-ov-file#%EF%B8%8F-technical-notes)
-* [License](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
+| Section                                                 | Description                                                       |
+| ------------------------------------------------------- | ----------------------------------------------------------------- |
+| [Features](#-features)                                  | Core application capabilities.                                    |
+| [Application Modes](#-application-modes)                | Major Streamlit modes exposed by `app.py`.                        |
+| [Architecture](#%EF%B8%8F-architecture)                 | High-level operating model.                                       |
+| [Directory Structure](#%EF%B8%8F-directory-structure)   | Expected project layout.                                          |
+| [Installation](#%EF%B8%8F-installation)                 | Local setup steps.                                                |
+| [Running the App](#%EF%B8%8F-running-the-streamlit-app) | Streamlit launch command.                                         |
+| [Loaders](#-loaders)                                    | File, web, corpus, and cloud loading components.                  |
+| [Retrieval Sources](#-retrieval-sources)                | Public collections and archive fetchers.                          |
+| [Domain Fetchers](#-domain-fetchers)                    | Geospatial, environmental, astronomical, and demographic sources. |
+| [Generation Providers](#-generation-providers)          | LLM providers surfaced in Generation mode.                        |
+| [Data Management](#-data-management)                    | SQLite table administration and analysis tools.                   |
+| [Requirements](#-requirements)                          | Dependency table.                                                 |
+| [Configuration](#-configuration)                        | Common keys and credentials.                                      |
+| [Technical Notes](#%EF%B8%8F-technical-notes)           | Implementation notes.                                             |
+| [License](#-license)                                    | License and copyright.                                            |
 
 ## ✨ Features
 
-* Modular, pluggable pipeline for document, web, and data retrieval and processing.
-* Robust, extensible loaders and fetchers for all common document and web data formats.
-* Powerful HTML/text scraping and cleaning.
-* Integrates with OpenAI, LangChain, ChromaDB, and advanced document stores.
-* Strong type safety and error handling.
-* Simple, extensible codebase.
+| Capability                  | Description                                                                                                                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Modular document loading    | Load text, CSV, XML, PDF, Markdown, HTML, JSON, PowerPoint, Excel, arXiv, Wikipedia, GitHub, web pages, crawled websites, notebooks, and cloud files.                                  |
+| Web scraping                | Extract titles, plain text, raw HTML, headings, paragraphs, lists, tables, articles, sections, divisions, blockquotes, hyperlinks, and image references.                               |
+| Public retrieval            | Query arXiv, Google Drive, Wikipedia, Google Custom Search, NASA Open Science, GovInfo, Congress.gov, Internet Archive, Grokipedia, Jupyter notebooks, cloud files, and cloud buckets. |
+| Geospatial workflows        | Query geocoding, Google Maps, Google Weather, OpenWeather, historical weather, USGS earthquakes, NASA Earth Observatory, USGS National Map, USGS ScienceBase, and OpenSky.             |
+| Environmental workflows     | Query AirNow, NOAA Climate Data, NASA EONET, EPA EnviroFacts, NOAA Tides and Currents, EPA UV Index, PurpleAir, OpenAQ, NASA FIRMS, and USGS Water Data.                               |
+| Astronomical workflows      | Query U.S. Naval Observatory, Satellite Center, Astro Catalog, AstroQuery, StarMap, SIMBAD, Space Weather, Star Chart, and near-Earth object data.                                     |
+| Demographic and health data | Query U.S. Census, CDC Socrata, U.S. HealthData, WHO Global, United Nations, World Population, CDC WONDER, PubMed, and Open City Data.                                                 |
+| Generative AI               | Use ChatGPT, Grok, Claude, Gemini, and Mistral through a shared prompt and parameter interface.                                                                                        |
+| SQLite management           | Import Excel workbooks, browse tables, perform CRUD operations, filter, aggregate, visualize, alter schema, and run read-only SQL.                                                     |
+| Text analytics              | Compute token counts, vocabulary, type-token ratio, hapax ratio, stopword ratio, lexical density, top tokens, and optional readability metrics.                                        |
+
+## 🕹️ Application Modes
+
+| Mode                | Purpose                                                                                      | Major Components                                                                                                                                                                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Loading**         | Load local, web, corpus, repository, and cloud documents into shared document/session state. | Text, NLTK corpora, CSV, XML, PDF, Markdown, HTML, JSON, PowerPoint, Excel, arXiv, Wikipedia, GitHub, Web Loader, Web Crawler.                                                                                                                 |
+| **Scraping**        | Scrape a target URL or recursively crawl pages and extract structured web content.           | Page title, basic text, raw HTML, headings, paragraphs, lists, tables, articles, sections, divisions, blockquotes, hyperlinks, images.                                                                                                         |
+| **Retrieval**       | Query public collections, archives, search services, cloud files, and cloud buckets.         | arXiv, Google Drive, Wikipedia, Google Search, NASA Open Science, GovInfo, U.S. Congress, Internet Archive, Grokipedia, Jupyter Notebook, Google Cloud File, AWS S3 File, OneDrive, Google Speech-to-Text, AWS S3 Bucket, Google Cloud Bucket. |
+| **Geospatial**      | Retrieve location, weather, map, flight, and earth-science data.                             | Geocoding, Google Maps, Google Weather, OpenWeather, Historical Weather, USGS Earthquakes, NASA Earth Observatory, USGS National Map, USGS ScienceBase, OpenSky.                                                                               |
+| **Environmental**   | Retrieve environmental, climate, water, fire, air-quality, UV, and sensor data.              | AirNow, NOAA Climate Data, NASA EONET, EPA EnviroFacts, NOAA Tides and Currents, EPA UV Index, PurpleAir, OpenAQ, NASA FIRMS, USGS Water Data.                                                                                                 |
+| **Astronomical**    | Retrieve astronomical, satellite, star, space-weather, and near-Earth object data.           | U.S. Naval Observatory, Satellite Center, Astro Catalog, AstroQuery, StarMap, SIMBAD, Space Weather, Star Chart, Near-Earth Objects.                                                                                                           |
+| **Demographic**     | Retrieve demographic, health, population, city, and public-health records.                   | U.S. Census, CDC Socrata, U.S. Health, WHO Global, United Nations, World Population, CDC WONDER, PubMed Search, Open City Data.                                                                                                                |
+| **Generation**      | Generate or analyze text using multiple AI providers.                                        | ChatGPT, Grok, Claude, Gemini, Mistral.                                                                                                                                                                                                        |
+| **Data Management** | Manage local SQLite data and perform structured analysis.                                    | Import, Browse, CRUD, Explore, Filter, Aggregate, Visualize, Admin, SQL.                                                                                                                                                                       |
 
 ## 🏛️ Architecture
 
+```text
+📥 Loader → 🧹 Text Processing → 🧠 Session State → 🔍 Retrieval / Analysis / Generation
+      │                  │                    │
+      ├── 🕸️ Scraper      ├── 📊 Metrics        ├── 🗄️ SQLite
+      ├── 🌐 Fetcher      ├── 🧩 Documents      ├── 📈 Visualization
+      └── ☁️ Cloud        └── 📝 Raw Text       └── 🤖 LLM Providers
 ```
-📄 Fetcher → 🕸️ Scraper → 📤 Loader  
-```
+
+Foo uses a Streamlit UI over modular Python classes. The application imports loader classes from
+`loaders.py`, provider classes from `generators.py`, and API/data-source wrappers from `fetchers.py`.
+Shared working state is coordinated through `st.session_state`, allowing loaded documents, raw text,
+processed text, tokens, metrics, and database results to flow between controls.
 
 ## 🗂️ Directory Structure
 
-```
+```text
 foo/
-├── __init__.py
-├── core.py
-├── data.py
-├── fetchers.py
-├── loaders.py
-├── scrapers.py
-├── config.py
-├── requirements.txt
+├── app.py                 # Streamlit user interface
+├── config.py              # App title, mode map, defaults, labels, API references, and constants
+├── core.py                # Optional package core abstractions
+├── data.py                # Data helpers and shared data abstractions
+├── fetchers.py            # External API, archive, geospatial, environmental, and science fetchers
+├── generators.py          # ChatGPT, Claude, Grok, Mistral, and Gemini wrappers
+├── loaders.py             # File, web, cloud, repository, and corpus loaders
+├── scrapers.py            # HTML extraction helpers
+├── requirements.txt       # Python dependencies
+├── stores/
+│   └── sqlite/            # SQLite database storage
+└── resources/
+    └── images/            # README and UI image assets
 ```
 
 ## 🛡️ Installation
 
 ```bash
-
 git clone https://github.com/is-leeroy-jenkins/Foo.git
 cd Foo
 python -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
+For Linux or macOS:
 
----
+```bash
+git clone https://github.com/is-leeroy-jenkins/Foo.git
+cd Foo
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
 
 ## ▶️ Running the Streamlit App
 
 ```bash
-
 streamlit run app.py
 ```
 
-The application runs locally and does not require a database or background services.
-
----
+The application initializes Streamlit in wide layout, loads the configured mode map from `config.py`,
+and displays the active mode selector in the sidebar under **🕹️ Mode**.
 
 ## 🚀 Quick Start
 
-```python
-from foo.core import Fetch
-fetcher = Fetch(model='gpt-4o', db_uri='sqlite:///foo.sqlite', doc_paths=['docs/*.pdf'])
-response = fetcher.query_docs("Summarize the uploaded PDFs.")
-print(response)
+### Run the Application
+
+```bash
+streamlit run app.py
 ```
 
+### Load a Document
 
+1. Open **Loading** mode.
+2. Expand a loader such as **PDF Loader**, **Excel Loader**, **Web Loader**, or **GitHub Loader**.
+3. Select or enter the source.
+4. Click **Load**.
+5. Review the document preview panel and corpus metrics.
 
-## 🔍 Example Usage 
+### Scrape a Web Page
 
-**Scrape Web Page Paragraphs:**
+1. Open **Scraping** mode.
+2. Enter a target URL.
+3. Select core output and structured extraction options.
+4. Optionally enable recursive crawl controls.
+5. Click **Run Scraper**.
+
+### Query a Public Source
+
+1. Open **Retrieval** mode.
+2. Expand a source such as **ArXiv**, **Google Search**, **Gov Info**, or **US Congress**.
+3. Enter the query and parameters.
+4. Click **Submit**.
+5. Review rendered summaries, rows, and raw results.
+
+### Manage SQLite Data
+
+1. Open **Data Management** mode.
+2. Use **Import** to load Excel sheets into SQLite.
+3. Use **Browse**, **CRUD**, **Explore**, **Filter**, **Aggregate**, or **Visualize**.
+4. Use **SQL** for read-only SELECT queries.
+
+## 📤 Loaders
+
+| Loader                | Input                                                | Purpose                                                                                        |
+| --------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Text Loader**       | `.txt` files                                         | Loads plain text into document/session state.                                                  |
+| **Corpora Loader**    | NLTK corpora or local text directory                 | Loads Brown, Gutenberg, Reuters, WebText, Inaugural, State of the Union, or local text files.  |
+| **CSV Loader**        | `.csv` files                                         | Loads delimited tabular text as documents.                                                     |
+| **XML Loader**        | `.xml` files                                         | Supports semantic XML loading, document splitting, structured tree loading, and XPath queries. |
+| **PDF Loader**        | `.pdf` files                                         | Loads PDF content in single or element mode, with plain or OCR extraction options.             |
+| **Markdown Loader**   | `.md`, `.markdown` files                             | Loads Markdown content into document state.                                                    |
+| **HTML Loader**       | `.html`, `.htm` files                                | Loads local HTML files.                                                                        |
+| **JSON Loader**       | `.json` files                                        | Loads JSON or JSON Lines.                                                                      |
+| **PowerPoint Loader** | `.pptx` files                                        | Loads PowerPoint slide content.                                                                |
+| **Excel Loader**      | `.xlsx`, `.xls` files                                | Loads Excel sheets and stores sheet data in SQLite tables.                                     |
+| **ArXiv Loader**      | Query text                                           | Retrieves arXiv documents.                                                                     |
+| **Wikipedia Loader**  | Query text                                           | Retrieves Wikipedia documents.                                                                 |
+| **GitHub Loader**     | GitHub API URL, repository, branch, file-type filter | Loads repository files matching the selected filter.                                           |
+| **Web Loader**        | One or more URLs                                     | Loads web documents.                                                                           |
+| **Web Crawler**       | Start URL                                            | Recursively crawls web pages with depth/domain controls.                                       |
+
+## 🕸️ Scraping
+
+| Output Category           | Supported Extraction                                                                           |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| Core output               | Page title, basic text, raw HTML.                                                              |
+| Structured text           | Headings, paragraphs, lists, tables, articles, sections, divisions, blockquotes.               |
+| Link and media extraction | Hyperlinks and images.                                                                         |
+| Crawl controls            | Recursive crawl, max depth, max pages, same-domain-only filtering.                             |
+| Results                   | Per-page metadata, plain text, raw HTML, discovered links, extracted records, and error lists. |
+
+## 🏛️ Retrieval Sources
+
+| Source                    | Purpose                                                                                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ArXiv**                 | Retrieve research documents by query or identifier.                                                                                                         |
+| **Google Drive**          | Retrieve documents or snippets from Google Drive.                                                                                                           |
+| **Wikipedia**             | Retrieve Wikipedia article content and metadata.                                                                                                            |
+| **Google Search**         | Use Google Custom Search with exact terms, exclusions, file type, date restriction, site search, image search, country, language, and safe-search controls. |
+| **Open Science**          | Query NASA Open Science / OSDR dataset, metadata, assays, and data endpoints.                                                                               |
+| **Gov Info**              | Search GovInfo, retrieve package summaries, or browse collections.                                                                                          |
+| **US Congress**           | Query Congress.gov congresses, bills, bill details, laws, law details, reports, and report details.                                                         |
+| **Internet Archive**      | Search archived media and text collections.                                                                                                                 |
+| **Grokipedia**            | Retrieve Grokipedia pages or search results.                                                                                                                |
+| **Jupyter Notebook**      | Load notebook content.                                                                                                                                      |
+| **Google Cloud File**     | Load a single Google Cloud file.                                                                                                                            |
+| **AWS S3 File**           | Load a single AWS S3 file.                                                                                                                                  |
+| **OneDrive**              | Load OneDrive-hosted documents.                                                                                                                             |
+| **Google Speech-to-Text** | Transcribe audio using Google Speech-to-Text.                                                                                                               |
+| **AWS S3 Bucket**         | Load records from an S3 bucket.                                                                                                                             |
+| **Google Cloud Bucket**   | Load records from a Google Cloud bucket.                                                                                                                    |
+
+## 🌎 Domain Fetchers
+
+### Geospatial
+
+| Fetcher                    | Purpose                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| **Geocoding**              | Resolve address/location text into coordinates and normalized location metadata. |
+| **Google Maps**            | Query Google Maps functionality such as place/location operations.               |
+| **Google Weather**         | Retrieve Google Weather data.                                                    |
+| **Open Weather**           | Retrieve OpenWeather/Open-Meteo style weather data.                              |
+| **Historical Weather**     | Retrieve historical weather data.                                                |
+| **USGS Earthquakes**       | Retrieve earthquake events and feature records.                                  |
+| **NASA Earth Observatory** | Retrieve NASA Earth Observatory content.                                         |
+| **The National Map**       | Retrieve USGS National Map results.                                              |
+| **USGS ScienceBase**       | Retrieve ScienceBase records.                                                    |
+| **OpenSky**                | Retrieve aviation/open-sky records.                                              |
+
+### Environmental
+
+| Fetcher                     | Purpose                                                   |
+| --------------------------- | --------------------------------------------------------- |
+| **AirNow**                  | Retrieve air-quality observations and forecasts.          |
+| **NOAA Climate Data**       | Retrieve climate data.                                    |
+| **NASA EONET**              | Retrieve natural event records.                           |
+| **EPA EnviroFacts**         | Retrieve EPA environmental facility or data records.      |
+| **NOAA Tides and Currents** | Retrieve tides, currents, stations, and water-level data. |
+| **EPA UV Index**            | Retrieve UV index information.                            |
+| **PurpleAir**               | Retrieve PurpleAir sensor data.                           |
+| **OpenAQ**                  | Retrieve open air-quality data.                           |
+| **NASA FIRMS**              | Retrieve fire/hotspot data.                               |
+| **USGS Water Data**         | Retrieve USGS water data.                                 |
+
+### Astronomical
+
+| Fetcher                  | Purpose                                                           |
+| ------------------------ | ----------------------------------------------------------------- |
+| **US Naval Observatory** | Retrieve celestial navigation/time data for observer coordinates. |
+| **Satellite Center**     | Retrieve satellite or ground station data.                        |
+| **Astro Catalog**        | Retrieve astronomical catalog data.                               |
+| **AstroQuery**           | Query astronomical services.                                      |
+| **Star Map**             | Generate or retrieve star map data.                               |
+| **SIMBAD**               | Query SIMBAD astronomical objects.                                |
+| **Space Weather**        | Retrieve space weather data.                                      |
+| **Star Chart**           | Generate or retrieve star chart information.                      |
+| **Near Earth Objects**   | Retrieve near-Earth object or related object data.                |
+
+### Demographic and Health
+
+| Fetcher                | Purpose                                                   |
+| ---------------------- | --------------------------------------------------------- |
+| **U.S. Census Bureau** | Retrieve Census records.                                  |
+| **CDC Socrata**        | Retrieve CDC Socrata datasets.                            |
+| **U.S. Health**        | Retrieve HealthData.gov or similar public health records. |
+| **WHO Global**         | Retrieve WHO Global Health Observatory data.              |
+| **United Nations**     | Retrieve United Nations data.                             |
+| **World Population**   | Retrieve world population datasets.                       |
+| **CDC WONDER**         | Retrieve CDC WONDER data.                                 |
+| **PubMed Search**      | Search PubMed records.                                    |
+| **Open City Data**     | Retrieve city/open-data records.                          |
+
+## 🤖 Generation Providers
+
+| Provider  | Mode Expander | Purpose                                                        |
+| --------- | ------------- | -------------------------------------------------------------- |
+| OpenAI    | **ChatGPT**   | General text generation and analysis through the Chat wrapper. |
+| xAI       | **Grok**      | Text generation and analysis through the Grok wrapper.         |
+| Anthropic | **Claude**    | Text generation and analysis through the Claude wrapper.       |
+| Google    | **Gemini**    | Text generation and analysis through the Gemini wrapper.       |
+| Mistral   | **Mistral**   | Text generation and analysis through the Mistral wrapper.      |
+
+## 🗄️ Data Management
+
+| Tab              | Purpose                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| **📥 Import**    | Import Excel sheets into SQLite tables with optional overwrite behavior.                                      |
+| **🗂 Browse**    | Select and browse existing SQLite tables.                                                                     |
+| **💉 CRUD**      | Insert, update, and delete rows.                                                                              |
+| **📊 Explore**   | Profile data and inspect table-level information.                                                             |
+| **🔎 Filter**    | Apply interactive column filters.                                                                             |
+| **🧮 Aggregate** | Compute count, sum, average, minimum, maximum, and median summaries.                                          |
+| **📈 Visualize** | Render histogram, bar, line, scatter, box, pie, and correlation charts.                                       |
+| **⚙ Admin**      | Create tables, inspect schema, inspect indexes, add columns, rename columns, rename tables, and drop columns. |
+| **🧠 SQL**       | Run read-only SQL queries with result display and execution metrics.                                          |
+
+## 📦 Requirements
+
+The table below reflects the requirements implied by the active imports, loaders, fetchers, and UI
+surface in `app.py`. Some provider-specific loaders/fetchers may require additional credentials or
+cloud SDKs depending on deployment.
+
+| Requirement              | Import / Package Name                 | Purpose                                                               | Required By                                             |
+| ------------------------ | ------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------- |
+| Python                   | `python>=3.10`                        | Runtime for modern typing syntax and Streamlit application execution. | Entire application.                                     |
+| Streamlit                | `streamlit`                           | Web application framework.                                            | UI, sidebar, modes, expanders, controls, session state. |
+| Altair                   | `altair`                              | Declarative charting support.                                         | Visualization and chart-compatible workflows.           |
+| Pandas                   | `pandas`                              | Dataframes, Excel ingestion, SQL result rendering, tabular previews.  | Loaders, Data Management, result tables.                |
+| NumPy                    | `numpy`                               | Numeric arrays and vector calculations.                               | Text/vector utilities and analysis helpers.             |
+| Plotly                   | `plotly`                              | Interactive charts and visualizations.                                | Data Management visualization engine.                   |
+| BeautifulSoup            | `beautifulsoup4`                      | HTML parsing and link/text extraction.                                | Scraping mode and HTML preview helpers.                 |
+| Requests                 | `requests`                            | HTTP request support.                                                 | Web fetchers and API wrappers.                          |
+| Crawl4AI                 | `crawl4ai`                            | JavaScript-capable or enhanced crawling support.                      | Web crawling workflows.                                 |
+| LangChain Core           | `langchain-core`                      | `Document` object model for loaded/retrieved records.                 | Loaders and retrieval result handling.                  |
+| LXML                     | `lxml`                                | XML parsing and XPath operations.                                     | XML Loader.                                             |
+| NLTK                     | `nltk`                                | Tokenization, stopwords, WordNet, corpora, text metrics.              | Loading metrics and Corpora Loader.                     |
+| TextStat                 | `textstat`                            | Optional readability metrics.                                         | Readability panel.                                      |
+| Astroquery               | `astroquery`                          | Astronomical service access, including SIMBAD.                        | Astronomical mode.                                      |
+| SQLite                   | `sqlite3`                             | Local database storage and SQL execution.                             | Data Management and local stores.                       |
+| OpenPyXL                 | `openpyxl`                            | Excel `.xlsx` read/write engine.                                      | Excel Loader and Data Management import.                |
+| Python PPTX              | `python-pptx`                         | PowerPoint text extraction support.                                   | PowerPoint Loader.                                      |
+| PyMuPDF                  | `PyMuPDF`                             | PDF extraction support where used by PDF loader internals.            | PDF Loader.                                             |
+| Unstructured             | `unstructured`                        | Optional document extraction for complex files.                       | PDF/XML/document loader implementations.                |
+| Python DOCX / Docx2Txt   | `python-docx` / `docx2txt`            | Word document extraction support.                                     | WordLoader.                                             |
+| Boto3                    | `boto3`                               | AWS S3 file and bucket access.                                        | AWS S3 File and AWS S3 Bucket loaders.                  |
+| Google API Client        | `google-api-python-client`            | Google Drive and Google API access.                                   | Google Drive and cloud workflows.                       |
+| Google Auth              | `google-auth`, `google-auth-oauthlib` | Google credentials and OAuth flows.                                   | Google Drive, Google Cloud, Google Speech-to-Text.      |
+| Google Cloud Storage     | `google-cloud-storage`                | Google Cloud bucket/file access.                                      | Google Cloud File and Google Cloud Bucket loaders.      |
+| Google Cloud Speech      | `google-cloud-speech`                 | Speech-to-text transcription.                                         | Google Speech-to-Text loader.                           |
+| ArXiv                    | `arxiv`                               | arXiv search and document retrieval.                                  | ArXiv Loader and Retrieval mode.                        |
+| Streamlit Runtime Extras | `watchdog`                            | Optional local development file watching.                             | Local Streamlit development.                            |
+| Environment Variables    | `python-dotenv`                       | Optional `.env` loading for API keys.                                 | Local configuration.                                    |
+| Typing Extensions        | `typing-extensions`                   | Backported typing support where needed.                               | Compatibility support.                                  |
+
+## 🔑 Configuration
+
+| Key / Setting             | Purpose                                                                          | Used By                                    |
+| ------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------ |
+| `APP_TITLE`               | Streamlit page title.                                                            | App setup.                                 |
+| `FAVICON`                 | Browser/page icon.                                                               | App setup.                                 |
+| `LOGO`                    | Sidebar/application logo.                                                        | App setup.                                 |
+| `MODE_MAP`                | Mode names displayed in the sidebar.                                             | Sidebar mode selector.                     |
+| `SESSION_STATE_DEFAULTS`  | Shared session-state defaults.                                                   | Startup initialization.                    |
+| `REQUIRED_CORPORA`        | NLTK resources to verify/download.                                               | Loading mode and text analytics.           |
+| `DB_PATH`                 | SQLite database path.                                                            | Data Management and persistent app tables. |
+| `GOOGLE_API_KEY`          | Google service key.                                                              | Google Search and related Google fetchers. |
+| `GOOGLE_CSE_ID`           | Google Custom Search Engine ID.                                                  | Google Search.                             |
+| `GOOGLE_ACCOUNT_FILE`     | Google service account credential file.                                          | Google Drive and Google Cloud workflows.   |
+| `GOOGLE_DRIVE_FOLDER_ID`  | Default Drive folder identifier.                                                 | Google Drive retrieval.                    |
+| `GOOGLE_DRIVE_TOKEN_PATH` | Optional token persistence path.                                                 | Google Drive retrieval.                    |
+| `LANGSMITH_API_KEY`       | Optional LangSmith tracing key.                                                  | LangChain tracing where configured.        |
+| Provider model lists      | `GPT_MODELS`, `GROK_MODELS`, `CLAUDE_MODELS`, `GEMINI_MODELS`, `MISTRAL_MODELS`. | Generation mode model selectors.           |
+
+## 🔍 Example Usage
+
+### Scrape Web Page Paragraphs
 
 ```python
 from foo.scrapers import WebExtractor
+
 extractor = WebExtractor()
 paragraphs = extractor.scrape_paragraphs("https://example.com")
 print(paragraphs)
 ```
 
-**Load and Chunk a PDF:**
+### Load and Chunk a PDF
 
 ```python
 from foo.loaders import PdfLoader
+
 loader = PdfLoader()
-doc = loader.load('docs/report.pdf')
-chunks = loader.split(doc)
+documents = loader.load("docs/report.pdf")
+chunks = loader.split(documents, chunk=1000, overlap=100)
 print(chunks)
 ```
 
+### Query a Fetcher
 
+```python
+from foo.fetchers import Wikipedia
 
-## 🗂️ Loader
+fetcher = Wikipedia(language="en", max_documents=5)
+documents = fetcher.fetch("Natural language processing")
+for document in documents:
+    print(document.metadata)
+    print(document.page_content[:500])
+```
 
-*Abstract base class for all loaders; provides document loading and splitting interface.*
+### Run a Read-Only SQLite Query
 
-* `load(path)` – Loads the document from the specified path.
+```python
+import sqlite3
+import pandas as pd
 
-* `split(doc, chunk=1000, overlap=100)` – Splits a loaded document into overlapping text chunks.
+with sqlite3.connect("stores/sqlite/data.db") as connection:
+    df_results = pd.read_sql_query("SELECT * FROM Prompts LIMIT 10;", connection)
 
-## 🧾 CsvLoader
-
-*Loads and splits CSV files for tabular data ingestion.*
-
-* `load(path)` – Loads and parses a CSV file.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits CSV content for batch processing.
-
-## 📄 PdfLoader
-
-*Loads PDF files, supporting robust text extraction and chunking.*
-
-* `load(path)` – Loads and extracts text from a PDF document.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits PDF text into manageable chunks.
-
-
-## 📝 DocxLoader
-
-*Loads and extracts content from DOCX (Word) documents.*
-
-* `load(path)` – Loads and parses a DOCX file.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits DOCX text for analysis.
-
-
-## 🌐 HtmlLoader
-
-*Loads and parses local HTML documents.*
-
-* `load(path)` – Loads HTML content from a file.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits HTML body text into chunks.
-
-
-## 📊 PptxLoader
-
-*Loads and extracts text from PowerPoint (`.pptx`) files.*
-
-* `load(path)` – Loads slide contents from a PowerPoint file.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits slide text for downstream use.
-
-
-## 📈 ExcelLoader
-
-*Loads and processes Excel spreadsheets (XLS/XLSX).*
-
-* `load(path)` – Loads and reads an Excel file.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits spreadsheet content for batch processing.
-
-
-## 📜 TextLoader
-
-*Loads plain text files, supporting chunked analysis.*
-
-* `load(path)` – Loads the content of a text file.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits text file content into chunks.
-
-
-## 🗃️ JsonLoader
-
-*Loads structured data from JSON files.*
-
-* `load(path)` – Loads and parses JSON data.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits JSON-encoded text as appropriate.
-
-
-## 📝 MarkdownLoader
-
-*Loads and splits Markdown (`.md`) documents.*
-
-* `load(path)` – Loads a Markdown file’s content.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits Markdown into logical text chunks.
-
-
-
-## 🗂️ XmlLoader
-
-*Loads and parses XML documents.*
-
-* `load(path)` – Loads and parses XML content.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits XML text nodes for further use.
-
-## 🖼️ ImageLoader
-
-*Loads and processes image files for downstream tasks (e.g., OCR, embeddings).*
-
-* `load(path)` – Loads an image file.
-
-* `split(doc, chunk=1000, overlap=100)` – Optionally splits or processes image regions.
-
-
-## 📺 YouTubeLoader
-
-*Loads YouTube video transcripts and metadata.*
-
-* `load(path)` – Retrieves transcript/caption text for a given video ID or URL.
-
-* `split(doc, chunk=1000, overlap=100)` – Splits transcript into chunks.
-
-
-## 💾 UnstructuredLoader
-
-*Flexible loader for mixed-format or “messy” documents.*
-
-* `load(path)` – Loads and attempts to parse various unstructured document formats
-
-* `split(doc, chunk=1000, overlap=100)` – Splits extracted text for processing.
-
-
-## 🤖 Fetcher
-
-*Abstract base class for all fetchers, defining the core fetch interface.*
-
-* `fetch(url, **kwargs)` – Performs a data retrieval request to a specified endpoint.
-
-
-## 🌍 WebFetcher
-
-*Fetches HTML content using `requests` and provides rich methods for extracting text and elements from web pages.*
-
-* `fetch(url, time=10)` – Performs an HTTP GET and returns a structured Result.
-
-* `html_to_text(html)` – Converts raw HTML to compact plain text.
-
-
-## 🕸️ WebCrawler
-
-*JavaScript-capable crawler using `crawl4ai` or Playwright, for dynamic content.*
-
-* `fetch(url, depth=1, **kwargs)` – Recursively crawls and fetches HTML from linked pages.
-
-
-## 🌌 StarMap
-
-*Fetches celestial map images using coordinates from StarMap.org.*
-
-* `fetch_by_coordinates(ra, dec)` – Generates a star map based on right ascension and declination.
-
-
-## 📚 ArxivFetcher
-
-*Loads arXiv papers via the `ArxivRetriever`, returning results as document objects.*
-
-* `fetch(query, **kwargs)` – Retrieves papers matching the specified query.
-
-
-## 🗂️ GoogleDriveFetcher
-
-*Loads files from Google Drive using LangChain retrievers.*
-
-* `fetch(query, **kwargs)` – Retrieves documents or file metadata from Google Drive.
-
-
-## 📖 WikipediaFetcher
-
-*Retrieves Wikipedia articles with full metadata support.*
-
-* `fetch(query, **kwargs)` – Retrieves article text and metadata for a search term.
-
-
-
-## 📰 NewsFetcher
-
-*Fetches news articles using Thenewsapi.com.*
-
-* `fetch(query, **kwargs)` – Retrieves news articles based on keyword and category.
-
-
-## 🔎 GoogleSearch
-
-*Uses Google Custom Search API for web search.*
-
-* `fetch(query, **kwargs)` – Executes a web search and returns the top results.
-
-
-## 🗺️ GoogleMaps
-
-*Integrates with Google Maps for geocoding, address validation, and directions.*
-
-* `geocode(address)` – Returns geocoordinates for a given address.
-
-* `directions(origin, destination)` – Retrieves navigation routes.
-
-* `validate(address)` – Validates a given address.
-
-
-## ☁️ GoogleWeather
-
-*Retrieves weather data using Google Weather API.*
-
-* `fetch(location)` – Returns weather info for a location.
-
-* `resolve_location(query)` – Performs geocoding to determine a location from a query.
-
-
-## 🕰️ NavalObservatory
-
-*Fetches astronomical and time data from the U.S. Naval Observatory.*
-
-* `fetch_julian_date()` – Returns current Julian date.
-
-* `fetch_sidereal_time()` – Returns local sidereal time.
-
-
-## 🛰️ SatelliteCenter
-
-*Interfaces with NASA SSCWeb for satellite and ground station data.*
-
-* `fetch_orbits(satellite, start, end)` – Retrieves orbital tracks for a satellite.
-
-* `fetch_ground_stations()` – Lists ground station metadata.
-
-
-## 🌋 EarthObservatory
-
-*Connects to NASA EONET for global natural event data.*
-
-* `fetch_events(count)` – Returns recent global events (fires, storms, volcanoes, etc).
-
-* `fetch_categories()` – Returns the event categories.
-
-
-## 🗾 GlobalImagery
-
-*Pulls satellite imagery from NASA GIBS WMS.*
-
-* `fetch_imagery(bbox, date)` – Returns satellite map tiles or images.
-
-
-## ☄️ NearbyObjects
-
-*Retrieves near-Earth object (NEO) and fireball data from JPL’s CNEOS/SSD APIs.*
-
-* `fetch_neos(start, end)` – Returns near-Earth object data for date range.
-
-* `fetch_fireballs(start, end)` – Returns fireball events for date range.
-
-
-## 🕸️ Scrapers
-
-## 🧩 Extractor
-
-*Abstract base for HTML → plain-text extraction.*
-
-* `__init__(self, raw_html: str = '')` — Initialize with optional raw HTML to extract.
-
-* `extract(self)` — Abstract method for extracting readable text from HTML. Must be implemented by subclasses.
-
-
-
-## 🕷️ WebExtractor
-
-*Concrete, synchronous extractor using `requests` and BeautifulSoup for HTML → text extraction.*
-
-* `__init__(self, raw_html: str = '')` — Initialize the extractor, optionally with raw HTML.
-
-* `fetch(self, url: str, time: int = 10)` — Performs an HTTP GET, returns a canonicalized Result.
-
-* `html_to_text(self, html: str)` — Converts HTML to plain, readable text, removing scripts/styles.
-
-* `scrape_paragraphs(self, uri: str)` — Extracts all `<p>` blocks from the page at the given URI.
-
-* `scrape_lists(self, uri: str)` — Extracts all `<li>` items from lists.
-
-* `scrape_tables(self, uri: str)` — Extracts and flattens all table cell contents.
-
-* `scrape_articles(self, uri: str)` — Extracts text from `<article>` elements.
-
-* `scrape_headings(self, uri: str)` — Extracts all headings (`<h1>`–`<h6>`).
-
-* `scrape_divisions(self, uri: str)` — Extracts text from `<div>` elements.
-
-* `scrape_sections(self, uri: str)` — Extracts text from `<section>` elements.
-
-* `scrape_blockquotes(self, uri: str)` — Extracts text from `<blockquote>` elements.
-
-* `scrape_hyperlinks(self, uri: str)` — Extracts all hyperlinks (from `<a href>`).
-
-* `scrape_images(self, uri: str)` — Extracts image sources (from `<img src>`).
-
-* `create_schema(self, function, tool, description, parameters, required)` — Builds an OpenAI Tool API schema dynamically for a function.
-
-
-
-## 📦 Dependencies
-
-| Package           | Purpose/Description          | Link                                                    |
-| ----------------- | ---------------------------- | ------------------------------------------------------- |
-| beautifulsoup4    | HTML/XML parsing             | [PyPI](https://pypi.org/project/beautifulsoup4/)        |
-| requests          | HTTP client                  | [PyPI](https://pypi.org/project/requests/)              |
-| playwright        | Headless browser automation  | [PyPI](https://pypi.org/project/playwright/)            |
-| langchain         | LLM & RAG framework          | [LangChain](https://python.langchain.com/)              |
-| chromadb          | Vector DB for embeddings     | [PyPI](https://pypi.org/project/chromadb/)              |
-| pandas            | Data analysis                | [PyPI](https://pypi.org/project/pandas/)                |
-| numpy             | Numeric computing            | [PyPI](https://pypi.org/project/numpy/)                 |
-| matplotlib        | Visualization                | [PyPI](https://pypi.org/project/matplotlib/)            |
-| owslib            | Geospatial Web Services      | [PyPI](https://pypi.org/project/OWSLib/)                |
-| astroquery        | Astronomy data               | [PyPI](https://pypi.org/project/astroquery/)            |
-| unstructured      | Document parsing             | [Docs](https://unstructured-io.github.io/unstructured/) |
-| pytube            | YouTube video download       | [PyPI](https://pypi.org/project/pytube/)                |
-| docx2txt          | DOCX text extraction         | [PyPI](https://pypi.org/project/docx2txt/)              |
-| pillow            | Image processing             | [PyPI](https://pypi.org/project/Pillow/)                |
-| python-pptx       | PowerPoint processing        | [PyPI](https://pypi.org/project/python-pptx/)           |
-| PyMuPDF (fitz)    | PDF parsing                  | [PyPI](https://pypi.org/project/PyMuPDF/)               |
-| scikit-learn      | Machine learning             | [PyPI](https://pypi.org/project/scikit-learn/)          |
-| tiktoken          | OpenAI tokenization          | [PyPI](https://pypi.org/project/tiktoken/)              |
-| pyyaml            | YAML file parsing            | [PyPI](https://pypi.org/project/PyYAML/)                |
-| tabulate          | Tabular text/markdown output | [PyPI](https://pypi.org/project/tabulate/)              |
-| python-dotenv     | Manage .env files            | [PyPI](https://pypi.org/project/python-dotenv/)         |
-| typing_extensions | Type hinting support         | [PyPI](https://pypi.org/project/typing-extensions/)     |
-
-
+print(df_results)
+```
 
 ## ⚙️ Technical Notes
 
-* Pluggable, modular pipeline—add new fetchers/loaders by subclassing.
-
-* Type-safety and error handling by design.
-
-* Compatible with CI/CD and production data environments.
-
-
+| Topic                 | Note                                                                                                                                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Session state         | The application uses `st.session_state` for mode state, model parameters, loaded documents, raw text, processed text, tokens, vocabulary, token counts, API configuration, and database working state. |
+| Safety                | SQL execution is intentionally constrained to read-only query forms through `is_safe_query`.                                                                                                           |
+| Loader contract       | Loaded content is promoted into shared document state with raw text and active loader metadata.                                                                                                        |
+| SQLite                | Data Management uses local SQLite tables and supports schema operations through guarded helper functions.                                                                                              |
+| Metrics               | Text metrics are computed from either processed text or raw text depending on what is available.                                                                                                       |
+| Optional dependencies | Some loaders and fetchers are only needed when their corresponding mode/expander is used.                                                                                                              |
+| Credentials           | API keys are entered through sidebar configuration or loaded from configuration/environment variables.                                                                                                 |
 
 ## 📝 License
 
-- MIT License [here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
-
-- Copyright © 2022–2025 Terry D. Eppler
-
-
+* MIT License [here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
+* Copyright © 2022–2025 Terry D. Eppler
 
 ## 🙏 Acknowledgments
 
 * Project lead: Terry D. Eppler ([terryeppler@gmail.com](mailto:terryeppler@gmail.com))
+* Inspired by open-source Python, ML, retrieval, mapping, public-data, and LLM communities.
 
-* Inspired by open-source Python, ML, and LLM communities.
