@@ -2,7 +2,7 @@
 
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
-Foo is a Streamlit-based data loading, scraping, retrieval, geospatial, environmental,
+Foo is a data loading, scraping, retrieval, geospatial, environmental,
 astronomical, demographic, generative-AI, and SQLite data-management workspace. It is designed
 to give users explicit, hands-on control over how content is loaded, extracted, queried, fetched,
 cleaned, analyzed, visualized, and routed into downstream machine-learning or agentic workflows.
@@ -13,9 +13,13 @@ supports local files, web pages, public archives, Google services, government da
 geospatial APIs, environmental APIs, astronomical APIs, demographic APIs, and multiple LLM
 providers.
 
-[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
+## 🎥 Demo
 
-![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/Foo-streamlit.gif)
+![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo-demo.gif)
+
+## 🕸️ Web
+
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
 
 ## 📚 Table of Contents
 
