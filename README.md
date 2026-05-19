@@ -25,6 +25,10 @@ Foo is modular by design, allowing individual capabilities—loaders, scrapers, 
 - [NASA](https://api.nasa.gov/)
 - [The News API](https://www.thenewsapi.com/register)
 - [Google Weather](https://developers.google.com/maps/documentation/weather/get-api-key)
+- [Grokipedia](https://pypi.org/project/grokipedia-api/)
+- [CDC](https://data.cdc.gov/login)
+- [Purple Air](https://develop.purpleair.com/)
+- [FIRMS](https://firms.modaps.eosdis.nasa.gov/usfs/api/map_key/)
 
 ## 📚 Table of Contents
 
