@@ -11,9 +11,20 @@ Foo is modular by design, allowing individual capabilities—loaders, scrapers, 
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo-demo.gif)
 
 
-## 🕸️ Web 
+### 🕸️ Web Application
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://fooo-py.streamlit.app/)
+
+
+## 🔑 API KEY SETUP
+
+- [OpenAI](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
+- [Geolocation](https://developers.google.com/maps/documentation/geolocation/get-api-key)
+- [Google Maps](https://developers.google.com/maps/documentation/embed/get-api-key)
+- [Gov Data](https://www.govinfo.gov/api-signup)
+- [NASA](https://api.nasa.gov/)
+- [The News API](https://www.thenewsapi.com/register)
+- 
 
 ## 📚 Table of Contents
 
