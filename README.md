@@ -24,10 +24,8 @@ ___
   <a href="#-features">Features</a> ·
   <a href="#-application-modes">Modes</a> ·
   <a href="#%EF%B8%8F-architecture">Architecture</a> ·
-  <a href="#%EF%B8%8F-directory-structure">Structure</a> ·
-  <a href="#%EF%B8%8F-installation">Installation</a> ·
+  <a href="#%EF%B8%8F-installation">Install</a> ·
   <a href="#%EF%B8%8F-running-the-streamlit-app">Running</a> ·
-  <a href="#-quick-start">Start-up</a> ·
   <a href="#-loaders">Loaders</a> ·
   <a href="#%EF%B8%8F-scraping">Scraping</a> ·
   <a href="#%EF%B8%8F-retrieval-sources">Sources</a> ·
@@ -37,7 +35,6 @@ ___
   <a href="#-requirements">Requirements</a> ·
   <a href="#-configuration">Configuration</a> ·
   <a href="#-example-usage">Examples</a> ·
-  <a href="#%EF%B8%8F-technical-notes">Notes</a> ·
 </p>
 
 ## ✨ Features
