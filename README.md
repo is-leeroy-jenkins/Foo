@@ -12,6 +12,7 @@ operate independently while remaining composable inside one cohesive interface. 
 supports local files, web pages, public archives, Google services, government data sources,
 geospatial APIs, environmental APIs, astronomical APIs, demographic APIs, and multiple LLM
 providers.
+___
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
 
