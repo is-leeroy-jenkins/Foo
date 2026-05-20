@@ -1,19 +1,6 @@
 ###### foo
 
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
-
-Foo is a Streamlit-based data loading, scraping, retrieval, geospatial, environmental,
-astronomical, demographic, generative-AI, and SQLite data-management workspace. It is designed
-to give users explicit, hands-on control over how content is loaded, extracted, queried, fetched,
-cleaned, analyzed, visualized, and routed into downstream machine-learning or agentic workflows.
-
-Foo is modular by design. Loaders, scrapers, fetchers, generators, databases, and external APIs can
-operate independently while remaining composable inside one cohesive interface. The application
-supports local files, web pages, public archives, Google services, government data sources,
-geospatial APIs, environmental APIs, astronomical APIs, demographic APIs, and multiple LLM
-providers.
-
-## 🛰️ Navigation
 <p align="center">
   <a href="#-features">Features</a> ·
   <a href="#-application-modes">Modes</a> ·
@@ -27,6 +14,19 @@ providers.
   <a href="#%EF%B8%8F-data-management">Data</a> ·
   <a href="#-example-usage">Examples</a> ·
 </p>
+
+Foo is a Streamlit-based data loading, scraping, retrieval, geospatial, environmental,
+astronomical, demographic, generative-AI, and SQLite data-management workspace. It is designed
+to give users explicit, hands-on control over how content is loaded, extracted, queried, fetched,
+cleaned, analyzed, visualized, and routed into downstream machine-learning or agentic workflows.
+
+Foo is modular by design. Loaders, scrapers, fetchers, generators, databases, and external APIs can
+operate independently while remaining composable inside one cohesive interface. The application
+supports local files, web pages, public archives, Google services, government data sources,
+geospatial APIs, environmental APIs, astronomical APIs, demographic APIs, and multiple LLM
+providers.
+
+
 
 ## 🎥 Demo
 
