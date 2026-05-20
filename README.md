@@ -45,15 +45,15 @@ providers.
 
 | Capability                  | Description                                                                                                                                                                            |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Modular document loading    | Load text, CSV, XML, PDF, Markdown, HTML, JSON, PowerPoint, Excel, arXiv, Wikipedia, GitHub, web pages, crawled websites, notebooks, and cloud files.                                  |
+| Document Loading            | Load text, CSV, XML, PDF, Markdown, HTML, JSON, PowerPoint, Excel, arXiv, Wikipedia, GitHub, web pages, crawled websites, notebooks, and cloud files.                                  |
 | Web scraping                | Extract titles, plain text, raw HTML, headings, paragraphs, lists, tables, articles, sections, divisions, blockquotes, hyperlinks, and image references.                               |
 | Public retrieval            | Query arXiv, Google Drive, Wikipedia, Google Custom Search, NASA Open Science, GovInfo, Congress.gov, Internet Archive, Grokipedia, Jupyter notebooks, cloud files, and cloud buckets. |
 | Geospatial workflows        | Query geocoding, Google Maps, Google Weather, OpenWeather, historical weather, USGS earthquakes, NASA Earth Observatory, USGS National Map, USGS ScienceBase, and OpenSky.             |
 | Environmental workflows     | Query AirNow, NOAA Climate Data, NASA EONET, EPA EnviroFacts, NOAA Tides and Currents, EPA UV Index, PurpleAir, OpenAQ, NASA FIRMS, and USGS Water Data.                               |
 | Astronomical workflows      | Query U.S. Naval Observatory, Satellite Center, Astro Catalog, AstroQuery, StarMap, SIMBAD, Space Weather, Star Chart, and near-Earth object data.                                     |
-| Demographic and health data | Query U.S. Census, CDC Socrata, U.S. HealthData, WHO Global, United Nations, World Population, CDC WONDER, PubMed, and Open City Data.                                                 |
+| Demographic & Health        | Query U.S. Census, CDC Socrata, U.S. HealthData, WHO Global, United Nations, World Population, CDC WONDER, PubMed, and Open City Data.                                                 |
 | Generative AI               | Use ChatGPT, Grok, Claude, Gemini, and Mistral through a shared prompt and parameter interface.                                                                                        |
-| SQLite management           | Import Excel workbooks, browse tables, perform CRUD operations, filter, aggregate, visualize, alter schema, and run read-only SQL.                                                     |
+| Data management             | Import Excel workbooks, browse tables, perform CRUD operations, filter, aggregate, visualize, alter schema, and run read-only SQL.                                                     |
 | Text analytics              | Compute token counts, vocabulary, type-token ratio, hapax ratio, stopword ratio, lexical density, top tokens, and optional readability metrics.                                        |
 
 ## 🕹️ Application Modes
@@ -143,7 +143,7 @@ and displays the active mode selector in the sidebar under **🕹️ Mode**.
 streamlit run app.py
 ```
 
-#### 📤 Load a Document
+### Load a Document
 
 1. Open **Loading** mode.
 2. Expand a loader such as **PDF Loader**, **Excel Loader**, **Web Loader**, or **GitHub Loader**.
@@ -151,7 +151,7 @@ streamlit run app.py
 4. Click **Load**.
 5. Review the document preview panel and corpus metrics.
 
-####  Scrape a Web Page
+### Scrape a Web Page
 
 1. Open **Scraping** mode.
 2. Enter a target URL.
@@ -159,7 +159,7 @@ streamlit run app.py
 4. Optionally enable recursive crawl controls.
 5. Click **Run Scraper**.
 
-####  Query a Public Source
+### Query a Public Source
 
 1. Open **Retrieval** mode.
 2. Expand a source such as **ArXiv**, **Google Search**, **Gov Info**, or **US Congress**.
@@ -167,7 +167,7 @@ streamlit run app.py
 4. Click **Submit**.
 5. Review rendered summaries, rows, and raw results.
 
-####  Manage SQLite Data
+### Manage SQLite Data
 
 1. Open **Data Management** mode.
 2. Use **Import** to load Excel sheets into SQLite.
@@ -299,16 +299,44 @@ streamlit run app.py
 
 | Tab              | Purpose                                                                                                       |
 | ---------------- | ------------------------------------------------------------------------------------------------------------- |
-| **📥 Import**    | Import Excel sheets into SQLite tables with optional overwrite behavior.                                      |
-| **🗂 Browse**    | Select and browse existing SQLite tables.                                                                     |
-| **💉 CRUD**      | Insert, update, and delete rows.                                                                              |
-| **📊 Explore**   | Profile data and inspect table-level information.                                                             |
-| **🔎 Filter**    | Apply interactive column filters.                                                                             |
-| **🧮 Aggregate** | Compute count, sum, average, minimum, maximum, and median summaries.                                          |
-| **📈 Visualize** | Render histogram, bar, line, scatter, box, pie, and correlation charts.                                       |
-| **⚙ Admin**      | Create tables, inspect schema, inspect indexes, add columns, rename columns, rename tables, and drop columns. |
-| **🧠 SQL**       | Run read-only SQL queries with result display and execution metrics.                                          |
+| **Import**    | Import Excel sheets into SQLite tables with optional overwrite behavior.                                      |
+| **Browse**    | Select and browse existing SQLite tables.                                                                     |
+| **CRUD**      | Insert, update, and delete rows.                                                                              |
+| **Explore**   | Profile data and inspect table-level information.                                                             |
+| **Filter**    | Apply interactive column filters.                                                                             |
+| **Aggregate** | Compute count, sum, average, minimum, maximum, and median summaries.                                          |
+| **Visualize** | Render histogram, bar, line, scatter, box, pie, and correlation charts.                                       |
+| **Admin**      | Create tables, inspect schema, inspect indexes, add columns, rename columns, rename tables, and drop columns. |
+| **SQL**       | Run read-only SQL queries with result display and execution metrics.                                          |
 
+
+
+## 🔑 AI API Key
+
+- [OpenAI API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
+- [Grok API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)
+- [Gemini API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
+
+
+#### Data Services 
+
+- [OpenAI](https://platform.openai.com/home)
+- [Grok](https://accounts.x.ai/account)
+- [Gemini](https://aistudio.google.com/api-keys)
+- [Claude](https://platform.claude.com/docs/en/api/admin/api_keys/retrieve) 
+- [Mistral](https://chat.mistral.ai/1) 
+- [NASA](https://api.nasa.gov/) 
+- [Geolocation](https://developers.google.com/maps/documentation/geolocation/get-api-key) 
+- [Google Maps](https://developers.google.com/maps/documentation/embed/get-api-key) 
+- [Gov Data](https://api.govinfo.gov/docs/) 
+- [The News API](https://www.thenewsapi.com/register) 
+- [Google Weather](https://developers.google.com/maps/documentation/weather/get-api-key) 
+- [Grokipedia](https://pypi.org/project/grokipedia-api/) 
+- [CDC](https://data.cdc.gov/login) 
+- [Purple Air](https://develop.purpleair.com/) 
+- [FIRMS](https://firms.modaps.eosdis.nasa.gov/usfs/api/map_key/) 
+- [CENSUS](https://api.census.gov/data/key_signup.html) 
+- [Wikipedia](https://www.mediawiki.org/wiki/Wikimedia_APIs/Get_started)
 ## 📦 Requirements
 
 The table below reflects the requirements implied by the active imports, loaders, fetchers, and UI
