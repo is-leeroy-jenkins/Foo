@@ -36,10 +36,17 @@ providers.
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo-demo.gif)
 
 
-## 🕸️ Web 
+## 🕸️ Streamlit (Web)
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
+- A Python framework to build dynamic, interactive web applications.
 
+
+## 🧱 Databricks
+[![Foo](https://img.shields.io/badge/Databricks-Foo-FF3621?logo=databricks&logoColor=white)](https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152437678?o=7474645703081351)
+- A data engineering, analytics, and artificial intelligence collaborative workspace
+- Codebase
+  
 ## ✨ Features
 
 | Capability                  | Description                                                                                                                                                                            |
