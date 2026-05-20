@@ -12,14 +12,8 @@ operate independently while remaining composable inside one cohesive interface. 
 supports local files, web pages, public archives, Google services, government data sources,
 geospatial APIs, environmental APIs, astronomical APIs, demographic APIs, and multiple LLM
 providers.
-___
 
-[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
-
-![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/Foo-streamlit.gif)
-
-
-
+## 🛰️ Navigation
 <p align="center">
   <a href="#-features">Features</a> ·
   <a href="#-application-modes">Modes</a> ·
@@ -35,6 +29,15 @@ ___
   <a href="#-requirements">Requirements</a> ·
   <a href="#-example-usage">Examples</a> ·
 </p>
+
+## 🎥 Demo
+
+![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo-demo.gif)
+
+
+## 🕸️ Web 
+
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
 
 ## ✨ Features
 
