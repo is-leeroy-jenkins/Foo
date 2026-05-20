@@ -21,22 +21,22 @@ providers.
 
 <p align="center">
   <a href="#-features">Features</a> ·
-  <a href="#-application-modes">Application Modes</a> ·
+  <a href="#-application-modes">Modes</a> ·
   <a href="#%EF%B8%8F-architecture">Architecture</a> ·
-  <a href="#%EF%B8%8F-directory-structure">Directory Structure</a> ·
+  <a href="#%EF%B8%8F-directory-structure">Structure</a> ·
   <a href="#%EF%B8%8F-installation">Installation</a> ·
-  <a href="#%EF%B8%8F-running-the-streamlit-app">Running the App</a> ·
+  <a href="#%EF%B8%8F-running-the-streamlit-app">Running</a> ·
   <a href="#-quick-start">Quick Start</a> ·
   <a href="#-loaders">Loaders</a> ·
   <a href="#%EF%B8%8F-scraping">Scraping</a> ·
-  <a href="#%EF%B8%8F-retrieval-sources">Retrieval Sources</a> ·
-  <a href="#-domain-fetchers">Domain Fetchers</a> ·
-  <a href="#-generation-providers">Generation Providers</a> ·
-  <a href="#%EF%B8%8F-data-management">Data Management</a> ·
+  <a href="#%EF%B8%8F-retrieval-sources">Sources</a> ·
+  <a href="#-domain-fetchers">Fetchers</a> ·
+  <a href="#-generation-providers">AI Providers</a> ·
+  <a href="#%EF%B8%8F-data-management">Data</a> ·
   <a href="#-requirements">Requirements</a> ·
   <a href="#-configuration">Configuration</a> ·
-  <a href="#-example-usage">Example Usage</a> ·
-  <a href="#%EF%B8%8F-technical-notes">Technical Notes</a> ·
+  <a href="#-example-usage">Examples</a> ·
+  <a href="#%EF%B8%8F-technical-notes">Notes</a> ·
   <a href="#-license">License</a>
 </p>
 
