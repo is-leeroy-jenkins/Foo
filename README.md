@@ -5,23 +5,21 @@
   <a href="#-features">Features</a> ·
   <a href="#-application-modes">Modes</a> ·
   <a href="#%EF%B8%8F-architecture">Architecture</a> ·
-  <a href="#%EF%B8%8F-directory-structure">Structure</a> ·
   <a href="#%EF%B8%8F-installation">Install</a> ·
   <a href="#%EF%B8%8F-running-the-streamlit-app">Run</a> ·
   <a href="#-quick-start">Start</a> ·
   <a href="#-loaders">Loaders</a> ·
   <a href="#%EF%B8%8F-scraping">Scraping</a> ·
-  <a href="#%EF%B8%8F-retrieval-sources">Retrieval</a> ·
+  <a href="#%EF%B8%8F-retrieval-sources">Retrievers</a> ·
   <a href="#-domain-fetchers">Fetchers</a> ·
   <a href="#-generation-providers">AI</a> ·
   <a href="#%EF%B8%8F-data-management">Data</a> ·
   <a href="#-requirements">Requirements</a> ·
   <a href="#-configuration">Configuration</a> ·
   <a href="#-example-usage">Examples</a> ·
-  <a href="#%EF%B8%8F-technical-notes">Notes</a> ·
   <a href="#-license">License</a>
 </p>
-___
+
 Foo is a Streamlit-based data loading, scraping, retrieval, geospatial, environmental,
 astronomical, demographic, generative-AI, and SQLite data-management workspace. It is designed
 to give users explicit, hands-on control over how content is loaded, extracted, queried, fetched,
