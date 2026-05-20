@@ -345,27 +345,6 @@ cloud SDKs depending on deployment.
 | Environment Variables    | `python-dotenv`                       | Optional `.env` loading for API keys.                                 | Local configuration.                                    |
 | Typing Extensions        | `typing-extensions`                   | Backported typing support where needed.                               | Compatibility support.                                  |
 
-## 🔑 AI API Key
-
-| Provider | Setup Link                                                                                       |
-| -------- | ------------------------------------------------------------------------------------------------ |
-| OpenAI   | [OpenAI API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md) |
-| Grok     | [Grok API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)      |
-| Gemini   | [Gemini API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md) |
-
-#### Data Services
-
-| Service        | Link                                                                                           | Service      | Link                                                                              |
-| -------------- | ---------------------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------- |
-| OpenAI         | [Platform](https://platform.openai.com/home)                                                   | Grok         | [Account](https://accounts.x.ai/account)                                          |
-| Gemini         | [AI Studio](https://aistudio.google.com/api-keys)                                              | Claude       | [API Keys](https://platform.claude.com/docs/en/api/admin/api_keys/retrieve)       |
-| Mistral        | [Console](https://chat.mistral.ai/1)                                                           | NASA         | [NASA API](https://api.nasa.gov/)                                                 |
-| Geolocation    | [Google Geolocation](https://developers.google.com/maps/documentation/geolocation/get-api-key) | Google Maps  | [Google Maps](https://developers.google.com/maps/documentation/embed/get-api-key) |
-| Gov Data       | [GovInfo API](https://api.govinfo.gov/docs/)                                                   | The News API | [Register](https://www.thenewsapi.com/register)                                   |
-| Google Weather | [Weather API](https://developers.google.com/maps/documentation/weather/get-api-key)            | Grokipedia   | [PyPI](https://pypi.org/project/grokipedia-api/)                                  |
-| CDC            | [CDC Data](https://data.cdc.gov/login)                                                         | Purple Air   | [Developer Portal](https://develop.purpleair.com/)                                |
-| FIRMS          | [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/usfs/api/map_key/)                           | CENSUS       | [API Key](https://api.census.gov/data/key_signup.html)                            |
-| Wikipedia      | [Wikimedia APIs](https://www.mediawiki.org/wiki/Wikimedia_APIs/Get_started)                    |              |                                                                                   |
 
 ## 🔑 Configuration
 
@@ -444,6 +423,28 @@ print(df_results)
 | Metrics               | Text metrics are computed from either processed text or raw text depending on what is available.                                                                                                       |
 | Optional dependencies | Some loaders and fetchers are only needed when their corresponding mode/expander is used.                                                                                                              |
 | Credentials           | API keys are entered through sidebar configuration or loaded from configuration/environment variables.                                                                                                 |
+
+## 🔑 AI API Key
+
+| Provider | Setup Link                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------ |
+| OpenAI   | [OpenAI API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md) |
+| Grok     | [Grok API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)      |
+| Gemini   | [Gemini API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md) |
+
+#### Data Services
+
+| Service        | Link                                                                                           | Service      | Link                                                                              |
+| -------------- | ---------------------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------- |
+| OpenAI         | [Platform](https://platform.openai.com/home)                                                   | Grok         | [Account](https://accounts.x.ai/account)                                          |
+| Gemini         | [AI Studio](https://aistudio.google.com/api-keys)                                              | Claude       | [API Keys](https://platform.claude.com/docs/en/api/admin/api_keys/retrieve)       |
+| Mistral        | [Console](https://chat.mistral.ai/1)                                                           | NASA         | [NASA API](https://api.nasa.gov/)                                                 |
+| Geolocation    | [Google Geolocation](https://developers.google.com/maps/documentation/geolocation/get-api-key) | Google Maps  | [Google Maps](https://developers.google.com/maps/documentation/embed/get-api-key) |
+| Gov Data       | [GovInfo API](https://api.govinfo.gov/docs/)                                                   | The News API | [Register](https://www.thenewsapi.com/register)                                   |
+| Google Weather | [Weather API](https://developers.google.com/maps/documentation/weather/get-api-key)            | Grokipedia   | [PyPI](https://pypi.org/project/grokipedia-api/)                                  |
+| CDC            | [CDC Data](https://data.cdc.gov/login)                                                         | Purple Air   | [Developer Portal](https://develop.purpleair.com/)                                |
+| FIRMS          | [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/usfs/api/map_key/)                           | CENSUS       | [API Key](https://api.census.gov/data/key_signup.html)                            |
+| Wikipedia      | [Wikimedia APIs](https://www.mediawiki.org/wiki/Wikimedia_APIs/Get_started)                    |              |                                                                                   |
 
 ## 📝 License
 
