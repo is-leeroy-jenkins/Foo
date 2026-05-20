@@ -452,8 +452,3 @@ print(df_results)
 
 * MIT License [here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
 * Copyright © 2022–2025 Terry D. Eppler
-
-## 🙏 Acknowledgments
-
-* Project lead: Terry D. Eppler ([terryeppler@gmail.com](mailto:terryeppler@gmail.com))
-* Inspired by open-source Python, ML, retrieval, mapping, public-data, and LLM communities.
