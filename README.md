@@ -2,7 +2,7 @@
 
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
 
-Foo is a data loading, scraping, retrieval, geospatial, environmental,
+Foo is a Streamlit-based data loading, scraping, retrieval, geospatial, environmental,
 astronomical, demographic, generative-AI, and SQLite data-management workspace. It is designed
 to give users explicit, hands-on control over how content is loaded, extracted, queried, fetched,
 cleaned, analyzed, visualized, and routed into downstream machine-learning or agentic workflows.
@@ -13,47 +13,46 @@ supports local files, web pages, public archives, Google services, government da
 geospatial APIs, environmental APIs, astronomical APIs, demographic APIs, and multiple LLM
 providers.
 
-## 🎥 Demo
-
-![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo-demo.gif)
-
-## 🕸️ Web
-
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
 
-## 📚 Table of Contents
+![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/Foo-streamlit.gif)
 
-| Section                                                 | Description                                                       |
-| ------------------------------------------------------- | ----------------------------------------------------------------- |
-| [Features](#-features)                                  | Core application capabilities.                                    |
-| [Application Modes](#-application-modes)                | Major Streamlit modes exposed by `app.py`.                        |
-| [Architecture](#%EF%B8%8F-architecture)                 | High-level operating model.                                       |
-| [Directory Structure](#%EF%B8%8F-directory-structure)   | Expected project layout.                                          |
-| [Installation](#%EF%B8%8F-installation)                 | Local setup steps.                                                |
-| [Running the App](#%EF%B8%8F-running-the-streamlit-app) | Streamlit launch command.                                         |
-| [Loaders](#-loaders)                                    | File, web, corpus, and cloud loading components.                  |
-| [Retrieval Sources](#-retrieval-sources)                | Public collections and archive fetchers.                          |
-| [Domain Fetchers](#-domain-fetchers)                    | Geospatial, environmental, astronomical, and demographic sources. |
-| [Generation Providers](#-generation-providers)          | LLM providers surfaced in Generation mode.                        |
-| [Data Management](#-data-management)                    | SQLite table administration and analysis tools.                   |
-| [Requirements](#-requirements)                          | Dependency table.                                                 |
-| [Configuration](#-configuration)                        | Common keys and credentials.                                      |
-| [Technical Notes](#%EF%B8%8F-technical-notes)           | Implementation notes.                                             |
-| [License](#-license)                                    | License and copyright.                                            |
+## 📚 Navigation
+
+<p align="center">
+  <a href="#-features">Features</a> ·
+  <a href="#-application-modes">Application Modes</a> ·
+  <a href="#%EF%B8%8F-architecture">Architecture</a> ·
+  <a href="#%EF%B8%8F-directory-structure">Directory Structure</a> ·
+  <a href="#%EF%B8%8F-installation">Installation</a> ·
+  <a href="#%EF%B8%8F-running-the-streamlit-app">Running the App</a> ·
+  <a href="#-quick-start">Quick Start</a> ·
+  <a href="#-loaders">Loaders</a> ·
+  <a href="#%EF%B8%8F-scraping">Scraping</a> ·
+  <a href="#%EF%B8%8F-retrieval-sources">Retrieval Sources</a> ·
+  <a href="#-domain-fetchers">Domain Fetchers</a> ·
+  <a href="#-generation-providers">Generation Providers</a> ·
+  <a href="#%EF%B8%8F-data-management">Data Management</a> ·
+  <a href="#-requirements">Requirements</a> ·
+  <a href="#-configuration">Configuration</a> ·
+  <a href="#-example-usage">Example Usage</a> ·
+  <a href="#%EF%B8%8F-technical-notes">Technical Notes</a> ·
+  <a href="#-license">License</a>
+</p>
 
 ## ✨ Features
 
 | Capability                  | Description                                                                                                                                                                            |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Document Loading            | Load text, CSV, XML, PDF, Markdown, HTML, JSON, PowerPoint, Excel, arXiv, Wikipedia, GitHub, web pages, crawled websites, notebooks, and cloud files.                                  |
+| Modular document loading    | Load text, CSV, XML, PDF, Markdown, HTML, JSON, PowerPoint, Excel, arXiv, Wikipedia, GitHub, web pages, crawled websites, notebooks, and cloud files.                                  |
 | Web scraping                | Extract titles, plain text, raw HTML, headings, paragraphs, lists, tables, articles, sections, divisions, blockquotes, hyperlinks, and image references.                               |
 | Public retrieval            | Query arXiv, Google Drive, Wikipedia, Google Custom Search, NASA Open Science, GovInfo, Congress.gov, Internet Archive, Grokipedia, Jupyter notebooks, cloud files, and cloud buckets. |
 | Geospatial workflows        | Query geocoding, Google Maps, Google Weather, OpenWeather, historical weather, USGS earthquakes, NASA Earth Observatory, USGS National Map, USGS ScienceBase, and OpenSky.             |
 | Environmental workflows     | Query AirNow, NOAA Climate Data, NASA EONET, EPA EnviroFacts, NOAA Tides and Currents, EPA UV Index, PurpleAir, OpenAQ, NASA FIRMS, and USGS Water Data.                               |
 | Astronomical workflows      | Query U.S. Naval Observatory, Satellite Center, Astro Catalog, AstroQuery, StarMap, SIMBAD, Space Weather, Star Chart, and near-Earth object data.                                     |
-| Demographic & Health        | Query U.S. Census, CDC Socrata, U.S. HealthData, WHO Global, United Nations, World Population, CDC WONDER, PubMed, and Open City Data.                                                 |
+| Demographic and health data | Query U.S. Census, CDC Socrata, U.S. HealthData, WHO Global, United Nations, World Population, CDC WONDER, PubMed, and Open City Data.                                                 |
 | Generative AI               | Use ChatGPT, Grok, Claude, Gemini, and Mistral through a shared prompt and parameter interface.                                                                                        |
-| Data management             | Import Excel workbooks, browse tables, perform CRUD operations, filter, aggregate, visualize, alter schema, and run read-only SQL.                                                     |
+| SQLite management           | Import Excel workbooks, browse tables, perform CRUD operations, filter, aggregate, visualize, alter schema, and run read-only SQL.                                                     |
 | Text analytics              | Compute token counts, vocabulary, type-token ratio, hapax ratio, stopword ratio, lexical density, top tokens, and optional readability metrics.                                        |
 
 ## 🕹️ Application Modes
@@ -137,7 +136,7 @@ and displays the active mode selector in the sidebar under **🕹️ Mode**.
 
 ## 🚀 Quick Start
 
-#### 🏃 Run the Application
+### Run the Application
 
 ```bash
 streamlit run app.py
@@ -194,7 +193,7 @@ streamlit run app.py
 | **Web Loader**        | One or more URLs                                     | Loads web documents.                                                                           |
 | **Web Crawler**       | Start URL                                            | Recursively crawls web pages with depth/domain controls.                                       |
 
-## 📐 Scraping
+## 🕸️ Scraping
 
 | Output Category           | Supported Extraction                                                                           |
 | ------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -225,9 +224,9 @@ streamlit run app.py
 | **AWS S3 Bucket**         | Load records from an S3 bucket.                                                                                                                             |
 | **Google Cloud Bucket**   | Load records from a Google Cloud bucket.                                                                                                                    |
 
+## 🌎 Domain Fetchers
 
-
-## 🗺️ Geospatial
+### Geospatial
 
 | Fetcher                    | Purpose                                                                          |
 | -------------------------- | -------------------------------------------------------------------------------- |
@@ -242,7 +241,7 @@ streamlit run app.py
 | **USGS ScienceBase**       | Retrieve ScienceBase records.                                                    |
 | **OpenSky**                | Retrieve aviation/open-sky records.                                              |
 
-## 🌍 Environmental
+### Environmental
 
 | Fetcher                     | Purpose                                                   |
 | --------------------------- | --------------------------------------------------------- |
@@ -257,7 +256,7 @@ streamlit run app.py
 | **NASA FIRMS**              | Retrieve fire/hotspot data.                               |
 | **USGS Water Data**         | Retrieve USGS water data.                                 |
 
-## 🔭 Astronomical
+### Astronomical
 
 | Fetcher                  | Purpose                                                           |
 | ------------------------ | ----------------------------------------------------------------- |
@@ -271,7 +270,7 @@ streamlit run app.py
 | **Star Chart**           | Generate or retrieve star chart information.                      |
 | **Near Earth Objects**   | Retrieve near-Earth object or related object data.                |
 
-## 🩺 Demographic and Health
+### Demographic and Health
 
 | Fetcher                | Purpose                                                   |
 | ---------------------- | --------------------------------------------------------- |
@@ -285,7 +284,7 @@ streamlit run app.py
 | **PubMed Search**      | Search PubMed records.                                    |
 | **Open City Data**     | Retrieve city/open-data records.                          |
 
-## 🧠 Generation Providers
+## 🤖 Generation Providers
 
 | Provider  | Mode Expander | Purpose                                                        |
 | --------- | ------------- | -------------------------------------------------------------- |
@@ -299,44 +298,16 @@ streamlit run app.py
 
 | Tab              | Purpose                                                                                                       |
 | ---------------- | ------------------------------------------------------------------------------------------------------------- |
-| **Import**    | Import Excel sheets into SQLite tables with optional overwrite behavior.                                      |
-| **Browse**    | Select and browse existing SQLite tables.                                                                     |
-| **CRUD**      | Insert, update, and delete rows.                                                                              |
-| **Explore**   | Profile data and inspect table-level information.                                                             |
-| **Filter**    | Apply interactive column filters.                                                                             |
-| **Aggregate** | Compute count, sum, average, minimum, maximum, and median summaries.                                          |
-| **Visualize** | Render histogram, bar, line, scatter, box, pie, and correlation charts.                                       |
-| **Admin**      | Create tables, inspect schema, inspect indexes, add columns, rename columns, rename tables, and drop columns. |
-| **SQL**       | Run read-only SQL queries with result display and execution metrics.                                          |
+| **📥 Import**    | Import Excel sheets into SQLite tables with optional overwrite behavior.                                      |
+| **🗂 Browse**    | Select and browse existing SQLite tables.                                                                     |
+| **💉 CRUD**      | Insert, update, and delete rows.                                                                              |
+| **📊 Explore**   | Profile data and inspect table-level information.                                                             |
+| **🔎 Filter**    | Apply interactive column filters.                                                                             |
+| **🧮 Aggregate** | Compute count, sum, average, minimum, maximum, and median summaries.                                          |
+| **📈 Visualize** | Render histogram, bar, line, scatter, box, pie, and correlation charts.                                       |
+| **⚙ Admin**      | Create tables, inspect schema, inspect indexes, add columns, rename columns, rename tables, and drop columns. |
+| **🧠 SQL**       | Run read-only SQL queries with result display and execution metrics.                                          |
 
-
-
-## 🔑 AI API Key
-
-- [OpenAI API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md)
-- [Grok API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)
-- [Gemini API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md)
-
-
-#### Data Services 
-
-- [OpenAI](https://platform.openai.com/home)
-- [Grok](https://accounts.x.ai/account)
-- [Gemini](https://aistudio.google.com/api-keys)
-- [Claude](https://platform.claude.com/docs/en/api/admin/api_keys/retrieve) 
-- [Mistral](https://chat.mistral.ai/1) 
-- [NASA](https://api.nasa.gov/) 
-- [Geolocation](https://developers.google.com/maps/documentation/geolocation/get-api-key) 
-- [Google Maps](https://developers.google.com/maps/documentation/embed/get-api-key) 
-- [Gov Data](https://api.govinfo.gov/docs/) 
-- [The News API](https://www.thenewsapi.com/register) 
-- [Google Weather](https://developers.google.com/maps/documentation/weather/get-api-key) 
-- [Grokipedia](https://pypi.org/project/grokipedia-api/) 
-- [CDC](https://data.cdc.gov/login) 
-- [Purple Air](https://develop.purpleair.com/) 
-- [FIRMS](https://firms.modaps.eosdis.nasa.gov/usfs/api/map_key/) 
-- [CENSUS](https://api.census.gov/data/key_signup.html) 
-- [Wikipedia](https://www.mediawiki.org/wiki/Wikimedia_APIs/Get_started)
 ## 📦 Requirements
 
 The table below reflects the requirements implied by the active imports, loaders, fetchers, and UI
@@ -375,6 +346,28 @@ cloud SDKs depending on deployment.
 | Environment Variables    | `python-dotenv`                       | Optional `.env` loading for API keys.                                 | Local configuration.                                    |
 | Typing Extensions        | `typing-extensions`                   | Backported typing support where needed.                               | Compatibility support.                                  |
 
+## 🔑 AI API Key
+
+| Provider | Setup Link                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------ |
+| OpenAI   | [OpenAI API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/openai.md) |
+| Grok     | [Grok API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/xai.md)      |
+| Gemini   | [Gemini API Key](https://github.com/is-leeroy-jenkins/Buddy/blob/main/resources/setup/gemini.md) |
+
+#### Data Services
+
+| Service        | Link                                                                                           | Service      | Link                                                                              |
+| -------------- | ---------------------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------- |
+| OpenAI         | [Platform](https://platform.openai.com/home)                                                   | Grok         | [Account](https://accounts.x.ai/account)                                          |
+| Gemini         | [AI Studio](https://aistudio.google.com/api-keys)                                              | Claude       | [API Keys](https://platform.claude.com/docs/en/api/admin/api_keys/retrieve)       |
+| Mistral        | [Console](https://chat.mistral.ai/1)                                                           | NASA         | [NASA API](https://api.nasa.gov/)                                                 |
+| Geolocation    | [Google Geolocation](https://developers.google.com/maps/documentation/geolocation/get-api-key) | Google Maps  | [Google Maps](https://developers.google.com/maps/documentation/embed/get-api-key) |
+| Gov Data       | [GovInfo API](https://api.govinfo.gov/docs/)                                                   | The News API | [Register](https://www.thenewsapi.com/register)                                   |
+| Google Weather | [Weather API](https://developers.google.com/maps/documentation/weather/get-api-key)            | Grokipedia   | [PyPI](https://pypi.org/project/grokipedia-api/)                                  |
+| CDC            | [CDC Data](https://data.cdc.gov/login)                                                         | Purple Air   | [Developer Portal](https://develop.purpleair.com/)                                |
+| FIRMS          | [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/usfs/api/map_key/)                           | CENSUS       | [API Key](https://api.census.gov/data/key_signup.html)                            |
+| Wikipedia      | [Wikimedia APIs](https://www.mediawiki.org/wiki/Wikimedia_APIs/Get_started)                    |              |                                                                                   |
+
 ## 🔑 Configuration
 
 | Key / Setting             | Purpose                                                                          | Used By                                    |
@@ -396,7 +389,7 @@ cloud SDKs depending on deployment.
 
 ## 🔍 Example Usage
 
-#### Scrape Web Page Paragraphs
+### Scrape Web Page Paragraphs
 
 ```python
 from foo.scrapers import WebExtractor
@@ -406,7 +399,7 @@ paragraphs = extractor.scrape_paragraphs("https://example.com")
 print(paragraphs)
 ```
 
-#### Load and Chunk a PDF
+### Load and Chunk a PDF
 
 ```python
 from foo.loaders import PdfLoader
@@ -417,7 +410,7 @@ chunks = loader.split(documents, chunk=1000, overlap=100)
 print(chunks)
 ```
 
-#### Query a Fetcher
+### Query a Fetcher
 
 ```python
 from foo.fetchers import Wikipedia
@@ -429,7 +422,7 @@ for document in documents:
     print(document.page_content[:500])
 ```
 
-#### Run a Read-Only SQLite Query
+### Run a Read-Only SQLite Query
 
 ```python
 import sqlite3
@@ -462,4 +455,3 @@ print(df_results)
 
 * Project lead: Terry D. Eppler ([terryeppler@gmail.com](mailto:terryeppler@gmail.com))
 * Inspired by open-source Python, ML, retrieval, mapping, public-data, and LLM communities.
-
