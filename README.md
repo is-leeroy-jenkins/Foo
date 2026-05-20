@@ -7,7 +7,6 @@
   <a href="#%EF%B8%8F-architecture">Architecture</a> ·
   <a href="#%EF%B8%8F-installation">Install</a> ·
   <a href="#%EF%B8%8F-running-the-streamlit-app">Run</a> ·
-  <a href="#-quick-start">Start</a> ·
   <a href="#-loaders">Loaders</a> ·
   <a href="#%EF%B8%8F-scraping">Scraping</a> ·
   <a href="#%EF%B8%8F-retrieval-sources">Retrievers</a> ·
@@ -15,7 +14,6 @@
   <a href="#-generation-providers">AI</a> ·
   <a href="#%EF%B8%8F-data-management">Data</a> ·
   <a href="#-requirements">Requirements</a> ·
-  <a href="#-configuration">Configuration</a> ·
   <a href="#-example-usage">Examples</a> ·
   <a href="#-license">License</a>
 </p>
