@@ -18,7 +18,7 @@ ___
 
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/Foo-streamlit.gif)
 
-## 📚 Navigation
+
 
 <p align="center">
   <a href="#-features">Features</a> ·
@@ -33,7 +33,6 @@ ___
   <a href="#-generation-providers">AI</a> ·
   <a href="#%EF%B8%8F-data-management">Data</a> ·
   <a href="#-requirements">Requirements</a> ·
-  <a href="#-configuration">Configuration</a> ·
   <a href="#-example-usage">Examples</a> ·
 </p>
 
