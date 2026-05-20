@@ -137,13 +137,13 @@ and displays the active mode selector in the sidebar under **🕹️ Mode**.
 
 ## 🚀 Quick Start
 
-### Run the Application
+#### 🏃 Run the Application
 
 ```bash
 streamlit run app.py
 ```
 
-### Load a Document
+#### 📤 Load a Document
 
 1. Open **Loading** mode.
 2. Expand a loader such as **PDF Loader**, **Excel Loader**, **Web Loader**, or **GitHub Loader**.
@@ -151,7 +151,7 @@ streamlit run app.py
 4. Click **Load**.
 5. Review the document preview panel and corpus metrics.
 
-### Scrape a Web Page
+####  Scrape a Web Page
 
 1. Open **Scraping** mode.
 2. Enter a target URL.
@@ -159,7 +159,7 @@ streamlit run app.py
 4. Optionally enable recursive crawl controls.
 5. Click **Run Scraper**.
 
-### Query a Public Source
+####  Query a Public Source
 
 1. Open **Retrieval** mode.
 2. Expand a source such as **ArXiv**, **Google Search**, **Gov Info**, or **US Congress**.
@@ -167,7 +167,7 @@ streamlit run app.py
 4. Click **Submit**.
 5. Review rendered summaries, rows, and raw results.
 
-### Manage SQLite Data
+####  Manage SQLite Data
 
 1. Open **Data Management** mode.
 2. Use **Import** to load Excel sheets into SQLite.
@@ -194,7 +194,7 @@ streamlit run app.py
 | **Web Loader**        | One or more URLs                                     | Loads web documents.                                                                           |
 | **Web Crawler**       | Start URL                                            | Recursively crawls web pages with depth/domain controls.                                       |
 
-## 🕸️ Scraping
+## 📐 Scraping
 
 | Output Category           | Supported Extraction                                                                           |
 | ------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -225,9 +225,9 @@ streamlit run app.py
 | **AWS S3 Bucket**         | Load records from an S3 bucket.                                                                                                                             |
 | **Google Cloud Bucket**   | Load records from a Google Cloud bucket.                                                                                                                    |
 
-## 🌎 Domain Fetchers
 
-### Geospatial
+
+## 🗺️ Geospatial
 
 | Fetcher                    | Purpose                                                                          |
 | -------------------------- | -------------------------------------------------------------------------------- |
@@ -242,7 +242,7 @@ streamlit run app.py
 | **USGS ScienceBase**       | Retrieve ScienceBase records.                                                    |
 | **OpenSky**                | Retrieve aviation/open-sky records.                                              |
 
-### Environmental
+## 🌍 Environmental
 
 | Fetcher                     | Purpose                                                   |
 | --------------------------- | --------------------------------------------------------- |
@@ -257,7 +257,7 @@ streamlit run app.py
 | **NASA FIRMS**              | Retrieve fire/hotspot data.                               |
 | **USGS Water Data**         | Retrieve USGS water data.                                 |
 
-### Astronomical
+## 🔭 Astronomical
 
 | Fetcher                  | Purpose                                                           |
 | ------------------------ | ----------------------------------------------------------------- |
@@ -271,7 +271,7 @@ streamlit run app.py
 | **Star Chart**           | Generate or retrieve star chart information.                      |
 | **Near Earth Objects**   | Retrieve near-Earth object or related object data.                |
 
-### Demographic and Health
+## 🩺 Demographic and Health
 
 | Fetcher                | Purpose                                                   |
 | ---------------------- | --------------------------------------------------------- |
@@ -285,7 +285,7 @@ streamlit run app.py
 | **PubMed Search**      | Search PubMed records.                                    |
 | **Open City Data**     | Retrieve city/open-data records.                          |
 
-## 🤖 Generation Providers
+## 🧠 Generation Providers
 
 | Provider  | Mode Expander | Purpose                                                        |
 | --------- | ------------- | -------------------------------------------------------------- |
@@ -368,7 +368,7 @@ cloud SDKs depending on deployment.
 
 ## 🔍 Example Usage
 
-### Scrape Web Page Paragraphs
+#### Scrape Web Page Paragraphs
 
 ```python
 from foo.scrapers import WebExtractor
@@ -378,7 +378,7 @@ paragraphs = extractor.scrape_paragraphs("https://example.com")
 print(paragraphs)
 ```
 
-### Load and Chunk a PDF
+#### Load and Chunk a PDF
 
 ```python
 from foo.loaders import PdfLoader
@@ -389,7 +389,7 @@ chunks = loader.split(documents, chunk=1000, overlap=100)
 print(chunks)
 ```
 
-### Query a Fetcher
+#### Query a Fetcher
 
 ```python
 from foo.fetchers import Wikipedia
@@ -401,7 +401,7 @@ for document in documents:
     print(document.page_content[:500])
 ```
 
-### Run a Read-Only SQLite Query
+#### Run a Read-Only SQLite Query
 
 ```python
 import sqlite3
