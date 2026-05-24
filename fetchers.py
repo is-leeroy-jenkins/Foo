@@ -23341,9 +23341,7 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = (
-					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			raise exception
 	
 	def fetch_countries( self, providers_id: str = '', parameters_id: str = '',
@@ -23854,23 +23852,6 @@ class Firms( Fetcher ):
 		Provides access to NASA FIRMS area fire-detection and data-availability
 		services using a MAP_KEY and human-readable normalized output.
 
-		Referenced API Requirements:
-		----------------------------
-		NASA FIRMS API Base Endpoint:
-			- https://firms.modaps.eosdis.nasa.gov/api
-
-		Resources used here:
-			- /area/csv/[MAP_KEY]/[SOURCE]/[AREA_COORDINATES]/[DAY_RANGE]
-			- /area/csv/[MAP_KEY]/[SOURCE]/[AREA_COORDINATES]/[DAY_RANGE]/[DATE]
-			- /data_availability/csv/[MAP_KEY]/[SENSOR]
-
-		Common query concepts:
-			- MAP_KEY
-			- SOURCE or SENSOR
-			- AREA_COORDINATES as west,south,east,north or world
-			- DAY_RANGE from 1 to 5
-			- Optional DATE in YYYY-MM-DD format
-
 	'''
 	base_url: Optional[ str ]
 	map_key: Optional[ str ]
@@ -23879,12 +23860,18 @@ class Firms( Fetcher ):
 	payload: Optional[ Any ]
 	timeout: Optional[ int ]
 	agents: Optional[ str ]
+	source: Optional[ str ]
+	area_coordinates: Optional[ str ]
+	day_range: Optional[ int ]
+	date: Optional[ str ]
+	sensor: Optional[ str ]
+	result: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			--------
-			Initialize the NASA FIRMS fetcher.
+			Initialize the NASA FIRMS fetcher and bind the MAP_KEY from config.py.
 
 			Parameters:
 			-----------
@@ -23896,12 +23883,19 @@ class Firms( Fetcher ):
 		'''
 		super( ).__init__( )
 		self.base_url = 'https://firms.modaps.eosdis.nasa.gov/api'
-		self.map_key = self._resolve_map_key( )
+		self.map_key = cfg.FIRMS_MAP_KEY
 		self.mode = 'area'
 		self.params = { }
 		self.payload = ''
 		self.timeout = 20
 		self.agents = cfg.AGENTS
+		self.source = None
+		self.area_coordinates = None
+		self.day_range = None
+		self.date = None
+		self.sensor = None
+		self.response = None
+		self.result = { }
 		self.headers = {
 				'Accept': 'text/csv',
 				'User-Agent': self.agents
@@ -23928,59 +23922,34 @@ class Firms( Fetcher ):
 				'params',
 				'payload',
 				'timeout',
-				'_resolve_map_key',
+				'agents',
+				'source',
+				'area_coordinates',
+				'day_range',
+				'date',
+				'sensor',
+				'response',
+				'result',
 				'request_csv',
-				'_csv_to_rows',
-				'_summarize_rows',
+				'csv_to_rows',
+				'summarize_rows',
+				'package_response',
 				'fetch_area',
 				'fetch_data_availability',
 				'fetch',
 				'create_schema'
 		]
 	
-	def _resolve_map_key( self ) -> Optional[ str ]:
+	def request_csv( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Resolve the NASA FIRMS MAP_KEY from environment variables.
-
-			Parameters:
-			-----------
-			None
-
-			Returns:
-			--------
-			Optional[str]
-		'''
-		try:
-			candidates: List[ Optional[ str ] ]=[
-					os.getenv( 'FIRMS_MAP_KEY' ),
-					os.getenv( 'NASA_FIRMS_MAP_KEY' )
-			]
-			
-			for candidate in candidates:
-				if candidate is not None and str( candidate ).strip( ):
-					return str( candidate ).strip( )
-			
-			return None
-		
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Firms'
-			exception.method = '_resolve_map_key( self ) -> Optional[ str ]'
-			raise exception
-	
-	def request_csv( self, url: str, time: int=20 ) -> Dict[ str, Any ] | None:
-		'''
-			Purpose:
-			--------
-			Issue a GET request to a FIRMS CSV endpoint.
+			Issue a GET request to a FIRMS CSV endpoint and store response state.
 
 			Parameters:
 			-----------
 			url (str):
-				Fully qualified request URL.
+				Fully qualified FIRMS request URL.
 
 			time (int):
 				Request timeout in seconds.
@@ -23990,43 +23959,39 @@ class Firms( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'map_key', self.map_key )
 			throw_if( 'url', url )
-			
-			if self.map_key is None or not str( self.map_key ).strip( ):
-				raise ValueError(
-					'FIRMS MAP_KEY not found. Set FIRMS_MAP_KEY or '
-					'NASA_FIRMS_MAP_KEY.'
-				)
+			throw_if( 'time', time )
 			
 			self.url = str( url ).strip( )
-			self.params = { }
+			self.timeout = int( time )
 			
 			self.response = requests.get(
 				url=self.url,
 				headers=self.headers,
-				timeout=int( time )
+				timeout=self.timeout
 			)
+			
 			self.response.raise_for_status( )
-			
 			self.payload = self.response.text
-			
-			return {
+			self.result = {
 					'url': self.url,
 					'params': self.params,
 					'raw': self.payload
 			}
+			
+			return self.result
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
 			exception.method = (
-					'request_csv( self, url: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'request_csv( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def _csv_to_rows( self, csv_text: str ) -> List[ Dict[ str, Any ] ]:
+	def csv_to_rows( self, csv_text: str ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
@@ -24046,14 +24011,14 @@ class Firms( Fetcher ):
 				return [ ]
 			
 			df_csv = pd.read_csv( io.StringIO( str( csv_text ) ) )
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for _, item in df_csv.iterrows( ):
-				row: Dict[ str, Any ]={ }
+				row: Dict[ str, Any ] = { }
 				
 				for key in df_csv.columns:
 					friendly_key = str( key ).replace( '_', ' ' ).title( )
-					row[ friendly_key ]=item[ key ]
+					row[ friendly_key ] = item[ key ]
 				
 				rows.append( row )
 			
@@ -24064,11 +24029,11 @@ class Firms( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
 			exception.method = (
-					'_csv_to_rows( self, csv_text: str ) -> List[ Dict[ str, Any ] ]'
+					'csv_to_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
@@ -24077,7 +24042,7 @@ class Firms( Fetcher ):
 			Parameters:
 			-----------
 			rows (List[Dict[str, Any]]):
-				Normalized row dictionaries.
+				Normalized FIRMS row dictionaries.
 
 			Returns:
 			--------
@@ -24088,20 +24053,42 @@ class Firms( Fetcher ):
 			first_date = ''
 			first_lat = ''
 			first_lon = ''
+			first_sensor = ''
 			
 			if rows:
 				first_date = str(
-					rows[ 0 ].get( 'Acq Date', '' ) or
-					rows[ 0 ].get( 'Date', '' ) or ''
+					rows[ 0 ].get( 'Acq Date', '' )
+					or rows[ 0 ].get( 'Date', '' )
+					or ''
 				)
-				first_lat = str( rows[ 0 ].get( 'Latitude', '' ) or '' )
-				first_lon = str( rows[ 0 ].get( 'Longitude', '' ) or '' )
+				
+				first_lat = str(
+					rows[ 0 ].get( 'Latitude', '' )
+					or rows[ 0 ].get( 'Lat', '' )
+					or ''
+				)
+				
+				first_lon = str(
+					rows[ 0 ].get( 'Longitude', '' )
+					or rows[ 0 ].get( 'Lon', '' )
+					or ''
+				)
+				
+				first_sensor = str(
+					rows[ 0 ].get( 'Sensor', '' )
+					or rows[ 0 ].get( 'Source', '' )
+					or rows[ 0 ].get( 'Satellite', '' )
+					or self.sensor
+					or self.source
+					or ''
+				)
 			
 			return {
 					'count': count,
 					'first_date': first_date,
 					'first_lat': first_lat,
-					'first_lon': first_lon
+					'first_lon': first_lon,
+					'first_sensor': first_sensor
 			}
 		
 		except Exception as e:
@@ -24109,14 +24096,50 @@ class Firms( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
 			exception.method = (
-					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_area( self, source: str, area_coordinates: str='world',
-			day_range: int=1, date: str='',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def package_response( self ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Package the stored FIRMS response into the result structure consumed by
+			app.py.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			csv_text = self.result.get( 'raw', '' ) if isinstance( self.result, dict ) else ''
+			rows = self.csv_to_rows( str( csv_text or '' ) )
+			
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': csv_text
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = 'package_response( self ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_area( self, source: str, area_coordinates: str = 'world',
+			day_range: int = 1, date: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -24125,15 +24148,9 @@ class Firms( Fetcher ):
 			Parameters:
 			-----------
 			source (str):
-				FIRMS source, such as:
-				- LANDSAT_NRT
-				- MODIS_NRT
-				- MODIS_SP
-				- VIIRS_NOAA20_NRT
-				- VIIRS_NOAA20_SP
-				- VIIRS_NOAA21_NRT
-				- VIIRS_SNPP_NRT
-				- VIIRS_SNPP_SP
+				FIRMS source, such as LANDSAT_NRT, MODIS_NRT, MODIS_SP,
+				VIIRS_NOAA20_NRT, VIIRS_NOAA20_SP, VIIRS_NOAA21_NRT,
+				VIIRS_SNPP_NRT, or VIIRS_SNPP_SP.
 
 			area_coordinates (str):
 				Bounding box as west,south,east,north, or world.
@@ -24153,54 +24170,53 @@ class Firms( Fetcher ):
 		'''
 		try:
 			throw_if( 'source', source )
+			throw_if( 'area_coordinates', area_coordinates )
+			throw_if( 'day_range', day_range )
+			throw_if( 'time', time )
 			
 			self.mode = 'area'
-			source_value = str( source ).strip( ).upper( )
-			area_value = str( area_coordinates ).strip( )
-			range_value = max( 1, min( 5, int( day_range ) ) )
+			self.source = str( source ).strip( ).upper( )
+			self.area_coordinates = str( area_coordinates ).strip( )
+			self.day_range = int( day_range )
+			self.date = str( date or '' ).strip( )
+			self.timeout = int( time )
 			
-			url = (
-					f'{self.base_url}/area/csv/{self.map_key}/{source_value}/'
-					f'{area_value}/{range_value}'
+			if self.day_range < 1 or self.day_range > 5:
+				raise ValueError( 'day_range must be between 1 and 5.' )
+			
+			self.params = {
+					'source': self.source,
+					'area_coordinates': self.area_coordinates,
+					'day_range': self.day_range,
+					'date': self.date
+			}
+			
+			self.url = (
+					f'{self.base_url}/area/csv/{self.map_key}/{self.source}/'
+					f'{self.area_coordinates}/{self.day_range}'
 			)
 			
-			if str( date ).strip( ):
-				url = f'{url}/{str( date ).strip( )}'
+			if self.date:
+				self.url = f'{self.url}/{self.date}'
 			
-			base = self.request_csv(
-				url=url,
-				time=int( time )
-			) or { }
+			self.request_csv(
+				url=self.url,
+				time=self.timeout
+			)
 			
-			rows = self._csv_to_rows( str( base.get( 'raw', '' ) or '' ) )
-			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': {
-							'source': source_value,
-							'area_coordinates': area_value,
-							'day_range': range_value,
-							'date': str( date ).strip( )
-					},
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': base.get( 'raw', '' )
-			}
+			return self.package_response( )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
 			exception.method = (
-					'fetch_area( self, source: str, area_coordinates: str=world, '
-					'day_range: int=1, date: str=, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_area( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_data_availability( self, sensor: str='ALL',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_data_availability( self, sensor: str = 'ALL',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -24221,44 +24237,44 @@ class Firms( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'sensor', sensor )
+			throw_if( 'time', time )
+			
 			self.mode = 'data-availability'
-			sensor_value = str( sensor ).strip( ).upper( )
-			
-			base = self.request_csv(
-				url=f'{self.base_url}/data_availability/csv/{self.map_key}/{sensor_value}',
-				time=int( time )
-			) or { }
-			
-			rows = self._csv_to_rows( str( base.get( 'raw', '' ) or '' ) )
-			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': {
-							'sensor': sensor_value
-					},
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': base.get( 'raw', '' )
+			self.sensor = str( sensor ).strip( ).upper( )
+			self.timeout = int( time )
+			self.params = {
+					'sensor': self.sensor
 			}
+			self.url = (
+					f'{self.base_url}/data_availability/csv/'
+					f'{self.map_key}/{self.sensor}'
+			)
+			
+			self.request_csv(
+				url=self.url,
+				time=self.timeout
+			)
+			
+			return self.package_response( )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
 			exception.method = (
-					'fetch_data_availability( self, sensor: str=ALL, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_data_availability( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='area', source: str='',
-			area_coordinates: str='world', day_range: int=1, date: str='',
-			sensor: str='ALL', time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'area', source: str = '',
+			area_coordinates: str = 'world', day_range: int = 1, date: str = '',
+			sensor: str = 'ALL', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Unified dispatcher for FIRMS area and data-availability retrieval.
+			Dispatch a FIRMS request to the mode-specific fetch method.
 
 			Parameters:
 			-----------
@@ -24290,34 +24306,23 @@ class Firms( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'area' ).strip( ).lower( )
+			throw_if( 'mode', mode )
+			self.mode = str( mode ).strip( ).lower( )
 			
-			if active_mode == 'area':
-				return self.fetch_area(
-					source=source,
-					area_coordinates=area_coordinates,
-					day_range=day_range,
-					date=date,
-					time=int( time )
-				)
+			if self.mode == 'area':
+				return self.fetch_area( source=source, area_coordinates=area_coordinates,
+					day_range=day_range, date=date, time=time )
 			
-			if active_mode == 'data-availability':
-				return self.fetch_data_availability(
-					sensor=sensor,
-					time=int( time )
-				)
+			if self.mode == 'data-availability':
+				return self.fetch_data_availability( sensor=sensor, time=time )
 			
-			raise ValueError( "Unsupported mode. Use 'area' or 'data-availability'." )
+			raise ValueError( "Unsupported FIRMS mode. Expected 'area' or 'data-availability'." )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = (
-					'fetch( self, mode: str=area, source: str=, '
-					'area_coordinates: str=world, day_range: int=1, date: str=, '
-					'sensor: str=ALL, time: int=20 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			raise exception
 	
 	def create_schema( self, function: str, tool: str,
@@ -24326,7 +24331,7 @@ class Firms( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
@@ -24340,7 +24345,7 @@ class Firms( Fetcher ):
 				Precise explanation of what the function does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				Dictionary defining parameter names and JSON schema descriptors.
 
 			required (list[str]):
 				List of required parameter names.
@@ -24359,34 +24364,30 @@ class Firms( Fetcher ):
 				required = list( parameters.keys( ) )
 			
 			return { 'name': function.strip( ),
-			         'description': (
-					         f"{description.strip( )} This function uses the "
-					         f"{tool.strip( )} service."
-			         ),
-			         'parameters': {
-					         'type': 'object',
-					         'properties': parameters,
-					         'required': required
-			         }
-			         }
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
-			)
+			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			raise exception
 
 class OpenSky( Fetcher ):
 	'''
-
 		Purpose:
 		--------
-		Provides access to the OpenSky Network REST API for aircraft state
-		vectors, flights, airport arrivals/departures, and aircraft tracks.
+		Provides access to the OpenSky Network REST API for aircraft state vectors,
+		flights, airport arrivals/departures, and aircraft tracks.
 
 	'''
 	token_url: Optional[ str ]
@@ -24394,23 +24395,84 @@ class OpenSky( Fetcher ):
 	client_id: Optional[ str ]
 	client_secret: Optional[ str ]
 	access_token: Optional[ str ]
+	token_response: Optional[ Response ]
+	token_payload: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	params: Optional[ Dict[ str, Any ] ]
+	mode: Optional[ str ]
+	endpoint: Optional[ str ]
+	icao24: Optional[ str ]
+	airport: Optional[ str ]
+	begin: Optional[ int ]
+	end: Optional[ int ]
+	time_value: Optional[ int ]
+	lamin: Optional[ float ]
+	lomin: Optional[ float ]
+	lamax: Optional[ float ]
+	lomax: Optional[ float ]
+	extended: Optional[ bool ]
 	
 	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the OpenSky fetcher and bind OAuth credentials from config.py.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
 		super( ).__init__( )
 		self.timeout = 20
 		self.base_url = 'https://opensky-network.org/api'
 		self.token_url = (
 				'https://auth.opensky-network.org/auth/realms/opensky-network/'
-				'protocol/openid-connect/token' )
-		self.client_id = None
-		self.client_secret = None
+				'protocol/openid-connect/token'
+		)
+		self.client_id = cfg.OPENSKY_API_CLIENT_ID
+		self.client_secret = cfg.OPENSKY_API_CREDENTIALS
 		self.access_token = None
+		self.token_response = None
+		self.token_payload = { }
+		self.payload = { }
+		self.params = { }
+		self.mode = 'states_bbox'
+		self.endpoint = None
+		self.icao24 = None
+		self.airport = None
+		self.begin = None
+		self.end = None
+		self.time_value = None
+		self.lamin = None
+		self.lomin = None
+		self.lamax = None
+		self.lomax = None
+		self.extended = False
+		self.response = None
+		self.result = { }
 		self.headers = {
 				'Accept': 'application/json',
 				'User-Agent': cfg.AGENTS,
 		}
 	
 	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
 		return [
 				'timeout',
 				'headers',
@@ -24423,169 +24485,216 @@ class OpenSky( Fetcher ):
 				'client_id',
 				'client_secret',
 				'access_token',
-				'fetch',
+				'token_response',
+				'token_payload',
+				'payload',
+				'params',
+				'mode',
+				'endpoint',
+				'icao24',
+				'airport',
+				'begin',
+				'end',
+				'time_value',
+				'lamin',
+				'lomin',
+				'lamax',
+				'lomax',
+				'extended',
 				'get_token',
 				'request',
 				'normalize_states',
 				'normalize_flights',
 				'normalize_track',
+				'fetch_states_bbox',
+				'fetch_flights_aircraft',
+				'fetch_arrivals_airport',
+				'fetch_departures_airport',
+				'fetch_track_aircraft',
+				'fetch',
+				'create_schema'
 		]
 	
-	@property
-	def mode_options( self ) -> List[ str ]:
-		return [
-				'states_bbox',
-				'flights_aircraft',
-				'arrivals_airport',
-				'departures_airport',
-				'track_aircraft', ]
-	
-	def get_token( self, client_id: str, client_secret: str ) -> str:
+	def get_token( self, client_id: str = None, client_secret: str = None ) -> str:
 		'''
-	
 			Purpose:
 			--------
-			Request a bearer token from the OpenSky authentication server.
-	
+			Request an OpenSky OAuth2 bearer token using client credentials.
+
 			Parameters:
 			-----------
 			client_id (str):
-				OpenSky OAuth client id.
-	
+				Optional OpenSky OAuth client ID. When omitted, the constructor-bound
+				config.py value is used.
+
 			client_secret (str):
-				OpenSky OAuth client secret.
-	
+				Optional OpenSky OAuth client secret. When omitted, the constructor-bound
+				config.py value is used.
+
 			Returns:
 			--------
-			str:
-				Bearer access token.
-	
+			str
 		'''
 		try:
-			throw_if( 'client_id', client_id )
-			throw_if( 'client_secret', client_secret )
-			self.client_id = client_id.strip( )
-			self.client_secret = client_secret.strip( )
-			response = requests.post( self.token_url,
-				headers={ 'Content-Type': 'application/x-www-form-urlencoded' },
+			if client_id:
+				self.client_id = str( client_id ).strip( )
+			
+			if client_secret:
+				self.client_secret = str( client_secret ).strip( )
+			
+			throw_if( 'client_id', self.client_id )
+			throw_if( 'client_secret', self.client_secret )
+			
+			self.token_response = requests.post(
+				self.token_url,
+				headers={
+						'Content-Type': 'application/x-www-form-urlencoded'
+				},
 				data={
 						'grant_type': 'client_credentials',
 						'client_id': self.client_id,
-						'client_secret': self.client_secret, }, timeout=self.timeout, )
-			response.raise_for_status( )
-			payload = response.json( )
-			token = payload.get( 'access_token' )
-			if not token:
+						'client_secret': self.client_secret
+				},
+				timeout=self.timeout
+			)
+			
+			self.token_response.raise_for_status( )
+			self.token_payload = self.token_response.json( )
+			self.access_token = self.token_payload.get( 'access_token' )
+			
+			if not self.access_token:
 				raise ValueError( 'OpenSky token response did not include access_token.' )
 			
-			self.access_token = token
-			return token
-		except Exception as exc:
-			exception = Error( exc )
+			return self.access_token
+		
+		except Exception as e:
+			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
-			exception.method = 'get_token( self, *args ) -> str'
+			exception.method = 'get_token( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def request( self, endpoint: str, params: Dict[ str, Any ], client_id: str=None,
-			client_secret: str=None ) -> Any:
+	def request( self, endpoint: str, params: Dict[ str, Any ],
+			client_id: str = None, client_secret: str = None ) -> Any:
 		'''
-	
 			Purpose:
 			--------
-			Send a GET request to an OpenSky REST endpoint.
-	
+			Send a GET request to an OpenSky REST endpoint and store response state.
+
 			Parameters:
 			-----------
 			endpoint (str):
 				OpenSky endpoint path beginning with '/'.
-	
+
 			params (Dict[str, Any]):
 				Query-string parameters passed to the endpoint.
-	
-			client_id (str | None):
-				Optional OAuth client id for authenticated requests.
-	
-			client_secret (str | None):
-				Optional OAuth client secret for authenticated requests.
-	
+
+			client_id (str):
+				Optional OAuth client ID override.
+
+			client_secret (str):
+				Optional OAuth client secret override.
+
 			Returns:
 			--------
-			Any:
-				Parsed JSON payload returned by OpenSky.
-	
+			Any
 		'''
 		try:
 			throw_if( 'endpoint', endpoint )
-			self.url = f'{self.base_url}{endpoint}'
+			
+			self.endpoint = str( endpoint ).strip( )
+			self.url = f'{self.base_url}{self.endpoint}'
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			if client_id:
+				self.client_id = str( client_id ).strip( )
+			
+			if client_secret:
+				self.client_secret = str( client_secret ).strip( )
 			
 			request_headers = dict( self.headers or { } )
-			if client_id and client_secret:
-				token = self.get_token( client_id, client_secret )
-				request_headers[ 'Authorization' ]=f'Bearer {token}'
 			
-			clean_params = {
-					k: v for k, v in (params or { }).items( )
-					if v is not None and v != ''
-			}
+			if self.client_id and self.client_secret:
+				self.access_token = self.get_token(
+					client_id=self.client_id,
+					client_secret=self.client_secret
+				)
+				request_headers[ 'Authorization' ] = f'Bearer {self.access_token}'
 			
 			self.response = requests.get(
 				self.url,
-				params=clean_params,
+				params=self.params,
 				headers=request_headers,
-				timeout=self.timeout,
+				timeout=self.timeout
 			)
 			
 			if self.response.status_code == 404:
-				return [ ] if '/flights/' in endpoint else { }
+				self.payload = [ ] if '/flights/' in self.endpoint else { }
+				self.result = {
+						'url': self.url,
+						'params': self.params,
+						'raw': self.payload
+				}
+				return self.payload
 			
 			self.response.raise_for_status( )
-			return self.response.json( )
+			self.payload = self.response.json( )
+			self.result = {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.payload
 		
-		except Exception as exc:
-			exception = Error( exc )
+		except Exception as e:
+			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
-			exception.method = (
-					'request( self, endpoint: str, params: Dict[ str, Any ], '
-					'client_id: str | None=None, client_secret: str | None=None ) -> Any'
-			)
+			exception.method = 'request( self, *args, **kwargs ) -> Any'
 			raise exception
 	
 	def normalize_states( self, payload: Dict[ str, Any ] | None ) -> Dict[ str, Any ] | None:
 		'''
-		
 			Purpose:
 			--------
-			Normalize an OpenSky state-vector response into a structured dictionary with
-			mode metadata and aircraft state records.
-		
+			Normalize an OpenSky state-vector response into a structured dictionary.
+
 			Parameters:
 			-----------
-			payload (Dict[ str, Any ] | None): Raw OpenSky state-vector response payload.
-		
+			payload (Dict[str, Any] | None):
+				Raw OpenSky state-vector response payload.
+
 			Returns:
 			--------
-			Dict[ str, Any ] | None: Normalized state-vector records and metadata, or
-			None when normalization fails.
-		
+			Dict[str, Any] | None
 		'''
 		try:
 			if not payload:
-				return {
+				self.result = {
 						'mode': 'states_bbox',
 						'time': None,
 						'count': 0,
 						'items': [ ],
 				}
+				return self.result
 			
 			rows = payload.get( 'states' ) or [ ]
-			items: List[ Dict[ str, Any ] ]=[ ]
+			items: List[ Dict[ str, Any ] ] = [ ]
 			
 			for row in rows:
 				items.append(
 					{
-							'icao24': row[ 0 ],
+							'icao24': row[ 0 ] if len( row ) > 0 else None,
 							'callsign': (row[ 1 ] or '').strip( ) if len( row ) > 1 else '',
 							'origin_country': row[ 2 ] if len( row ) > 2 else None,
 							'time_position': row[ 3 ] if len( row ) > 3 else None,
@@ -24604,27 +24713,52 @@ class OpenSky( Fetcher ):
 					}
 				)
 			
-			return {
+			self.result = {
 					'mode': 'states_bbox',
 					'time': payload.get( 'time' ),
 					'count': len( items ),
 					'items': items,
 			}
+			
+			return self.result
 		
-		except Exception as exc:
-			exception = Error( exc )
+		except Exception as e:
+			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
-			exception.method = 'normalize_states( self, payload: Dict[ str, Any ] | None )'
+			exception.method = (
+					'normalize_states( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
 	def normalize_flights( self, payload: List[ Dict[ str, Any ] ] | None,
 			mode: str ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Normalize OpenSky flight rows into the structure consumed by app.py.
+
+			Parameters:
+			-----------
+			payload (List[Dict[str, Any]] | None):
+				Raw OpenSky flight rows.
+
+			mode (str):
+				OpenSky flight mode.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
 		try:
+			throw_if( 'mode', mode )
+			
 			rows = payload or [ ]
-			items: List[ Dict[ str, Any ] ]=[ ]
+			items: List[ Dict[ str, Any ] ] = [ ]
+			
 			for row in rows:
-				items.append( {
+				items.append(
+					{
 							'icao24': row.get( 'icao24' ),
 							'callsign': (row.get( 'callsign' ) or '').strip( ),
 							'first_seen': row.get( 'firstSeen' ),
@@ -24643,27 +24777,44 @@ class OpenSky( Fetcher ):
 								row.get( 'departureAirportCandidatesCount' ),
 							'arrival_airport_candidates_count':
 								row.get( 'arrivalAirportCandidatesCount' ),
-					} )
+					}
+				)
 			
-			return {
+			self.result = {
 					'mode': mode,
 					'count': len( items ),
 					'items': items,
 			}
-		except Exception as exc:
-			exception = Error( exc )
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
-					'normalize_flights( self, payload: List[ Dict[ str, Any ] ] | None, '
-					'mode: str )'
+					'normalize_flights( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def normalize_track( self, payload: Dict[ str, Any ] | None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Normalize an OpenSky aircraft-track response into display rows.
+
+			Parameters:
+			-----------
+			payload (Dict[str, Any] | None):
+				Raw OpenSky track payload.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
 		try:
 			if not payload:
-				return {
+				self.result = {
 						'mode': 'track_aircraft',
 						'icao24': None,
 						'callsign': None,
@@ -24672,20 +24823,24 @@ class OpenSky( Fetcher ):
 						'count': 0,
 						'items': [ ],
 				}
+				return self.result
 			
 			path = payload.get( 'path' ) or [ ]
-			items: List[ Dict[ str, Any ] ]=[ ]
+			items: List[ Dict[ str, Any ] ] = [ ]
+			
 			for row in path:
-				items.append( {
+				items.append(
+					{
 							'time': row[ 0 ] if len( row ) > 0 else None,
 							'latitude': row[ 1 ] if len( row ) > 1 else None,
 							'longitude': row[ 2 ] if len( row ) > 2 else None,
 							'baro_altitude_m': row[ 3 ] if len( row ) > 3 else None,
 							'true_track_deg': row[ 4 ] if len( row ) > 4 else None,
 							'on_ground': row[ 5 ] if len( row ) > 5 else None,
-					} )
+					}
+				)
 			
-			return {
+			self.result = {
 					'mode': 'track_aircraft',
 					'icao24': payload.get( 'icao24' ),
 					'callsign': payload.get( 'callsign' ) or payload.get( 'calllsign' ),
@@ -24694,122 +24849,546 @@ class OpenSky( Fetcher ):
 					'count': len( items ),
 					'items': items,
 			}
-		except Exception as exc:
-			exception = Error( exc )
-			exception.module = 'fetchers'
-			exception.cause = 'OpenSky'
-			exception.method = 'normalize_track( self, payload: Dict[ str, Any ] | None )'
-			raise exception
-	
-	def fetch( self, mode: str='states_bbox', icao24: str='', airport: str='',
-			begin: int=None, end: int=None, time_value: int=None,
-			lamin: float | None=None, lomin: float | None=None, lamax: float | None=None,
-			lomax: float | None=None, extended: bool=False, client_id: str=None,
-			client_secret: str=None, time: int=20 ) -> Dict[ str, Any ] | None:
-		try:
-			self.timeout = int( time )
-			active_mode = (mode or 'states_bbox').strip( ).lower( )
-			if active_mode == 'states_bbox':
-				params: Dict[ str, Any ]={ }
-				if time_value is not None:
-					params[ 'time' ]=int( time_value )
-				if icao24 and icao24.strip( ):
-					params[ 'icao24' ]=icao24.strip( ).lower( )
-				if lamin is not None and lomin is not None and lamax is not None and lomax is not None:
-					params[ 'lamin' ]=float( lamin )
-					params[ 'lomin' ]=float( lomin )
-					params[ 'lamax' ]=float( lamax )
-					params[ 'lomax' ]=float( lomax )
-				if extended:
-					params[ 'extended' ]=1
-				
-				payload = self.request(
-					'/states/all',
-					params=params,
-					client_id=client_id,
-					client_secret=client_secret,
-				)
-				return self.normalize_states( payload )
 			
-			if active_mode == 'flights_aircraft':
-				throw_if( 'icao24', icao24 )
-				throw_if( 'begin', begin )
-				throw_if( 'end', end )
-				
-				payload = self.request(
-					'/flights/aircraft',
-					params={
-							'icao24': icao24.strip( ).lower( ),
-							'begin': int( begin ),
-							'end': int( end ),
-					},
-					client_id=client_id,
-					client_secret=client_secret,
-				)
-				return self.normalize_flights( payload, active_mode )
-			
-			if active_mode == 'arrivals_airport':
-				throw_if( 'airport', airport )
-				throw_if( 'begin', begin )
-				throw_if( 'end', end )
-				
-				payload = self.request(
-					'/flights/arrival',
-					params={
-							'airport': airport.strip( ).upper( ),
-							'begin': int( begin ),
-							'end': int( end ),
-					},
-					client_id=client_id,
-					client_secret=client_secret,
-				)
-				return self.normalize_flights( payload, active_mode )
-			
-			if active_mode == 'departures_airport':
-				throw_if( 'airport', airport )
-				throw_if( 'begin', begin )
-				throw_if( 'end', end )
-				
-				payload = self.request(
-					'/flights/departure',
-					params={
-							'airport': airport.strip( ).upper( ),
-							'begin': int( begin ),
-							'end': int( end ),
-					},
-					client_id=client_id,
-					client_secret=client_secret,
-				)
-				return self.normalize_flights( payload, active_mode )
-			
-			if active_mode == 'track_aircraft':
-				throw_if( 'icao24', icao24 )
-				payload = self.request(
-					'/tracks/all',
-					params={
-							'icao24': icao24.strip( ).lower( ),
-							'time': int( time_value or 0 ),
-					},
-					client_id=client_id,
-					client_secret=client_secret,
-				)
-				return self.normalize_track( payload )
-			
-			raise ValueError(
-				"Unsupported mode. Use 'states_bbox', 'flights_aircraft', "
-				"'arrivals_airport', 'departures_airport', or 'track_aircraft'."
-			)
+			return self.result
 		
-		except Exception as exc:
-			exception = Error( exc )
+		except Exception as e:
+			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
-					'fetch( self, mode: str=states_bbox, icao24: str=, airport: str=, '
-					'begin: int | None=None, end: int | None=None, time_value: int | None=None, '
-					'lamin: float | None=None, lomin: float | None=None, '
-					'lamax: float | None=None, lomax: float | None=None, '
-					'extended: bool=False, client_id: str | None=None, '
-					'client_secret: str | None=None, time: int=20 ) -> Dict[ str, Any ]'
+					'normalize_track( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_states_bbox( self, icao24: str = '', time_value: int = None,
+			lamin: float | None = None, lomin: float | None = None,
+			lamax: float | None = None, lomax: float | None = None,
+			extended: bool = False, client_id: str = None,
+			client_secret: str = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch live or time-filtered state vectors, optionally bounded by location.
+
+			Parameters:
+			-----------
+			icao24 (str):
+				Optional aircraft ICAO24 identifier.
+
+			time_value (int | None):
+				Optional Unix timestamp.
+
+			lamin (float | None):
+				Minimum latitude.
+
+			lomin (float | None):
+				Minimum longitude.
+
+			lamax (float | None):
+				Maximum latitude.
+
+			lomax (float | None):
+				Maximum longitude.
+
+			extended (bool):
+				Whether to request extended aircraft categories.
+
+			client_id (str):
+				Optional OAuth client ID override.
+
+			client_secret (str):
+				Optional OAuth client secret override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'states_bbox'
+			self.icao24 = str( icao24 or '' ).strip( ).lower( )
+			self.time_value = None if time_value is None else int( time_value )
+			self.lamin = None if lamin is None else float( lamin )
+			self.lomin = None if lomin is None else float( lomin )
+			self.lamax = None if lamax is None else float( lamax )
+			self.lomax = None if lomax is None else float( lomax )
+			self.extended = bool( extended )
+			
+			self.params = { }
+			
+			if self.time_value is not None:
+				self.params[ 'time' ] = self.time_value
+			
+			if self.icao24:
+				self.params[ 'icao24' ] = self.icao24
+			
+			if (
+					self.lamin is not None
+					and self.lomin is not None
+					and self.lamax is not None
+					and self.lomax is not None
+			):
+				self.params[ 'lamin' ] = self.lamin
+				self.params[ 'lomin' ] = self.lomin
+				self.params[ 'lamax' ] = self.lamax
+				self.params[ 'lomax' ] = self.lomax
+			
+			if self.extended:
+				self.params[ 'extended' ] = 1
+			
+			self.payload = self.request(
+				endpoint='/states/all',
+				params=self.params,
+				client_id=client_id,
+				client_secret=client_secret
+			)
+			
+			return self.normalize_states( self.payload )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'fetch_states_bbox( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_flights_aircraft( self, icao24: str, begin: int, end: int,
+			client_id: str = None, client_secret: str = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch flights for a single aircraft within a Unix-time window.
+
+			Parameters:
+			-----------
+			icao24 (str):
+				Aircraft ICAO24 identifier.
+
+			begin (int):
+				Beginning Unix timestamp.
+
+			end (int):
+				Ending Unix timestamp.
+
+			client_id (str):
+				Optional OAuth client ID override.
+
+			client_secret (str):
+				Optional OAuth client secret override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'icao24', icao24 )
+			throw_if( 'begin', begin )
+			throw_if( 'end', end )
+			
+			self.mode = 'flights_aircraft'
+			self.icao24 = str( icao24 ).strip( ).lower( )
+			self.begin = int( begin )
+			self.end = int( end )
+			self.params = {
+					'icao24': self.icao24,
+					'begin': self.begin,
+					'end': self.end
+			}
+			
+			self.payload = self.request(
+				endpoint='/flights/aircraft',
+				params=self.params,
+				client_id=client_id,
+				client_secret=client_secret
+			)
+			
+			return self.normalize_flights( self.payload, self.mode )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'fetch_flights_aircraft( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_arrivals_airport( self, airport: str, begin: int, end: int,
+			client_id: str = None, client_secret: str = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch arrivals for a single airport within a Unix-time window.
+
+			Parameters:
+			-----------
+			airport (str):
+				Airport ICAO code.
+
+			begin (int):
+				Beginning Unix timestamp.
+
+			end (int):
+				Ending Unix timestamp.
+
+			client_id (str):
+				Optional OAuth client ID override.
+
+			client_secret (str):
+				Optional OAuth client secret override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'airport', airport )
+			throw_if( 'begin', begin )
+			throw_if( 'end', end )
+			
+			self.mode = 'arrivals_airport'
+			self.airport = str( airport ).strip( ).upper( )
+			self.begin = int( begin )
+			self.end = int( end )
+			self.params = {
+					'airport': self.airport,
+					'begin': self.begin,
+					'end': self.end
+			}
+			
+			self.payload = self.request(
+				endpoint='/flights/arrival',
+				params=self.params,
+				client_id=client_id,
+				client_secret=client_secret
+			)
+			
+			return self.normalize_flights( self.payload, self.mode )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'fetch_arrivals_airport( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_departures_airport( self, airport: str, begin: int, end: int,
+			client_id: str = None, client_secret: str = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch departures for a single airport within a Unix-time window.
+
+			Parameters:
+			-----------
+			airport (str):
+				Airport ICAO code.
+
+			begin (int):
+				Beginning Unix timestamp.
+
+			end (int):
+				Ending Unix timestamp.
+
+			client_id (str):
+				Optional OAuth client ID override.
+
+			client_secret (str):
+				Optional OAuth client secret override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'airport', airport )
+			throw_if( 'begin', begin )
+			throw_if( 'end', end )
+			
+			self.mode = 'departures_airport'
+			self.airport = str( airport ).strip( ).upper( )
+			self.begin = int( begin )
+			self.end = int( end )
+			self.params = {
+					'airport': self.airport,
+					'begin': self.begin,
+					'end': self.end
+			}
+			
+			self.payload = self.request(
+				endpoint='/flights/departure',
+				params=self.params,
+				client_id=client_id,
+				client_secret=client_secret
+			)
+			
+			return self.normalize_flights( self.payload, self.mode )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'fetch_departures_airport( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_track_aircraft( self, icao24: str, time_value: int = 0,
+			client_id: str = None, client_secret: str = None ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch track waypoints for a single aircraft.
+
+			Parameters:
+			-----------
+			icao24 (str):
+				Aircraft ICAO24 identifier.
+
+			time_value (int):
+				Unix timestamp. Zero requests current/latest track behavior.
+
+			client_id (str):
+				Optional OAuth client ID override.
+
+			client_secret (str):
+				Optional OAuth client secret override.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'icao24', icao24 )
+			
+			self.mode = 'track_aircraft'
+			self.icao24 = str( icao24 ).strip( ).lower( )
+			self.time_value = int( time_value or 0 )
+			self.params = {
+					'icao24': self.icao24,
+					'time': self.time_value
+			}
+			
+			self.payload = self.request(
+				endpoint='/tracks/all',
+				params=self.params,
+				client_id=client_id,
+				client_secret=client_secret
+			)
+			
+			return self.normalize_track( self.payload )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'fetch_track_aircraft( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch( self, mode: str = 'states_bbox', icao24: str = '', airport: str = '',
+			begin: int = None, end: int = None, time_value: int = None,
+			lamin: float | None = None, lomin: float | None = None, lamax: float | None = None,
+			lomax: float | None = None, extended: bool = False, client_id: str = None,
+			client_secret: str = None, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Dispatch an OpenSky request to the mode-specific fetch method.
+
+			Parameters:
+			-----------
+			mode (str):
+				Supported modes:
+				- states_bbox
+				- flights_aircraft
+				- arrivals_airport
+				- departures_airport
+				- track_aircraft
+
+			icao24 (str):
+				Aircraft ICAO24 identifier.
+
+			airport (str):
+				Airport ICAO code.
+
+			begin (int):
+				Beginning Unix timestamp for history queries.
+
+			end (int):
+				Ending Unix timestamp for history queries.
+
+			time_value (int):
+				Optional Unix timestamp.
+
+			lamin (float | None):
+				Minimum latitude.
+
+			lomin (float | None):
+				Minimum longitude.
+
+			lamax (float | None):
+				Maximum latitude.
+
+			lomax (float | None):
+				Maximum longitude.
+
+			extended (bool):
+				Whether to request extended aircraft categories.
+
+			client_id (str):
+				Optional OAuth client ID override.
+
+			client_secret (str):
+				Optional OAuth client secret override.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'mode', mode )
+			throw_if( 'time', time )
+			
+			self.timeout = int( time )
+			self.mode = str( mode ).strip( ).lower( )
+			
+			if client_id:
+				self.client_id = str( client_id ).strip( )
+			
+			if client_secret:
+				self.client_secret = str( client_secret ).strip( )
+			
+			if self.mode == 'states_bbox':
+				return self.fetch_states_bbox(
+					icao24=icao24,
+					time_value=time_value,
+					lamin=lamin,
+					lomin=lomin,
+					lamax=lamax,
+					lomax=lomax,
+					extended=extended,
+					client_id=self.client_id,
+					client_secret=self.client_secret
+				)
+			
+			if self.mode == 'flights_aircraft':
+				return self.fetch_flights_aircraft(
+					icao24=icao24,
+					begin=begin,
+					end=end,
+					client_id=self.client_id,
+					client_secret=self.client_secret
+				)
+			
+			if self.mode == 'arrivals_airport':
+				return self.fetch_arrivals_airport(
+					airport=airport,
+					begin=begin,
+					end=end,
+					client_id=self.client_id,
+					client_secret=self.client_secret
+				)
+			
+			if self.mode == 'departures_airport':
+				return self.fetch_departures_airport(
+					airport=airport,
+					begin=begin,
+					end=end,
+					client_id=self.client_id,
+					client_secret=self.client_secret
+				)
+			
+			if self.mode == 'track_aircraft':
+				return self.fetch_track_aircraft(
+					icao24=icao24,
+					time_value=int( time_value or 0 ),
+					client_id=self.client_id,
+					client_secret=self.client_secret
+				)
+			
+			raise ValueError(
+				"Unsupported OpenSky mode. Expected 'states_bbox', 'flights_aircraft', "
+				"'arrivals_airport', 'departures_airport', or 'track_aircraft'."
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				Dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
+		try:
+			throw_if( 'function', function )
+			throw_if( 'tool', tool )
+			throw_if( 'description', description )
+			throw_if( 'parameters', parameters )
+			
+			if required is None:
+				required = list( parameters.keys( ) )
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
