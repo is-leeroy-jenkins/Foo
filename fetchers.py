@@ -1646,25 +1646,6 @@ class GoogleDrive( Fetcher ):
 		--------
 		Fetches Google Drive documents through the LangChain GoogleDriveRetriever.
 
-		Attributes:
-		-----------
-		fetcher,
-		documents,
-		num_results,
-		folder_id,
-		template,
-		query,
-		mime_type,
-		mode,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		mime_options(...): Performs the mime_options operation for this fetcher.
-		template_options(...): Performs the template_options operation for this fetcher.
-		mode_options(...): Performs the mode_options operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-
 	'''
 	fetcher: Optional[ GoogleDriveRetriever ]
 	documents: Optional[ List[ Document ] ]
@@ -1674,115 +1655,226 @@ class GoogleDrive( Fetcher ):
 	query: Optional[ str ]
 	mime_type: Optional[ str ]
 	mode: Optional[ str ]
+	credentials_path: Optional[ str ]
+	token_path: Optional[ str ]
+	retriever_kwargs: Optional[ Dict[ str, Any ] ]
+	invoke_query: Optional[ str ]
 	
 	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the Google Drive retriever wrapper.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
 		super( ).__init__( )
 		self.fetcher = None
-		self.documents = None
-		self.query = None
+		self.documents = [ ]
+		self.query = ''
 		self.template = 'gdrive-query'
-		self.folder_id = 'root'
+		self.folder_id = cfg.GOOGLE_DRIVE_FOLDER_ID or 'root'
 		self.num_results = 10
 		self.mime_type = None
 		self.mode = 'documents'
+		self.credentials_path = cfg.GOOGLE_ACCOUNT_FILE
+		self.token_path = cfg.GOOGLE_DRIVE_TOKEN_PATH
+		self.retriever_kwargs = { }
+		self.invoke_query = ''
+	
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
+		return [
+				'fetcher',
+				'documents',
+				'num_results',
+				'folder_id',
+				'template',
+				'query',
+				'mime_type',
+				'mode',
+				'credentials_path',
+				'token_path',
+				'retriever_kwargs',
+				'invoke_query',
+				'mime_options',
+				'template_options',
+				'mode_options',
+				'fetch'
+		]
 	
 	@property
 	def mime_options( self ) -> List[ str ]:
 		'''
-		
+
 			Purpose:
 			--------
 			Return supported MIME types aligned to the Google Drive retriever docs.
-		
+
 			Returns:
 			--------
 			List[str]
-		
+
 		'''
-		return [ '', 'text/text', 'text/plain', 'text/html', 'text/csv', 'text/markdown',
-		         'image/png', 'image/jpeg', 'application/epub+zip', 'application/pdf',
-		         'application/rtf', 'application/vnd.google-apps.document',
-		         'application/vnd.google-apps.presentation',
-		         'application/vnd.google-apps.spreadsheet',
-		         'application/vnd.google.colaboratory',
-		         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-		         'application/vnd.openxmlformats-officedocument.wordprocessingml.document', ]
+		return [
+				'',
+				'text/text',
+				'text/plain',
+				'text/html',
+				'text/csv',
+				'text/markdown',
+				'image/png',
+				'image/jpeg',
+				'application/epub+zip',
+				'application/pdf',
+				'application/rtf',
+				'application/vnd.google-apps.document',
+				'application/vnd.google-apps.presentation',
+				'application/vnd.google-apps.spreadsheet',
+				'application/vnd.google.colaboratory',
+				'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+		]
 	
 	@property
 	def template_options( self ) -> List[ str ]:
 		'''
-		
+
 			Purpose:
 			--------
 			Return predefined template options supported by GoogleDriveRetriever.
-		
+
 			Returns:
 			--------
 			List[str]
-		
+
 		'''
-		return [ 'gdrive-all-in-folder', 'gdrive-query', 'gdrive-by-name', 'gdrive-query-in-folder',
-		         'gdrive-mime-type', 'gdrive-mime-type-in-folder', 'gdrive-query-with-mime-type',
-		         'gdrive-query-with-mime-type-and-folder', ]
+		return [
+				'gdrive-all-in-folder',
+				'gdrive-query',
+				'gdrive-by-name',
+				'gdrive-query-in-folder',
+				'gdrive-mime-type',
+				'gdrive-mime-type-in-folder',
+				'gdrive-query-with-mime-type',
+				'gdrive-query-with-mime-type-and-folder',
+		]
 	
 	@property
 	def mode_options( self ) -> List[ str ]:
 		'''
-		
+
 			Purpose:
 			--------
 			Return supported retrieval display modes.
-		
+
 			Returns:
 			--------
 			List[str]
-		
+
 		'''
-		return [ 'documents', 'snippets' ]
+		return [
+				'documents',
+				'snippets'
+		]
 	
-	def fetch( self, question: str, folder_id: str='root', results: int=10, template: str='gdrive-query',
-			mime_type: str=None, mode: str='documents' ) -> List[ Document ] | None:
-		'''Query Google Drive through LangChain's GoogleDriveRetriever and return LangChain Document objects.
-		
+	def fetch( self, question: str, folder_id: str = 'root', results: int = 10,
+			template: str = 'gdrive-query', mime_type: str = None,
+			mode: str = 'documents' ) -> List[ Document ] | None:
+		'''
+			Purpose:
+			--------
+			Query Google Drive through LangChain's GoogleDriveRetriever and return
+			LangChain Document objects.
+
 			Parameters:
 			-----------
-			question: str
-				Free-text query used by the retriever. For templates that do not
-				require a query, a placeholder value may still be passed.
-				
-			folder_id: str
-				Google Drive folder id. Use 'root' for the user's root Drive.
-				
-			results: int
+			question (str):
+				Free-text query used by the retriever. For templates that do not require
+				a query, an empty string may be passed.
+
+			folder_id (str):
+				Google Drive folder id. Use root for the user's root Drive.
+
+			results (int):
 				Maximum number of returned documents.
-				
-			template: str
+
+			template (str):
 				Predefined GoogleDriveRetriever selection template.
-				
-			mime_type:
+
+			mime_type (str):
 				Optional MIME type filter.
-				
-			mode: str
-				Retrieval mode, typically 'documents' or 'snippets'.
-		
+
+			mode (str):
+				Retrieval mode, typically documents or snippets.
+
 			Returns:
 			--------
 			List[Document] | None
-		
 		'''
 		try:
 			throw_if( 'template', template )
 			throw_if( 'folder_id', folder_id )
+			throw_if( 'results', results )
+			throw_if( 'mode', mode )
 			
-			self.query = (question or '').strip( )
-			self.folder_id = folder_id.strip( ) if folder_id else 'root'
-			self.num_results = max( 1, min( int( results ), 100 ) )
-			self.template = template.strip( )
-			self.mime_type = mime_type.strip( ) if isinstance( mime_type,
-				str ) and mime_type.strip( ) else None
-			self.mode = mode.strip( ) if mode else 'documents'
+			self.query = str( question or '' ).strip( )
+			self.folder_id = str( folder_id or 'root' ).strip( ) or 'root'
+			self.num_results = int( results )
+			self.template = str( template ).strip( )
+			self.mime_type = (
+					str( mime_type ).strip( )
+					if isinstance( mime_type, str ) and str( mime_type ).strip( )
+					else None
+			)
+			self.mode = str( mode ).strip( )
+			self.credentials_path = cfg.GOOGLE_ACCOUNT_FILE
+			self.token_path = cfg.GOOGLE_DRIVE_TOKEN_PATH
 			
-			retriever_kwargs: Dict[ str, Any ]={
+			if self.num_results < 1 or self.num_results > 100:
+				raise ValueError( 'results must be between 1 and 100.' )
+			
+			if self.template not in self.template_options:
+				raise ValueError( f'Unsupported Google Drive template: {self.template}' )
+			
+			if self.mode not in self.mode_options:
+				raise ValueError( f'Unsupported Google Drive mode: {self.mode}' )
+			
+			if self.mime_type and self.mime_type not in self.mime_options:
+				raise ValueError( f'Unsupported Google Drive MIME type: {self.mime_type}' )
+			
+			self.invoke_query = self.query
+			if not self.invoke_query:
+				if self.template in (
+							'gdrive-all-in-folder',
+							'gdrive-mime-type',
+							'gdrive-mime-type-in-folder'
+				):
+					self.invoke_query = '*'
+				else:
+					raise ValueError(
+						'A query is required for the selected Google Drive template.'
+					)
+			
+			self.retriever_kwargs = {
 					'folder_id': self.folder_id,
 					'template': self.template,
 					'num_results': self.num_results,
@@ -1790,33 +1882,26 @@ class GoogleDrive( Fetcher ):
 			}
 			
 			if self.mime_type:
-				retriever_kwargs[ 'mime_type' ]=self.mime_type
+				self.retriever_kwargs[ 'mime_type' ] = self.mime_type
 			
-			if cfg.GOOGLE_ACCOUNT_FILE:
-				retriever_kwargs[ 'credentials_path' ]=cfg.GOOGLE_ACCOUNT_FILE
+			if self.credentials_path:
+				self.retriever_kwargs[ 'credentials_path' ] = self.credentials_path
 			
-			if cfg.GOOGLE_DRIVE_TOKEN_PATH:
-				retriever_kwargs[ 'token_path' ]=cfg.GOOGLE_DRIVE_TOKEN_PATH
+			if self.token_path:
+				self.retriever_kwargs[ 'token_path' ] = self.token_path
 			
-			self.fetcher = GoogleDriveRetriever( **retriever_kwargs )
+			self.fetcher = GoogleDriveRetriever( **self.retriever_kwargs )
+			self.documents = self.fetcher.invoke( self.invoke_query )
 			
-			invoke_query = self.query
-			if not invoke_query:
-				if self.template in ('gdrive-all-in-folder', 'gdrive-mime-type',
-				                     'gdrive-mime-type-in-folder'):
-					invoke_query = '*'
-				else:
-					raise ValueError(
-						'A query is required for the selected Google Drive template.' )
-			
-			self.documents = self.fetcher.invoke( invoke_query )
 			return self.documents
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleDrive'
-			exception.method = 'fetch( self, *kwargs ) -> List[ Document ]'
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> List[ Document ] | None'
+			)
 			raise exception
 
 class Wikipedia( Fetcher ):
@@ -2151,27 +2236,8 @@ class GoogleSearch( Fetcher ):
 
 		Purpose:
 		--------
-		Fetches Google Custom Search results.
-	
-		Attributes:
-		-----------
-		keywords,
-		url,
-		re_tag,
-		re_ws,
-		response,
-		api_key,
-		cse_id,
-		params,
-		results,
-		start,
-	
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-	
+		Fetches Google Custom Search JSON API results.
+
 	'''
 	keywords: Optional[ str ]
 	url: Optional[ str ]
@@ -2181,14 +2247,36 @@ class GoogleSearch( Fetcher ):
 	api_key: Optional[ str ]
 	cse_id: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
 	results: Optional[ int ]
 	start: Optional[ int ]
+	exact_terms: Optional[ str ]
+	exclude_terms: Optional[ str ]
+	file_type: Optional[ str ]
+	date_restrict: Optional[ str ]
+	gl: Optional[ str ]
+	lr: Optional[ str ]
+	safe: Optional[ str ]
+	search_type: Optional[ str ]
+	site_search: Optional[ str ]
+	site_search_filter: Optional[ str ]
+	sort: Optional[ str ]
+	img_size: Optional[ str ]
+	img_type: Optional[ str ]
+	img_color_type: Optional[ str ]
+	img_dominant_color: Optional[ str ]
+	agents: Optional[ str ]
+	result: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			-----------
-			Initialize GoogleSearch with environment-based credentials and sane defaults.
+			Initialize GoogleSearch with config.py credentials and request defaults.
+
+			Parameters:
+			-----------
+			None
 
 			Returns:
 			-----------
@@ -2204,32 +2292,88 @@ class GoogleSearch( Fetcher ):
 		self.timeout = 10
 		self.keywords = None
 		self.params = { }
+		self.payload = { }
 		self.response = None
+		self.result = { }
 		self.results = 10
 		self.start = 1
+		self.exact_terms = None
+		self.exclude_terms = None
+		self.file_type = None
+		self.date_restrict = None
+		self.gl = None
+		self.lr = None
+		self.safe = 'off'
+		self.search_type = None
+		self.site_search = None
+		self.site_search_filter = None
+		self.sort = None
+		self.img_size = None
+		self.img_type = None
+		self.img_color_type = None
+		self.img_dominant_color = None
 		self.agents = cfg.AGENTS
 		
 		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ]=self.agents
+			self.headers[ 'User-Agent' ] = self.agents
 		
 		if 'Accept' not in self.headers:
-			self.headers[ 'Accept' ]='application/json'
+			self.headers[ 'Accept' ] = 'application/json'
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
 			Purpose:
 			-----------
 			Control visible ordering for GoogleSearch.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			-----------
+			List[str]
 		'''
-		return [ 'keywords', 'url', 'timeout', 'headers', 'fetch', 'api_key',
-		         'response', 'cse_id', 'params', 'agents', 'results', 'start', ]
+		return [
+				'keywords',
+				'url',
+				'timeout',
+				'headers',
+				'fetch',
+				'api_key',
+				'response',
+				'payload',
+				'result',
+				'cse_id',
+				'params',
+				'agents',
+				'results',
+				'start',
+				'exact_terms',
+				'exclude_terms',
+				'file_type',
+				'date_restrict',
+				'gl',
+				'lr',
+				'safe',
+				'search_type',
+				'site_search',
+				'site_search_filter',
+				'sort',
+				'img_size',
+				'img_type',
+				'img_color_type',
+				'img_dominant_color'
+		]
 	
-	def fetch( self, keywords: str, results: int=10, start: int=1, exact_terms: str='',
-			exclude_terms: str='', file_type: str='', date_restrict: str='', gl: str='', lr: str='',
-			safe: str='off', search_type: str='', site_search: str='', site_search_filter: str='',
-			sort: str='', img_size: str='', img_type: str='', img_color_type: str='',
-			img_dominant_color: str='', time: int=10, api_key: str=None,
-			cse_id: str=None ) -> Dict[ str, Any ] | None:
+	def fetch( self, keywords: str, results: int = 10, start: int = 1, exact_terms: str = '',
+			exclude_terms: str = '', file_type: str = '', date_restrict: str = '', gl: str = '',
+			lr: str = '',
+			safe: str = 'off', search_type: str = '', site_search: str = '',
+			site_search_filter: str = '',
+			sort: str = '', img_size: str = '', img_type: str = '', img_color_type: str = '',
+			img_dominant_color: str = '', time: int = 10, api_key: str = None,
+			cse_id: str = None ) -> Dict[ str, Any ] | None:
 		'''
 
 			Purpose:
@@ -2239,49 +2383,68 @@ class GoogleSearch( Fetcher ):
 
 			Parameters:
 			-----------
-			keywords:
+			keywords (str):
 				Search query string.
-			results:
+
+			results (int):
 				Number of results per request. Google supports up to 10 per request.
-			start:
-				Index of the first result to return. Combined paging is limited to
-				the first 100 results.
-			exact_terms:
+
+			start (int):
+				Index of the first result to return.
+
+			exact_terms (str):
 				Phrase that all documents must contain.
-			exclude_terms:
+
+			exclude_terms (str):
 				Words or phrases that must not appear.
-			file_type:
+
+			file_type (str):
 				File extension filter, e.g. pdf, docx.
-			date_restrict:
+
+			date_restrict (str):
 				Date restriction such as d7, w2, m1, y1.
-			gl:
+
+			gl (str):
 				Country boost code, e.g. us.
-			lr:
+
+			lr (str):
 				Language restrict code, e.g. lang_en.
-			safe:
+
+			safe (str):
 				Safe search value, typically active or off.
-			search_type:
+
+			search_type (str):
 				Set to image for image search.
-			site_search:
-				Restrict to a site or domain.
-			site_search_filter:
+
+			site_search (str):
+				Restrict results to a site or domain.
+
+			site_search_filter (str):
 				i to include, e to exclude the specified site.
-			sort:
-				Sort expression when supported by the engine.
-			img_size:
-				Image size filter when search_type=image.
-			img_type:
-				Image type filter when search_type=image.
-			img_color_type:
-				Image color type filter when search_type=image.
-			img_dominant_color:
-				Image dominant color filter when search_type=image.
-			time:
+
+			sort (str):
+				Sort expression supported by the Custom Search engine.
+
+			img_size (str):
+				Image-size filter used only when search_type is image.
+
+			img_type (str):
+				Image-type filter used only when search_type is image.
+
+			img_color_type (str):
+				Image-color-type filter used only when search_type is image.
+
+			img_dominant_color (str):
+				Image-dominant-color filter used only when search_type is image.
+
+			time (int):
 				Request timeout in seconds.
-			api_key:
-				Optional runtime override. Falls back to cfg.GOOGLE_API_KEY.
-			cse_id:
-				Optional runtime override. Falls back to cfg.GOOGLE_CSE_ID.
+
+			api_key (str):
+				Optional API-key override. Uses cfg.GOOGLE_API_KEY when omitted.
+
+			cse_id (str):
+				Optional CSE-ID override. Uses cfg.GOOGLE_CSE_ID when omitted.
 
 			Returns:
 			--------
@@ -2290,80 +2453,122 @@ class GoogleSearch( Fetcher ):
 		'''
 		try:
 			throw_if( 'keywords', keywords )
-			active_key = (api_key or self.api_key or '').strip( )
-			active_cse = (cse_id or self.cse_id or '').strip( )
-			if not active_key:
-				raise ValueError( 'Google API key is required.' )
+			throw_if( 'time', time )
 			
-			if not active_cse:
-				raise ValueError( 'Google CSE ID is required.' )
+			if api_key:
+				self.api_key = str( api_key ).strip( )
+			
+			if cse_id:
+				self.cse_id = str( cse_id ).strip( )
+			
+			throw_if( 'api_key', self.api_key )
+			throw_if( 'cse_id', self.cse_id )
 			
 			self.timeout = int( time )
-			self.keywords = keywords.strip( )
-			self.results = max( 1, min( int( results ), 10 ) )
-			self.start = max( 1, min( int( start ), 91 ) )
+			self.keywords = str( keywords ).strip( )
+			self.results = int( results )
+			self.start = int( start )
+			
+			if self.results < 1:
+				raise ValueError( 'results must be greater than or equal to 1.' )
+			
+			if self.results > 10:
+				raise ValueError( 'results cannot exceed 10 for one Google Custom Search request.' )
+			
+			if self.start < 1:
+				raise ValueError( 'start must be greater than or equal to 1.' )
+			
+			if self.start > 91:
+				raise ValueError( 'start cannot exceed 91 when requesting up to 10 results.' )
+			
+			self.exact_terms = str( exact_terms or '' ).strip( )
+			self.exclude_terms = str( exclude_terms or '' ).strip( )
+			self.file_type = str( file_type or '' ).strip( )
+			self.date_restrict = str( date_restrict or '' ).strip( )
+			self.gl = str( gl or '' ).strip( )
+			self.lr = str( lr or '' ).strip( )
+			self.safe = str( safe or 'off' ).strip( )
+			self.search_type = str( search_type or '' ).strip( )
+			self.site_search = str( site_search or '' ).strip( )
+			self.site_search_filter = str( site_search_filter or '' ).strip( )
+			self.sort = str( sort or '' ).strip( )
+			self.img_size = str( img_size or '' ).strip( )
+			self.img_type = str( img_type or '' ).strip( )
+			self.img_color_type = str( img_color_type or '' ).strip( )
+			self.img_dominant_color = str( img_dominant_color or '' ).strip( )
+			
 			self.params = {
 					'q': self.keywords,
-					'key': active_key,
-					'cx': active_cse,
+					'key': self.api_key,
+					'cx': self.cse_id,
 					'num': self.results,
 					'start': self.start,
-					'safe': (safe or 'off').strip( ),
+					'safe': self.safe
 			}
 			
-			if exact_terms and exact_terms.strip( ):
-				self.params[ 'exactTerms' ]=exact_terms.strip( )
+			if self.exact_terms:
+				self.params[ 'exactTerms' ] = self.exact_terms
 			
-			if exclude_terms and exclude_terms.strip( ):
-				self.params[ 'excludeTerms' ]=exclude_terms.strip( )
+			if self.exclude_terms:
+				self.params[ 'excludeTerms' ] = self.exclude_terms
 			
-			if file_type and file_type.strip( ):
-				self.params[ 'fileType' ]=file_type.strip( )
+			if self.file_type:
+				self.params[ 'fileType' ] = self.file_type
 			
-			if date_restrict and date_restrict.strip( ):
-				self.params[ 'dateRestrict' ]=date_restrict.strip( )
+			if self.date_restrict:
+				self.params[ 'dateRestrict' ] = self.date_restrict
 			
-			if gl and gl.strip( ):
-				self.params[ 'gl' ]=gl.strip( )
+			if self.gl:
+				self.params[ 'gl' ] = self.gl
 			
-			if lr and lr.strip( ):
-				self.params[ 'lr' ]=lr.strip( )
+			if self.lr:
+				self.params[ 'lr' ] = self.lr
 			
-			if search_type and search_type.strip( ):
-				self.params[ 'searchType' ]=search_type.strip( )
+			if self.search_type:
+				self.params[ 'searchType' ] = self.search_type
 			
-			if site_search and site_search.strip( ):
-				self.params[ 'siteSearch' ]=site_search.strip( )
+			if self.site_search:
+				self.params[ 'siteSearch' ] = self.site_search
 			
-			if site_search_filter and site_search_filter.strip( ):
-				self.params[ 'siteSearchFilter' ]=site_search_filter.strip( )
+			if self.site_search_filter:
+				self.params[ 'siteSearchFilter' ] = self.site_search_filter
 			
-			if sort and sort.strip( ):
-				self.params[ 'sort' ]=sort.strip( )
+			if self.sort:
+				self.params[ 'sort' ] = self.sort
 			
-			if search_type.strip( ).lower( ) == 'image':
-				if img_size and img_size.strip( ):
-					self.params[ 'imgSize' ]=img_size.strip( )
+			if self.search_type.lower( ) == 'image':
+				if self.img_size:
+					self.params[ 'imgSize' ] = self.img_size
 				
-				if img_type and img_type.strip( ):
-					self.params[ 'imgType' ]=img_type.strip( )
+				if self.img_type:
+					self.params[ 'imgType' ] = self.img_type
 				
-				if img_color_type and img_color_type.strip( ):
-					self.params[ 'imgColorType' ]=img_color_type.strip( )
+				if self.img_color_type:
+					self.params[ 'imgColorType' ] = self.img_color_type
 				
-				if img_dominant_color and img_dominant_color.strip( ):
-					self.params[ 'imgDominantColor' ]=img_dominant_color.strip( )
+				if self.img_dominant_color:
+					self.params[ 'imgDominantColor' ] = self.img_dominant_color
 			
-			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
 			
 			self.response.raise_for_status( )
-			return self.response.json( )
+			self.payload = self.response.json( )
+			self.result = self.payload
+			
+			return self.result
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleSearch'
-			exception.method = ('fetch( self, keywords: str, results: int=10 ) -> Dict[ str, Any ]')
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 
 class GoogleMaps( Fetcher ):
@@ -2371,30 +2576,7 @@ class GoogleMaps( Fetcher ):
 
 		Purpose:
 		--------
-		Provides Google Maps geocoding, validation, and directions requests.
-
-		Attributes:
-		-----------
-		file_path,
-		headers,
-		num_results,
-		api_key,
-		mode,
-		latitude,
-		longitude,
-		coordinates,
-		address,
-		directions,
-		params,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		geocode_location(...): Performs the geocode_location operation for this fetcher.
-		geocode_coordinates(...): Performs the geocode_coordinates operation for this fetcher.
-		validate_address(...): Performs the validate_address operation for this fetcher.
-		request_directions(...): Performs the request_directions operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
+		Provides Google Maps geocoding, address validation, and directions requests.
 
 	'''
 	file_path: Optional[ str ]
@@ -2406,10 +2588,30 @@ class GoogleMaps( Fetcher ):
 	longitude: Optional[ float ]
 	coordinates: Optional[ Tuple[ float, float ] ]
 	address: Optional[ str ]
-	directions: Optional[ str ]
+	address_lines: Optional[ List[ str ] ]
+	origin: Optional[ str ]
+	destination: Optional[ str ]
+	directions: Optional[ Dict[ str, Any ] ]
 	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	result: Optional[ Any ]
+	agents: Optional[ str ]
+	timeout: Optional[ int ]
 	
 	def __init__( self ) -> None:
+		'''
+			Purpose:
+			--------
+			Initialize the Google Maps fetcher and bind the API key from config.py.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			None
+		'''
 		super( ).__init__( )
 		self.api_key = cfg.GOOGLE_API_KEY
 		self.headers = { }
@@ -2420,245 +2622,372 @@ class GoogleMaps( Fetcher ):
 		self.url = None
 		self.file_path = None
 		self.coordinates = None
-		self.fetcher = None
 		self.address = None
-		self.directions = None
+		self.address_lines = [ ]
+		self.origin = None
+		self.destination = None
+		self.directions = { }
+		self.response = None
+		self.payload = { }
+		self.result = None
+		self.timeout = 10
+		self.num_results = None
 		self.agents = cfg.AGENTS
+		
 		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ]=self.agents
+			self.headers[ 'User-Agent' ] = self.agents
+		
+		if 'Accept' not in self.headers:
+			self.headers[ 'Accept' ] = 'application/json'
 	
-	def geocode_location( self, address: str ) -> Tuple[ float, float ]:
-		'''Uses gmaps to get coordinates from a given address.
+	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Provide ordered member visibility.
 
 			Parameters:
 			-----------
-			address (str): address
+			None
 
 			Returns:
 			--------
-			Tuple[ float, float ] - a tuple of floats representing latitude and longitude (lat, lng)
+			List[str]
+		'''
+		return [
+				'file_path',
+				'headers',
+				'num_results',
+				'api_key',
+				'mode',
+				'latitude',
+				'longitude',
+				'coordinates',
+				'address',
+				'address_lines',
+				'origin',
+				'destination',
+				'directions',
+				'params',
+				'payload',
+				'result',
+				'agents',
+				'timeout',
+				'response',
+				'url',
+				'geocode_location',
+				'geocode_coordinates',
+				'validate_address',
+				'request_directions',
+				'create_schema'
+		]
+	
+	def geocode_location( self, address: str ) -> Tuple[ float, float ]:
+		'''
+			Purpose:
+			--------
+			Get latitude and longitude coordinates from a human-readable address.
 
+			Parameters:
+			-----------
+			address (str):
+				Address, city, place name, or other geocodable location.
+
+			Returns:
+			--------
+			Tuple[float, float]
 		'''
 		try:
+			throw_if( 'api_key', self.api_key )
 			throw_if( 'address', address )
-			self.address = address
-			self.url = "https://maps.googleapis.com/maps/api/geocode/json"
-			self.params = { 'address': self.address, 'key': self.api_key, 'headers': self.headers }
-			self.response = requests.get( url=self.url, params=self.params )
+			
+			self.mode = 'geocode_location'
+			self.address = str( address ).strip( )
+			self.url = 'https://maps.googleapis.com/maps/api/geocode/json'
+			self.params = {
+					'address': self.address,
+					'key': self.api_key
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
-			_response = self.response.json( )
-			_result = _response[ 'results' ][ 0 ]
-			_geo = _result[ 'geometry' ]
-			_loc = _geo[ 'location' ]
-			_lat = _loc[ 'lat' ]
-			_lng = _loc[ 'lng' ]
-			return (_lat, _lng)
+			
+			self.payload = self.response.json( )
+			results = self.payload.get( 'results', [ ] ) if isinstance( self.payload,
+				dict ) else [ ]
+			
+			if not results:
+				raise ValueError( 'No geocoding results were returned for the supplied address.' )
+			
+			location = results[ 0 ].get( 'geometry', { } ).get( 'location', { } )
+			self.latitude = float( location.get( 'lat' ) )
+			self.longitude = float( location.get( 'lng' ) )
+			self.coordinates = (self.latitude, self.longitude)
+			self.result = self.coordinates
+			
+			return self.coordinates
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
-			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
+			exception.method = (
+					'geocode_location( self, *args, **kwargs ) -> Tuple[ float, float ]'
+			)
 			raise exception
 	
 	def geocode_coordinates( self, lat: float, long: float ) -> str | None:
-		'''Uses the Google Maps API to get address from coordinates.
+		'''
+			Purpose:
+			--------
+			Get a formatted address from latitude and longitude coordinates.
 
 			Parameters:
 			-----------
-			lat (float): The geographic latitude of a given location
-			long (floa): The geographic longitude of a given location
+			lat (float):
+				Latitude.
+
+			long (float):
+				Longitude.
 
 			Returns:
 			--------
-			List[ Document ]: List of Document objects parsed from HTML content.
-
+			str | None
 		'''
 		try:
-			throw_if( 'latitiude', lat )
+			throw_if( 'api_key', self.api_key )
+			throw_if( 'latitude', lat )
 			throw_if( 'longitude', long )
-			self.latitude = lat
-			self.longitude = long
-			self.coordinates = (lat, long)
-			self.url = r'https://maps.googleapis.com/maps/api/geocode/json?latlng='
-			self.url += f'{lat},' + f'{long}' + f'&key={self.api_key}'
-			_response = requests.get( self.url ).json( )
-			_address = _response[ 'results' ][ 0 ][ 'formatted_address' ]
-			return _address
+			
+			self.mode = 'geocode_coordinates'
+			self.latitude = float( lat )
+			self.longitude = float( long )
+			self.coordinates = (self.latitude, self.longitude)
+			self.url = 'https://maps.googleapis.com/maps/api/geocode/json'
+			self.params = {
+					'latlng': f'{self.latitude},{self.longitude}',
+					'key': self.api_key
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			
+			self.payload = self.response.json( )
+			results = self.payload.get( 'results', [ ] ) if isinstance( self.payload,
+				dict ) else [ ]
+			
+			if not results:
+				raise ValueError( 'No address results were returned for the supplied coordinates.' )
+			
+			self.address = str( results[ 0 ].get( 'formatted_address', '' ) )
+			self.result = self.address
+			
+			return self.address
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
-			exception.method = 'fetch_location( self, address: str ) -> Tuple[ float, float ]'
+			exception.method = (
+					'geocode_coordinates( self, *args, **kwargs ) -> str | None'
+			)
 			raise exception
 	
 	def validate_address( self, address: List[ str ] ) -> Dict[ Any, Any ] | None:
-		"""
-			
+		'''
 			Purpose:
 			--------
-			Validate an address using Google's Address Validation API.
-	
+			Validate an address using the Google Address Validation API.
+
 			Parameters:
 			-----------
-			address (list): List of address lines (e.g. ["1600 Amphitheatre Parkway"]).
-	
+			address (List[str]):
+				List of address lines.
+
 			Returns:
 			--------
-			dict: Parsed JSON response from Google.
-			
-		"""
+			Dict[Any, Any] | None
+		'''
 		try:
+			throw_if( 'api_key', self.api_key )
 			throw_if( 'address', address )
-			url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
-			payload = \
-				{
-						'address': { 'addressLines': address, }
-				}
 			
-			self.params = \
-				{
-						'key': self.api_key
-				}
+			if not isinstance( address, list ):
+				raise TypeError( 'address must be a list of address-line strings.' )
 			
-			response = requests.post( url, params=self.params, json=payload )
-			if response.status_code != 200:
-				msg = f'Request failed: {response.status_code} – {response.text}'
-				raise RuntimeError( msg )
-			return response.json( )
+			self.mode = 'validate_address'
+			self.url = 'https://addressvalidation.googleapis.com/v1:validateAddress'
+			self.address_lines = [
+					str( line ).strip( )
+					for line in address
+					if line is not None and str( line ).strip( )
+			]
+			
+			if not self.address_lines:
+				raise ValueError( 'At least one address line is required.' )
+			
+			self.params = {
+					'key': self.api_key
+			}
+			self.payload = {
+					'address': {
+							'addressLines': self.address_lines
+					}
+			}
+			
+			self.response = requests.post(
+				url=self.url,
+				params=self.params,
+				json=self.payload,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			
+			self.result = self.response.json( )
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
-			exception.method = 'validate_address( self, address: str ) -> str'
+			exception.method = (
+					'validate_address( self, *args, **kwargs ) -> Dict[ Any, Any ] | None'
+			)
 			raise exception
 	
 	def request_directions( self, origin: str, destination: str,
-			mode: str='driving' ) -> str | None:
-		"""
-		
+			mode: str = 'driving' ) -> Dict[ str, Any ] | None:
+		'''
 			Purpose:
-			----------
-			Request route directions from Google Maps Directions API.
-		
+			--------
+			Request route directions from the Google Directions API.
+
 			Parameters:
 			-----------
-			api_key     (str): Google Maps Platform API key.
-			origin      (str): Starting location (address or lat,lng).
-			destination (str): Ending location (address or lat,lng).
-			mode        (str): travel mode: 'driving', 'walking', bicycling', or 'transit'.
-		
+			origin (str):
+				Starting location as an address or latitude,longitude string.
+
+			destination (str):
+				Ending location as an address or latitude,longitude string.
+
+			mode (str):
+				Travel mode: driving, walking, bicycling, or transit.
+
 			Returns:
-			---------
-			dict: Parsed JSON response from Google Directions API.
-			
-		"""
+			--------
+			Dict[str, Any] | None
+		'''
 		try:
+			throw_if( 'api_key', self.api_key )
 			throw_if( 'origin', origin )
 			throw_if( 'destination', destination )
-			self.mode = mode
-			self.url = "https://maps.googleapis.com/maps/api/directions/json"
-			self.params = \
-				{
-						'origin': origin,
-						'destination': destination,
-						'mode': self.mode,
-						'key': self.api_key
-				}
+			throw_if( 'mode', mode )
 			
-			self.response = requests.get( url=self.url, params=self.params )
+			self.mode = str( mode ).strip( ).lower( )
+			self.origin = str( origin ).strip( )
+			self.destination = str( destination ).strip( )
+			self.url = 'https://maps.googleapis.com/maps/api/directions/json'
+			self.params = {
+					'origin': self.origin,
+					'destination': self.destination,
+					'mode': self.mode,
+					'key': self.api_key
+			}
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
-			_results = self.response.json( )
-			_route = _results.get( 'routes', [ { } ] )[ 0 ]
-			return _route
+			
+			self.payload = self.response.json( )
+			routes = self.payload.get( 'routes', [ ] ) if isinstance( self.payload, dict ) else [ ]
+			self.directions = routes[ 0 ] if routes else { }
+			self.result = self.directions
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
-			exception.method = 'request_directions( self, origin: str, destination: str ) -> dict'
+			exception.method = (
+					'request_directions( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
 	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
-
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
-			Supports arbitrary parameters, types, nested objects, and required fields.
+			--------
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
-			___________
+			-----------
 			function (str):
-			The function name exposed to the LLM.
+				The function name exposed to the LLM.
 
 			tool (str):
-			The underlying system or service the function wraps
-			(e.g., “Google Maps”, “SQLite”, “Weather API”).
+				The underlying system or service the function wraps.
 
 			description (str):
-			Precise explanation of what the function does.
+				Precise explanation of what the function does.
 
 			parameters (dict):
-			A dictionary defining parameter names and JSON schema descriptors.
-			Each value must itself be a valid JSON-schema fragment.
+				Dictionary defining parameter names and JSON schema descriptors.
 
-				Example:
-					{
-						"origin": {
-							"type": "string",
-							"description": "Starting location."
-						},
-						"destination": {
-							"type": "string",
-							"description": "Ending location."
-						},
-						"mode": {
-							"type": "string",
-							"enum": ["driving", "walking", "bicycling", "transit"],
-							"description": "Travel mode."
-						}
-					}
-
-			required (list[str] | None):
-			List of required parameter names.
-			If None, required = list(parameters.keys()).
+			required (list[str]):
+				List of required parameter names.
 
 			Returns:
-			________
-			dict:
-			A JSON-compatible dictionary defining the tool schema.
-
-		"""
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
-			_schema = \
-				{
-						'name': func_name,
-						'description': f'{desc} This function uses the {tool_name} service.',
-						'parameters':
-							{
-									'type': 'object',
-									'properties': parameters,
-									'required': required
-							}
-				}
-			return _schema
+			
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
+					'parameters': {
+							'type': 'object',
+							'properties': parameters,
+							'required': required
+					}
+			}
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleMaps'
-			exception.method = 'create_schema( self, *params ) -> Dict[ str, str ]'
+			exception.method = (
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			)
 			raise exception
 
 class GoogleWeather( Fetcher ):
@@ -2668,32 +2997,6 @@ class GoogleWeather( Fetcher ):
 		--------
 		Provides Google Weather current conditions, forecasts, hourly history,
 		and public weather alert requests.
-
-		Attributes:
-		-----------
-		gmaps,
-		headers,
-		api_key,
-		mode,
-		latitude,
-		longitude,
-		coordinates,
-		address,
-		params,
-		response,
-		result,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		resolve_coordinates(...): Performs the resolve_coordinates operation for this fetcher.
-		request(...): Performs the request operation for this fetcher.
-		fetch_current(...): Performs the fetch_current operation for this fetcher.
-		fetch_hourly_forecast(...): Performs the fetch_hourly_forecast operation for this fetcher.
-		fetch_daily_forecast(...): Performs the fetch_daily_forecast operation for this fetcher.
-		fetch_hourly_history(...): Performs the fetch_hourly_history operation for this fetcher.
-		fetch_alerts(...): Performs the fetch_alerts operation for this fetcher.
 
 	'''
 	gmaps: Optional[ GoogleMaps ]
@@ -2706,7 +3009,14 @@ class GoogleWeather( Fetcher ):
 	address: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	response: Optional[ Response ]
+	payload: Optional[ Dict[ str, Any ] ]
 	result: Optional[ Dict[ str, Any ] ]
+	units_system: Optional[ str ]
+	language_code: Optional[ str ]
+	hours: Optional[ int ]
+	days: Optional[ int ]
+	path: Optional[ str ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
@@ -2733,19 +3043,24 @@ class GoogleWeather( Fetcher ):
 		self.longitude = 0.0
 		self.latitude = 0.0
 		self.coordinates = (0.0, 0.0)
-		self.fetcher = None
 		self.address = None
 		self.params = { }
 		self.response = None
-		self.result = None
+		self.payload = { }
+		self.result = { }
 		self.timeout = 10
+		self.units_system = 'METRIC'
+		self.language_code = 'en'
+		self.hours = None
+		self.days = None
+		self.path = None
 		self.agents = cfg.AGENTS
 		
 		if 'User-Agent' not in self.headers:
-			self.headers[ 'User-Agent' ]=self.agents
+			self.headers[ 'User-Agent' ] = self.agents
 		
 		if 'Accept' not in self.headers:
-			self.headers[ 'Accept' ]='application/json'
+			self.headers[ 'Accept' ] = 'application/json'
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
@@ -2760,7 +3075,7 @@ class GoogleWeather( Fetcher ):
 			
 			Returns:
 			--------
-			List[str]: Ordered attribute and method names.
+			List[str]
 			
 		'''
 		return [
@@ -2776,9 +3091,17 @@ class GoogleWeather( Fetcher ):
 				'address',
 				'params',
 				'response',
+				'payload',
 				'result',
+				'units_system',
+				'language_code',
+				'hours',
+				'days',
+				'path',
+				'agents',
 				'resolve_coordinates',
 				'request',
+				'package_response',
 				'fetch_current',
 				'fetch_hourly_forecast',
 				'fetch_daily_forecast',
@@ -2796,86 +3119,139 @@ class GoogleWeather( Fetcher ):
 			
 			Parameters:
 			-----------
-			address (str): Physical address, named place, city, or other geocodable location.
+			address (str):
+				Physical address, named place, city, or other geocodable location.
 			
 			Returns:
 			--------
-			Tuple[float, float]: Latitude and longitude coordinates.
+			Tuple[float, float]
 			
 		'''
 		try:
 			throw_if( 'address', address )
-			self.address = address.strip( )
-			if not self.address:
-				raise ValueError( 'Address cannot be empty.' )
 			
+			self.address = str( address ).strip( )
 			lat, lng = self.gmaps.geocode_location( address=self.address )
 			self.latitude = float( lat )
 			self.longitude = float( lng )
 			self.coordinates = (self.latitude, self.longitude)
+			
 			return self.coordinates
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = (
-					'resolve_coordinates( self, address: str ) -> Tuple[ float, float ]')
+			exception.method = 'resolve_coordinates( self, *args, **kwargs ) -> Tuple[ float, float ]'
 			raise exception
 	
-	def request( self, path: str, params: Dict[ str, Any ], time: int=10 ) -> Dict[
-		                                                                            str, Any ] | None:
+	def request( self, path: str, params: Dict[ str, Any ], time: int = 10 ) -> Dict[ str, Any ] | None:
 		'''
 			
 			Purpose:
 			--------
-			Send a GET request to a Google Weather API endpoint and return the JSON response.
+			Send a GET request to a Google Weather API endpoint and store response state.
 			
 			Parameters:
 			-----------
-			path (str): Google Weather API path relative to https://weather.googleapis.com/v1.
-			params (Dict[str, Any]): Query parameters for the request.
-			time (int): Request timeout in seconds.
+			path (str):
+				Google Weather API path relative to https://weather.googleapis.com/v1.
+			
+			params (Dict[str, Any]):
+				Query parameters for the request.
+			
+			time (int):
+				Request timeout in seconds.
 			
 			Returns:
 			--------
-			Dict[str, Any] | None: JSON response from the Google Weather API.
+			Dict[str, Any] | None
 			
 		'''
 		try:
+			throw_if( 'api_key', self.api_key )
 			throw_if( 'path', path )
+			throw_if( 'params', params )
+			throw_if( 'time', time )
 			
-			active_key = (self.api_key or '').strip( )
-			if not active_key:
-				raise ValueError( 'Google Weather API key is required.' )
-			
+			self.path = str( path ).strip( ).lstrip( '/' )
 			self.timeout = int( time )
+			self.params = { }
 			if self.timeout < 1:
-				self.timeout = 10
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
-			request_params = dict( params or { } )
-			request_params[ 'key' ]=active_key
+			for key, value in params.items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
 			
-			clean_path = path.strip( ).lstrip( '/' )
-			request_url = f'{self.url}/{clean_path}'
-			self.params = request_params
-			self.response = requests.get( url=request_url, params=request_params,
-				headers=self.headers, timeout=self.timeout )
+			self.params[ 'key' ] = self.api_key
+			request_url = f'{self.url}/{self.path}'
+			
+			self.response = requests.get( url=request_url, params=self.params, headers=self.headers,
+				timeout=self.timeout )
 			
 			self.response.raise_for_status( )
-			self.result = self.response.json( )
+			self.payload = self.response.json( )
+			self.result = {
+					'mode': self.mode,
+					'url': request_url,
+					'params': self.params,
+					'data': self.payload
+			}
+			
 			return self.result
 		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
-			exception.method = (
-					'request( self, path: str, params: Dict[ str, Any ], '
-					'time: int=10 ) -> Dict[ str, Any ] | None')
+			exception.method = 'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			raise exception
 	
-	def fetch_current( self, address: str, units_system: str='METRIC',
-			language_code: str='en', time: int=10 ) -> Dict[ str, Any ] | None:
+	def package_response( self ) -> Dict[ str, Any ]:
+		'''
+			
+			Purpose:
+			--------
+			Return the stored Google Weather result in the app-facing structure.
+			
+			Parameters:
+			-----------
+			None
+			
+			Returns:
+			--------
+			Dict[str, Any]
+			
+		'''
+		try:
+			if not isinstance( self.result, dict ):
+				self.result = { }
+			
+			if 'data' not in self.result:
+				self.result = {
+						'mode': self.mode,
+						'url': f'{self.url}/{self.path}' if self.path else self.url,
+						'params': self.params,
+						'data': self.payload or { }
+				}
+			
+			return self.result
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'GoogleWeather'
+			exception.method = 'package_response( self ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_current( self, address: str, units_system: str = 'METRIC',
+			language_code: str = 'en', time: int = 10 ) -> Dict[ str, Any ] | None:
 		'''
 			
 			Purpose:
@@ -2884,38 +3260,62 @@ class GoogleWeather( Fetcher ):
 			
 			Parameters:
 			-----------
-			address (str): Physical address, named place, city, or geocodable location.
-			units_system (str): Units system used by the response, usually METRIC or IMPERIAL.
-			language_code (str): BCP-47 language code used by the response.
-			time (int): Request timeout in seconds.
+			address (str):
+				Physical address, named place, city, or geocodable location.
+			
+			units_system (str):
+				Units system used by the response, usually METRIC or IMPERIAL.
+			
+			language_code (str):
+				BCP-47 language code used by the response.
+			
+			time (int):
+				Request timeout in seconds.
 			
 			Returns:
 			--------
-			Dict[str, Any] | None: Google Weather current conditions response.
+			Dict[str, Any] | None
 			
 		'''
 		try:
-			lat, lng = self.resolve_coordinates( address )
+			throw_if( 'address', address )
+			throw_if( 'units_system', units_system )
+			throw_if( 'language_code', language_code )
+			throw_if( 'time', time )
+			
 			self.mode = 'current'
+			self.units_system = str( units_system ).strip( )
+			self.language_code = str( language_code ).strip( )
+			self.timeout = int( time )
+			self.latitude, self.longitude = self.resolve_coordinates( address )
+			
 			self.params = {
-					'location.latitude': lat,
-					'location.longitude': lng,
-					'unitsSystem': units_system,
-					'languageCode': language_code
+					'location.latitude': self.latitude,
+					'location.longitude': self.longitude,
+					'unitsSystem': self.units_system,
+					'languageCode': self.language_code
 			}
-			return self.request( path='currentConditions:lookup', params=self.params,
-				time=time )
+			
+			self.request(
+				path='currentConditions:lookup',
+				params=self.params,
+				time=self.timeout
+			)
+			
+			return self.package_response( )
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = (
-					'fetch_current( self, address: str, units_system: str="METRIC", '
-					'language_code: str="en", time: int=10 ) -> Dict[ str, Any ] | None')
+					'fetch_current( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
-	def fetch_hourly_forecast( self, address: str, hours: int=24, units_system: str='METRIC',
-			language_code: str='en', time: int=10 ) -> Dict[ str, Any ] | None:
+	def fetch_hourly_forecast( self, address: str, hours: int = 24,
+			units_system: str = 'METRIC', language_code: str = 'en',
+			time: int = 10 ) -> Dict[ str, Any ] | None:
 		'''
 			
 			Purpose:
@@ -2924,41 +3324,72 @@ class GoogleWeather( Fetcher ):
 			
 			Parameters:
 			-----------
-			address (str): Physical address, named place, city, or geocodable location.
-			hours (int): Number of forecast hours to request, clamped to 1 through 240.
-			units_system (str): Units system used by the response, usually METRIC or IMPERIAL.
-			language_code (str): BCP-47 language code used by the response.
-			time (int): Request timeout in seconds.
+			address (str):
+				Physical address, named place, city, or geocodable location.
+			
+			hours (int):
+				Number of forecast hours to request, from 1 through 240.
+			
+			units_system (str):
+				Units system used by the response, usually METRIC or IMPERIAL.
+			
+			language_code (str):
+				BCP-47 language code used by the response.
+			
+			time (int):
+				Request timeout in seconds.
 			
 			Returns:
 			--------
-			Dict[str, Any] | None: Google Weather hourly forecast response.
+			Dict[str, Any] | None
 			
 		'''
 		try:
-			lat, lng = self.resolve_coordinates( address )
+			throw_if( 'address', address )
+			throw_if( 'hours', hours )
+			throw_if( 'units_system', units_system )
+			throw_if( 'language_code', language_code )
+			throw_if( 'time', time )
+			
 			self.mode = 'hourly_forecast'
-			forecast_hours = max( 1, min( int( hours ), 240 ) )
+			self.hours = int( hours )
+			self.units_system = str( units_system ).strip( )
+			self.language_code = str( language_code ).strip( )
+			self.timeout = int( time )
+			
+			if self.hours < 1 or self.hours > 240:
+				raise ValueError( 'hours must be between 1 and 240.' )
+			
+			self.latitude, self.longitude = self.resolve_coordinates( address )
 			self.params = {
-					'location.latitude': lat,
-					'location.longitude': lng,
-					'hours': forecast_hours,
-					'unitsSystem': units_system,
-					'languageCode': language_code
+					'location.latitude': self.latitude,
+					'location.longitude': self.longitude,
+					'hours': self.hours,
+					'unitsSystem': self.units_system,
+					'languageCode': self.language_code
 			}
-			return self.request( path='forecast/hours:lookup', params=self.params, time=time )
+			
+			self.request(
+				path='forecast/hours:lookup',
+				params=self.params,
+				time=self.timeout
+			)
+			
+			return self.package_response( )
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = (
-					'fetch_hourly_forecast( self, address: str, hours: int=24, '
-					'units_system: str="METRIC", language_code: str="en", '
-					'time: int=10 ) -> Dict[ str, Any ] | None')
+					'fetch_hourly_forecast( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
-	def fetch_daily_forecast( self, address: str, days: int=5, units_system: str='METRIC',
-			language_code: str='en', time: int=10 ) -> Dict[ str, Any ] | None:
+	def fetch_daily_forecast( self, address: str, days: int = 5,
+			units_system: str = 'METRIC', language_code: str = 'en',
+			time: int = 10 ) -> Dict[ str, Any ] | None:
 		'''
 			
 			Purpose:
@@ -2967,41 +3398,72 @@ class GoogleWeather( Fetcher ):
 			
 			Parameters:
 			-----------
-			address (str): Physical address, named place, city, or geocodable location.
-			days (int): Number of forecast days to request, clamped to 1 through 10.
-			units_system (str): Units system used by the response, usually METRIC or IMPERIAL.
-			language_code (str): BCP-47 language code used by the response.
-			time (int): Request timeout in seconds.
+			address (str):
+				Physical address, named place, city, or geocodable location.
+			
+			days (int):
+				Number of forecast days to request, from 1 through 10.
+			
+			units_system (str):
+				Units system used by the response, usually METRIC or IMPERIAL.
+			
+			language_code (str):
+				BCP-47 language code used by the response.
+			
+			time (int):
+				Request timeout in seconds.
 			
 			Returns:
 			--------
-			Dict[str, Any] | None: Google Weather daily forecast response.
+			Dict[str, Any] | None
 			
 		'''
 		try:
-			lat, lng = self.resolve_coordinates( address )
+			throw_if( 'address', address )
+			throw_if( 'days', days )
+			throw_if( 'units_system', units_system )
+			throw_if( 'language_code', language_code )
+			throw_if( 'time', time )
+			
 			self.mode = 'daily_forecast'
-			forecast_days = max( 1, min( int( days ), 10 ) )
+			self.days = int( days )
+			self.units_system = str( units_system ).strip( )
+			self.language_code = str( language_code ).strip( )
+			self.timeout = int( time )
+			
+			if self.days < 1 or self.days > 10:
+				raise ValueError( 'days must be between 1 and 10.' )
+			
+			self.latitude, self.longitude = self.resolve_coordinates( address )
 			self.params = {
-					'location.latitude': lat,
-					'location.longitude': lng,
-					'days': forecast_days,
-					'unitsSystem': units_system,
-					'languageCode': language_code
+					'location.latitude': self.latitude,
+					'location.longitude': self.longitude,
+					'days': self.days,
+					'unitsSystem': self.units_system,
+					'languageCode': self.language_code
 			}
-			return self.request( path='forecast/days:lookup', params=self.params, time=time )
+			
+			self.request(
+				path='forecast/days:lookup',
+				params=self.params,
+				time=self.timeout
+			)
+			
+			return self.package_response( )
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = (
-					'fetch_daily_forecast( self, address: str, days: int=5, '
-					'units_system: str="METRIC", language_code: str="en", '
-					'time: int=10 ) -> Dict[ str, Any ] | None')
+					'fetch_daily_forecast( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
-	def fetch_hourly_history( self, address: str, hours: int=24, units_system: str='METRIC',
-			language_code: str='en', time: int=10 ) -> Dict[ str, Any ] | None:
+	def fetch_hourly_history( self, address: str, hours: int = 24,
+			units_system: str = 'METRIC', language_code: str = 'en',
+			time: int = 10 ) -> Dict[ str, Any ] | None:
 		'''
 			
 			Purpose:
@@ -3010,41 +3472,71 @@ class GoogleWeather( Fetcher ):
 			
 			Parameters:
 			-----------
-			address (str): Physical address, named place, city, or geocodable location.
-			hours (int): Number of historical hours to request, clamped to 1 through 24.
-			units_system (str): Units system used by the response, usually METRIC or IMPERIAL.
-			language_code (str): BCP-47 language code used by the response.
-			time (int): Request timeout in seconds.
+			address (str):
+				Physical address, named place, city, or geocodable location.
+			
+			hours (int):
+				Number of historical hours to request, from 1 through 24.
+			
+			units_system (str):
+				Units system used by the response, usually METRIC or IMPERIAL.
+			
+			language_code (str):
+				BCP-47 language code used by the response.
+			
+			time (int):
+				Request timeout in seconds.
 			
 			Returns:
 			--------
-			Dict[str, Any] | None: Google Weather hourly history response.
+			Dict[str, Any] | None
 			
 		'''
 		try:
-			lat, lng = self.resolve_coordinates( address )
+			throw_if( 'address', address )
+			throw_if( 'hours', hours )
+			throw_if( 'units_system', units_system )
+			throw_if( 'language_code', language_code )
+			throw_if( 'time', time )
+			
 			self.mode = 'hourly_history'
-			history_hours = max( 1, min( int( hours ), 24 ) )
+			self.hours = int( hours )
+			self.units_system = str( units_system ).strip( )
+			self.language_code = str( language_code ).strip( )
+			self.timeout = int( time )
+			
+			if self.hours < 1 or self.hours > 24:
+				raise ValueError( 'hours must be between 1 and 24 for hourly history.' )
+			
+			self.latitude, self.longitude = self.resolve_coordinates( address )
 			self.params = {
-					'location.latitude': lat,
-					'location.longitude': lng,
-					'hours': history_hours,
-					'unitsSystem': units_system,
-					'languageCode': language_code
+					'location.latitude': self.latitude,
+					'location.longitude': self.longitude,
+					'hours': self.hours,
+					'unitsSystem': self.units_system,
+					'languageCode': self.language_code
 			}
-			return self.request( path='history/hours:lookup', params=self.params, time=time )
+			
+			self.request(
+				path='history/hours:lookup',
+				params=self.params,
+				time=self.timeout
+			)
+			
+			return self.package_response( )
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = (
-					'fetch_hourly_history( self, address: str, hours: int=24, '
-					'units_system: str="METRIC", language_code: str="en", '
-					'time: int=10 ) -> Dict[ str, Any ] | None')
+					'fetch_hourly_history( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
-	def fetch_alerts( self, address: str, language_code: str='en',
-			time: int=10 ) -> Dict[ str, Any ] | None:
+	def fetch_alerts( self, address: str, language_code: str = 'en',
+			time: int = 10 ) -> Dict[ str, Any ] | None:
 		'''
 			
 			Purpose:
@@ -3053,31 +3545,50 @@ class GoogleWeather( Fetcher ):
 			
 			Parameters:
 			-----------
-			address (str): Physical address, named place, city, or geocodable location.
-			language_code (str): BCP-47 language code used by the response.
-			time (int): Request timeout in seconds.
+			address (str):
+				Physical address, named place, city, or geocodable location.
+			
+			language_code (str):
+				BCP-47 language code used by the response.
+			
+			time (int):
+				Request timeout in seconds.
 			
 			Returns:
 			--------
-			Dict[str, Any] | None: Google Weather public alerts response.
+			Dict[str, Any] | None
 			
 		'''
 		try:
-			lat, lng = self.resolve_coordinates( address )
+			throw_if( 'address', address )
+			throw_if( 'language_code', language_code )
+			throw_if( 'time', time )
+			
 			self.mode = 'alerts'
+			self.language_code = str( language_code ).strip( )
+			self.timeout = int( time )
+			self.latitude, self.longitude = self.resolve_coordinates( address )
 			self.params = {
-					'location.latitude': lat,
-					'location.longitude': lng,
-					'languageCode': language_code
+					'location.latitude': self.latitude,
+					'location.longitude': self.longitude,
+					'languageCode': self.language_code
 			}
-			return self.request( path='publicAlerts:lookup', params=self.params, time=time )
+			
+			self.request(
+				path='publicAlerts:lookup',
+				params=self.params,
+				time=self.timeout
+			)
+			
+			return self.package_response( )
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleWeather'
 			exception.method = (
-					'fetch_alerts( self, address: str, language_code: str="en", '
-					'time: int=10 ) -> Dict[ str, Any ] | None')
+					'fetch_alerts( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 
 class NavalObservatory( Fetcher ):
@@ -7545,38 +8056,7 @@ class GovData( Fetcher ):
 
 		Purpose:
 		--------
-		Fetches Data.gov package search, package summary, and collection records.
-
-		Attributes:
-		-----------
-		api_key,
-		base_url,
-		url,
-		params,
-		payload,
-		query,
-		page_size,
-		offset_mark,
-		sort_field,
-		sort_order,
-		package_id,
-		collection,
-		start_date,
-		agents,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
-		_validate_page_size(...): Performs the _validate_page_size operation for this fetcher.
-		_validate_sort_field(...): Performs the _validate_sort_field operation for this fetcher.
-		_validate_sort_order(...): Performs the _validate_sort_order operation for this fetcher.
-		fetch_search(...): Performs the fetch_search operation for this fetcher.
-		fetch_package_summary(...): Performs the fetch_package_summary operation for this fetcher.
-		fetch_collection(...): Performs the fetch_collection operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
+		Fetches GovInfo package search, package summary, and collection records.
 
 	'''
 	api_key: Optional[ str ]
@@ -7584,6 +8064,8 @@ class GovData( Fetcher ):
 	url: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Dict[ str, Any ] ]
+	result: Optional[ Dict[ str, Any ] ]
+	mode: Optional[ str ]
 	query: Optional[ str ]
 	page_size: Optional[ int ]
 	offset_mark: Optional[ str ]
@@ -7614,6 +8096,8 @@ class GovData( Fetcher ):
 		self.url = None
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.mode = 'search'
 		self.query = ''
 		self.page_size = 10
 		self.offset_mark = '*'
@@ -7622,6 +8106,7 @@ class GovData( Fetcher ):
 		self.package_id = ''
 		self.collection = ''
 		self.start_date = ''
+		self.response = None
 		self.headers = {
 				'Accept': 'application/json',
 				'Content-Type': 'application/json',
@@ -7649,6 +8134,8 @@ class GovData( Fetcher ):
 				'url',
 				'params',
 				'payload',
+				'result',
+				'mode',
 				'query',
 				'page_size',
 				'offset_mark',
@@ -7657,6 +8144,12 @@ class GovData( Fetcher ):
 				'package_id',
 				'collection',
 				'start_date',
+				'response',
+				'headers',
+				'agents',
+				'validate_page_size',
+				'validate_sort_field',
+				'validate_sort_order',
 				'fetch_search',
 				'fetch_package_summary',
 				'fetch_collection',
@@ -7664,32 +8157,7 @@ class GovData( Fetcher ):
 				'create_schema'
 		]
 	
-	def _resolve_api_key( self ) -> str:
-		'''
-			Purpose:
-			--------
-			Resolve the GovInfo API key, falling back to DEMO_KEY if none is set.
-
-			Parameters:
-			-----------
-			None
-
-			Returns:
-			--------
-			str
-		'''
-		try:
-			value = str( self.api_key or '' ).strip( )
-			return value if value else 'DEMO_KEY'
-		
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GovData'
-			exception.method = '_resolve_api_key( self ) -> str'
-			raise exception
-	
-	def _validate_page_size( self, page_size: int ) -> int:
+	def validate_page_size( self, page_size: int ) -> int:
 		'''
 			Purpose:
 			--------
@@ -7705,6 +8173,8 @@ class GovData( Fetcher ):
 			int
 		'''
 		try:
+			throw_if( 'page_size', page_size )
+			
 			value = int( page_size )
 			if value < 1 or value > 1000:
 				raise ValueError( 'page_size must be between 1 and 1000.' )
@@ -7715,14 +8185,14 @@ class GovData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GovData'
-			exception.method = '_validate_page_size( self, page_size: int ) -> int'
+			exception.method = 'validate_page_size( self, *args, **kwargs ) -> int'
 			raise exception
 	
-	def _validate_sort_field( self, sort_field: str ) -> str:
+	def validate_sort_field( self, sort_field: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Validate supported sort field values for the search expander.
+			Validate supported sort field values for GovInfo search.
 
 			Parameters:
 			-----------
@@ -7748,14 +8218,14 @@ class GovData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GovData'
-			exception.method = '_validate_sort_field( self, sort_field: str ) -> str'
+			exception.method = 'validate_sort_field( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _validate_sort_order( self, sort_order: str ) -> str:
+	def validate_sort_order( self, sort_order: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Validate supported sort order values.
+			Validate supported GovInfo sort order values.
 
 			Parameters:
 			-----------
@@ -7779,38 +8249,33 @@ class GovData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GovData'
-			exception.method = '_validate_sort_order( self, sort_order: str ) -> str'
+			exception.method = 'validate_sort_order( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def fetch_search( self, query: str, page_size: int=10,
-			offset_mark: str='*', sort_field: str='score',
-			sort_order: str='DESC', time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_search( self, query: str, page_size: int = 10,
+			offset_mark: str = '*', sort_field: str = 'score',
+			sort_order: str = 'DESC', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
-		
 			Purpose:
 			--------
-			Execute a GovInfo Search Service query.
+			Execute a GovInfo Search Service request.
 
 			Parameters:
 			-----------
 			query (str):
-				GovInfo search expression. May include field operators such as
-				collection, congress, publishdate, and lastModified.
+				Search query.
 
 			page_size (int):
-				Number of records to return. GovInfo allows up to 1000.
+				Number of records to return.
 
 			offset_mark (str):
-				Use '*' for the first page; for subsequent pages use the offsetMark
-				returned by the prior response.
+				Offset marker. Use * for the first request.
 
 			sort_field (str):
-				Supported here:
-				- score
-				- lastModified
+				Sort field.
 
 			sort_order (str):
-				ASC or DESC.
+				Sort order.
 
 			time (int):
 				Request timeout in seconds.
@@ -7820,17 +8285,21 @@ class GovData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'api_key', self.api_key )
 			throw_if( 'query', query )
+			throw_if( 'offset_mark', offset_mark )
+			throw_if( 'time', time )
 			
+			self.mode = 'search'
 			self.query = str( query ).strip( )
-			self.page_size = self._validate_page_size( page_size )
+			self.page_size = self.validate_page_size( page_size )
 			self.offset_mark = str( offset_mark or '*' ).strip( )
-			self.sort_field = self._validate_sort_field( sort_field )
-			self.sort_order = self._validate_sort_order( sort_order )
-			
+			self.sort_field = self.validate_sort_field( sort_field )
+			self.sort_order = self.validate_sort_order( sort_order )
+			self.timeout = int( time )
 			self.url = f'{self.base_url}/search'
 			self.params = {
-					'api_key': self._resolve_api_key( )
+					'api_key': self.api_key
 			}
 			self.payload = {
 					'query': self.query,
@@ -7849,31 +8318,31 @@ class GovData( Fetcher ):
 				params=self.params,
 				json=self.payload,
 				headers=self.headers,
-				timeout=int( time )
+				timeout=self.timeout
 			)
 			self.response.raise_for_status( )
 			
-			return {
-					'mode': 'search',
+			self.result = {
+					'mode': self.mode,
 					'url': self.url,
 					'params': self.params,
 					'payload': self.payload,
 					'data': self.response.json( )
 			}
+			
+			return self.result
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GovData'
 			exception.method = (
-					'fetch_search( self, query: str, page_size: int=10, '
-					'offset_mark: str=*, sort_field: str=score, '
-					'sort_order: str=DESC, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_search( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_package_summary( self, package_id: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7892,12 +8361,16 @@ class GovData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'api_key', self.api_key )
 			throw_if( 'package_id', package_id )
+			throw_if( 'time', time )
 			
+			self.mode = 'package_summary'
 			self.package_id = str( package_id ).strip( )
+			self.timeout = int( time )
 			self.url = f'{self.base_url}/packages/{self.package_id}/summary'
 			self.params = {
-					'api_key': self._resolve_api_key( )
+					'api_key': self.api_key
 			}
 			self.payload = { }
 			
@@ -7905,30 +8378,33 @@ class GovData( Fetcher ):
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time )
+				timeout=self.timeout
 			)
 			self.response.raise_for_status( )
 			
-			return {
-					'mode': 'package_summary',
+			self.result = {
+					'mode': self.mode,
 					'url': self.url,
 					'params': self.params,
+					'payload': self.payload,
 					'data': self.response.json( )
 			}
+			
+			return self.result
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GovData'
 			exception.method = (
-					'fetch_package_summary( self, package_id: str, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_package_summary( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_collection( self, collection: str, start_date: str,
-			page_size: int=10, offset_mark: str='*',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			page_size: int = 10, offset_mark: str = '*',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -7946,7 +8422,7 @@ class GovData( Fetcher ):
 				Number of records to return.
 
 			offset_mark (str):
-				Use '*' for the first page.
+				Use * for the first page.
 
 			time (int):
 				Request timeout in seconds.
@@ -7956,19 +8432,23 @@ class GovData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'api_key', self.api_key )
 			throw_if( 'collection', collection )
 			throw_if( 'start_date', start_date )
+			throw_if( 'offset_mark', offset_mark )
+			throw_if( 'time', time )
 			
+			self.mode = 'collection'
 			self.collection = str( collection ).strip( )
 			self.start_date = str( start_date ).strip( )
-			self.page_size = self._validate_page_size( page_size )
+			self.page_size = self.validate_page_size( page_size )
 			self.offset_mark = str( offset_mark or '*' ).strip( )
-			
+			self.timeout = int( time )
 			self.url = f'{self.base_url}/collections/{self.collection}/{self.start_date}'
 			self.params = {
 					'pageSize': self.page_size,
 					'offsetMark': self.offset_mark,
-					'api_key': self._resolve_api_key( )
+					'api_key': self.api_key
 			}
 			self.payload = { }
 			
@@ -7976,33 +8456,34 @@ class GovData( Fetcher ):
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time )
+				timeout=self.timeout
 			)
 			self.response.raise_for_status( )
 			
-			return {
-					'mode': 'collection',
+			self.result = {
+					'mode': self.mode,
 					'url': self.url,
 					'params': self.params,
+					'payload': self.payload,
 					'data': self.response.json( )
 			}
+			
+			return self.result
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GovData'
 			exception.method = (
-					'fetch_collection( self, collection: str, start_date: str, '
-					'page_size: int=10, offset_mark: str=*, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_collection( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='search', query: str='',
-			page_size: int=10, offset_mark: str='*',
-			sort_field: str='score', sort_order: str='DESC',
-			package_id: str='', collection: str='',
-			start_date: str='', time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'search', query: str = '',
+			page_size: int = 10, offset_mark: str = '*',
+			sort_field: str = 'score', sort_order: str = 'DESC',
+			package_id: str = '', collection: str = '',
+			start_date: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -8048,9 +8529,10 @@ class GovData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'search' ).strip( ).lower( )
+			throw_if( 'mode', mode )
+			self.mode = str( mode or 'search' ).strip( ).lower( )
 			
-			if active_mode == 'search':
+			if self.mode == 'search':
 				return self.fetch_search(
 					query=query,
 					page_size=page_size,
@@ -8060,13 +8542,13 @@ class GovData( Fetcher ):
 					time=time
 				)
 			
-			if active_mode == 'package_summary':
+			if self.mode == 'package_summary':
 				return self.fetch_package_summary(
 					package_id=package_id,
 					time=time
 				)
 			
-			if active_mode == 'collection':
+			if self.mode == 'collection':
 				return self.fetch_collection(
 					collection=collection,
 					start_date=start_date,
@@ -8076,18 +8558,16 @@ class GovData( Fetcher ):
 				)
 			
 			raise ValueError(
-				"Unsupported mode. Use one of: search, package_summary, collection."
+				"Unsupported GovInfo mode. Use 'search', 'package_summary', or "
+				"'collection'."
 			)
 		
-		except Exception as exc:
-			exception = Error( exc )
+		except Exception as e:
+			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GovData'
 			exception.method = (
-					'fetch( self, mode: str=search, query: str=, page_size: int=10, '
-					'offset_mark: str=*, sort_field: str=score, '
-					'sort_order: str=DESC, package_id: str=, collection: str=, '
-					'start_date: str=, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -8097,7 +8577,7 @@ class GovData( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
@@ -8111,7 +8591,7 @@ class GovData( Fetcher ):
 				Precise explanation of what the function does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				Dictionary defining parameter names and JSON schema descriptors.
 
 			required (list[str]):
 				List of required parameter names.
@@ -8132,8 +8612,8 @@ class GovData( Fetcher ):
 			return {
 					'name': function.strip( ),
 					'description': (
-							f'{description.strip( )} '
-							f'This function uses the {tool.strip( )} service.'
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
 					),
 					'parameters': {
 							'type': 'object',
@@ -8147,8 +8627,7 @@ class GovData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GovData'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -8956,56 +9435,15 @@ class Congress( Fetcher ):
 
 		Purpose:
 		--------
-		Fetches Congress.gov congress, bill, law, and report resources.
-
-		Attributes:
-		-----------
-		api_key,
-		base_url,
-		url,
-		params,
-		mode,
-		congress_number,
-		bill_type,
-		bill_number,
-		law_type,
-		law_number,
-		report_type,
-		report_number,
-		offset,
-		limit,
-		sort,
-		from_date_time,
-		to_date_time,
-		conference,
-		agents,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
-		_validate_limit(...): Performs the _validate_limit operation for this fetcher.
-		_validate_offset(...): Performs the _validate_offset operation for this fetcher.
-		_normalize_bill_type(...): Performs the _normalize_bill_type operation for this fetcher.
-		_normalize_law_type(...): Performs the _normalize_law_type operation for this fetcher.
-		_normalize_report_type(...): Performs the _normalize_report_type operation for this fetcher.
-		_base_params(...): Performs the _base_params operation for this fetcher.
-		fetch_congresses(...): Performs the fetch_congresses operation for this fetcher.
-		fetch_bills(...): Performs the fetch_bills operation for this fetcher.
-		fetch_bill(...): Performs the fetch_bill operation for this fetcher.
-		fetch_laws(...): Performs the fetch_laws operation for this fetcher.
-		fetch_law(...): Performs the fetch_law operation for this fetcher.
-		fetch_reports(...): Performs the fetch_reports operation for this fetcher.
-		fetch_report(...): Performs the fetch_report operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
+		Fetches Congress.gov congress, bill, law, and committee-report resources.
 
 	'''
 	api_key: Optional[ str ]
 	base_url: Optional[ str ]
 	url: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Dict[ str, Any ] ]
+	result: Optional[ Dict[ str, Any ] ]
 	mode: Optional[ str ]
 	congress_number: Optional[ int ]
 	bill_type: Optional[ str ]
@@ -9026,7 +9464,7 @@ class Congress( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Initialize the Congress fetcher with current API defaults.
+			Initialize the Congress.gov fetcher with current API defaults.
 
 			Parameters:
 			-----------
@@ -9041,13 +9479,15 @@ class Congress( Fetcher ):
 		self.base_url = 'https://api.congress.gov/v3'
 		self.url = None
 		self.params = { }
+		self.payload = { }
+		self.result = { }
 		self.mode = 'congresses'
 		self.congress_number = None
-		self.bill_type = None
+		self.bill_type = ''
 		self.bill_number = None
-		self.law_type = None
+		self.law_type = ''
 		self.law_number = None
-		self.report_type = None
+		self.report_type = ''
 		self.report_number = None
 		self.offset = 0
 		self.limit = 20
@@ -9055,6 +9495,7 @@ class Congress( Fetcher ):
 		self.from_date_time = ''
 		self.to_date_time = ''
 		self.conference = False
+		self.response = None
 		self.headers = {
 				'Accept': 'application/json',
 				'User-Agent': cfg.AGENTS
@@ -9080,6 +9521,8 @@ class Congress( Fetcher ):
 				'base_url',
 				'url',
 				'params',
+				'payload',
+				'result',
 				'mode',
 				'congress_number',
 				'bill_type',
@@ -9094,6 +9537,16 @@ class Congress( Fetcher ):
 				'from_date_time',
 				'to_date_time',
 				'conference',
+				'response',
+				'headers',
+				'agents',
+				'validate_limit',
+				'validate_offset',
+				'normalize_bill_type',
+				'normalize_law_type',
+				'normalize_report_type',
+				'build_params',
+				'request',
 				'fetch_congresses',
 				'fetch_bills',
 				'fetch_bill',
@@ -9105,48 +9558,24 @@ class Congress( Fetcher ):
 				'create_schema'
 		]
 	
-	def _resolve_api_key( self ) -> str:
+	def validate_limit( self, limit: int ) -> int:
 		'''
 			Purpose:
 			--------
-			Resolve the Congress.gov API key.
-
-			Parameters:
-			-----------
-			None
-
-			Returns:
-			--------
-			str
-		'''
-		try:
-			value = str( self.api_key or '' ).strip( )
-			throw_if( 'CONGRESS_API_KEY', value )
-			return value
-		
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'Congress'
-			exception.method = '_resolve_api_key( self ) -> str'
-			raise exception
-	
-	def _validate_limit( self, limit: int ) -> int:
-		'''
-			Purpose:
-			--------
-			Validate list request page size.
+			Validate Congress.gov list-result limit values.
 
 			Parameters:
 			-----------
 			limit (int):
-				Page size.
+				Requested result limit.
 
 			Returns:
 			--------
 			int
 		'''
 		try:
+			throw_if( 'limit', limit )
+			
 			value = int( limit )
 			if value < 1 or value > 250:
 				raise ValueError( 'limit must be between 1 and 250.' )
@@ -9157,25 +9586,28 @@ class Congress( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
-			exception.method = '_validate_limit( self, limit: int ) -> int'
+			exception.method = 'validate_limit( self, *args, **kwargs ) -> int'
 			raise exception
 	
-	def _validate_offset( self, offset: int ) -> int:
+	def validate_offset( self, offset: int ) -> int:
 		'''
 			Purpose:
 			--------
-			Validate list request offset.
+			Validate Congress.gov list-result offset values.
 
 			Parameters:
 			-----------
 			offset (int):
-				Offset value.
+				Requested result offset.
 
 			Returns:
 			--------
 			int
 		'''
 		try:
+			if offset is None:
+				raise ValueError( 'offset cannot be None.' )
+			
 			value = int( offset )
 			if value < 0:
 				raise ValueError( 'offset must be greater than or equal to 0.' )
@@ -9186,14 +9618,14 @@ class Congress( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
-			exception.method = '_validate_offset( self, offset: int ) -> int'
+			exception.method = 'validate_offset( self, *args, **kwargs ) -> int'
 			raise exception
 	
-	def _normalize_bill_type( self, bill_type: str ) -> str:
+	def normalize_bill_type( self, bill_type: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Normalize bill type codes.
+			Normalize and validate Congress.gov bill type codes.
 
 			Parameters:
 			-----------
@@ -9209,14 +9641,20 @@ class Congress( Fetcher ):
 			throw_if( 'bill_type', value )
 			
 			allowed = {
-					'hr', 's', 'hjres', 'sjres',
-					'hconres', 'sconres', 'hres', 'sres'
+					'hr',
+					's',
+					'hjres',
+					'sjres',
+					'hconres',
+					'sconres',
+					'hres',
+					'sres'
 			}
 			
 			if value not in allowed:
 				raise ValueError(
-					"Unsupported bill_type. Use hr, s, hjres, sjres, "
-					"hconres, sconres, hres, or sres."
+					"Unsupported bill_type. Use 'hr', 's', 'hjres', 'sjres', "
+					"'hconres', 'sconres', 'hres', or 'sres'."
 				)
 			
 			return value
@@ -9225,14 +9663,14 @@ class Congress( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
-			exception.method = '_normalize_bill_type( self, bill_type: str ) -> str'
+			exception.method = 'normalize_bill_type( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _normalize_law_type( self, law_type: str ) -> str:
+	def normalize_law_type( self, law_type: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Normalize law type codes.
+			Normalize and validate Congress.gov law type codes.
 
 			Parameters:
 			-----------
@@ -9258,14 +9696,14 @@ class Congress( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
-			exception.method = '_normalize_law_type( self, law_type: str ) -> str'
+			exception.method = 'normalize_law_type( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _normalize_report_type( self, report_type: str ) -> str:
+	def normalize_report_type( self, report_type: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Normalize committee report type codes.
+			Normalize and validate Congress.gov committee report type codes.
 
 			Parameters:
 			-----------
@@ -9293,15 +9731,15 @@ class Congress( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
-			exception.method = '_normalize_report_type( self, report_type: str ) -> str'
+			exception.method = 'normalize_report_type( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _base_params( self, limit: int=20, offset: int=0,
-			sort: str='updateDate+desc' ) -> Dict[ str, Any ]:
+	def build_params( self, limit: int = 20, offset: int = 0,
+			sort: str = 'updateDate+desc' ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
-			Construct shared list-query parameters.
+			Build shared Congress.gov list-query parameters.
 
 			Parameters:
 			-----------
@@ -9319,12 +9757,18 @@ class Congress( Fetcher ):
 			Dict[str, Any]
 		'''
 		try:
+			throw_if( 'api_key', self.api_key )
+			
+			self.limit = self.validate_limit( limit )
+			self.offset = self.validate_offset( offset )
+			self.sort = str( sort or 'updateDate+desc' ).strip( )
+			
 			return {
-					'api_key': self._resolve_api_key( ),
+					'api_key': self.api_key,
 					'format': 'json',
-					'limit': self._validate_limit( limit ),
-					'offset': self._validate_offset( offset ),
-					'sort': str( sort or 'updateDate+desc' ).strip( )
+					'limit': self.limit,
+					'offset': self.offset,
+					'sort': self.sort
 			}
 		
 		except Exception as e:
@@ -9332,17 +9776,78 @@ class Congress( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'_base_params( self, limit: int=20, offset: int=0, '
-					'sort: str=updateDate+desc ) -> Dict[ str, Any ]'
+					'build_params( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_congresses( self, limit: int=20, offset: int=0,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def request( self, mode: str, url: str, params: Dict[ str, Any ],
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch the list of congresses and sessions.
+			Send a Congress.gov GET request and store response state.
+
+			Parameters:
+			-----------
+			mode (str):
+				App-facing operation mode.
+
+			url (str):
+				Full request URL.
+
+			params (Dict[str, Any]):
+				Query parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'mode', mode )
+			throw_if( 'url', url )
+			throw_if( 'params', params )
+			throw_if( 'time', time )
+			
+			self.mode = str( mode ).strip( )
+			self.url = str( url ).strip( )
+			self.timeout = int( time )
+			self.params = params
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( )
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'data': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Congress'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_congresses( self, limit: int = 20, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch the list of congresses and congressional sessions.
 
 			Parameters:
 			-----------
@@ -9361,45 +9866,36 @@ class Congress( Fetcher ):
 		'''
 		try:
 			self.url = f'{self.base_url}/congress'
-			self.params = self._base_params(
+			self.params = self.build_params(
 				limit=limit,
 				offset=offset,
 				sort='updateDate+desc'
 			)
 			
-			self.response = requests.get(
+			return self.request(
+				mode='congresses',
 				url=self.url,
 				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
+				time=time
 			)
-			self.response.raise_for_status( )
-			
-			return {
-					'mode': 'congresses',
-					'url': self.url,
-					'params': self.params,
-					'data': self.response.json( )
-			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'fetch_congresses( self, limit: int=20, offset: int=0, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_congresses( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_bills( self, congress: int, bill_type: str='',
-			offset: int=0, limit: int=20, from_date_time: str='',
-			to_date_time: str='', sort: str='updateDate+desc',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_bills( self, congress: int, bill_type: str = '',
+			offset: int = 0, limit: int = 20, sort: str = 'updateDate+desc',
+			from_date_time: str = '', to_date_time: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch bills for a congress, optionally filtered by bill type.
+			Fetch bills for a congress, optionally filtered by bill type and date range.
 
 			Parameters:
 			-----------
@@ -9415,14 +9911,14 @@ class Congress( Fetcher ):
 			limit (int):
 				Page size.
 
-			from_date_time (str):
-				Optional ISO timestamp filter.
-
-			to_date_time (str):
-				Optional ISO timestamp filter.
-
 			sort (str):
 				Sort directive.
+
+			from_date_time (str):
+				Optional ISO lower-bound datetime.
+
+			to_date_time (str):
+				Optional ISO upper-bound datetime.
 
 			time (int):
 				Request timeout in seconds.
@@ -9436,54 +9932,45 @@ class Congress( Fetcher ):
 			
 			self.congress_number = int( congress )
 			self.bill_type = str( bill_type or '' ).strip( ).lower( )
+			self.from_date_time = str( from_date_time or '' ).strip( )
+			self.to_date_time = str( to_date_time or '' ).strip( )
 			
 			if self.bill_type:
-				self.bill_type = self._normalize_bill_type( self.bill_type )
+				self.bill_type = self.normalize_bill_type( self.bill_type )
 				self.url = f'{self.base_url}/bill/{self.congress_number}/{self.bill_type}'
 			else:
 				self.url = f'{self.base_url}/bill/{self.congress_number}'
 			
-			self.params = self._base_params(
+			self.params = self.build_params(
 				limit=limit,
 				offset=offset,
 				sort=sort
 			)
 			
-			if from_date_time:
-				self.params[ 'fromDateTime' ]=str( from_date_time ).strip( )
+			if self.from_date_time:
+				self.params[ 'fromDateTime' ] = self.from_date_time
 			
-			if to_date_time:
-				self.params[ 'toDateTime' ]=str( to_date_time ).strip( )
+			if self.to_date_time:
+				self.params[ 'toDateTime' ] = self.to_date_time
 			
-			self.response = requests.get(
+			return self.request(
+				mode='bills',
 				url=self.url,
 				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
+				time=time
 			)
-			self.response.raise_for_status( )
-			
-			return {
-					'mode': 'bills',
-					'url': self.url,
-					'params': self.params,
-					'data': self.response.json( )
-			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'fetch_bills( self, congress: int, bill_type: str=, '
-					'offset: int=0, limit: int=20, from_date_time: str=, '
-					'to_date_time: str=, sort: str=updateDate+desc, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_bills( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_bill( self, congress: int, bill_type: str,
-			bill_number: int, time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_bill( self, congress: int, bill_type: str, bill_number: int,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -9513,46 +10000,36 @@ class Congress( Fetcher ):
 			throw_if( 'bill_number', bill_number )
 			
 			self.congress_number = int( congress )
-			self.bill_type = self._normalize_bill_type( bill_type )
+			self.bill_type = self.normalize_bill_type( bill_type )
 			self.bill_number = int( bill_number )
-			
 			self.url = (
 					f'{self.base_url}/bill/{self.congress_number}/'
 					f'{self.bill_type}/{self.bill_number}'
 			)
 			self.params = {
-					'api_key': self._resolve_api_key( ),
+					'api_key': self.api_key,
 					'format': 'json'
 			}
 			
-			self.response = requests.get(
+			return self.request(
+				mode='bill_detail',
 				url=self.url,
 				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
+				time=time
 			)
-			self.response.raise_for_status( )
-			
-			return {
-					'mode': 'bill_detail',
-					'url': self.url,
-					'params': self.params,
-					'data': self.response.json( )
-			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'fetch_bill( self, congress: int, bill_type: str, '
-					'bill_number: int, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_bill( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_laws( self, congress: int, law_type: str='',
-			offset: int=0, limit: int=20,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_laws( self, congress: int, law_type: str = '',
+			offset: int = 0, limit: int = 20,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -9586,45 +10063,35 @@ class Congress( Fetcher ):
 			self.law_type = str( law_type or '' ).strip( ).lower( )
 			
 			if self.law_type:
-				self.law_type = self._normalize_law_type( self.law_type )
+				self.law_type = self.normalize_law_type( self.law_type )
 				self.url = f'{self.base_url}/law/{self.congress_number}/{self.law_type}'
 			else:
 				self.url = f'{self.base_url}/law/{self.congress_number}'
 			
-			self.params = self._base_params(
+			self.params = self.build_params(
 				limit=limit,
 				offset=offset,
 				sort='updateDate+desc'
 			)
 			
-			self.response = requests.get(
+			return self.request(
+				mode='laws',
 				url=self.url,
 				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
+				time=time
 			)
-			self.response.raise_for_status( )
-			
-			return {
-					'mode': 'laws',
-					'url': self.url,
-					'params': self.params,
-					'data': self.response.json( )
-			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'fetch_laws( self, congress: int, law_type: str=, '
-					'offset: int=0, limit: int=20, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_laws( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_law( self, congress: int, law_type: str,
-			law_number: int, time: int=20 ) -> Dict[ str, Any ] | None:
+			law_number: int, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -9654,51 +10121,40 @@ class Congress( Fetcher ):
 			throw_if( 'law_number', law_number )
 			
 			self.congress_number = int( congress )
-			self.law_type = self._normalize_law_type( law_type )
+			self.law_type = self.normalize_law_type( law_type )
 			self.law_number = int( law_number )
-			
 			self.url = (
 					f'{self.base_url}/law/{self.congress_number}/'
 					f'{self.law_type}/{self.law_number}'
 			)
 			self.params = {
-					'api_key': self._resolve_api_key( ),
+					'api_key': self.api_key,
 					'format': 'json'
 			}
 			
-			self.response = requests.get(
+			return self.request(
+				mode='law_detail',
 				url=self.url,
 				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
+				time=time
 			)
-			self.response.raise_for_status( )
-			
-			return {
-					'mode': 'law_detail',
-					'url': self.url,
-					'params': self.params,
-					'data': self.response.json( )
-			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'fetch_law( self, congress: int, law_type: str, '
-					'law_number: int, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_law( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_reports( self, congress: int, report_type: str='',
-			offset: int=0, limit: int=20, conference: bool=False,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_reports( self, congress: int, report_type: str = '',
+			offset: int = 0, limit: int = 20, conference: bool = False,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch committee reports for a congress, optionally filtered by
-			report type.
+			Fetch committee reports for a congress, optionally filtered by report type.
 
 			Parameters:
 			-----------
@@ -9706,7 +10162,7 @@ class Congress( Fetcher ):
 				Congress number.
 
 			report_type (str):
-				Optional report type code: hrpt, srpt, or erpt.
+				Optional report type code.
 
 			offset (int):
 				Result offset.
@@ -9715,7 +10171,7 @@ class Congress( Fetcher ):
 				Page size.
 
 			conference (bool):
-				Whether to request conference reports where supported.
+				Whether to request conference reports.
 
 			time (int):
 				Request timeout in seconds.
@@ -9732,7 +10188,7 @@ class Congress( Fetcher ):
 			self.conference = bool( conference )
 			
 			if self.report_type:
-				self.report_type = self._normalize_report_type( self.report_type )
+				self.report_type = self.normalize_report_type( self.report_type )
 				self.url = (
 						f'{self.base_url}/committee-report/'
 						f'{self.congress_number}/{self.report_type}'
@@ -9740,41 +10196,31 @@ class Congress( Fetcher ):
 			else:
 				self.url = f'{self.base_url}/committee-report/{self.congress_number}'
 			
-			self.params = self._base_params(
+			self.params = self.build_params(
 				limit=limit,
 				offset=offset,
 				sort='updateDate+desc'
 			)
-			self.params[ 'conference' ]=str( self.conference ).lower( )
+			self.params[ 'conference' ] = str( self.conference ).lower( )
 			
-			self.response = requests.get(
+			return self.request(
+				mode='reports',
 				url=self.url,
 				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
+				time=time
 			)
-			self.response.raise_for_status( )
-			
-			return {
-					'mode': 'reports',
-					'url': self.url,
-					'params': self.params,
-					'data': self.response.json( )
-			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'fetch_reports( self, congress: int, report_type: str=, '
-					'offset: int=0, limit: int=20, conference: bool=False, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_reports( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_report( self, congress: int, report_type: str,
-			report_number: int, time: int=20 ) -> Dict[ str, Any ] | None:
+			report_number: int, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -9804,50 +10250,40 @@ class Congress( Fetcher ):
 			throw_if( 'report_number', report_number )
 			
 			self.congress_number = int( congress )
-			self.report_type = self._normalize_report_type( report_type )
+			self.report_type = self.normalize_report_type( report_type )
 			self.report_number = int( report_number )
-			
 			self.url = (
 					f'{self.base_url}/committee-report/{self.congress_number}/'
 					f'{self.report_type}/{self.report_number}'
 			)
 			self.params = {
-					'api_key': self._resolve_api_key( ),
+					'api_key': self.api_key,
 					'format': 'json'
 			}
 			
-			self.response = requests.get(
+			return self.request(
+				mode='report_detail',
 				url=self.url,
 				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
+				time=time
 			)
-			self.response.raise_for_status( )
-			
-			return {
-					'mode': 'report_detail',
-					'url': self.url,
-					'params': self.params,
-					'data': self.response.json( )
-			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'fetch_report( self, congress: int, report_type: str, '
-					'report_number: int, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_report( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='congresses', congress: int=0,
-			bill_type: str='', bill_number: int=0, law_type: str='',
-			law_number: int=0, report_type: str='',
-			report_number: int=0, offset: int=0, limit: int=20,
-			sort: str='updateDate+desc', from_date_time: str='',
-			to_date_time: str='', conference: bool=False,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'congresses', congress: int = 0,
+			bill_type: str = '', bill_number: int = 0, law_type: str = '',
+			law_number: int = 0, report_type: str = '',
+			report_number: int = 0, offset: int = 0, limit: int = 20,
+			sort: str = 'updateDate+desc', from_date_time: str = '',
+			to_date_time: str = '', conference: bool = False,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -9866,43 +10302,43 @@ class Congress( Fetcher ):
 				- report_detail
 
 			congress (int):
-				Congress number for congress-scoped modes.
+				Congress number.
 
 			bill_type (str):
-				Bill type code for bill modes.
+				Bill type code.
 
 			bill_number (int):
-				Bill number for bill_detail mode.
+				Bill number.
 
 			law_type (str):
-				Law type code for law modes.
+				Law type code.
 
 			law_number (int):
-				Law number for law_detail mode.
+				Law number.
 
 			report_type (str):
-				Report type code for report modes.
+				Committee report type code.
 
 			report_number (int):
-				Report number for report_detail mode.
+				Committee report number.
 
 			offset (int):
-				Result offset for list modes.
+				Result offset.
 
 			limit (int):
-				Page size for list modes.
+				Page size.
 
 			sort (str):
-				Sort directive for bill list modes.
+				Sort directive.
 
 			from_date_time (str):
-				Optional ISO timestamp for bill list mode.
+				Optional ISO lower-bound datetime for bills.
 
 			to_date_time (str):
-				Optional ISO timestamp for bill list mode.
+				Optional ISO upper-bound datetime for bills.
 
 			conference (bool):
-				Conference report filter for report list mode.
+				Whether to request conference reports for report-list mode.
 
 			time (int):
 				Request timeout in seconds.
@@ -9912,28 +10348,29 @@ class Congress( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'congresses' ).strip( ).lower( )
+			throw_if( 'mode', mode )
+			self.mode = str( mode or 'congresses' ).strip( ).lower( )
 			
-			if active_mode == 'congresses':
+			if self.mode == 'congresses':
 				return self.fetch_congresses(
 					limit=limit,
 					offset=offset,
 					time=time
 				)
 			
-			if active_mode == 'bills':
+			if self.mode == 'bills':
 				return self.fetch_bills(
 					congress=congress,
 					bill_type=bill_type,
 					offset=offset,
 					limit=limit,
+					sort=sort,
 					from_date_time=from_date_time,
 					to_date_time=to_date_time,
-					sort=sort,
 					time=time
 				)
 			
-			if active_mode == 'bill_detail':
+			if self.mode == 'bill_detail':
 				return self.fetch_bill(
 					congress=congress,
 					bill_type=bill_type,
@@ -9941,7 +10378,7 @@ class Congress( Fetcher ):
 					time=time
 				)
 			
-			if active_mode == 'laws':
+			if self.mode == 'laws':
 				return self.fetch_laws(
 					congress=congress,
 					law_type=law_type,
@@ -9950,7 +10387,7 @@ class Congress( Fetcher ):
 					time=time
 				)
 			
-			if active_mode == 'law_detail':
+			if self.mode == 'law_detail':
 				return self.fetch_law(
 					congress=congress,
 					law_type=law_type,
@@ -9958,7 +10395,7 @@ class Congress( Fetcher ):
 					time=time
 				)
 			
-			if active_mode == 'reports':
+			if self.mode == 'reports':
 				return self.fetch_reports(
 					congress=congress,
 					report_type=report_type,
@@ -9968,7 +10405,7 @@ class Congress( Fetcher ):
 					time=time
 				)
 			
-			if active_mode == 'report_detail':
+			if self.mode == 'report_detail':
 				return self.fetch_report(
 					congress=congress,
 					report_type=report_type,
@@ -9977,21 +10414,16 @@ class Congress( Fetcher ):
 				)
 			
 			raise ValueError(
-				"Unsupported mode. Use one of: congresses, bills, bill_detail, "
-				"laws, law_detail, reports, report_detail."
+				"Unsupported Congress mode. Use 'congresses', 'bills', "
+				"'bill_detail', 'laws', 'law_detail', 'reports', or 'report_detail'."
 			)
 		
-		except Exception as exc:
-			exception = Error( exc )
+		except Exception as e:
+			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'fetch( self, mode: str=congresses, congress: int=0, '
-					'bill_type: str=, bill_number: int=0, law_type: str=, '
-					'law_number: int=0, report_type: str=, report_number: int=0, '
-					'offset: int=0, limit: int=20, sort: str=updateDate+desc, '
-					'from_date_time: str=, to_date_time: str=, '
-					'conference: bool=False, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -10001,7 +10433,7 @@ class Congress( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
@@ -10015,7 +10447,7 @@ class Congress( Fetcher ):
 				Precise explanation of what the function does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				Dictionary defining parameter names and JSON schema descriptors.
 
 			required (list[str]):
 				List of required parameter names.
@@ -10036,8 +10468,8 @@ class Congress( Fetcher ):
 			return {
 					'name': function.strip( ),
 					'description': (
-							f'{description.strip( )} '
-							f'This function uses the {tool.strip( )} service.'
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
 					),
 					'parameters': {
 							'type': 'object',
@@ -10051,8 +10483,7 @@ class Congress( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'Congress'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -12139,35 +12570,6 @@ class GoogleGeocoding( Fetcher ):
 		--------
 		Fetches Google Geocoding forward, reverse, and place lookup records.
 
-		Attributes:
-		-----------
-		api_key,
-		url,
-		params,
-		mode,
-		query,
-		latitude,
-		longitude,
-		place_id,
-		language,
-		region,
-		result_type,
-		location_type,
-		timeout,
-		agents,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
-		request(...): Performs the request operation for this fetcher.
-		fetch_forward(...): Performs the fetch_forward operation for this fetcher.
-		fetch_reverse(...): Performs the fetch_reverse operation for this fetcher.
-		fetch_place(...): Performs the fetch_place operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
-
 	'''
 	api_key: Optional[ str ]
 	url: Optional[ str ]
@@ -12183,6 +12585,8 @@ class GoogleGeocoding( Fetcher ):
 	location_type: Optional[ str ]
 	timeout: Optional[ int ]
 	agents: Optional[ str ]
+	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
 	
 	def __init__( self ) -> None:
 		'''
@@ -12213,6 +12617,9 @@ class GoogleGeocoding( Fetcher ):
 		self.location_type = ''
 		self.timeout = 10
 		self.agents = cfg.AGENTS
+		self.response = None
+		self.payload = { }
+		self.result = { }
 		self.headers = {
 				'Accept': 'application/json',
 				'User-Agent': self.agents
@@ -12246,6 +12653,11 @@ class GoogleGeocoding( Fetcher ):
 				'result_type',
 				'location_type',
 				'timeout',
+				'agents',
+				'response',
+				'payload',
+				'result',
+				'request',
 				'fetch_forward',
 				'fetch_reverse',
 				'fetch_place',
@@ -12253,96 +12665,90 @@ class GoogleGeocoding( Fetcher ):
 				'create_schema'
 		]
 	
-	def _resolve_api_key( self, api_key: Optional[ str ]=None ) -> str:
+	def request( self, params: Dict[ str, Any ], time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Resolve the Google API key.
-
-			Parameters:
-			-----------
-			api_key (Optional[str]):
-				Optional explicit API key override.
-
-			Returns:
-			--------
-			str
-		'''
-		try:
-			value = str( api_key or self.api_key or '' ).strip( )
-			throw_if( 'GOOGLE_API_KEY', value )
-			return value
-		
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'GoogleGeocoding'
-			exception.method = '_resolve_api_key( self, api_key: Optional[ str ]=None ) -> str'
-			raise exception
-	
-	def request( self, params: Dict[ str, Any ], time: int=10,
-			api_key: Optional[ str ]=None ) -> Dict[ str, Any ] | None:
-		'''
-			Purpose:
-			--------
-			Submit a request to the Google Geocoding API.
+			Send a request to the Google Geocoding API and store response state.
 
 			Parameters:
 			-----------
 			params (Dict[str, Any]):
-				Request parameters excluding the key.
+				Request query parameters for the Geocoding API.
 
 			time (int):
 				Request timeout in seconds.
 
 			api_key (Optional[str]):
-				Optional explicit API key override.
+				Optional API-key override.
 
 			Returns:
 			--------
 			Dict[str, Any] | None
 		'''
 		try:
-			request_params = dict( params or { } )
-			request_params[ 'key' ]=self._resolve_api_key( api_key=api_key )
+			throw_if( 'params', params )
+			throw_if( 'time', time )
 			
-			self.params = request_params
+			if api_key:
+				self.api_key = str( api_key ).strip( )
+			
+			throw_if( 'api_key', self.api_key )
+			
+			self.timeout = int( time )
+			self.params = { }
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			self.params[ 'key' ] = self.api_key
+			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time )
+				timeout=self.timeout
 			)
+			
 			self.response.raise_for_status( )
-			
-			payload = self.response.json( ) or { }
-			
-			return {
+			self.payload = self.response.json( )
+			self.result = {
 					'mode': self.mode,
 					'url': self.url,
 					'params': self.params,
-					'status': payload.get( 'status', '' ),
-					'results': payload.get( 'results', [ ] ),
-					'raw': payload
+					'status': self.payload.get( 'status', '' ) if isinstance( self.payload,
+						dict ) else '',
+					'results': self.payload.get( 'results', [ ] )
+					if isinstance( self.payload, dict )
+					else [ ],
+					'raw': self.payload
 			}
+			
+			return self.result
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleGeocoding'
 			exception.method = (
-					'request( self, params: Dict[ str, Any ], time: int=10, '
-					'api_key: Optional[ str ]=None ) -> Dict[ str, Any ]'
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_forward( self, query: str, language: str='en',
-			region: str='', time: int=10,
-			api_key: Optional[ str ]=None ) -> Dict[ str, Any ] | None:
+	def fetch_forward( self, query: str, language: str = 'en',
+			region: str = '', time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Forward geocode an address or place string.
+			Forward geocode a human-readable address or place query.
 
 			Parameters:
 			-----------
@@ -12353,7 +12759,7 @@ class GoogleGeocoding( Fetcher ):
 				Preferred response language.
 
 			region (str):
-				Optional region bias, such as 'us'.
+				Optional region bias, such as us.
 
 			time (int):
 				Request timeout in seconds.
@@ -12367,23 +12773,24 @@ class GoogleGeocoding( Fetcher ):
 		'''
 		try:
 			throw_if( 'query', query )
+			throw_if( 'time', time )
 			
 			self.mode = 'forward'
 			self.query = str( query ).strip( )
 			self.language = str( language or 'en' ).strip( )
 			self.region = str( region or '' ).strip( )
-			
-			params = {
+			self.timeout = int( time )
+			self.params = {
 					'address': self.query,
 					'language': self.language
 			}
 			
 			if self.region:
-				params[ 'region' ]=self.region
+				self.params[ 'region' ] = self.region
 			
 			return self.request(
-				params=params,
-				time=int( time ),
+				params=self.params,
+				time=self.timeout,
 				api_key=api_key
 			)
 		
@@ -12392,16 +12799,14 @@ class GoogleGeocoding( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleGeocoding'
 			exception.method = (
-					'fetch_forward( self, query: str, language: str=en, '
-					'region: str=, time: int=10, api_key: Optional[ str ]=None ) '
-					'-> Dict[ str, Any ]'
+					'fetch_forward( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_reverse( self, latitude: float, longitude: float,
-			language: str='en', result_type: str='',
-			location_type: str='', time: int=10,
-			api_key: Optional[ str ]=None ) -> Dict[ str, Any ] | None:
+			language: str = 'en', result_type: str = '',
+			location_type: str = '', time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -12435,27 +12840,31 @@ class GoogleGeocoding( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'latitude', latitude )
+			throw_if( 'longitude', longitude )
+			throw_if( 'time', time )
+			
 			self.mode = 'reverse'
 			self.latitude = float( latitude )
 			self.longitude = float( longitude )
 			self.language = str( language or 'en' ).strip( )
 			self.result_type = str( result_type or '' ).strip( )
 			self.location_type = str( location_type or '' ).strip( )
-			
-			params = {
+			self.timeout = int( time )
+			self.params = {
 					'latlng': f'{self.latitude},{self.longitude}',
 					'language': self.language
 			}
 			
 			if self.result_type:
-				params[ 'result_type' ]=self.result_type
+				self.params[ 'result_type' ] = self.result_type
 			
 			if self.location_type:
-				params[ 'location_type' ]=self.location_type
+				self.params[ 'location_type' ] = self.location_type
 			
 			return self.request(
-				params=params,
-				time=int( time ),
+				params=self.params,
+				time=self.timeout,
 				api_key=api_key
 			)
 		
@@ -12464,15 +12873,13 @@ class GoogleGeocoding( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleGeocoding'
 			exception.method = (
-					'fetch_reverse( self, latitude: float, longitude: float, '
-					'language: str=en, result_type: str=, location_type: str=, '
-					'time: int=10, api_key: Optional[ str ]=None ) -> Dict[ str, Any ]'
+					'fetch_reverse( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_place( self, place_id: str, language: str='en',
-			region: str='', time: int=10,
-			api_key: Optional[ str ]=None ) -> Dict[ str, Any ] | None:
+	def fetch_place( self, place_id: str, language: str = 'en',
+			region: str = '', time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -12501,23 +12908,24 @@ class GoogleGeocoding( Fetcher ):
 		'''
 		try:
 			throw_if( 'place_id', place_id )
+			throw_if( 'time', time )
 			
 			self.mode = 'place'
 			self.place_id = str( place_id ).strip( )
 			self.language = str( language or 'en' ).strip( )
 			self.region = str( region or '' ).strip( )
-			
-			params = {
+			self.timeout = int( time )
+			self.params = {
 					'place_id': self.place_id,
 					'language': self.language
 			}
 			
 			if self.region:
-				params[ 'region' ]=self.region
+				self.params[ 'region' ] = self.region
 			
 			return self.request(
-				params=params,
-				time=int( time ),
+				params=self.params,
+				time=self.timeout,
 				api_key=api_key
 			)
 		
@@ -12526,20 +12934,19 @@ class GoogleGeocoding( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleGeocoding'
 			exception.method = (
-					'fetch_place( self, place_id: str, language: str=en, region: str=, '
-					'time: int=10, api_key: Optional[ str ]=None ) -> Dict[ str, Any ]'
+					'fetch_place( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='forward', query: str='',
+	def fetch( self, mode: str = 'forward', query: str = '',
 			latitude: float = 0.0, longitude: float = 0.0,
-			place_id: str='', language: str='en', region: str='',
-			result_type: str='', location_type: str='', time: int=10,
-			api_key: Optional[ str ]=None ) -> Dict[ str, Any ] | None:
+			place_id: str = '', language: str = 'en', region: str = '',
+			result_type: str = '', location_type: str = '', time: int = 10,
+			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Unified dispatcher for Google Geocoding requests.
+			Dispatch a Google Geocoding request to the mode-specific fetch method.
 
 			Parameters:
 			-----------
@@ -12584,9 +12991,10 @@ class GoogleGeocoding( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'forward' ).strip( ).lower( )
+			throw_if( 'mode', mode )
+			self.mode = str( mode ).strip( ).lower( )
 			
-			if active_mode == 'forward':
+			if self.mode == 'forward':
 				return self.fetch_forward(
 					query=query,
 					language=language,
@@ -12595,7 +13003,7 @@ class GoogleGeocoding( Fetcher ):
 					api_key=api_key
 				)
 			
-			if active_mode == 'reverse':
+			if self.mode == 'reverse':
 				return self.fetch_reverse(
 					latitude=latitude,
 					longitude=longitude,
@@ -12606,7 +13014,7 @@ class GoogleGeocoding( Fetcher ):
 					api_key=api_key
 				)
 			
-			if active_mode == 'place':
+			if self.mode == 'place':
 				return self.fetch_place(
 					place_id=place_id,
 					language=language,
@@ -12615,18 +13023,14 @@ class GoogleGeocoding( Fetcher ):
 					api_key=api_key
 				)
 			
-			raise ValueError( "Unsupported mode. Use 'forward', 'reverse', or 'place'." )
+			raise ValueError( "Unsupported geocoding mode. Use 'forward', 'reverse', or 'place'." )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleGeocoding'
 			exception.method = (
-					'fetch( self, mode: str=forward, query: str=, latitude: float=0.0, '
-					'longitude: float=0.0, place_id: str=, language: str=en, '
-					'region: str=, result_type: str=, location_type: str=, '
-					'time: int=10, api_key: Optional[ str ]=None ) '
-					'-> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -12636,7 +13040,7 @@ class GoogleGeocoding( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
@@ -12650,7 +13054,7 @@ class GoogleGeocoding( Fetcher ):
 				Precise explanation of what the function does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				Dictionary defining parameter names and JSON schema descriptors.
 
 			required (list[str]):
 				List of required parameter names.
@@ -12686,8 +13090,7 @@ class GoogleGeocoding( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'GoogleGeocoding'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -12697,33 +13100,6 @@ class CensusData( Fetcher ):
 		Purpose:
 		--------
 		Fetches Census API variables and tabular data.
-
-		Attributes:
-		-----------
-		api_key,
-		base_url,
-		year,
-		dataset,
-		mode,
-		fields,
-		geography_for,
-		geography_in,
-		predicates,
-		params,
-		payload,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
-		_normalize_fields(...): Performs the _normalize_fields operation for this fetcher.
-		_parse_predicates(...): Performs the _parse_predicates operation for this fetcher.
-		_shape_table(...): Performs the _shape_table operation for this fetcher.
-		fetch_variables(...): Performs the fetch_variables operation for this fetcher.
-		fetch_data(...): Performs the fetch_data operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
 
 	'''
 	api_key: Optional[ str ]
@@ -12736,12 +13112,14 @@ class CensusData( Fetcher ):
 	geography_in: Optional[ str ]
 	predicates: Optional[ Dict[ str, Any ] ]
 	params: Optional[ Dict[ str, Any ] ]
-	payload: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Initialize the U.S. Census Bureau API wrapper.
 
 			Parameters:
@@ -12749,12 +13127,11 @@ class CensusData( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			None
-
 		'''
 		super( ).__init__( )
-		self.api_key = getattr( cfg, 'CENSUS_API_KEY', '' )
+		self.api_key = cfg.CENSUS_API_KEY
 		self.base_url = 'https://api.census.gov/data'
 		self.year = None
 		self.dataset = None
@@ -12765,16 +13142,20 @@ class CensusData( Fetcher ):
 		self.predicates = { }
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
+		self.timeout = 20
+		self.agents = cfg.AGENTS
 		self.headers = {
 				'Accept': 'application/json',
-				'User-Agent': cfg.AGENTS,
+				'User-Agent': self.agents,
 		}
-		self.timeout = 20
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
 			Purpose:
-			-----------
+			--------
 			Return ordered CensusData members.
 
 			Parameters:
@@ -12782,9 +13163,8 @@ class CensusData( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			List[str]
-
 		'''
 		return [
 				'api_key',
@@ -12798,148 +13178,145 @@ class CensusData( Fetcher ):
 				'predicates',
 				'params',
 				'payload',
-				'_resolve_api_key',
-				'_normalize_fields',
-				'_parse_predicates',
-				'_shape_table',
+				'result',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'normalize_fields',
+				'parse_predicates',
+				'shape_table',
 				'fetch_variables',
 				'fetch_data',
 				'fetch',
-				'create_schema',
+				'create_schema'
 		]
 	
-	def _resolve_api_key( self ) -> Optional[ str ]:
+	def normalize_fields( self, fields: str ) -> str:
 		'''
 			Purpose:
-			-----------
-			Resolve the configured Census API key.
+			--------
+			Normalize a comma-delimited Census field string into a Census API get
+			parameter value.
 
 			Parameters:
 			-----------
-			None
+			fields (str):
+				Comma-delimited Census variable names.
 
 			Returns:
-			-----------
-			Optional[str]
-
-		'''
-		key = str( self.api_key or '' ).strip( )
-		return key if key else None
-	
-	def _normalize_fields( self, fields: str ) -> str:
-		'''
-			Purpose:
-			-----------
-			Normalize the comma-delimited Census get-field string.
-
-			Parameters:
-			-----------
-			fields (str): Comma-delimited field list.
-
-			Returns:
-			-----------
+			--------
 			str
-
 		'''
 		try:
 			throw_if( 'fields', fields )
-			parts = [ p.strip( ) for p in str( fields ).split( ',' ) if p.strip( ) ]
-			if not parts:
-				raise ValueError( "Argument 'fields' cannot be empty!" )
-			self.fields = parts
-			return ','.join( parts )
+			
+			self.fields = [
+					field.strip( )
+					for field in str( fields ).split( ',' )
+					if field and field.strip( )
+			]
+			
+			if not self.fields:
+				raise ValueError( 'At least one Census field is required.' )
+			
+			return ','.join( self.fields )
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
-			exception.method = '_normalize_fields( self, fields: str ) -> str'
+			exception.method = 'normalize_fields( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _parse_predicates( self, predicates: str ) -> Dict[ str, Any ]:
+	def parse_predicates( self, predicates: str = '' ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
-			-----------
-			Parse optional Census predicate text into a parameter dictionary.
+			--------
+			Parse newline-delimited Census API predicates from key=value lines.
 
 			Parameters:
 			-----------
 			predicates (str):
-				Newline-delimited key=value pairs.
+				Optional newline-delimited key=value predicates.
 
 			Returns:
-			-----------
+			--------
 			Dict[str, Any]
-
 		'''
 		try:
-			output: Dict[ str, Any ]={ }
+			self.predicates = { }
 			text = str( predicates or '' ).strip( )
+			
 			if not text:
-				return output
+				return self.predicates
 			
 			for line in text.splitlines( ):
-				item = str( line ).strip( )
-				if not item:
+				clean = str( line or '' ).strip( )
+				
+				if not clean:
 					continue
 				
-				if '=' not in item:
+				if '=' not in clean:
 					raise ValueError(
-						"Each predicate line must use the form 'key=value'."
+						'Each Census predicate line must use key=value format.'
 					)
 				
-				key, value = item.split( '=', 1 )
-				k = str( key ).strip( )
-				v = str( value ).strip( )
+				key, value = clean.split( '=', 1 )
+				key = key.strip( )
+				value = value.strip( )
 				
-				if not k:
-					raise ValueError( 'Predicate key cannot be empty.' )
+				throw_if( 'predicate key', key )
+				throw_if( 'predicate value', value )
 				
-				output[ k ]=v
+				self.predicates[ key ] = value
 			
-			return output
+			return self.predicates
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
 			exception.method = (
-					'_parse_predicates( self, predicates: str ) -> Dict[ str, Any ]'
+					'parse_predicates( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def _shape_table( self, rows: List[ Any ] ) -> Dict[ str, Any ]:
+	def shape_table( self, rows: List[ Any ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
-			-----------
-			Transform Census array-style responses into header/row dictionaries.
+			--------
+			Convert the Census API list-of-lists response into columns and row
+			dictionaries.
 
 			Parameters:
 			-----------
 			rows (List[Any]):
-				Raw Census API response payload.
+				Census API list-of-lists response.
 
 			Returns:
-			-----------
+			--------
 			Dict[str, Any]
-
 		'''
 		try:
-			if not isinstance( rows, list ) or not rows:
+			if not rows:
 				return {
 						'columns': [ ],
 						'rows': [ ],
 						'count': 0,
 				}
 			
-			headers = [ str( h ) for h in rows[ 0 ] ] if isinstance( rows[ 0 ], list ) else [ ]
+			headers = rows[ 0 ] if isinstance( rows[ 0 ], list ) else [ ]
 			data_rows = rows[ 1: ] if len( rows ) > 1 else [ ]
-			records: List[ Dict[ str, Any ] ]=[ ]
+			records: List[ Dict[ str, Any ] ] = [ ]
 			
 			for row in data_rows:
 				if isinstance( row, list ) and headers:
 					records.append(
 						{
-								headers[ idx ]: row[ idx ] if idx < len( row ) else ''
-								for idx in range( len( headers ) )
+								headers[ index ]: row[ index ] if index < len( row ) else ''
+								for index in range( len( headers ) )
 						}
 					)
 			
@@ -12948,14 +13325,18 @@ class CensusData( Fetcher ):
 					'rows': records,
 					'count': len( records ),
 			}
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
-			exception.method = '_shape_table( self, rows: List[ Any ] ) -> Dict[ str, Any ]'
+			exception.method = (
+					'shape_table( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			raise exception
 	
-	def fetch_variables( self, year: str, dataset: str, time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_variables( self, year: str, dataset: str,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -12967,7 +13348,7 @@ class CensusData( Fetcher ):
 				Dataset year such as 2022.
 
 			dataset (str):
-				Dataset path such as acs/acs5 or 2020/dec/dhc.
+				Dataset path such as acs/acs5 or dec/pl.
 
 			time (int):
 				Request timeout in seconds.
@@ -12975,47 +13356,51 @@ class CensusData( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
 			throw_if( 'year', year )
 			throw_if( 'dataset', dataset )
+			throw_if( 'time', time )
 			
 			self.mode = 'variables'
 			self.year = str( year ).strip( )
 			self.dataset = str( dataset ).strip( ).strip( '/' )
+			self.timeout = int( time )
 			self.url = f'{self.base_url}/{self.year}/{self.dataset}/variables.json'
 			self.params = { }
-			api_key = self._resolve_api_key( )
-			if api_key:
-				self.params[ 'key' ]=api_key
+			
+			if self.api_key:
+				self.params[ 'key' ] = self.api_key
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
-			
-			return {
+			self.payload = self.response.json( )
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
-					'data': self.response.json( ),
+					'data': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
 			exception.method = (
-					'fetch_variables( self, year: str, dataset: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_variables( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_data( self, year: str, dataset: str, fields: str,
-			geography_for: str='', geography_in: str='',
-			predicates: str='', time: int=20 ) -> Dict[ str, Any ] | None:
+			geography_for: str = '', geography_in: str = '',
+			predicates: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13033,10 +13418,10 @@ class CensusData( Fetcher ):
 				Comma-delimited get variables such as NAME,B01001_001E.
 
 			geography_for (str):
-				Census `for` geography clause, e.g. state:*.
+				Census for geography clause, e.g. state:*.
 
 			geography_in (str):
-				Optional Census `in` geography clause.
+				Optional Census in geography clause.
 
 			predicates (str):
 				Optional newline-delimited key=value predicates.
@@ -13047,68 +13432,67 @@ class CensusData( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
 			throw_if( 'year', year )
 			throw_if( 'dataset', dataset )
 			throw_if( 'fields', fields )
+			throw_if( 'geography_for', geography_for )
+			throw_if( 'time', time )
 			
 			self.mode = 'data'
 			self.year = str( year ).strip( )
 			self.dataset = str( dataset ).strip( ).strip( '/' )
 			self.geography_for = str( geography_for or '' ).strip( )
 			self.geography_in = str( geography_in or '' ).strip( )
-			self.predicates = self._parse_predicates( predicates )
+			self.predicates = self.parse_predicates( predicates )
+			self.timeout = int( time )
 			self.url = f'{self.base_url}/{self.year}/{self.dataset}'
 			self.params = {
-					'get': self._normalize_fields( fields ),
+					'get': self.normalize_fields( fields ),
+					'for': self.geography_for,
 			}
 			
-			if self.geography_for:
-				self.params[ 'for' ]=self.geography_for
-			
 			if self.geography_in:
-				self.params[ 'in' ]=self.geography_in
+				self.params[ 'in' ] = self.geography_in
 			
 			if self.predicates:
 				self.params.update( self.predicates )
 			
-			api_key = self._resolve_api_key( )
-			if api_key:
-				self.params[ 'key' ]=api_key
+			if self.api_key:
+				self.params[ 'key' ] = self.api_key
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
-			
 			self.payload = self.response.json( )
-			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
-					'data': self._shape_table( self.payload ),
+					'data': self.shape_table( self.payload ),
 					'raw': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
 			exception.method = (
-					'fetch_data( self, year: str, dataset: str, fields: str, '
-					'geography_for: str="", geography_in: str="", predicates: str="", '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_data( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='variables', year: str='2022',
-			dataset: str='acs/acs5', fields: str='NAME,B01001_001E',
-			geography_for: str='state:*', geography_in: str='',
-			predicates: str='', time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'variables', year: str = '2022',
+			dataset: str = 'acs/acs5', fields: str = 'NAME,B01001_001E',
+			geography_for: str = 'state:*', geography_in: str = '',
+			predicates: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13129,10 +13513,10 @@ class CensusData( Fetcher ):
 				Comma-delimited data fields for data mode.
 
 			geography_for (str):
-				Census `for` clause for data mode.
+				Census for clause for data mode.
 
 			geography_in (str):
-				Optional Census `in` clause for data mode.
+				Optional Census in clause for data mode.
 
 			predicates (str):
 				Optional newline-delimited key=value predicates.
@@ -13143,16 +13527,18 @@ class CensusData( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
-			self.mode = str( mode or 'variables' ).strip( ).lower( )
+			throw_if( 'mode', mode )
+			
+			self.mode = str( mode ).strip( ).lower( )
 			
 			if self.mode == 'variables':
 				return self.fetch_variables(
 					year=year,
 					dataset=dataset,
-					time=int( time ) )
+					time=time
+				)
 			
 			if self.mode == 'data':
 				return self.fetch_data(
@@ -13162,81 +13548,76 @@ class CensusData( Fetcher ):
 					geography_for=geography_for,
 					geography_in=geography_in,
 					predicates=predicates,
-					time=int( time ) )
+					time=time
+				)
 			
-			raise ValueError(
-				"mode must be one of: 'variables', 'data'."
-			)
+			raise ValueError( "Unsupported Census mode. Use 'variables' or 'data'." )
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
 			exception.method = (
-					'fetch( self, mode: str="variables", year: str="2022", '
-					'dataset: str="acs/acs5", fields: str="NAME,B01001_001E", '
-					'geography_for: str="state:*", geography_in: str="", '
-					'predicates: str="", time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
+		'''
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			--------
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
-			___________
-			function (str): Tool function name.
-			tool (str): Service name.
-			description (str): What the function does.
-			parameters (dict): JSON-schema properties.
-			required (list[str]): Required parameter names.
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				Dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
 
 			Returns:
-			________
-			dict
-
-		"""
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
-			if not isinstance( parameters, dict ):
-				raise ValueError(
-					'parameters must be a dict of param_name -> schema definition.'
-				)
-			
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			_schema = {
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required,
+							'required': required
 					}
 			}
-			
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
-			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
-			)
+			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			raise exception
 
 class Socrata( Fetcher ):
@@ -13246,37 +13627,10 @@ class Socrata( Fetcher ):
 		--------
 		Fetches metadata and rows from Socrata-backed open-data portals.
 
-		Attributes:
-		-----------
-		api_key,
-		base_url,
-		domain,
-		dataset_id,
-		mode,
-		select_clause,
-		where_clause,
-		order_clause,
-		group_clause,
-		limit_value,
-		offset_value,
-		params,
-		payload,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
-		_normalize_domain(...): Performs the _normalize_domain operation for this fetcher.
-		_normalize_dataset_id(...): Performs the _normalize_dataset_id operation for this fetcher.
-		fetch_metadata(...): Performs the fetch_metadata operation for this fetcher.
-		fetch_rows(...): Performs the fetch_rows operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
-
 	'''
 	api_key: Optional[ str ]
 	base_url: Optional[ str ]
+	metadata_url: Optional[ str ]
 	domain: Optional[ str ]
 	dataset_id: Optional[ str ]
 	mode: Optional[ str ]
@@ -13288,27 +13642,29 @@ class Socrata( Fetcher ):
 	offset_value: Optional[ int ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
-			-----------
-			Initialize the Socrata API wrapper.
+			--------
+			Initialize the Socrata API fetcher.
 
 			Parameters:
 			-----------
 			None
 
 			Returns:
-			-----------
+			--------
 			None
-
 		'''
 		super( ).__init__( )
-		self.api_key = getattr( cfg, 'SOCRATA_API_KEY', '' )
+		self.api_key = cfg.SOCRATA_API_KEY
 		self.base_url = 'https://{domain}/resource/{dataset}.json'
-		self.domain = 'data.cdc.gov'
-		self.dataset_id = ''
+		self.metadata_url = 'https://{domain}/api/views/{dataset}.json'
+		self.domain = None
+		self.dataset_id = None
 		self.mode = 'rows'
 		self.select_clause = ''
 		self.where_clause = ''
@@ -13317,17 +13673,24 @@ class Socrata( Fetcher ):
 		self.limit_value = 25
 		self.offset_value = 0
 		self.params = { }
-		self.payload = [ ]
+		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
+		self.timeout = 20
+		self.agents = cfg.AGENTS
 		self.headers = {
 				'Accept': 'application/json',
-				'User-Agent': cfg.AGENTS,
+				'User-Agent': self.agents
 		}
-		self.timeout = 20
+		
+		if self.api_key:
+			self.headers[ 'X-App-Token' ] = self.api_key
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
 			Purpose:
-			-----------
+			--------
 			Return ordered Socrata members.
 
 			Parameters:
@@ -13335,13 +13698,13 @@ class Socrata( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			List[str]
-
 		'''
 		return [
 				'api_key',
 				'base_url',
+				'metadata_url',
 				'domain',
 				'dataset_id',
 				'mode',
@@ -13353,93 +13716,153 @@ class Socrata( Fetcher ):
 				'offset_value',
 				'params',
 				'payload',
-				'_resolve_api_key',
-				'_normalize_domain',
-				'_normalize_dataset_id',
+				'result',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'normalize_domain',
+				'normalize_dataset_id',
+				'validate_limit',
+				'validate_offset',
 				'fetch_metadata',
 				'fetch_rows',
 				'fetch',
-				'create_schema',
+				'create_schema'
 		]
 	
-	def _resolve_api_key( self ) -> Optional[ str ]:
+	def normalize_domain( self, domain: str ) -> str:
 		'''
 			Purpose:
-			-----------
-			Resolve the configured Socrata application token.
+			--------
+			Normalize a Socrata portal domain.
 
 			Parameters:
 			-----------
-			None
+			domain (str):
+				Socrata portal domain such as data.cdc.gov.
 
 			Returns:
-			-----------
-			Optional[str]
-
-		'''
-		key = str( self.api_key or '' ).strip( )
-		return key if key else None
-	
-	def _normalize_domain( self, domain: str ) -> str:
-		'''
-			Purpose:
-			-----------
-			Normalize the Socrata domain.
-
-			Parameters:
-			-----------
-			domain (str): Domain such as data.cdc.gov.
-
-			Returns:
-			-----------
+			--------
 			str
-
 		'''
 		try:
 			throw_if( 'domain', domain )
+			
 			value = str( domain ).strip( )
 			value = value.replace( 'https://', '' ).replace( 'http://', '' ).strip( '/' )
-			if not value:
-				raise ValueError( "Argument 'domain' cannot be empty!" )
+			
+			if not value or '.' not in value:
+				raise ValueError( 'domain must be a valid Socrata portal domain.' )
+			
 			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Socrata'
-			exception.method = '_normalize_domain( self, domain: str ) -> str'
+			exception.method = 'normalize_domain( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _normalize_dataset_id( self, dataset_id: str ) -> str:
+	def normalize_dataset_id( self, dataset_id: str ) -> str:
 		'''
 			Purpose:
-			-----------
-			Normalize the Socrata dataset identifier.
+			--------
+			Normalize a Socrata 4x4 dataset identifier.
 
 			Parameters:
 			-----------
-			dataset_id (str): 4x4 dataset identifier.
+			dataset_id (str):
+				Socrata dataset identifier such as q8xq-ygsk.
 
 			Returns:
-			-----------
+			--------
 			str
-
 		'''
 		try:
 			throw_if( 'dataset_id', dataset_id )
+			
 			value = str( dataset_id ).strip( )
 			value = value.replace( '.json', '' ).strip( '/' )
+			
 			if not value:
-				raise ValueError( "Argument 'dataset_id' cannot be empty!" )
+				raise ValueError( 'dataset_id cannot be empty.' )
+			
 			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Socrata'
-			exception.method = '_normalize_dataset_id( self, dataset_id: str ) -> str'
+			exception.method = 'normalize_dataset_id( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_limit( self, limit: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a Socrata row limit.
+
+			Parameters:
+			-----------
+			limit (int):
+				Requested row limit.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'limit', limit )
+			
+			value = int( limit )
+			if value < 1 or value > 50000:
+				raise ValueError( 'limit must be between 1 and 50000.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Socrata'
+			exception.method = 'validate_limit( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_offset( self, offset: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a Socrata row offset.
+
+			Parameters:
+			-----------
+			offset (int):
+				Requested row offset.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			if offset is None:
+				raise ValueError( 'offset cannot be None.' )
+			
+			value = int( offset )
+			if value < 0:
+				raise ValueError( 'offset must be greater than or equal to 0.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Socrata'
+			exception.method = 'validate_offset( self, *args, **kwargs ) -> int'
 			raise exception
 	
 	def fetch_metadata( self, domain: str, dataset_id: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13459,46 +13882,57 @@ class Socrata( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'time', time )
+			
 			self.mode = 'metadata'
-			self.domain = self._normalize_domain( domain )
-			self.dataset_id = self._normalize_dataset_id( dataset_id )
-			self.url = f'https://{self.domain}/api/views/{self.dataset_id}.json'
+			self.domain = self.normalize_domain( domain )
+			self.dataset_id = self.normalize_dataset_id( dataset_id )
+			self.timeout = int( time )
+			self.url = self.metadata_url.format(
+				domain=self.domain,
+				dataset=self.dataset_id
+			)
 			self.params = { }
 			
-			api_key = self._resolve_api_key( )
-			if api_key:
-				self.headers[ 'X-App-Token' ]=api_key
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			if self.api_key:
+				self.headers[ 'X-App-Token' ] = self.api_key
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
-			return {
+			self.payload = self.response.json( )
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
-					'data': self.response.json( ),
+					'data': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Socrata'
 			exception.method = (
-					'fetch_metadata( self, domain: str, dataset_id: str, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_metadata( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_rows( self, domain: str, dataset_id: str, select: str='',
-			where: str='', order: str='', group: str='',
-			limit: int=25, offset: int=0,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_rows( self, domain: str, dataset_id: str, select: str = '',
+			where: str = '', order: str = '', group: str = '',
+			limit: int = 25, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13525,10 +13959,10 @@ class Socrata( Fetcher ):
 				Optional $group clause.
 
 			limit (int):
-				Optional row limit.
+				Row limit.
 
 			offset (int):
-				Optional offset for pagination.
+				Offset for pagination.
 
 			time (int):
 				Request timeout in seconds.
@@ -13536,75 +13970,80 @@ class Socrata( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'time', time )
+			
 			self.mode = 'rows'
-			self.domain = self._normalize_domain( domain )
-			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.domain = self.normalize_domain( domain )
+			self.dataset_id = self.normalize_dataset_id( dataset_id )
 			self.select_clause = str( select or '' ).strip( )
 			self.where_clause = str( where or '' ).strip( )
 			self.order_clause = str( order or '' ).strip( )
 			self.group_clause = str( group or '' ).strip( )
-			self.limit_value = int( limit )
-			self.offset_value = int( offset )
+			self.limit_value = self.validate_limit( limit )
+			self.offset_value = self.validate_offset( offset )
+			self.timeout = int( time )
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
 			self.url = self.base_url.format(
 				domain=self.domain,
-				dataset=self.dataset_id )
-			
+				dataset=self.dataset_id
+			)
 			self.params = {
 					'$limit': self.limit_value,
 					'$offset': self.offset_value,
 			}
 			
 			if self.select_clause:
-				self.params[ '$select' ]=self.select_clause
+				self.params[ '$select' ] = self.select_clause
 			
 			if self.where_clause:
-				self.params[ '$where' ]=self.where_clause
+				self.params[ '$where' ] = self.where_clause
 			
 			if self.order_clause:
-				self.params[ '$order' ]=self.order_clause
+				self.params[ '$order' ] = self.order_clause
 			
 			if self.group_clause:
-				self.params[ '$group' ]=self.group_clause
+				self.params[ '$group' ] = self.group_clause
 			
-			api_key = self._resolve_api_key( )
-			if api_key:
-				self.headers[ 'X-App-Token' ]=api_key
+			if self.api_key:
+				self.headers[ 'X-App-Token' ] = self.api_key
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			self.payload = self.response.json( )
-			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
 					'count': len( self.payload ) if isinstance( self.payload, list ) else 0,
 					'data': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Socrata'
 			exception.method = (
-					'fetch_rows( self, domain: str, dataset_id: str, select: str="", '
-					'where: str="", order: str="", group: str="", limit: int=25, '
-					'offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_rows( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='rows', domain: str='data.cdc.gov',
-			dataset_id: str='', select: str='', where: str='',
-			order: str='', group: str='', limit: int=25,
-			offset: int=0, time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'rows', domain: str = 'data.cdc.gov',
+			dataset_id: str = '', select: str = '', where: str = '',
+			order: str = '', group: str = '', limit: int = 25,
+			offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13634,10 +14073,10 @@ class Socrata( Fetcher ):
 				Optional $group clause.
 
 			limit (int):
-				Optional row limit.
+				Row limit.
 
 			offset (int):
-				Optional row offset.
+				Row offset.
 
 			time (int):
 				Request timeout in seconds.
@@ -13645,18 +14084,20 @@ class Socrata( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
-			active_mode = str( mode or 'rows' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'metadata':
+			self.mode = str( mode or 'rows' ).strip( ).lower( )
+			
+			if self.mode == 'metadata':
 				return self.fetch_metadata(
 					domain=domain,
 					dataset_id=dataset_id,
-					time=int( time ) )
+					time=time
+				)
 			
-			if active_mode == 'rows':
+			if self.mode == 'rows':
 				return self.fetch_rows(
 					domain=domain,
 					dataset_id=dataset_id,
@@ -13664,80 +14105,79 @@ class Socrata( Fetcher ):
 					where=where,
 					order=order,
 					group=group,
-					limit=int( limit ),
-					offset=int( offset ),
-					time=int( time ) )
+					limit=limit,
+					offset=offset,
+					time=time
+				)
 			
-			raise ValueError( "mode must be one of: 'metadata', 'rows'." )
+			raise ValueError( "Unsupported Socrata mode. Use 'metadata' or 'rows'." )
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Socrata'
 			exception.method = (
-					'fetch( self, mode: str="rows", domain: str="data.cdc.gov", '
-					'dataset_id: str="", select: str="", where: str="", order: str="", '
-					'group: str="", limit: int=25, offset: int=0, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""
+		'''
 			Purpose:
-			________
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			--------
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
-			___________
-			function (str): Tool function name.
-			tool (str): Service name.
-			description (str): What the function does.
-			parameters (dict): JSON-schema properties.
-			required (list[str]): Required parameter names.
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				Dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
 
 			Returns:
-			________
-			dict
-
-		"""
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
-			if not isinstance( parameters, dict ):
-				raise ValueError(
-					'parameters must be a dict of param_name -> schema definition.'
-				)
-			
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			_schema = {
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required,
+							'required': required
 					}
 			}
-			
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Socrata'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -13748,37 +14188,10 @@ class HealthData( Fetcher ):
 		--------
 		Fetches metadata and rows from HealthData.gov Socrata datasets.
 
-		Attributes:
-		-----------
-		api_key,
-		base_url,
-		domain,
-		dataset_id,
-		mode,
-		select_clause,
-		where_clause,
-		order_clause,
-		group_clause,
-		limit_value,
-		offset_value,
-		params,
-		payload,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		_resolve_api_key(...): Performs the _resolve_api_key operation for this fetcher.
-		_normalize_domain(...): Performs the _normalize_domain operation for this fetcher.
-		_normalize_dataset_id(...): Performs the _normalize_dataset_id operation for this fetcher.
-		fetch_metadata(...): Performs the fetch_metadata operation for this fetcher.
-		fetch_rows(...): Performs the fetch_rows operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
-
 	'''
 	api_key: Optional[ str ]
 	base_url: Optional[ str ]
+	metadata_url: Optional[ str ]
 	domain: Optional[ str ]
 	dataset_id: Optional[ str ]
 	mode: Optional[ str ]
@@ -13790,11 +14203,13 @@ class HealthData( Fetcher ):
 	offset_value: Optional[ int ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Initialize the HealthData.gov API wrapper.
 
 			Parameters:
@@ -13802,13 +14217,13 @@ class HealthData( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			None
-
 		'''
 		super( ).__init__( )
-		self.api_key = getattr( cfg, 'HEALTHDATA_API_KEY', '' )
+		self.api_key = cfg.HEALTHDATA_API_KEY
 		self.base_url = 'https://{domain}/resource/{dataset}.json'
+		self.metadata_url = 'https://{domain}/api/views/{dataset}.json'
 		self.domain = 'healthdata.gov'
 		self.dataset_id = ''
 		self.mode = 'rows'
@@ -13820,16 +14235,23 @@ class HealthData( Fetcher ):
 		self.offset_value = 0
 		self.params = { }
 		self.payload = [ ]
+		self.result = { }
+		self.response = None
+		self.url = None
+		self.timeout = 20
+		self.agents = cfg.AGENTS
 		self.headers = {
 				'Accept': 'application/json',
-				'User-Agent': cfg.AGENTS,
+				'User-Agent': self.agents,
 		}
-		self.timeout = 20
+		
+		if self.api_key:
+			self.headers[ 'X-App-Token' ] = self.api_key
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
 			Purpose:
-			-----------
+			--------
 			Return ordered HealthData members.
 
 			Parameters:
@@ -13837,13 +14259,13 @@ class HealthData( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			List[str]
-
 		'''
 		return [
 				'api_key',
 				'base_url',
+				'metadata_url',
 				'domain',
 				'dataset_id',
 				'mode',
@@ -13855,95 +14277,153 @@ class HealthData( Fetcher ):
 				'offset_value',
 				'params',
 				'payload',
-				'_resolve_api_key',
-				'_normalize_domain',
-				'_normalize_dataset_id',
+				'result',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'normalize_domain',
+				'normalize_dataset_id',
+				'validate_limit',
+				'validate_offset',
 				'fetch_metadata',
 				'fetch_rows',
 				'fetch',
-				'create_schema',
+				'create_schema'
 		]
 	
-	def _resolve_api_key( self ) -> Optional[ str ]:
+	def normalize_domain( self, domain: str ) -> str:
 		'''
 			Purpose:
-			-----------
-			Resolve the configured HealthData.gov application token.
-
-			Parameters:
-			-----------
-			None
-
-			Returns:
-			-----------
-			Optional[str]
-
-		'''
-		key = str( self.api_key or '' ).strip( )
-		return key if key else None
-	
-	def _normalize_domain( self, domain: str ) -> str:
-		'''
-			Purpose:
-			-----------
-			Normalize the HealthData.gov domain.
+			--------
+			Normalize a HealthData.gov Socrata portal domain.
 
 			Parameters:
 			-----------
 			domain (str):
-				Domain such as healthdata.gov.
+				Socrata portal domain, usually healthdata.gov.
 
 			Returns:
-			-----------
+			--------
 			str
-
 		'''
 		try:
 			throw_if( 'domain', domain )
+			
 			value = str( domain ).strip( )
 			value = value.replace( 'https://', '' ).replace( 'http://', '' ).strip( '/' )
-			if not value:
-				raise ValueError( "Argument 'domain' cannot be empty!" )
+			
+			if not value or '.' not in value:
+				raise ValueError( 'domain must be a valid HealthData.gov portal domain.' )
+			
 			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'HealthData'
-			exception.method = '_normalize_domain( self, domain: str ) -> str'
+			exception.method = 'normalize_domain( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _normalize_dataset_id( self, dataset_id: str ) -> str:
+	def normalize_dataset_id( self, dataset_id: str ) -> str:
 		'''
 			Purpose:
-			-----------
-			Normalize the HealthData.gov dataset identifier.
+			--------
+			Normalize a HealthData.gov Socrata dataset identifier.
 
 			Parameters:
 			-----------
 			dataset_id (str):
-				Dataset identifier.
+				Socrata dataset identifier.
 
 			Returns:
-			-----------
+			--------
 			str
-
 		'''
 		try:
 			throw_if( 'dataset_id', dataset_id )
+			
 			value = str( dataset_id ).strip( )
 			value = value.replace( '.json', '' ).strip( '/' )
+			
 			if not value:
-				raise ValueError( "Argument 'dataset_id' cannot be empty!" )
+				raise ValueError( 'dataset_id cannot be empty.' )
+			
 			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'HealthData'
-			exception.method = '_normalize_dataset_id( self, dataset_id: str ) -> str'
+			exception.method = 'normalize_dataset_id( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_limit( self, limit: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a HealthData.gov row limit.
+
+			Parameters:
+			-----------
+			limit (int):
+				Requested row limit.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'limit', limit )
+			
+			value = int( limit )
+			if value < 1 or value > 50000:
+				raise ValueError( 'limit must be between 1 and 50000.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HealthData'
+			exception.method = 'validate_limit( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_offset( self, offset: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a HealthData.gov row offset.
+
+			Parameters:
+			-----------
+			offset (int):
+				Requested row offset.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			if offset is None:
+				raise ValueError( 'offset cannot be None.' )
+			
+			value = int( offset )
+			if value < 0:
+				raise ValueError( 'offset must be greater than or equal to 0.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'HealthData'
+			exception.method = 'validate_offset( self, *args, **kwargs ) -> int'
 			raise exception
 	
 	def fetch_metadata( self, domain: str, dataset_id: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -13963,46 +14443,57 @@ class HealthData( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'time', time )
+			
 			self.mode = 'metadata'
-			self.domain = self._normalize_domain( domain )
-			self.dataset_id = self._normalize_dataset_id( dataset_id )
-			self.url = f'https://{self.domain}/api/views/{self.dataset_id}.json'
+			self.domain = self.normalize_domain( domain )
+			self.dataset_id = self.normalize_dataset_id( dataset_id )
+			self.timeout = int( time )
+			self.url = self.metadata_url.format(
+				domain=self.domain,
+				dataset=self.dataset_id
+			)
 			self.params = { }
 			
-			api_key = self._resolve_api_key( )
-			if api_key:
-				self.headers[ 'X-App-Token' ]=api_key
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			if self.api_key:
+				self.headers[ 'X-App-Token' ] = self.api_key
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
-			return {
+			self.payload = self.response.json( )
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
-					'data': self.response.json( ),
+					'data': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'HealthData'
 			exception.method = (
-					'fetch_metadata( self, domain: str, dataset_id: str, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_metadata( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_rows( self, domain: str, dataset_id: str, select: str='',
-			where: str='', order: str='', group: str='',
-			limit: int=25, offset: int=0,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_rows( self, domain: str, dataset_id: str, select: str = '',
+			where: str = '', order: str = '', group: str = '',
+			limit: int = 25, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -14040,75 +14531,80 @@ class HealthData( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'time', time )
+			
 			self.mode = 'rows'
-			self.domain = self._normalize_domain( domain )
-			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.domain = self.normalize_domain( domain )
+			self.dataset_id = self.normalize_dataset_id( dataset_id )
 			self.select_clause = str( select or '' ).strip( )
 			self.where_clause = str( where or '' ).strip( )
 			self.order_clause = str( order or '' ).strip( )
 			self.group_clause = str( group or '' ).strip( )
-			self.limit_value = int( limit )
-			self.offset_value = int( offset )
+			self.limit_value = self.validate_limit( limit )
+			self.offset_value = self.validate_offset( offset )
+			self.timeout = int( time )
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
 			self.url = self.base_url.format(
 				domain=self.domain,
-				dataset=self.dataset_id )
-			
+				dataset=self.dataset_id
+			)
 			self.params = {
 					'$limit': self.limit_value,
 					'$offset': self.offset_value,
 			}
 			
 			if self.select_clause:
-				self.params[ '$select' ]=self.select_clause
+				self.params[ '$select' ] = self.select_clause
 			
 			if self.where_clause:
-				self.params[ '$where' ]=self.where_clause
+				self.params[ '$where' ] = self.where_clause
 			
 			if self.order_clause:
-				self.params[ '$order' ]=self.order_clause
+				self.params[ '$order' ] = self.order_clause
 			
 			if self.group_clause:
-				self.params[ '$group' ]=self.group_clause
+				self.params[ '$group' ] = self.group_clause
 			
-			api_key = self._resolve_api_key( )
-			if api_key:
-				self.headers[ 'X-App-Token' ]=api_key
+			if self.api_key:
+				self.headers[ 'X-App-Token' ] = self.api_key
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			self.payload = self.response.json( )
-			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
 					'count': len( self.payload ) if isinstance( self.payload, list ) else 0,
 					'data': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'HealthData'
 			exception.method = (
-					'fetch_rows( self, domain: str, dataset_id: str, select: str="", '
-					'where: str="", order: str="", group: str="", limit: int=25, '
-					'offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_rows( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='rows', domain: str='healthdata.gov',
-			dataset_id: str='', select: str='', where: str='',
-			order: str='', group: str='', limit: int=25,
-			offset: int=0, time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'rows', domain: str = 'healthdata.gov',
+			dataset_id: str = '', select: str = '', where: str = '',
+			order: str = '', group: str = '', limit: int = 25,
+			offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -14149,18 +14645,20 @@ class HealthData( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
-			active_mode = str( mode or 'rows' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'metadata':
+			self.mode = str( mode or 'rows' ).strip( ).lower( )
+			
+			if self.mode == 'metadata':
 				return self.fetch_metadata(
 					domain=domain,
 					dataset_id=dataset_id,
-					time=int( time ) )
+					time=time
+				)
 			
-			if active_mode == 'rows':
+			if self.mode == 'rows':
 				return self.fetch_rows(
 					domain=domain,
 					dataset_id=dataset_id,
@@ -14168,20 +14666,19 @@ class HealthData( Fetcher ):
 					where=where,
 					order=order,
 					group=group,
-					limit=int( limit ),
-					offset=int( offset ),
-					time=int( time ) )
+					limit=limit,
+					offset=offset,
+					time=time
+				)
 			
-			raise ValueError( "mode must be one of: 'metadata', 'rows'." )
+			raise ValueError( "Unsupported HealthData mode. Use 'metadata' or 'rows'." )
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'HealthData'
 			exception.method = (
-					'fetch( self, mode: str="rows", domain: str="healthdata.gov", '
-					'dataset_id: str="", select: str="", where: str="", order: str="", '
-					'group: str="", limit: int=25, offset: int=0, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -14190,30 +14687,29 @@ class HealthData( Fetcher ):
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				Tool function name.
+				The function name exposed to the LLM.
 
 			tool (str):
-				Service name.
+				The underlying system or service the function wraps.
 
 			description (str):
-				Description of what the tool does.
+				Precise explanation of what the function does.
 
 			parameters (dict):
-				JSON-schema properties.
+				Dictionary defining parameter names and JSON schema descriptors.
 
 			required (list[str]):
-				Required parameter names.
+				List of required parameter names.
 
 			Returns:
-			-----------
+			--------
 			Dict[str, str] | None
-
 		'''
 		try:
 			throw_if( 'function', function )
@@ -14221,78 +14717,55 @@ class HealthData( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
-			if not isinstance( parameters, dict ):
-				raise ValueError(
-					'parameters must be a dict of param_name -> schema definition.'
-				)
-			
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			_schema = {
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required,
+							'required': required
 					}
 			}
-			
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'HealthData'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
 class GlobalHealthData( Fetcher ):
 	'''
-	
+
 		Purpose:
 		--------
-		Fetches United Nations SDMX catalog and query data.
-	
-		Attributes:
-		-----------
-		base_url,
-		catalog_url,
-		mode,
-		query_path,
-		params,
-		payload,
-	
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		_normalize_query_path(...): Performs the _normalize_query_path operation for this fetcher.
-		fetch_datasets(...): Performs the fetch_datasets operation for this fetcher.
-		fetch_sdmx_query(...): Performs the fetch_sdmx_query operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
-	
+		Fetches WHO Global Health Observatory indicator registry and Athena/OData
+		query-path responses.
+
 	'''
 	api_key: Optional[ str ]
 	base_url: Optional[ str ]
 	athena_base_url: Optional[ str ]
 	mode: Optional[ str ]
 	query_path: Optional[ str ]
+	fmt: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Initialize the WHO Global Health Observatory API wrapper.
 
 			Parameters:
@@ -14300,98 +14773,110 @@ class GlobalHealthData( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			None
-
 		'''
 		super( ).__init__( )
-		self.api_key = getattr( cfg, 'WHO_API_KEY', '' )
+		self.api_key = cfg.WHO_API_KEY
 		self.base_url = 'https://www.who.int/data/gho'
 		self.athena_base_url = 'https://ghoapi.azureedge.net/api'
 		self.mode = 'indicator_registry'
 		self.query_path = ''
+		self.fmt = 'json'
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
+		self.timeout = 20
+		self.agents = cfg.AGENTS
 		self.headers = {
 				'Accept': 'application/json',
-				'User-Agent': cfg.AGENTS,
+				'User-Agent': self.agents,
 		}
-		self.timeout = 20
+		
+		if self.api_key:
+			self.headers[ 'X-API-Key' ] = self.api_key
 	
 	def __dir__( self ) -> List[ str ]:
+		'''
+			Purpose:
+			--------
+			Return ordered GlobalHealthData members.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			List[str]
+		'''
 		return [
 				'api_key',
 				'base_url',
 				'athena_base_url',
 				'mode',
 				'query_path',
+				'fmt',
 				'params',
 				'payload',
-				'_resolve_api_key',
-				'_normalize_query_path',
+				'result',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'normalize_query_path',
 				'fetch_indicator_registry',
 				'fetch_athena',
 				'fetch',
-				'create_schema',
+				'create_schema'
 		]
 	
-	def _resolve_api_key( self ) -> Optional[ str ]:
+	def normalize_query_path( self, query_path: str ) -> str:
 		'''
+			Purpose:
+			--------
+			Normalize a WHO GHO Athena/OData query path.
 
-			Purpose:
-			--------
-			Fetch a NASA GIBS Mercator map image and render it through the provided
-			Cartopy coordinate reference system module.
-		
 			Parameters:
 			-----------
-			ccrs (Any | None): Optional Cartopy coordinate reference system module used
-			to project and render the returned map image.
-		
+			query_path (str):
+				Path appended after the WHO GHO API base endpoint.
+
 			Returns:
 			--------
-			Any | None: The rendered map result or None when the request fails.
-		
-		'''
-		key = str( self.api_key or '' ).strip( )
-		return key if key else None
-	
-	def _normalize_query_path( self, query_path: str ) -> str:
-		'''
-		
-			Purpose:
-			--------
-			Normalize a Global Health query path by trimming whitespace and removing
-			leading path separators before composing a request URL.
-		
-			Parameters:
-			-----------
-			query_path (str): Raw Global Health query path supplied by the caller.
-		
-			Returns:
-			--------
-			str: Normalized query path suitable for request URL composition.
-		
+			str
 		'''
 		try:
 			throw_if( 'query_path', query_path )
-			value = str( query_path ).strip( )
-			value = value.lstrip( '/' )
+			
+			value = str( query_path ).strip( ).lstrip( '/' )
+			
 			if not value:
 				raise ValueError( "Argument 'query_path' cannot be empty!" )
+			
+			if value.startswith( 'http://' ) or value.startswith( 'https://' ):
+				raise ValueError( 'query_path must be a path segment, not a full URL.' )
+			
+			if '..' in value:
+				raise ValueError( 'query_path cannot contain parent-directory markers.' )
+			
 			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GlobalHealthData'
-			exception.method = '_normalize_query_path( self, query_path: str ) -> str'
+			exception.method = 'normalize_query_path( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def fetch_indicator_registry( self, time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_indicator_registry( self, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch the WHO indicator metadata registry landing content.
+			Fetch the WHO Global Health Observatory indicator metadata registry page.
 
 			Parameters:
 			-----------
@@ -14401,22 +14886,27 @@ class GlobalHealthData( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'time', time )
+			
 			self.mode = 'indicator_registry'
+			self.timeout = int( time )
 			self.url = f'{self.base_url}/indicator-metadata-registry'
 			self.params = { }
 			
-			api_key = self._resolve_api_key( )
-			if api_key:
-				self.headers[ 'X-API-Key' ]=api_key
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			if self.api_key:
+				self.headers[ 'X-API-Key' ] = self.api_key
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
@@ -14428,24 +14918,27 @@ class GlobalHealthData( Fetcher ):
 						'html': self.response.text,
 				}
 			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
 					'data': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GlobalHealthData'
 			exception.method = (
-					'fetch_indicator_registry( self, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_indicator_registry( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_athena( self, query_path: str, fmt: str='json',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_athena( self, query_path: str, fmt: str = 'json',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -14454,10 +14947,11 @@ class GlobalHealthData( Fetcher ):
 			Parameters:
 			-----------
 			query_path (str):
-				The path segment to append after the base WHO API endpoint.
+				Path segment appended after the WHO GHO API base endpoint.
 
 			fmt (str):
-				Response format hint, typically json or xml.
+				Response format hint, typically json, xml, csv, csv&profile=text, or
+				csv&profile=verbose.
 
 			time (int):
 				Request timeout in seconds.
@@ -14465,26 +14959,33 @@ class GlobalHealthData( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'query_path', query_path )
+			throw_if( 'time', time )
+			
 			self.mode = 'athena'
-			self.query_path = self._normalize_query_path( query_path )
+			self.query_path = self.normalize_query_path( query_path )
+			self.fmt = str( fmt or 'json' ).strip( )
+			self.timeout = int( time )
 			self.url = f'{self.athena_base_url}/{self.query_path}'
 			self.params = { }
 			
-			if str( fmt or '' ).strip( ):
-				self.params[ '$format' ]=str( fmt ).strip( )
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
-			api_key = self._resolve_api_key( )
-			if api_key:
-				self.headers[ 'X-API-Key' ]=api_key
+			if self.fmt:
+				self.params[ '$format' ] = self.fmt
+			
+			if self.api_key:
+				self.headers[ 'X-API-Key' ] = self.api_key
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
@@ -14496,24 +14997,26 @@ class GlobalHealthData( Fetcher ):
 						'text': self.response.text,
 				}
 			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
 					'data': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GlobalHealthData'
 			exception.method = (
-					'fetch_athena( self, query_path: str, fmt: str="json", '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_athena( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='indicator_registry', query_path: str='',
-			fmt: str='json', time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'indicator_registry', query_path: str = '',
+			fmt: str = 'json', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -14525,7 +15028,7 @@ class GlobalHealthData( Fetcher ):
 				One of indicator_registry or athena.
 
 			query_path (str):
-				Query path for athena mode.
+				Query path for Athena/OData mode.
 
 			fmt (str):
 				Response format hint.
@@ -14536,73 +15039,95 @@ class GlobalHealthData( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
-			active_mode = str( mode or 'indicator_registry' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'indicator_registry':
+			self.mode = str( mode or 'indicator_registry' ).strip( ).lower( )
+			
+			if self.mode == 'indicator_registry':
 				return self.fetch_indicator_registry(
-					time=int( time ) )
+					time=time
+				)
 			
-			if active_mode == 'athena':
+			if self.mode == 'athena':
 				return self.fetch_athena(
 					query_path=query_path,
 					fmt=fmt,
-					time=int( time ) )
+					time=time
+				)
 			
 			raise ValueError(
-				"mode must be one of: 'indicator_registry', 'athena'."
+				"Unsupported WHO Global Health mode. Use 'indicator_registry' or "
+				"'athena'."
 			)
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GlobalHealthData'
 			exception.method = (
-					'fetch( self, mode: str="indicator_registry", query_path: str="", '
-					'fmt: str="json", time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
+		'''
+			Purpose:
+			--------
+			Construct and return a dynamic OpenAI Tool API schema definition.
+
+			Parameters:
+			-----------
+			function (str):
+				The function name exposed to the LLM.
+
+			tool (str):
+				The underlying system or service the function wraps.
+
+			description (str):
+				Precise explanation of what the function does.
+
+			parameters (dict):
+				Dictionary defining parameter names and JSON schema descriptors.
+
+			required (list[str]):
+				List of required parameter names.
+
+			Returns:
+			--------
+			Dict[str, str] | None
+		'''
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
-			if not isinstance( parameters, dict ):
-				raise ValueError(
-					'parameters must be a dict of param_name -> schema definition.'
-				)
-			
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			_schema = {
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required,
+							'required': required
 					}
 			}
-			
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'GlobalHealthData'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
