@@ -19133,18 +19133,16 @@ elif mode == 'Demographic':
 				st.session_state[ 'pubmed_max_docs' ] = 5
 				st.session_state[ 'pubmed_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				pubmed_query = st.text_input(
-					'PubMed Query',
+				pubmed_query = st.text_input( 'PubMed Query',
 					value=st.session_state.get( 'pubmed_query', '' ),
 					key='pubmed_query',
 					placeholder='Example: machine learning cancer diagnosis'
 				)
 				
-				pubmed_max_docs = st.number_input(
-					'Max Documents',
+				pubmed_max_docs = st.number_input( 'Max Documents',
 					min_value=1,
 					max_value=100,
 					value=int( st.session_state.get( 'pubmed_max_docs', 5 ) ),
@@ -19456,10 +19454,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'open_city_id' ] = 'data.sfgov.org'
 			
 			if st.session_state.get( 'open_city_id', 'data.sfgov.org' ) in OPEN_CITY_DOMAINS:
-				default_open_city_choice = st.session_state.get(
-					'open_city_id',
-					'data.sfgov.org'
-				)
+				default_open_city_choice = st.session_state.get( 'open_city_id', 'data.sfgov.org' )
 			else:
 				default_open_city_choice = 'Other'
 			
@@ -19491,11 +19486,10 @@ elif mode == 'Demographic':
 				st.session_state[ 'open_city_limit' ] = 100
 				st.session_state[ 'open_city_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				open_city_choice = st.selectbox(
-					'City ID',
+				open_city_choice = st.selectbox( 'City ID',
 					options=OPEN_CITY_DOMAINS,
 					index=OPEN_CITY_DOMAINS.index(
 						st.session_state.get( 'open_city_choice', 'data.sfgov.org' )
