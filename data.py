@@ -54,25 +54,28 @@ import chromadb
 from chromadb.config import Settings
 import config as cfg
 
-def throw_if( name: str, value: Any ) -> None:
-	'''
-
+def throw_if( name: str, value: object ) -> None:
+	"""
+	
 		Purpose:
-		-----------
-		Simple guard which raises ValueError when `value` is falsy (None, empty).
-
+		--------
+		Validate that a required value is not empty.
+		
 		Parameters:
 		-----------
-		name (str): Variable name used in the raised message.
-		value (Any): Value to validate.
-
+		name (str): Name of the argument being validated.
+		value (object): Value to validate.
+		
 		Returns:
-		-----------
-		None: Raises ValueError when `value` is falsy.
-
-	'''
+		--------
+		None
+		
+	"""
 	if value is None:
-		raise ValueError( f"Argument '{name}' cannot be empty!" )
+		raise ValueError( f'Argument "{name}" cannot be None.' )
+	
+	if isinstance( value, str ) and not value.strip( ):
+		raise ValueError( f'Argument "{name}" cannot be empty.' )
 
 class DB( ):
 	'''
