@@ -63,6 +63,7 @@ from astroquery.simbad import Simbad
 from bs4 import BeautifulSoup
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import crawl4ai
+import csv
 from google import genai
 from grokipedia_api import GrokipediaClient
 from langchain_community.retrievers import ArxivRetriever, WikipediaRetriever
@@ -15135,27 +15136,7 @@ class UnitedNations( Fetcher ):
 	'''
 		Purpose:
 		--------
-		Fetch catalog and SDMX query results from the United Nations UNdata API.
-
-		Attribues:
-		-----------
-		base_url - Optional[ str ]
-		catalog_url - Optional[ str ]
-		mode - Optional[ str ]
-		query_path - Optional[ str ]
-		params - Optional[ Dict[ str, Any ] ]
-		payload - Optional[ Any ]
-
-		Methods:
-		-----------
-		_normalize_query_path( query_path: str ) -> str
-		fetch_datasets( time: int=20 ) -> Dict[ str, Any ]
-		fetch_sdmx_query( query_path: str, time: int=20 ) -> Dict[ str, Any ]
-		fetch( mode: str='datasets', query_path: str='', time: int=20 )
-			-> Dict[ str, Any ]
-		create_schema( self, function: str, tool: str, description: str,
-			parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None
-
+		Fetch catalog and SDMX-style query results from United Nations data endpoints.
 	'''
 	base_url: Optional[ str ]
 	catalog_url: Optional[ str ]
@@ -15163,39 +15144,44 @@ class UnitedNations( Fetcher ):
 	query_path: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
-			-----------
-			Initialize the United Nations UNdata API wrapper.
+			--------
+			Initialize the United Nations data wrapper.
 
 			Parameters:
 			-----------
 			None
 
 			Returns:
-			-----------
+			--------
 			None
-
 		'''
 		super( ).__init__( )
-		self.base_url = 'https://data.un.org/WS/rest'
-		self.catalog_url = 'https://data.un.org/datamartinfo.aspx'
+		self.base_url = 'https://data.un.org/Handlers/DownloadHandler.ashx'
+		self.catalog_url = 'https://data.un.org/Handlers/DownloadHandler.ashx'
 		self.mode = 'datasets'
 		self.query_path = ''
 		self.params = { }
 		self.payload = { }
-		self.headers = {
-				'Accept': 'application/json, text/xml, application/xml, text/html',
-				'User-Agent': cfg.AGENTS,
-		}
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json, text/json, text/csv, text/xml, */*',
+				'User-Agent': self.agents
+		}
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
 			Purpose:
-			-----------
+			--------
 			Return ordered UnitedNations members.
 
 			Parameters:
@@ -15203,9 +15189,8 @@ class UnitedNations( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			List[str]
-
 		'''
 		return [
 				'base_url',
@@ -15214,48 +15199,62 @@ class UnitedNations( Fetcher ):
 				'query_path',
 				'params',
 				'payload',
-				'_normalize_query_path',
+				'result',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'normalize_query_path',
 				'fetch_datasets',
 				'fetch_sdmx_query',
 				'fetch',
-				'create_schema',
+				'create_schema'
 		]
 	
-	def _normalize_query_path( self, query_path: str ) -> str:
+	def normalize_query_path( self, query_path: str ) -> str:
 		'''
 			Purpose:
-			-----------
-			Normalize the SDMX query path appended to the UNdata REST endpoint.
+			--------
+			Normalize a United Nations SDMX query path.
 
 			Parameters:
 			-----------
 			query_path (str):
-				Path appended after the UNdata REST base endpoint.
+				Path or query fragment supplied by the user interface.
 
 			Returns:
-			-----------
+			--------
 			str
-
 		'''
 		try:
 			throw_if( 'query_path', query_path )
-			value = str( query_path ).strip( )
-			value = value.lstrip( '/' )
+			
+			value = str( query_path ).strip( ).lstrip( '/' )
+			
 			if not value:
-				raise ValueError( "Argument 'query_path' cannot be empty!" )
+				raise ValueError( 'query_path cannot be empty.' )
+			
+			if value.startswith( 'http://' ) or value.startswith( 'https://' ):
+				raise ValueError( 'query_path must be a path segment, not a full URL.' )
+			
+			if '..' in value:
+				raise ValueError( 'query_path cannot contain parent-directory markers.' )
+			
 			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UnitedNations'
-			exception.method = '_normalize_query_path( self, query_path: str ) -> str'
+			exception.method = 'normalize_query_path( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def fetch_datasets( self, time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_datasets( self, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch the UNdata dataset catalog landing page.
+			Fetch United Nations dataset/catalog landing metadata.
 
 			Parameters:
 			-----------
@@ -15265,55 +15264,64 @@ class UnitedNations( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'time', time )
+			
 			self.mode = 'datasets'
+			self.timeout = int( time )
 			self.url = self.catalog_url
 			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
 			
-			if 'application/json' in content_type:
+			if 'application/json' in content_type or 'text/json' in content_type:
 				self.payload = self.response.json( )
 			else:
 				self.payload = {
-						'html': self.response.text,
+						'text': self.response.text
 				}
 			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
-					'data': self.payload,
+					'data': self.payload
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UnitedNations'
 			exception.method = (
-					'fetch_datasets( self, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_datasets( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_sdmx_query( self, query_path: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Execute a REST SDMX query against the UNdata API.
+			Fetch a United Nations SDMX-style query path.
 
 			Parameters:
 			-----------
 			query_path (str):
-				Path appended after the UNdata REST base endpoint.
+				Query path selected or entered in the user interface.
 
 			time (int):
 				Request timeout in seconds.
@@ -15321,11 +15329,18 @@ class UnitedNations( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'query_path', query_path )
+			throw_if( 'time', time )
+			
 			self.mode = 'sdmx_query'
-			self.query_path = self._normalize_query_path( query_path )
+			self.query_path = self.normalize_query_path( query_path )
+			self.timeout = int( time )
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
 			self.url = f'{self.base_url}/{self.query_path}'
 			self.params = { }
 			
@@ -15333,40 +15348,43 @@ class UnitedNations( Fetcher ):
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
 			
-			if 'application/json' in content_type:
+			if 'application/json' in content_type or 'text/json' in content_type:
 				self.payload = self.response.json( )
 			else:
 				self.payload = {
-						'text': self.response.text,
+						'text': self.response.text
 				}
 			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
-					'data': self.payload,
+					'data': self.payload
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UnitedNations'
 			exception.method = (
-					'fetch_sdmx_query( self, query_path: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_sdmx_query( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='datasets', query_path: str='',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'datasets', query_path: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Dispatch United Nations UNdata API operations.
+			Dispatch United Nations data requests.
 
 			Parameters:
 			-----------
@@ -15382,30 +15400,31 @@ class UnitedNations( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
-			active_mode = str( mode or 'datasets' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'datasets':
+			self.mode = str( mode or 'datasets' ).strip( ).lower( )
+			
+			if self.mode == 'datasets':
 				return self.fetch_datasets(
-					time=int( time ) )
+					time=time
+				)
 			
-			if active_mode == 'sdmx_query':
+			if self.mode == 'sdmx_query':
 				return self.fetch_sdmx_query(
 					query_path=query_path,
-					time=int( time ) )
+					time=time
+				)
 			
-			raise ValueError(
-				"mode must be one of: 'datasets', 'sdmx_query'."
-			)
+			raise ValueError( "Unsupported United Nations mode. Use 'datasets' or 'sdmx_query'." )
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UnitedNations'
 			exception.method = (
-					'fetch( self, mode: str="datasets", query_path: str="", '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -15414,30 +15433,29 @@ class UnitedNations( Fetcher ):
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				Tool function name.
+				The function name exposed to the LLM.
 
 			tool (str):
-				Service name.
+				The underlying system or service the function wraps.
 
 			description (str):
-				Description of what the tool does.
+				Precise explanation of what the function does.
 
 			parameters (dict):
-				JSON-schema properties.
+				Dictionary defining parameter names and JSON schema descriptors.
 
 			required (list[str]):
-				Required parameter names.
+				List of required parameter names.
 
 			Returns:
-			-----------
+			--------
 			Dict[str, str] | None
-
 		'''
 		try:
 			throw_if( 'function', function )
@@ -15445,80 +15463,53 @@ class UnitedNations( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
-			if not isinstance( parameters, dict ):
-				raise ValueError(
-					'parameters must be a dict of param_name -> schema definition.'
-				)
-			
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			_schema = {
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required,
+							'required': required
 					}
 			}
-			
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UnitedNations'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
 class WorldPopulation( Fetcher ):
 	'''
-
 		Purpose:
 		--------
-		Fetches WorldPop catalog and raster metadata records.
-
-		Attributes:
-		-----------
-		base_url,
-		stac_url,
-		mode,
-		query_text,
-		asset_path,
-		params,
-		payload,
-
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		_normalize_asset_path(...): Performs the _normalize_asset_path operation for this fetcher.
-		fetch_catalog(...): Performs the fetch_catalog operation for this fetcher.
-		search_catalog(...): Performs the search_catalog operation for this fetcher.
-		fetch_raster_metadata(...): Performs the fetch_raster_metadata operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
-
+		Fetches WorldPop catalog, search, and raster metadata records.
 	'''
 	base_url: Optional[ str ]
 	stac_url: Optional[ str ]
 	mode: Optional[ str ]
 	query_text: Optional[ str ]
 	asset_path: Optional[ str ]
+	page: Optional[ int ]
+	page_size: Optional[ int ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Initialize the WorldPop API wrapper.
 
 			Parameters:
@@ -15526,28 +15517,33 @@ class WorldPopulation( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			None
-
 		'''
 		super( ).__init__( )
-		self.base_url = 'https://api.worldpop.org/v1'
-		self.stac_url = 'https://api.worldpop.org/stac'
+		self.base_url = 'https://www.worldpop.org/rest'
+		self.stac_url = 'https://worldpop.github.io/worldpop-stac'
 		self.mode = 'catalog'
 		self.query_text = ''
 		self.asset_path = ''
+		self.page = 1
+		self.page_size = 25
 		self.params = { }
 		self.payload = { }
-		self.headers = {
-				'Accept': 'application/json, text/html',
-				'User-Agent': cfg.AGENTS,
-		}
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
+		self.agents = cfg.AGENTS
+		self.headers = {
+				'Accept': 'application/json, text/html, text/plain, */*',
+				'User-Agent': self.agents
+		}
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
 			Purpose:
-			-----------
+			--------
 			Return ordered WorldPopulation members.
 
 			Parameters:
@@ -15555,9 +15551,8 @@ class WorldPopulation( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			List[str]
-
 		'''
 		return [
 				'base_url',
@@ -15565,47 +15560,127 @@ class WorldPopulation( Fetcher ):
 				'mode',
 				'query_text',
 				'asset_path',
+				'page',
+				'page_size',
 				'params',
 				'payload',
-				'_normalize_asset_path',
+				'result',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'normalize_asset_path',
+				'validate_page',
+				'validate_page_size',
 				'fetch_catalog',
 				'search_catalog',
 				'fetch_raster_metadata',
 				'fetch',
-				'create_schema',
+				'create_schema'
 		]
 	
-	def _normalize_asset_path( self, asset_path: str ) -> str:
+	def normalize_asset_path( self, asset_path: str ) -> str:
 		'''
 			Purpose:
-			-----------
-			Normalize an asset or metadata path appended to the WorldPop API.
+			--------
+			Normalize a WorldPop metadata or raster asset path.
 
 			Parameters:
 			-----------
 			asset_path (str):
-				Path appended after the API base endpoint.
+				Asset path appended after the WorldPop REST base URL.
 
 			Returns:
-			-----------
+			--------
 			str
-
 		'''
 		try:
 			throw_if( 'asset_path', asset_path )
-			value = str( asset_path ).strip( )
-			value = value.lstrip( '/' )
+			
+			value = str( asset_path ).strip( ).lstrip( '/' )
+			
 			if not value:
 				raise ValueError( "Argument 'asset_path' cannot be empty!" )
+			
+			if value.startswith( 'http://' ) or value.startswith( 'https://' ):
+				raise ValueError( 'asset_path must be a path segment, not a full URL.' )
+			
+			if '..' in value:
+				raise ValueError( 'asset_path cannot contain parent-directory markers.' )
+			
 			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'WorldPopulation'
-			exception.method = '_normalize_asset_path( self, asset_path: str ) -> str'
+			exception.method = 'normalize_asset_path( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def fetch_catalog( self, time: int=20 ) -> Dict[ str, Any ] | None:
+	def validate_page( self, page: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a WorldPop search page number.
+
+			Parameters:
+			-----------
+			page (int):
+				Requested page number.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'page', page )
+			
+			value = int( page )
+			if value < 1:
+				raise ValueError( 'page must be greater than or equal to 1.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'WorldPopulation'
+			exception.method = 'validate_page( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_page_size( self, page_size: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a WorldPop search page size.
+
+			Parameters:
+			-----------
+			page_size (int):
+				Requested page size.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'page_size', page_size )
+			
+			value = int( page_size )
+			if value < 1 or value > 500:
+				raise ValueError( 'page_size must be between 1 and 500.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'WorldPopulation'
+			exception.method = 'validate_page_size( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def fetch_catalog( self, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -15619,18 +15694,24 @@ class WorldPopulation( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'time', time )
+			
 			self.mode = 'catalog'
+			self.timeout = int( time )
 			self.url = self.base_url
 			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
@@ -15639,30 +15720,33 @@ class WorldPopulation( Fetcher ):
 				self.payload = self.response.json( )
 			else:
 				self.payload = {
-						'html': self.response.text,
+						'html': self.response.text
 				}
 			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
-					'data': self.payload,
+					'data': self.payload
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'WorldPopulation'
 			exception.method = (
-					'fetch_catalog( self, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_catalog( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def search_catalog( self, query: str='', page: int=1, page_size: int=25,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def search_catalog( self, query: str = '', page: int = 1, page_size: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Execute a simple WorldPop catalog search request.
+			Execute a WorldPop catalog-style search request.
 
 			Parameters:
 			-----------
@@ -15681,25 +15765,32 @@ class WorldPopulation( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'query', query )
+			throw_if( 'time', time )
+			
 			self.mode = 'search'
 			self.query_text = str( query or '' ).strip( )
+			self.page = self.validate_page( page )
+			self.page_size = self.validate_page_size( page_size )
+			self.timeout = int( time )
 			self.url = f'{self.base_url}/search'
 			self.params = {
-					'page': int( page ),
-					'page_size': int( page_size ),
+					'q': self.query_text,
+					'page': self.page,
+					'page_size': self.page_size
 			}
 			
-			if self.query_text:
-				self.params[ 'q' ]=self.query_text
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
@@ -15708,27 +15799,29 @@ class WorldPopulation( Fetcher ):
 				self.payload = self.response.json( )
 			else:
 				self.payload = {
-						'text': self.response.text,
+						'text': self.response.text
 				}
 			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
-					'data': self.payload,
+					'data': self.payload
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'WorldPopulation'
 			exception.method = (
-					'search_catalog( self, query: str="", page: int=1, '
-					'page_size: int=25, time: int=20 ) -> Dict[ str, Any ]'
+					'search_catalog( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_raster_metadata( self, asset_path: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -15745,19 +15838,26 @@ class WorldPopulation( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
+			throw_if( 'asset_path', asset_path )
+			throw_if( 'time', time )
+			
 			self.mode = 'raster_metadata'
-			self.asset_path = self._normalize_asset_path( asset_path )
+			self.asset_path = self.normalize_asset_path( asset_path )
+			self.timeout = int( time )
 			self.url = f'{self.base_url}/{self.asset_path}'
 			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
@@ -15766,28 +15866,31 @@ class WorldPopulation( Fetcher ):
 				self.payload = self.response.json( )
 			else:
 				self.payload = {
-						'text': self.response.text,
+						'text': self.response.text
 				}
 			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.response.url,
 					'params': self.params,
-					'data': self.payload,
+					'data': self.payload
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'WorldPopulation'
 			exception.method = (
-					'fetch_raster_metadata( self, asset_path: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_raster_metadata( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='catalog', query: str='',
-			asset_path: str='', page: int=1, page_size: int=25,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'catalog', query: str = '',
+			asset_path: str = '', page: int = 1, page_size: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -15816,38 +15919,42 @@ class WorldPopulation( Fetcher ):
 			Returns:
 			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
-			active_mode = str( mode or 'catalog' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'catalog':
+			self.mode = str( mode or 'catalog' ).strip( ).lower( )
+			
+			if self.mode == 'catalog':
 				return self.fetch_catalog(
-					time=int( time ) )
+					time=time
+				)
 			
-			if active_mode == 'search':
+			if self.mode == 'search':
 				return self.search_catalog(
 					query=query,
-					page=int( page ),
-					page_size=int( page_size ),
-					time=int( time ) )
+					page=page,
+					page_size=page_size,
+					time=time
+				)
 			
-			if active_mode == 'raster_metadata':
+			if self.mode == 'raster_metadata':
 				return self.fetch_raster_metadata(
 					asset_path=asset_path,
-					time=int( time ) )
+					time=time
+				)
 			
 			raise ValueError(
-				"mode must be one of: 'catalog', 'search', 'raster_metadata'."
+				"Unsupported World Population mode. Use 'catalog', 'search', "
+				"or 'raster_metadata'."
 			)
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'WorldPopulation'
 			exception.method = (
-					'fetch( self, mode: str="catalog", query: str="", asset_path: str="", '
-					'page: int=1, page_size: int=25, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -15856,30 +15963,29 @@ class WorldPopulation( Fetcher ):
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				Tool function name.
+				The function name exposed to the LLM.
 
 			tool (str):
-				Service name.
+				The underlying system or service the function wraps.
 
 			description (str):
-				Description of what the tool does.
+				Precise explanation of what the function does.
 
 			parameters (dict):
-				JSON-schema properties.
+				Dictionary defining parameter names and JSON schema descriptors.
 
 			required (list[str]):
-				Required parameter names.
+				List of required parameter names.
 
 			Returns:
-			-----------
+			--------
 			Dict[str, str] | None
-
 		'''
 		try:
 			throw_if( 'function', function )
@@ -15887,66 +15993,36 @@ class WorldPopulation( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
-			if not isinstance( parameters, dict ):
-				raise ValueError(
-					'parameters must be a dict of param_name -> schema definition.'
-				)
-			
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			_schema = {
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
+			return {
+					'name': function.strip( ),
+					'description': (
+							f"{description.strip( )} This function uses the "
+							f"{tool.strip( )} service."
+					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required,
+							'required': required
 					}
 			}
-			
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'WorldPopulation'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
 class Wonder( Fetcher ):
 	'''
-	
 		Purpose:
 		--------
-		Builds and submits CDC WONDER query templates.
-	
-		Attributes:
-		-----------
-		base_url,
-		mode,
-		dataset_id,
-		request_xml,
-		params,
-		payload,
-	
-		Methods:
-		--------
-		__init__(...): Performs the __init__ operation for this fetcher.
-		__dir__(...): Performs the __dir__ operation for this fetcher.
-		_normalize_dataset_id(...): Performs the _normalize_dataset_id operation for this fetcher.
-		build_template(...): Performs the build_template operation for this fetcher.
-		fetch_template(...): Performs the fetch_template operation for this fetcher.
-		submit_query(...): Performs the submit_query operation for this fetcher.
-		fetch(...): Performs the fetch operation for this fetcher.
-		create_schema(...): Performs the create_schema operation for this fetcher.
-	
+		Builds and submits CDC WONDER XML query templates.
 	'''
 	base_url: Optional[ str ]
 	mode: Optional[ str ]
@@ -15954,11 +16030,13 @@ class Wonder( Fetcher ):
 	request_xml: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Initialize the CDC WONDER API wrapper.
 
 			Parameters:
@@ -15966,9 +16044,8 @@ class Wonder( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			None
-
 		'''
 		super( ).__init__( )
 		self.base_url = 'https://wonder.cdc.gov/controller/datarequest'
@@ -15977,17 +16054,21 @@ class Wonder( Fetcher ):
 		self.request_xml = ''
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
+		self.timeout = 20
+		self.agents = cfg.AGENTS
 		self.headers = {
 				'Accept': 'application/xml, text/xml, text/plain',
 				'Content-Type': 'application/x-www-form-urlencoded',
-				'User-Agent': cfg.AGENTS,
+				'User-Agent': self.agents,
 		}
-		self.timeout = 20
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
 			Purpose:
-			-----------
+			--------
 			Return ordered Wonder members.
 
 			Parameters:
@@ -15995,9 +16076,8 @@ class Wonder( Fetcher ):
 			None
 
 			Returns:
-			-----------
+			--------
 			List[str]
-
 		'''
 		return [
 				'base_url',
@@ -16006,18 +16086,24 @@ class Wonder( Fetcher ):
 				'request_xml',
 				'params',
 				'payload',
-				'_normalize_dataset_id',
+				'result',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'normalize_dataset_id',
 				'build_template',
 				'fetch_template',
 				'submit_query',
 				'fetch',
-				'create_schema',
+				'create_schema'
 		]
 	
-	def _normalize_dataset_id( self, dataset_id: str ) -> str:
+	def normalize_dataset_id( self, dataset_id: str ) -> str:
 		'''
 			Purpose:
-			-----------
+			--------
 			Normalize the CDC WONDER database identifier.
 
 			Parameters:
@@ -16026,27 +16112,33 @@ class Wonder( Fetcher ):
 				Database identifier such as D76.
 
 			Returns:
-			-----------
+			--------
 			str
-
 		'''
 		try:
 			throw_if( 'dataset_id', dataset_id )
+			
 			value = str( dataset_id ).strip( ).upper( )
-			if not value:
-				raise ValueError( "Argument 'dataset_id' cannot be empty!" )
+			
+			if not re.fullmatch( r'D\d{1,4}', value ):
+				raise ValueError(
+					'CDC WONDER Dataset ID must use the format D followed by digits, '
+					'such as D76.'
+				)
+			
 			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Wonder'
-			exception.method = '_normalize_dataset_id( self, dataset_id: str ) -> str'
+			exception.method = 'normalize_dataset_id( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def build_template( self, dataset_id: str='D76' ) -> str:
+	def build_template( self, dataset_id: str = 'D76' ) -> str:
 		'''
 			Purpose:
-			-----------
+			--------
 			Build a starter XML request document for a CDC WONDER query.
 
 			Parameters:
@@ -16055,14 +16147,12 @@ class Wonder( Fetcher ):
 				Database identifier such as D76.
 
 			Returns:
-			-----------
+			--------
 			str
-
 		'''
 		try:
-			self.dataset_id = self._normalize_dataset_id( dataset_id )
-			
-			return (
+			self.dataset_id = self.normalize_dataset_id( dataset_id )
+			self.request_xml = (
 					f'<request>\n'
 					f'  <request-parameters>\n'
 					f'    <parameter>\n'
@@ -16084,17 +16174,20 @@ class Wonder( Fetcher ):
 					f'  </request-parameters>\n'
 					f'</request>'
 			)
+			
+			return self.request_xml
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Wonder'
-			exception.method = 'build_template( self, dataset_id: str="D76" ) -> str'
+			exception.method = 'build_template( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def fetch_template( self, dataset_id: str='D76' ) -> Dict[ str, Any ] | None:
+	def fetch_template( self, dataset_id: str = 'D76' ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Return a local CDC WONDER XML request template.
 
 			Parameters:
@@ -16103,13 +16196,16 @@ class Wonder( Fetcher ):
 				Database identifier such as D76.
 
 			Returns:
-			-----------
+			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
 			self.mode = 'metadata_template'
-			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.dataset_id = self.normalize_dataset_id( dataset_id )
+			self.url = f'{self.base_url}/{self.dataset_id}'
+			self.params = {
+					'dataset_id': self.dataset_id
+			}
 			self.payload = {
 					'dataset_id': self.dataset_id,
 					'request_xml': self.build_template( dataset_id=self.dataset_id ),
@@ -16119,28 +16215,29 @@ class Wonder( Fetcher ):
 							'with a request_xml parameter and acceptance of data-use restrictions.'
 					),
 			}
-			
-			return {
+			self.result = {
 					'mode': self.mode,
-					'url': f'{self.base_url}/{self.dataset_id}',
-					'params': { 'dataset_id': self.dataset_id },
+					'url': self.url,
+					'params': self.params,
 					'data': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Wonder'
 			exception.method = (
-					'fetch_template( self, dataset_id: str="D76" ) '
-					'-> Dict[ str, Any ]'
+					'fetch_template( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def submit_query( self, dataset_id: str, request_xml: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Submit a CDC WONDER XML query request.
 
 			Parameters:
@@ -16155,36 +16252,39 @@ class Wonder( Fetcher ):
 				Request timeout in seconds.
 
 			Returns:
-			-----------
+			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
 			throw_if( 'dataset_id', dataset_id )
 			throw_if( 'request_xml', request_xml )
+			throw_if( 'time', time )
 			
 			self.mode = 'query_xml'
-			self.dataset_id = self._normalize_dataset_id( dataset_id )
+			self.dataset_id = self.normalize_dataset_id( dataset_id )
 			self.request_xml = str( request_xml ).strip( )
+			self.timeout = int( time )
 			self.url = f'{self.base_url}/{self.dataset_id}'
-			
 			self.params = {
 					'request_xml': self.request_xml,
 					'accept_datause_restrictions': 'true',
 			}
 			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
 			self.response = requests.post(
 				url=self.url,
 				data=self.params,
 				headers=self.headers,
-				timeout=int( time ) )
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			
 			self.payload = {
 					'xml': self.response.text,
 			}
-			
-			return {
+			self.result = {
 					'mode': self.mode,
 					'url': self.url,
 					'params': {
@@ -16193,21 +16293,23 @@ class Wonder( Fetcher ):
 					},
 					'data': self.payload,
 			}
+			
+			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Wonder'
 			exception.method = (
-					'submit_query( self, dataset_id: str, request_xml: str, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'submit_query( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='metadata_template', dataset_id: str='D76',
-			request_xml: str='', time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'metadata_template', dataset_id: str = 'D76',
+			request_xml: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Dispatch CDC WONDER API operations.
 
 			Parameters:
@@ -16225,33 +16327,36 @@ class Wonder( Fetcher ):
 				Request timeout in seconds.
 
 			Returns:
-			-----------
+			--------
 			Dict[str, Any] | None
-
 		'''
 		try:
-			active_mode = str( mode or 'metadata_template' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'metadata_template':
+			self.mode = str( mode or 'metadata_template' ).strip( ).lower( )
+			
+			if self.mode == 'metadata_template':
 				return self.fetch_template(
-					dataset_id=dataset_id )
+					dataset_id=dataset_id
+				)
 			
-			if active_mode == 'query_xml':
+			if self.mode == 'query_xml':
 				return self.submit_query(
 					dataset_id=dataset_id,
 					request_xml=request_xml,
-					time=int( time ) )
+					time=time
+				)
 			
 			raise ValueError(
-				"mode must be one of: 'metadata_template', 'query_xml'."
+				"Unsupported CDC WONDER mode. Use 'metadata_template' or 'query_xml'."
 			)
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Wonder'
 			exception.method = (
-					'fetch( self, mode: str="metadata_template", dataset_id: str="D76", '
-					'request_xml: str="", time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -16260,7 +16365,7 @@ class Wonder( Fetcher ):
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		'''
 			Purpose:
-			-----------
+			--------
 			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
@@ -16281,9 +16386,8 @@ class Wonder( Fetcher ):
 				Required parameter names.
 
 			Returns:
-			-----------
+			--------
 			Dict[str, str] | None
-
 		'''
 		try:
 			throw_if( 'function', function )
@@ -16296,31 +16400,28 @@ class Wonder( Fetcher ):
 					'parameters must be a dict of param_name -> schema definition.'
 				)
 			
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			_schema = {
-					'name': func_name,
-					'description': f'{desc} This function uses the {tool_name} service.',
+			return {
+					'name': function.strip( ),
+					'description': (
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
+					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
 							'required': required,
 					}
 			}
-			
-			return _schema
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Wonder'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -16328,37 +16429,8 @@ class USGSEarthquakes( Fetcher ):
 	'''
 		Purpose:
 		--------
-		Provides access to the U.S. Geological Survey (USGS) earthquake feeds and
-		event search API for human-readable geospatial earthquake retrieval.
-
-		Referenced API Requirements:
-		----------------------------
-		USGS GeoJSON Summary Feeds:
-			- Endpoint:
-			  https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/
-			- Examples:
-			  - all_hour.geojson
-			  - all_day.geojson
-			  - all_week.geojson
-			  - all_month.geojson
-			  - significant_day.geojson
-
-		USGS Earthquake Catalog API:
-			- Endpoint:
-			  https://earthquake.usgs.gov/fdsnws/event/1/query
-			- Required parameter used here:
-			  - format=geojson
-			- Optional parameters used here:
-			  - starttime
-			  - endtime
-			  - minmagnitude
-			  - maxmagnitude
-			  - limit
-			  - orderby
-			  - eventtype
-			  - latitude
-			  - longitude
-			  - maxradiuskm
+		Provides access to the U.S. Geological Survey earthquake GeoJSON summary
+		feeds and FDSN event-search API.
 
 	'''
 	feed_url: Optional[ str ]
@@ -16377,7 +16449,7 @@ class USGSEarthquakes( Fetcher ):
 	max_radius_km: Optional[ float ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Dict[ str, Any ] ]
-	timeout: Optional[ int ]
+	result: Optional[ Dict[ str, Any ] ]
 	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -16411,10 +16483,13 @@ class USGSEarthquakes( Fetcher ):
 		self.max_radius_km = None
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
 		self.headers = {
-				'Accept': 'application/json',
+				'Accept': 'application/geo+json, application/json',
 				'User-Agent': self.agents
 		}
 	
@@ -16422,7 +16497,7 @@ class USGSEarthquakes( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Provide ordered member visibility.
+			Return ordered USGSEarthquakes members.
 
 			Parameters:
 			-----------
@@ -16449,32 +16524,354 @@ class USGSEarthquakes( Fetcher ):
 				'max_radius_km',
 				'params',
 				'payload',
+				'result',
+				'response',
+				'url',
 				'timeout',
-				'_shape_feature_rows',
-				'_summarize_features',
+				'agents',
+				'headers',
+				'validate_feed',
+				'validate_limit',
+				'validate_magnitude',
+				'validate_order_by',
+				'validate_latitude',
+				'validate_longitude',
+				'validate_radius',
+				'to_iso_date',
+				'epoch_millis_to_iso',
+				'shape_feature_rows',
+				'summarize_features',
+				'package_response',
 				'fetch_feed',
 				'fetch_search',
 				'fetch',
 				'create_schema'
 		]
 	
-	def _shape_feature_rows( self, features: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+	def validate_feed( self, feed: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Normalize USGS GeoJSON feature records into human-readable tabular rows.
+			Validate a USGS summary feed filename.
+
+			Parameters:
+			-----------
+			feed (str):
+				Summary feed filename.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'feed', feed )
+			
+			value = str( feed ).strip( )
+			allowed = {
+					'all_hour.geojson',
+					'all_day.geojson',
+					'all_week.geojson',
+					'all_month.geojson',
+					'significant_hour.geojson',
+					'significant_day.geojson',
+					'significant_week.geojson',
+					'significant_month.geojson',
+					'4.5_hour.geojson',
+					'4.5_day.geojson',
+					'4.5_week.geojson',
+					'4.5_month.geojson',
+					'2.5_hour.geojson',
+					'2.5_day.geojson',
+					'2.5_week.geojson',
+					'2.5_month.geojson',
+					'1.0_hour.geojson',
+					'1.0_day.geojson',
+					'1.0_week.geojson',
+					'1.0_month.geojson'
+			}
+			
+			if value not in allowed:
+				raise ValueError( f'Unsupported USGS earthquake feed: {value}' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = 'validate_feed( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_limit( self, limit: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a USGS event-search result limit.
+
+			Parameters:
+			-----------
+			limit (int):
+				Maximum number of returned events.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'limit', limit )
+			
+			value = int( limit )
+			if value < 1 or value > 20000:
+				raise ValueError( 'limit must be between 1 and 20000.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = 'validate_limit( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_magnitude( self, name: str, value: float ) -> float:
+		'''
+			Purpose:
+			--------
+			Validate an earthquake magnitude value.
+
+			Parameters:
+			-----------
+			name (str):
+				Argument name.
+
+			value (float):
+				Magnitude value.
+
+			Returns:
+			--------
+			float
+		'''
+		try:
+			throw_if( 'name', name )
+			throw_if( name, value )
+			
+			number = float( value )
+			if number < 0.0 or number > 10.0:
+				raise ValueError( f'{name} must be between 0.0 and 10.0.' )
+			
+			return number
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = 'validate_magnitude( self, *args, **kwargs ) -> float'
+			raise exception
+	
+	def validate_order_by( self, order_by: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a USGS event-search orderby value.
+
+			Parameters:
+			-----------
+			order_by (str):
+				Sort order value.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'order_by', order_by )
+			
+			value = str( order_by ).strip( ).lower( )
+			allowed = {
+					'time',
+					'time-asc',
+					'magnitude',
+					'magnitude-asc'
+			}
+			
+			if value not in allowed:
+				raise ValueError(
+					"order_by must be 'time', 'time-asc', 'magnitude', or "
+					"'magnitude-asc'."
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = 'validate_order_by( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_latitude( self, latitude: float ) -> float:
+		'''
+			Purpose:
+			--------
+			Validate a latitude value.
+
+			Parameters:
+			-----------
+			latitude (float):
+				Latitude in decimal degrees.
+
+			Returns:
+			--------
+			float
+		'''
+		try:
+			throw_if( 'latitude', latitude )
+			
+			value = float( latitude )
+			if value < -90.0 or value > 90.0:
+				raise ValueError( 'latitude must be between -90 and 90.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = 'validate_latitude( self, *args, **kwargs ) -> float'
+			raise exception
+	
+	def validate_longitude( self, longitude: float ) -> float:
+		'''
+			Purpose:
+			--------
+			Validate a longitude value.
+
+			Parameters:
+			-----------
+			longitude (float):
+				Longitude in decimal degrees.
+
+			Returns:
+			--------
+			float
+		'''
+		try:
+			throw_if( 'longitude', longitude )
+			
+			value = float( longitude )
+			if value < -180.0 or value > 180.0:
+				raise ValueError( 'longitude must be between -180 and 180.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = 'validate_longitude( self, *args, **kwargs ) -> float'
+			raise exception
+	
+	def validate_radius( self, radius: float ) -> float:
+		'''
+			Purpose:
+			--------
+			Validate a USGS radial search distance in kilometers.
+
+			Parameters:
+			-----------
+			radius (float):
+				Maximum radius in kilometers.
+
+			Returns:
+			--------
+			float
+		'''
+		try:
+			throw_if( 'max_radius_km', radius )
+			
+			value = float( radius )
+			if value < 0.0 or value > 20001.6:
+				raise ValueError( 'max_radius_km must be between 0.0 and 20001.6.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = 'validate_radius( self, *args, **kwargs ) -> float'
+			raise exception
+	
+	def to_iso_date( self, value: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Normalize a date-like value to a string accepted by the USGS API.
+
+			Parameters:
+			-----------
+			value (str):
+				Date or datetime string.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'date', value )
+			return str( value ).strip( )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = 'to_iso_date( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def epoch_millis_to_iso( self, value: Any ) -> str:
+		'''
+			Purpose:
+			--------
+			Convert an epoch-millisecond value to an ISO datetime string.
+
+			Parameters:
+			-----------
+			value (Any):
+				Epoch milliseconds value.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			if value is None:
+				return ''
+			
+			return dt.datetime.fromtimestamp(
+				float( value ) / 1000.0,
+				tz=dt.timezone.utc
+			).isoformat( )
+		
+		except Exception:
+			return ''
+	
+	def shape_feature_rows( self, features: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize USGS GeoJSON features into display rows.
 
 			Parameters:
 			-----------
 			features (List[Dict[str, Any]]):
-				Feature collection returned by the USGS feed or search API.
+				USGS GeoJSON feature records.
 
 			Returns:
 			--------
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for feature in features or [ ]:
 				properties = feature.get( 'properties', { } ) or { }
@@ -16484,28 +16881,8 @@ class USGSEarthquakes( Fetcher ):
 				longitude = coordinates[ 0 ] if len( coordinates ) > 0 else None
 				latitude = coordinates[ 1 ] if len( coordinates ) > 1 else None
 				depth = coordinates[ 2 ] if len( coordinates ) > 2 else None
-				
-				epoch_ms = properties.get( 'time', None )
-				updated_ms = properties.get( 'updated', None )
-				
-				event_time = None
-				updated_time = None
-				
-				if epoch_ms is not None:
-					try:
-						event_time = dt.datetime.utcfromtimestamp(
-							float( epoch_ms ) / 1000.0
-						).strftime( '%Y-%m-%d %H:%M:%S UTC' )
-					except Exception:
-						event_time = str( epoch_ms )
-				
-				if updated_ms is not None:
-					try:
-						updated_time = dt.datetime.utcfromtimestamp(
-							float( updated_ms ) / 1000.0
-						).strftime( '%Y-%m-%d %H:%M:%S UTC' )
-					except Exception:
-						updated_time = str( updated_ms )
+				event_time = self.epoch_millis_to_iso( properties.get( 'time' ) )
+				updated_time = self.epoch_millis_to_iso( properties.get( 'updated' ) )
 				
 				rows.append(
 					{
@@ -16533,12 +16910,11 @@ class USGSEarthquakes( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSEarthquakes'
 			exception.method = (
-					'_shape_feature_rows( self, features: List[ Dict[ str, Any ] ] ) '
-					'-> List[ Dict[ str, Any ] ]'
+					'shape_feature_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _summarize_features( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def summarize_features( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
@@ -16585,13 +16961,54 @@ class USGSEarthquakes( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSEarthquakes'
 			exception.method = (
-					'_summarize_features( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'summarize_features( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_feed( self, feed: str='all_day.geojson',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def package_response( self ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Package stored USGS GeoJSON response state into the app-facing result.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			metadata = self.payload.get( 'metadata', { } ) or { }
+			features = self.payload.get( 'features', [ ] ) or [ ]
+			rows = self.shape_feature_rows( features )
+			
+			self.result = {
+					'mode': self.mode,
+					'feed': self.feed if self.mode == 'feed' else '',
+					'url': self.url,
+					'params': self.params,
+					'title': metadata.get( 'title', '' ),
+					'generated': metadata.get( 'generated', None ),
+					'count': metadata.get( 'count', len( rows ) ),
+					'bbox': self.payload.get( 'bbox', [ ] ),
+					'summary': self.summarize_features( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSEarthquakes'
+			exception.method = 'package_response( self ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def fetch_feed( self, feed: str = 'all_day.geojson',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16600,12 +17017,7 @@ class USGSEarthquakes( Fetcher ):
 			Parameters:
 			-----------
 			feed (str):
-				Feed filename such as:
-				- all_hour.geojson
-				- all_day.geojson
-				- all_week.geojson
-				- all_month.geojson
-				- significant_day.geojson
+				Feed filename.
 
 			time (int):
 				Request timeout in seconds.
@@ -16615,94 +17027,80 @@ class USGSEarthquakes( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'feed', feed )
+			throw_if( 'time', time )
 			
 			self.mode = 'feed'
-			self.feed = str( feed ).strip( )
+			self.feed = self.validate_feed( feed )
+			self.timeout = int( time )
 			self.params = { }
 			self.url = f'{self.feed_url}/{self.feed}'
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
 			self.response = requests.get(
 				url=self.url,
 				headers=self.headers,
-				timeout=int( time )
+				timeout=self.timeout
 			)
 			self.response.raise_for_status( )
 			
 			self.payload = self.response.json( ) or { }
-			features = self.payload.get( 'features', [ ] ) or [ ]
-			rows = self._shape_feature_rows( features )
 			
-			return {
-					'mode': self.mode,
-					'feed': self.feed,
-					'url': self.url,
-					'params': self.params,
-					'title': self.payload.get( 'metadata', { } ).get( 'title', '' ),
-					'generated': self.payload.get( 'metadata', { } ).get( 'generated', None ),
-					'count': self.payload.get( 'metadata', { } ).get( 'count', len( rows ) ),
-					'bbox': self.payload.get( 'bbox', [ ] ),
-					'summary': self._summarize_features( rows ),
-					'rows': rows,
-					'raw': self.payload
-			}
+			return self.package_response( )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSEarthquakes'
 			exception.method = (
-					'fetch_feed( self, feed: str=all_day.geojson, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_feed( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_search( self, start_date: str, end_date: str, min_magnitude: float = 1.0,
-			max_magnitude: float = 10.0, limit: int=25, order_by: str='time',
-			event_type: str='earthquake', latitude: float | None=None,
-			longitude: float | None=None, max_radius_km: float | None=None,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_search( self, start_date: str, end_date: str,
+			min_magnitude: float = 1.0, max_magnitude: float = 10.0,
+			limit: int = 25, order_by: str = 'time',
+			event_type: str = 'earthquake', latitude: float | None = None,
+			longitude: float | None = None,
+			max_radius_km: float | None = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Retrieve earthquake events from the USGS catalog search endpoint.
+			Search the USGS Earthquake Catalog API.
 
 			Parameters:
 			-----------
 			start_date (str):
-				Inclusive start date in YYYY-MM-DD format.
+				Start date or datetime.
 
 			end_date (str):
-				Inclusive end date in YYYY-MM-DD format.
+				End date or datetime.
 
 			min_magnitude (float):
-				Minimum magnitude filter.
+				Minimum earthquake magnitude.
 
 			max_magnitude (float):
-				Maximum magnitude filter.
+				Maximum earthquake magnitude.
 
 			limit (int):
-				Maximum number of returned events.
+				Maximum returned events.
 
 			order_by (str):
-				Catalog sort order such as:
-				- time
-				- time-asc
-				- magnitude
-				- magnitude-asc
+				USGS sort order.
 
 			event_type (str):
-				Event type filter, usually 'earthquake'.
+				Event type, usually earthquake.
 
 			latitude (float | None):
-				Optional latitude center for radial searches.
+				Optional radial-search latitude.
 
 			longitude (float | None):
-				Optional longitude center for radial searches.
+				Optional radial-search longitude.
 
 			max_radius_km (float | None):
-				Optional radial search distance in kilometers. Only used when both
-				latitude and longitude are supplied.
+				Optional radial-search radius in kilometers.
 
 			time (int):
 				Request timeout in seconds.
@@ -16714,18 +17112,26 @@ class USGSEarthquakes( Fetcher ):
 		try:
 			throw_if( 'start_date', start_date )
 			throw_if( 'end_date', end_date )
+			throw_if( 'event_type', event_type )
+			throw_if( 'time', time )
 			
 			self.mode = 'search'
-			self.start_date = str( start_date ).strip( )
-			self.end_date = str( end_date ).strip( )
-			self.min_magnitude = float( min_magnitude )
-			self.max_magnitude = float( max_magnitude )
-			self.limit = max( 1, int( limit ) )
-			self.order_by = str( order_by or 'time' ).strip( )
-			self.event_type = str( event_type or 'earthquake' ).strip( )
-			self.latitude = None if latitude is None else float( latitude )
-			self.longitude = None if longitude is None else float( longitude )
-			self.max_radius_km = None if max_radius_km is None else float( max_radius_km )
+			self.feed = ''
+			self.start_date = self.to_iso_date( start_date )
+			self.end_date = self.to_iso_date( end_date )
+			self.min_magnitude = self.validate_magnitude( 'min_magnitude', min_magnitude )
+			self.max_magnitude = self.validate_magnitude( 'max_magnitude', max_magnitude )
+			self.limit = self.validate_limit( limit )
+			self.order_by = self.validate_order_by( order_by )
+			self.event_type = str( event_type ).strip( )
+			self.timeout = int( time )
+			self.url = self.search_url
+			
+			if self.min_magnitude > self.max_magnitude:
+				raise ValueError( 'min_magnitude must be less than or equal to max_magnitude.' )
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
 			self.params = {
 					'format': 'geojson',
@@ -16738,59 +17144,53 @@ class USGSEarthquakes( Fetcher ):
 					'eventtype': self.event_type
 			}
 			
-			if self.latitude is not None and self.longitude is not None:
-				self.params[ 'latitude' ]=self.latitude
-				self.params[ 'longitude' ]=self.longitude
-				
-				if self.max_radius_km is not None:
-					self.params[ 'maxradiuskm' ]=self.max_radius_km
+			if (latitude is None) != (longitude is None):
+				raise ValueError(
+					'latitude and longitude must both be supplied for radial search.'
+				)
 			
-			self.url = self.search_url
+			if latitude is not None and longitude is not None:
+				self.latitude = self.validate_latitude( latitude )
+				self.longitude = self.validate_longitude( longitude )
+				self.params[ 'latitude' ] = self.latitude
+				self.params[ 'longitude' ] = self.longitude
+			
+			if max_radius_km is not None:
+				if self.latitude is None or self.longitude is None:
+					raise ValueError(
+						'max_radius_km requires both latitude and longitude.'
+					)
+				
+				self.max_radius_km = self.validate_radius( max_radius_km )
+				self.params[ 'maxradiuskm' ] = self.max_radius_km
+			
 			self.response = requests.get(
 				url=self.url,
 				params=self.params,
 				headers=self.headers,
-				timeout=int( time )
+				timeout=self.timeout
 			)
 			self.response.raise_for_status( )
 			
 			self.payload = self.response.json( ) or { }
-			features = self.payload.get( 'features', [ ] ) or [ ]
-			rows = self._shape_feature_rows( features )
 			
-			return {
-					'mode': self.mode,
-					'url': self.url,
-					'params': self.params,
-					'title': self.payload.get( 'metadata', { } ).get( 'title', '' ),
-					'generated': self.payload.get( 'metadata', { } ).get( 'generated', None ),
-					'count': self.payload.get( 'metadata', { } ).get( 'count', len( rows ) ),
-					'bbox': self.payload.get( 'bbox', [ ] ),
-					'summary': self._summarize_features( rows ),
-					'rows': rows,
-					'raw': self.payload
-			}
+			return self.package_response( )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSEarthquakes'
 			exception.method = (
-					'fetch_search( self, start_date: str, end_date: str, '
-					'min_magnitude: float=1.0, max_magnitude: float=10.0, '
-					'limit: int=25, order_by: str=time, event_type: str=earthquake, '
-					'latitude: float | None=None, longitude: float | None=None, '
-					'max_radius_km: float | None=None, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_search( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='feed', feed: str='all_day.geojson',
-			start_date: str='', end_date: str='', min_magnitude: float = 1.0,
-			max_magnitude: float = 10.0, limit: int=25, order_by: str='time',
-			event_type: str='earthquake', latitude: float | None=None,
-			longitude: float | None=None, max_radius_km: float | None=None,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'feed', feed: str = 'all_day.geojson',
+			start_date: str = '', end_date: str = '', min_magnitude: float = 1.0,
+			max_magnitude: float = 10.0, limit: int = 25, order_by: str = 'time',
+			event_type: str = 'earthquake', latitude: float | None = None,
+			longitude: float | None = None, max_radius_km: float | None = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -16799,9 +17199,7 @@ class USGSEarthquakes( Fetcher ):
 			Parameters:
 			-----------
 			mode (str):
-				Supported modes:
-				- feed
-				- search
+				Supported modes: feed or search.
 
 			feed (str):
 				USGS summary feed filename for feed mode.
@@ -16828,10 +17226,10 @@ class USGSEarthquakes( Fetcher ):
 				Event type for search mode.
 
 			latitude (float | None):
-				Optional latitude center for radial search mode.
+				Optional latitude center for radial search.
 
 			longitude (float | None):
-				Optional longitude center for radial search mode.
+				Optional longitude center for radial search.
 
 			max_radius_km (float | None):
 				Optional radial search distance.
@@ -16844,15 +17242,17 @@ class USGSEarthquakes( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'feed' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'feed':
+			self.mode = str( mode or 'feed' ).strip( ).lower( )
+			
+			if self.mode == 'feed':
 				return self.fetch_feed(
 					feed=feed,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'search':
+			if self.mode == 'search':
 				return self.fetch_search(
 					start_date=start_date,
 					end_date=end_date,
@@ -16864,22 +17264,17 @@ class USGSEarthquakes( Fetcher ):
 					latitude=latitude,
 					longitude=longitude,
 					max_radius_km=max_radius_km,
-					time=int( time )
+					time=time
 				)
 			
-			raise ValueError( "Unsupported mode. Use 'feed' or 'search'." )
+			raise ValueError( "Unsupported USGS Earthquakes mode. Use 'feed' or 'search'." )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSEarthquakes'
 			exception.method = (
-					'fetch( self, mode: str=feed, feed: str=all_day.geojson, '
-					'start_date: str=, end_date: str=, min_magnitude: float=1.0, '
-					'max_magnitude: float=10.0, limit: int=25, order_by: str=time, '
-					'event_type: str=earthquake, latitude: float | None=None, '
-					'longitude: float | None=None, max_radius_km: float | None=None, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -16889,24 +17284,24 @@ class USGSEarthquakes( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -16918,19 +17313,24 @@ class USGSEarthquakes( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -16939,8 +17339,7 @@ class USGSEarthquakes( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSEarthquakes'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -16948,39 +17347,30 @@ class USGSWaterData( Fetcher ):
 	'''
 		Purpose:
 		--------
-		Provides access to the modern USGS Water Data APIs for monitoring
-		locations, time-series metadata, latest continuous values, and latest
-		daily values.
-
-		Referenced API Requirements:
-		----------------------------
-		Base Endpoint:
-			- https://api.waterdata.usgs.gov/ogcapi/v0
-
-		Collections used here:
-			- monitoring-locations
-			- time-series-metadata
-			- latest-continuous
-			- latest-daily
-
-		Optional Authentication:
-			- X-Api-Key header
-			- API keys increase rate limits but are not required for basic use
-
+		Provides access to the modern USGS Water Data OGC API collections for
+		monitoring locations, time-series metadata, latest continuous values, and
+		latest daily values.
 	'''
+	api_key: Optional[ str ]
 	base_url: Optional[ str ]
 	mode: Optional[ str ]
-	api_key: Optional[ str ]
+	collection: Optional[ str ]
+	monitoring_location_id: Optional[ str ]
+	state_code: Optional[ str ]
+	county_code: Optional[ str ]
+	site_type: Optional[ str ]
+	parameter_code: Optional[ str ]
+	limit: Optional[ int ]
 	params: Optional[ Dict[ str, Any ] ]
-	payload: Optional[ Dict[ str, Any ] ]
-	timeout: Optional[ int ]
+	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
 	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			--------
-			Initialize the USGS Water Data wrapper.
+			Initialize the USGS Water Data fetcher with API defaults.
 
 			Parameters:
 			-----------
@@ -16991,11 +17381,21 @@ class USGSWaterData( Fetcher ):
 			None
 		'''
 		super( ).__init__( )
-		self.base_url = 'https://api.waterdata.usgs.gov/ogcapi/v0'
+		self.api_key = cfg.USGS_WATERDATA_API_KEY
+		self.base_url = 'https://api.waterdata.usgs.gov/ogcapi/v0/collections'
 		self.mode = 'monitoring-locations'
-		self.api_key = self._resolve_api_key( )
+		self.collection = None
+		self.monitoring_location_id = ''
+		self.state_code = ''
+		self.county_code = ''
+		self.site_type = ''
+		self.parameter_code = ''
+		self.limit = 25
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
 		self.headers = {
@@ -17004,13 +17404,13 @@ class USGSWaterData( Fetcher ):
 		}
 		
 		if self.api_key:
-			self.headers[ 'X-Api-Key' ]=self.api_key
+			self.headers[ 'X-API-Key' ] = self.api_key
 	
 	def __dir__( self ) -> List[ str ]:
 		'''
 			Purpose:
 			--------
-			Provide ordered member visibility.
+			Return ordered USGSWaterData members.
 
 			Parameters:
 			-----------
@@ -17021,19 +17421,34 @@ class USGSWaterData( Fetcher ):
 			List[str]
 		'''
 		return [
+				'api_key',
 				'base_url',
 				'mode',
-				'api_key',
+				'collection',
+				'monitoring_location_id',
+				'state_code',
+				'county_code',
+				'site_type',
+				'parameter_code',
+				'limit',
 				'params',
 				'payload',
+				'result',
+				'response',
+				'url',
 				'timeout',
-				'_resolve_api_key',
-				'_coalesce',
+				'agents',
+				'headers',
+				'validate_collection',
+				'validate_limit',
+				'validate_parameter_code',
+				'coalesce_records',
+				'shape_monitoring_locations',
+				'shape_time_series_metadata',
+				'shape_latest_values',
+				'summarize_rows',
+				'package_response',
 				'request',
-				'_shape_monitoring_locations',
-				'_shape_time_series_metadata',
-				'_shape_latest_values',
-				'_summarize_rows',
 				'fetch_monitoring_locations',
 				'fetch_time_series_metadata',
 				'fetch_latest_continuous',
@@ -17042,215 +17457,227 @@ class USGSWaterData( Fetcher ):
 				'create_schema'
 		]
 	
-	def _resolve_api_key( self ) -> Optional[ str ]:
+	def validate_collection( self, collection: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Resolve an API key for the USGS Water Data APIs.
+			Validate a USGS Water Data OGC collection name.
 
 			Parameters:
 			-----------
-			None
+			collection (str):
+				USGS Water Data collection name.
 
 			Returns:
 			--------
-			Optional[str]
+			str
 		'''
 		try:
-			candidates: List[ Optional[ str ] ]=[
-					os.getenv( 'USGS_WATERDATA_API_KEY' ),
-					os.getenv( 'DATA_GOV_API_KEY' ),
-					os.getenv( 'GOVINFO_API_KEY' )
-			]
+			throw_if( 'collection', collection )
 			
-			for candidate in candidates:
-				if candidate is not None and str( candidate ).strip( ):
-					return str( candidate ).strip( )
+			value = str( collection ).strip( )
+			allowed = {
+					'monitoring-locations',
+					'time-series-metadata',
+					'latest-continuous',
+					'latest-daily'
+			}
 			
-			return None
+			if value not in allowed:
+				raise ValueError(
+					'Unsupported USGS Water Data collection. Use '
+					'monitoring-locations, time-series-metadata, latest-continuous, '
+					'or latest-daily.'
+				)
+			
+			return value
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
-			exception.method = '_resolve_api_key( self ) -> Optional[ str ]'
+			exception.method = 'validate_collection( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+	def validate_limit( self, limit: int ) -> int:
 		'''
 			Purpose:
 			--------
-			Normalize several possible USGS Water Data response layouts into a list
-			of record dictionaries.
+			Validate the USGS Water Data request limit.
+
+			Parameters:
+			-----------
+			limit (int):
+				Maximum rows requested.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'limit', limit )
+			
+			value = int( limit )
+			if value < 1 or value > 10000:
+				raise ValueError( 'limit must be between 1 and 10000.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = 'validate_limit( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_parameter_code( self, parameter_code: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a USGS 5-digit parameter code when supplied.
+
+			Parameters:
+			-----------
+			parameter_code (str):
+				Optional USGS parameter code.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( parameter_code or '' ).strip( )
+			
+			if value and not re.fullmatch( r'\d{5}', value ):
+				raise ValueError( 'parameter_code must be a 5-digit USGS parameter code.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = 'validate_parameter_code( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def coalesce_records( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Coalesce common USGS Water Data response shapes into a list of records.
 
 			Parameters:
 			-----------
 			payload (Any):
-				Decoded JSON payload returned by the API.
+				Raw parsed response payload.
 
 			Returns:
 			--------
 			List[Dict[str, Any]]
 		'''
 		try:
+			if payload is None:
+				return [ ]
+			
 			if isinstance( payload, list ):
-				return [ item for item in payload if isinstance( item, dict ) ]
+				return [
+						item
+						for item in payload
+						if isinstance( item, dict )
+				]
 			
 			if not isinstance( payload, dict ):
 				return [ ]
 			
-			for key in [ 'features', 'value', 'items', 'data' ]:
+			for key in [
+					'features',
+					'items',
+					'results',
+					'data',
+					'value',
+					'timeSeries',
+					'observations'
+			]:
 				value = payload.get( key, None )
+				
 				if isinstance( value, list ):
-					return [ item for item in value if isinstance( item, dict ) ]
+					return [
+							item
+							for item in value
+							if isinstance( item, dict )
+					]
 			
-			return [ ]
-		
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'USGSWaterData'
-			exception.method = '_coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]'
-			raise exception
-	
-	def request( self, collection: str,
-			params: Optional[ Dict[ str, Any ] ]=None,
-			time: int=20 ) -> Dict[ str, Any ] | None:
-		'''
-			Purpose:
-			--------
-			Issue a GET request to a USGS Water Data collection endpoint.
-
-			Parameters:
-			-----------
-			collection (str):
-				Collection name under the OGC API base path.
-
-			params (Optional[Dict[str, Any]]):
-				Query string parameters.
-
-			time (int):
-				Request timeout in seconds.
-
-			Returns:
-			--------
-			Dict[str, Any] | None
-		'''
-		try:
-			throw_if( 'collection', collection )
-			
-			self.url = f'{self.base_url}/collections/{str( collection ).strip( )}'
-			self.params = { }
-			
-			for key, value in (params or { }).items( ):
-				if value is None:
-					continue
-				if isinstance( value, str ) and not value.strip( ):
-					continue
-				self.params[ key ]=value
-			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
-			)
-			self.response.raise_for_status( )
-			
-			self.payload = self.response.json( ) or { }
-			
-			return {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
-			}
+			return [ payload ]
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'request( self, collection: str, '
-					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'coalesce_records( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _shape_monitoring_locations( self,
+	def shape_monitoring_locations( self,
 			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize monitoring-location records into a human-readable table.
+			Normalize monitoring-location records into display rows.
 
 			Parameters:
 			-----------
 			records (List[Dict[str, Any]]):
-				Monitoring location records.
+				Monitoring-location records.
 
 			Returns:
 			--------
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
 				properties = item.get( 'properties', { } ) or item
 				geometry = item.get( 'geometry', { } ) or { }
 				coordinates = geometry.get( 'coordinates', [ ] ) or [ ]
 				
-				longitude = coordinates[
-					0 ] if len( coordinates ) > 0 else properties.get( 'longitude', None )
-				latitude = coordinates[
-					1 ] if len( coordinates ) > 1 else properties.get( 'latitude', None )
-				
-				identifier = (
-						properties.get( 'monitoring_location_id', None ) or
-						properties.get( 'monitoringLocationIdentifier', None ) or
-						properties.get( 'site_no', None ) or
-						properties.get( 'siteNumber', None ) or
-						item.get( 'id', '' )
+				longitude = coordinates[ 0 ] if len( coordinates ) > 0 else (
+						properties.get( 'longitude', None )
+						or properties.get( 'dec_long_va', None )
 				)
-				
-				name = (
-						properties.get( 'monitoring_location_name', None ) or
-						properties.get( 'monitoringLocationName', None ) or
-						properties.get( 'site_name', None ) or
-						properties.get( 'siteName', '' )
-				)
-				
-				state = (
-						properties.get( 'state', None ) or
-						properties.get( 'state_code', None ) or
-						properties.get( 'stateCode', '' )
-				)
-				
-				county = (
-						properties.get( 'county', None ) or
-						properties.get( 'county_name', None ) or
-						properties.get( 'countyName', '' )
-				)
-				
-				site_type = (
-						properties.get( 'site_type', None ) or
-						properties.get( 'siteType', '' )
-				)
-				
-				huc = (
-						properties.get( 'huc', None ) or
-						properties.get( 'huc_cd', None ) or
-						properties.get( 'hucCode', '' )
+				latitude = coordinates[ 1 ] if len( coordinates ) > 1 else (
+						properties.get( 'latitude', None )
+						or properties.get( 'dec_lat_va', None )
 				)
 				
 				rows.append(
 					{
-							'Monitoring Location ID': identifier,
-							'Name': name,
-							'Site Type': site_type,
-							'State': state,
-							'County': county,
-							'HUC': huc,
+							'Monitoring Location ID': (
+									properties.get( 'monitoring_location_id', None )
+									or properties.get( 'monitoringLocationIdentifier', None )
+									or properties.get( 'site_no', '' )
+							),
+							'Name': (
+									properties.get( 'monitoring_location_name', None )
+									or properties.get( 'monitoringLocationName', None )
+									or properties.get( 'station_nm', '' )
+							),
+							'Site Type': (
+									properties.get( 'site_type', None )
+									or properties.get( 'siteType', None )
+									or properties.get( 'site_tp_cd', '' )
+							),
+							'State Code': (
+									properties.get( 'state_code', None )
+									or properties.get( 'stateCode', None )
+									or properties.get( 'state_cd', '' )
+							),
+							'County Code': (
+									properties.get( 'county_code', None )
+									or properties.get( 'countyCode', None )
+									or properties.get( 'county_cd', '' )
+							),
 							'Latitude': latitude,
 							'Longitude': longitude
 					}
@@ -17263,17 +17690,17 @@ class USGSWaterData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'_shape_monitoring_locations( self, records: '
-					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+					'shape_monitoring_locations( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _shape_time_series_metadata( self,
+	def shape_time_series_metadata( self,
 			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize time-series metadata records into a human-readable table.
+			Normalize time-series metadata records into display rows.
 
 			Parameters:
 			-----------
@@ -17285,7 +17712,7 @@ class USGSWaterData( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
 				properties = item.get( 'properties', { } ) or item
@@ -17293,37 +17720,38 @@ class USGSWaterData( Fetcher ):
 				rows.append(
 					{
 							'Monitoring Location ID': (
-									properties.get( 'monitoring_location_id', None ) or
-									properties.get( 'monitoringLocationIdentifier', None ) or
-									properties.get( 'site_no', '' )
+									properties.get( 'monitoring_location_id', None )
+									or properties.get( 'monitoringLocationIdentifier', None )
+									or properties.get( 'site_no', '' )
+							),
+							'Name': (
+									properties.get( 'monitoring_location_name', None )
+									or properties.get( 'monitoringLocationName', None )
+									or properties.get( 'site_name', '' )
 							),
 							'Parameter Code': (
-									properties.get( 'parameter_code', None ) or
-									properties.get( 'parameterCode', '' )
+									properties.get( 'parameter_code', None )
+									or properties.get( 'parameterCode', '' )
 							),
 							'Parameter Name': (
-									properties.get( 'parameter_name', None ) or
-									properties.get( 'parameterName', '' )
+									properties.get( 'parameter_name', None )
+									or properties.get( 'parameterName', '' )
 							),
 							'Statistic ID': (
-									properties.get( 'statistic_id', None ) or
-									properties.get( 'statisticId', '' )
-							),
-							'Statistic Name': (
-									properties.get( 'statistic_name', None ) or
-									properties.get( 'statisticName', '' )
+									properties.get( 'statistic_id', None )
+									or properties.get( 'statisticId', '' )
 							),
 							'Unit': (
-									properties.get( 'unit_of_measure', None ) or
-									properties.get( 'unitOfMeasure', '' )
+									properties.get( 'unit_of_measure', None )
+									or properties.get( 'unitOfMeasure', '' )
 							),
 							'Begin Time': (
-									properties.get( 'begin_time', None ) or
-									properties.get( 'beginTime', '' )
+									properties.get( 'begin_time', None )
+									or properties.get( 'beginTime', '' )
 							),
 							'End Time': (
-									properties.get( 'end_time', None ) or
-									properties.get( 'endTime', '' )
+									properties.get( 'end_time', None )
+									or properties.get( 'endTime', '' )
 							)
 					}
 				)
@@ -17335,29 +17763,29 @@ class USGSWaterData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'_shape_time_series_metadata( self, records: '
-					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+					'shape_time_series_metadata( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _shape_latest_values( self,
+	def shape_latest_values( self,
 			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize latest continuous or daily value records into a readable table.
+			Normalize latest continuous or latest daily value records into display rows.
 
 			Parameters:
 			-----------
 			records (List[Dict[str, Any]]):
-				Value records.
+				Latest value records.
 
 			Returns:
 			--------
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
 				properties = item.get( 'properties', { } ) or item
@@ -17365,44 +17793,44 @@ class USGSWaterData( Fetcher ):
 				rows.append(
 					{
 							'Monitoring Location ID': (
-									properties.get( 'monitoring_location_id', None ) or
-									properties.get( 'monitoringLocationIdentifier', None ) or
-									properties.get( 'site_no', '' )
+									properties.get( 'monitoring_location_id', None )
+									or properties.get( 'monitoringLocationIdentifier', None )
+									or properties.get( 'site_no', '' )
 							),
 							'Name': (
-									properties.get( 'monitoring_location_name', None ) or
-									properties.get( 'monitoringLocationName', None ) or
-									properties.get( 'site_name', '' )
+									properties.get( 'monitoring_location_name', None )
+									or properties.get( 'monitoringLocationName', None )
+									or properties.get( 'site_name', '' )
 							),
 							'Parameter Code': (
-									properties.get( 'parameter_code', None ) or
-									properties.get( 'parameterCode', '' )
+									properties.get( 'parameter_code', None )
+									or properties.get( 'parameterCode', '' )
 							),
 							'Parameter Name': (
-									properties.get( 'parameter_name', None ) or
-									properties.get( 'parameterName', '' )
+									properties.get( 'parameter_name', None )
+									or properties.get( 'parameterName', '' )
 							),
 							'Statistic ID': (
-									properties.get( 'statistic_id', None ) or
-									properties.get( 'statisticId', '' )
+									properties.get( 'statistic_id', None )
+									or properties.get( 'statisticId', '' )
 							),
 							'Value': (
-									properties.get( 'result_value', None ) or
-									properties.get( 'value', None ) or
-									properties.get( 'primary_value', '' )
+									properties.get( 'result_value', None )
+									or properties.get( 'value', None )
+									or properties.get( 'primary_value', '' )
 							),
 							'Unit': (
-									properties.get( 'unit_of_measure', None ) or
-									properties.get( 'unitOfMeasure', '' )
+									properties.get( 'unit_of_measure', None )
+									or properties.get( 'unitOfMeasure', '' )
 							),
 							'Time': (
-									properties.get( 'time', None ) or
-									properties.get( 'result_time', None ) or
-									properties.get( 'resultTime', '' )
+									properties.get( 'time', None )
+									or properties.get( 'result_time', None )
+									or properties.get( 'resultTime', '' )
 							),
 							'Approval Status': (
-									properties.get( 'approval_status', None ) or
-									properties.get( 'approvalStatus', '' )
+									properties.get( 'approval_status', None )
+									or properties.get( 'approvalStatus', '' )
 							)
 					}
 				)
@@ -17414,16 +17842,16 @@ class USGSWaterData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'_shape_latest_values( self, records: '
-					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+					'shape_latest_values( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
-			Create a compact summary block from normalized rows.
+			Create a compact summary block from normalized USGS Water Data rows.
 
 			Parameters:
 			-----------
@@ -17436,23 +17864,31 @@ class USGSWaterData( Fetcher ):
 		'''
 		try:
 			count = len( rows or [ ] )
-			first_site = ''
+			first_location = ''
 			first_parameter = ''
 			first_value = ''
+			first_time = ''
 			
 			if rows:
-				first_site = str(
-					rows[ 0 ].get( 'Name', '' ) or
-					rows[ 0 ].get( 'Monitoring Location ID', '' ) or ''
+				first_location = str(
+					rows[ 0 ].get( 'Name', '' )
+					or rows[ 0 ].get( 'Monitoring Location ID', '' )
+					or ''
 				)
 				first_parameter = str( rows[ 0 ].get( 'Parameter Name', '' ) or '' )
 				first_value = str( rows[ 0 ].get( 'Value', '' ) or '' )
+				first_time = str(
+					rows[ 0 ].get( 'Time', '' )
+					or rows[ 0 ].get( 'Begin Time', '' )
+					or ''
+				)
 			
 			return {
 					'count': count,
-					'first_site': first_site,
+					'first_location': first_location,
 					'first_parameter': first_parameter,
-					'first_value': first_value
+					'first_value': first_value,
+					'first_time': first_time
 			}
 		
 		except Exception as e:
@@ -17460,14 +17896,121 @@ class USGSWaterData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_monitoring_locations( self, monitoring_location_id: str='',
-			state_code: str='', county_code: str='', site_type: str='',
-			limit: int=25, time: int=20 ) -> Dict[ str, Any ] | None:
+	def package_response( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Package the stored USGS Water Data response into the app-facing result.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized output rows.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def request( self, collection: str, params: Dict[ str, Any ],
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Send a GET request to a USGS Water Data OGC collection item endpoint.
+
+			Parameters:
+			-----------
+			collection (str):
+				USGS Water Data collection name.
+
+			params (Dict[str, Any]):
+				Query parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'collection', collection )
+			throw_if( 'params', params )
+			throw_if( 'time', time )
+			
+			self.collection = self.validate_collection( collection )
+			self.timeout = int( time )
+			self.url = f'{self.base_url}/{self.collection}/items'
+			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			for key, value in params.items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			if self.api_key:
+				self.headers[ 'X-API-Key' ] = self.api_key
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( ) or { }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSWaterData'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_monitoring_locations( self, monitoring_location_id: str = '',
+			state_code: str = '', county_code: str = '', site_type: str = '',
+			limit: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -17498,55 +18041,56 @@ class USGSWaterData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'limit', limit )
+			throw_if( 'time', time )
+			
 			self.mode = 'monitoring-locations'
-			base = self.request(
+			self.monitoring_location_id = str( monitoring_location_id or '' ).strip( )
+			self.state_code = str( state_code or '' ).strip( )
+			self.county_code = str( county_code or '' ).strip( )
+			self.site_type = str( site_type or '' ).strip( )
+			self.limit = self.validate_limit( limit )
+			self.timeout = int( time )
+			
+			self.request(
 				collection='monitoring-locations',
 				params={
-						'monitoring_location_id': str( monitoring_location_id ).strip( ),
-						'state_code': str( state_code ).strip( ),
-						'county_code': str( county_code ).strip( ),
-						'site_type': str( site_type ).strip( ),
-						'limit': max( 1, int( limit ) )
+						'monitoring_location_id': self.monitoring_location_id,
+						'state_code': self.state_code,
+						'county_code': self.county_code,
+						'site_type': self.site_type,
+						'limit': self.limit
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			records = self._coalesce( base.get( 'raw', { } ) )
-			rows = self._shape_monitoring_locations( records )
+			records = self.coalesce_records( self.payload )
+			rows = self.shape_monitoring_locations( records )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': base.get( 'raw', { } )
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'fetch_monitoring_locations( self, monitoring_location_id: str=, '
-					'state_code: str=, county_code: str=, site_type: str=, '
-					'limit: int=25, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_monitoring_locations( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_time_series_metadata( self, monitoring_location_id: str='',
-			parameter_code: str='', limit: int=25,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_time_series_metadata( self, monitoring_location_id: str = '',
+			parameter_code: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch time-series metadata for a monitoring location and optional
-			parameter code.
+			Fetch time-series metadata for a monitoring location and optional parameter.
 
 			Parameters:
 			-----------
 			monitoring_location_id (str):
-				Optional monitoring location identifier.
+				Monitoring location identifier.
 
 			parameter_code (str):
 				Optional USGS parameter code.
@@ -17562,52 +18106,53 @@ class USGSWaterData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'monitoring_location_id', monitoring_location_id )
+			throw_if( 'limit', limit )
+			throw_if( 'time', time )
+			
 			self.mode = 'time-series-metadata'
-			base = self.request(
+			self.monitoring_location_id = str( monitoring_location_id ).strip( )
+			self.parameter_code = self.validate_parameter_code( parameter_code )
+			self.limit = self.validate_limit( limit )
+			self.timeout = int( time )
+			
+			self.request(
 				collection='time-series-metadata',
 				params={
-						'monitoring_location_id': str( monitoring_location_id ).strip( ),
-						'parameter_code': str( parameter_code ).strip( ),
-						'limit': max( 1, int( limit ) )
+						'monitoring_location_id': self.monitoring_location_id,
+						'parameter_code': self.parameter_code,
+						'limit': self.limit
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			records = self._coalesce( base.get( 'raw', { } ) )
-			rows = self._shape_time_series_metadata( records )
+			records = self.coalesce_records( self.payload )
+			rows = self.shape_time_series_metadata( records )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': base.get( 'raw', { } )
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'fetch_time_series_metadata( self, monitoring_location_id: str=, '
-					'parameter_code: str=, limit: int=25, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_time_series_metadata( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_latest_continuous( self, monitoring_location_id: str='',
-			parameter_code: str='', limit: int=25,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_latest_continuous( self, monitoring_location_id: str = '',
+			parameter_code: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch the latest continuous values for a monitoring location.
+			Fetch latest continuous values for a monitoring location.
 
 			Parameters:
 			-----------
 			monitoring_location_id (str):
-				Optional monitoring location identifier.
+				Monitoring location identifier.
 
 			parameter_code (str):
 				Optional USGS parameter code.
@@ -17623,52 +18168,53 @@ class USGSWaterData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'monitoring_location_id', monitoring_location_id )
+			throw_if( 'limit', limit )
+			throw_if( 'time', time )
+			
 			self.mode = 'latest-continuous'
-			base = self.request(
+			self.monitoring_location_id = str( monitoring_location_id ).strip( )
+			self.parameter_code = self.validate_parameter_code( parameter_code )
+			self.limit = self.validate_limit( limit )
+			self.timeout = int( time )
+			
+			self.request(
 				collection='latest-continuous',
 				params={
-						'monitoring_location_id': str( monitoring_location_id ).strip( ),
-						'parameter_code': str( parameter_code ).strip( ),
-						'limit': max( 1, int( limit ) )
+						'monitoring_location_id': self.monitoring_location_id,
+						'parameter_code': self.parameter_code,
+						'limit': self.limit
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			records = self._coalesce( base.get( 'raw', { } ) )
-			rows = self._shape_latest_values( records )
+			records = self.coalesce_records( self.payload )
+			rows = self.shape_latest_values( records )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': base.get( 'raw', { } )
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'fetch_latest_continuous( self, monitoring_location_id: str=, '
-					'parameter_code: str=, limit: int=25, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_latest_continuous( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_latest_daily( self, monitoring_location_id: str='',
-			parameter_code: str='', limit: int=25,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_latest_daily( self, monitoring_location_id: str = '',
+			parameter_code: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch the latest daily values for a monitoring location.
+			Fetch latest daily values for a monitoring location.
 
 			Parameters:
 			-----------
 			monitoring_location_id (str):
-				Optional monitoring location identifier.
+				Monitoring location identifier.
 
 			parameter_code (str):
 				Optional USGS parameter code.
@@ -17684,45 +18230,46 @@ class USGSWaterData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'monitoring_location_id', monitoring_location_id )
+			throw_if( 'limit', limit )
+			throw_if( 'time', time )
+			
 			self.mode = 'latest-daily'
-			base = self.request(
+			self.monitoring_location_id = str( monitoring_location_id ).strip( )
+			self.parameter_code = self.validate_parameter_code( parameter_code )
+			self.limit = self.validate_limit( limit )
+			self.timeout = int( time )
+			
+			self.request(
 				collection='latest-daily',
 				params={
-						'monitoring_location_id': str( monitoring_location_id ).strip( ),
-						'parameter_code': str( parameter_code ).strip( ),
-						'limit': max( 1, int( limit ) )
+						'monitoring_location_id': self.monitoring_location_id,
+						'parameter_code': self.parameter_code,
+						'limit': self.limit
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			records = self._coalesce( base.get( 'raw', { } ) )
-			rows = self._shape_latest_values( records )
+			records = self.coalesce_records( self.payload )
+			rows = self.shape_latest_values( records )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': base.get( 'raw', { } )
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'fetch_latest_daily( self, monitoring_location_id: str=, '
-					'parameter_code: str=, limit: int=25, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_latest_daily( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='monitoring-locations',
-			monitoring_location_id: str='', state_code: str='',
-			county_code: str='', site_type: str='',
-			parameter_code: str='', limit: int=25,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'monitoring-locations',
+			monitoring_location_id: str = '', state_code: str = '',
+			county_code: str = '', site_type: str = '',
+			parameter_code: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -17763,45 +18310,47 @@ class USGSWaterData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'monitoring-locations' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'monitoring-locations':
+			self.mode = str( mode or 'monitoring-locations' ).strip( ).lower( )
+			
+			if self.mode == 'monitoring-locations':
 				return self.fetch_monitoring_locations(
 					monitoring_location_id=monitoring_location_id,
 					state_code=state_code,
 					county_code=county_code,
 					site_type=site_type,
 					limit=limit,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'time-series-metadata':
+			if self.mode == 'time-series-metadata':
 				return self.fetch_time_series_metadata(
 					monitoring_location_id=monitoring_location_id,
 					parameter_code=parameter_code,
 					limit=limit,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'latest-continuous':
+			if self.mode == 'latest-continuous':
 				return self.fetch_latest_continuous(
 					monitoring_location_id=monitoring_location_id,
 					parameter_code=parameter_code,
 					limit=limit,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'latest-daily':
+			if self.mode == 'latest-daily':
 				return self.fetch_latest_daily(
 					monitoring_location_id=monitoring_location_id,
 					parameter_code=parameter_code,
 					limit=limit,
-					time=int( time )
+					time=time
 				)
 			
 			raise ValueError(
-				"Unsupported mode. Use 'monitoring-locations', "
-				"'time-series-metadata', 'latest-continuous', or 'latest-daily'."
+				'Unsupported USGS Water Data mode. Use monitoring-locations, '
+				'time-series-metadata, latest-continuous, or latest-daily.'
 			)
 		
 		except Exception as e:
@@ -17809,10 +18358,7 @@ class USGSWaterData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'fetch( self, mode: str=monitoring-locations, '
-					'monitoring_location_id: str=, state_code: str=, '
-					'county_code: str=, site_type: str=, parameter_code: str=, '
-					'limit: int=25, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -17822,24 +18368,24 @@ class USGSWaterData( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -17851,19 +18397,24 @@ class USGSWaterData( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -17872,8 +18423,7 @@ class USGSWaterData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSWaterData'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -17881,32 +18431,22 @@ class USGSTheNationalMap( Fetcher ):
 	'''
 		Purpose:
 		--------
-		Provides access to the USGS The National Map (TNM) TNMAccess API for
-		dataset discovery and downloadable product search.
-
-		Referenced API Requirements:
-		----------------------------
-		Base Endpoint:
-			- https://tnmaccess.nationalmap.gov/api/v1
-
-		Resources used here:
-			- /datasets
-			- /products
-
-		Common product query concepts:
-			- datasets
-			- q
-			- bbox
-			- prodFormats
-			- max
-			- offset
+		Provides access to the USGS The National Map TNMAccess API for dataset
+		discovery and downloadable product search.
 
 	'''
 	base_url: Optional[ str ]
 	mode: Optional[ str ]
+	endpoint: Optional[ str ]
+	dataset: Optional[ str ]
+	query_text: Optional[ str ]
+	bbox: Optional[ str ]
+	prod_formats: Optional[ str ]
+	max_items: Optional[ int ]
+	offset: Optional[ int ]
 	params: Optional[ Dict[ str, Any ] ]
-	payload: Optional[ Dict[ str, Any ] ]
-	timeout: Optional[ int ]
+	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
 	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -17926,8 +18466,18 @@ class USGSTheNationalMap( Fetcher ):
 		super( ).__init__( )
 		self.base_url = 'https://tnmaccess.nationalmap.gov/api/v1'
 		self.mode = 'products'
+		self.endpoint = None
+		self.dataset = ''
+		self.query_text = ''
+		self.bbox = ''
+		self.prod_formats = ''
+		self.max_items = 25
+		self.offset = 0
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
 		self.headers = {
@@ -17952,88 +18502,188 @@ class USGSTheNationalMap( Fetcher ):
 		return [
 				'base_url',
 				'mode',
+				'endpoint',
+				'dataset',
+				'query_text',
+				'bbox',
+				'prod_formats',
+				'max_items',
+				'offset',
 				'params',
 				'payload',
+				'result',
+				'response',
+				'url',
 				'timeout',
+				'agents',
+				'headers',
+				'validate_endpoint',
+				'validate_max_items',
+				'validate_offset',
+				'validate_bbox',
+				'coalesce_records',
+				'shape_dataset_rows',
+				'shape_product_rows',
+				'summarize_rows',
+				'package_response',
 				'request',
-				'_coalesce',
-				'_shape_dataset_rows',
-				'_shape_product_rows',
-				'_summarize_rows',
 				'fetch_datasets',
 				'fetch_products',
 				'fetch',
 				'create_schema'
 		]
 	
-	def request( self, endpoint: str,
-			params: Optional[ Dict[ str, Any ] ]=None,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def validate_endpoint( self, endpoint: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to a TNMAccess endpoint.
+			Validate a TNMAccess endpoint name.
 
 			Parameters:
 			-----------
 			endpoint (str):
-				Endpoint path under the TNMAccess base URL.
-
-			params (Optional[Dict[str, Any]]):
-				Query string parameters.
-
-			time (int):
-				Request timeout in seconds.
+				Endpoint name.
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			str
 		'''
 		try:
 			throw_if( 'endpoint', endpoint )
 			
-			self.url = f'{self.base_url}/{str( endpoint ).strip( )}'
-			self.params = { }
-			
-			for key, value in (params or { }).items( ):
-				if value is None:
-					continue
-				if isinstance( value, str ) and not value.strip( ):
-					continue
-				self.params[ key ]=value
-			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
-			)
-			self.response.raise_for_status( )
-			
-			self.payload = self.response.json( ) or { }
-			
-			return {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
+			value = str( endpoint ).strip( ).lower( )
+			allowed = {
+					'datasets',
+					'products'
 			}
+			
+			if value not in allowed:
+				raise ValueError( "endpoint must be 'datasets' or 'products'." )
+			
+			return value
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
-			exception.method = (
-					'request( self, endpoint: str, '
-					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
-					'-> Dict[ str, Any ]'
-			)
+			exception.method = 'validate_endpoint( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+	def validate_max_items( self, max_items: int ) -> int:
 		'''
 			Purpose:
 			--------
-			Normalize possible TNMAccess response layouts into a list of records.
+			Validate the TNMAccess max item count.
+
+			Parameters:
+			-----------
+			max_items (int):
+				Maximum returned product count.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'max_items', max_items )
+			
+			value = int( max_items )
+			if value < 1 or value > 500:
+				raise ValueError( 'max_items must be between 1 and 500.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = 'validate_max_items( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_offset( self, offset: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate the TNMAccess result offset.
+
+			Parameters:
+			-----------
+			offset (int):
+				Result offset.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			if offset is None:
+				raise ValueError( 'offset cannot be None.' )
+			
+			value = int( offset )
+			if value < 0 or value > 10000:
+				raise ValueError( 'offset must be between 0 and 10000.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = 'validate_offset( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_bbox( self, bbox: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate an optional TNMAccess bounding-box string.
+
+			Parameters:
+			-----------
+			bbox (str):
+				Optional bounding box in minx,miny,maxx,maxy format.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( bbox or '' ).strip( )
+			
+			if not value:
+				return ''
+			
+			parts = [
+					part.strip( )
+					for part in value.split( ',' )
+			]
+			
+			if len( parts ) != 4:
+				raise ValueError( 'bbox must use minx,miny,maxx,maxy format.' )
+			
+			numbers = [ float( part ) for part in parts ]
+			minx, miny, maxx, maxy = numbers
+			
+			if minx >= maxx:
+				raise ValueError( 'bbox minx must be less than maxx.' )
+			
+			if miny >= maxy:
+				raise ValueError( 'bbox miny must be less than maxy.' )
+			
+			return ','.join( [ str( number ) for number in numbers ] )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = 'validate_bbox( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def coalesce_records( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Coalesce common TNMAccess response shapes into a list of records.
 
 			Parameters:
 			-----------
@@ -18045,32 +18695,47 @@ class USGSTheNationalMap( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
+			if payload is None:
+				return [ ]
+			
 			if isinstance( payload, list ):
-				return [ item for item in payload if isinstance( item, dict ) ]
+				return [
+						item
+						for item in payload
+						if isinstance( item, dict )
+				]
 			
 			if not isinstance( payload, dict ):
 				return [ ]
 			
-			for key in [ 'items', 'datasets', 'data', 'results' ]:
+			for key in [ 'items', 'datasets', 'data', 'results', 'products' ]:
 				value = payload.get( key, None )
+				
 				if isinstance( value, list ):
-					return [ item for item in value if isinstance( item, dict ) ]
+					return [
+							item
+							for item in value
+							if isinstance( item, dict )
+					]
 			
-			return [ ]
+			return [ payload ]
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
-			exception.method = '_coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]'
+			exception.method = (
+					'coalesce_records( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
 			raise exception
 	
-	def _shape_dataset_rows( self,
+	def shape_dataset_rows( self,
 			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize TNM dataset records into a human-readable table.
+			Normalize TNM dataset records into display rows.
 
 			Parameters:
 			-----------
@@ -18082,26 +18747,26 @@ class USGSTheNationalMap( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
 				rows.append(
 					{
 							'Id': item.get( 'id', '' ),
 							'Dataset': (
-									item.get( 'sbDatasetTag', None ) or
-									item.get( 'dataset', None ) or
-									item.get( 'tag', '' )
+									item.get( 'sbDatasetTag', None )
+									or item.get( 'dataset', None )
+									or item.get( 'tag', '' )
 							),
 							'Name': (
-									item.get( 'sbDatasetName', None ) or
-									item.get( 'name', '' )
+									item.get( 'sbDatasetName', None )
+									or item.get( 'name', '' )
 							),
 							'Category': item.get( 'category', '' ),
 							'Type': item.get( 'type', '' ),
 							'Description': (
-									item.get( 'description', None ) or
-									item.get( 'summary', '' )
+									item.get( 'description', None )
+									or item.get( 'summary', '' )
 							)
 					}
 				)
@@ -18113,17 +18778,17 @@ class USGSTheNationalMap( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
 			exception.method = (
-					'_shape_dataset_rows( self, records: '
-					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+					'shape_dataset_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _shape_product_rows( self,
+	def shape_product_rows( self,
 			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize TNM product records into a human-readable table.
+			Normalize TNM product records into display rows.
 
 			Parameters:
 			-----------
@@ -18135,53 +18800,55 @@ class USGSTheNationalMap( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
 				download_url = (
-						item.get( 'downloadURL', None ) or
-						item.get( 'downloadUrl', None ) or
-						item.get( 'url', '' )
+						item.get( 'downloadURL', None )
+						or item.get( 'downloadUrl', None )
+						or item.get( 'url', '' )
 				)
-				
 				meta_url = (
-						item.get( 'metaUrl', None ) or
-						item.get( 'metadataURL', None ) or
-						item.get( 'metadataUrl', '' )
+						item.get( 'metaUrl', None )
+						or item.get( 'metadataUrl', None )
+						or item.get( 'metaURL', '' )
 				)
-				
-				formats = item.get( 'format', None )
-				if isinstance( formats, list ):
-					formats = ', '.join( [ str( value ) for value in formats ] )
+				bbox = (
+						item.get( 'bbox', None )
+						or item.get( 'boundingBox', None )
+						or item.get( 'extent', '' )
+				)
 				
 				rows.append(
 					{
-							'Id': (
-									item.get( 'sourceId', None ) or
-									item.get( 'id', '' )
-							),
 							'Title': (
-									item.get( 'title', None ) or
-									item.get( 'name', '' )
+									item.get( 'title', None )
+									or item.get( 'name', None )
+									or item.get( 'displayName', '' )
 							),
 							'Dataset': (
-									item.get( 'sbDatasetTag', None ) or
-									item.get( 'dataset', '' )
+									item.get( 'dataset', None )
+									or item.get( 'datasets', None )
+									or item.get( 'sourceDataSet', '' )
 							),
-							'Format': (
-									formats or
-									item.get( 'format', '' )
+							'Product Format': (
+									item.get( 'format', None )
+									or item.get( 'prodFormat', None )
+									or item.get( 'productFormat', '' )
 							),
 							'Publication Date': (
-									item.get( 'publicationDate', None ) or
-									item.get( 'lastUpdated', '' )
+									item.get( 'publicationDate', None )
+									or item.get( 'dateCreated', None )
+									or item.get( 'lastUpdated', '' )
 							),
-							'Bounding Box': (
-									item.get( 'boundingBox', None ) or
-									item.get( 'bbox', '' )
+							'Size': (
+									item.get( 'size', None )
+									or item.get( 'filesize', None )
+									or item.get( 'fileSize', '' )
 							),
 							'Download URL': download_url,
-							'Metadata URL': meta_url
+							'Metadata URL': meta_url,
+							'Bounding Box': bbox
 					}
 				)
 			
@@ -18192,21 +18859,21 @@ class USGSTheNationalMap( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
 			exception.method = (
-					'_shape_product_rows( self, records: '
-					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+					'shape_product_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
-			Create a compact summary block from normalized rows.
+			Create a compact summary block from normalized TNM rows.
 
 			Parameters:
 			-----------
 			rows (List[Dict[str, Any]]):
-				Normalized row dictionaries.
+				Normalized TNM row dictionaries.
 
 			Returns:
 			--------
@@ -18219,8 +18886,10 @@ class USGSTheNationalMap( Fetcher ):
 			
 			if rows:
 				first_title = str(
-					rows[ 0 ].get( 'Title', '' ) or
-					rows[ 0 ].get( 'Name', '' ) or ''
+					rows[ 0 ].get( 'Title', '' )
+					or rows[ 0 ].get( 'Name', '' )
+					or rows[ 0 ].get( 'Dataset', '' )
+					or ''
 				)
 				first_dataset = str( rows[ 0 ].get( 'Dataset', '' ) or '' )
 			
@@ -18235,16 +18904,120 @@ class USGSTheNationalMap( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
 			exception.method = (
-					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_datasets( self, time: int=20 ) -> Dict[ str, Any ] | None:
+	def package_response( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
-			Fetch dataset metadata from TNMAccess.
+			Package stored TNMAccess response state into the app-facing result.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized output rows.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def request( self, endpoint: str, params: Dict[ str, Any ],
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Send a GET request to a TNMAccess endpoint and store response state.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				TNMAccess endpoint.
+
+			params (Dict[str, Any]):
+				Query parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			throw_if( 'params', params )
+			throw_if( 'time', time )
+			
+			self.endpoint = self.validate_endpoint( endpoint )
+			self.timeout = int( time )
+			self.url = f'{self.base_url}/{self.endpoint}'
+			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			for key, value in params.items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( ) or { }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSTheNationalMap'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_datasets( self, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch the TNMAccess dataset catalog.
 
 			Parameters:
 			-----------
@@ -18256,35 +19029,34 @@ class USGSTheNationalMap( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'time', time )
+			
 			self.mode = 'datasets'
-			base = self.request(
+			self.timeout = int( time )
+			
+			self.request(
 				endpoint='datasets',
 				params={ },
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			records = self._coalesce( base.get( 'raw', { } ) )
-			rows = self._shape_dataset_rows( records )
+			records = self.coalesce_records( self.payload )
+			rows = self.shape_dataset_rows( records )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': base.get( 'raw', { } )
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
-			exception.method = 'fetch_datasets( self, time: int=20 ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_datasets( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
-	def fetch_products( self, dataset: str='', q: str='',
-			bbox: str='', prod_formats: str='', max_items: int=25,
-			offset: int=0, time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_products( self, dataset: str = '', q: str = '',
+			bbox: str = '', prod_formats: str = '', max_items: int = 25,
+			offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18318,47 +19090,50 @@ class USGSTheNationalMap( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'max_items', max_items )
+			throw_if( 'offset', offset )
+			throw_if( 'time', time )
+			
 			self.mode = 'products'
-			base = self.request(
+			self.dataset = str( dataset or '' ).strip( )
+			self.query_text = str( q or '' ).strip( )
+			self.bbox = self.validate_bbox( bbox )
+			self.prod_formats = str( prod_formats or '' ).strip( )
+			self.max_items = self.validate_max_items( max_items )
+			self.offset = self.validate_offset( offset )
+			self.timeout = int( time )
+			
+			self.request(
 				endpoint='products',
 				params={
-						'datasets': str( dataset ).strip( ),
-						'q': str( q ).strip( ),
-						'bbox': str( bbox ).strip( ),
-						'prodFormats': str( prod_formats ).strip( ),
-						'max': max( 1, int( max_items ) ),
-						'offset': max( 0, int( offset ) )
+						'datasets': self.dataset,
+						'q': self.query_text,
+						'bbox': self.bbox,
+						'prodFormats': self.prod_formats,
+						'max': self.max_items,
+						'offset': self.offset
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			records = self._coalesce( base.get( 'raw', { } ) )
-			rows = self._shape_product_rows( records )
+			records = self.coalesce_records( self.payload )
+			rows = self.shape_product_rows( records )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': base.get( 'raw', { } )
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
 			exception.method = (
-					'fetch_products( self, dataset: str=, q: str=, bbox: str=, '
-					'prod_formats: str=, max_items: int=25, offset: int=0, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_products( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='products', dataset: str='',
-			q: str='', bbox: str='', prod_formats: str='',
-			max_items: int=25, offset: int=0,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'products', dataset: str = '',
+			q: str = '', bbox: str = '', prod_formats: str = '',
+			max_items: int = 25, offset: int = 0,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18397,14 +19172,16 @@ class USGSTheNationalMap( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'products' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'datasets':
+			self.mode = str( mode or 'products' ).strip( ).lower( )
+			
+			if self.mode == 'datasets':
 				return self.fetch_datasets(
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'products':
+			if self.mode == 'products':
 				return self.fetch_products(
 					dataset=dataset,
 					q=q,
@@ -18412,46 +19189,41 @@ class USGSTheNationalMap( Fetcher ):
 					prod_formats=prod_formats,
 					max_items=max_items,
 					offset=offset,
-					time=int( time )
+					time=time
 				)
 			
-			raise ValueError( "Unsupported mode. Use 'datasets' or 'products'." )
+			raise ValueError( "Unsupported TNMAccess mode. Use 'datasets' or 'products'." )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
-			exception.method = (
-					'fetch( self, mode: str=products, dataset: str=, q: str=, '
-					'bbox: str=, prod_formats: str=, max_items: int=25, '
-					'offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			raise exception
 	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict,
+	def create_schema( self, function: str, tool: str, description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -18463,19 +19235,22 @@ class USGSTheNationalMap( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError( 'parameters must be a dict of param_name -> schema definition.' )
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -18483,10 +19258,7 @@ class USGSTheNationalMap( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSTheNationalMap'
-			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
-			)
+			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			raise exception
 
 class USGSScienceBase( Fetcher ):
@@ -18495,28 +19267,18 @@ class USGSScienceBase( Fetcher ):
 		--------
 		Provides read-only access to the USGS ScienceBase REST/JSON API for
 		item search and item retrieval.
-
-		Referenced API Requirements:
-		----------------------------
-		Base Endpoint:
-			- https://www.sciencebase.gov/catalog
-
-		Resources used here:
-			- /items
-			- /item/{id}
-
-		Common query concepts:
-			- q
-			- max
-			- offset
-			- fields
-
 	'''
 	base_url: Optional[ str ]
 	mode: Optional[ str ]
+	endpoint: Optional[ str ]
+	item_id: Optional[ str ]
+	query_text: Optional[ str ]
+	max_items: Optional[ int ]
+	offset: Optional[ int ]
+	fields: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Dict[ str, Any ] ]
-	timeout: Optional[ int ]
+	result: Optional[ Dict[ str, Any ] ]
 	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -18536,8 +19298,17 @@ class USGSScienceBase( Fetcher ):
 		super( ).__init__( )
 		self.base_url = 'https://www.sciencebase.gov/catalog'
 		self.mode = 'items'
+		self.endpoint = None
+		self.item_id = ''
+		self.query_text = ''
+		self.max_items = 25
+		self.offset = 0
+		self.fields = ''
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
 		self.headers = {
@@ -18562,222 +19333,211 @@ class USGSScienceBase( Fetcher ):
 		return [
 				'base_url',
 				'mode',
+				'endpoint',
+				'item_id',
+				'query_text',
+				'max_items',
+				'offset',
+				'fields',
 				'params',
 				'payload',
+				'result',
+				'response',
+				'url',
 				'timeout',
+				'agents',
+				'headers',
+				'validate_endpoint',
+				'validate_max_items',
+				'validate_offset',
+				'coalesce_records',
+				'shape_item_rows',
+				'shape_single_item',
+				'summarize_rows',
+				'package_response',
 				'request',
-				'_coalesce',
-				'_shape_item_rows',
-				'_shape_single_item',
-				'_summarize_rows',
 				'fetch_items',
 				'fetch_item',
 				'fetch',
 				'create_schema'
 		]
 	
-	def request( self, endpoint: str,
-			params: Optional[ Dict[ str, Any ] ]=None,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def validate_endpoint( self, endpoint: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to a ScienceBase endpoint.
+			Validate a ScienceBase endpoint path.
 
 			Parameters:
 			-----------
 			endpoint (str):
-				Endpoint path under the ScienceBase base URL.
-
-			params (Optional[Dict[str, Any]]):
-				Query string parameters.
-
-			time (int):
-				Request timeout in seconds.
+				Endpoint path under the ScienceBase catalog base URL.
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			str
 		'''
 		try:
 			throw_if( 'endpoint', endpoint )
 			
-			self.url = f'{self.base_url}/{str( endpoint ).strip( )}'
-			self.params = { }
+			value = str( endpoint ).strip( ).strip( '/' )
 			
-			for key, value in (params or { }).items( ):
-				if value is None:
-					continue
-				if isinstance( value, str ) and not value.strip( ):
-					continue
-				self.params[ key ]=value
+			if not value:
+				raise ValueError( 'endpoint cannot be empty.' )
 			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
-			)
-			self.response.raise_for_status( )
+			if value.startswith( 'http://' ) or value.startswith( 'https://' ):
+				raise ValueError( 'endpoint must be a path segment, not a full URL.' )
 			
-			self.payload = self.response.json( ) or { }
+			if '..' in value:
+				raise ValueError( 'endpoint cannot contain parent-directory markers.' )
 			
-			return {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
-			}
+			if value != 'items' and not value.startswith( 'item/' ):
+				raise ValueError( "endpoint must be 'items' or 'item/{id}'." )
+			
+			return value
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
-			exception.method = (
-					'request( self, endpoint: str, '
-					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
-					'-> Dict[ str, Any ]'
-			)
+			exception.method = 'validate_endpoint( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+	def validate_max_items( self, max_items: int ) -> int:
 		'''
 			Purpose:
 			--------
-			Normalize possible ScienceBase response layouts into a list of items.
+			Validate the ScienceBase item-search maximum.
+
+			Parameters:
+			-----------
+			max_items (int):
+				Maximum returned item count.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'max_items', max_items )
+			
+			value = int( max_items )
+			if value < 1 or value > 1000:
+				raise ValueError( 'max_items must be between 1 and 1000.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = 'validate_max_items( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_offset( self, offset: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate the ScienceBase item-search offset.
+
+			Parameters:
+			-----------
+			offset (int):
+				Result offset for paging.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			if offset is None:
+				raise ValueError( 'offset cannot be None.' )
+			
+			value = int( offset )
+			if value < 0 or value > 150000:
+				raise ValueError( 'offset must be between 0 and 150000.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = 'validate_offset( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def coalesce_records( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Coalesce common ScienceBase response shapes into a list of records.
 
 			Parameters:
 			-----------
 			payload (Any):
-				Decoded JSON payload returned by the API.
+				Decoded ScienceBase JSON payload.
 
 			Returns:
 			--------
 			List[Dict[str, Any]]
 		'''
 		try:
+			if payload is None:
+				return [ ]
+			
 			if isinstance( payload, list ):
-				return [ item for item in payload if isinstance( item, dict ) ]
+				return [
+						item
+						for item in payload
+						if isinstance( item, dict )
+				]
 			
 			if not isinstance( payload, dict ):
 				return [ ]
 			
 			for key in [ 'items', 'results', 'data' ]:
 				value = payload.get( key, None )
+				
 				if isinstance( value, list ):
-					return [ item for item in value if isinstance( item, dict ) ]
+					return [
+							item
+							for item in value
+							if isinstance( item, dict )
+					]
 			
-			if 'id' in payload and isinstance( payload.get( 'id' ), str ):
-				return [ payload ]
-			
-			return [ ]
-		
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'USGSScienceBase'
-			exception.method = '_coalesce( self, payload: Any ) -> List[ Dict[ str, Any ] ]'
-			raise exception
-	
-	def _shape_item_rows( self,
-			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
-		'''
-			Purpose:
-			--------
-			Normalize ScienceBase item records into a human-readable table.
-
-			Parameters:
-			-----------
-			records (List[Dict[str, Any]]):
-				Item records returned by ScienceBase.
-
-			Returns:
-			--------
-			List[Dict[str, Any]]
-		'''
-		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
-			
-			for item in records or [ ]:
-				title = item.get( 'title', '' )
-				item_id = item.get( 'id', '' )
-				item_type = item.get( 'itemType', '' )
-				summary = (
-						item.get( 'summary', None ) or
-						item.get( 'body', None ) or
-						''
-				)
-				
-				if isinstance( summary, str ) and len( summary ) > 300:
-					summary = summary[ :300 ].rstrip( ) + '...'
-				
-				has_spatial = False
-				if item.get( 'spatial', None ) is not None:
-					has_spatial = True
-				if item.get( 'facets', None ):
-					try:
-						for facet in item.get( 'facets', [ ] ) or [ ]:
-							if isinstance( facet, dict ) and facet.get( 'boundingBox',
-									None ) is not None:
-								has_spatial = True
-								break
-					except Exception:
-						pass
-				
-				dates = item.get( 'dates', [ ] ) or [ ]
-				latest_date = ''
-				if isinstance( dates, list ) and dates:
-					first_date = dates[ 0 ]
-					if isinstance( first_date, dict ):
-						latest_date = (
-								first_date.get( 'dateString', None ) or
-								first_date.get( 'date', '' )
-						)
-				
-				rows.append(
-					{
-							'Id': item_id,
-							'Title': title,
-							'Type': item_type,
-							'Updated': (
-									item.get( 'dateUpdated', None ) or
-									item.get( 'lastUpdated', None ) or
-									latest_date
-							),
-							'Has Spatial Metadata': has_spatial,
-							'Summary': summary
-					}
-				)
-			
-			return rows
+			return [ payload ]
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
 			exception.method = (
-					'_shape_item_rows( self, records: '
-					'List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]'
+					'coalesce_records( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _shape_single_item( self, item: Dict[ str, Any ] ) -> Dict[ str, Any ]:
+	def shape_single_item( self, item: Dict[ str, Any ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
-			Normalize a single ScienceBase item into a readable detail dictionary.
+			Normalize a ScienceBase item into the display row expected by app.py.
 
 			Parameters:
 			-----------
 			item (Dict[str, Any]):
-				Single item payload returned by ScienceBase.
+				ScienceBase item dictionary.
 
 			Returns:
 			--------
 			Dict[str, Any]
 		'''
 		try:
-			files_value = item.get( 'files', [ ] ) or [ ]
-			file_count = len( files_value ) if isinstance( files_value, list ) else 0
+			if not isinstance( item, dict ):
+				item = { }
+			
+			files = item.get( 'files', [ ] ) or [ ]
+			file_count = len( files ) if isinstance( files, list ) else 0
 			
 			web_links = item.get( 'webLinks', [ ] ) or [ ]
 			link_count = len( web_links ) if isinstance( web_links, list ) else 0
@@ -18790,12 +19550,12 @@ class USGSScienceBase( Fetcher ):
 					'Title': item.get( 'title', '' ),
 					'Type': item.get( 'itemType', '' ),
 					'Updated': (
-							item.get( 'dateUpdated', None ) or
-							item.get( 'lastUpdated', '' )
+							item.get( 'dateUpdated', None )
+							or item.get( 'lastUpdated', '' )
 					),
 					'Summary': (
-							item.get( 'summary', None ) or
-							item.get( 'body', '' )
+							item.get( 'summary', None )
+							or item.get( 'body', '' )
 					),
 					'Has Spatial Metadata': item.get( 'spatial', None ) is not None,
 					'File Count': file_count,
@@ -18809,16 +19569,49 @@ class USGSScienceBase( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
 			exception.method = (
-					'_shape_single_item( self, item: Dict[ str, Any ] ) '
-					'-> Dict[ str, Any ]'
+					'shape_single_item( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def shape_item_rows( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Create a compact summary block from normalized rows.
+			Normalize ScienceBase item records into display rows.
+
+			Parameters:
+			-----------
+			records (List[Dict[str, Any]]):
+				ScienceBase item records.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in records or [ ]:
+				rows.append( self.shape_single_item( item ) )
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'shape_item_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Create a compact summary block from normalized ScienceBase rows.
 
 			Parameters:
 			-----------
@@ -18855,14 +19648,118 @@ class USGSScienceBase( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
 			exception.method = (
-					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_items( self, q: str='', max_items: int=25,
-			offset: int=0, fields: str='',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def package_response( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Package stored ScienceBase response state into the app-facing result.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized ScienceBase rows.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def request( self, endpoint: str,
+			params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a ScienceBase endpoint and store response state.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path under the ScienceBase base URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			throw_if( 'time', time )
+			
+			self.endpoint = self.validate_endpoint( endpoint )
+			self.timeout = int( time )
+			self.url = f'{self.base_url}/{self.endpoint}'
+			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( ) or { }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'USGSScienceBase'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_items( self, q: str = '', max_items: int = 25,
+			offset: int = 0, fields: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18890,42 +19787,44 @@ class USGSScienceBase( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'max_items', max_items )
+			throw_if( 'offset', offset )
+			throw_if( 'time', time )
+			
 			self.mode = 'items'
-			base = self.request(
+			self.query_text = str( q or '' ).strip( )
+			self.max_items = self.validate_max_items( max_items )
+			self.offset = self.validate_offset( offset )
+			self.fields = str( fields or '' ).strip( )
+			self.timeout = int( time )
+			
+			self.request(
 				endpoint='items',
 				params={
-						'q': str( q ).strip( ),
-						'max': max( 1, int( max_items ) ),
-						'offset': max( 0, int( offset ) ),
-						'fields': str( fields ).strip( )
+						'q': self.query_text,
+						'max': self.max_items,
+						'offset': self.offset,
+						'fields': self.fields
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			records = self._coalesce( base.get( 'raw', { } ) )
-			rows = self._shape_item_rows( records )
+			records = self.coalesce_records( self.payload )
+			rows = self.shape_item_rows( records )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': base.get( 'raw', { } )
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
 			exception.method = (
-					'fetch_items( self, q: str=, max_items: int=25, offset: int=0, '
-					'fields: str=, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_items( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_item( self, item_id: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -18945,44 +19844,34 @@ class USGSScienceBase( Fetcher ):
 		'''
 		try:
 			throw_if( 'item_id', item_id )
+			throw_if( 'time', time )
 			
 			self.mode = 'item'
-			base = self.request(
-				endpoint=f'item/{str( item_id ).strip( )}',
+			self.item_id = str( item_id ).strip( )
+			self.timeout = int( time )
+			
+			self.request(
+				endpoint=f'item/{self.item_id}',
 				params={ },
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			item = base.get( 'raw', { } ) or { }
-			detail = self._shape_single_item( item )
+			detail = self.shape_single_item( self.payload or { } )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': {
-							'count': 1,
-							'first_title': detail.get( 'Title', '' ),
-							'first_type': detail.get( 'Type', '' ),
-							'spatial_count': 1 if detail.get( 'Has Spatial Metadata', False ) else 0
-					},
-					'rows': [ detail ],
-					'raw': base.get( 'raw', { } )
-			}
+			return self.package_response( [ detail ] )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
 			exception.method = (
-					'fetch_item( self, item_id: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_item( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='items', q: str='',
-			item_id: str='', max_items: int=25, offset: int=0,
-			fields: str='', time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'items', q: str = '',
+			item_id: str = '', max_items: int = 25, offset: int = 0,
+			fields: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -19018,33 +19907,33 @@ class USGSScienceBase( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'items' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'items':
+			self.mode = str( mode or 'items' ).strip( ).lower( )
+			
+			if self.mode == 'items':
 				return self.fetch_items(
 					q=q,
 					max_items=max_items,
 					offset=offset,
 					fields=fields,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'item':
+			if self.mode == 'item':
 				return self.fetch_item(
 					item_id=item_id,
-					time=int( time )
+					time=time
 				)
 			
-			raise ValueError( "Unsupported mode. Use 'items' or 'item'." )
+			raise ValueError( "Unsupported ScienceBase mode. Use 'items' or 'item'." )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
 			exception.method = (
-					'fetch( self, mode: str=items, q: str=, item_id: str=, '
-					'max_items: int=25, offset: int=0, fields: str=, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -19054,24 +19943,24 @@ class USGSScienceBase( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -19083,19 +19972,24 @@ class USGSScienceBase( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -19104,8 +19998,7 @@ class USGSScienceBase( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -19796,37 +20689,21 @@ class ClimateData( Fetcher ):
 		--------
 		Provides access to NOAA NCEI climate data search and retrieval services for
 		dataset discovery and subsetted climate data extraction.
-
-		Referenced API Requirements:
-		----------------------------
-		NOAA NCEI Access Data Service:
-			- Endpoint:
-			  https://www.ncei.noaa.gov/access/services/data/v1
-			- Common parameters:
-			  - dataset
-			  - startDate
-			  - endDate
-			  - stations
-			  - dataTypes
-			  - format
-
-		NOAA NCEI Access Search Service:
-			- Endpoint:
-			  https://www.ncei.noaa.gov/access/services/search/v1/datasets
-			- Common parameters:
-			  - keyword
-			  - startDate
-			  - endDate
-			  - offset
-			  - limit
-
 	'''
 	data_url: Optional[ str ]
 	search_url: Optional[ str ]
 	mode: Optional[ str ]
+	keyword: Optional[ str ]
+	dataset: Optional[ str ]
+	start_date: Optional[ str ]
+	end_date: Optional[ str ]
+	stations: Optional[ str ]
+	data_types: Optional[ str ]
+	limit: Optional[ int ]
+	offset: Optional[ int ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
-	timeout: Optional[ int ]
+	result: Optional[ Dict[ str, Any ] ]
 	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -19847,8 +20724,19 @@ class ClimateData( Fetcher ):
 		self.data_url = 'https://www.ncei.noaa.gov/access/services/data/v1'
 		self.search_url = 'https://www.ncei.noaa.gov/access/services/search/v1'
 		self.mode = 'datasets'
+		self.keyword = ''
+		self.dataset = ''
+		self.start_date = ''
+		self.end_date = ''
+		self.stations = ''
+		self.data_types = ''
+		self.limit = 25
+		self.offset = 0
 		self.params = { }
 		self.payload = [ ]
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
 		self.headers = {
@@ -19874,85 +20762,195 @@ class ClimateData( Fetcher ):
 				'data_url',
 				'search_url',
 				'mode',
+				'keyword',
+				'dataset',
+				'start_date',
+				'end_date',
+				'stations',
+				'data_types',
+				'limit',
+				'offset',
 				'params',
 				'payload',
+				'result',
+				'response',
+				'url',
 				'timeout',
+				'agents',
+				'headers',
+				'validate_limit',
+				'validate_offset',
+				'validate_date_range',
+				'coalesce_records',
+				'shape_dataset_rows',
+				'shape_data_rows',
+				'summarize_rows',
+				'package_response',
 				'request',
-				'_shape_dataset_rows',
-				'_shape_data_rows',
-				'_summarize_rows',
 				'fetch_datasets',
 				'fetch_data',
 				'fetch',
 				'create_schema'
 		]
 	
-	def request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def validate_limit( self, limit: int ) -> int:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to a NOAA NCEI endpoint.
+			Validate a NOAA NCEI result limit.
 
 			Parameters:
 			-----------
-			url (str):
-				Target endpoint URL.
-
-			params (Optional[Dict[str, Any]]):
-				Query string parameters.
-
-			time (int):
-				Request timeout in seconds.
+			limit (int):
+				Maximum number of rows requested.
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			int
 		'''
 		try:
-			throw_if( 'url', url )
+			throw_if( 'limit', limit )
 			
-			self.url = str( url ).strip( )
-			self.params = { }
+			value = int( limit )
+			if value < 1 or value > 500:
+				raise ValueError( 'limit must be between 1 and 500.' )
 			
-			for key, value in (params or { }).items( ):
-				if value is None:
-					continue
-				if isinstance( value, str ) and not value.strip( ):
-					continue
-				self.params[ key ]=value
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = 'validate_limit( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_offset( self, offset: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a NOAA NCEI result offset.
+
+			Parameters:
+			-----------
+			offset (int):
+				Result offset.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			if offset is None:
+				raise ValueError( 'offset cannot be None.' )
 			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
-			)
-			self.response.raise_for_status( )
+			value = int( offset )
+			if value < 0 or value > 10000:
+				raise ValueError( 'offset must be between 0 and 10000.' )
 			
-			self.payload = self.response.json( )
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = 'validate_offset( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_date_range( self, start_date: str, end_date: str ) -> Tuple[ str, str ]:
+		'''
+			Purpose:
+			--------
+			Validate and normalize a NOAA NCEI date range.
+
+			Parameters:
+			-----------
+			start_date (str):
+				ISO start date.
+
+			end_date (str):
+				ISO end date.
+
+			Returns:
+			--------
+			Tuple[str, str]
+		'''
+		try:
+			throw_if( 'start_date', start_date )
+			throw_if( 'end_date', end_date )
 			
-			return {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
-			}
+			start_value = str( start_date ).strip( )
+			end_value = str( end_date ).strip( )
+			
+			if start_value > end_value:
+				raise ValueError( 'start_date must be on or before end_date.' )
+			
+			return start_value, end_value
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
 			exception.method = (
-					'request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'validate_date_range( self, *args, **kwargs ) -> Tuple[ str, str ]'
 			)
 			raise exception
 	
-	def _shape_dataset_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+	def coalesce_records( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize NOAA dataset search records into a human-readable table.
+			Coalesce common NOAA NCEI response shapes into a list of dictionaries.
+
+			Parameters:
+			-----------
+			payload (Any):
+				Decoded JSON payload returned by the API.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			if payload is None:
+				return [ ]
+			
+			if isinstance( payload, list ):
+				return [
+						item
+						for item in payload
+						if isinstance( item, dict )
+				]
+			
+			if not isinstance( payload, dict ):
+				return [ ]
+			
+			for key in [ 'results', 'data', 'items', 'records' ]:
+				value = payload.get( key, None )
+				
+				if isinstance( value, list ):
+					return [
+							item
+							for item in value
+							if isinstance( item, dict )
+					]
+			
+			return [ payload ]
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = (
+					'coalesce_records( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def shape_dataset_rows( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize NOAA climate dataset records into display rows.
 
 			Parameters:
 			-----------
@@ -19964,23 +20962,23 @@ class ClimateData( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
 				rows.append(
 					{
 							'Id': item.get( 'id', '' ),
 							'Dataset': (
-									item.get( 'dataset', None ) or
-									item.get( 'name', '' )
+									item.get( 'dataset', None )
+									or item.get( 'name', '' )
 							),
 							'Title': (
-									item.get( 'title', None ) or
-									item.get( 'name', '' )
+									item.get( 'title', None )
+									or item.get( 'name', '' )
 							),
 							'Description': (
-									item.get( 'description', None ) or
-									item.get( 'summary', '' )
+									item.get( 'description', None )
+									or item.get( 'summary', '' )
 							),
 							'Start Date': item.get( 'startDate', '' ),
 							'End Date': item.get( 'endDate', '' )
@@ -19994,12 +20992,12 @@ class ClimateData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
 			exception.method = (
-					'_shape_dataset_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'shape_dataset_rows( self, *args, **kwargs ) '
 					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _shape_data_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+	def shape_data_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
@@ -20015,14 +21013,14 @@ class ClimateData( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
-				row: Dict[ str, Any ]={ }
+				row: Dict[ str, Any ] = { }
 				
 				for key, value in item.items( ):
 					friendly_key = str( key ).replace( '_', ' ' ).title( )
-					row[ friendly_key ]=value
+					row[ friendly_key ] = value
 				
 				rows.append( row )
 			
@@ -20032,17 +21030,14 @@ class ClimateData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
-			exception.method = (
-					'_shape_data_rows( self, records: List[ Dict[ str, Any ] ] ) '
-					'-> List[ Dict[ str, Any ] ]'
-			)
+			exception.method = 'shape_data_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ]]'
 			raise exception
 	
-	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
-			Create a compact summary block from normalized rows.
+			Create a compact summary block from normalized climate rows.
 
 			Parameters:
 			-----------
@@ -20060,13 +21055,17 @@ class ClimateData( Fetcher ):
 			
 			if rows:
 				first_title = str(
-					rows[ 0 ].get( 'Title', '' ) or
-					rows[ 0 ].get( 'Station', '' ) or
-					rows[ 0 ].get( 'Date', '' ) or ''
+					rows[ 0 ].get( 'Title', '' )
+					or rows[ 0 ].get( 'Station', '' )
+					or rows[ 0 ].get( 'Date', '' )
+					or rows[ 0 ].get( 'Start Date', '' )
+					or ''
 				)
 				first_dataset = str(
-					rows[ 0 ].get( 'Dataset', '' ) or
-					rows[ 0 ].get( 'Datatype', '' ) or ''
+					rows[ 0 ].get( 'Dataset', '' )
+					or rows[ 0 ].get( 'Datatype', '' )
+					or rows[ 0 ].get( 'Data Type', '' )
+					or ''
 				)
 			
 			return {
@@ -20079,15 +21078,114 @@ class ClimateData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
+			exception.method = 'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			raise exception
+	
+	def package_response( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Package stored NOAA Climate response state into the app-facing result.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized output rows.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
 			exception.method = (
-					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_datasets( self, keyword: str='', start_date: str='',
-			end_date: str='', limit: int=25, offset: int=0,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def request( self, url: str, params: Dict[ str, Any ], time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Send a GET request to a NOAA NCEI climate endpoint and store response state.
+
+			Parameters:
+			-----------
+			url (str):
+				NOAA NCEI request URL.
+
+			params (Dict[str, Any]):
+				Query parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'url', url )
+			throw_if( 'params', params )
+			throw_if( 'time', time )
+			
+			self.url = str( url ).strip( )
+			self.timeout = int( time )
+			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			for key, value in params.items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
+				timeout=self.timeout )
+			self.response.raise_for_status( )
+			
+			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
+			if 'application/json' in content_type:
+				self.payload = self.response.json( ) or { }
+			else:
+				self.payload = self.response.text or ''
+			
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'ClimateData'
+			exception.method = 'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			raise exception
+	
+	def fetch_datasets( self, keyword: str = '', start_date: str = '', end_date: str = '',
+			limit: int = 25, offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20118,45 +21216,43 @@ class ClimateData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'limit', limit )
+			throw_if( 'offset', offset )
+			throw_if( 'time', time )
+			
 			self.mode = 'datasets'
-			base = self.request(
-				url=f'{self.search_url}/datasets',
-				params={
-						'keyword': str( keyword ).strip( ),
-						'startDate': str( start_date ).strip( ),
-						'endDate': str( end_date ).strip( ),
-						'limit': max( 1, int( limit ) ),
-						'offset': max( 0, int( offset ) )
+			self.keyword = str( keyword or '' ).strip( )
+			self.start_date = str( start_date or '' ).strip( )
+			self.end_date = str( end_date or '' ).strip( )
+			self.limit = self.validate_limit( limit )
+			self.offset = self.validate_offset( offset )
+			self.timeout = int( time )
+			if self.start_date and self.end_date:
+				self.start_date, self.end_date = self.validate_date_range( self.start_date,
+					self.end_date )
+			
+			self.request( url=f'{self.search_url}/datasets', params={
+						'keyword': self.keyword,
+						'startDate': self.start_date,
+						'endDate': self.end_date,
+						'limit': self.limit,
+						'offset': self.offset
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout )
 			
-			payload = base.get( 'raw', { } ) or { }
-			records = payload.get( 'results', [ ] ) if isinstance( payload, dict ) else [ ]
-			rows = self._shape_dataset_rows( records )
-			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
-			}
+			records = self.coalesce_records( self.payload )
+			rows = self.shape_dataset_rows( records )
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
-			exception.method = (
-					'fetch_datasets( self, keyword: str=, start_date: str=, end_date: str=, '
-					'limit: int=25, offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_datasets( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			raise exception
 	
-	def fetch_data( self, dataset: str, start_date: str, end_date: str,
-			stations: str='', data_types: str='', limit: int=25,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_data( self, dataset: str, start_date: str, end_date: str, stations: str = '',
+			data_types: str = '', limit: int = 25, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20177,10 +21273,10 @@ class ClimateData( Fetcher ):
 				Optional comma-separated station identifiers.
 
 			data_types (str):
-				Optional comma-separated datatype identifiers.
+				Optional comma-separated data type identifiers.
 
 			limit (int):
-				Maximum returned rows.
+				Maximum returned records.
 
 			time (int):
 				Request timeout in seconds.
@@ -20193,53 +21289,42 @@ class ClimateData( Fetcher ):
 			throw_if( 'dataset', dataset )
 			throw_if( 'start_date', start_date )
 			throw_if( 'end_date', end_date )
+			throw_if( 'limit', limit )
+			throw_if( 'time', time )
 			
 			self.mode = 'data'
-			base = self.request(
-				url=self.data_url,
-				params={
-						'dataset': str( dataset ).strip( ),
-						'startDate': str( start_date ).strip( ),
-						'endDate': str( end_date ).strip( ),
-						'stations': str( stations ).strip( ),
-						'dataTypes': str( data_types ).strip( ),
-						'format': 'json',
-						'limit': max( 1, int( limit ) )
-				},
-				time=int( time )
-			) or { }
+			self.dataset = str( dataset ).strip( )
+			self.start_date, self.end_date = self.validate_date_range( start_date, end_date )
+			self.stations = str( stations or '' ).strip( )
+			self.data_types = str( data_types or '' ).strip( )
+			self.limit = self.validate_limit( limit )
+			self.timeout = int( time )
 			
-			payload = base.get( 'raw', [ ] ) or [ ]
-			rows = self._shape_data_rows( payload if isinstance( payload, list ) else [ ] )
+			self.request( url=self.data_url,
+				params={ 'dataset': self.dataset, 'startDate': self.start_date, 'endDate': self.end_date,
+						'stations': self.stations, 'dataTypes': self.data_types,
+						'format': 'json', 'limit': self.limit },
+				time=self.timeout )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
-			}
+			records = self.coalesce_records( self.payload )
+			rows = self.shape_data_rows( records )
+			
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
-			exception.method = (
-					'fetch_data( self, dataset: str, start_date: str, end_date: str, '
-					'stations: str=, data_types: str=, limit: int=25, time: int=20 ) '
-					'-> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_data( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			raise exception
 	
-	def fetch( self, mode: str='datasets', keyword: str='', dataset: str='',
-			start_date: str='', end_date: str='', stations: str='',
-			data_types: str='', limit: int=25, offset: int=0,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'datasets', keyword: str = '', dataset: str = '',
+			start_date: str = '', end_date: str = '', stations: str = '', data_types: str = '',
+			limit: int = 25, offset: int = 0, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Unified dispatcher for NOAA climate dataset discovery and data retrieval.
+			Unified dispatcher for NOAA NCEI climate dataset discovery and data retrieval.
 
 			Parameters:
 			-----------
@@ -20249,22 +21334,22 @@ class ClimateData( Fetcher ):
 				- data
 
 			keyword (str):
-				Optional dataset search keyword.
+				Optional search keyword for datasets mode.
 
 			dataset (str):
 				Dataset identifier for data mode.
 
 			start_date (str):
-				Optional start date.
+				ISO start date.
 
 			end_date (str):
-				Optional end date.
+				ISO end date.
 
 			stations (str):
-				Optional comma-separated station identifiers.
+				Optional station identifiers for data mode.
 
 			data_types (str):
-				Optional comma-separated datatype identifiers.
+				Optional data type identifiers for data mode.
 
 			limit (int):
 				Maximum returned rows.
@@ -20280,66 +21365,56 @@ class ClimateData( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'datasets' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'datasets':
+			self.mode = str( mode or 'datasets' ).strip( ).lower( )
+			
+			if self.mode == 'datasets':
 				return self.fetch_datasets(
 					keyword=keyword,
 					start_date=start_date,
 					end_date=end_date,
 					limit=limit,
 					offset=offset,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'data':
-				return self.fetch_data(
-					dataset=dataset,
-					start_date=start_date,
-					end_date=end_date,
-					stations=stations,
-					data_types=data_types,
-					limit=limit,
-					time=int( time )
-				)
+			if self.mode == 'data':
+				return self.fetch_data( dataset=dataset, start_date=start_date, end_date=end_date,
+					stations=stations, data_types=data_types, limit=limit, time=time )
 			
-			raise ValueError( "Unsupported mode. Use 'datasets' or 'data'." )
+			raise ValueError( "Unsupported ClimateData mode. Use 'datasets' or 'data'." )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
-			exception.method = (
-					'fetch( self, mode: str=datasets, keyword: str=, dataset: str=, '
-					'start_date: str=, end_date: str=, stations: str=, data_types: str=, '
-					'limit: int=25, offset: int=0, time: int=20 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			raise exception
 	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict,
+	def create_schema( self, function: str, tool: str, description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -20351,19 +21426,24 @@ class ClimateData( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -20372,8 +21452,7 @@ class ClimateData( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -20383,40 +21462,28 @@ class EoNet( Fetcher ):
 		--------
 		Provides access to NASA EONET Version 3 for event discovery and category
 		discovery, returning human-readable normalized rows.
-
-		Referenced API Requirements:
-		----------------------------
-		EONET Version 3 Base Endpoint:
-			- https://eonet.gsfc.nasa.gov/api/v3
-
-		Resources used here:
-			- /events
-			- /events/geojson
-			- /categories
-
-		Common event filters:
-			- source
-			- category
-			- status
-			- limit
-			- days
-			- start
-			- end
-			- bbox
-
 	'''
 	base_url: Optional[ str ]
 	mode: Optional[ str ]
+	endpoint: Optional[ str ]
+	source: Optional[ str ]
+	category: Optional[ str ]
+	status: Optional[ str ]
+	limit: Optional[ int ]
+	days: Optional[ int ]
+	start_date: Optional[ str ]
+	end_date: Optional[ str ]
+	bbox: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
-	timeout: Optional[ int ]
+	result: Optional[ Dict[ str, Any ] ]
 	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			--------
-			Initialize the NASA EONET fetcher.
+			Initialize the NASA EONET v3 fetcher.
 
 			Parameters:
 			-----------
@@ -20429,8 +21496,20 @@ class EoNet( Fetcher ):
 		super( ).__init__( )
 		self.base_url = 'https://eonet.gsfc.nasa.gov/api/v3'
 		self.mode = 'events'
+		self.endpoint = None
+		self.source = ''
+		self.category = ''
+		self.status = 'open'
+		self.limit = 25
+		self.days = 30
+		self.start_date = ''
+		self.end_date = ''
+		self.bbox = ''
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
 		self.headers = {
@@ -20455,144 +21534,340 @@ class EoNet( Fetcher ):
 		return [
 				'base_url',
 				'mode',
+				'endpoint',
+				'source',
+				'category',
+				'status',
+				'limit',
+				'days',
+				'start_date',
+				'end_date',
+				'bbox',
 				'params',
 				'payload',
+				'result',
+				'response',
+				'url',
 				'timeout',
+				'agents',
+				'headers',
+				'validate_endpoint',
+				'validate_status',
+				'validate_limit',
+				'validate_days',
+				'validate_bbox',
+				'validate_date_pair',
+				'shape_event_rows',
+				'shape_category_rows',
+				'summarize_rows',
+				'package_response',
 				'request',
-				'_shape_event_rows',
-				'_shape_category_rows',
-				'_summarize_rows',
 				'fetch_events',
 				'fetch_categories',
 				'fetch',
 				'create_schema'
 		]
 	
-	def request( self, endpoint: str,
-			params: Optional[ Dict[ str, Any ] ]=None,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def validate_endpoint( self, endpoint: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to an EONET endpoint.
+			Validate a NASA EONET v3 endpoint.
 
 			Parameters:
 			-----------
 			endpoint (str):
-				Endpoint path under the EONET base URL.
-
-			params (Optional[Dict[str, Any]]):
-				Query string parameters.
-
-			time (int):
-				Request timeout in seconds.
+				EONET endpoint name.
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			str
 		'''
 		try:
 			throw_if( 'endpoint', endpoint )
 			
-			self.url = f'{self.base_url}/{str( endpoint ).strip( )}'
-			self.params = { }
-			
-			for key, value in (params or { }).items( ):
-				if value is None:
-					continue
-				if isinstance( value, str ) and not value.strip( ):
-					continue
-				self.params[ key ]=value
-			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
-			)
-			self.response.raise_for_status( )
-			
-			self.payload = self.response.json( )
-			
-			return {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
+			value = str( endpoint ).strip( ).lower( )
+			allowed = {
+					'events',
+					'categories'
 			}
+			
+			if value not in allowed:
+				raise ValueError( "endpoint must be 'events' or 'categories'." )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = 'validate_endpoint( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_status( self, status: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate an EONET event status filter.
+
+			Parameters:
+			-----------
+			status (str):
+				Event status filter.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'status', status )
+			
+			value = str( status ).strip( ).lower( )
+			allowed = {
+					'open',
+					'closed',
+					'all'
+			}
+			
+			if value not in allowed:
+				raise ValueError( "status must be 'open', 'closed', or 'all'." )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = 'validate_status( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_limit( self, limit: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate the EONET event limit.
+
+			Parameters:
+			-----------
+			limit (int):
+				Maximum returned events.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'limit', limit )
+			
+			value = int( limit )
+			if value < 1 or value > 500:
+				raise ValueError( 'limit must be between 1 and 500.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = 'validate_limit( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_days( self, days: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate the EONET prior-day event window.
+
+			Parameters:
+			-----------
+			days (int):
+				Number of prior days including today.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'days', days )
+			
+			value = int( days )
+			if value < 1 or value > 3650:
+				raise ValueError( 'days must be between 1 and 3650.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = 'validate_days( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_bbox( self, bbox: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate an optional EONET bounding-box string.
+
+			Parameters:
+			-----------
+			bbox (str):
+				Optional bounding box in min_lon,max_lat,max_lon,min_lat format.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( bbox or '' ).strip( )
+			
+			if not value:
+				return ''
+			
+			parts = [
+					part.strip( )
+					for part in value.split( ',' )
+			]
+			
+			if len( parts ) != 4:
+				raise ValueError(
+					'bbox must use min_lon,max_lat,max_lon,min_lat format.'
+				)
+			
+			numbers = [ float( part ) for part in parts ]
+			min_lon, max_lat, max_lon, min_lat = numbers
+			
+			if min_lon < -180.0 or min_lon > 180.0:
+				raise ValueError( 'bbox min_lon must be between -180 and 180.' )
+			
+			if max_lon < -180.0 or max_lon > 180.0:
+				raise ValueError( 'bbox max_lon must be between -180 and 180.' )
+			
+			if min_lat < -90.0 or min_lat > 90.0:
+				raise ValueError( 'bbox min_lat must be between -90 and 90.' )
+			
+			if max_lat < -90.0 or max_lat > 90.0:
+				raise ValueError( 'bbox max_lat must be between -90 and 90.' )
+			
+			if min_lon >= max_lon:
+				raise ValueError( 'bbox min_lon must be less than max_lon.' )
+			
+			if min_lat >= max_lat:
+				raise ValueError( 'bbox min_lat must be less than max_lat.' )
+			
+			return ','.join( [ str( number ) for number in numbers ] )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = 'validate_bbox( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_date_pair( self, start_date: str = '', end_date: str = '' ) -> Tuple[ str, str ]:
+		'''
+			Purpose:
+			--------
+			Validate optional EONET start/end date filters.
+
+			Parameters:
+			-----------
+			start_date (str):
+				Optional start date in YYYY-MM-DD format.
+
+			end_date (str):
+				Optional end date in YYYY-MM-DD format.
+
+			Returns:
+			--------
+			Tuple[str, str]
+		'''
+		try:
+			start_value = str( start_date or '' ).strip( )
+			end_value = str( end_date or '' ).strip( )
+			
+			if bool( start_value ) != bool( end_value ):
+				raise ValueError(
+					'start_date and end_date must either both be supplied or both be blank.'
+				)
+			
+			if start_value and end_value and start_value > end_value:
+				raise ValueError( 'start_date must be on or before end_date.' )
+			
+			return start_value, end_value
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'EoNet'
 			exception.method = (
-					'request( self, endpoint: str, '
-					'params: Optional[ Dict[ str, Any ] ]=None, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'validate_date_pair( self, *args, **kwargs ) -> Tuple[ str, str ]'
 			)
 			raise exception
 	
-	def _shape_event_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+	def shape_event_rows( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize EONET event records into a human-readable table.
+			Normalize EONET event records into display rows.
 
 			Parameters:
 			-----------
 			records (List[Dict[str, Any]]):
-				Event records returned by EONET.
+				EONET event records.
 
 			Returns:
 			--------
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
 				categories = item.get( 'categories', [ ] ) or [ ]
 				sources = item.get( 'sources', [ ] ) or [ ]
 				geometry = item.get( 'geometry', [ ] ) or [ ]
+				last_geometry = geometry[ -1 ] if geometry else { }
+				coordinates = last_geometry.get( 'coordinates', [ ] ) or [ ]
+				geometry_type = str( last_geometry.get( 'type', '' ) or '' )
+				latitude = None
+				longitude = None
+				
+				if geometry_type.lower( ) == 'point' and isinstance( coordinates, list ):
+					longitude = coordinates[ 0 ] if len( coordinates ) > 0 else None
+					latitude = coordinates[ 1 ] if len( coordinates ) > 1 else None
 				
 				category_titles = ', '.join(
 					[
-							str( category.get( 'title', '' ) )
+							str( category.get( 'title', category.get( 'id', '' ) ) )
 							for category in categories
 							if isinstance( category, dict )
 					]
 				)
-				
-				source_titles = ', '.join(
+				source_ids = ', '.join(
 					[
-							str(
-								source.get( 'id', '' ) or
-								source.get( 'title', '' )
-							)
+							str( source.get( 'id', source.get( 'title', '' ) ) )
 							for source in sources
 							if isinstance( source, dict )
 					]
 				)
-				
-				last_geometry_date = ''
-				if geometry:
-					last_geometry = geometry[ -1 ]
-					if isinstance( last_geometry, dict ):
-						last_geometry_date = str( last_geometry.get( 'date', '' ) or '' )
-				
-				status = 'open'
-				if item.get( 'closed', None ) is not None:
-					status = 'closed'
+				closed_date = str( item.get( 'closed', '' ) or '' )
+				status = 'closed' if closed_date else 'open'
 				
 				rows.append(
 					{
 							'Id': item.get( 'id', '' ),
 							'Title': item.get( 'title', '' ),
 							'Status': status,
-							'Closed': item.get( 'closed', None ),
+							'Closed Date': closed_date,
 							'Categories': category_titles,
-							'Sources': source_titles,
+							'Sources': source_ids,
 							'Geometry Count': len( geometry ),
-							'Last Geometry Date': last_geometry_date,
+							'Last Geometry Type': geometry_type,
+							'Last Geometry Date': last_geometry.get( 'date', '' ),
+							'Latitude': latitude,
+							'Longitude': longitude,
 							'Link': item.get( 'link', '' ),
 							'Description': item.get( 'description', '' )
 					}
@@ -20605,28 +21880,29 @@ class EoNet( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EoNet'
 			exception.method = (
-					'_shape_event_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'shape_event_rows( self, *args, **kwargs ) '
 					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _shape_category_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+	def shape_category_rows( self,
+			records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize EONET category records into a human-readable table.
+			Normalize EONET category records into display rows.
 
 			Parameters:
 			-----------
 			records (List[Dict[str, Any]]):
-				Category records returned by EONET.
+				EONET category records.
 
 			Returns:
 			--------
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
 				rows.append(
@@ -20645,12 +21921,12 @@ class EoNet( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EoNet'
 			exception.method = (
-					'_shape_category_rows( self, records: List[ Dict[ str, Any ] ] ) '
+					'shape_category_rows( self, *args, **kwargs ) '
 					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
@@ -20691,15 +21967,118 @@ class EoNet( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EoNet'
 			exception.method = (
-					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_events( self, source: str='', category: str='',
-			status: str='open', limit: int=25, days: int=30,
-			start_date: str='', end_date: str='', bbox: str='',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def package_response( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Package stored EONET response state into the app-facing result.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized output rows.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Send a GET request to a NASA EONET v3 endpoint and store response state.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				EONET endpoint name.
+
+			params (Optional[Dict[str, Any]]):
+				Query parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			throw_if( 'time', time )
+			
+			self.endpoint = self.validate_endpoint( endpoint )
+			self.timeout = int( time )
+			self.url = f'{self.base_url}/{self.endpoint}'
+			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( ) or { }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EoNet'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_events( self, source: str = '', category: str = '',
+			status: str = 'open', limit: int = 25, days: int = 30,
+			start_date: str = '', end_date: str = '', bbox: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20714,10 +22093,7 @@ class EoNet( Fetcher ):
 				Optional category identifier or comma-separated category identifiers.
 
 			status (str):
-				Event status filter:
-				- open
-				- closed
-				- all
+				Event status filter.
 
 			limit (int):
 				Maximum returned events.
@@ -20732,8 +22108,7 @@ class EoNet( Fetcher ):
 				Optional ISO end date.
 
 			bbox (str):
-				Optional bounding box in:
-				min_lon,max_lat,max_lon,min_lat
+				Optional bounding box in min_lon,max_lat,max_lon,min_lat format.
 
 			time (int):
 				Request timeout in seconds.
@@ -20743,51 +22118,62 @@ class EoNet( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'status', status )
+			throw_if( 'limit', limit )
+			throw_if( 'days', days )
+			throw_if( 'time', time )
+			
 			self.mode = 'events'
-			base = self.request(
+			self.source = str( source or '' ).strip( )
+			self.category = str( category or '' ).strip( )
+			self.status = self.validate_status( status )
+			self.limit = self.validate_limit( limit )
+			self.days = self.validate_days( days )
+			self.start_date, self.end_date = self.validate_date_pair(
+				start_date=start_date,
+				end_date=end_date
+			)
+			self.bbox = self.validate_bbox( bbox )
+			self.timeout = int( time )
+			
+			self.request(
 				endpoint='events',
 				params={
-						'source': str( source ).strip( ),
-						'category': str( category ).strip( ),
-						'status': str( status ).strip( ),
-						'limit': max( 1, int( limit ) ),
-						'days': max( 1, int( days ) ),
-						'start': str( start_date ).strip( ),
-						'end': str( end_date ).strip( ),
-						'bbox': str( bbox ).strip( )
+						'source': self.source,
+						'category': self.category,
+						'status': self.status,
+						'limit': self.limit,
+						'days': self.days,
+						'start': self.start_date,
+						'end': self.end_date,
+						'bbox': self.bbox
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			payload = base.get( 'raw', { } ) or { }
-			records = payload.get( 'events', [ ] ) if isinstance( payload, dict ) else [ ]
-			rows = self._shape_event_rows( records )
+			records = (
+					self.payload.get( 'events', [ ] )
+					if isinstance( self.payload, dict )
+					else [ ]
+			)
+			rows = self.shape_event_rows( records )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'EoNet'
 			exception.method = (
-					'fetch_events( self, source: str=, category: str=, status: str=open, '
-					'limit: int=25, days: int=30, start_date: str=, end_date: str=, '
-					'bbox: str=, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_events( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_categories( self, time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch_categories( self, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch EONET categories.
+			Fetch EONET event categories.
 
 			Parameters:
 			-----------
@@ -20799,37 +22185,39 @@ class EoNet( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
+			throw_if( 'time', time )
+			
 			self.mode = 'categories'
-			base = self.request(
+			self.timeout = int( time )
+			
+			self.request(
 				endpoint='categories',
 				params={ },
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			payload = base.get( 'raw', { } ) or { }
-			records = payload.get( 'categories', [ ] ) if isinstance( payload, dict ) else [ ]
-			rows = self._shape_category_rows( records )
+			records = (
+					self.payload.get( 'categories', [ ] )
+					if isinstance( self.payload, dict )
+					else [ ]
+			)
+			rows = self.shape_category_rows( records )
 			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'EoNet'
-			exception.method = 'fetch_categories( self, time: int=20 ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_categories( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
-	def fetch( self, mode: str='events', source: str='', category: str='',
-			status: str='open', limit: int=25, days: int=30,
-			start_date: str='', end_date: str='', bbox: str='',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'events', source: str = '', category: str = '',
+			status: str = 'open', limit: int = 25, days: int = 30,
+			start_date: str = '', end_date: str = '', bbox: str = '',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -20858,10 +22246,10 @@ class EoNet( Fetcher ):
 				Number of prior days including today.
 
 			start_date (str):
-				Optional ISO start date.
+				Optional start date.
 
 			end_date (str):
-				Optional ISO end date.
+				Optional end date.
 
 			bbox (str):
 				Optional bounding box string.
@@ -20874,9 +22262,11 @@ class EoNet( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'events' ).strip( ).lower( )
+			throw_if( 'mode', mode )
 			
-			if active_mode == 'events':
+			self.mode = str( mode or 'events' ).strip( ).lower( )
+			
+			if self.mode == 'events':
 				return self.fetch_events(
 					source=source,
 					category=category,
@@ -20886,24 +22276,22 @@ class EoNet( Fetcher ):
 					start_date=start_date,
 					end_date=end_date,
 					bbox=bbox,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'categories':
+			if self.mode == 'categories':
 				return self.fetch_categories(
-					time=int( time )
+					time=time
 				)
 			
-			raise ValueError( "Unsupported mode. Use 'events' or 'categories'." )
+			raise ValueError( "Unsupported EONET mode. Use 'events' or 'categories'." )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'EoNet'
 			exception.method = (
-					'fetch( self, mode: str=events, source: str=, category: str=, '
-					'status: str=open, limit: int=25, days: int=30, start_date: str=, '
-					'end_date: str=, bbox: str=, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -20913,24 +22301,24 @@ class EoNet( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -20942,19 +22330,24 @@ class EoNet( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -20962,50 +22355,33 @@ class EoNet( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'EoNet'
-			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
-			)
+			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			raise exception
 
 class EnviroFacts( Fetcher ):
 	'''
 		Purpose:
 		--------
-		Provides access to selected EPA Envirofacts Data Service API tables using
-		a constrained, human-readable wrapper for common environmental queries.
-
-		Referenced API Requirements:
-		----------------------------
-		Envirofacts Data Service API:
-			- Base:
-			  https://enviro.epa.gov/enviro/efservice
-
-		Supported first-pass tables in this wrapper:
-			- TRI_FACILITY
-			- TRI_RELEASE
-			- EF_W_EMISSIONS_SOURCE_GHG
-
-		Common query concepts:
-			- table selection
-			- row limiting
-			- optional state filtering
-			- optional facility-name prefix filtering
-			- JSON output
-
+		Provides access to selected EPA Envirofacts Data Service API tables using a
+		constrained, human-readable wrapper for common environmental queries.
 	'''
 	base_url: Optional[ str ]
 	mode: Optional[ str ]
+	table_name: Optional[ str ]
+	state_code: Optional[ str ]
+	facility_name: Optional[ str ]
+	limit: Optional[ int ]
+	path: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
-	timeout: Optional[ int ]
+	result: Optional[ Dict[ str, Any ] ]
 	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			--------
-			Initialize the Envirofacts fetcher.
+			Initialize the EPA Envirofacts fetcher.
 
 			Parameters:
 			-----------
@@ -21016,10 +22392,18 @@ class EnviroFacts( Fetcher ):
 			None
 		'''
 		super( ).__init__( )
-		self.base_url = 'https://enviro.epa.gov/enviro/efservice'
+		self.base_url = 'https://data.epa.gov/efservice'
 		self.mode = 'table'
+		self.table_name = 'TRI_FACILITY'
+		self.state_code = ''
+		self.facility_name = ''
+		self.limit = 25
+		self.path = ''
 		self.params = { }
 		self.payload = [ ]
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
 		self.headers = {
@@ -21044,39 +22428,42 @@ class EnviroFacts( Fetcher ):
 		return [
 				'base_url',
 				'mode',
+				'table_name',
+				'state_code',
+				'facility_name',
+				'limit',
+				'path',
 				'params',
 				'payload',
+				'result',
+				'response',
+				'url',
 				'timeout',
-				'_resolve_table_path',
+				'agents',
+				'headers',
+				'validate_table_name',
+				'validate_state_code',
+				'validate_limit',
+				'resolve_table_path',
+				'shape_rows',
+				'summarize_rows',
+				'package_response',
 				'request',
-				'_shape_rows',
-				'_summarize_rows',
 				'fetch_table',
 				'fetch',
 				'create_schema'
 		]
 	
-	def _resolve_table_path( self, table_name: str,
-			state_code: str='', facility_name: str='',
-			limit: int=25 ) -> str:
+	def validate_table_name( self, table_name: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Construct a constrained Envirofacts REST path for a supported table.
+			Validate the constrained Envirofacts table name.
 
 			Parameters:
 			-----------
 			table_name (str):
-				Supported table name.
-
-			state_code (str):
-				Optional state code filter.
-
-			facility_name (str):
-				Optional facility name prefix filter.
-
-			limit (int):
-				Maximum number of returned rows.
+				Supported Envirofacts table name.
 
 			Returns:
 			--------
@@ -21085,101 +22472,191 @@ class EnviroFacts( Fetcher ):
 		try:
 			throw_if( 'table_name', table_name )
 			
-			table_value = str( table_name ).strip( ).upper( )
-			state_value = str( state_code ).strip( ).upper( )
-			facility_value = str( facility_name ).strip( ).upper( )
-			row_limit = max( 1, int( limit ) )
+			value = str( table_name ).strip( ).upper( )
+			allowed = {
+					'TRI_FACILITY',
+					'TRI_RELEASE',
+					'EF_W_EMISSIONS_SOURCE_GHG'
+			}
 			
-			base_path = f'{table_value}'
-			segments: List[ str ]=[ ]
+			if value not in allowed:
+				raise ValueError(
+					'Unsupported Envirofacts table. Use TRI_FACILITY, TRI_RELEASE, '
+					'or EF_W_EMISSIONS_SOURCE_GHG.'
+				)
 			
-			if table_value in [ 'TRI_FACILITY', 'TRI_RELEASE' ]:
-				if state_value:
-					segments.append( f'STATE_ABBR/{state_value}' )
-				
-				if facility_value:
-					segments.append( f'FACILITY_NAME/BEGINNING/{facility_value}' )
-			
-			if table_value == 'EF_W_EMISSIONS_SOURCE_GHG':
-				if state_value:
-					segments.append( f'STATE/{state_value}' )
-				
-				if facility_value:
-					segments.append( f'FACILITY_NAME/BEGINNING/{facility_value}' )
-			
-			path = base_path
-			
-			if segments:
-				path = f'{path}/' + '/'.join( segments )
-			
-			path = f'{path}/rows/0:{row_limit}/JSON'
-			return path
+			return value
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'EnviroFacts'
-			exception.method = (
-					'_resolve_table_path( self, table_name: str, state_code: str=, '
-					'facility_name: str=, limit: int=25 ) -> str'
-			)
+			exception.method = 'validate_table_name( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def request( self, url: str, time: int=20 ) -> Dict[ str, Any ] | None:
+	def validate_state_code( self, state_code: str = '' ) -> str:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to an Envirofacts endpoint.
+			Validate an optional U.S. state or territory code.
 
 			Parameters:
 			-----------
-			url (str):
-				Fully qualified request URL.
-
-			time (int):
-				Request timeout in seconds.
+			state_code (str):
+				Optional two-character state or territory code.
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			str
 		'''
 		try:
-			throw_if( 'url', url )
+			value = str( state_code or '' ).strip( ).upper( )
 			
-			self.url = str( url ).strip( )
-			self.params = { }
+			if not value:
+				return ''
 			
-			self.response = requests.get(
-				url=self.url,
-				headers=self.headers,
-				timeout=int( time )
+			if not re.fullmatch( r'[A-Z]{2}', value ):
+				raise ValueError( 'state_code must be blank or a two-letter code.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = 'validate_state_code( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_limit( self, limit: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate the Envirofacts row limit.
+
+			Parameters:
+			-----------
+			limit (int):
+				Maximum returned rows.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'limit', limit )
+			
+			value = int( limit )
+			if value < 1 or value > 500:
+				raise ValueError( 'limit must be between 1 and 500.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = 'validate_limit( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def resolve_table_path( self, table_name: str, state_code: str = '',
+			facility_name: str = '', limit: int = 25 ) -> str:
+		'''
+			Purpose:
+			--------
+			Build an Envirofacts REST path for the constrained table wrapper.
+
+			Parameters:
+			-----------
+			table_name (str):
+				Supported Envirofacts table name.
+
+			state_code (str):
+				Optional state or territory code filter.
+
+			facility_name (str):
+				Optional facility-name prefix filter.
+
+			limit (int):
+				Maximum returned rows.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			self.table_name = self.validate_table_name( table_name )
+			self.state_code = self.validate_state_code( state_code )
+			self.facility_name = str( facility_name or '' ).strip( )
+			self.limit = self.validate_limit( limit )
+			
+			segments: List[ str ] = [
+					self.table_name
+			]
+			
+			if self.state_code:
+				if self.table_name == 'EF_W_EMISSIONS_SOURCE_GHG':
+					segments.extend(
+						[
+								'STATE',
+								self.state_code
+						]
+					)
+				else:
+					segments.extend(
+						[
+								'ST',
+								self.state_code
+						]
+					)
+			
+			if self.facility_name:
+				if self.table_name == 'EF_W_EMISSIONS_SOURCE_GHG':
+					segments.extend(
+						[
+								'FACILITY_NAME',
+								self.facility_name
+						]
+					)
+				else:
+					segments.extend(
+						[
+								'FACILITY_NAME',
+								self.facility_name
+						]
+					)
+			
+			segments.extend(
+				[
+						'ROWS',
+						str( self.limit ),
+						'JSON'
+				]
 			)
-			self.response.raise_for_status( )
 			
-			self.payload = self.response.json( )
+			self.path = '/'.join(
+				[
+						urllib.parse.quote( str( segment ), safe='' )
+						for segment in segments
+				]
+			)
 			
-			return {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
-			}
+			return self.path
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'EnviroFacts'
 			exception.method = (
-					'request( self, url: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'resolve_table_path( self, *args, **kwargs ) -> str'
 			)
 			raise exception
 	
-	def _shape_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+	def shape_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
 			Normalize Envirofacts rows into a human-readable table by title-casing
-			column names and preserving the original values.
+			column names and preserving original values.
 
 			Parameters:
 			-----------
@@ -21191,14 +22668,17 @@ class EnviroFacts( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
-				row: Dict[ str, Any ]={ }
+				if not isinstance( item, dict ):
+					continue
+				
+				row: Dict[ str, Any ] = { }
 				
 				for key, value in item.items( ):
 					friendly_key = str( key ).replace( '_', ' ' ).title( )
-					row[ friendly_key ]=value
+					row[ friendly_key ] = value
 				
 				rows.append( row )
 			
@@ -21209,12 +22689,11 @@ class EnviroFacts( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EnviroFacts'
 			exception.method = (
-					'_shape_rows( self, records: List[ Dict[ str, Any ] ] ) '
-					'-> List[ Dict[ str, Any ] ]'
+					'shape_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
@@ -21236,14 +22715,17 @@ class EnviroFacts( Fetcher ):
 			
 			if rows:
 				first_facility = str(
-					rows[ 0 ].get( 'Facility Name', '' ) or
-					rows[ 0 ].get( 'Primary Name', '' ) or
-					rows[ 0 ].get( 'Name', '' ) or ''
+					rows[ 0 ].get( 'Facility Name', '' )
+					or rows[ 0 ].get( 'Primary Name', '' )
+					or rows[ 0 ].get( 'Name', '' )
+					or ''
 				)
 				
 				first_state = str(
-					rows[ 0 ].get( 'State', '' ) or
-					rows[ 0 ].get( 'State Abbr', '' ) or ''
+					rows[ 0 ].get( 'State', '' )
+					or rows[ 0 ].get( 'State Abbr', '' )
+					or rows[ 0 ].get( 'St', '' )
+					or ''
 				)
 			
 			return {
@@ -21257,14 +22739,102 @@ class EnviroFacts( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EnviroFacts'
 			exception.method = (
-					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			)
 			raise exception
 	
-	def fetch_table( self, table_name: str, state_code: str='',
-			facility_name: str='', limit: int=25,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def package_response( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Package stored Envirofacts response state into the app-facing result.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized Envirofacts rows.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			self.result = {
+					'mode': self.mode,
+					'table_name': self.table_name,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def request( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to an Envirofacts endpoint and store response state.
+
+			Parameters:
+			-----------
+			url (str):
+				Fully qualified Envirofacts request URL.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'url', url )
+			throw_if( 'time', time )
+			
+			self.url = str( url ).strip( )
+			self.timeout = int( time )
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			self.response = requests.get(
+				url=self.url,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( )
+			self.result = {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'EnviroFacts'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_table( self, table_name: str, state_code: str = '',
+			facility_name: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21273,13 +22843,10 @@ class EnviroFacts( Fetcher ):
 			Parameters:
 			-----------
 			table_name (str):
-				Supported table name:
-				- TRI_FACILITY
-				- TRI_RELEASE
-				- EF_W_EMISSIONS_SOURCE_GHG
+				Supported Envirofacts table name.
 
 			state_code (str):
-				Optional state filter.
+				Optional state or territory code filter.
 
 			facility_name (str):
 				Optional facility-name prefix filter.
@@ -21296,66 +22863,45 @@ class EnviroFacts( Fetcher ):
 		'''
 		try:
 			throw_if( 'table_name', table_name )
-			
-			table_value = str( table_name ).strip( ).upper( )
-			supported_tables: List[ str ]=[
-					'TRI_FACILITY',
-					'TRI_RELEASE',
-					'EF_W_EMISSIONS_SOURCE_GHG'
-			]
-			
-			if table_value not in supported_tables:
-				raise ValueError(
-					'Unsupported Envirofacts table. Use TRI_FACILITY, TRI_RELEASE, '
-					'or EF_W_EMISSIONS_SOURCE_GHG.'
-				)
+			throw_if( 'limit', limit )
+			throw_if( 'time', time )
 			
 			self.mode = 'table'
-			path = self._resolve_table_path(
-				table_name=table_value,
+			self.path = self.resolve_table_path(
+				table_name=table_name,
 				state_code=state_code,
 				facility_name=facility_name,
-				limit=int( limit )
+				limit=limit
+			)
+			self.params = {
+					'table_name': self.table_name,
+					'state_code': self.state_code,
+					'facility_name': self.facility_name,
+					'limit': self.limit
+			}
+			
+			self.request(
+				url=f'{self.base_url}/{self.path}',
+				time=int( time )
 			)
 			
-			base = self.request(
-				url=f'{self.base_url}/{path}',
-				time=int( time )
-			) or { }
+			records = self.payload if isinstance( self.payload, list ) else [ ]
+			rows = self.shape_rows( records )
 			
-			payload = base.get( 'raw', [ ] ) or [ ]
-			records = payload if isinstance( payload, list ) else [ ]
-			rows = self._shape_rows( records )
-			
-			return {
-					'mode': self.mode,
-					'table_name': table_value,
-					'url': base.get( 'url', '' ),
-					'params': {
-							'table_name': table_value,
-							'state_code': str( state_code ).strip( ).upper( ),
-							'facility_name': str( facility_name ).strip( ),
-							'limit': max( 1, int( limit ) )
-					},
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'EnviroFacts'
 			exception.method = (
-					'fetch_table( self, table_name: str, state_code: str=, '
-					'facility_name: str=, limit: int=25, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_table( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, table_name: str='TRI_FACILITY', state_code: str='',
-			facility_name: str='', limit: int=25,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, table_name: str = 'TRI_FACILITY', state_code: str = '',
+			facility_name: str = '', limit: int = 25,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -21364,10 +22910,10 @@ class EnviroFacts( Fetcher ):
 			Parameters:
 			-----------
 			table_name (str):
-				Supported table name.
+				Supported Envirofacts table name.
 
 			state_code (str):
-				Optional state filter.
+				Optional state or territory code filter.
 
 			facility_name (str):
 				Optional facility-name prefix filter.
@@ -21388,7 +22934,7 @@ class EnviroFacts( Fetcher ):
 				state_code=state_code,
 				facility_name=facility_name,
 				limit=limit,
-				time=int( time )
+				time=time
 			)
 		
 		except Exception as e:
@@ -21396,9 +22942,7 @@ class EnviroFacts( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EnviroFacts'
 			exception.method = (
-					'fetch( self, table_name: str=TRI_FACILITY, state_code: str=, '
-					'facility_name: str=, limit: int=25, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -21408,24 +22952,24 @@ class EnviroFacts( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -21437,19 +22981,24 @@ class EnviroFacts( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -21458,8 +23007,7 @@ class EnviroFacts( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'EnviroFacts'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -21469,32 +23017,20 @@ class TidesAndCurrents( Fetcher ):
 		--------
 		Provides access to NOAA CO-OPS Tides and Currents APIs for station metadata,
 		water-level observations, and tide predictions.
-
-		Referenced API Requirements:
-		----------------------------
-		NOAA CO-OPS Data API:
-			- https://api.tidesandcurrents.noaa.gov/api/prod/datagetter
-
-		NOAA CO-OPS Metadata API:
-			- https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi
-
-		Common Data API parameters:
-			- product
-			- station
-			- begin_date
-			- end_date
-			- datum
-			- units
-			- time_zone
-			- format
-
 	'''
 	data_url: Optional[ str ]
 	metadata_url: Optional[ str ]
 	mode: Optional[ str ]
+	station_id: Optional[ str ]
+	begin_date: Optional[ str ]
+	end_date: Optional[ str ]
+	datum: Optional[ str ]
+	units: Optional[ str ]
+	time_zone: Optional[ str ]
+	interval: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
-	timeout: Optional[ int ]
+	result: Optional[ Dict[ str, Any ] ]
 	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -21515,8 +23051,18 @@ class TidesAndCurrents( Fetcher ):
 		self.data_url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
 		self.metadata_url = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi'
 		self.mode = 'water-level'
+		self.station_id = ''
+		self.begin_date = ''
+		self.end_date = ''
+		self.datum = 'MLLW'
+		self.units = 'metric'
+		self.time_zone = 'gmt'
+		self.interval = 'hilo'
 		self.params = { }
 		self.payload = { }
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
 		self.headers = {
@@ -21542,13 +23088,33 @@ class TidesAndCurrents( Fetcher ):
 				'data_url',
 				'metadata_url',
 				'mode',
+				'station_id',
+				'begin_date',
+				'end_date',
+				'datum',
+				'units',
+				'time_zone',
+				'interval',
 				'params',
 				'payload',
+				'result',
+				'response',
+				'url',
 				'timeout',
+				'agents',
+				'headers',
+				'validate_mode',
+				'validate_station_id',
+				'validate_date_range',
+				'validate_datum',
+				'validate_units',
+				'validate_time_zone',
+				'validate_interval',
+				'shape_station_rows',
+				'shape_data_rows',
+				'summarize_rows',
+				'package_response',
 				'request',
-				'_shape_station_rows',
-				'_shape_data_rows',
-				'_summarize_rows',
 				'fetch_station',
 				'fetch_water_level',
 				'fetch_tide_predictions',
@@ -21556,68 +23122,291 @@ class TidesAndCurrents( Fetcher ):
 				'create_schema'
 		]
 	
-	def request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def validate_mode( self, mode: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to a NOAA CO-OPS endpoint.
+			Validate a NOAA CO-OPS wrapper mode.
 
 			Parameters:
 			-----------
-			url (str):
-				Target endpoint URL.
-
-			params (Optional[Dict[str, Any]]):
-				Query string parameters.
-
-			time (int):
-				Request timeout in seconds.
+			mode (str):
+				Requested wrapper mode.
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			str
 		'''
 		try:
-			throw_if( 'url', url )
+			throw_if( 'mode', mode )
 			
-			self.url = str( url ).strip( )
-			self.params = { }
-			
-			for key, value in (params or { }).items( ):
-				if value is None:
-					continue
-				if isinstance( value, str ) and not value.strip( ):
-					continue
-				self.params[ key ]=value
-			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
-			)
-			self.response.raise_for_status( )
-			
-			self.payload = self.response.json( )
-			
-			return {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
+			value = str( mode ).strip( ).lower( )
+			allowed = {
+					'station',
+					'water-level',
+					'tide-predictions'
 			}
+			
+			if value not in allowed:
+				raise ValueError(
+					"Unsupported NOAA Tides & Currents mode. Use 'station', "
+					"'water-level', or 'tide-predictions'."
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = 'validate_mode( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_station_id( self, station_id: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a NOAA CO-OPS station identifier.
+
+			Parameters:
+			-----------
+			station_id (str):
+				NOAA station identifier.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'station_id', station_id )
+			
+			value = str( station_id ).strip( )
+			
+			if not re.fullmatch( r'[A-Za-z0-9_-]{3,20}', value ):
+				raise ValueError(
+					'station_id must contain 3 to 20 letters, digits, underscores, '
+					'or hyphens.'
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = 'validate_station_id( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_date_range( self, begin_date: str, end_date: str ) -> Tuple[ str, str ]:
+		'''
+			Purpose:
+			--------
+			Validate a NOAA CO-OPS begin/end date pair.
+
+			Parameters:
+			-----------
+			begin_date (str):
+				Begin date in YYYYMMDD format.
+
+			end_date (str):
+				End date in YYYYMMDD format.
+
+			Returns:
+			--------
+			Tuple[str, str]
+		'''
+		try:
+			throw_if( 'begin_date', begin_date )
+			throw_if( 'end_date', end_date )
+			
+			begin_value = str( begin_date ).strip( )
+			end_value = str( end_date ).strip( )
+			
+			if not re.fullmatch( r'\d{8}', begin_value ):
+				raise ValueError( 'begin_date must use YYYYMMDD format.' )
+			
+			if not re.fullmatch( r'\d{8}', end_value ):
+				raise ValueError( 'end_date must use YYYYMMDD format.' )
+			
+			if begin_value > end_value:
+				raise ValueError( 'begin_date must be on or before end_date.' )
+			
+			return begin_value, end_value
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'request( self, url: str, params: Optional[ Dict[ str, Any ] ]=None, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'validate_date_range( self, *args, **kwargs ) -> Tuple[ str, str ]'
 			)
 			raise exception
 	
-	def _shape_station_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+	def validate_datum( self, datum: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a NOAA CO-OPS datum option used by the current app controls.
+
+			Parameters:
+			-----------
+			datum (str):
+				Datum value.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'datum', datum )
+			
+			value = str( datum ).strip( ).upper( )
+			allowed = {
+					'MLLW',
+					'MHHW',
+					'MHW',
+					'MTL',
+					'MSL',
+					'MLW',
+					'NAVD',
+					'STND'
+			}
+			
+			if value not in allowed:
+				raise ValueError(
+					'datum must be one of MLLW, MHHW, MHW, MTL, MSL, MLW, NAVD, '
+					'or STND.'
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = 'validate_datum( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_units( self, units: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate NOAA CO-OPS unit selection.
+
+			Parameters:
+			-----------
+			units (str):
+				Unit system.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'units', units )
+			
+			value = str( units ).strip( ).lower( )
+			allowed = {
+					'metric',
+					'english'
+			}
+			
+			if value not in allowed:
+				raise ValueError( "units must be 'metric' or 'english'." )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = 'validate_units( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_time_zone( self, time_zone: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate NOAA CO-OPS time-zone selection.
+
+			Parameters:
+			-----------
+			time_zone (str):
+				Time-zone code.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'time_zone', time_zone )
+			
+			value = str( time_zone ).strip( ).lower( )
+			allowed = {
+					'gmt',
+					'lst',
+					'lst_ldt'
+			}
+			
+			if value not in allowed:
+				raise ValueError( "time_zone must be 'gmt', 'lst', or 'lst_ldt'." )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = 'validate_time_zone( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_interval( self, interval: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate NOAA CO-OPS tide-prediction interval selection.
+
+			Parameters:
+			-----------
+			interval (str):
+				Prediction interval.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'interval', interval )
+			
+			value = str( interval ).strip( ).lower( )
+			allowed = {
+					'hilo',
+					'h',
+					'1',
+					'5',
+					'6',
+					'10',
+					'15',
+					'30',
+					'60'
+			}
+			
+			if value not in allowed:
+				raise ValueError(
+					"interval must be one of 'hilo', 'h', '1', '5', '6', '10', "
+					"'15', '30', or '60'."
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = 'validate_interval( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def shape_station_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
@@ -21633,15 +23422,15 @@ class TidesAndCurrents( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			station = payload.get( 'stations', None )
+			station = payload.get( 'stations', None ) if isinstance( payload, dict ) else None
 			
 			if isinstance( station, list ) and station:
 				station = station[ 0 ]
 			
 			if not isinstance( station, dict ):
-				station = payload
+				station = payload if isinstance( payload, dict ) else { }
 			
-			row: Dict[ str, Any ]={
+			row: Dict[ str, Any ] = {
 					'Station Id': station.get( 'id', '' ),
 					'Name': station.get( 'name', '' ),
 					'State': station.get( 'state', '' ),
@@ -21660,16 +23449,16 @@ class TidesAndCurrents( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'_shape_station_rows( self, payload: Dict[ str, Any ] ) '
+					'shape_station_rows( self, *args, **kwargs ) '
 					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _shape_data_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+	def shape_data_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize NOAA CO-OPS data payloads into a human-readable table.
+			Normalize NOAA CO-OPS water-level and prediction payloads into display rows.
 
 			Parameters:
 			-----------
@@ -21681,18 +23470,25 @@ class TidesAndCurrents( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			if not isinstance( payload, dict ):
+				return rows
+			
 			records = payload.get( 'data', None )
 			
 			if records is None:
 				records = payload.get( 'predictions', [ ] )
 			
 			for item in records or [ ]:
-				row: Dict[ str, Any ]={ }
+				if not isinstance( item, dict ):
+					continue
+				
+				row: Dict[ str, Any ] = { }
 				
 				for key, value in item.items( ):
 					friendly_key = str( key ).replace( '_', ' ' ).title( )
-					row[ friendly_key ]=value
+					row[ friendly_key ] = value
 				
 				rows.append( row )
 			
@@ -21703,16 +23499,16 @@ class TidesAndCurrents( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'_shape_data_rows( self, payload: Dict[ str, Any ] ) '
+					'shape_data_rows( self, *args, **kwargs ) '
 					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
-			Create a compact summary block from normalized rows.
+			Create a compact summary block from normalized NOAA CO-OPS rows.
 
 			Parameters:
 			-----------
@@ -21725,30 +23521,36 @@ class TidesAndCurrents( Fetcher ):
 		'''
 		try:
 			count = len( rows or [ ] )
-			first_time = ''
-			first_value = ''
 			first_station = ''
+			first_value = ''
+			first_time = ''
 			
 			if rows:
-				first_time = str(
-					rows[ 0 ].get( 'T', '' ) or
-					rows[ 0 ].get( 'Time', '' ) or ''
+				first_station = str(
+					rows[ 0 ].get( 'Name', '' )
+					or rows[ 0 ].get( 'Station Id', '' )
+					or self.station_id
+					or ''
 				)
 				first_value = str(
-					rows[ 0 ].get( 'V', '' ) or
-					rows[ 0 ].get( 'Value', '' ) or
-					rows[ 0 ].get( 'Type', '' ) or ''
+					rows[ 0 ].get( 'V', '' )
+					or rows[ 0 ].get( 'Value', '' )
+					or rows[ 0 ].get( 'Prediction', '' )
+					or rows[ 0 ].get( 'Predicted Wl', '' )
+					or ''
 				)
-				first_station = str(
-					rows[ 0 ].get( 'Name', '' ) or
-					rows[ 0 ].get( 'Station Id', '' ) or ''
+				first_time = str(
+					rows[ 0 ].get( 'T', '' )
+					or rows[ 0 ].get( 'Time', '' )
+					or rows[ 0 ].get( 'Date Time', '' )
+					or ''
 				)
 			
 			return {
 					'count': count,
-					'first_time': first_time,
+					'first_station': first_station,
 					'first_value': first_value,
-					'first_station': first_station
+					'first_time': first_time
 			}
 		
 		except Exception as e:
@@ -21756,17 +23558,120 @@ class TidesAndCurrents( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def package_response( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Package stored NOAA CO-OPS response state into the app-facing result.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized output rows.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			self.result = {
+					'mode': self.mode,
+					'station_id': self.station_id,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def request( self, url: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a NOAA CO-OPS endpoint and store response state.
+
+			Parameters:
+			-----------
+			url (str):
+				Target endpoint URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'url', url )
+			throw_if( 'time', time )
+			
+			self.url = str( url ).strip( )
+			self.timeout = int( time )
+			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( ) or { }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'TidesAndCurrents'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_station( self, station_id: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch station metadata.
+			Fetch NOAA CO-OPS station metadata.
 
 			Parameters:
 			-----------
@@ -21782,45 +23687,38 @@ class TidesAndCurrents( Fetcher ):
 		'''
 		try:
 			throw_if( 'station_id', station_id )
+			throw_if( 'time', time )
 			
 			self.mode = 'station'
-			base = self.request(
-				url=f'{self.metadata_url}/stations/{str( station_id ).strip( )}.json',
+			self.station_id = self.validate_station_id( station_id )
+			self.timeout = int( time )
+			
+			self.request(
+				url=f'{self.metadata_url}/stations/{self.station_id}.json',
 				params={ },
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			payload = base.get( 'raw', { } ) or { }
-			rows = self._shape_station_rows( payload )
+			rows = self.shape_station_rows( self.payload )
 			
-			return {
-					'mode': self.mode,
-					'station_id': str( station_id ).strip( ),
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'fetch_station( self, station_id: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_station( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch_water_level( self, station_id: str, begin_date: str, end_date: str,
-			datum: str='MLLW',
-			units: str='metric', time_zone: str='gmt', time: int=20 ) -> Dict[
-				                                                                   str, Any ] | None:
+	def fetch_water_level( self, station_id: str, begin_date: str,
+			end_date: str, datum: str = 'MLLW', units: str = 'metric',
+			time_zone: str = 'gmt', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch water-level observations.
+			Fetch NOAA CO-OPS water-level observations.
 
 			Parameters:
 			-----------
@@ -21853,56 +23751,56 @@ class TidesAndCurrents( Fetcher ):
 			throw_if( 'station_id', station_id )
 			throw_if( 'begin_date', begin_date )
 			throw_if( 'end_date', end_date )
+			throw_if( 'time', time )
 			
 			self.mode = 'water-level'
-			base = self.request(
+			self.station_id = self.validate_station_id( station_id )
+			self.begin_date, self.end_date = self.validate_date_range(
+				begin_date,
+				end_date
+			)
+			self.datum = self.validate_datum( datum )
+			self.units = self.validate_units( units )
+			self.time_zone = self.validate_time_zone( time_zone )
+			self.timeout = int( time )
+			
+			self.request(
 				url=self.data_url,
 				params={
 						'product': 'water_level',
 						'application': 'Foo',
-						'station': str( station_id ).strip( ),
-						'begin_date': str( begin_date ).strip( ),
-						'end_date': str( end_date ).strip( ),
-						'datum': str( datum ).strip( ),
-						'units': str( units ).strip( ),
-						'time_zone': str( time_zone ).strip( ),
+						'station': self.station_id,
+						'begin_date': self.begin_date,
+						'end_date': self.end_date,
+						'datum': self.datum,
+						'units': self.units,
+						'time_zone': self.time_zone,
 						'format': 'json'
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			payload = base.get( 'raw', { } ) or { }
-			rows = self._shape_data_rows( payload )
+			rows = self.shape_data_rows( self.payload )
 			
-			return {
-					'mode': self.mode,
-					'station_id': str( station_id ).strip( ),
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'fetch_water_level( self, station_id: str, begin_date: str, '
-					'end_date: str, datum: str=MLLW, units: str=metric, '
-					'time_zone: str=gmt, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch_water_level( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_tide_predictions( self, station_id: str, begin_date: str,
-			end_date: str, datum: str='MLLW', units: str='metric',
-			time_zone: str='gmt', interval: str='hilo',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			end_date: str, datum: str = 'MLLW', units: str = 'metric',
+			time_zone: str = 'gmt', interval: str = 'hilo',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch tide predictions.
+			Fetch NOAA CO-OPS tide predictions.
 
 			Parameters:
 			-----------
@@ -21938,54 +23836,55 @@ class TidesAndCurrents( Fetcher ):
 			throw_if( 'station_id', station_id )
 			throw_if( 'begin_date', begin_date )
 			throw_if( 'end_date', end_date )
+			throw_if( 'time', time )
 			
 			self.mode = 'tide-predictions'
-			base = self.request(
+			self.station_id = self.validate_station_id( station_id )
+			self.begin_date, self.end_date = self.validate_date_range(
+				begin_date,
+				end_date
+			)
+			self.datum = self.validate_datum( datum )
+			self.units = self.validate_units( units )
+			self.time_zone = self.validate_time_zone( time_zone )
+			self.interval = self.validate_interval( interval )
+			self.timeout = int( time )
+			
+			self.request(
 				url=self.data_url,
 				params={
 						'product': 'predictions',
 						'application': 'Foo',
-						'station': str( station_id ).strip( ),
-						'begin_date': str( begin_date ).strip( ),
-						'end_date': str( end_date ).strip( ),
-						'datum': str( datum ).strip( ),
-						'units': str( units ).strip( ),
-						'time_zone': str( time_zone ).strip( ),
-						'interval': str( interval ).strip( ),
+						'station': self.station_id,
+						'begin_date': self.begin_date,
+						'end_date': self.end_date,
+						'datum': self.datum,
+						'units': self.units,
+						'time_zone': self.time_zone,
+						'interval': self.interval,
 						'format': 'json'
 				},
-				time=int( time )
-			) or { }
+				time=self.timeout
+			)
 			
-			payload = base.get( 'raw', { } ) or { }
-			rows = self._shape_data_rows( payload )
+			rows = self.shape_data_rows( self.payload )
 			
-			return {
-					'mode': self.mode,
-					'station_id': str( station_id ).strip( ),
-					'url': base.get( 'url', '' ),
-					'params': base.get( 'params', { } ),
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
-			}
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'fetch_tide_predictions( self, station_id: str, begin_date: str, '
-					'end_date: str, datum: str=MLLW, units: str=metric, '
-					'time_zone: str=gmt, interval: str=hilo, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_tide_predictions( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='water-level', station_id: str='',
-			begin_date: str='', end_date: str='', datum: str='MLLW',
-			units: str='metric', time_zone: str='gmt',
-			interval: str='hilo', time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'water-level', station_id: str = '',
+			begin_date: str = '', end_date: str = '', datum: str = 'MLLW',
+			units: str = 'metric', time_zone: str = 'gmt',
+			interval: str = 'hilo', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -22028,18 +23927,26 @@ class TidesAndCurrents( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'water-level' ).strip( ).lower( )
+			self.mode = self.validate_mode( mode )
 			
-			if active_mode == 'station':
-				return self.fetch_station( station_id=station_id,
-					time=int( time ) )
+			if self.mode == 'station':
+				return self.fetch_station(
+					station_id=station_id,
+					time=time
+				)
 			
-			if active_mode == 'water-level':
-				return self.fetch_water_level( station_id=station_id, begin_date=begin_date,
-					end_date=end_date, datum=datum, units=units,
-					time_zone=time_zone, time=int( time ) )
+			if self.mode == 'water-level':
+				return self.fetch_water_level(
+					station_id=station_id,
+					begin_date=begin_date,
+					end_date=end_date,
+					datum=datum,
+					units=units,
+					time_zone=time_zone,
+					time=time
+				)
 			
-			if active_mode == 'tide-predictions':
+			if self.mode == 'tide-predictions':
 				return self.fetch_tide_predictions(
 					station_id=station_id,
 					begin_date=begin_date,
@@ -22048,7 +23955,7 @@ class TidesAndCurrents( Fetcher ):
 					units=units,
 					time_zone=time_zone,
 					interval=interval,
-					time=int( time )
+					time=time
 				)
 			
 			raise ValueError(
@@ -22061,36 +23968,34 @@ class TidesAndCurrents( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'fetch( self, mode: str=water-level, station_id: str=, '
-					'begin_date: str=, end_date: str=, datum: str=MLLW, '
-					'units: str=metric, time_zone: str=gmt, interval: str=hilo, '
-					'time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def create_schema( self, function: str, tool: str, description: str, parameters: dict,
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -22102,19 +24007,24 @@ class TidesAndCurrents( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -22123,8 +24033,7 @@ class TidesAndCurrents( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -22135,23 +24044,16 @@ class UvIndex( Fetcher ):
 		Provides access to the EPA UV Index web services for daily and hourly UV
 		forecast retrieval by ZIP code or by city and state.
 
-		Referenced API Requirements:
-		----------------------------
-		EPA Envirofacts UV Index Web Services:
-			- Hourly by ZIP
-			- Hourly by City/State
-			- Daily by ZIP
-			- Daily by City/State
-
-		Base Endpoint:
-			- https://enviro.epa.gov/enviro/efservice
-
 	'''
 	base_url: Optional[ str ]
 	mode: Optional[ str ]
+	zip_code: Optional[ str ]
+	city: Optional[ str ]
+	state: Optional[ str ]
+	endpoint: Optional[ str ]
 	params: Optional[ Dict[ str, Any ] ]
 	payload: Optional[ Any ]
-	timeout: Optional[ int ]
+	result: Optional[ Dict[ str, Any ] ]
 	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
@@ -22171,8 +24073,15 @@ class UvIndex( Fetcher ):
 		super( ).__init__( )
 		self.base_url = 'https://enviro.epa.gov/enviro/efservice'
 		self.mode = 'daily-zip'
+		self.zip_code = ''
+		self.city = ''
+		self.state = ''
+		self.endpoint = ''
 		self.params = { }
 		self.payload = [ ]
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
 		self.headers = {
@@ -22197,12 +24106,26 @@ class UvIndex( Fetcher ):
 		return [
 				'base_url',
 				'mode',
+				'zip_code',
+				'city',
+				'state',
+				'endpoint',
 				'params',
 				'payload',
+				'result',
+				'response',
+				'url',
 				'timeout',
+				'agents',
+				'headers',
+				'validate_mode',
+				'validate_zip_code',
+				'validate_city',
+				'validate_state',
+				'shape_rows',
+				'summarize_rows',
+				'package_response',
 				'request',
-				'_shape_rows',
-				'_summarize_rows',
 				'fetch_daily_zip',
 				'fetch_daily_city_state',
 				'fetch_hourly_zip',
@@ -22211,56 +24134,147 @@ class UvIndex( Fetcher ):
 				'create_schema'
 		]
 	
-	def request( self, url: str, time: int=20 ) -> Dict[ str, Any ] | None:
+	def validate_mode( self, mode: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to a UV Index endpoint.
+			Validate an EPA UV Index wrapper mode.
 
 			Parameters:
 			-----------
-			url (str):
-				Fully qualified request URL.
-
-			time (int):
-				Request timeout in seconds.
+			mode (str):
+				Requested wrapper mode.
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			str
 		'''
 		try:
-			throw_if( 'url', url )
+			throw_if( 'mode', mode )
 			
-			self.url = str( url ).strip( )
-			self.params = { }
-			
-			self.response = requests.get(
-				url=self.url,
-				headers=self.headers,
-				timeout=int( time )
-			)
-			self.response.raise_for_status( )
-			
-			self.payload = self.response.json( )
-			
-			return {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
+			value = str( mode ).strip( ).lower( )
+			allowed = {
+					'daily-zip',
+					'daily-city-state',
+					'hourly-zip',
+					'hourly-city-state'
 			}
+			
+			if value not in allowed:
+				raise ValueError(
+					"Unsupported EPA UV Index mode. Use 'daily-zip', "
+					"'daily-city-state', 'hourly-zip', or 'hourly-city-state'."
+				)
+			
+			return value
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = (
-					'request( self, url: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
-			)
+			exception.method = 'validate_mode( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def _shape_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
+	def validate_zip_code( self, zip_code: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a U.S. ZIP code accepted by the EPA UV Index service.
+
+			Parameters:
+			-----------
+			zip_code (str):
+				Five-digit ZIP or ZIP+4 value.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'zip_code', zip_code )
+			
+			value = str( zip_code ).strip( )
+			
+			if not re.fullmatch( r'\d{5}(?:-\d{4})?', value ):
+				raise ValueError( 'zip_code must be a valid 5-digit ZIP or ZIP+4 value.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = 'validate_zip_code( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_city( self, city: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a city name before constructing the EPA UV Index URL.
+
+			Parameters:
+			-----------
+			city (str):
+				U.S. city name.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'city', city )
+			
+			value = str( city ).strip( )
+			
+			if not value:
+				raise ValueError( 'city cannot be empty.' )
+			
+			if '/' in value or '\\' in value:
+				raise ValueError( 'city cannot contain path separators.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = 'validate_city( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_state( self, state: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a U.S. state or territory abbreviation.
+
+			Parameters:
+			-----------
+			state (str):
+				State or territory abbreviation.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'state', state )
+			
+			value = str( state ).strip( ).upper( )
+			
+			if not re.fullmatch( r'[A-Z]{2}', value ):
+				raise ValueError( 'state must be a two-letter abbreviation.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = 'validate_state( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def shape_rows( self, records: List[ Dict[ str, Any ] ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
@@ -22276,14 +24290,17 @@ class UvIndex( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			rows: List[ Dict[ str, Any ] ]=[ ]
+			rows: List[ Dict[ str, Any ] ] = [ ]
 			
 			for item in records or [ ]:
-				row: Dict[ str, Any ]={ }
+				if not isinstance( item, dict ):
+					continue
+				
+				row: Dict[ str, Any ] = { }
 				
 				for key, value in item.items( ):
 					friendly_key = str( key ).replace( '_', ' ' ).title( )
-					row[ friendly_key ]=value
+					row[ friendly_key ] = value
 				
 				rows.append( row )
 			
@@ -22294,12 +24311,11 @@ class UvIndex( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
 			exception.method = (
-					'_shape_rows( self, records: List[ Dict[ str, Any ] ] ) '
-					'-> List[ Dict[ str, Any ] ]'
+					'shape_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
 	
-	def _summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+	def summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
@@ -22323,16 +24339,27 @@ class UvIndex( Fetcher ):
 			for row in rows or [ ]:
 				if not first_location:
 					first_location = str(
-						row.get( 'City', '' ) or
-						row.get( 'Zip', '' ) or ''
+						row.get( 'City', '' )
+						or row.get( 'Zip', '' )
+						or row.get( 'State', '' )
+						or ''
 					)
 				
 				if not first_alert:
-					first_alert = str( row.get( 'Uv Alert', '' ) or '' )
+					first_alert = str(
+						row.get( 'Uv Alert', '' )
+						or row.get( 'Alert', '' )
+						or ''
+					)
 				
-				uv_value = row.get( 'Uv Value', None )
+				uv_value = (
+						row.get( 'Uv Value', None )
+						or row.get( 'Index', None )
+						or row.get( 'Uv Index', None )
+				)
+				
 				try:
-					if uv_value is not None:
+					if uv_value is not None and str( uv_value ).strip( ):
 						if max_uv is None or float( uv_value ) > float( max_uv ):
 							max_uv = float( uv_value )
 				except Exception:
@@ -22350,17 +24377,110 @@ class UvIndex( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
 			exception.method = (
-					'_summarize_rows( self, rows: List[ Dict[ str, Any ] ] ) '
-					'-> Dict[ str, Any ]'
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def package_response( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
+		'''
+			Purpose:
+			--------
+			Package stored EPA UV Index response state into the app-facing result.
+
+			Parameters:
+			-----------
+			rows (List[Dict[str, Any]]):
+				Normalized UV Index rows.
+
+			Returns:
+			--------
+			Dict[str, Any]
+		'''
+		try:
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def request( self, url: str, params: Dict[ str, Any ],
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to an EPA UV Index endpoint and store response state.
+
+			Parameters:
+			-----------
+			url (str):
+				Fully qualified request URL.
+
+			params (Dict[str, Any]):
+				App-facing request metadata.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			throw_if( 'url', url )
+			throw_if( 'params', params )
+			throw_if( 'time', time )
+			
+			self.url = str( url ).strip( )
+			self.params = params
+			self.timeout = int( time )
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			self.response = requests.get(
+				url=self.url,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( ) or [ ]
+			self.result = {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'UvIndex'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_daily_zip( self, zip_code: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch daily UV forecast and alert by ZIP code.
+			Fetch daily UV forecast and alert data by ZIP code.
 
 			Parameters:
 			-----------
@@ -22376,42 +24496,46 @@ class UvIndex( Fetcher ):
 		'''
 		try:
 			throw_if( 'zip_code', zip_code )
+			throw_if( 'time', time )
 			
 			self.mode = 'daily-zip'
-			base = self.request(
-				url=f'{self.base_url}/getEnvirofactsUVDAILY/ZIP/{str( zip_code ).strip( )}/JSON',
-				time=int( time )
-			) or { }
-			
-			payload = base.get( 'raw', [ ] ) or [ ]
-			records = payload if isinstance( payload, list ) else [ ]
-			rows = self._shape_rows( records )
-			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': { 'zip_code': str( zip_code ).strip( ) },
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
+			self.zip_code = self.validate_zip_code( zip_code )
+			self.endpoint = 'getEnvirofactsUVDAILY'
+			self.timeout = int( time )
+			self.params = {
+					'zip_code': self.zip_code
 			}
+			self.url = (
+					f'{self.base_url}/{self.endpoint}/ZIP/'
+					f'{urllib.parse.quote( self.zip_code, safe="" )}/JSON'
+			)
+			
+			self.request(
+				url=self.url,
+				params=self.params,
+				time=self.timeout
+			)
+			
+			records = self.payload if isinstance( self.payload, list ) else [ ]
+			rows = self.shape_rows( records )
+			
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
 			exception.method = (
-					'fetch_daily_zip( self, zip_code: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_daily_zip( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_daily_city_state( self, city: str, state: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch daily UV forecast and alert by city and state.
+			Fetch daily UV forecast and alert data by city and state.
 
 			Parameters:
 			-----------
@@ -22431,48 +24555,50 @@ class UvIndex( Fetcher ):
 		try:
 			throw_if( 'city', city )
 			throw_if( 'state', state )
+			throw_if( 'time', time )
 			
 			self.mode = 'daily-city-state'
-			base = self.request(
-				url=(
-						f'{self.base_url}/getEnvirofactsUVDAILY/CITY/'
-						f'{str( city ).strip( )}/STATE/{str( state ).strip( )}/JSON'
-				),
-				time=int( time )
-			) or { }
-			
-			payload = base.get( 'raw', [ ] ) or [ ]
-			records = payload if isinstance( payload, list ) else [ ]
-			rows = self._shape_rows( records )
-			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': {
-							'city': str( city ).strip( ),
-							'state': str( state ).strip( ).upper( )
-					},
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
+			self.city = self.validate_city( city )
+			self.state = self.validate_state( state )
+			self.endpoint = 'getEnvirofactsUVDAILY'
+			self.timeout = int( time )
+			self.params = {
+					'city': self.city,
+					'state': self.state
 			}
+			self.url = (
+					f'{self.base_url}/{self.endpoint}/CITY/'
+					f'{urllib.parse.quote( self.city, safe="" )}/STATE/'
+					f'{urllib.parse.quote( self.state, safe="" )}/JSON'
+			)
+			
+			self.request(
+				url=self.url,
+				params=self.params,
+				time=self.timeout
+			)
+			
+			records = self.payload if isinstance( self.payload, list ) else [ ]
+			rows = self.shape_rows( records )
+			
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
 			exception.method = (
-					'fetch_daily_city_state( self, city: str, state: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_daily_city_state( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_hourly_zip( self, zip_code: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch hourly UV forecast by ZIP code.
+			Fetch hourly UV forecast data by ZIP code.
 
 			Parameters:
 			-----------
@@ -22488,42 +24614,46 @@ class UvIndex( Fetcher ):
 		'''
 		try:
 			throw_if( 'zip_code', zip_code )
+			throw_if( 'time', time )
 			
 			self.mode = 'hourly-zip'
-			base = self.request(
-				url=f'{self.base_url}/getEnvirofactsUVHOURLY/ZIP/{str( zip_code ).strip( )}/JSON',
-				time=int( time )
-			) or { }
-			
-			payload = base.get( 'raw', [ ] ) or [ ]
-			records = payload if isinstance( payload, list ) else [ ]
-			rows = self._shape_rows( records )
-			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': { 'zip_code': str( zip_code ).strip( ) },
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
+			self.zip_code = self.validate_zip_code( zip_code )
+			self.endpoint = 'getEnvirofactsUVHOURLY'
+			self.timeout = int( time )
+			self.params = {
+					'zip_code': self.zip_code
 			}
+			self.url = (
+					f'{self.base_url}/{self.endpoint}/ZIP/'
+					f'{urllib.parse.quote( self.zip_code, safe="" )}/JSON'
+			)
+			
+			self.request(
+				url=self.url,
+				params=self.params,
+				time=self.timeout
+			)
+			
+			records = self.payload if isinstance( self.payload, list ) else [ ]
+			rows = self.shape_rows( records )
+			
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
 			exception.method = (
-					'fetch_hourly_zip( self, zip_code: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_hourly_zip( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
 	def fetch_hourly_city_state( self, city: str, state: str,
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch hourly UV forecast by city and state.
+			Fetch hourly UV forecast data by city and state.
 
 			Parameters:
 			-----------
@@ -22543,49 +24673,50 @@ class UvIndex( Fetcher ):
 		try:
 			throw_if( 'city', city )
 			throw_if( 'state', state )
+			throw_if( 'time', time )
 			
 			self.mode = 'hourly-city-state'
-			base = self.request(
-				url=(
-						f'{self.base_url}/getEnvirofactsUVHOURLY/CITY/'
-						f'{str( city ).strip( )}/STATE/{str( state ).strip( )}/JSON'
-				),
-				time=int( time )
-			) or { }
-			
-			payload = base.get( 'raw', [ ] ) or [ ]
-			records = payload if isinstance( payload, list ) else [ ]
-			rows = self._shape_rows( records )
-			
-			return {
-					'mode': self.mode,
-					'url': base.get( 'url', '' ),
-					'params': {
-							'city': str( city ).strip( ),
-							'state': str( state ).strip( ).upper( )
-					},
-					'summary': self._summarize_rows( rows ),
-					'rows': rows,
-					'raw': payload
+			self.city = self.validate_city( city )
+			self.state = self.validate_state( state )
+			self.endpoint = 'getEnvirofactsUVHOURLY'
+			self.timeout = int( time )
+			self.params = {
+					'city': self.city,
+					'state': self.state
 			}
+			self.url = (
+					f'{self.base_url}/{self.endpoint}/CITY/'
+					f'{urllib.parse.quote( self.city, safe="" )}/STATE/'
+					f'{urllib.parse.quote( self.state, safe="" )}/JSON'
+			)
+			
+			self.request(
+				url=self.url,
+				params=self.params,
+				time=self.timeout
+			)
+			
+			records = self.payload if isinstance( self.payload, list ) else [ ]
+			rows = self.shape_rows( records )
+			
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
 			exception.method = (
-					'fetch_hourly_city_state( self, city: str, state: str, time: int=20 ) '
-					'-> Dict[ str, Any ]'
+					'fetch_hourly_city_state( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
-	def fetch( self, mode: str='daily-zip', zip_code: str='',
-			city: str='', state: str='',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'daily-zip', zip_code: str = '',
+			city: str = '', state: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Unified dispatcher for UV Index forecast retrieval.
+			Unified dispatcher for EPA UV Index forecast retrieval.
 
 			Parameters:
 			-----------
@@ -22597,13 +24728,13 @@ class UvIndex( Fetcher ):
 				- hourly-city-state
 
 			zip_code (str):
-				Optional U.S. ZIP code.
+				U.S. ZIP code for ZIP-based modes.
 
 			city (str):
-				Optional city name.
+				U.S. city name for city/state modes.
 
 			state (str):
-				Optional state abbreviation.
+				U.S. state abbreviation for city/state modes.
 
 			time (int):
 				Request timeout in seconds.
@@ -22613,32 +24744,32 @@ class UvIndex( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			active_mode = str( mode or 'daily-zip' ).strip( ).lower( )
+			self.mode = self.validate_mode( mode )
 			
-			if active_mode == 'daily-zip':
+			if self.mode == 'daily-zip':
 				return self.fetch_daily_zip(
 					zip_code=zip_code,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'daily-city-state':
+			if self.mode == 'daily-city-state':
 				return self.fetch_daily_city_state(
 					city=city,
 					state=state,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'hourly-zip':
+			if self.mode == 'hourly-zip':
 				return self.fetch_hourly_zip(
 					zip_code=zip_code,
-					time=int( time )
+					time=time
 				)
 			
-			if active_mode == 'hourly-city-state':
+			if self.mode == 'hourly-city-state':
 				return self.fetch_hourly_city_state(
 					city=city,
 					state=state,
-					time=int( time )
+					time=time
 				)
 			
 			raise ValueError(
@@ -22651,8 +24782,7 @@ class UvIndex( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
 			exception.method = (
-					'fetch( self, mode: str=daily-zip, zip_code: str=, city: str=, '
-					'state: str=, time: int=20 ) -> Dict[ str, Any ]'
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -22662,24 +24792,24 @@ class UvIndex( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Construct and return a fully dynamic OpenAI Tool API schema definition.
+			Construct and return a dynamic OpenAI Tool API schema definition.
 
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				A dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -22691,19 +24821,24 @@ class UvIndex( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -22712,8 +24847,7 @@ class UvIndex( Fetcher ):
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
 			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			)
 			raise exception
 
@@ -22722,17 +24856,12 @@ class PurpleAir( Fetcher ):
 		Purpose:
 		--------
 		Provides access to the PurpleAir API for bounding-box sensor discovery and
-		single-sensor detail retrieval using explicit field selection to reduce
-		point consumption and improve readability.
+		single-sensor detail retrieval using explicit field selection.
 
 	'''
 	base_url: Optional[ str ]
 	api_key: Optional[ str ]
 	mode: Optional[ str ]
-	params: Optional[ Dict[ str, Any ] ]
-	payload: Optional[ Any ]
-	timeout: Optional[ int ]
-	agents: Optional[ str ]
 	endpoint: Optional[ str ]
 	sensor_index: Optional[ int ]
 	nwlng: Optional[ float ]
@@ -22743,13 +24872,16 @@ class PurpleAir( Fetcher ):
 	max_age: Optional[ int ]
 	modified_since: Optional[ int ]
 	fields: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
 	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			--------
-			Initialize the PurpleAir fetcher and bind the API key from config.py.
+			Initialize the PurpleAir fetcher.
 
 			Parameters:
 			-----------
@@ -22763,22 +24895,23 @@ class PurpleAir( Fetcher ):
 		self.base_url = 'https://api.purpleair.com/v1'
 		self.api_key = cfg.PURPLEAIR_API_KEY
 		self.mode = 'sensors'
-		self.params = { }
-		self.payload = { }
-		self.timeout = 20
-		self.agents = cfg.AGENTS
-		self.endpoint = None
+		self.endpoint = ''
 		self.sensor_index = None
 		self.nwlng = None
 		self.nwlat = None
 		self.selng = None
 		self.selat = None
-		self.location_type = None
-		self.max_age = None
-		self.modified_since = None
-		self.fields = None
-		self.response = None
+		self.location_type = 0
+		self.max_age = 0
+		self.modified_since = 0
+		self.fields = ''
+		self.params = { }
+		self.payload = { }
 		self.result = { }
+		self.response = None
+		self.url = None
+		self.timeout = 20
+		self.agents = cfg.AGENTS
 		self.headers = {
 				'Accept': 'application/json',
 				'User-Agent': self.agents
@@ -22805,10 +24938,6 @@ class PurpleAir( Fetcher ):
 				'base_url',
 				'api_key',
 				'mode',
-				'params',
-				'payload',
-				'timeout',
-				'agents',
 				'endpoint',
 				'sensor_index',
 				'nwlng',
@@ -22819,97 +24948,411 @@ class PurpleAir( Fetcher ):
 				'max_age',
 				'modified_since',
 				'fields',
-				'response',
+				'params',
+				'payload',
 				'result',
-				'request',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'validate_api_key',
+				'validate_mode',
+				'validate_endpoint',
+				'validate_sensor_index',
+				'validate_longitude',
+				'validate_latitude',
+				'validate_bbox',
+				'validate_location_type',
+				'validate_non_negative_integer',
+				'normalize_fields',
 				'shape_sensor_list_rows',
 				'shape_sensor_detail_rows',
 				'summarize_rows',
 				'package_response',
+				'request',
 				'fetch_sensors',
 				'fetch_sensor',
 				'fetch',
 				'create_schema'
 		]
 	
-	def request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def validate_api_key( self ) -> str:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to a PurpleAir endpoint and store response state.
+			Validate the PurpleAir API key before making an API request.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'api_key', self.api_key )
+			return str( self.api_key ).strip( )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = 'validate_api_key( self ) -> str'
+			raise exception
+	
+	def validate_mode( self, mode: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a PurpleAir wrapper mode.
+
+			Parameters:
+			-----------
+			mode (str):
+				Requested wrapper mode.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'mode', mode )
+			
+			value = str( mode ).strip( ).lower( )
+			allowed = {
+					'sensors',
+					'sensor'
+			}
+			
+			if value not in allowed:
+				raise ValueError( "Unsupported PurpleAir mode. Use 'sensors' or 'sensor'." )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = 'validate_mode( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_endpoint( self, endpoint: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a PurpleAir endpoint path before URL construction.
 
 			Parameters:
 			-----------
 			endpoint (str):
-				Endpoint path under the PurpleAir base URL.
-
-			params (Optional[Dict[str, Any]]):
-				Query string parameters.
-
-			time (int):
-				Request timeout in seconds.
+				Endpoint path under the PurpleAir v1 base URL.
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			str
 		'''
 		try:
-			throw_if( 'api_key', self.api_key )
 			throw_if( 'endpoint', endpoint )
-			throw_if( 'time', time )
 			
-			self.endpoint = str( endpoint ).strip( )
-			self.timeout = int( time )
-			self.url = f'{self.base_url}/{self.endpoint}'
-			self.params = { }
-			self.headers[ 'X-API-Key' ] = str( self.api_key ).strip( )
+			value = str( endpoint ).strip( ).strip( '/' )
 			
-			for key, value in (params or { }).items( ):
-				if value is None:
-					continue
-				
-				if isinstance( value, str ) and not value.strip( ):
-					continue
-				
-				self.params[ key ] = value
+			if value.startswith( 'http://' ) or value.startswith( 'https://' ):
+				raise ValueError( 'endpoint must be a path segment, not a full URL.' )
 			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=self.timeout
-			)
+			if '..' in value:
+				raise ValueError( 'endpoint cannot contain parent-directory markers.' )
 			
-			self.response.raise_for_status( )
-			self.payload = self.response.json( )
-			self.result = {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
-			}
+			if value != 'sensors' and not re.fullmatch( r'sensors/\d+', value ):
+				raise ValueError( "endpoint must be 'sensors' or 'sensors/{sensor_index}'." )
 			
-			return self.result
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = 'validate_endpoint( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_sensor_index( self, sensor_index: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a PurpleAir sensor index.
+
+			Parameters:
+			-----------
+			sensor_index (int):
+				PurpleAir sensor index.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'sensor_index', sensor_index )
+			
+			value = int( sensor_index )
+			if value < 1:
+				raise ValueError( 'sensor_index must be greater than or equal to 1.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = 'validate_sensor_index( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_longitude( self, name: str, value: float ) -> float:
+		'''
+			Purpose:
+			--------
+			Validate a longitude value.
+
+			Parameters:
+			-----------
+			name (str):
+				Argument name.
+
+			value (float):
+				Longitude in decimal degrees.
+
+			Returns:
+			--------
+			float
+		'''
+		try:
+			throw_if( 'name', name )
+			throw_if( name, value )
+			
+			number = float( value )
+			if number < -180.0 or number > 180.0:
+				raise ValueError( f'{name} must be between -180 and 180.' )
+			
+			return number
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = 'validate_longitude( self, *args, **kwargs ) -> float'
+			raise exception
+	
+	def validate_latitude( self, name: str, value: float ) -> float:
+		'''
+			Purpose:
+			--------
+			Validate a latitude value.
+
+			Parameters:
+			-----------
+			name (str):
+				Argument name.
+
+			value (float):
+				Latitude in decimal degrees.
+
+			Returns:
+			--------
+			float
+		'''
+		try:
+			throw_if( 'name', name )
+			throw_if( name, value )
+			
+			number = float( value )
+			if number < -90.0 or number > 90.0:
+				raise ValueError( f'{name} must be between -90 and 90.' )
+			
+			return number
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = 'validate_latitude( self, *args, **kwargs ) -> float'
+			raise exception
+	
+	def validate_bbox( self, nwlng: float, nwlat: float,
+			selng: float, selat: float ) -> Tuple[ float, float, float, float ]:
+		'''
+			Purpose:
+			--------
+			Validate the PurpleAir bounding-box coordinates.
+
+			Parameters:
+			-----------
+			nwlng (float):
+				Northwest longitude.
+
+			nwlat (float):
+				Northwest latitude.
+
+			selng (float):
+				Southeast longitude.
+
+			selat (float):
+				Southeast latitude.
+
+			Returns:
+			--------
+			Tuple[float, float, float, float]
+		'''
+		try:
+			nw_lng = self.validate_longitude( 'nwlng', nwlng )
+			nw_lat = self.validate_latitude( 'nwlat', nwlat )
+			se_lng = self.validate_longitude( 'selng', selng )
+			se_lat = self.validate_latitude( 'selat', selat )
+			
+			if nw_lng >= se_lng:
+				raise ValueError( 'nwlng must be less than selng.' )
+			
+			if nw_lat <= se_lat:
+				raise ValueError( 'nwlat must be greater than selat.' )
+			
+			return nw_lng, nw_lat, se_lng, se_lat
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
 			exception.method = (
-					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+					'validate_bbox( self, *args, **kwargs ) '
+					'-> Tuple[ float, float, float, float ]'
 			)
 			raise exception
 	
-	def shape_sensor_list_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+	def validate_location_type( self, location_type: int ) -> int:
 		'''
 			Purpose:
 			--------
-			Normalize PurpleAir sensor-list payloads into a human-readable table.
+			Validate the PurpleAir location type value used by the current app controls.
+
+			Parameters:
+			-----------
+			location_type (int):
+				Location type. Outdoor sensors are 0; indoor sensors are 1.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'location_type', location_type if location_type == 0 else location_type )
+			
+			value = int( location_type )
+			if value not in (0, 1):
+				raise ValueError( 'location_type must be 0 or 1.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = 'validate_location_type( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_non_negative_integer( self, name: str, value: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a non-negative integer request parameter.
+
+			Parameters:
+			-----------
+			name (str):
+				Argument name.
+
+			value (int):
+				Integer value.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'name', name )
+			
+			if value is None:
+				raise ValueError( f'{name} cannot be None.' )
+			
+			number = int( value )
+			if number < 0:
+				raise ValueError( f'{name} must be greater than or equal to 0.' )
+			
+			return number
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'validate_non_negative_integer( self, *args, **kwargs ) -> int'
+			)
+			raise exception
+	
+	def normalize_fields( self, fields: str, default_fields: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Normalize a PurpleAir comma-separated field list.
+
+			Parameters:
+			-----------
+			fields (str):
+				User-selected comma-separated field list.
+
+			default_fields (str):
+				Fallback field list used when fields is blank.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'default_fields', default_fields )
+			
+			selected = str( fields or '' ).strip( )
+			
+			if not selected:
+				selected = str( default_fields ).strip( )
+			
+			field_list = [
+					field.strip( )
+					for field in selected.split( ',' )
+					if field and field.strip( )
+			]
+			
+			if not field_list:
+				raise ValueError( 'At least one PurpleAir field is required.' )
+			
+			self.fields = ','.join( field_list )
+			
+			return self.fields
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = 'normalize_fields( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def shape_sensor_list_rows( self,
+			payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize a PurpleAir sensor-list payload into display rows.
 
 			Parameters:
 			-----------
 			payload (Dict[str, Any]):
-				Sensor-list payload returned by PurpleAir.
+				PurpleAir sensor-list response payload.
 
 			Returns:
 			--------
@@ -22917,31 +25360,33 @@ class PurpleAir( Fetcher ):
 		'''
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			if not isinstance( payload, dict ):
+				return rows
+			
 			fields = payload.get( 'fields', [ ] ) or [ ]
 			data = payload.get( 'data', [ ] ) or [ ]
 			
 			for record in data:
-				row_map: Dict[ str, Any ] = { }
+				if not isinstance( record, list ):
+					continue
 				
-				if isinstance( record, list ):
-					for index, field_name in enumerate( fields ):
-						if index < len( record ):
-							row_map[ str( field_name ) ] = record[ index ]
-				
-				elif isinstance( record, dict ):
-					row_map = record
+				sensor = {
+						fields[ index ]: record[ index ] if index < len( record ) else None
+						for index in range( len( fields ) )
+				}
 				
 				rows.append(
 					{
-							'Sensor Index': row_map.get( 'sensor_index', '' ),
-							'Name': row_map.get( 'name', '' ),
-							'PM2.5': row_map.get( 'pm2.5', None ),
-							'Temperature': row_map.get( 'temperature', None ),
-							'Humidity': row_map.get( 'humidity', None ),
-							'Latitude': row_map.get( 'latitude', None ),
-							'Longitude': row_map.get( 'longitude', None ),
-							'Last Seen': row_map.get( 'last_seen', None ),
-							'Location Type': row_map.get( 'location_type', None )
+							'Sensor Index': sensor.get( 'sensor_index', None ),
+							'Name': sensor.get( 'name', '' ),
+							'PM2.5': sensor.get( 'pm2.5', None ),
+							'Temperature': sensor.get( 'temperature', None ),
+							'Humidity': sensor.get( 'humidity', None ),
+							'Latitude': sensor.get( 'latitude', None ),
+							'Longitude': sensor.get( 'longitude', None ),
+							'Last Seen': sensor.get( 'last_seen', None ),
+							'Location Type': sensor.get( 'location_type', None )
 					}
 				)
 			
@@ -22957,26 +25402,30 @@ class PurpleAir( Fetcher ):
 			)
 			raise exception
 	
-	def shape_sensor_detail_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+	def shape_sensor_detail_rows( self,
+			payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize PurpleAir single-sensor detail payload into a readable row.
+			Normalize a PurpleAir single-sensor payload into a display row.
 
 			Parameters:
 			-----------
 			payload (Dict[str, Any]):
-				Single-sensor payload returned by PurpleAir.
+				PurpleAir single-sensor response payload.
 
 			Returns:
 			--------
 			List[Dict[str, Any]]
 		'''
 		try:
+			if not isinstance( payload, dict ):
+				return [ ]
+			
 			sensor = payload.get( 'sensor', { } ) or { }
 			
-			row: Dict[ str, Any ] = {
-					'Sensor Index': sensor.get( 'sensor_index', '' ),
+			row = {
+					'Sensor Index': sensor.get( 'sensor_index', self.sensor_index ),
 					'Name': sensor.get( 'name', '' ),
 					'Model': sensor.get( 'model', '' ),
 					'Hardware': sensor.get( 'hardware', '' ),
@@ -23027,7 +25476,9 @@ class PurpleAir( Fetcher ):
 			for row in rows or [ ]:
 				if not first_name:
 					first_name = str(
-						row.get( 'Name', '' ) or row.get( 'Sensor Index', '' ) or ''
+						row.get( 'Name', '' )
+						or row.get( 'Sensor Index', '' )
+						or ''
 					)
 				
 				pm25_value = row.get( 'PM2.5', None )
@@ -23036,10 +25487,9 @@ class PurpleAir( Fetcher ):
 					pm25_value = row.get( 'PM2.5 Cf 1 A', None )
 				
 				try:
-					if pm25_value is not None:
+					if pm25_value is not None and str( pm25_value ).strip( ):
 						if max_pm25 is None or float( pm25_value ) > float( max_pm25 ):
 							max_pm25 = float( pm25_value )
-				
 				except Exception:
 					pass
 			
@@ -23058,43 +25508,33 @@ class PurpleAir( Fetcher ):
 			)
 			raise exception
 	
-	def package_response( self ) -> Dict[ str, Any ]:
+	def package_response( self, rows: List[ Dict[ str, Any ] ],
+			params: Dict[ str, Any ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
-			Package the stored PurpleAir response into the result structure consumed by
-			app.py.
+			Package stored PurpleAir response state into the app-facing result.
 
 			Parameters:
 			-----------
-			None
+			rows (List[Dict[str, Any]]):
+				Normalized PurpleAir rows.
+
+			params (Dict[str, Any]):
+				App-facing request parameters.
 
 			Returns:
 			--------
 			Dict[str, Any]
 		'''
 		try:
-			payload = self.result.get( 'raw', { } ) if isinstance( self.result, dict ) else { }
-			payload = payload or { }
-			
-			if self.mode == 'sensor':
-				rows = self.shape_sensor_detail_rows( payload )
-				params = {
-						'sensor_index': self.sensor_index,
-						'fields': self.fields
-				}
-			
-			else:
-				rows = self.shape_sensor_list_rows( payload )
-				params = self.params
-			
 			self.result = {
 					'mode': self.mode,
 					'url': self.url,
 					'params': params,
 					'summary': self.summarize_rows( rows ),
 					'rows': rows,
-					'raw': payload
+					'raw': self.payload
 			}
 			
 			return self.result
@@ -23103,16 +25543,87 @@ class PurpleAir( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'package_response( self ) -> Dict[ str, Any ]'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			raise exception
 	
-	def fetch_sensors( self, nwlng: float, nwlat: float, selng: float,
-			selat: float, location_type: int = 0, max_age: int = 0,
-			modified_since: int = 0, fields: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch PurpleAir sensors inside a bounding box.
+			Issue a GET request to a PurpleAir endpoint and store response state.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path under the PurpleAir base URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.validate_api_key( )
+			self.endpoint = self.validate_endpoint( endpoint )
+			throw_if( 'time', time )
+			
+			self.timeout = int( time )
+			self.url = f'{self.base_url}/{self.endpoint}'
+			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			self.headers[ 'X-API-Key' ] = self.validate_api_key( )
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( ) or { }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'PurpleAir'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_sensors( self, nwlng: float, nwlat: float, selng: float, selat: float,
+			location_type: int = 0, max_age: int = 0, modified_since: int = 0,
+			fields: str = '', time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch PurpleAir sensors within a bounding box.
 
 			Parameters:
 			-----------
@@ -23129,13 +25640,13 @@ class PurpleAir( Fetcher ):
 				Southeast latitude.
 
 			location_type (int):
-				PurpleAir location type.
+				PurpleAir location type. Outdoor sensors are commonly 0.
 
 			max_age (int):
-				Maximum age filter.
+				Maximum sensor age filter in seconds.
 
 			modified_since (int):
-				UNIX timestamp filter.
+				UNIX timestamp filter. 0 disables the filter.
 
 			fields (str):
 				Optional comma-separated PurpleAir field list.
@@ -23148,31 +25659,29 @@ class PurpleAir( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'nwlng', nwlng )
-			throw_if( 'nwlat', nwlat )
-			throw_if( 'selng', selng )
-			throw_if( 'selat', selat )
-			throw_if( 'location_type', location_type )
-			throw_if( 'max_age', max_age )
-			throw_if( 'modified_since', modified_since )
-			throw_if( 'time', time )
+			default_fields = (
+					'name,pm2.5,temperature,humidity,latitude,longitude,last_seen,'
+					'location_type'
+			)
 			
 			self.mode = 'sensors'
-			self.nwlng = float( nwlng )
-			self.nwlat = float( nwlat )
-			self.selng = float( selng )
-			self.selat = float( selat )
-			self.location_type = int( location_type )
-			self.max_age = int( max_age )
-			self.modified_since = int( modified_since )
+			self.nwlng, self.nwlat, self.selng, self.selat = self.validate_bbox(
+				nwlng=nwlng,
+				nwlat=nwlat,
+				selng=selng,
+				selat=selat
+			)
+			self.location_type = self.validate_location_type( location_type )
+			self.max_age = self.validate_non_negative_integer( 'max_age', max_age )
+			self.modified_since = self.validate_non_negative_integer(
+				'modified_since',
+				modified_since
+			)
+			self.fields = self.normalize_fields(
+				fields=fields,
+				default_fields=default_fields
+			)
 			self.timeout = int( time )
-			
-			self.fields = str( fields or '' ).strip( )
-			if not self.fields:
-				self.fields = (
-						'sensor_index,name,pm2.5,temperature,humidity,latitude,'
-						'longitude,last_seen,location_type'
-				)
 			
 			self.request(
 				endpoint='sensors',
@@ -23189,7 +25698,12 @@ class PurpleAir( Fetcher ):
 				time=self.timeout
 			)
 			
-			return self.package_response( )
+			rows = self.shape_sensor_list_rows( self.payload )
+			
+			return self.package_response(
+				rows=rows,
+				params=self.params
+			)
 		
 		except Exception as e:
 			exception = Error( e )
@@ -23223,20 +25737,18 @@ class PurpleAir( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'sensor_index', sensor_index )
-			throw_if( 'time', time )
+			default_fields = (
+					'name,model,hardware,pm2.5_cf_1_a,pm2.5_cf_1_b,temperature,'
+					'humidity,pressure,latitude,longitude,last_seen,firmware_version,rssi'
+			)
 			
 			self.mode = 'sensor'
-			self.sensor_index = int( sensor_index )
+			self.sensor_index = self.validate_sensor_index( sensor_index )
+			self.fields = self.normalize_fields(
+				fields=fields,
+				default_fields=default_fields
+			)
 			self.timeout = int( time )
-			
-			self.fields = str( fields or '' ).strip( )
-			if not self.fields:
-				self.fields = (
-						'name,model,hardware,pm2.5_cf_1_a,pm2.5_cf_1_b,temperature,'
-						'humidity,pressure,latitude,longitude,last_seen,'
-						'firmware_version,rssi'
-				)
 			
 			self.request(
 				endpoint=f'sensors/{self.sensor_index}',
@@ -23246,7 +25758,15 @@ class PurpleAir( Fetcher ):
 				time=self.timeout
 			)
 			
-			return self.package_response( )
+			rows = self.shape_sensor_detail_rows( self.payload )
+			
+			return self.package_response(
+				rows=rows,
+				params={
+						'sensor_index': self.sensor_index,
+						'fields': self.fields
+				}
+			)
 		
 		except Exception as e:
 			exception = Error( e )
@@ -23265,7 +25785,7 @@ class PurpleAir( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Dispatch a PurpleAir request to the mode-specific fetch method.
+			Unified dispatcher for PurpleAir sensor discovery and sensor detail retrieval.
 
 			Parameters:
 			-----------
@@ -23309,8 +25829,7 @@ class PurpleAir( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'mode', mode )
-			self.mode = str( mode ).strip( ).lower( )
+			self.mode = self.validate_mode( mode )
 			
 			if self.mode == 'sensors':
 				return self.fetch_sensors(
@@ -23332,7 +25851,7 @@ class PurpleAir( Fetcher ):
 					time=time
 				)
 			
-			raise ValueError( "Unsupported PurpleAir mode. Expected 'sensors' or 'sensor'." )
+			raise ValueError( "Unsupported PurpleAir mode. Use 'sensors' or 'sensor'." )
 		
 		except Exception as e:
 			exception = Error( e )
@@ -23354,19 +25873,19 @@ class PurpleAir( Fetcher ):
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				Dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -23378,19 +25897,24 @@ class PurpleAir( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -23407,17 +25931,12 @@ class OpenAQ( Fetcher ):
 	'''
 		Purpose:
 		--------
-		Provides access to the OpenAQ v3 API for resource discovery, location
-		discovery, and latest measurement retrieval.
-
+		Provides access to OpenAQ API v3 discovery, locations, and latest
+		air-quality measurement endpoints.
 	'''
 	base_url: Optional[ str ]
 	api_key: Optional[ str ]
 	mode: Optional[ str ]
-	params: Optional[ Dict[ str, Any ] ]
-	payload: Optional[ Any ]
-	timeout: Optional[ int ]
-	agents: Optional[ str ]
 	endpoint: Optional[ str ]
 	location_id: Optional[ int ]
 	parameter_id: Optional[ int ]
@@ -23428,13 +25947,16 @@ class OpenAQ( Fetcher ):
 	parameters_id: Optional[ str ]
 	limit: Optional[ int ]
 	page: Optional[ int ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
 	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			--------
-			Initialize the OpenAQ fetcher and bind the API key from config.py.
+			Initialize the OpenAQ API v3 fetcher.
 
 			Parameters:
 			-----------
@@ -23448,22 +25970,23 @@ class OpenAQ( Fetcher ):
 		self.base_url = 'https://api.openaq.org/v3'
 		self.api_key = cfg.OPENAQ_API_KEY
 		self.mode = 'locations'
-		self.params = { }
-		self.payload = { }
-		self.timeout = 20
-		self.agents = cfg.AGENTS
-		self.endpoint = None
+		self.endpoint = ''
 		self.location_id = None
 		self.parameter_id = None
 		self.country_id = None
-		self.coordinates = None
-		self.radius = None
-		self.providers_id = None
-		self.parameters_id = None
-		self.limit = None
-		self.page = None
-		self.response = None
+		self.coordinates = ''
+		self.radius = 25000
+		self.providers_id = ''
+		self.parameters_id = ''
+		self.limit = 25
+		self.page = 1
+		self.params = { }
+		self.payload = { }
 		self.result = { }
+		self.response = None
+		self.url = None
+		self.timeout = 20
+		self.agents = cfg.AGENTS
 		self.headers = {
 				'Accept': 'application/json',
 				'User-Agent': self.agents
@@ -23490,10 +26013,6 @@ class OpenAQ( Fetcher ):
 				'base_url',
 				'api_key',
 				'mode',
-				'params',
-				'payload',
-				'timeout',
-				'agents',
 				'endpoint',
 				'location_id',
 				'parameter_id',
@@ -23504,102 +26023,435 @@ class OpenAQ( Fetcher ):
 				'parameters_id',
 				'limit',
 				'page',
-				'response',
+				'params',
+				'payload',
 				'result',
-				'request',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'validate_api_key',
+				'validate_mode',
+				'validate_endpoint',
+				'validate_positive_integer',
+				'validate_non_negative_integer',
+				'validate_coordinates',
+				'validate_radius',
+				'coalesce_results',
+				'shape_resource_rows',
 				'shape_location_rows',
 				'shape_latest_rows',
-				'shape_resource_rows',
 				'summarize_rows',
 				'package_response',
+				'request',
 				'fetch_countries',
 				'fetch_providers',
 				'fetch_parameters',
+				'fetch_parameter_latest',
 				'fetch_locations',
 				'fetch_latest',
-				'fetch_parameter_latest',
 				'fetch',
 				'create_schema'
 		]
 	
-	def request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ] = None,
-			time: int = 20 ) -> Dict[ str, Any ] | None:
+	def validate_api_key( self ) -> str:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to an OpenAQ endpoint and store response state.
+			Validate the OpenAQ API key before request execution.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'api_key', self.api_key )
+			return str( self.api_key ).strip( )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = 'validate_api_key( self ) -> str'
+			raise exception
+	
+	def validate_mode( self, mode: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate an OpenAQ wrapper mode.
+
+			Parameters:
+			-----------
+			mode (str):
+				Requested wrapper mode.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'mode', mode )
+			
+			value = str( mode ).strip( ).lower( )
+			allowed = {
+					'countries',
+					'providers',
+					'parameters',
+					'parameter_latest',
+					'locations',
+					'latest'
+			}
+			
+			if value not in allowed:
+				raise ValueError(
+					'Unsupported OpenAQ mode. Use countries, providers, parameters, '
+					'parameter_latest, locations, or latest.'
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = 'validate_mode( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_endpoint( self, endpoint: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate an OpenAQ API v3 endpoint path.
 
 			Parameters:
 			-----------
 			endpoint (str):
-				Endpoint path under the OpenAQ base URL.
-
-			params (Optional[Dict[str, Any]]):
-				Query string parameters.
-
-			time (int):
-				Request timeout in seconds.
+				Endpoint path under the OpenAQ v3 base URL.
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			str
 		'''
 		try:
-			throw_if( 'api_key', self.api_key )
 			throw_if( 'endpoint', endpoint )
-			throw_if( 'time', time )
 			
-			self.endpoint = str( endpoint ).strip( )
-			self.timeout = int( time )
-			self.url = f'{self.base_url}/{self.endpoint}'
-			self.params = { }
-			self.headers[ 'X-API-Key' ] = str( self.api_key ).strip( )
+			value = str( endpoint ).strip( ).strip( '/' )
 			
-			for key, value in (params or { }).items( ):
-				if value is None:
-					continue
-				
-				if isinstance( value, str ) and not value.strip( ):
-					continue
-				
-				self.params[ key ] = value
+			if value.startswith( 'http://' ) or value.startswith( 'https://' ):
+				raise ValueError( 'endpoint must be a path segment, not a full URL.' )
 			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=self.timeout
-			)
+			if '..' in value:
+				raise ValueError( 'endpoint cannot contain parent-directory markers.' )
 			
-			self.response.raise_for_status( )
-			self.payload = self.response.json( )
-			self.result = {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
-			}
+			if not re.fullmatch(
+					r'(countries|providers|parameters|locations|'
+					r'parameters/\d+/latest|locations/\d+/latest)',
+					value
+			):
+				raise ValueError(
+					'Unsupported OpenAQ endpoint path.'
+				)
 			
-			return self.result
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = 'validate_endpoint( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_positive_integer( self, name: str, value: Any,
+			maximum: int | None = None ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a positive integer request argument.
+
+			Parameters:
+			-----------
+			name (str):
+				Argument name.
+
+			value (Any):
+				Integer-like argument value.
+
+			maximum (int | None):
+				Optional inclusive maximum.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'name', name )
+			throw_if( name, value )
+			
+			number = int( value )
+			
+			if number < 1:
+				raise ValueError( f'{name} must be greater than or equal to 1.' )
+			
+			if maximum is not None and number > int( maximum ):
+				raise ValueError( f'{name} must be less than or equal to {maximum}.' )
+			
+			return number
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
 			exception.method = (
-					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+					'validate_positive_integer( self, *args, **kwargs ) -> int'
 			)
 			raise exception
 	
-	def shape_location_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+	def validate_non_negative_integer( self, name: str, value: Any ) -> int:
 		'''
 			Purpose:
 			--------
-			Normalize OpenAQ location payloads into display rows.
+			Validate a non-negative integer request argument.
 
 			Parameters:
 			-----------
-			payload (Dict[str, Any]):
-				Location payload returned by OpenAQ.
+			name (str):
+				Argument name.
+
+			value (Any):
+				Integer-like argument value.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'name', name )
+			
+			if value is None:
+				raise ValueError( f'{name} cannot be None.' )
+			
+			number = int( value )
+			
+			if number < 0:
+				raise ValueError( f'{name} must be greater than or equal to 0.' )
+			
+			return number
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'validate_non_negative_integer( self, *args, **kwargs ) -> int'
+			)
+			raise exception
+	
+	def validate_coordinates( self, coordinates: str = '' ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate an optional OpenAQ latitude,longitude coordinate filter.
+
+			Parameters:
+			-----------
+			coordinates (str):
+				Optional coordinate string in latitude,longitude format.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( coordinates or '' ).strip( )
+			
+			if not value:
+				return ''
+			
+			parts = [
+					part.strip( )
+					for part in value.split( ',' )
+			]
+			
+			if len( parts ) != 2:
+				raise ValueError( 'coordinates must use latitude,longitude format.' )
+			
+			latitude = float( parts[ 0 ] )
+			longitude = float( parts[ 1 ] )
+			
+			if latitude < -90.0 or latitude > 90.0:
+				raise ValueError( 'coordinates latitude must be between -90 and 90.' )
+			
+			if longitude < -180.0 or longitude > 180.0:
+				raise ValueError( 'coordinates longitude must be between -180 and 180.' )
+			
+			return f'{latitude},{longitude}'
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = 'validate_coordinates( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_radius( self, radius: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate an OpenAQ geospatial radius in meters.
+
+			Parameters:
+			-----------
+			radius (int):
+				Radius in meters.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			value = self.validate_positive_integer(
+				name='radius',
+				value=radius,
+				maximum=100000
+			)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = 'validate_radius( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def coalesce_results( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Coalesce common OpenAQ response shapes into a list of records.
+
+			Parameters:
+			-----------
+			payload (Any):
+				Decoded OpenAQ JSON payload.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			if payload is None:
+				return [ ]
+			
+			if isinstance( payload, list ):
+				return [
+						item
+						for item in payload
+						if isinstance( item, dict )
+				]
+			
+			if not isinstance( payload, dict ):
+				return [ ]
+			
+			results = payload.get( 'results', [ ] )
+			
+			if isinstance( results, list ):
+				return [
+						item
+						for item in results
+						if isinstance( item, dict )
+				]
+			
+			return [ ]
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'coalesce_results( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def shape_resource_rows( self, payload: Any,
+			resource_name: str ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize OpenAQ resource discovery records into display rows.
+
+			Parameters:
+			-----------
+			payload (Any):
+				Decoded OpenAQ response payload.
+
+			resource_name (str):
+				Resource label used for fallback display.
+
+			Returns:
+			--------
+			List[Dict[str, Any]]
+		'''
+		try:
+			throw_if( 'resource_name', resource_name )
+			
+			rows: List[ Dict[ str, Any ] ] = [ ]
+			
+			for item in self.coalesce_results( payload ):
+				row = {
+						'Id': item.get( 'id', '' ),
+						'Name': item.get( 'name', '' ),
+						'Display Name': (
+								item.get( 'displayName', None )
+								or item.get( 'display_name', None )
+								or item.get( 'name', '' )
+						),
+						'Code': item.get( 'code', '' ),
+						'Resource': resource_name,
+						'First Datetime': item.get( 'datetimeFirst', '' ),
+						'Last Datetime': item.get( 'datetimeLast', '' )
+				}
+				
+				parameters = item.get( 'parameters', [ ] )
+				if isinstance( parameters, list ) and parameters:
+					row[ 'Parameter Count' ] = len( parameters )
+					row[ 'First Parameter' ] = (
+							parameters[ 0 ].get( 'name', '' )
+							if isinstance( parameters[ 0 ], dict )
+							else ''
+					)
+				
+				rows.append( row )
+			
+			return rows
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'shape_resource_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
+			raise exception
+	
+	def shape_location_rows( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
+		'''
+			Purpose:
+			--------
+			Normalize OpenAQ location records into display rows.
+
+			Parameters:
+			-----------
+			payload (Any):
+				Decoded OpenAQ location response payload.
 
 			Returns:
 			--------
@@ -23607,28 +26459,61 @@ class OpenAQ( Fetcher ):
 		'''
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
-			results = payload.get( 'results', [ ] ) or [ ]
 			
-			for item in results:
-				country = item.get( 'country', { } ) or { }
-				provider = item.get( 'provider', { } ) or { }
-				owner = item.get( 'owner', { } ) or { }
+			for item in self.coalesce_results( payload ):
 				coordinates = item.get( 'coordinates', { } ) or { }
+				country = item.get( 'country', { } ) or { }
+				provider = item.get( 'provider', { } ) or item.get( 'owner', { } ) or { }
+				parameters = item.get( 'parameters', [ ] ) or [ ]
+				
+				latitude = (
+						coordinates.get( 'latitude', None )
+						if isinstance( coordinates, dict )
+						else None
+				)
+				longitude = (
+						coordinates.get( 'longitude', None )
+						if isinstance( coordinates, dict )
+						else None
+				)
 				
 				rows.append(
 					{
 							'Location Id': item.get( 'id', '' ),
 							'Name': item.get( 'name', '' ),
 							'Locality': item.get( 'locality', '' ),
-							'Country': country.get( 'name', '' ),
-							'Country Code': country.get( 'code', '' ),
-							'Provider': provider.get( 'name', '' ),
-							'Owner': owner.get( 'name', '' ),
-							'Latitude': coordinates.get( 'latitude', None ),
-							'Longitude': coordinates.get( 'longitude', None ),
-							'Time Zone': item.get( 'timezone', '' ),
-							'Is Mobile': item.get( 'isMobile', None ),
-							'Is Monitor': item.get( 'isMonitor', None )
+							'Timezone': item.get( 'timezone', '' ),
+							'Country': (
+									country.get( 'name', '' )
+									if isinstance( country, dict )
+									else country
+							),
+							'Country Code': (
+									country.get( 'code', '' )
+									if isinstance( country, dict )
+									else ''
+							),
+							'Provider': (
+									provider.get( 'name', '' )
+									if isinstance( provider, dict )
+									else provider
+							),
+							'Parameter Count': (
+									len( parameters )
+									if isinstance( parameters, list )
+									else 0
+							),
+							'First Parameter': (
+									parameters[ 0 ].get( 'name', '' )
+									if isinstance( parameters, list )
+									   and parameters
+									   and isinstance( parameters[ 0 ], dict )
+									else ''
+							),
+							'Latitude': latitude,
+							'Longitude': longitude,
+							'First Datetime': item.get( 'datetimeFirst', '' ),
+							'Last Datetime': item.get( 'datetimeLast', '' )
 					}
 				)
 			
@@ -23644,16 +26529,16 @@ class OpenAQ( Fetcher ):
 			)
 			raise exception
 	
-	def shape_latest_rows( self, payload: Dict[ str, Any ] ) -> List[ Dict[ str, Any ] ]:
+	def shape_latest_rows( self, payload: Any ) -> List[ Dict[ str, Any ] ]:
 		'''
 			Purpose:
 			--------
-			Normalize OpenAQ latest-measurement payloads into display rows.
+			Normalize OpenAQ latest measurement records into display rows.
 
 			Parameters:
 			-----------
-			payload (Dict[str, Any]):
-				Latest-measurement payload returned by OpenAQ.
+			payload (Any):
+				Decoded OpenAQ latest-measurement response payload.
 
 			Returns:
 			--------
@@ -23661,35 +26546,56 @@ class OpenAQ( Fetcher ):
 		'''
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
-			results = payload.get( 'results', [ ] ) or [ ]
 			
-			for item in results:
+			for item in self.coalesce_results( payload ):
+				location = item.get( 'location', { } ) or { }
 				parameter = item.get( 'parameter', { } ) or { }
-				datetime_value = item.get( 'datetime', { } ) or { }
-				sensor_ids = item.get( 'sensorsId', [ ] ) or [ ]
+				coordinates = item.get( 'coordinates', { } ) or { }
+				period = item.get( 'period', { } ) or { }
+				datetime_value = item.get( 'datetime', { } ) or item.get( 'date', { } ) or { }
 				
 				rows.append(
 					{
-							'Parameter': (
-									parameter.get( 'displayName', None )
-									or parameter.get( 'name', '' )
+							'Location Id': (
+									location.get( 'id', '' )
+									if isinstance( location, dict )
+									else ''
 							),
-							'Parameter Name': parameter.get( 'name', '' ),
-							'Units': parameter.get( 'units', '' ),
-							'Value': item.get( 'value', None ),
-							'Date Time UTC': (
+							'Name': (
+									location.get( 'name', '' )
+									if isinstance( location, dict )
+									else ''
+							),
+							'Parameter': (
+									parameter.get( 'name', '' )
+									if isinstance( parameter, dict )
+									else item.get( 'parameter', '' )
+							),
+							'Parameter Id': (
+									parameter.get( 'id', '' )
+									if isinstance( parameter, dict )
+									else ''
+							),
+							'Value': item.get( 'value', '' ),
+							'Unit': item.get( 'unit', '' ),
+							'Datetime': (
 									datetime_value.get( 'utc', '' )
 									if isinstance( datetime_value, dict )
+									else datetime_value
+							),
+							'Period Label': (
+									period.get( 'label', '' )
+									if isinstance( period, dict )
 									else ''
 							),
-							'Date Time Local': (
-									datetime_value.get( 'local', '' )
-									if isinstance( datetime_value, dict )
-									else ''
+							'Latitude': (
+									coordinates.get( 'latitude', None )
+									if isinstance( coordinates, dict )
+									else None
 							),
-							'Sensor Id': (
-									sensor_ids[ 0 ]
-									if isinstance( sensor_ids, list ) and len( sensor_ids ) > 0
+							'Longitude': (
+									coordinates.get( 'longitude', None )
+									if isinstance( coordinates, dict )
 									else None
 							)
 					}
@@ -23703,76 +26609,6 @@ class OpenAQ( Fetcher ):
 			exception.cause = 'OpenAQ'
 			exception.method = (
 					'shape_latest_rows( self, *args, **kwargs ) '
-					'-> List[ Dict[ str, Any ] ]'
-			)
-			raise exception
-	
-	def shape_resource_rows( self, payload: Dict[ str, Any ],
-			resource: str ) -> List[ Dict[ str, Any ] ]:
-		'''
-			Purpose:
-			--------
-			Normalize OpenAQ lookup resources into display rows.
-
-			Parameters:
-			-----------
-			payload (Dict[str, Any]):
-				OpenAQ resource payload.
-
-			resource (str):
-				Resource name used to shape common fields.
-
-			Returns:
-			--------
-			List[Dict[str, Any]]
-		'''
-		try:
-			throw_if( 'resource', resource )
-			
-			rows: List[ Dict[ str, Any ] ] = [ ]
-			results = payload.get( 'results', [ ] ) or [ ]
-			resource_name = str( resource ).strip( ).lower( )
-			
-			for item in results:
-				if not isinstance( item, dict ):
-					continue
-				
-				row = {
-						'Resource': resource_name,
-						'Id': item.get( 'id', '' ),
-						'Name': item.get( 'name', '' )
-				}
-				
-				if resource_name == 'countries':
-					row[ 'Code' ] = item.get( 'code', '' )
-					row[ 'Locations' ] = item.get( 'locations', None )
-					row[ 'Parameters' ] = item.get( 'parameters', None )
-				
-				elif resource_name == 'providers':
-					row[ 'Description' ] = item.get( 'description', '' )
-					row[ 'Source Name' ] = item.get( 'sourceName', '' )
-					row[ 'Export Prefix' ] = item.get( 'exportPrefix', '' )
-				
-				elif resource_name == 'parameters':
-					row[ 'Display Name' ] = item.get( 'displayName', '' )
-					row[ 'Units' ] = item.get( 'units', '' )
-					row[ 'Description' ] = item.get( 'description', '' )
-				
-				else:
-					for key, value in item.items( ):
-						if isinstance( value, (str, int, float, bool) ) or value is None:
-							row[ str( key ) ] = value
-				
-				rows.append( row )
-			
-			return rows
-		
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'OpenAQ'
-			exception.method = (
-					'shape_resource_rows( self, *args, **kwargs ) '
 					'-> List[ Dict[ str, Any ] ]'
 			)
 			raise exception
@@ -23794,28 +26630,34 @@ class OpenAQ( Fetcher ):
 		'''
 		try:
 			count = len( rows or [ ] )
-			first_name = ''
-			first_country = ''
+			first_result = ''
 			first_parameter = ''
+			first_country = ''
 			
 			if rows:
-				first_name = str(
+				first_result = str(
 					rows[ 0 ].get( 'Name', '' )
+					or rows[ 0 ].get( 'Display Name', '' )
 					or rows[ 0 ].get( 'Location Id', '' )
+					or rows[ 0 ].get( 'Id', '' )
 					or ''
 				)
-				first_country = str( rows[ 0 ].get( 'Country', '' ) or '' )
 				first_parameter = str(
-					rows[ 0 ].get( 'Parameter', '' )
-					or rows[ 0 ].get( 'Parameter Name', '' )
+					rows[ 0 ].get( 'First Parameter', '' )
+					or rows[ 0 ].get( 'Parameter', '' )
+					or ''
+				)
+				first_country = str(
+					rows[ 0 ].get( 'Country', '' )
+					or rows[ 0 ].get( 'Country Code', '' )
 					or ''
 				)
 			
 			return {
 					'count': count,
-					'first_name': first_name,
-					'first_country': first_country,
-					'first_parameter': first_parameter
+					'first_result': first_result,
+					'first_parameter': first_parameter,
+					'first_country': first_country
 			}
 		
 		except Exception as e:
@@ -23832,32 +26674,28 @@ class OpenAQ( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Package the stored OpenAQ response into the result structure consumed by
-			app.py.
+			Package stored OpenAQ response state into the app-facing result.
 
 			Parameters:
 			-----------
 			rows (List[Dict[str, Any]]):
-				Normalized output rows.
+				Normalized OpenAQ rows.
 
 			params (Optional[Dict[str, Any]]):
-				Optional app-facing parameter dictionary.
+				App-facing request parameters. Defaults to self.params.
 
 			Returns:
 			--------
 			Dict[str, Any]
 		'''
 		try:
-			payload = self.result.get( 'raw', { } ) if isinstance( self.result, dict ) else { }
-			payload = payload or { }
-			
 			self.result = {
 					'mode': self.mode,
 					'url': self.url,
 					'params': params if params is not None else self.params,
 					'summary': self.summarize_rows( rows ),
 					'rows': rows,
-					'raw': payload
+					'raw': self.payload
 			}
 			
 			return self.result
@@ -23866,11 +26704,83 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def request( self, endpoint: str, params: Optional[ Dict[ str, Any ] ] = None,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to an OpenAQ API v3 endpoint and store response state.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				Endpoint path under the OpenAQ v3 base URL.
+
+			params (Optional[Dict[str, Any]]):
+				Query string parameters.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.validate_api_key( )
+			self.endpoint = self.validate_endpoint( endpoint )
+			throw_if( 'time', time )
+			
+			self.timeout = int( time )
+			self.url = f'{self.base_url}/{self.endpoint}'
+			self.params = { }
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			for key, value in (params or { }).items( ):
+				if value is None:
+					continue
+				
+				if isinstance( value, str ) and not value.strip( ):
+					continue
+				
+				self.params[ key ] = value
+			
+			self.headers[ 'X-API-Key' ] = self.validate_api_key( )
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.json( ) or { }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
 	def fetch_countries( self, providers_id: str = '', parameters_id: str = '',
-			limit: int = 100, page: int = 1, time: int = 20 ) -> Dict[ str, Any ] | None:
+			limit: int = 100, page: int = 1,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
@@ -23898,15 +26808,11 @@ class OpenAQ( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'limit', limit )
-			throw_if( 'page', page )
-			throw_if( 'time', time )
-			
 			self.mode = 'countries'
 			self.providers_id = str( providers_id or '' ).strip( )
 			self.parameters_id = str( parameters_id or '' ).strip( )
-			self.limit = int( limit )
-			self.page = int( page )
+			self.limit = self.validate_positive_integer( 'limit', limit, maximum=1000 )
+			self.page = self.validate_positive_integer( 'page', page )
 			self.timeout = int( time )
 			
 			self.request(
@@ -23921,6 +26827,7 @@ class OpenAQ( Fetcher ):
 			)
 			
 			rows = self.shape_resource_rows( self.payload, 'countries' )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
@@ -23955,13 +26862,9 @@ class OpenAQ( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'limit', limit )
-			throw_if( 'page', page )
-			throw_if( 'time', time )
-			
 			self.mode = 'providers'
-			self.limit = int( limit )
-			self.page = int( page )
+			self.limit = self.validate_positive_integer( 'limit', limit, maximum=1000 )
+			self.page = self.validate_positive_integer( 'page', page )
 			self.timeout = int( time )
 			
 			self.request(
@@ -23974,6 +26877,7 @@ class OpenAQ( Fetcher ):
 			)
 			
 			rows = self.shape_resource_rows( self.payload, 'providers' )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
@@ -24008,13 +26912,9 @@ class OpenAQ( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'limit', limit )
-			throw_if( 'page', page )
-			throw_if( 'time', time )
-			
 			self.mode = 'parameters'
-			self.limit = int( limit )
-			self.page = int( page )
+			self.limit = self.validate_positive_integer( 'limit', limit, maximum=1000 )
+			self.page = self.validate_positive_integer( 'page', page )
 			self.timeout = int( time )
 			
 			self.request(
@@ -24027,6 +26927,7 @@ class OpenAQ( Fetcher ):
 			)
 			
 			rows = self.shape_resource_rows( self.payload, 'parameters' )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
@@ -24038,13 +26939,79 @@ class OpenAQ( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_locations( self, country_id: int = None, coordinates: str = '', radius: int = 25000,
-			providers_id: str = '', parameters_id: str = '', limit: int = 25, page: int = 1,
+	def fetch_parameter_latest( self, parameter_id: int, limit: int = 100,
+			page: int = 1, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Fetch latest OpenAQ measurements for a single parameter.
+
+			Parameters:
+			-----------
+			parameter_id (int):
+				OpenAQ parameter identifier.
+
+			limit (int):
+				Maximum returned latest measurements.
+
+			page (int):
+				Result page number.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.mode = 'parameter_latest'
+			self.parameter_id = self.validate_positive_integer(
+				name='parameter_id',
+				value=parameter_id
+			)
+			self.limit = self.validate_positive_integer( 'limit', limit, maximum=1000 )
+			self.page = self.validate_positive_integer( 'page', page )
+			self.timeout = int( time )
+			
+			self.request(
+				endpoint=f'parameters/{self.parameter_id}/latest',
+				params={
+						'limit': self.limit,
+						'page': self.page
+				},
+				time=self.timeout
+			)
+			
+			rows = self.shape_latest_rows( self.payload )
+			
+			return self.package_response(
+				rows=rows,
+				params={
+						'parameter_id': self.parameter_id,
+						'limit': self.limit,
+						'page': self.page
+				}
+			)
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenAQ'
+			exception.method = (
+					'fetch_parameter_latest( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
+			raise exception
+	
+	def fetch_locations( self, country_id: int = None, coordinates: str = '',
+			radius: int = 25000, providers_id: str = '', parameters_id: str = '',
+			limit: int = 25, page: int = 1,
 			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch OpenAQ locations.
+			Fetch OpenAQ monitoring locations.
 
 			Parameters:
 			-----------
@@ -24052,10 +27019,10 @@ class OpenAQ( Fetcher ):
 				Optional OpenAQ country identifier.
 
 			coordinates (str):
-				Optional latitude,longitude string for geospatial filtering.
+				Optional latitude,longitude geospatial filter.
 
 			radius (int):
-				Optional radius in meters when coordinates are supplied.
+				Radius in meters when coordinates are supplied.
 
 			providers_id (str):
 				Optional provider ID filter.
@@ -24077,19 +27044,18 @@ class OpenAQ( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'radius', radius )
-			throw_if( 'limit', limit )
-			throw_if( 'page', page )
-			throw_if( 'time', time )
-			
 			self.mode = 'locations'
-			self.country_id = None if country_id is None else int( country_id )
-			self.coordinates = str( coordinates or '' ).strip( )
-			self.radius = int( radius )
+			self.country_id = (
+					None
+					if country_id is None
+					else self.validate_positive_integer( 'country_id', country_id )
+			)
+			self.coordinates = self.validate_coordinates( coordinates )
+			self.radius = self.validate_radius( radius )
 			self.providers_id = str( providers_id or '' ).strip( )
 			self.parameters_id = str( parameters_id or '' ).strip( )
-			self.limit = int( limit )
-			self.page = int( page )
+			self.limit = self.validate_positive_integer( 'limit', limit, maximum=1000 )
+			self.page = self.validate_positive_integer( 'page', page )
 			self.timeout = int( time )
 			
 			self.request(
@@ -24107,6 +27073,7 @@ class OpenAQ( Fetcher ):
 			)
 			
 			rows = self.shape_location_rows( self.payload )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
@@ -24118,11 +27085,12 @@ class OpenAQ( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_latest( self, location_id: int, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch_latest( self, location_id: int,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch latest measurements for a single OpenAQ location.
+			Fetch latest OpenAQ measurements for a single monitoring location.
 
 			Parameters:
 			-----------
@@ -24137,11 +27105,11 @@ class OpenAQ( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'location_id', location_id )
-			throw_if( 'time', time )
-			
 			self.mode = 'latest'
-			self.location_id = int( location_id )
+			self.location_id = self.validate_positive_integer(
+				name='location_id',
+				value=location_id
+			)
 			self.timeout = int( time )
 			
 			self.request(
@@ -24151,8 +27119,9 @@ class OpenAQ( Fetcher ):
 			)
 			
 			rows = self.shape_latest_rows( self.payload )
+			
 			return self.package_response(
-				rows,
+				rows=rows,
 				params={
 						'location_id': self.location_id
 				}
@@ -24167,69 +27136,17 @@ class OpenAQ( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_parameter_latest( self, parameter_id: int, limit: int = 100,
-			page: int = 1, time: int = 20 ) -> Dict[ str, Any ] | None:
-		'''
-			Purpose:
-			--------
-			Fetch latest measurements for a single OpenAQ parameter.
-
-			Parameters:
-			-----------
-			parameter_id (int):
-				OpenAQ parameter identifier.
-
-			limit (int):
-				Maximum returned latest values.
-
-			page (int):
-				Result page number.
-
-			time (int):
-				Request timeout in seconds.
-
-			Returns:
-			--------
-			Dict[str, Any] | None
-		'''
-		try:
-			throw_if( 'parameter_id', parameter_id )
-			throw_if( 'limit', limit )
-			throw_if( 'page', page )
-			throw_if( 'time', time )
-			
-			self.mode = 'parameter_latest'
-			self.parameter_id = int( parameter_id )
-			self.limit = int( limit )
-			self.page = int( page )
-			self.timeout = int( time )
-			
-			self.request( endpoint=f'parameters/{self.parameter_id}/latest',
-				params={ 'limit': self.limit, 'page': self.page },
-				time=self.timeout )
-			
-			rows = self.shape_latest_rows( self.payload )
-			return self.package_response( rows, params={
-						'parameter_id': self.parameter_id,
-						'limit': self.limit,
-						'page': self.page
-				} )
-		
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'fetchers'
-			exception.cause = 'OpenAQ'
-			exception.method = 'fetch_parameter_latest( self, *args, **kwargs ) -> Dict[ str, Any ]'
-			raise exception
-	
 	def fetch( self, mode: str = 'locations', location_id: int = None,
-			parameter_id: int = None, country_id: int = None, coordinates: str = '',
-			radius: int = 25000, providers_id: str = '', parameters_id: str = '',
-			limit: int = 25, page: int = 1, time: int = 20 ) -> Dict[ str, Any ] | None:
+			parameter_id: int = None, country_id: int = None,
+			coordinates: str = '', radius: int = 25000,
+			providers_id: str = '', parameters_id: str = '',
+			limit: int = 25, page: int = 1,
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Dispatch an OpenAQ request to the mode-specific fetch method.
+			Unified dispatcher for OpenAQ v3 resource discovery, location, and latest
+			measurement retrieval.
 
 			Parameters:
 			-----------
@@ -24238,9 +27155,9 @@ class OpenAQ( Fetcher ):
 				- countries
 				- providers
 				- parameters
+				- parameter_latest
 				- locations
 				- latest
-				- parameter_latest
 
 			location_id (int | None):
 				OpenAQ location identifier for latest mode.
@@ -24249,10 +27166,10 @@ class OpenAQ( Fetcher ):
 				OpenAQ parameter identifier for parameter_latest mode.
 
 			country_id (int | None):
-				Optional OpenAQ country identifier.
+				Optional OpenAQ country identifier for locations mode.
 
 			coordinates (str):
-				Optional latitude,longitude string.
+				Optional latitude,longitude filter for locations mode.
 
 			radius (int):
 				Geospatial radius in meters.
@@ -24277,44 +27194,73 @@ class OpenAQ( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'mode', mode )
-			self.mode = str( mode ).strip( ).lower( )
+			self.mode = self.validate_mode( mode )
 			
 			if self.mode == 'countries':
-				return self.fetch_countries( providers_id=providers_id, parameters_id=parameters_id,
-					limit=limit, page=page, time=time )
+				return self.fetch_countries(
+					providers_id=providers_id,
+					parameters_id=parameters_id,
+					limit=limit,
+					page=page,
+					time=time
+				)
 			
 			if self.mode == 'providers':
-				return self.fetch_providers( limit=limit, page=page, time=time )
+				return self.fetch_providers(
+					limit=limit,
+					page=page,
+					time=time
+				)
 			
 			if self.mode == 'parameters':
-				return self.fetch_parameters( limit=limit, page=page, time=time )
-			
-			if self.mode == 'locations':
-				return self.fetch_locations( country_id=country_id, coordinates=coordinates,
-					radius=radius, providers_id=providers_id, parameters_id=parameters_id,
-					limit=limit, page=page, time=time )
-			
-			if self.mode == 'latest':
-				return self.fetch_latest( location_id=location_id, time=time )
+				return self.fetch_parameters(
+					limit=limit,
+					page=page,
+					time=time
+				)
 			
 			if self.mode == 'parameter_latest':
-				return self.fetch_parameter_latest( parameter_id=parameter_id, limit=limit,
-					page=page, time=time )
+				return self.fetch_parameter_latest(
+					parameter_id=parameter_id,
+					limit=limit,
+					page=page,
+					time=time
+				)
+			
+			if self.mode == 'locations':
+				return self.fetch_locations(
+					country_id=country_id,
+					coordinates=coordinates,
+					radius=radius,
+					providers_id=providers_id,
+					parameters_id=parameters_id,
+					limit=limit,
+					page=page,
+					time=time
+				)
+			
+			if self.mode == 'latest':
+				return self.fetch_latest(
+					location_id=location_id,
+					time=time
+				)
 			
 			raise ValueError(
-				"Unsupported OpenAQ mode. Expected 'countries', 'providers', "
-				"'parameters', 'locations', 'latest', or 'parameter_latest'."
+				'Unsupported OpenAQ mode. Use countries, providers, parameters, '
+				'parameter_latest, locations, or latest.'
 			)
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
-	def create_schema( self, function: str, tool: str, description: str, parameters: dict,
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		'''
 			Purpose:
@@ -24324,19 +27270,19 @@ class OpenAQ( Fetcher ):
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				Dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -24347,19 +27293,25 @@ class OpenAQ( Fetcher ):
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
+			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -24367,7 +27319,9 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			exception.method = (
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			)
 			raise exception
 
 class Firms( Fetcher ):
@@ -24376,27 +27330,25 @@ class Firms( Fetcher ):
 		--------
 		Provides access to NASA FIRMS area fire-detection and data-availability
 		services using a MAP_KEY and human-readable normalized output.
-
 	'''
 	base_url: Optional[ str ]
 	map_key: Optional[ str ]
 	mode: Optional[ str ]
-	params: Optional[ Dict[ str, Any ] ]
-	payload: Optional[ Any ]
-	timeout: Optional[ int ]
-	agents: Optional[ str ]
 	source: Optional[ str ]
 	area_coordinates: Optional[ str ]
 	day_range: Optional[ int ]
 	date: Optional[ str ]
 	sensor: Optional[ str ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
 	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			--------
-			Initialize the NASA FIRMS fetcher and bind the MAP_KEY from config.py.
+			Initialize the NASA FIRMS fetcher.
 
 			Parameters:
 			-----------
@@ -24410,17 +27362,18 @@ class Firms( Fetcher ):
 		self.base_url = 'https://firms.modaps.eosdis.nasa.gov/api'
 		self.map_key = cfg.FIRMS_MAP_KEY
 		self.mode = 'area'
+		self.source = 'VIIRS_SNPP_NRT'
+		self.area_coordinates = 'world'
+		self.day_range = 1
+		self.date = ''
+		self.sensor = 'ALL'
 		self.params = { }
 		self.payload = ''
+		self.result = { }
+		self.response = None
+		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.source = None
-		self.area_coordinates = None
-		self.day_range = None
-		self.date = None
-		self.sensor = None
-		self.response = None
-		self.result = { }
 		self.headers = {
 				'Accept': 'text/csv',
 				'User-Agent': self.agents
@@ -24444,75 +27397,311 @@ class Firms( Fetcher ):
 				'base_url',
 				'map_key',
 				'mode',
-				'params',
-				'payload',
-				'timeout',
-				'agents',
 				'source',
 				'area_coordinates',
 				'day_range',
 				'date',
 				'sensor',
-				'response',
+				'params',
+				'payload',
 				'result',
-				'request_csv',
+				'response',
+				'url',
+				'timeout',
+				'agents',
+				'headers',
+				'validate_map_key',
+				'validate_mode',
+				'validate_source',
+				'validate_sensor',
+				'validate_day_range',
+				'validate_date',
+				'validate_area_coordinates',
 				'csv_to_rows',
 				'summarize_rows',
 				'package_response',
+				'request_csv',
 				'fetch_area',
 				'fetch_data_availability',
 				'fetch',
 				'create_schema'
 		]
 	
-	def request_csv( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+	def validate_map_key( self ) -> str:
 		'''
 			Purpose:
 			--------
-			Issue a GET request to a FIRMS CSV endpoint and store response state.
+			Validate the NASA FIRMS MAP_KEY before request execution.
 
 			Parameters:
 			-----------
-			url (str):
-				Fully qualified FIRMS request URL.
-
-			time (int):
-				Request timeout in seconds.
+			None
 
 			Returns:
 			--------
-			Dict[str, Any] | None
+			str
 		'''
 		try:
 			throw_if( 'map_key', self.map_key )
-			throw_if( 'url', url )
-			throw_if( 'time', time )
+			return str( self.map_key ).strip( )
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = 'validate_map_key( self ) -> str'
+			raise exception
+	
+	def validate_mode( self, mode: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a NASA FIRMS wrapper mode.
+
+			Parameters:
+			-----------
+			mode (str):
+				Requested wrapper mode.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'mode', mode )
 			
-			self.url = str( url ).strip( )
-			self.timeout = int( time )
-			
-			self.response = requests.get(
-				url=self.url,
-				headers=self.headers,
-				timeout=self.timeout
-			)
-			
-			self.response.raise_for_status( )
-			self.payload = self.response.text
-			self.result = {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
+			value = str( mode ).strip( ).lower( )
+			allowed = {
+					'area',
+					'data-availability'
 			}
 			
-			return self.result
+			if value not in allowed:
+				raise ValueError(
+					"Unsupported FIRMS mode. Use 'area' or 'data-availability'."
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = 'validate_mode( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_source( self, source: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a NASA FIRMS area-source identifier.
+
+			Parameters:
+			-----------
+			source (str):
+				FIRMS source identifier.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'source', source )
+			
+			value = str( source ).strip( ).upper( )
+			allowed = {
+					'LANDSAT_NRT',
+					'MODIS_NRT',
+					'MODIS_SP',
+					'VIIRS_NOAA20_NRT',
+					'VIIRS_NOAA20_SP',
+					'VIIRS_NOAA21_NRT',
+					'VIIRS_SNPP_NRT',
+					'VIIRS_SNPP_SP'
+			}
+			
+			if value not in allowed:
+				raise ValueError(
+					'Unsupported FIRMS source. Use one of the app-supported '
+					'LANDSAT, MODIS, or VIIRS source identifiers.'
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = 'validate_source( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_sensor( self, sensor: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate a NASA FIRMS data-availability sensor selector.
+
+			Parameters:
+			-----------
+			sensor (str):
+				FIRMS sensor selector.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'sensor', sensor )
+			
+			value = str( sensor ).strip( ).upper( )
+			allowed = {
+					'ALL',
+					'LANDSAT',
+					'MODIS',
+					'VIIRS_SNPP',
+					'VIIRS_NOAA20',
+					'VIIRS_NOAA21'
+			}
+			
+			if value not in allowed:
+				raise ValueError(
+					'Unsupported FIRMS sensor. Use ALL, LANDSAT, MODIS, '
+					'VIIRS_SNPP, VIIRS_NOAA20, or VIIRS_NOAA21.'
+				)
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = 'validate_sensor( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_day_range( self, day_range: int ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate a NASA FIRMS area day range.
+
+			Parameters:
+			-----------
+			day_range (int):
+				Number of days to query.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'day_range', day_range )
+			
+			value = int( day_range )
+			if value < 1 or value > 5:
+				raise ValueError( 'day_range must be between 1 and 5.' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = 'validate_day_range( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_date( self, date: str = '' ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate an optional NASA FIRMS date value.
+
+			Parameters:
+			-----------
+			date (str):
+				Optional date in YYYY-MM-DD format.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			value = str( date or '' ).strip( )
+			
+			if not value:
+				return ''
+			
+			dt.datetime.strptime( value, '%Y-%m-%d' )
+			
+			return value
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = 'validate_date( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_area_coordinates( self, area_coordinates: str = 'world' ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate FIRMS area coordinates as world or west,south,east,north.
+
+			Parameters:
+			-----------
+			area_coordinates (str):
+				Area value accepted by the FIRMS Area API.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'area_coordinates', area_coordinates )
+			
+			value = str( area_coordinates ).strip( )
+			
+			if value.lower( ) == 'world':
+				return 'world'
+			
+			parts = [
+					part.strip( )
+					for part in value.split( ',' )
+			]
+			
+			if len( parts ) != 4:
+				raise ValueError(
+					'area_coordinates must be world or west,south,east,north.'
+				)
+			
+			west, south, east, north = [ float( part ) for part in parts ]
+			
+			if west < -180.0 or west > 180.0:
+				raise ValueError( 'west longitude must be between -180 and 180.' )
+			
+			if east < -180.0 or east > 180.0:
+				raise ValueError( 'east longitude must be between -180 and 180.' )
+			
+			if south < -90.0 or south > 90.0:
+				raise ValueError( 'south latitude must be between -90 and 90.' )
+			
+			if north < -90.0 or north > 90.0:
+				raise ValueError( 'north latitude must be between -90 and 90.' )
+			
+			if west >= east:
+				raise ValueError( 'west longitude must be less than east longitude.' )
+			
+			if south >= north:
+				raise ValueError( 'south latitude must be less than north latitude.' )
+			
+			return f'{west:g},{south:g},{east:g},{north:g}'
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
 			exception.method = (
-					'request_csv( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+					'validate_area_coordinates( self, *args, **kwargs ) -> str'
 			)
 			raise exception
 	
@@ -24520,7 +27709,7 @@ class Firms( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Convert FIRMS CSV text into normalized row dictionaries.
+			Convert FIRMS CSV response text into title-cased display row dictionaries.
 
 			Parameters:
 			-----------
@@ -24532,18 +27721,23 @@ class Firms( Fetcher ):
 			List[Dict[str, Any]]
 		'''
 		try:
-			if csv_text is None or not str( csv_text ).strip( ):
+			text = str( csv_text or '' )
+			
+			if not text.strip( ):
 				return [ ]
 			
-			df_csv = pd.read_csv( io.StringIO( str( csv_text ) ) )
+			reader = csv.DictReader( io.StringIO( text ) )
 			rows: List[ Dict[ str, Any ] ] = [ ]
 			
-			for _, item in df_csv.iterrows( ):
+			for record in reader:
+				if not isinstance( record, dict ):
+					continue
+				
 				row: Dict[ str, Any ] = { }
 				
-				for key in df_csv.columns:
+				for key, value in record.items( ):
 					friendly_key = str( key ).replace( '_', ' ' ).title( )
-					row[ friendly_key ] = item[ key ]
+					row[ friendly_key ] = value
 				
 				rows.append( row )
 			
@@ -24567,7 +27761,7 @@ class Firms( Fetcher ):
 			Parameters:
 			-----------
 			rows (List[Dict[str, Any]]):
-				Normalized FIRMS row dictionaries.
+				Normalized row dictionaries.
 
 			Returns:
 			--------
@@ -24576,44 +27770,32 @@ class Firms( Fetcher ):
 		try:
 			count = len( rows or [ ] )
 			first_date = ''
+			first_sensor = ''
 			first_lat = ''
 			first_lon = ''
-			first_sensor = ''
 			
 			if rows:
 				first_date = str(
 					rows[ 0 ].get( 'Acq Date', '' )
 					or rows[ 0 ].get( 'Date', '' )
+					or rows[ 0 ].get( 'Start Date', '' )
 					or ''
 				)
-				
-				first_lat = str(
-					rows[ 0 ].get( 'Latitude', '' )
-					or rows[ 0 ].get( 'Lat', '' )
-					or ''
-				)
-				
-				first_lon = str(
-					rows[ 0 ].get( 'Longitude', '' )
-					or rows[ 0 ].get( 'Lon', '' )
-					or ''
-				)
-				
 				first_sensor = str(
 					rows[ 0 ].get( 'Sensor', '' )
-					or rows[ 0 ].get( 'Source', '' )
 					or rows[ 0 ].get( 'Satellite', '' )
-					or self.sensor
-					or self.source
+					or rows[ 0 ].get( 'Source', '' )
 					or ''
 				)
+				first_lat = str( rows[ 0 ].get( 'Latitude', '' ) or '' )
+				first_lon = str( rows[ 0 ].get( 'Longitude', '' ) or '' )
 			
 			return {
 					'count': count,
 					'first_date': first_date,
+					'first_sensor': first_sensor,
 					'first_lat': first_lat,
-					'first_lon': first_lon,
-					'first_sensor': first_sensor
+					'first_lon': first_lon
 			}
 		
 		except Exception as e:
@@ -24625,32 +27807,29 @@ class Firms( Fetcher ):
 			)
 			raise exception
 	
-	def package_response( self ) -> Dict[ str, Any ]:
+	def package_response( self, rows: List[ Dict[ str, Any ] ] ) -> Dict[ str, Any ]:
 		'''
 			Purpose:
 			--------
-			Package the stored FIRMS response into the result structure consumed by
-			app.py.
+			Package stored FIRMS response state into the app-facing result.
 
 			Parameters:
 			-----------
-			None
+			rows (List[Dict[str, Any]]):
+				Normalized FIRMS rows.
 
 			Returns:
 			--------
 			Dict[str, Any]
 		'''
 		try:
-			csv_text = self.result.get( 'raw', '' ) if isinstance( self.result, dict ) else ''
-			rows = self.csv_to_rows( str( csv_text or '' ) )
-			
 			self.result = {
 					'mode': self.mode,
 					'url': self.url,
 					'params': self.params,
 					'summary': self.summarize_rows( rows ),
 					'rows': rows,
-					'raw': csv_text
+					'raw': self.payload
 			}
 			
 			return self.result
@@ -24659,7 +27838,62 @@ class Firms( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = 'package_response( self ) -> Dict[ str, Any ]'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
+			raise exception
+	
+	def request_csv( self, url: str, time: int = 20 ) -> Dict[ str, Any ] | None:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to a FIRMS CSV endpoint and store response state.
+
+			Parameters:
+			-----------
+			url (str):
+				Fully qualified request URL.
+
+			time (int):
+				Request timeout in seconds.
+
+			Returns:
+			--------
+			Dict[str, Any] | None
+		'''
+		try:
+			self.validate_map_key( )
+			throw_if( 'url', url )
+			throw_if( 'time', time )
+			
+			self.url = str( url ).strip( )
+			self.timeout = int( time )
+			
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
+			
+			self.response = requests.get(
+				url=self.url,
+				headers=self.headers,
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			self.payload = self.response.text or ''
+			self.result = {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
+			
+			return self.result
+		
+		except Exception as e:
+			exception = Error( e )
+			exception.module = 'fetchers'
+			exception.cause = 'Firms'
+			exception.method = (
+					'request_csv( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
 	def fetch_area( self, source: str, area_coordinates: str = 'world',
@@ -24673,9 +27907,7 @@ class Firms( Fetcher ):
 			Parameters:
 			-----------
 			source (str):
-				FIRMS source, such as LANDSAT_NRT, MODIS_NRT, MODIS_SP,
-				VIIRS_NOAA20_NRT, VIIRS_NOAA20_SP, VIIRS_NOAA21_NRT,
-				VIIRS_SNPP_NRT, or VIIRS_SNPP_SP.
+				FIRMS source identifier.
 
 			area_coordinates (str):
 				Bounding box as west,south,east,north, or world.
@@ -24694,31 +27926,21 @@ class Firms( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'source', source )
-			throw_if( 'area_coordinates', area_coordinates )
-			throw_if( 'day_range', day_range )
-			throw_if( 'time', time )
-			
 			self.mode = 'area'
-			self.source = str( source ).strip( ).upper( )
-			self.area_coordinates = str( area_coordinates ).strip( )
-			self.day_range = int( day_range )
-			self.date = str( date or '' ).strip( )
+			self.source = self.validate_source( source )
+			self.area_coordinates = self.validate_area_coordinates( area_coordinates )
+			self.day_range = self.validate_day_range( day_range )
+			self.date = self.validate_date( date )
 			self.timeout = int( time )
-			
-			if self.day_range < 1 or self.day_range > 5:
-				raise ValueError( 'day_range must be between 1 and 5.' )
-			
 			self.params = {
 					'source': self.source,
 					'area_coordinates': self.area_coordinates,
 					'day_range': self.day_range,
 					'date': self.date
 			}
-			
 			self.url = (
-					f'{self.base_url}/area/csv/{self.map_key}/{self.source}/'
-					f'{self.area_coordinates}/{self.day_range}'
+					f'{self.base_url}/area/csv/{self.validate_map_key( )}/'
+					f'{self.source}/{self.area_coordinates}/{self.day_range}'
 			)
 			
 			if self.date:
@@ -24729,7 +27951,9 @@ class Firms( Fetcher ):
 				time=self.timeout
 			)
 			
-			return self.package_response( )
+			rows = self.csv_to_rows( self.payload )
+			
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
@@ -24750,9 +27974,7 @@ class Firms( Fetcher ):
 			Parameters:
 			-----------
 			sensor (str):
-				Sensor family such as ALL, LANDSAT_NRT, MODIS_NRT, MODIS_SP,
-				VIIRS_NOAA20_NRT, VIIRS_NOAA20_SP, VIIRS_NOAA21_NRT,
-				VIIRS_SNPP_NRT, or VIIRS_SNPP_SP.
+				FIRMS sensor selector.
 
 			time (int):
 				Request timeout in seconds.
@@ -24762,18 +27984,15 @@ class Firms( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'sensor', sensor )
-			throw_if( 'time', time )
-			
 			self.mode = 'data-availability'
-			self.sensor = str( sensor ).strip( ).upper( )
+			self.sensor = self.validate_sensor( sensor )
 			self.timeout = int( time )
 			self.params = {
 					'sensor': self.sensor
 			}
 			self.url = (
 					f'{self.base_url}/data_availability/csv/'
-					f'{self.map_key}/{self.sensor}'
+					f'{self.validate_map_key( )}/{self.sensor}'
 			)
 			
 			self.request_csv(
@@ -24781,7 +28000,9 @@ class Firms( Fetcher ):
 				time=self.timeout
 			)
 			
-			return self.package_response( )
+			rows = self.csv_to_rows( self.payload )
+			
+			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
@@ -24793,13 +28014,14 @@ class Firms( Fetcher ):
 			)
 			raise exception
 	
-	def fetch( self, mode: str = 'area', source: str = '',
-			area_coordinates: str = 'world', day_range: int = 1, date: str = '',
-			sensor: str = 'ALL', time: int = 20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'area', source: str = 'VIIRS_SNPP_NRT',
+			area_coordinates: str = 'world', day_range: int = 1,
+			date: str = '', sensor: str = 'ALL',
+			time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Dispatch a FIRMS request to the mode-specific fetch method.
+			Unified dispatcher for NASA FIRMS area and data-availability retrieval.
 
 			Parameters:
 			-----------
@@ -24809,19 +28031,19 @@ class Firms( Fetcher ):
 				- data-availability
 
 			source (str):
-				FIRMS source for area mode.
+				FIRMS source identifier for area mode.
 
 			area_coordinates (str):
-				Bounding box string or world.
+				Area coordinates for area mode.
 
 			day_range (int):
-				Number of days from 1 to 5.
+				Day range for area mode.
 
 			date (str):
-				Optional start date for area mode.
+				Optional YYYY-MM-DD date for area mode.
 
 			sensor (str):
-				Sensor family for data-availability mode.
+				Sensor selector for data-availability mode.
 
 			time (int):
 				Request timeout in seconds.
@@ -24831,23 +28053,32 @@ class Firms( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'mode', mode )
-			self.mode = str( mode ).strip( ).lower( )
+			self.mode = self.validate_mode( mode )
 			
 			if self.mode == 'area':
-				return self.fetch_area( source=source, area_coordinates=area_coordinates,
-					day_range=day_range, date=date, time=time )
+				return self.fetch_area(
+					source=source,
+					area_coordinates=area_coordinates,
+					day_range=day_range,
+					date=date,
+					time=time
+				)
 			
 			if self.mode == 'data-availability':
-				return self.fetch_data_availability( sensor=sensor, time=time )
+				return self.fetch_data_availability(
+					sensor=sensor,
+					time=time
+				)
 			
-			raise ValueError( "Unsupported FIRMS mode. Expected 'area' or 'data-availability'." )
+			raise ValueError( "Unsupported FIRMS mode. Use 'area' or 'data-availability'." )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			raise exception
 	
 	def create_schema( self, function: str, tool: str,
@@ -24861,19 +28092,19 @@ class Firms( Fetcher ):
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				Dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -24885,18 +28116,24 @@ class Firms( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			return { 'name': function.strip( ),
+			return {
+					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
@@ -24904,11 +28141,14 @@ class Firms( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			exception.method = (
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			)
 			raise exception
 
 class OpenSky( Fetcher ):
 	'''
+
 		Purpose:
 		--------
 		Provides access to the OpenSky Network REST API for aircraft state vectors,
@@ -24920,10 +28160,6 @@ class OpenSky( Fetcher ):
 	client_id: Optional[ str ]
 	client_secret: Optional[ str ]
 	access_token: Optional[ str ]
-	token_response: Optional[ Response ]
-	token_payload: Optional[ Dict[ str, Any ] ]
-	payload: Optional[ Any ]
-	params: Optional[ Dict[ str, Any ] ]
 	mode: Optional[ str ]
 	endpoint: Optional[ str ]
 	icao24: Optional[ str ]
@@ -24936,12 +28172,16 @@ class OpenSky( Fetcher ):
 	lamax: Optional[ float ]
 	lomax: Optional[ float ]
 	extended: Optional[ bool ]
+	params: Optional[ Dict[ str, Any ] ]
+	payload: Optional[ Any ]
+	result: Optional[ Dict[ str, Any ] ]
+	agents: Optional[ str ]
 	
 	def __init__( self ) -> None:
 		'''
 			Purpose:
 			--------
-			Initialize the OpenSky fetcher and bind OAuth credentials from config.py.
+			Initialize the OpenSky Network REST API wrapper.
 
 			Parameters:
 			-----------
@@ -24961,14 +28201,10 @@ class OpenSky( Fetcher ):
 		self.client_id = cfg.OPENSKY_API_CLIENT_ID
 		self.client_secret = cfg.OPENSKY_API_CREDENTIALS
 		self.access_token = None
-		self.token_response = None
-		self.token_payload = { }
-		self.payload = { }
-		self.params = { }
 		self.mode = 'states_bbox'
-		self.endpoint = None
-		self.icao24 = None
-		self.airport = None
+		self.endpoint = ''
+		self.icao24 = ''
+		self.airport = ''
 		self.begin = None
 		self.end = None
 		self.time_value = None
@@ -24977,11 +28213,15 @@ class OpenSky( Fetcher ):
 		self.lamax = None
 		self.lomax = None
 		self.extended = False
-		self.response = None
+		self.params = { }
+		self.payload = None
 		self.result = { }
+		self.response = None
+		self.url = None
+		self.agents = cfg.AGENTS
 		self.headers = {
 				'Accept': 'application/json',
-				'User-Agent': cfg.AGENTS,
+				'User-Agent': self.agents,
 		}
 	
 	def __dir__( self ) -> List[ str ]:
@@ -25010,10 +28250,6 @@ class OpenSky( Fetcher ):
 				'client_id',
 				'client_secret',
 				'access_token',
-				'token_response',
-				'token_payload',
-				'payload',
-				'params',
 				'mode',
 				'endpoint',
 				'icao24',
@@ -25026,12 +28262,25 @@ class OpenSky( Fetcher ):
 				'lamax',
 				'lomax',
 				'extended',
-				'get_token',
+				'params',
+				'payload',
+				'agents',
+				'validate_mode',
+				'validate_endpoint',
+				'validate_icao24',
+				'validate_airport',
+				'validate_epoch',
+				'validate_time_range',
+				'validate_latitude',
+				'validate_longitude',
+				'validate_bbox',
+				'assign_credentials',
+				'authenticate',
 				'request',
 				'normalize_states',
 				'normalize_flights',
 				'normalize_track',
-				'fetch_states_bbox',
+				'fetch_states',
 				'fetch_flights_aircraft',
 				'fetch_arrivals_airport',
 				'fetch_departures_airport',
@@ -25040,94 +28289,471 @@ class OpenSky( Fetcher ):
 				'create_schema'
 		]
 	
-	def get_token( self, client_id: str = None, client_secret: str = None ) -> str:
+	def validate_mode( self, mode: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Request an OpenSky OAuth2 bearer token using client credentials.
+			Validate an OpenSky wrapper mode.
 
 			Parameters:
 			-----------
-			client_id (str):
-				Optional OpenSky OAuth client ID. When omitted, the constructor-bound
-				config.py value is used.
-
-			client_secret (str):
-				Optional OpenSky OAuth client secret. When omitted, the constructor-bound
-				config.py value is used.
+			mode (str):
+				Requested wrapper mode.
 
 			Returns:
 			--------
 			str
 		'''
 		try:
-			if client_id:
-				self.client_id = str( client_id ).strip( )
+			throw_if( 'mode', mode )
 			
-			if client_secret:
-				self.client_secret = str( client_secret ).strip( )
+			value = str( mode ).strip( ).lower( )
+			allowed = {
+					'states_bbox',
+					'flights_aircraft',
+					'arrivals_airport',
+					'departures_airport',
+					'track_aircraft'
+			}
 			
-			throw_if( 'client_id', self.client_id )
-			throw_if( 'client_secret', self.client_secret )
+			if value not in allowed:
+				raise ValueError(
+					"Unsupported OpenSky mode. Use 'states_bbox', "
+					"'flights_aircraft', 'arrivals_airport', "
+					"'departures_airport', or 'track_aircraft'."
+				)
 			
-			self.token_response = requests.post(
-				self.token_url,
-				headers={
-						'Content-Type': 'application/x-www-form-urlencoded'
-				},
-				data={
-						'grant_type': 'client_credentials',
-						'client_id': self.client_id,
-						'client_secret': self.client_secret
-				},
-				timeout=self.timeout
-			)
-			
-			self.token_response.raise_for_status( )
-			self.token_payload = self.token_response.json( )
-			self.access_token = self.token_payload.get( 'access_token' )
-			
-			if not self.access_token:
-				raise ValueError( 'OpenSky token response did not include access_token.' )
-			
-			return self.access_token
+			return value
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
-			exception.method = 'get_token( self, *args, **kwargs ) -> str'
+			exception.method = 'validate_mode( self, *args, **kwargs ) -> str'
 			raise exception
 	
-	def request( self, endpoint: str, params: Dict[ str, Any ],
-			client_id: str = None, client_secret: str = None ) -> Any:
+	def validate_endpoint( self, endpoint: str ) -> str:
 		'''
 			Purpose:
 			--------
-			Send a GET request to an OpenSky REST endpoint and store response state.
+			Validate an OpenSky endpoint path before URL construction.
 
 			Parameters:
 			-----------
 			endpoint (str):
-				OpenSky endpoint path beginning with '/'.
+				Endpoint path under the OpenSky API base URL.
 
-			params (Dict[str, Any]):
-				Query-string parameters passed to the endpoint.
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'endpoint', endpoint )
+			
+			value = str( endpoint ).strip( )
+			
+			if value.startswith( 'http://' ) or value.startswith( 'https://' ):
+				raise ValueError( 'endpoint must be a path segment, not a full URL.' )
+			
+			if '..' in value:
+				raise ValueError( 'endpoint cannot contain parent-directory markers.' )
+			
+			allowed = {
+					'/states/all',
+					'/flights/aircraft',
+					'/flights/arrival',
+					'/flights/departure',
+					'/tracks/all'
+			}
+			
+			if value not in allowed:
+				raise ValueError( 'Unsupported OpenSky endpoint path.' )
+			
+			return value
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'validate_endpoint( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_icao24( self, icao24: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate an ICAO24 hexadecimal transponder address.
 
+			Parameters:
+			-----------
+			icao24 (str):
+				ICAO24 address.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'icao24', icao24 )
+			
+			value = str( icao24 ).strip( ).lower( )
+			
+			if not re.fullmatch( r'[0-9a-f]{6}', value ):
+				raise ValueError( 'icao24 must be a six-character hexadecimal address.' )
+			
+			return value
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'validate_icao24( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_airport( self, airport: str ) -> str:
+		'''
+			Purpose:
+			--------
+			Validate an airport ICAO code.
+
+			Parameters:
+			-----------
+			airport (str):
+				Airport ICAO code.
+
+			Returns:
+			--------
+			str
+		'''
+		try:
+			throw_if( 'airport', airport )
+			
+			value = str( airport ).strip( ).upper( )
+			
+			if not re.fullmatch( r'[A-Z0-9]{4}', value ):
+				raise ValueError( 'airport must be a four-character ICAO airport code.' )
+			
+			return value
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'validate_airport( self, *args, **kwargs ) -> str'
+			raise exception
+	
+	def validate_epoch( self, name: str, value: Any ) -> int:
+		'''
+			Purpose:
+			--------
+			Validate an epoch timestamp value.
+
+			Parameters:
+			-----------
+			name (str):
+				Argument name.
+
+			value (Any):
+				Epoch timestamp.
+
+			Returns:
+			--------
+			int
+		'''
+		try:
+			throw_if( 'name', name )
+			throw_if( name, value )
+			
+			number = int( value )
+			
+			if number < 0:
+				raise ValueError( f'{name} must be greater than or equal to 0.' )
+			
+			return number
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'validate_epoch( self, *args, **kwargs ) -> int'
+			raise exception
+	
+	def validate_time_range( self, begin: int, end: int ) -> Tuple[ int, int ]:
+		'''
+			Purpose:
+			--------
+			Validate begin/end epoch timestamps for flight-history endpoints.
+
+			Parameters:
+			-----------
+			begin (int):
+				Interval start timestamp.
+
+			end (int):
+				Interval end timestamp.
+
+			Returns:
+			--------
+			Tuple[int, int]
+		'''
+		try:
+			start = self.validate_epoch( 'begin', begin )
+			stop = self.validate_epoch( 'end', end )
+			
+			if start > stop:
+				raise ValueError( 'begin must be less than or equal to end.' )
+			
+			return start, stop
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'validate_time_range( self, *args, **kwargs ) -> Tuple[ int, int ]'
+			)
+			raise exception
+	
+	def validate_latitude( self, name: str, value: Any ) -> float:
+		'''
+			Purpose:
+			--------
+			Validate a latitude value.
+
+			Parameters:
+			-----------
+			name (str):
+				Argument name.
+
+			value (Any):
+				Latitude in decimal degrees.
+
+			Returns:
+			--------
+			float
+		'''
+		try:
+			throw_if( 'name', name )
+			throw_if( name, value )
+			
+			number = float( value )
+			
+			if number < -90.0 or number > 90.0:
+				raise ValueError( f'{name} must be between -90 and 90.' )
+			
+			return number
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'validate_latitude( self, *args, **kwargs ) -> float'
+			raise exception
+	
+	def validate_longitude( self, name: str, value: Any ) -> float:
+		'''
+			Purpose:
+			--------
+			Validate a longitude value.
+
+			Parameters:
+			-----------
+			name (str):
+				Argument name.
+
+			value (Any):
+				Longitude in decimal degrees.
+
+			Returns:
+			--------
+			float
+		'''
+		try:
+			throw_if( 'name', name )
+			throw_if( name, value )
+			
+			number = float( value )
+			
+			if number < -180.0 or number > 180.0:
+				raise ValueError( f'{name} must be between -180 and 180.' )
+			
+			return number
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'validate_longitude( self, *args, **kwargs ) -> float'
+			raise exception
+	
+	def validate_bbox( self, lamin: float, lomin: float,
+			lamax: float, lomax: float ) -> Tuple[ float, float, float, float ]:
+		'''
+			Purpose:
+			--------
+			Validate an OpenSky WGS84 bounding box.
+
+			Parameters:
+			-----------
+			lamin (float):
+				Lower latitude.
+
+			lomin (float):
+				Lower longitude.
+
+			lamax (float):
+				Upper latitude.
+
+			lomax (float):
+				Upper longitude.
+
+			Returns:
+			--------
+			Tuple[float, float, float, float]
+		'''
+		try:
+			min_lat = self.validate_latitude( 'lamin', lamin )
+			min_lon = self.validate_longitude( 'lomin', lomin )
+			max_lat = self.validate_latitude( 'lamax', lamax )
+			max_lon = self.validate_longitude( 'lomax', lomax )
+			
+			if min_lat >= max_lat:
+				raise ValueError( 'lamin must be less than lamax.' )
+			
+			if min_lon >= max_lon:
+				raise ValueError( 'lomin must be less than lomax.' )
+			
+			return min_lat, min_lon, max_lat, max_lon
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'validate_bbox( self, *args, **kwargs ) '
+					'-> Tuple[ float, float, float, float ]'
+			)
+			raise exception
+	
+	def assign_credentials( self, client_id: str = None,
+			client_secret: str = None ) -> None:
+		'''
+			Purpose:
+			--------
+			Assign OpenSky OAuth client credentials from explicit arguments or config.py.
+
+			Parameters:
+			-----------
 			client_id (str):
-				Optional OAuth client ID override.
+				Optional OAuth client ID supplied by the UI.
 
 			client_secret (str):
-				Optional OAuth client secret override.
+				Optional OAuth client secret supplied by the UI.
+
+			Returns:
+			--------
+			None
+		'''
+		try:
+			if client_id is not None and str( client_id ).strip( ):
+				self.client_id = str( client_id ).strip( )
+			else:
+				self.client_id = cfg.OPENSKY_API_CLIENT_ID
+			
+			if client_secret is not None and str( client_secret ).strip( ):
+				self.client_secret = str( client_secret ).strip( )
+			else:
+				self.client_secret = cfg.OPENSKY_API_CREDENTIALS
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = (
+					'assign_credentials( self, *args, **kwargs ) -> None'
+			)
+			raise exception
+	
+	def authenticate( self ) -> str | None:
+		'''
+			Purpose:
+			--------
+			Obtain an OpenSky OAuth2 access token when client credentials are available.
+
+			Parameters:
+			-----------
+			None
+
+			Returns:
+			--------
+			str | None
+		'''
+		try:
+			if not self.client_id or not self.client_secret:
+				return None
+			
+			self.response = requests.post(
+				url=self.token_url,
+				data={
+						'grant_type': 'client_credentials',
+						'client_id': self.client_id,
+						'client_secret': self.client_secret,
+				},
+				headers={
+						'Accept': 'application/json',
+						'User-Agent': self.agents,
+				},
+				timeout=self.timeout
+			)
+			self.response.raise_for_status( )
+			token_payload = self.response.json( ) or { }
+			self.access_token = token_payload.get( 'access_token', None )
+			
+			if self.access_token:
+				self.headers[ 'Authorization' ] = f'Bearer {self.access_token}'
+			
+			return self.access_token
+		
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'fetchers'
+			exception.cause = 'OpenSky'
+			exception.method = 'authenticate( self ) -> str | None'
+			raise exception
+	
+	def request( self, endpoint: str, params: Dict[ str, Any ] | None = None,
+			client_id: str = None, client_secret: str = None ) -> Any:
+		'''
+			Purpose:
+			--------
+			Issue a GET request to an OpenSky endpoint and store response state.
+
+			Parameters:
+			-----------
+			endpoint (str):
+				OpenSky endpoint path.
+
+			params (Dict[str, Any] | None):
+				Optional query parameters.
+
+			client_id (str):
+				Optional OAuth client ID supplied by the UI.
+
+			client_secret (str):
+				Optional OAuth client secret supplied by the UI.
 
 			Returns:
 			--------
 			Any
 		'''
 		try:
-			throw_if( 'endpoint', endpoint )
+			self.endpoint = self.validate_endpoint( endpoint )
+			self.assign_credentials(
+				client_id=client_id,
+				client_secret=client_secret
+			)
+			self.authenticate( )
 			
-			self.endpoint = str( endpoint ).strip( )
 			self.url = f'{self.base_url}{self.endpoint}'
 			self.params = { }
 			
@@ -25140,49 +28766,19 @@ class OpenSky( Fetcher ):
 				
 				self.params[ key ] = value
 			
-			if client_id:
-				self.client_id = str( client_id ).strip( )
-			
-			if client_secret:
-				self.client_secret = str( client_secret ).strip( )
-			
-			request_headers = dict( self.headers or { } )
-			
-			if self.client_id and self.client_secret:
-				self.access_token = self.get_token(
-					client_id=self.client_id,
-					client_secret=self.client_secret
-				)
-				request_headers[ 'Authorization' ] = f'Bearer {self.access_token}'
-			
 			self.response = requests.get(
-				self.url,
+				url=self.url,
 				params=self.params,
-				headers=request_headers,
+				headers=self.headers,
 				timeout=self.timeout
 			)
-			
-			if self.response.status_code == 404:
-				self.payload = [ ] if '/flights/' in self.endpoint else { }
-				self.result = {
-						'url': self.url,
-						'params': self.params,
-						'raw': self.payload
-				}
-				return self.payload
-			
 			self.response.raise_for_status( )
 			self.payload = self.response.json( )
-			self.result = {
-					'url': self.url,
-					'params': self.params,
-					'raw': self.payload
-			}
 			
 			return self.payload
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = 'request( self, *args, **kwargs ) -> Any'
@@ -25192,35 +28788,37 @@ class OpenSky( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Normalize an OpenSky state-vector response into a structured dictionary.
+			Normalize OpenSky state-vector payloads into app-facing dictionaries.
 
 			Parameters:
 			-----------
 			payload (Dict[str, Any] | None):
-				Raw OpenSky state-vector response payload.
+				OpenSky state-vector payload.
 
 			Returns:
 			--------
 			Dict[str, Any] | None
 		'''
 		try:
-			if not payload:
-				self.result = {
-						'mode': 'states_bbox',
-						'time': None,
-						'count': 0,
-						'items': [ ],
-				}
-				return self.result
+			states = [ ]
 			
-			rows = payload.get( 'states' ) or [ ]
+			if isinstance( payload, dict ):
+				states = payload.get( 'states', [ ] ) or [ ]
+			
 			items: List[ Dict[ str, Any ] ] = [ ]
 			
-			for row in rows:
+			for row in states:
+				if not isinstance( row, list ):
+					continue
+				
 				items.append(
 					{
 							'icao24': row[ 0 ] if len( row ) > 0 else None,
-							'callsign': (row[ 1 ] or '').strip( ) if len( row ) > 1 else '',
+							'callsign': (
+									str( row[ 1 ] ).strip( )
+									if len( row ) > 1 and row[ 1 ] is not None
+									else None
+							),
 							'origin_country': row[ 2 ] if len( row ) > 2 else None,
 							'time_position': row[ 3 ] if len( row ) > 3 else None,
 							'last_contact': row[ 4 ] if len( row ) > 4 else None,
@@ -25231,24 +28829,25 @@ class OpenSky( Fetcher ):
 							'velocity_mps': row[ 9 ] if len( row ) > 9 else None,
 							'true_track_deg': row[ 10 ] if len( row ) > 10 else None,
 							'vertical_rate_mps': row[ 11 ] if len( row ) > 11 else None,
+							'sensors': row[ 12 ] if len( row ) > 12 else None,
 							'geo_altitude_m': row[ 13 ] if len( row ) > 13 else None,
 							'squawk': row[ 14 ] if len( row ) > 14 else None,
+							'spi': row[ 15 ] if len( row ) > 15 else None,
 							'position_source': row[ 16 ] if len( row ) > 16 else None,
-							'category': row[ 17 ] if len( row ) > 17 else None,
 					}
 				)
 			
 			self.result = {
 					'mode': 'states_bbox',
-					'time': payload.get( 'time' ),
+					'time': payload.get( 'time', None ) if isinstance( payload, dict ) else None,
 					'count': len( items ),
 					'items': items,
 			}
 			
 			return self.result
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
@@ -25261,35 +28860,35 @@ class OpenSky( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Normalize OpenSky flight rows into the structure consumed by app.py.
+			Normalize OpenSky flight payloads into app-facing dictionaries.
 
 			Parameters:
 			-----------
 			payload (List[Dict[str, Any]] | None):
-				Raw OpenSky flight rows.
+				OpenSky flight records.
 
 			mode (str):
-				OpenSky flight mode.
+				Active wrapper mode.
 
 			Returns:
 			--------
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'mode', mode )
-			
-			rows = payload or [ ]
 			items: List[ Dict[ str, Any ] ] = [ ]
 			
-			for row in rows:
+			for row in payload or [ ]:
+				if not isinstance( row, dict ):
+					continue
+				
 				items.append(
 					{
 							'icao24': row.get( 'icao24' ),
-							'callsign': (row.get( 'callsign' ) or '').strip( ),
 							'first_seen': row.get( 'firstSeen' ),
-							'last_seen': row.get( 'lastSeen' ),
 							'est_departure_airport': row.get( 'estDepartureAirport' ),
+							'last_seen': row.get( 'lastSeen' ),
 							'est_arrival_airport': row.get( 'estArrivalAirport' ),
+							'callsign': row.get( 'callsign' ),
 							'est_departure_airport_horiz_distance_m':
 								row.get( 'estDepartureAirportHorizDistance' ),
 							'est_departure_airport_vert_distance_m':
@@ -25313,8 +28912,8 @@ class OpenSky( Fetcher ):
 			
 			return self.result
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
@@ -25326,12 +28925,12 @@ class OpenSky( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Normalize an OpenSky aircraft-track response into display rows.
+			Normalize OpenSky track payloads into app-facing dictionaries.
 
 			Parameters:
 			-----------
 			payload (Dict[str, Any] | None):
-				Raw OpenSky track payload.
+				OpenSky track payload.
 
 			Returns:
 			--------
@@ -25354,6 +28953,9 @@ class OpenSky( Fetcher ):
 			items: List[ Dict[ str, Any ] ] = [ ]
 			
 			for row in path:
+				if not isinstance( row, list ):
+					continue
+				
 				items.append(
 					{
 							'time': row[ 0 ] if len( row ) > 0 else None,
@@ -25377,8 +28979,8 @@ class OpenSky( Fetcher ):
 			
 			return self.result
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
@@ -25386,7 +28988,7 @@ class OpenSky( Fetcher ):
 			)
 			raise exception
 	
-	def fetch_states_bbox( self, icao24: str = '', time_value: int = None,
+	def fetch_states( self, icao24: str = '', time_value: int = None,
 			lamin: float | None = None, lomin: float | None = None,
 			lamax: float | None = None, lomax: float | None = None,
 			extended: bool = False, client_id: str = None,
@@ -25394,36 +28996,36 @@ class OpenSky( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Fetch live or time-filtered state vectors, optionally bounded by location.
+			Fetch all state vectors, optionally filtered by aircraft, time, and bounding box.
 
 			Parameters:
 			-----------
 			icao24 (str):
-				Optional aircraft ICAO24 identifier.
+				Optional ICAO24 transponder address.
 
-			time_value (int | None):
-				Optional Unix timestamp.
+			time_value (int):
+				Optional epoch timestamp.
 
 			lamin (float | None):
-				Minimum latitude.
+				Optional minimum latitude.
 
 			lomin (float | None):
-				Minimum longitude.
+				Optional minimum longitude.
 
 			lamax (float | None):
-				Maximum latitude.
+				Optional maximum latitude.
 
 			lomax (float | None):
-				Maximum longitude.
+				Optional maximum longitude.
 
 			extended (bool):
-				Whether to request extended aircraft categories.
+				Whether to request extended state fields.
 
 			client_id (str):
-				Optional OAuth client ID override.
+				Optional OAuth client ID supplied by UI.
 
 			client_secret (str):
-				Optional OAuth client secret override.
+				Optional OAuth client secret supplied by UI.
 
 			Returns:
 			--------
@@ -25431,12 +29033,12 @@ class OpenSky( Fetcher ):
 		'''
 		try:
 			self.mode = 'states_bbox'
-			self.icao24 = str( icao24 or '' ).strip( ).lower( )
-			self.time_value = None if time_value is None else int( time_value )
-			self.lamin = None if lamin is None else float( lamin )
-			self.lomin = None if lomin is None else float( lomin )
-			self.lamax = None if lamax is None else float( lamax )
-			self.lomax = None if lomax is None else float( lomax )
+			self.icao24 = self.validate_icao24( icao24 ) if str( icao24 or '' ).strip( ) else ''
+			self.time_value = (
+					self.validate_epoch( 'time_value', time_value )
+					if time_value is not None
+					else None
+			)
 			self.extended = bool( extended )
 			
 			self.params = { }
@@ -25447,12 +29049,28 @@ class OpenSky( Fetcher ):
 			if self.icao24:
 				self.params[ 'icao24' ] = self.icao24
 			
-			if (
-					self.lamin is not None
-					and self.lomin is not None
-					and self.lamax is not None
-					and self.lomax is not None
-			):
+			has_bbox = all(
+				value is not None
+				for value in [ lamin, lomin, lamax, lomax ]
+			)
+			
+			partial_bbox = any(
+				value is not None
+				for value in [ lamin, lomin, lamax, lomax ]
+			)
+			
+			if partial_bbox and not has_bbox:
+				raise ValueError(
+					'lamin, lomin, lamax, and lomax must all be supplied together.'
+				)
+			
+			if has_bbox:
+				self.lamin, self.lomin, self.lamax, self.lomax = self.validate_bbox(
+					lamin=lamin,
+					lomin=lomin,
+					lamax=lamax,
+					lomax=lomax
+				)
 				self.params[ 'lamin' ] = self.lamin
 				self.params[ 'lomin' ] = self.lomin
 				self.params[ 'lamax' ] = self.lamax
@@ -25462,7 +29080,7 @@ class OpenSky( Fetcher ):
 				self.params[ 'extended' ] = 1
 			
 			self.payload = self.request(
-				endpoint='/states/all',
+				'/states/all',
 				params=self.params,
 				client_id=client_id,
 				client_secret=client_secret
@@ -25470,12 +29088,12 @@ class OpenSky( Fetcher ):
 			
 			return self.normalize_states( self.payload )
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
-					'fetch_states_bbox( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+					'fetch_states( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			)
 			raise exception
 	
@@ -25484,46 +29102,41 @@ class OpenSky( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Fetch flights for a single aircraft within a Unix-time window.
+			Fetch flights for a specific aircraft within a time interval.
 
 			Parameters:
 			-----------
 			icao24 (str):
-				Aircraft ICAO24 identifier.
+				ICAO24 transponder address.
 
 			begin (int):
-				Beginning Unix timestamp.
+				Interval start timestamp.
 
 			end (int):
-				Ending Unix timestamp.
+				Interval end timestamp.
 
 			client_id (str):
-				Optional OAuth client ID override.
+				Optional OAuth client ID supplied by UI.
 
 			client_secret (str):
-				Optional OAuth client secret override.
+				Optional OAuth client secret supplied by UI.
 
 			Returns:
 			--------
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'icao24', icao24 )
-			throw_if( 'begin', begin )
-			throw_if( 'end', end )
-			
 			self.mode = 'flights_aircraft'
-			self.icao24 = str( icao24 ).strip( ).lower( )
-			self.begin = int( begin )
-			self.end = int( end )
+			self.icao24 = self.validate_icao24( icao24 )
+			self.begin, self.end = self.validate_time_range( begin, end )
 			self.params = {
 					'icao24': self.icao24,
 					'begin': self.begin,
-					'end': self.end
+					'end': self.end,
 			}
 			
 			self.payload = self.request(
-				endpoint='/flights/aircraft',
+				'/flights/aircraft',
 				params=self.params,
 				client_id=client_id,
 				client_secret=client_secret
@@ -25531,8 +29144,8 @@ class OpenSky( Fetcher ):
 			
 			return self.normalize_flights( self.payload, self.mode )
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
@@ -25546,7 +29159,7 @@ class OpenSky( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Fetch arrivals for a single airport within a Unix-time window.
+			Fetch flights arriving at an airport within a time interval.
 
 			Parameters:
 			-----------
@@ -25554,38 +29167,33 @@ class OpenSky( Fetcher ):
 				Airport ICAO code.
 
 			begin (int):
-				Beginning Unix timestamp.
+				Interval start timestamp.
 
 			end (int):
-				Ending Unix timestamp.
+				Interval end timestamp.
 
 			client_id (str):
-				Optional OAuth client ID override.
+				Optional OAuth client ID supplied by UI.
 
 			client_secret (str):
-				Optional OAuth client secret override.
+				Optional OAuth client secret supplied by UI.
 
 			Returns:
 			--------
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'airport', airport )
-			throw_if( 'begin', begin )
-			throw_if( 'end', end )
-			
 			self.mode = 'arrivals_airport'
-			self.airport = str( airport ).strip( ).upper( )
-			self.begin = int( begin )
-			self.end = int( end )
+			self.airport = self.validate_airport( airport )
+			self.begin, self.end = self.validate_time_range( begin, end )
 			self.params = {
 					'airport': self.airport,
 					'begin': self.begin,
-					'end': self.end
+					'end': self.end,
 			}
 			
 			self.payload = self.request(
-				endpoint='/flights/arrival',
+				'/flights/arrival',
 				params=self.params,
 				client_id=client_id,
 				client_secret=client_secret
@@ -25593,8 +29201,8 @@ class OpenSky( Fetcher ):
 			
 			return self.normalize_flights( self.payload, self.mode )
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
@@ -25608,7 +29216,7 @@ class OpenSky( Fetcher ):
 		'''
 			Purpose:
 			--------
-			Fetch departures for a single airport within a Unix-time window.
+			Fetch flights departing from an airport within a time interval.
 
 			Parameters:
 			-----------
@@ -25616,38 +29224,33 @@ class OpenSky( Fetcher ):
 				Airport ICAO code.
 
 			begin (int):
-				Beginning Unix timestamp.
+				Interval start timestamp.
 
 			end (int):
-				Ending Unix timestamp.
+				Interval end timestamp.
 
 			client_id (str):
-				Optional OAuth client ID override.
+				Optional OAuth client ID supplied by UI.
 
 			client_secret (str):
-				Optional OAuth client secret override.
+				Optional OAuth client secret supplied by UI.
 
 			Returns:
 			--------
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'airport', airport )
-			throw_if( 'begin', begin )
-			throw_if( 'end', end )
-			
 			self.mode = 'departures_airport'
-			self.airport = str( airport ).strip( ).upper( )
-			self.begin = int( begin )
-			self.end = int( end )
+			self.airport = self.validate_airport( airport )
+			self.begin, self.end = self.validate_time_range( begin, end )
 			self.params = {
 					'airport': self.airport,
 					'begin': self.begin,
-					'end': self.end
+					'end': self.end,
 			}
 			
 			self.payload = self.request(
-				endpoint='/flights/departure',
+				'/flights/departure',
 				params=self.params,
 				client_id=client_id,
 				client_secret=client_secret
@@ -25655,63 +29258,52 @@ class OpenSky( Fetcher ):
 			
 			return self.normalize_flights( self.payload, self.mode )
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
-			exception.method = (
-					'fetch_departures_airport( self, *args, **kwargs ) '
-					'-> Dict[ str, Any ] | None'
-			)
+			exception.method = 'fetch_departures_airport( self, *args, **kwargs ) -> Dict[str, Any]'
 			raise exception
 	
-	def fetch_track_aircraft( self, icao24: str, time_value: int = 0,
+	def fetch_track_aircraft( self, icao24: str, time_value: int = None,
 			client_id: str = None, client_secret: str = None ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Fetch track waypoints for a single aircraft.
+			Fetch an aircraft track at a given time.
 
 			Parameters:
 			-----------
 			icao24 (str):
-				Aircraft ICAO24 identifier.
+				ICAO24 transponder address.
 
 			time_value (int):
-				Unix timestamp. Zero requests current/latest track behavior.
+				Optional epoch timestamp. Zero requests the latest available track.
 
 			client_id (str):
-				Optional OAuth client ID override.
+				Optional OAuth client ID supplied by UI.
 
 			client_secret (str):
-				Optional OAuth client secret override.
+				Optional OAuth client secret supplied by UI.
 
 			Returns:
 			--------
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'icao24', icao24 )
-			
 			self.mode = 'track_aircraft'
-			self.icao24 = str( icao24 ).strip( ).lower( )
-			self.time_value = int( time_value or 0 )
-			self.params = {
-					'icao24': self.icao24,
-					'time': self.time_value
-			}
+			self.icao24 = self.validate_icao24( icao24 )
+			self.time_value = ( self.validate_epoch( 'time_value', time_value )
+					if time_value is not None else 0 )
+			self.params = { 'icao24': self.icao24, 'time': self.time_value, }
 			
-			self.payload = self.request(
-				endpoint='/tracks/all',
-				params=self.params,
-				client_id=client_id,
-				client_secret=client_secret
-			)
+			self.payload = self.request( '/tracks/all', params=self.params, client_id=client_id,
+				client_secret=client_secret )
 			
 			return self.normalize_track( self.payload )
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
@@ -25722,13 +29314,15 @@ class OpenSky( Fetcher ):
 	
 	def fetch( self, mode: str = 'states_bbox', icao24: str = '', airport: str = '',
 			begin: int = None, end: int = None, time_value: int = None,
-			lamin: float | None = None, lomin: float | None = None, lamax: float | None = None,
-			lomax: float | None = None, extended: bool = False, client_id: str = None,
+			lamin: float | None = None, lomin: float | None = None,
+			lamax: float | None = None, lomax: float | None = None,
+			extended: bool = False, client_id: str = None,
 			client_secret: str = None, time: int = 20 ) -> Dict[ str, Any ] | None:
 		'''
 			Purpose:
 			--------
-			Dispatch an OpenSky request to the mode-specific fetch method.
+			Unified dispatcher for OpenSky Network state, flight, airport, and track
+			retrieval.
 
 			Parameters:
 			-----------
@@ -25741,40 +29335,40 @@ class OpenSky( Fetcher ):
 				- track_aircraft
 
 			icao24 (str):
-				Aircraft ICAO24 identifier.
+				ICAO24 transponder address for aircraft-specific modes.
 
 			airport (str):
-				Airport ICAO code.
+				Airport ICAO code for airport-specific modes.
 
 			begin (int):
-				Beginning Unix timestamp for history queries.
+				Interval start timestamp.
 
 			end (int):
-				Ending Unix timestamp for history queries.
+				Interval end timestamp.
 
 			time_value (int):
-				Optional Unix timestamp.
+				Optional epoch timestamp for states or track queries.
 
 			lamin (float | None):
-				Minimum latitude.
+				Lower latitude for state-vector bounding box.
 
 			lomin (float | None):
-				Minimum longitude.
+				Lower longitude for state-vector bounding box.
 
 			lamax (float | None):
-				Maximum latitude.
+				Upper latitude for state-vector bounding box.
 
 			lomax (float | None):
-				Maximum longitude.
+				Upper longitude for state-vector bounding box.
 
 			extended (bool):
-				Whether to request extended aircraft categories.
+				Whether to request extended state-vector fields.
 
 			client_id (str):
-				Optional OAuth client ID override.
+				Optional OAuth client ID supplied by the UI.
 
 			client_secret (str):
-				Optional OAuth client secret override.
+				Optional OAuth client secret supplied by the UI.
 
 			time (int):
 				Request timeout in seconds.
@@ -25784,20 +29378,14 @@ class OpenSky( Fetcher ):
 			Dict[str, Any] | None
 		'''
 		try:
-			throw_if( 'mode', mode )
-			throw_if( 'time', time )
-			
 			self.timeout = int( time )
-			self.mode = str( mode ).strip( ).lower( )
+			self.mode = self.validate_mode( mode )
 			
-			if client_id:
-				self.client_id = str( client_id ).strip( )
-			
-			if client_secret:
-				self.client_secret = str( client_secret ).strip( )
+			if self.timeout < 1:
+				raise ValueError( 'time must be greater than or equal to 1.' )
 			
 			if self.mode == 'states_bbox':
-				return self.fetch_states_bbox(
+				return self.fetch_states(
 					icao24=icao24,
 					time_value=time_value,
 					lamin=lamin,
@@ -25805,8 +29393,8 @@ class OpenSky( Fetcher ):
 					lamax=lamax,
 					lomax=lomax,
 					extended=extended,
-					client_id=self.client_id,
-					client_secret=self.client_secret
+					client_id=client_id,
+					client_secret=client_secret
 				)
 			
 			if self.mode == 'flights_aircraft':
@@ -25814,8 +29402,8 @@ class OpenSky( Fetcher ):
 					icao24=icao24,
 					begin=begin,
 					end=end,
-					client_id=self.client_id,
-					client_secret=self.client_secret
+					client_id=client_id,
+					client_secret=client_secret
 				)
 			
 			if self.mode == 'arrivals_airport':
@@ -25823,8 +29411,8 @@ class OpenSky( Fetcher ):
 					airport=airport,
 					begin=begin,
 					end=end,
-					client_id=self.client_id,
-					client_secret=self.client_secret
+					client_id=client_id,
+					client_secret=client_secret
 				)
 			
 			if self.mode == 'departures_airport':
@@ -25832,25 +29420,25 @@ class OpenSky( Fetcher ):
 					airport=airport,
 					begin=begin,
 					end=end,
-					client_id=self.client_id,
-					client_secret=self.client_secret
+					client_id=client_id,
+					client_secret=client_secret
 				)
 			
 			if self.mode == 'track_aircraft':
 				return self.fetch_track_aircraft(
 					icao24=icao24,
-					time_value=int( time_value or 0 ),
-					client_id=self.client_id,
-					client_secret=self.client_secret
+					time_value=time_value,
+					client_id=client_id,
+					client_secret=client_secret
 				)
 			
 			raise ValueError(
-				"Unsupported OpenSky mode. Expected 'states_bbox', 'flights_aircraft', "
+				"Unsupported mode. Use 'states_bbox', 'flights_aircraft', "
 				"'arrivals_airport', 'departures_airport', or 'track_aircraft'."
 			)
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (
@@ -25869,19 +29457,19 @@ class OpenSky( Fetcher ):
 			Parameters:
 			-----------
 			function (str):
-				The function name exposed to the LLM.
+				Tool function name.
 
 			tool (str):
-				The underlying system or service the function wraps.
+				Service name.
 
 			description (str):
-				Precise explanation of what the function does.
+				Description of what the tool does.
 
 			parameters (dict):
-				Dictionary defining parameter names and JSON schema descriptors.
+				JSON-schema properties.
 
 			required (list[str]):
-				List of required parameter names.
+				Required parameter names.
 
 			Returns:
 			--------
@@ -25893,24 +29481,29 @@ class OpenSky( Fetcher ):
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
 			
+			if not isinstance( parameters, dict ):
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
+			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
 			return {
 					'name': function.strip( ),
 					'description': (
-							f"{description.strip( )} This function uses the "
-							f"{tool.strip( )} service."
+							f'{description.strip( )} This function uses the '
+							f'{tool.strip( )} service.'
 					),
 					'parameters': {
 							'type': 'object',
 							'properties': parameters,
-							'required': required
+							'required': required,
 					}
 			}
 		
-		except Exception as e:
-			exception = Error( e )
+		except Exception as exc:
+			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
 			exception.method = (

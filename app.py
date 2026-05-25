@@ -10344,332 +10344,332 @@ elif mode == 'Geospatial':
 					with st.expander( 'Raw Result', expanded=False ):
 						st.json( result )
 			
-			# -------- Open Sky
-			with st.expander( label='Open Sky', icon='✈️', expanded=False ):
-				def _clear_opensky_state( ) -> None:
-					'''
-						Purpose:
-						--------
-						Reset the OpenSky controls and result payload to their default values.
-	
-						Parameters:
-						-----------
-						None
-	
-						Returns:
-						--------
-						None
-	
-					'''
-					st.session_state[ 'opensky_results' ] = { }
-					st.session_state[ 'opensky_mode' ] = 'states_bbox'
-					st.session_state[ 'opensky_icao24' ] = ''
-					st.session_state[ 'opensky_airport' ] = ''
-					st.session_state[ 'opensky_begin' ] = 0
-					st.session_state[ 'opensky_end' ] = 0
-					st.session_state[ 'opensky_time_value' ] = 0
-					st.session_state[ 'opensky_lamin' ] = 39.0
-					st.session_state[ 'opensky_lomin' ] = -77.5
-					st.session_state[ 'opensky_lamax' ] = 40.5
-					st.session_state[ 'opensky_lomax' ] = -75.0
-					st.session_state[ 'opensky_extended' ] = False
-					st.session_state[ 'opensky_client_id' ] = ''
-					st.session_state[ 'opensky_client_secret' ] = ''
-					st.session_state[ 'opensky_timeout' ] = 20
+		# -------- Open Sky
+		with st.expander( label='Open Sky', icon='✈️', expanded=False ):
+			def _clear_opensky_state( ) -> None:
+				'''
+					Purpose:
+					--------
+					Reset the OpenSky controls and result payload to their default values.
+
+					Parameters:
+					-----------
+					None
+
+					Returns:
+					--------
+					None
+
+				'''
+				st.session_state[ 'opensky_results' ] = { }
+				st.session_state[ 'opensky_mode' ] = 'states_bbox'
+				st.session_state[ 'opensky_icao24' ] = ''
+				st.session_state[ 'opensky_airport' ] = ''
+				st.session_state[ 'opensky_begin' ] = 0
+				st.session_state[ 'opensky_end' ] = 0
+				st.session_state[ 'opensky_time_value' ] = 0
+				st.session_state[ 'opensky_lamin' ] = 39.0
+				st.session_state[ 'opensky_lomin' ] = -77.5
+				st.session_state[ 'opensky_lamax' ] = 40.5
+				st.session_state[ 'opensky_lomax' ] = -75.0
+				st.session_state[ 'opensky_extended' ] = False
+				st.session_state[ 'opensky_client_id' ] = ''
+				st.session_state[ 'opensky_client_secret' ] = ''
+				st.session_state[ 'opensky_timeout' ] = 20
+			
+			def _coerce_opensky_time_value( mode_value: str, raw_value: int ) -> int | None:
+				'''
+					Purpose:
+					--------
+					Normalize the OpenSky time control before calling the wrapper. For live
+					state-vector requests, zero means omit the time parameter so OpenSky uses
+					current time. For aircraft track requests, zero remains valid because the
+					OpenSky track endpoint treats zero as a live/current-track request.
+
+					Parameters:
+					-----------
+					mode_value (str):
+						Selected OpenSky mode.
+
+					raw_value (int):
+						User-entered Unix timestamp value.
+
+					Returns:
+					--------
+					int | None:
+						Validated Unix timestamp or None when the API parameter should be
+						omitted.
+
+				'''
+				active_mode = str( mode_value or 'states_bbox' ).strip( ).lower( )
+				value = int( raw_value or 0 )
 				
-				def _coerce_opensky_time_value( mode_value: str, raw_value: int ) -> int | None:
-					'''
-						Purpose:
-						--------
-						Normalize the OpenSky time control before calling the wrapper. For live
-						state-vector requests, zero means omit the time parameter so OpenSky uses
-						current time. For aircraft track requests, zero remains valid because the
-						OpenSky track endpoint treats zero as a live/current-track request.
-	
-						Parameters:
-						-----------
-						mode_value (str):
-							Selected OpenSky mode.
-	
-						raw_value (int):
-							User-entered Unix timestamp value.
-	
-						Returns:
-						--------
-						int | None:
-							Validated Unix timestamp or None when the API parameter should be
-							omitted.
-	
-					'''
-					active_mode = str( mode_value or 'states_bbox' ).strip( ).lower( )
-					value = int( raw_value or 0 )
-					
-					if active_mode == 'states_bbox' and value <= 0:
-						return None
-					
-					if active_mode == 'track_aircraft':
-						return value
-					
-					if value <= 0:
-						return None
-					
+				if active_mode == 'states_bbox' and value <= 0:
+					return None
+				
+				if active_mode == 'track_aircraft':
 					return value
 				
-				if 'opensky_results' not in st.session_state:
-					st.session_state[ 'opensky_results' ] = { }
+				if value <= 0:
+					return None
 				
-				if 'opensky_mode' not in st.session_state:
-					st.session_state[ 'opensky_mode' ] = 'states_bbox'
+				return value
+			
+			if 'opensky_results' not in st.session_state:
+				st.session_state[ 'opensky_results' ] = { }
+			
+			if 'opensky_mode' not in st.session_state:
+				st.session_state[ 'opensky_mode' ] = 'states_bbox'
+			
+			if 'opensky_icao24' not in st.session_state:
+				st.session_state[ 'opensky_icao24' ] = ''
+			
+			if 'opensky_airport' not in st.session_state:
+				st.session_state[ 'opensky_airport' ] = ''
+			
+			if 'opensky_begin' not in st.session_state:
+				st.session_state[ 'opensky_begin' ] = 0
+			
+			if 'opensky_end' not in st.session_state:
+				st.session_state[ 'opensky_end' ] = 0
+			
+			if 'opensky_time_value' not in st.session_state:
+				st.session_state[ 'opensky_time_value' ] = 0
+			
+			if 'opensky_lamin' not in st.session_state:
+				st.session_state[ 'opensky_lamin' ] = 39.0
+			
+			if 'opensky_lomin' not in st.session_state:
+				st.session_state[ 'opensky_lomin' ] = -77.5
+			
+			if 'opensky_lamax' not in st.session_state:
+				st.session_state[ 'opensky_lamax' ] = 40.5
+			
+			if 'opensky_lomax' not in st.session_state:
+				st.session_state[ 'opensky_lomax' ] = -75.0
+			
+			if 'opensky_extended' not in st.session_state:
+				st.session_state[ 'opensky_extended' ] = False
+			
+			if 'opensky_client_id' not in st.session_state:
+				st.session_state[ 'opensky_client_id' ] = ''
+			
+			if 'opensky_client_secret' not in st.session_state:
+				st.session_state[ 'opensky_client_secret' ] = ''
+			
+			if 'opensky_timeout' not in st.session_state:
+				st.session_state[ 'opensky_timeout' ] = 20
+			
+			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
+			
+			with col_left:
+				mode = st.selectbox(
+					'Mode',
+					options=[
+							'states_bbox',
+							'flights_aircraft',
+							'arrivals_airport',
+							'departures_airport',
+							'track_aircraft',
+					],
+					key='opensky_mode',
+					help=(
+							'states_bbox = live aircraft inside a bounding box; '
+							'flights_aircraft = flights for one aircraft; '
+							'arrivals_airport / departures_airport = airport traffic; '
+							'track_aircraft = trajectory waypoints for one aircraft.'
+					)
+				)
 				
-				if 'opensky_icao24' not in st.session_state:
-					st.session_state[ 'opensky_icao24' ] = ''
+				icao24 = st.text_input(
+					'ICAO24 (Aircraft Hex ID)',
+					value='',
+					key='opensky_icao24',
+					help='Required for flights_aircraft and track_aircraft.'
+				)
 				
-				if 'opensky_airport' not in st.session_state:
-					st.session_state[ 'opensky_airport' ] = ''
+				airport = st.text_input(
+					'Airport ICAO',
+					value='',
+					key='opensky_airport',
+					help='Required for arrivals_airport and departures_airport.'
+				)
 				
-				if 'opensky_begin' not in st.session_state:
-					st.session_state[ 'opensky_begin' ] = 0
+				begin = st.number_input(
+					'Begin (Unix Time)',
+					min_value=0,
+					value=0,
+					step=60,
+					key='opensky_begin',
+					help='Required for aircraft and airport history queries.'
+				)
 				
-				if 'opensky_end' not in st.session_state:
-					st.session_state[ 'opensky_end' ] = 0
+				end = st.number_input(
+					'End (Unix Time)',
+					min_value=0,
+					value=0,
+					step=60,
+					key='opensky_end',
+					help='Required for aircraft and airport history queries.'
+				)
 				
-				if 'opensky_time_value' not in st.session_state:
-					st.session_state[ 'opensky_time_value' ] = 0
+				time_value = st.number_input(
+					'Time (Unix Time / 0 for Live Track)',
+					min_value=0,
+					value=0,
+					step=60,
+					key='opensky_time_value',
+					help=(
+							'Optional for states_bbox. Leave at 0 for current live state '
+							'vectors. Used by track_aircraft, where 0 requests the current '
+							'or latest available track.'
+					)
+				)
 				
-				if 'opensky_lamin' not in st.session_state:
-					st.session_state[ 'opensky_lamin' ] = 39.0
+				lamin = st.number_input( 'Min Latitude', value=39.0, key='opensky_lamin' )
+				lomin = st.number_input( 'Min Longitude', value=-77.5, key='opensky_lomin' )
+				lamax = st.number_input( 'Max Latitude', value=40.5, key='opensky_lamax' )
+				lomax = st.number_input( 'Max Longitude', value=-75.0, key='opensky_lomax' )
 				
-				if 'opensky_lomin' not in st.session_state:
-					st.session_state[ 'opensky_lomin' ] = -77.5
+				extended = st.checkbox(
+					'Extended Aircraft Categories',
+					value=False,
+					key='opensky_extended',
+					help='Only applies to states_bbox.'
+				)
 				
-				if 'opensky_lamax' not in st.session_state:
-					st.session_state[ 'opensky_lamax' ] = 40.5
+				client_id = st.text_input(
+					'Client ID (Optional)',
+					value='',
+					key='opensky_client_id'
+				)
 				
-				if 'opensky_lomax' not in st.session_state:
-					st.session_state[ 'opensky_lomax' ] = -75.0
+				client_secret = st.text_input(
+					'Client Secret (Optional)',
+					value='',
+					type='password',
+					key='opensky_client_secret'
+				)
 				
-				if 'opensky_extended' not in st.session_state:
-					st.session_state[ 'opensky_extended' ] = False
+				timeout = st.slider(
+					'Timeout (seconds)',
+					min_value=5,
+					max_value=60,
+					value=20,
+					step=1,
+					key='opensky_timeout'
+				)
 				
-				if 'opensky_client_id' not in st.session_state:
-					st.session_state[ 'opensky_client_id' ] = ''
+				b1, b2 = st.columns( 2 )
+				with b1:
+					opensky_submit = st.button(
+						'Submit',
+						key='opensky_submit',
+						use_container_width=True
+					)
+				with b2:
+					st.button(
+						'Clear',
+						key='opensky_clear',
+						on_click=_clear_opensky_state,
+						use_container_width=True
+					)
+			
+			with col_right:
+				if opensky_submit:
+					try:
+						normalized_time_value = _coerce_opensky_time_value(
+							mode_value=mode,
+							raw_value=int( time_value or 0 )
+						)
+						
+						client = OpenSky( )
+						result = client.fetch(
+							mode=mode,
+							icao24=icao24,
+							airport=airport,
+							begin=int( begin ) if int( begin or 0 ) > 0 else None,
+							end=int( end ) if int( end or 0 ) > 0 else None,
+							time_value=normalized_time_value,
+							lamin=float( lamin ) if lamin is not None else None,
+							lomin=float( lomin ) if lomin is not None else None,
+							lamax=float( lamax ) if lamax is not None else None,
+							lomax=float( lomax ) if lomax is not None else None,
+							extended=bool( extended ),
+							client_id=client_id.strip( ) or None,
+							client_secret=client_secret.strip( ) or None,
+							time=int( timeout ),
+						)
+						st.session_state[ 'opensky_results' ] = result or { }
+					except Exception as exc:
+						st.error( 'OpenSky request failed.' )
+						st.exception( exc )
 				
-				if 'opensky_client_secret' not in st.session_state:
-					st.session_state[ 'opensky_client_secret' ] = ''
+				result = st.session_state.get( 'opensky_results', { } )
 				
-				if 'opensky_timeout' not in st.session_state:
-					st.session_state[ 'opensky_timeout' ] = 20
-				
-				col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-				
-				with col_left:
-					mode = st.selectbox(
-						'Mode',
-						options=[
-								'states_bbox',
+				if not result:
+					st.text( 'No results.' )
+				else:
+					_render_summary_kv(
+						'#### Summary',
+						{
+								'Mode': result.get( 'mode', '' ),
+								'Returned': int( result.get( 'count', 0 ) or 0 ),
+								'Time': result.get( 'time', '' ) or result.get( 'start_time', '' ),
+								'ICAO24': result.get( 'icao24', '' ),
+								'Callsign': result.get( 'callsign', '' ),
+						}
+					)
+					
+					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					if result.get( 'mode' ) == 'states_bbox':
+						if items:
+							st.markdown( '#### Live State Vectors' )
+							st.dataframe( items, use_container_width=True, hide_index=True )
+							
+							map_rows = [
+									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+									for x in items
+									if x.get( 'latitude' ) is not None
+									   and x.get( 'longitude' ) is not None
+							]
+							if map_rows:
+								st.markdown( '#### Aircraft Positions' )
+								st.map( map_rows )
+						else:
+							st.info( 'No aircraft state vectors matched the requested filter.' )
+					
+					elif result.get( 'mode' ) in (
 								'flights_aircraft',
 								'arrivals_airport',
-								'departures_airport',
-								'track_aircraft',
-						],
-						key='opensky_mode',
-						help=(
-								'states_bbox = live aircraft inside a bounding box; '
-								'flights_aircraft = flights for one aircraft; '
-								'arrivals_airport / departures_airport = airport traffic; '
-								'track_aircraft = trajectory waypoints for one aircraft.'
-						)
-					)
+								'departures_airport'
+					):
+						if items:
+							st.markdown( '#### Flights' )
+							st.dataframe( items, use_container_width=True, hide_index=True )
+						else:
+							st.info( 'No flight rows were returned for that query window.' )
 					
-					icao24 = st.text_input(
-						'ICAO24 (Aircraft Hex ID)',
-						value='',
-						key='opensky_icao24',
-						help='Required for flights_aircraft and track_aircraft.'
-					)
-					
-					airport = st.text_input(
-						'Airport ICAO',
-						value='',
-						key='opensky_airport',
-						help='Required for arrivals_airport and departures_airport.'
-					)
-					
-					begin = st.number_input(
-						'Begin (Unix Time)',
-						min_value=0,
-						value=0,
-						step=60,
-						key='opensky_begin',
-						help='Required for aircraft and airport history queries.'
-					)
-					
-					end = st.number_input(
-						'End (Unix Time)',
-						min_value=0,
-						value=0,
-						step=60,
-						key='opensky_end',
-						help='Required for aircraft and airport history queries.'
-					)
-					
-					time_value = st.number_input(
-						'Time (Unix Time / 0 for Live Track)',
-						min_value=0,
-						value=0,
-						step=60,
-						key='opensky_time_value',
-						help=(
-								'Optional for states_bbox. Leave at 0 for current live state '
-								'vectors. Used by track_aircraft, where 0 requests the current '
-								'or latest available track.'
-						)
-					)
-					
-					lamin = st.number_input( 'Min Latitude', value=39.0, key='opensky_lamin' )
-					lomin = st.number_input( 'Min Longitude', value=-77.5, key='opensky_lomin' )
-					lamax = st.number_input( 'Max Latitude', value=40.5, key='opensky_lamax' )
-					lomax = st.number_input( 'Max Longitude', value=-75.0, key='opensky_lomax' )
-					
-					extended = st.checkbox(
-						'Extended Aircraft Categories',
-						value=False,
-						key='opensky_extended',
-						help='Only applies to states_bbox.'
-					)
-					
-					client_id = st.text_input(
-						'Client ID (Optional)',
-						value='',
-						key='opensky_client_id'
-					)
-					
-					client_secret = st.text_input(
-						'Client Secret (Optional)',
-						value='',
-						type='password',
-						key='opensky_client_secret'
-					)
-					
-					timeout = st.slider(
-						'Timeout (seconds)',
-						min_value=5,
-						max_value=60,
-						value=20,
-						step=1,
-						key='opensky_timeout'
-					)
-					
-					b1, b2 = st.columns( 2 )
-					with b1:
-						opensky_submit = st.button(
-							'Submit',
-							key='opensky_submit',
-							use_container_width=True
-						)
-					with b2:
-						st.button(
-							'Clear',
-							key='opensky_clear',
-							on_click=_clear_opensky_state,
-							use_container_width=True
-						)
-				
-				with col_right:
-					if opensky_submit:
-						try:
-							normalized_time_value = _coerce_opensky_time_value(
-								mode_value=mode,
-								raw_value=int( time_value or 0 )
-							)
+					elif result.get( 'mode' ) == 'track_aircraft':
+						if items:
+							st.markdown( '#### Aircraft Track' )
+							st.dataframe( items, use_container_width=True, hide_index=True )
 							
-							client = OpenSky( )
-							result = client.fetch(
-								mode=mode,
-								icao24=icao24,
-								airport=airport,
-								begin=int( begin ) if int( begin or 0 ) > 0 else None,
-								end=int( end ) if int( end or 0 ) > 0 else None,
-								time_value=normalized_time_value,
-								lamin=float( lamin ) if lamin is not None else None,
-								lomin=float( lomin ) if lomin is not None else None,
-								lamax=float( lamax ) if lamax is not None else None,
-								lomax=float( lomax ) if lomax is not None else None,
-								extended=bool( extended ),
-								client_id=client_id.strip( ) or None,
-								client_secret=client_secret.strip( ) or None,
-								time=int( timeout ),
-							)
-							st.session_state[ 'opensky_results' ] = result or { }
-						except Exception as exc:
-							st.error( 'OpenSky request failed.' )
-							st.exception( exc )
+							map_rows = [
+									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+									for x in items
+									if x.get( 'latitude' ) is not None
+									   and x.get( 'longitude' ) is not None
+							]
+							if map_rows:
+								st.markdown( '#### Track Map' )
+								st.map( map_rows )
+						else:
+							st.info( 'No track waypoints were returned for that aircraft.' )
 					
-					result = st.session_state.get( 'opensky_results', { } )
-					
-					if not result:
-						st.text( 'No results.' )
-					else:
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Mode': result.get( 'mode', '' ),
-									'Returned': int( result.get( 'count', 0 ) or 0 ),
-									'Time': result.get( 'time', '' ) or result.get( 'start_time', '' ),
-									'ICAO24': result.get( 'icao24', '' ),
-									'Callsign': result.get( 'callsign', '' ),
-							}
-						)
-						
-						items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-						
-						if result.get( 'mode' ) == 'states_bbox':
-							if items:
-								st.markdown( '#### Live State Vectors' )
-								st.dataframe( items, use_container_width=True, hide_index=True )
-								
-								map_rows = [
-										{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-										for x in items
-										if x.get( 'latitude' ) is not None
-										   and x.get( 'longitude' ) is not None
-								]
-								if map_rows:
-									st.markdown( '#### Aircraft Positions' )
-									st.map( map_rows )
-							else:
-								st.info( 'No aircraft state vectors matched the requested filter.' )
-						
-						elif result.get( 'mode' ) in (
-									'flights_aircraft',
-									'arrivals_airport',
-									'departures_airport'
-						):
-							if items:
-								st.markdown( '#### Flights' )
-								st.dataframe( items, use_container_width=True, hide_index=True )
-							else:
-								st.info( 'No flight rows were returned for that query window.' )
-						
-						elif result.get( 'mode' ) == 'track_aircraft':
-							if items:
-								st.markdown( '#### Aircraft Track' )
-								st.dataframe( items, use_container_width=True, hide_index=True )
-								
-								map_rows = [
-										{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-										for x in items
-										if x.get( 'latitude' ) is not None
-										   and x.get( 'longitude' ) is not None
-								]
-								if map_rows:
-									st.markdown( '#### Track Map' )
-									st.map( map_rows )
-							else:
-								st.info( 'No track waypoints were returned for that aircraft.' )
-						
-						with st.expander( 'Raw Result', expanded=False ):
-							st.json( result )
+					with st.expander( 'Raw Result', expanded=False ):
+						st.json( result )
 			
 # ==============================================================================
 # ENVIRONMENTAL MODE

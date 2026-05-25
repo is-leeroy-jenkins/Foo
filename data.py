@@ -202,6 +202,7 @@ class DB( ):
 			_exc.method = 'get_connection_string( self )'
 			raise _exc
 
+
 class SQLite( DB ):
 	"""
 
