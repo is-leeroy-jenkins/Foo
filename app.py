@@ -3620,15 +3620,9 @@ elif mode == 'Scraping':
 			
 			return page_result
 		
-		def _crawl_pages(
-				seed_url: str,
-				include_title: bool,
-				include_basic_text: bool,
-				include_raw_html: bool,
-				selected_methods: list[ str ],
-				recursive: bool,
-				max_depth: int,
-				max_pages: int,
+		def _crawl_pages( seed_url: str, include_title: bool, include_basic_text: bool,
+				include_raw_html: bool, selected_methods: list[ str ], recursive: bool,
+				max_depth: int, max_pages: int,
 				same_domain_only: bool ) -> tuple[ list[ dict[ str, Any ] ], dict[ str, Any ] ]:
 			results: list[ dict[ str, Any ] ] = [ ]
 			visited: set[ str ] = set( )
@@ -3702,9 +3696,7 @@ elif mode == 'Scraping':
 		col_left, col_right = st.columns( [ 1, 2 ], border=True )
 		
 		with col_left:
-			target_url = st.text_input(
-				'Enter Target URL',
-				placeholder='https://example.com',
+			target_url = st.text_input( 'Enter Target URL', placeholder='https://example.com',
 				key='webfetcher_url' )
 			
 			st.markdown( '##### Core Output' )
@@ -7629,28 +7621,22 @@ elif mode == 'Geospatial':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				googlegeocoding_mode = st.selectbox(
-					'Mode',
+				googlegeocoding_mode = st.selectbox( 'Mode',
 					options=[ 'forward', 'reverse', 'place' ],
 					index=[ 'forward', 'reverse', 'place' ].index(
 						st.session_state.get( 'googlegeocoding_mode', 'forward' )
-					),
-					key='googlegeocoding_mode',
-					help='forward = address search; reverse = lat/lng to address; place = place_id lookup.'
-				)
+					), key='googlegeocoding_mode',
+					help='forward = address search; reverse = lat/lng to address; place = place_id lookup.' )
 				
-				googlegeocoding_query = st.text_area(
-					'Address Query',
-					height=80,
-					key='googlegeocoding_query',
+				googlegeocoding_query = st.text_area( 'Address Query',
+					height=80, key='googlegeocoding_query',
 					placeholder=(
 							'Examples:\n'
 							'1600 Amphitheatre Parkway, Mountain View, CA\n'
 							'Arlington, VA\n'
 							'10 Downing Street, London'
 					),
-					disabled=(googlegeocoding_mode != 'forward')
-				)
+					disabled=(googlegeocoding_mode != 'forward') )
 				
 				c1, c2 = st.columns( 2 )
 				

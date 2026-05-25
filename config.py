@@ -49,7 +49,7 @@ ACCESS_DRIVER = r'DRIVER={ Microsoft Access Driver (*.mdb, *.accdb) };DBQ='
 AIRNOW_API_KEY = os.getenv( 'AIRNOW_API_KEY' )
 CLAUDE_API_KEY = os.getenv( 'CLAUDE_API_KEY' )
 CONGRESS_API_KEY = os.getenv( 'CONGRESS_API_KEY' )
-CHROMA_API_KEY = os.getevn( 'CHROMA_API_KEY' )
+CHROMA_API_KEY = os.getenv( 'CHROMA_API_KEY' )
 CHROMA_TENET_ID = os.getenv( 'CHROMA_TENET_ID' )
 GEOAPIFY_API_KEY = os.getenv( 'GEOAPIFY_API_KEY' )
 GEOCODING_API_KEY = os.getenv( 'GEOCODING_API_KEY' )
