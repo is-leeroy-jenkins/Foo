@@ -3694,16 +3694,13 @@ elif mode == 'Scraping':
 			return results, summary
 		
 		col_left, col_right = st.columns( [ 1, 2 ], border=True )
-		
 		with col_left:
 			target_url = st.text_input( 'Enter Target URL', placeholder='https://example.com',
 				key='webfetcher_url' )
 			
 			st.markdown( '##### Core Output' )
 			
-			include_title = st.checkbox(
-				'Page Title',
-				value=True,
+			include_title = st.checkbox( 'Page Title', value=True,
 				key='wf_page_title' )
 			
 			include_basic_text = st.checkbox(
@@ -8363,34 +8360,26 @@ elif mode == 'Geospatial':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				gw_location = st.text_area(
-					'Location',
-					height=70,
-					key='googleweather_location',
+				gw_location = st.text_area( 'Location', height=70, key='googleweather_location',
 					placeholder=(
 							'Examples:\n'
 							'Washington, DC\n'
 							'1600 Pennsylvania Ave NW, Washington, DC\n'
 							'Arlington, VA'
-					),
-				)
+					), )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					gw_mode = st.selectbox(
-						'Mode',
-						options=GOOGLEWEATHER_MODES,
+					gw_mode = st.selectbox( 'Mode', options=GOOGLEWEATHER_MODES,
 						index=GOOGLEWEATHER_MODES.index(
 							st.session_state.get( 'googleweather_mode', 'current' )
 						),
 						key='googleweather_mode',
-						help='Choose the Google Weather API operation to run.'
-					)
+						help='Choose the Google Weather API operation to run.' )
 				
 				with c2:
-					gw_units = st.selectbox(
-						'Units',
+					gw_units = st.selectbox( 'Units',
 						options=GOOGLEWEATHER_UNITS,
 						index=GOOGLEWEATHER_UNITS.index(
 							st.session_state.get( 'googleweather_units', 'METRIC' )
@@ -9494,39 +9483,29 @@ elif mode == 'Geospatial':
 				st.session_state[ 'earthobservatory_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
-			
 			with col_left:
-				earth_mode = st.selectbox(
-					'Mode',
+				earth_mode = st.selectbox( 'Mode',
 					options=[ 'events', 'categories', 'sources', 'layers' ],
 					index=[ 'events', 'categories', 'sources', 'layers' ].index(
 						st.session_state.get( 'earthobservatory_mode', 'events' )
-					),
-					key='earthobservatory_mode',
+					), key='earthobservatory_mode',
 					help='Choose the current documented EONET v3 endpoint.'
 				)
 				
-				earth_status = st.selectbox(
-					'Status',
-					options=[ 'open', 'closed', 'all' ],
+				earth_status = st.selectbox( 'Status', options=[ 'open', 'closed', 'all' ],
 					index=[ 'open', 'closed', 'all' ].index(
-						st.session_state.get( 'earthobservatory_status', 'open' )
-					),
+						st.session_state.get( 'earthobservatory_status', 'open' ) ),
 					key='earthobservatory_status',
-					disabled=(earth_mode != 'events')
-				)
+					disabled=(earth_mode != 'events') )
 				
-				earth_category = st.text_input(
-					'Category',
+				earth_category = st.text_input( 'Category',
 					value=st.session_state.get( 'earthobservatory_category', '' ),
 					key='earthobservatory_category',
 					placeholder='Examples: wildfires, severe storms, volcanoes ',
 					help='Used for events filtering and layers category path.',
-					disabled=(earth_mode not in [ 'events', 'layers' ])
-				)
+					disabled=(earth_mode not in [ 'events', 'layers' ]) )
 				
-				earth_source = st.text_input(
-					'Source',
+				earth_source = st.text_input( 'Source',
 					value=st.session_state.get( 'earthobservatory_source', '' ),
 					key='earthobservatory_source',
 					placeholder=(
@@ -9536,12 +9515,8 @@ elif mode == 'Geospatial':
 				)
 				
 				c1, c2 = st.columns( 2 )
-				
 				with c1:
-					earth_limit = st.number_input(
-						'Limit',
-						min_value=1,
-						max_value=500,
+					earth_limit = st.number_input( 'Limit', min_value=1, max_value=500,
 						value=int( st.session_state.get( 'earthobservatory_limit', 20 ) ),
 						step=1,
 						key='earthobservatory_limit',
@@ -9549,18 +9524,12 @@ elif mode == 'Geospatial':
 					)
 				
 				with c2:
-					earth_days = st.number_input(
-						'Days',
-						min_value=1,
-						max_value=3650,
+					earth_days = st.number_input( 'Days', min_value=1, max_value=3650,
 						value=int( st.session_state.get( 'earthobservatory_days', 30 ) ),
-						step=1,
-						key='earthobservatory_days',
-						disabled=(earth_mode != 'events')
-					)
+						step=1, key='earthobservatory_days',
+						disabled=(earth_mode != 'events') )
 				
 				d1, d2 = st.columns( 2 )
-				
 				with d1:
 					earth_start_date = st.text_input(
 						'Start Date',
@@ -10098,11 +10067,9 @@ elif mode == 'Geospatial':
 			
 			if isinstance( st.session_state.get( 'usgssb_fields' ), str ):
 				raw_fields = str( st.session_state.get( 'usgssb_fields', '' ) )
-				st.session_state[ 'usgssb_fields' ] = [
-						item.strip( )
+				st.session_state[ 'usgssb_fields' ] = [ item.strip( )
 						for item in raw_fields.split( ',' )
-						if item.strip( ) in USGSSB_FIELD_OPTIONS
-				]
+						if item.strip( ) in USGSSB_FIELD_OPTIONS ]
 			
 			if 'usgssb_timeout' not in st.session_state:
 				st.session_state[ 'usgssb_timeout' ] = 20
@@ -10118,25 +10085,17 @@ elif mode == 'Geospatial':
 				st.session_state[ 'usgssb_results' ] = { }
 				st.session_state[ 'usgssb_clear_request' ] = False
 			
-			col_left, col_right = st.columns( 2, border=True )
-			
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			with col_left:
-				usgssb_mode = st.selectbox(
-					'Mode',
-					options=USGSSB_MODES,
+				usgssb_mode = st.selectbox( 'Mode', options=USGSSB_MODES,
 					index=USGSSB_MODES.index(
 						st.session_state.get( 'usgssb_mode', 'items' )
-					),
-					key='usgssb_mode'
-				)
+					), key='usgssb_mode' )
 				
-				usgssb_q = st.text_input(
-					'Search Query',
-					value=st.session_state.get( 'usgssb_q', '' ),
-					key='usgssb_q',
+				usgssb_q = st.text_input( 'Search Query',
+					value=st.session_state.get( 'usgssb_q', '' ), key='usgssb_q',
 					disabled=(usgssb_mode != 'items'),
-					placeholder='Optional keyword search'
-				)
+					placeholder='Optional keyword search' )
 				
 				usgssb_item_id = st.text_input( 'Item ID',
 					value=st.session_state.get( 'usgssb_item_id', '' ),
@@ -10242,10 +10201,8 @@ elif mode == 'Geospatial':
 								st.markdown( '**First Result:** N/A' )
 						
 						with sum_c3:
-							st.metric(
-								'Spatial Records',
-								int( summary.get( 'spatial_count', 0 ) or 0 )
-							)
+							st.metric( 'Spatial Records',
+								int( summary.get( 'spatial_count', 0 ) or 0 ) )
 					
 					params = result.get( 'params', { } ) or { }
 					if params:
@@ -10258,11 +10215,7 @@ elif mode == 'Geospatial':
 						df_usgssb = pd.DataFrame( rows )
 						
 						if not df_usgssb.empty:
-							st.dataframe(
-								df_usgssb,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_usgssb, use_container_width=True, hide_index=True )
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
@@ -10446,33 +10399,18 @@ elif mode == 'Geospatial':
 			if 'opensky_timeout' not in st.session_state:
 				st.session_state[ 'opensky_timeout' ] = 20
 			
-			col_left, col_right = st.columns( [ 0.5, 0.5 ], border=True )
-			
+			col_left, col_right = st.columns( [ 1, 2 ], border=True )			
 			with col_left:
-				mode = st.selectbox(
-					'Mode',
-					options=[
-							'states_bbox',
-							'flights_aircraft',
-							'arrivals_airport',
-							'departures_airport',
-							'track_aircraft',
-					],
-					key='opensky_mode',
-					help=(
-							'states_bbox = live aircraft inside a bounding box; '
+				mode = st.selectbox( 'Mode',
+					options=[ 'states_bbox', 'flights_aircraft', 'arrivals_airport',
+							'departures_airport', 'track_aircraft', ], key='opensky_mode',
+					help=( 'states_bbox = live aircraft inside a bounding box; '
 							'flights_aircraft = flights for one aircraft; '
 							'arrivals_airport / departures_airport = airport traffic; '
-							'track_aircraft = trajectory waypoints for one aircraft.'
-					)
-				)
+							'track_aircraft = trajectory waypoints for one aircraft.' ) )
 				
-				icao24 = st.text_input(
-					'ICAO24 (Aircraft Hex ID)',
-					value='',
-					key='opensky_icao24',
-					help='Required for flights_aircraft and track_aircraft.'
-				)
+				icao24 = st.text_input( 'ICAO24 (Aircraft Hex ID)', value='',
+					key='opensky_icao24', help='Required for flights_aircraft and track_aircraft.' )
 				
 				airport = st.text_input(
 					'Airport ICAO',
