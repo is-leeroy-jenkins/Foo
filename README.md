@@ -18,8 +18,6 @@
 
 ___
 
-![License: Public Domain](https://img.shields.io/badge/license-public%20domain-brightgreen.svg)
-
 Foo is a Streamlit-based data loading, scraping, retrieval, geospatial, environmental,
 astronomical, demographic, generative-AI, and SQLite data-management workspace. It is designed
 to give users explicit, hands-on control over how content is loaded, extracted, queried, fetched,
@@ -457,6 +455,8 @@ print(df_results)
 | Wikipedia      | [Wikimedia APIs](https://www.mediawiki.org/wiki/Wikimedia_APIs/Get_started)                    |              |                                                                                   |
 
 ## 📝 License
+
+![License: Public Domain](https://img.shields.io/badge/license-public%20domain-brightgreen.svg)
 
 * MIT License [here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
 * Copyright © 2022–2025 Terry D. Eppler
