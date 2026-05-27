@@ -18,6 +18,8 @@
 
 ___
 
+![License: Public Domain](https://img.shields.io/badge/license-public%20domain-brightgreen.svg)
+
 Foo is a Streamlit-based data loading, scraping, retrieval, geospatial, environmental,
 astronomical, demographic, generative-AI, and SQLite data-management workspace. It is designed
 to give users explicit, hands-on control over how content is loaded, extracted, queried, fetched,
