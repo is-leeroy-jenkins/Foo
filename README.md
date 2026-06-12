@@ -456,5 +456,7 @@ print(df_results)
 
 ## 📝 License
 
+![License: Public Domain](https://img.shields.io/badge/license-public%20domain-brightgreen.svg)
+
 * MIT License [here](https://github.com/is-leeroy-jenkins/Foo/blob/main/LICENSE.txt)
 * Copyright © 2022–2025 Terry D. Eppler
