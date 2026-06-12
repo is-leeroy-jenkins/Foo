@@ -19166,7 +19166,6 @@ class ClimateData( Fetcher ):
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
-			
 			for item in records or [ ]:
 				row: Dict[ str, Any ] = { }
 				
