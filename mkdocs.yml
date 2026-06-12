@@ -1,22 +1,14 @@
-site_name: Foo Documentation
-site_description: Documentation for Foo, a Python framework for web scraping information into ML pipelines.
-site_author: Terry D. Eppler
-site_url: https://<your-github-username>.github.io/Foo/
-
-repo_url: https://github.com/<your-github-username>/Foo
-repo_name: <your-github-username>/Foo
-
-copyright: Copyright © 2022 Terry Eppler
-
 nav:
   - Home: index.md
-  - User Guide:
-      - Overview: user-guide.md
-      - Loading Data: loading.md
-      - Fetching and Scraping: fetching-scraping.md
-      - Data Management: data-management.md
-      - Generators: generators.md
+  - Application: app.md
   - Architecture: architecture.md
+  - User Guide: user-guide.md
+  - Loading Data: loading.md
+  - Fetching and Scraping: fetching-scraping.md
+  - Generation: generation.md
+  - Data Management: data-management.md
+  - Outputs: outputs.md
+  - Development: development.md
   - API Reference:
       - Overview: api/index.md
       - Core: api/core.md
@@ -27,76 +19,3 @@ nav:
       - Models: api/models.md
       - Scrapers: api/scrapers.md
       - Writers: api/writers.md
-  - Development: development.md
-  - GitHub Pages: github-pages.md
-
-plugins:
-  - search
-  - mkdocstrings:
-      handlers:
-        python:
-          paths:
-            - .
-          options:
-            docstring_style: google
-            docstring_options:
-              ignore_init_summary: true
-            show_source: true
-            show_root_heading: true
-            show_root_full_path: false
-            show_object_full_path: false
-            show_category_heading: true
-            show_signature_annotations: true
-            separate_signature: true
-            members_order: source
-            inherited_members: false
-            merge_init_into_class: true
-            filters:
-              - '!^_'
-
-markdown_extensions:
-  - admonition
-  - attr_list
-  - md_in_html
-  - tables
-  - toc:
-      permalink: true
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.tabbed:
-      alternate_style: true
-  - pymdownx.tasklist:
-      custom_checkbox: true
-
-theme:
-  name: material
-  language: en
-  palette:
-    - scheme: slate
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
-    - scheme: default
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-  features:
-    - navigation.instant
-    - navigation.tabs
-    - navigation.sections
-    - navigation.top
-    - search.highlight
-    - search.suggest
-    - content.code.copy
-    - content.tabs.link
-
-extra_css:
-  - assets/stylesheets/foo.css

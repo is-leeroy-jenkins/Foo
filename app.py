@@ -19289,20 +19289,14 @@ elif mode == 'Demographic':
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
-						table_rows = [
-								{
+						table_rows = [ {
 										'Index': item.get( 'Index', '' ),
 										'Title': item.get( 'Title', '' ),
 										'Published': item.get( 'Published', '' ),
-								}
-								for item in items
-						]
-						
+								} for item in items ]
 						df_pubmed = pd.DataFrame( table_rows )
-						
 						st.markdown( '#### Results' )
 						st.dataframe( df_pubmed, use_container_width=True, hide_index=True )
-						
 						first = items[ 0 ]
 						_render_summary_kv( '#### First Result', {
 									'Title': first.get( 'Title', '' ),
