@@ -45,25 +45,24 @@ from typing import Dict, Optional, Any
 from requests import Response
 
 def throw_if( name: str, value: object ) -> None:
-	"""
-
-		Purpose:
-		--------
-		Lightweight guard used to validate required arguments. Treats None and
-		empty/whitespace-only strings as invalid values and raises ValueError.
+	"""Throw if.
 	
-		Parameters:
-		----------
-		name (str): Human-friendly argument name used in the raised message.
-		value (object): Value to validate.
+	Purpose:
+	    Validates that a required argument contains a usable value before the surrounding workflow
+	    continues. This guard centralizes early validation so provider wrappers and UI routines fail
+	    with consistent, readable error messages.
 	
-		Returns:
-		-------
-		None
-
-	"""
+	Args:
+	    name (str): Name value used by the operation.
+	    value (object): Value value used by the operation.
+	
+	Returns:
+	    None: This function performs its work through side effects and does not return a value."""
 	if value is None:
-		raise ValueError( f'Argument "{name}" cannot be None' )
+		raise ValueError( f'Argument "{name}" cannot be None.' )
+	
+	if isinstance( value, str ) and not value.strip( ):
+		raise ValueError( f'Argument "{name}" cannot be empty.' )
 
 class Result( ):
 	"""
