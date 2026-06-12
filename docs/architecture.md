@@ -1,5 +1,5 @@
 # Architecture
-
+![](../images/foo-architecture.png)
 Foo is organized as a modular Streamlit application backed by source modules that can also be used directly from Python.
 
 ```mermaid
