@@ -15,7 +15,7 @@ nav:
   - User Guide: user-guide.md
   - Loading Data: loading.md
   - Fetching and Scraping: fetching-scraping.md
-  - Generation: generation.md
+  - Generation: generators.md
   - Data Management: data-management.md
   - Outputs: outputs.md
   - Development: development.md
