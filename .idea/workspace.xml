@@ -5,9 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="649d1b1c-e24f-435b-9576-30e7d61c1f89" name="Changes" comment="updates">
+      <change afterPath="$PROJECT_DIR$/docs/generation.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/loading.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/loading.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/api/app.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/app.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/generators.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/github-pages.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/github-pages.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/user-guide.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/user-guide.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mkdocs.yml" beforeDir="false" afterPath="$PROJECT_DIR$/mkdocs.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -80,6 +84,9 @@
       <recent name="C:\Users\terry\source\repos\Foo\docs" />
       <recent name="C:\Users\terry\source\repos\Foo" />
     </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\terry\source\repos\Foo\docs" />
+    </key>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -111,15 +118,7 @@
       <workItem from="1779654965957" duration="9637000" />
       <workItem from="1779691287422" duration="25157000" />
       <workItem from="1781264148381" duration="29000" />
-      <workItem from="1781265470013" duration="16396000" />
-    </task>
-    <task id="LOCAL-00001" summary="updates">
-      <option name="closed" value="true" />
-      <created>1776271973302</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1776271973302</updated>
+      <workItem from="1781265470013" duration="17209000" />
     </task>
     <task id="LOCAL-00002" summary="updates">
       <option name="closed" value="true" />
@@ -505,7 +504,15 @@
       <option name="project" value="LOCAL" />
       <updated>1781302192941</updated>
     </task>
-    <option name="localTasksCounter" value="50" />
+    <task id="LOCAL-00050" summary="updates">
+      <option name="closed" value="true" />
+      <created>1781302652422</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1781302652423</updated>
+    </task>
+    <option name="localTasksCounter" value="51" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

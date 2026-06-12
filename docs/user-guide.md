@@ -838,7 +838,7 @@ Use these pages for deeper guidance:
 * [Fetching and Scraping](fetching-scraping.md)
 * [Generation](generation.md)
 * [Data Management](data-management.md)
-* [Output](output.md)
+* [Output](outputs.md)
 * [Development](development.md)
 * [API Reference](api/index.md)
 
