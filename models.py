@@ -1,6 +1,6 @@
 '''
   ******************************************************************************************
-      Assembly:                Boo
+      Assembly:                Foo
       Filename:                models.py
       Author:                  Terry D. Eppler
       Created:                 05-31-2022
@@ -10,8 +10,7 @@
   ******************************************************************************************
   <copyright file="models.py" company="Terry D. Eppler">
 
-	     Boo is a df analysis tool integrating various Generative GPT, GptText-Processing, and
-	     Machine-Learning algorithms for federal analysts.
+	     Foo is a python framework for web scraping information into ML pipelines.
 	     Copyright ©  2022  Terry Eppler
 
      Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -39,6 +38,12 @@
   </copyright>
   <summary>
     models.py
+
+    Purpose:
+        Defines lightweight Pydantic models used by Foo to normalize prompts, files,
+        messages, tool declarations, locations, weather summaries, directions, and
+        astronomy coordinates. These models provide documented structured data shapes
+        for serialization, validation, and MkDocs-generated API reference pages.
   </summary>
   ******************************************************************************************
   '''
@@ -47,46 +52,22 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
-
 class Prompt( BaseModel ):
-	'''
+	"""Represent a structured prompt definition.
 
-		Purpose:
-		--------
-		Represents a structured “system prompt” or instruction bundle used to steer an LLM call.
-		This model is intended to capture the canonical components you pass into Boo when you
-		want to track prompts as first-class objects (versioning, variables, and provenance).
+	Purpose:
+		Captures the core fields used to store, version, and reuse an instruction bundle
+		for language-model workflows. The model gives Foo a consistent shape for prompt
+		text, identifiers, versions, formats, and associated user questions.
 
-		Attributes:
-		----------
-		instructions: Optional[ str ]
-			The primary instruction block (typically the system message content).
-
-		context: Optional[ str ]
-			Optional background context provided to the model (policies, references, etc.).
-
-		output_indicator: Optional[ str ]
-			A short indicator describing the desired output style/format (e.g., "json", "table").
-
-		input_data: Optional[ str ]
-			Optional data payload embedded into the prompt (small inputs, examples, etc.).
-
-		id: Optional[ str ]
-			Optional identifier for tracking prompts (e.g., GUID, hash, or friendly name).
-
-		version: Optional[ str ]
-			Optional version string for prompt management and experimentation.
-
-		format: Optional[ str ]
-			Optional format label describing the prompt template type (e.g., "chat", "completion").
-
-		variables: Optional[ List[ str ] ]
-			Optional list of placeholder variables referenced by the prompt template.
-
-		question: Optional[ str ]
-			Optional question or user query associated with the prompt.
-
-	'''
+	Attributes:
+		instructions (Optional[str]): Primary instruction block, usually equivalent to a
+			system message or reusable prompt body.
+		id (Optional[str]): Prompt identifier, friendly name, hash, or upstream object id.
+		version (Optional[str]): Version label used for prompt management and experiments.
+		format (Optional[str]): Format label such as ``chat``, ``json``, or ``completion``.
+		question (Optional[str]): User question or task associated with the prompt.
+	"""
 	instructions: Optional[ str ]
 	id: Optional[ str ]
 	version: Optional[ str ]
@@ -94,37 +75,23 @@ class Prompt( BaseModel ):
 	question: Optional[ str ]
 
 class File( BaseModel ):
-	'''
+	"""Represent file metadata.
 
-		Purpose:
-		--------
-		Represents a file-like object returned by an API (uploaded artifacts, generated files,
-		or tool outputs). This is intentionally permissive: Boo only needs the common metadata.
+	Purpose:
+		Stores common metadata for uploaded files, generated files, provider artifacts,
+		and tool outputs. The model intentionally remains permissive so Foo can normalize
+		file-like objects returned by different upstream APIs without coupling to a single
+		provider response schema.
 
-		Attributes:
-		----------
-		filename: Optional[ str ]
-			The original or assigned filename.
-
-		bytes: Optional[ int ]
-			The size of the file in bytes, if provided.
-
-		created_at: Optional[ int ]
-			Unix timestamp of creation (seconds), if provided.
-
-		expires_at: Optional[ int ]
-			Unix timestamp when the file expires, if the upstream supports expiring artifacts.
-
-		id: Optional[ str ]
-			Unique file identifier in the upstream system.
-
-		object: Optional[ str ]
-			Object discriminator from the upstream API (e.g., "file").
-
-		purpose: Optional[ str ]
-			Intended purpose for the file in the upstream system (e.g., "assistants", "fine-tune").
-
-	'''
+	Attributes:
+		filename (Optional[str]): Original, assigned, or display filename.
+		bytes (Optional[int]): File size in bytes when supplied by the upstream provider.
+		created_at (Optional[int]): Unix timestamp indicating when the file was created.
+		expires_at (Optional[int]): Unix timestamp indicating when the file expires.
+		id (Optional[str]): Unique upstream file identifier.
+		object (Optional[str]): Upstream object discriminator, such as ``file``.
+		purpose (Optional[str]): Provider-specific purpose value for the file.
+	"""
 	filename: Optional[ str ]
 	bytes: Optional[ int ]
 	created_at: Optional[ int ]
@@ -134,131 +101,87 @@ class File( BaseModel ):
 	purpose: Optional[ str ]
 
 class Error( BaseModel ):
-	'''
+	"""Represent an upstream API error payload.
 
-		Purpose:
-		--------
-		Represents an error object returned by an upstream API. Boo stores errors in structured
-		form so UI and logging layers can surface details without brittle string parsing.
+	Purpose:
+		Normalizes simple error objects returned by upstream services. Foo can surface
+		structured error codes and messages in the UI or documentation without parsing
+		unstructured exception strings.
 
-		Attributes:
-		----------
-		code: Optional[ str ]
-			A short error code when available (e.g., "invalid_request_error").
-
-		message: Optional[ str ]
-			Human-readable error message.
-
-	'''
+	Attributes:
+		code (Optional[str]): Provider-specific error code when available.
+		message (Optional[str]): Human-readable error message.
+	"""
 	code: Optional[ str ]
 	message: Optional[ str ]
 
 class Reasoning( BaseModel ):
-	'''
+	"""Represent reasoning metadata.
 
-		Purpose:
-		--------
-		Represents reasoning configuration and/or summary data surfaced by an upstream model.
-		Boo keeps this structured so callers can persist “reasoning metadata” without coupling
-		to a specific vendor response shape.
+	Purpose:
+		Stores reasoning configuration or summary fields returned by a model provider.
+		The model keeps reasoning-related metadata structured without requiring callers
+		to depend on a provider-specific response object.
 
-		Attributes:
-		----------
-		effort: Optional[ str ]
-			A label describing reasoning effort (when supported), e.g., "low", "medium", "high".
-
-		summary: Optional[ str ]
-			A short summary of reasoning (when the upstream provides it).
-
-	'''
+	Attributes:
+		effort (Optional[str]): Reasoning effort label such as ``low``, ``medium``, or
+			``high`` when supported by the provider.
+		summary (Optional[str]): Short reasoning summary when one is returned.
+	"""
 	effort: Optional[ str ]
 	summary: Optional[ str ]
 
 class Document( BaseModel ):
-	'''
+	"""Represent a simple structured document.
 
-		Purpose:
-		--------
-		Represents a generic “document-like” structured output. Boo uses this for demos and
-		for workflows where the model produces a multi-field narrative artifact with concepts.
+	Purpose:
+		Captures a generic document-like output with a summary and longer description.
+		Foo uses this shape for structured-output examples and workflows where a model
+		or loader returns a compact narrative artifact.
 
-		Attributes:
-		----------
-		invented_year: Optional[ int ]
-			Example field used in some structured-output prompts; can be repurposed.
-
-		summary: Optional[ str ]
-			High-level summary of the document.
-
-		inventors: Optional[ List[ str ] ]
-			Example list field used in structured-output prompts.
-
-		description: Optional[ str ]
-			Long-form description.
-
-		concepts: Optional[ List[ Concept ] ]
-			List of extracted or described concepts.
-
-	'''
+	Attributes:
+		summary (Optional[str]): High-level document summary.
+		description (Optional[str]): Longer narrative description or extracted content.
+	"""
 	summary: Optional[ str ]
 	description: Optional[ str ]
 
 class Message( BaseModel ):
-	'''
+	"""Represent a chat message object.
 
-		Purpose:
-		--------
-		Represents a chat message-like object used by Boo to normalize conversational state.
-		This is intentionally general to support both “input messages” and “output messages”.
+	Purpose:
+		Normalizes conversational state across model providers and internal workflows.
+		The model supports message content, role, optional message type, and additional
+		metadata so callers can serialize or inspect chat-like objects consistently.
 
-		Attributes:
-		----------
-		content: str
-			Message content payload. Boo treats this as required for operational messages.
-
-		role: str
-			Message role (e.g., "system", "user", "assistant", "tool").
-
-		type: Optional[ str ]
-			Optional discriminator if an upstream system emits typed message objects.
-
-		instructions: Optional[ str ]
-			Optional per-message instruction string (used in some orchestration patterns).
-
-		data: Optional[ Dict ]
-			Optional message metadata or additional structured payload.
-
-	'''
+	Attributes:
+		content (Optional[str]): Message payload text.
+		role (Optional[str]): Message role, such as ``system``, ``user``, ``assistant``,
+			or ``tool``.
+		type (Optional[str]): Optional provider or application message discriminator.
+		data (Optional[Dict]): Optional metadata or structured payload associated with
+			the message.
+	"""
 	content: Optional[ str ]
 	role: Optional[ str ]
 	type: Optional[ str ]
 	data: Optional[ Dict ]
 
 class Location( BaseModel ):
-	'''
+	"""Represent a coarse geographic location.
 
-		Purpose:
-		--------
-		Represents a high-level user location descriptor used by web search or other tools.
+	Purpose:
+		Stores city, country, region, timezone, and type information used to bias search,
+		mapping, weather, and other location-aware tools. The model is intentionally
+		high-level and does not store precise street-level location data.
 
-		Attributes:
-		----------
-		type: Optional[ str ]
-			Type discriminator for location objects.
-
-		city: Optional[ str ]
-			City name.
-
-		country: Optional[ str ]
-			Country name or code.
-
-		region: Optional[ str ]
-			State/province/region.
-
-		timezone: Optional[ str ]
-		IANA timezone string when known.
-
-	'''
+	Attributes:
+		type (Optional[str]): Object type discriminator.
+		city (Optional[str]): City name.
+		country (Optional[str]): Country name or country code.
+		region (Optional[str]): State, province, territory, or region name.
+		timezone (Optional[str]): IANA timezone string when known.
+	"""
 	type: Optional[ str ]
 	city: Optional[ str ]
 	country: Optional[ str ]
@@ -266,237 +189,159 @@ class Location( BaseModel ):
 	timezone: Optional[ str ]
 
 class GeoCoordinates( BaseModel ):
-	'''
+	"""Represent latitude and longitude coordinates.
 
-		Purpose:
-		--------
-		Represents a latitude/longitude coordinate pair, optionally with a timezone. This is
-		useful for tools like web search, maps, or proximity-based retrieval.
+	Purpose:
+		Stores a decimal-degree coordinate pair and optional timezone for tools that need
+		location precision beyond a city or region. The structure is suitable for maps,
+		nearby search, weather lookups, and proximity-based retrieval.
 
-		Attributes:
-		----------
-		type: Optional[ str ]
-			Type discriminator for geocoordinate objects.
-
-		latitude: Optional[ float ]
-			Latitude in decimal degrees.
-
-		longitude: Optional[ float ]
-			Longitude in decimal degrees.
-
-		timezone: Optional[ str ]
-			IANA timezone string when known.
-
-	'''
+	Attributes:
+		type (Optional[str]): Object type discriminator.
+		latitude (Optional[float]): Latitude in decimal degrees.
+		longitude (Optional[float]): Longitude in decimal degrees.
+		timezone (Optional[str]): IANA timezone string when known.
+	"""
 	type: Optional[ str ]
 	latitude: Optional[ float ]
 	longitude: Optional[ float ]
 	timezone: Optional[ str ]
 
 class Forecast( BaseModel ):
-	'''
+	"""Represent a simplified weather forecast.
 
-		Purpose:
-		--------
-		Represents a simplified weather forecast payload returned by a tool or model.
+	Purpose:
+		Stores a compact weather result that can be returned by a provider wrapper, tool,
+		or structured model response. The model keeps temperature, precipitation, and sky
+		condition fields separate for display and downstream processing.
 
-		Attributes:
-		----------
-		type: Optional[ str ]
-			Type discriminator for the object.
-
-		temperature: Optional[ int ]
-			Temperature value (units depend on the tool/provider).
-
-		precipitation: Optional[ int ]
-			Precipitation percentage or amount (provider-specific).
-
-		sky_conditions: Optional[ str ]
-			Text description such as "clear", "cloudy", "rain".
-
-	'''
+	Attributes:
+		type (Optional[str]): Object type discriminator.
+		temperature (Optional[int]): Temperature value using the provider's selected units.
+		precipitation (Optional[int]): Precipitation percentage or provider-specific amount.
+		sky_conditions (Optional[str]): Human-readable sky condition description.
+	"""
 	type: Optional[ str ]
 	temperature: Optional[ int ]
 	precipitation: Optional[ int ]
 	sky_conditions: Optional[ str ]
 
 class Directions( BaseModel ):
-	'''
+	"""Represent simplified route directions.
 
-		Purpose:
-		--------
-		Represents a simplified directions/route payload returned by a mapping tool.
+	Purpose:
+		Stores route information returned by a mapping or navigation provider. The route
+		field remains provider-neutral so it can hold a text route, polyline, structured
+		step list, or other upstream route representation.
 
-		Attributes:
-		----------
-		type: Optional[ str ]
-			Type discriminator for the object.
-
-		route: Optional[ Any ]
-			Route representation (provider-specific). Frequently this is a string/polyline or
-			a structured list of steps.
-
-	'''
+	Attributes:
+		type (Optional[str]): Object type discriminator.
+		route (Optional[Any]): Provider-specific route representation.
+	"""
 	type: Optional[ str ]
 	route: Optional[ Any ]
-	
+
 class SkyCoordinates( BaseModel ):
-	'''
+	"""Represent astronomical sky coordinates.
 
-		Purpose:
-		--------
-		Represents right ascension / declination coordinate pairs used in astronomy-oriented
-		structured outputs.
+	Purpose:
+		Stores right ascension and declination values for astronomy-oriented structured
+		outputs. Foo uses this shape when normalizing sky-object lookups, star charts,
+		or other celestial-coordinate responses.
 
-		Attributes:
-		----------
-		type: Optional[ str ]
-			Type discriminator for the object.
-
-		declination: Optional[ float ]
-			Declination in decimal degrees.
-
-		right_ascension: Optional[ float ]
-			Right ascension in decimal degrees or hours (provider-specific).
-
-	'''
+	Attributes:
+		type (Optional[str]): Object type discriminator.
+		declination (Optional[float]): Declination in decimal degrees.
+		right_ascension (Optional[float]): Right ascension in provider-specific units.
+	"""
 	type: Optional[ str ]
 	declination: Optional[ float ]
 	right_ascension: Optional[ float ]
 
 class Tool( BaseModel ):
-	'''
+	"""Represent a tool declaration.
 
-		Purpose:
-		--------
-		Represents a tool/function descriptor for tool-calling. Boo uses this to keep “tool
-		specification” structured (name, description, JSON schema parameters, strictness).
+	Purpose:
+		Stores the common fields used to describe a model-callable tool. The base model
+		captures the tool name, type, and description, while specialized subclasses add
+		configuration such as parameters, filters, or environment settings.
 
-		Attributes:
-		----------
-		name: Optional[ str ]
-			Function name as exposed to the model.
-
-		type: Optional[ str ]
-			Type discriminator (commonly "function") when used in tool lists.
-
-		description: Optional[ str ]
-			Human-readable description of the tool/function.
-
-		parameters: Optional[ Dict[ str, Any ] ]
-			JSON Schema-like parameters object describing accepted inputs.
-
-		strict: Optional[ bool ]
-			Whether the upstream should strictly validate arguments against the schema.
-
-	'''
+	Attributes:
+		name (Optional[str]): Tool or function name exposed to the model.
+		type (Optional[str]): Tool type discriminator, commonly ``function`` or a vendor
+			specific tool type.
+		description (Optional[str]): Human-readable description of the tool.
+	"""
 	name: Optional[ str ]
 	type: Optional[ str ]
 	description: Optional[ str ]
 
 class Function( Tool ):
-	'''
+	"""Represent a function tool declaration.
 
-		Purpose:
-		--------
-		Represents a tool/function descriptor for tool-calling. Boo uses this to keep “tool
-		specification” structured (name, description, JSON schema parameters, strictness).
+	Purpose:
+		Extends the generic tool declaration with JSON-schema-like parameters and a
+		strictness flag. This model is used when Foo needs to serialize a callable
+		function definition for provider tool-calling APIs.
 
-		Attributes:
-		----------
-		name: Optional[ str ]
-			Function name as exposed to the model.
-
-		type: Optional[ str ]
-			Type discriminator (commonly "function") when used in tool lists.
-
-		description: Optional[ str ]
-			Human-readable description of the tool/function.
-
-		parameters: Optional[ Dict[ str, Any ] ]
-			JSON Schema-like parameters object describing accepted inputs.
-
-		strict: Optional[ bool ]
-			Whether the upstream should strictly validate arguments against the schema.
-
-	'''
+	Attributes:
+		parameters (Optional[Dict[str, Any]]): JSON-schema-like input definition for the
+			function.
+		strict (Optional[bool]): Whether provider-side argument validation should be strict.
+	"""
 	parameters: Optional[ Dict[ str, Any ] ]
 	strict: Optional[ bool ]
 
 class FileSearch( Tool ):
-	'''
+	"""Represent a file-search tool configuration.
 
-		Purpose:
-		--------
-		Represents configuration for a file-search tool invocation. Boo uses this to keep tool
-		config structured and to support serialization/rehydration of tool configurations.
+	Purpose:
+		Stores configuration for a file-search tool invocation, including the vector stores
+		available to the search operation, result limits, and optional filter criteria.
+		The model supports serialization and rehydration of file-search configurations.
 
-		Attributes:
-		----------
-		type: Optional[ str ]
-			Type discriminator for the tool (commonly "file_search").
-
-		vector_store_ids: Optional[ List[ str ] ]
-			Vector store identifiers available to the search tool.
-
-		max_num_results: Optional[ int ]
-			Maximum number of results to return.
-
-		filters: Optional[ Dict[ str, Any ] ]
-			Optional filter object (metadata filters, namespace filters, etc.).
-
-	'''
+	Attributes:
+		vector_store_ids (Optional[List[str]]): Vector store identifiers available to the
+			search tool.
+		max_num_results (Optional[int]): Maximum number of results to return.
+		filters (Optional[Dict[str, Any]]): Optional metadata or provider-specific filters.
+	"""
 	vector_store_ids: Optional[ List[ str ] ]
 	max_num_results: Optional[ int ]
 	filters: Optional[ Dict[ str, Any ] ]
 
 class WebSearch( Tool ):
-	'''
+	"""Represent a web-search tool configuration.
 
-		Purpose:
-		--------
-		Represents configuration for a web-search tool invocation.
+	Purpose:
+		Stores configuration for a web-search tool invocation. The model captures context
+		size and optional user-location metadata so callers can construct provider search
+		requests in a structured, documented way.
 
-		Attributes:
-		----------
-		type: Optional[ str ]
-			Type discriminator for the tool (commonly "web_search").
-
-		search_context_size: Optional[ str ]
-			Desired context size (vendor-specific; common values are "low", "medium", "high").
-
-		user_location: Optional[ Any ]
-			Optional location descriptor to bias search results. This may be a Location,
-			GeoCoordinates, or a vendor-specific object.
-
-	'''
+	Attributes:
+		type (Optional[str]): Tool type discriminator, commonly ``web_search``.
+		search_context_size (Optional[str]): Desired amount of context returned by the
+			provider, such as ``low``, ``medium``, or ``high``.
+		user_location (Optional[Any]): Optional location descriptor used to bias results.
+	"""
 	type: Optional[ str ]
 	search_context_size: Optional[ str ]
 	user_location: Optional[ Any ]
 
 class ComputerUse( Tool ):
-	'''
+	"""Represent a computer-use tool configuration.
 
-		Purpose:
-		--------
-		Represents configuration for a computer-use tool invocation (UI automation / virtual
-		display sessions).
+	Purpose:
+		Stores virtual display and environment settings for a computer-use or UI automation
+		tool. The model is provider-neutral and supports browser, desktop, or other
+		environment labels when they are available.
 
-		Attributes:
-		----------
-		type: Optional[ str ]
-			Type discriminator for the tool (commonly "computer_use").
-
-		display_height: Optional[ int ]
-			Height (pixels) of the virtual display.
-
-		display_width: Optional[ int ]
-			Width (pixels) of the virtual display.
-
-		environment: Optional[ str ]
-			Environment label (e.g., "browser", "desktop") when supported by the tool provider.
-
-	'''
+	Attributes:
+		type (Optional[str]): Tool type discriminator, commonly ``computer_use``.
+		display_height (Optional[int]): Virtual display height in pixels.
+		display_width (Optional[int]): Virtual display width in pixels.
+		environment (Optional[str]): Provider-specific environment label.
+	"""
 	type: Optional[ str ]
 	display_height: Optional[ int ]
 	display_width: Optional[ int ]

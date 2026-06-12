@@ -19301,42 +19301,25 @@ elif mode == 'Demographic':
 						df_pubmed = pd.DataFrame( table_rows )
 						
 						st.markdown( '#### Results' )
-						st.dataframe(
-							df_pubmed,
-							use_container_width=True,
-							hide_index=True
-						)
+						st.dataframe( df_pubmed, use_container_width=True, hide_index=True )
 						
 						first = items[ 0 ]
-						_render_summary_kv(
-							'#### First Result',
-							{
+						_render_summary_kv( '#### First Result', {
 									'Title': first.get( 'Title', '' ),
 									'Published': first.get( 'Published', '' ),
 									'Copyright': first.get( 'Copyright', '' ),
-							}
-						)
+							} )
 						
 						st.markdown( '#### Abstract Preview' )
 						st.code( str( first.get( 'Summary', '' ) )[ :8000 ] )
 						
 						with st.expander( 'Records', expanded=False ):
 							for item in items:
-								record_label = str(
-									item.get( 'Title', '' )
-									or f"Record {item.get( 'Index', '' )}"
-								)
-								
-								with st.expander(
-										f"Record {item.get( 'Index', '' )}: {record_label}",
-										expanded=False
-								):
-									st.markdown(
-										f"**Published:** {item.get( 'Published', '' )}"
-									)
-									st.markdown(
-										f"**Copyright:** {item.get( 'Copyright', '' )}"
-									)
+								record_label = str( item.get( 'Title', '' ) or f"Record {item.get( 'Index', '' )}" )
+								with st.expander( f"Record {item.get( 'Index', '' )}: {record_label}",
+										expanded=False ):
+									st.markdown( f"**Published:** {item.get( 'Published', '' )}" )
+									st.markdown( f"**Copyright:** {item.get( 'Copyright', '' )}" )
 									st.markdown( '##### Summary' )
 									st.code( str( item.get( 'Summary', '' ) )[ :8000 ] )
 									

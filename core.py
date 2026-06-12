@@ -10,7 +10,7 @@
 	<copyright file="core.py" company="Terry D. Eppler">
 	
 	     Foo is a python framework for web scraping information into ML pipelines.
-	     Copyright ©  2022  Terry Eppler
+	     Copyright ©  2025  Terry Eppler
 	
 	 Permission is hereby granted, free of charge, to any person obtaining a copy
 	 of this software and associated documentation files (the “Software”),
@@ -36,7 +36,13 @@
 	
 	</copyright>
 	<summary>
-	    core.py — lightweight immutable result container and small core helpers
+	    core.py — lightweight immutable result container and small core helpers.
+
+	    Purpose:
+	        Provides shared validation and result-container primitives used by Foo fetchers,
+	        scrapers, loaders, generators, and writer utilities. The module centralizes the
+	        simple required-value guard and the response-backed Result object so higher-level
+	        components can exchange HTTP fetch outcomes through one consistent structure.
 	</summary>
 	******************************************************************************************
 '''
@@ -45,19 +51,20 @@ from typing import Dict, Optional, Any
 from requests import Response
 
 def throw_if( name: str, value: object ) -> None:
-	"""Throw if.
-	
+	"""Validate a required argument.
+
 	Purpose:
-	    Validates that a required argument contains a usable value before the surrounding workflow
-	    continues. This guard centralizes early validation so provider wrappers and UI routines fail
-	    with consistent, readable error messages.
-	
+		Validates that a required argument contains a usable value before the surrounding
+		workflow continues. This guard centralizes early validation so provider wrappers,
+		fetchers, and UI routines fail with consistent and readable error messages.
+
 	Args:
-	    name (str): Name value used by the operation.
-	    value (object): Value value used by the operation.
-	
-	Returns:
-	    None: This function performs its work through side effects and does not return a value."""
+		name (str): Name of the argument being validated.
+		value (object): Argument value to validate.
+
+	Raises:
+		ValueError: Raised when the value is ``None`` or an empty string.
+	"""
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be None.' )
 	
@@ -65,26 +72,21 @@ def throw_if( name: str, value: object ) -> None:
 		raise ValueError( f'Argument "{name}" cannot be empty.' )
 
 class Result( ):
-	"""
+	"""Represent an HTTP response result.
 
-		Purpose:
-		--------
-		Immutable container that represents the outcome of fetching a single
-		page. It stores the canonical URL, http status code, extracted plain
-		text, optional raw HTML, and response headers.
-	
-		Parameters:
-		----------
-		url (str): Canonical URL that was fetched.
-		status_code (int): HTTP status code (use 0 when not applicable).
-		text (str): Extracted plain text content (may be empty).
-		html (Optional[str]): Raw HTML from the response, if available.
-		headers (Optional[Dict[str, str]]): Response headers, if available.
-	
-		Returns:
-		-------
-		None
+	Purpose:
+		Stores the normalized outcome of a single HTTP response in a small object that is
+		easy to inspect, serialize, and pass between Foo components. The container keeps
+		the original response object together with common response fields such as URL,
+		status code, text, encoding, and headers.
 
+	Attributes:
+		url (Optional[str]): Final response URL.
+		status_code (Optional[int]): HTTP status code returned by the server.
+		text (Optional[str]): Response body text.
+		encoding (Optional[str]): Response text encoding reported by ``requests``.
+		headers (Optional[str]): Response headers captured from the source response.
+		response (Optional[Response]): Original ``requests.Response`` object.
 	"""
 	url: Optional[ str ]
 	status_code: Optional[ int ]
@@ -92,26 +94,36 @@ class Result( ):
 	encoding: Optional[ str ]
 	headers: Optional[ str ]
 	response: Optional[ Response ]
-
-	def __init__( self, response: Response ) -> None:
-			self.response = response
-			self.url = response.url
-			self.status_code = response.status_code
-			self.text = response.text
-			self.encoding = response.encoding
-			self.headers = response.headers
-
-	def __dir__( self ) -> list[ str ]:
-		"""
-
-			Purpose:
-			--------
-			Provide a stable ordering of attributes used by GUIs or inspector tooling.
 	
-			Returns:
-			-------
-			list[str]: attribute names in a stable order.
+	def __init__( self, response: Response ) -> None:
+		"""Initialize the result from a response object.
 
+		Purpose:
+			Copies the primary fields from a ``requests.Response`` object into stable
+			instance members. This constructor performs only local assignment and keeps
+			the original response available for callers that need access to the complete
+			upstream response object.
+
+		Args:
+			response (Response): Source response object returned by ``requests``.
+		"""
+		self.response = response
+		self.url = response.url
+		self.status_code = response.status_code
+		self.text = response.text
+		self.encoding = response.encoding
+		self.headers = response.headers
+	
+	def __dir__( self ) -> list[ str ]:
+		"""Return visible member names.
+
+		Purpose:
+			Provides a stable ordering of attributes and methods for interactive use,
+			debugging, documentation surfaces, and UI inspector tooling that displays
+			available result members.
+
+		Returns:
+			Ordered member names exposed by the result container.
 		"""
 		return [ 'url',
 		         'status_code',
@@ -120,50 +132,39 @@ class Result( ):
 		         'headers',
 		         'has_html',
 		         'to_dict',
-		         'from_response']
-
+		         'from_response' ]
+	
 	def to_dict( self ) -> Dict[ str, Any ]:
-		"""
+		"""Convert the result to a dictionary.
 
-			Purpose:
-			--------
-			Produce a plain dictionary representation of the Result for serialization
-			or tests. This copies headers to avoid outside mutations.
-	
-			Parameters:
-			----------
-			None
-	
-			Returns:
-			-------
-			Dict[str, Any]: dictionary with keys url, status_code, text, html, headers
+		Purpose:
+			Produces a plain dictionary representation of the result for serialization,
+			testing, UI display, or downstream processing. Response headers are copied
+			into a standard dictionary so callers receive a detached, JSON-friendly
+			mapping rather than the mutable header object from ``requests``.
 
+		Returns:
+			Dictionary containing the result URL, status code, text, encoding, and headers.
 		"""
 		return \
-		{
-			'url': self.url,
-			'status_code': self.status_code,
-			'text': self.text,
-			'encoding': self.encoding,
-			'headers': dict( self.headers ),
-		}
-
+			{
+					'url': self.url,
+					'status_code': self.status_code,
+					'text': self.text,
+					'encoding': self.encoding,
+					'headers': dict( self.headers ),
+			}
+	
 	@property
 	def has_html( self ) -> bool:
-		"""
+		"""Indicate whether response text is available.
 
-			Purpose:
-			--------
-			Indicate whether the Result includes non-empty HTML content.
-	
-			Parameters:
-			----------
-			None
-	
-			Returns:
-			-------
-			bool: True when html is a non-empty string; otherwise False.
+		Purpose:
+			Reports whether the result contains text content in the response body. The
+			property is used as a lightweight availability check by fetcher, scraper,
+			and writer workflows before rendering or serializing response content.
 
+		Returns:
+			True when response text is represented as a string; otherwise, False.
 		"""
 		return isinstance( self.text, str )
-

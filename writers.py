@@ -11,7 +11,7 @@
 	<copyright file="writers.py" company="Terry D. Eppler">
 
 	     Foo is a python framework for web scraping information into ML pipelines.
-	     Copyright ©  2022  Terry Eppler
+	     Copyright ©  2025  Terry Eppler
 
 	 Permission is hereby granted, free of charge, to any person obtaining a copy
 	 of this software and associated documentation files (the “Software”),
@@ -38,28 +38,36 @@
 	</copyright>
 	<summary>
 	writers.py
+
+	Purpose:
+		Provides Markdown writer utilities used by Foo workflows to persist extracted
+		text and fetch results as documentation-friendly Markdown files. The module
+		contains a base writer for plain text output and a specialized writer that
+		serializes response metadata as YAML front matter followed by the response
+		body.
 	</summary>
 	******************************************************************************************
 '''
 from pathlib import Path
 from typing import Optional
 from core import Result
-from boogr import Error
+from boogr import Error, Logger
 
 def throw_if( name: str, value: object ) -> None:
-	"""Throw if.
+	"""Validate a required argument.
 	
 	Purpose:
-	    Validates that a required argument contains a usable value before the surrounding workflow
-	    continues. This guard centralizes early validation so provider wrappers and UI routines fail
-	    with consistent, readable error messages.
+		Validates that a required argument contains a usable value before the writer
+		workflow continues. This guard centralizes early validation so file-writing
+		operations fail with consistent and readable error messages.
 	
 	Args:
-	    name (str): Name value used by the operation.
-	    value (object): Value value used by the operation.
+		name (str): Name of the argument being validated.
+		value (object): Argument value to validate.
 	
-	Returns:
-	    None: This function performs its work through side effects and does not return a value."""
+	Raises:
+		ValueError: Raised when the value is ``None`` or an empty string.
+	"""
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be None.' )
 	
@@ -67,46 +75,57 @@ def throw_if( name: str, value: object ) -> None:
 		raise ValueError( f'Argument "{name}" cannot be empty.' )
 
 class Writer( ):
-	"""
+	"""Write plain text content to Markdown files.
 
-		Purpose:
-		--------
-		Base class responsible for writing extracted text into a Markdown (.md) file.
+	Purpose:
+		Provides the base Markdown-writing behavior used by Foo output workflows.
+		The class creates the target output directory when needed, writes text using
+		UTF-8 encoding, and stores the resolved output path on the instance for later
+		inspection by callers or UI components.
 
-		Methods:
-		---------
-		write(text: str, file: str, dir: str = "output") -> Optional[Path]:
-		Saves text into a Markdown file in the specified directory.
-
+	Attributes:
+		output_path (Optional[Path]): Directory where the current output file is written.
+		file_path (Optional[Path]): Path of the most recently written Markdown file.
+		result (Optional[Result]): Optional result object retained by subclasses.
+		body (Optional[str]): Optional body text retained by subclasses or callers.
 	"""
 	output_path: Optional[ Path ]
 	file_path: Optional[ Path ]
 	result: Optional[ Result ]
 	body: Optional[ str ]
-
+	
 	def __init__( self ):
+		"""Initialize the writer.
+
+		Purpose:
+			Initializes the writer with empty runtime state for output path, file path,
+			result, and body content. The constructor performs only local assignment and
+			does not touch the filesystem until ``write`` is called.
+		"""
 		self.output_path = None
 		self.file_path = None
 		self.result = None
 		self.body = None
-		
-	def write( self, text: str, filename: str, directory: str='output' ) -> Path | None:
-		"""
+	
+	def write( self, text: str, filename: str, directory: str = 'output' ) -> Path | None:
+		"""Write text to a Markdown file.
 
-			Purpose:
-			---------
-			Save text into a Markdown file.
+		Purpose:
+			Persists a text payload as a UTF-8 Markdown file under the requested output
+			directory. The method validates required inputs, creates the output directory
+			when needed, stores the final file path on the instance, and returns that path
+			to the caller.
 
-			Parameters:
-			---------
+		Args:
 			text (str): Text content to save.
-			filename (str): Desired Markdown file (without extension).
-			output_dir (str): Directory to save the file into.
+			filename (str): Desired Markdown filename without the ``.md`` extension.
+			directory (str): Directory where the Markdown file should be written.
 
-			Returns:
-			---------
-			Optional[Path]: Path to the saved file if successful, otherwise None.
+		Returns:
+			Path to the written Markdown file when the operation succeeds.
 
+		Raises:
+			Error: Re-raised after the source exception is wrapped and logged.
 		"""
 		try:
 			throw_if( 'text', text )
@@ -121,39 +140,48 @@ class Writer( ):
 			exc.module = 'writers'
 			exc.cause = 'Writer'
 			exc.method = 'write( self, text: str, filename: str, directory: str="output" ) -> Path '
+			Logger( ).write( exc )
 			raise exc
 
 class MarkdownWriter( Writer ):
-	"""
+	"""Serialize fetch results as Markdown documents.
 
-		Purpose:
-		Serialize a `Result` into a Markdown file with a small YAML header.
-
-
+	Purpose:
+		Extends the base writer to persist a ``Result`` object as a Markdown file with
+		a compact YAML front matter block. The front matter captures source URL and
+		status code metadata before writing the response text as the Markdown body.
 	"""
 	def __init__( self ):
+		"""Initialize the Markdown result writer.
+
+		Purpose:
+			Initializes the inherited writer state and resets the fields used to track
+			the target output file, source result, and generated body. No filesystem work
+			is performed until ``write`` is called.
+		"""
 		super( ).__init__( )
 		self.output_path = None
 		self.file_path = None
 		self.result = None
 		self.body = None
+	
+	def write( self, result: Result, path: str ) -> Path | None:
+		"""Write a result object to Markdown.
 
-	def write( self, result: Result, path: str  ) -> Path | None:
-		"""
+		Purpose:
+			Writes a ``Result`` object to a Markdown file by creating parent directories,
+			building a YAML front matter block from response metadata, appending the
+			response text body, and returning the absolute output path.
 
-			Purpose:
-			--------
-			Write a `Result` to a Markdown file (front matter + body).
+		Args:
+			result (Result): Result object containing response URL, status code, and text.
+			path (str): Destination file path to write.
 
-			Parameters:
-			-----------
-			result (Result): Result object containing url/status/text/html.
-			path (str | Path): Destination path to write.
+		Returns:
+			Resolved path to the written Markdown file when the operation succeeds.
 
-			Returns:
-			--------
-			Path: The absolute path of the written file.
-
+		Raises:
+			Error: Re-raised after the source exception is wrapped and logged.
 		"""
 		try:
 			throw_if( 'result', result )
@@ -161,10 +189,10 @@ class MarkdownWriter( Writer ):
 			self.file_path = Path( path ).resolve( )
 			self.result = result
 			self.file_path.parent.mkdir( parents=True, exist_ok=True )
-			front_matter =  ('---\n'
-			                 + f'source_url: {self.result.url}\n'
-			                 + f'status_code: {self.result.status_code}\n'
-			                 + '---\n\n')
+			front_matter = ('---\n'
+			                + f'source_url: {self.result.url}\n'
+			                + f'status_code: {self.result.status_code}\n'
+			                + '---\n\n')
 			
 			body = self.result.text if self.result.text.endswith( '\n' ) else self.result.text + '\n'
 			self.file_path.write_text( front_matter + body, encoding='utf-8' )
@@ -174,4 +202,5 @@ class MarkdownWriter( Writer ):
 			exception.module = 'writers'
 			exception.cause = 'MarkdownWriter'
 			exception.method = 'write( self, result: Result, path: str  ) -> Path'
+			Logger( ).write( exception )
 			raise exception
