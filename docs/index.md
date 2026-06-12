@@ -1,4 +1,7 @@
-# Foo Documentation
+![](../images/foo-project.png)
+
+
+#### Foo Documentation
 
 Foo is a Python framework for loading, scraping, fetching, generating, and managing data for machine-learning and analysis workflows.
 

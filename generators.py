@@ -11,7 +11,7 @@
   <copyright file="generators.py" company="Terry D. Eppler">
 
 	     generators.py
-	     Copyright ©  2025  Terry Eppler
+	     Copyright ©  2022  Terry Eppler
 
      Permission is hereby granted, free of charge, to any person obtaining a copy
      of this software and associated documentation files (the “Software”),
@@ -38,13 +38,6 @@
   </copyright>
   <summary>
     generators.py
-
-    Purpose:
-        Provides Foo's generative AI provider wrappers and shared generation utilities.
-        The module centralizes request validation, provider-specific payload construction,
-        model option helpers, response-text extraction, web-search configuration, and
-        structured exception wrapping for OpenAI, xAI Grok, Google Gemini, Anthropic
-        Claude, and Mistral workflows.
   </summary>
   ******************************************************************************************
 '''
@@ -68,20 +61,16 @@ import re
 import urllib
 
 def throw_if( name: str, value: object ) -> None:
-	"""Throw if.
+	"""Perform the throw if operation.
 
 	Purpose:
-			Validates that a required argument contains a usable value before the
-			surrounding workflow continues. This guard centralizes early validation so
-			provider wrappers fail with consistent, readable error messages.
+		Executes the throw if operation using the existing Foo implementation. The method preserves
+		original runtime behavior while exposing documentation compatible with MkDocs.
 
 	Args:
-			name (str): Name value used by the operation.
-			value (object): Value value used by the operation.
-
-	Raises:
-			ValueError: Raised when a required value is missing or empty.
-		"""
+		name (str): Value used by the operation.
+		value (object): Value used by the operation.
+	"""
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be None.' )
 	
@@ -89,43 +78,29 @@ def throw_if( name: str, value: object ) -> None:
 		raise ValueError( f'Argument "{name}" cannot be empty.' )
 
 def encode_image( path: str ) -> str:
-	"""Encode image.
+	"""Perform the encode image operation.
 
 	Purpose:
-			Reads an image file from disk and returns a Base64-encoded string suitable for
-			provider APIs that accept inline image data.
+		Executes the encode image operation using the existing Foo implementation. The method
+		preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 	Args:
-			path (str): Path value used by the operation.
+		path (str): Value used by the operation.
 
 	Returns:
-			Value produced by the operation.
-		"""
+		Result produced by the operation.
+	"""
 	data = Path( path ).read_bytes( )
 	return base64.b64encode( data ).decode( "utf-8" )
 
 class Generator:
-	"""Generator component.
+	"""Represent the Generator component.
 
 	Purpose:
-			Defines the common base contract for Foo generation providers. The class stores
-			shared request, response, header, URL, timeout, result, and query state used by
-			concrete provider wrappers.
-
-	Attributes:
-			timeout (Optional[int]): Runtime state or configuration value maintained by the
-			component.
-			headers (Optional[Dict[str, Any]]): Runtime state or configuration value
-			maintained by the component.
-			response (Optional[Response]): Runtime state or configuration value maintained
-			by the component.
-			url (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			result (Optional[Result]): Runtime state or configuration value maintained by
-			the component.
-			query (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-		"""
+		Provides the Generator object used by Foo workflows. This class keeps its runtime state and
+		public interface available for loading, fetching, generation, scraping, or supporting
+		operations without altering the executable behavior of the original implementation.
+	"""
 	timeout: Optional[ int ]
 	headers: Optional[ Dict[ str, Any ] ]
 	response: Optional[ Response ]
@@ -137,10 +112,9 @@ class Generator:
 		"""Initialize instance.
 
 		Purpose:
-				Initializes the object with default configuration, runtime state, and
-				compatibility fields required by later method calls. The constructor performs
-				local setup and does not execute a provider request.
-			"""
+			Initializes the Generator instance with the default runtime state and configuration required
+			by later method calls. The constructor preserves the original initialization behavior.
+		"""
 		self.timeout = None
 		self.headers = None
 		self.response = None
@@ -149,15 +123,15 @@ class Generator:
 		self.query = None
 	
 	def __dir__( self ) -> list[ str ]:
-		"""Return member names.
+		"""Return visible member names.
 
 		Purpose:
-				Returns a stable ordering of public attributes and methods for interactive
-				inspection, documentation surfaces, and UI member displays.
+			Returns the stable list of public members exposed for introspection, documentation, and UI
+			display.
 
 		Returns:
-				Ordered public member names exposed by the object.
-			"""
+			Result produced by the operation.
+		"""
 		return [ 'timeout',
 		         'headers',
 		         'response',
@@ -167,75 +141,30 @@ class Generator:
 		         'fetch' ]
 	
 	def fetch( self, query: str, url: str, time: int = 10 ) -> Result | None:
-		"""Fetch.
+		"""Perform the fetch operation.
 
 		Purpose:
-				Executes the provider-specific generation or retrieval workflow after validating
-				input values and constructing the request payload required by the underlying
-				provider API.
+			Executes the fetch operation using the existing Foo implementation. The method preserves
+			original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				query (str): Input text submitted to the provider workflow.
-				url (str): Url value used by the operation.
-				time (int): Time value used by the operation.
+			query (str): Value used by the operation.
+			url (str): Value used by the operation.
+			time (int): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				NotImplementedError: Raised when a subclass has not implemented the required
-				operation.
-			"""
+			Result produced by the operation.
+		"""
 		raise NotImplementedError( 'Must be implemented by a subclass.' )
 
 class Grok( Generator ):
-	"""Grok component.
+	"""Represent the Grok component.
 
 	Purpose:
-			Provides xAI Grok text generation and web-search support through provider-
-			specific request construction, response execution, domain normalization, output
-			extraction, and compatibility helper methods.
-
-	Attributes:
-			client (Optional[Xai]): Runtime state or configuration value maintained by the
-			component.
-			model (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			response (Optional[Any]): Runtime state or configuration value maintained by the
-			component.
-			api_key (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			query (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			params (Optional[Dict[str, Any]]): Runtime state or configuration value
-			maintained by the component.
-			temperature (Optional[float]): Runtime state or configuration value maintained
-			by the component.
-			max_tokens (Optional[int]): Runtime state or configuration value maintained by
-			the component.
-			top_p (Optional[float]): Runtime state or configuration value maintained by the
-			component.
-			reasoning_effort (Optional[str]): Runtime state or configuration value
-			maintained by the component.
-			stream (Optional[bool]): Runtime state or configuration value maintained by the
-			component.
-			store (Optional[bool]): Runtime state or configuration value maintained by the
-			component.
-			messages (Optional[List[Dict[str, Any]]]): Runtime state or configuration value
-			maintained by the component.
-			system_instructions (Optional[str]): Runtime state or configuration value
-			maintained by the component.
-			web_search (Optional[bool]): Runtime state or configuration value maintained by
-			the component.
-			search_domains (Optional[List[str]]): Runtime state or configuration value
-			maintained by the component.
-			parallel_tool_calls (Optional[bool]): Runtime state or configuration value
-			maintained by the component.
-			tool_choice (Optional[str]): Runtime state or configuration value maintained by
-			the component.
-			tools (Optional[List[Dict[str, Any]]]): Runtime state or configuration value
-			maintained by the component.
-		"""
+		Provides the Grok object used by Foo workflows. This class keeps its runtime state and
+		public interface available for loading, fetching, generation, scraping, or supporting
+		operations without altering the executable behavior of the original implementation.
+	"""
 	
 	client: Optional[ Xai ]
 	model: Optional[ str ]
@@ -261,10 +190,9 @@ class Grok( Generator ):
 		"""Initialize instance.
 
 		Purpose:
-				Initializes the object with default configuration, runtime state, and
-				compatibility fields required by later method calls. The constructor performs
-				local setup and does not execute a provider request.
-			"""
+			Initializes the Grok instance with the default runtime state and configuration required by
+			later method calls. The constructor preserves the original initialization behavior.
+		"""
 		super( ).__init__( )
 		self.api_key = cfg.XAI_API_KEY
 		self.model = 'grok-4-fast-reasoning'
@@ -291,15 +219,15 @@ class Grok( Generator ):
 		self.stream = False
 	
 	def __dir__( self ) -> List[ str ]:
-		"""Return member names.
+		"""Return visible member names.
 
 		Purpose:
-				Returns a stable ordering of public attributes and methods for interactive
-				inspection, documentation surfaces, and UI member displays.
+			Returns the stable list of public members exposed for introspection, documentation, and UI
+			display.
 
 		Returns:
-				Ordered public member names exposed by the object.
-			"""
+			Result produced by the operation.
+		"""
 		return [
 				'client',
 				'model',
@@ -333,22 +261,18 @@ class Grok( Generator ):
 		]
 	
 	def normalize_domains( self, domains: Any ) -> List[ str ]:
-		"""Normalize domains.
+		"""Perform the normalize domains operation.
 
 		Purpose:
-				Normalizes user-supplied domain values into canonical, de-duplicated domain
-				names suitable for provider web-search restrictions.
+			Executes the normalize domains operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				domains (Any): Optional domain restriction values for provider web-search tools.
+			domains (Any): Value used by the operation.
 
 		Returns:
-				Normalized values suitable for the provider request.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if domains is None:
 				return [ ]
@@ -398,22 +322,19 @@ class Grok( Generator ):
 			raise exception
 	
 	def supports_reasoning_effort( self, model: str ) -> bool:
-		"""Supports reasoning effort.
+		"""Perform the supports reasoning effort operation.
 
 		Purpose:
-				Determines whether the selected provider model supports an explicit reasoning-
-				effort request field.
+			Executes the supports reasoning effort operation using the existing Foo implementation. The
+			method preserves original runtime behavior while exposing documentation compatible with
+			MkDocs.
 
 		Args:
-				model (str): Provider model identifier used for the request.
+			model (str): Value used by the operation.
 
 		Returns:
-				Boolean indicator for the requested provider capability.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'model', model )
 			name = str( model ).strip( ).lower( )
@@ -428,22 +349,19 @@ class Grok( Generator ):
 			raise exception
 	
 	def supports_reasoning_object( self, model: str ) -> bool:
-		"""Supports reasoning object.
+		"""Perform the supports reasoning object operation.
 
 		Purpose:
-				Determines whether the selected provider model supports the provider-specific
-				reasoning object in the request payload.
+			Executes the supports reasoning object operation using the existing Foo implementation. The
+			method preserves original runtime behavior while exposing documentation compatible with
+			MkDocs.
 
 		Args:
-				model (str): Provider model identifier used for the request.
+			model (str): Value used by the operation.
 
 		Returns:
-				Boolean indicator for the requested provider capability.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'model', model )
 			name = str( model ).strip( ).lower( )
@@ -458,22 +376,18 @@ class Grok( Generator ):
 			raise exception
 	
 	def is_reasoning_model( self, model: str ) -> bool:
-		"""Is reasoning model.
+		"""Perform the is reasoning model operation.
 
 		Purpose:
-				Identifies whether the selected model is a reasoning-capable model based on its
-				provider naming convention.
+			Executes the is reasoning model operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				model (str): Provider model identifier used for the request.
+			model (str): Value used by the operation.
 
 		Returns:
-				Boolean indicator for the requested provider capability.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'model', model )
 			name = str( model ).strip( ).lower( )
@@ -494,24 +408,19 @@ class Grok( Generator ):
 	
 	def build_instructions( self, system: str = None,
 			response_format: str = None ) -> str | None:
-		"""Build instructions.
+		"""Perform the build instructions operation.
 
 		Purpose:
-				Builds the final instruction text sent to the provider from system text,
-				requested output format, and optional search context.
+			Executes the build instructions operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			parts: List[ str ] = [ ]
 			
@@ -542,24 +451,19 @@ class Grok( Generator ):
 	
 	def build_tools( self, web_search: bool = False, search_domains: Any = None ) -> List[
 		Dict[ str, Any ] ]:
-		"""Build tools.
+		"""Perform the build tools operation.
 
 		Purpose:
-				Builds provider tool declarations from web-search, grounding, file-search, and
-				vector-store settings supported by the selected provider.
+			Executes the build tools operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				web_search (bool): Web search value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
+			web_search (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			tools: List[ Dict[ str, Any ] ] = [ ]
 			
@@ -588,23 +492,19 @@ class Grok( Generator ):
 	
 	def build_response_format( self, response_format: str = None ) -> Dict[
 		                                                                  str, Any ] | None:
-		"""Build response format.
+		"""Perform the build response format operation.
 
 		Purpose:
-				Builds the provider response-format configuration for plain text, JSON, or
-				schema-guided outputs.
+			Executes the build response format operation using the existing Foo implementation. The
+			method preserves original runtime behavior while exposing documentation compatible with
+			MkDocs.
 
 		Args:
-				response_format (str): Optional response-format or structured-output
-				configuration.
+			response_format (str): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			mode = str( response_format or '' ).strip( ).lower( )
 			
@@ -631,22 +531,18 @@ class Grok( Generator ):
 			raise exception
 	
 	def extract_output_text( self, response: Any ) -> str:
-		"""Extract output text.
+		"""Perform the extract output text operation.
 
 		Purpose:
-				Extracts usable text from provider response shapes while handling common SDK
-				object layouts and fallback representations.
+			Executes the extract output text operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				response (Any): Response value used by the operation.
+			response (Any): Value used by the operation.
 
 		Returns:
-				Text extracted from the provider response.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if response is None:
 				return ''
@@ -730,22 +626,18 @@ class Grok( Generator ):
 			raise exception
 	
 	def create_response( self, payload: Dict[ str, Any ] ) -> Any:
-		"""Create response.
+		"""Perform the create response operation.
 
 		Purpose:
-				Submits a prepared request payload to the xAI Responses API and stores the
-				provider response for later inspection.
+			Executes the create response operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				payload (Dict[str, Any]): Payload value used by the operation.
+			payload (Dict[str, Any]): Value used by the operation.
 
 		Returns:
-				Value produced by the operation.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'payload', payload )
 			
@@ -810,42 +702,33 @@ class Grok( Generator ):
 			web_search: bool = False, search_domains: Any = None,
 			stop: List[ str ] = None, stream: bool = False, store: bool = True,
 			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str | None:
-		"""Fetch.
+		"""Perform the fetch operation.
 
 		Purpose:
-				Executes the provider-specific generation or retrieval workflow after validating
-				input values and constructing the request payload required by the underlying
-				provider API.
+			Executes the fetch operation using the existing Foo implementation. The method preserves
+			original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				query (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
-				reasoning_effort (str): Reasoning effort value used by the operation.
-				web_search (bool): Web search value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				stop (List[str]): Stop value used by the operation.
-				stream (bool): Stream value used by the operation.
-				store (bool): Store value used by the operation.
-				parallel_tool_calls (bool): Optional provider tool configuration.
-				tool_choice (str): Optional provider tool configuration.
+			query (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
+			reasoning_effort (str): Value used by the operation.
+			web_search (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			stop (List[str]): Value used by the operation.
+			stream (bool): Value used by the operation.
+			store (bool): Value used by the operation.
+			parallel_tool_calls (bool): Value used by the operation.
+			tool_choice (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'query', query )
 			throw_if( 'model', model )
@@ -953,41 +836,33 @@ class Grok( Generator ):
 			web_search: bool = False, search_domains: Any = None,
 			stop: List[ str ] = None, stream: bool = False, store: bool = True,
 			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str | None:
-		"""Generate text.
+		"""Perform the generate text operation.
 
 		Purpose:
-				Generates text output by delegating to the provider-specific fetch path while
-				preserving a simplified call surface for text-generation workflows.
+			Executes the generate text operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				query (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
-				reasoning_effort (str): Reasoning effort value used by the operation.
-				web_search (bool): Web search value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				stop (List[str]): Stop value used by the operation.
-				stream (bool): Stream value used by the operation.
-				store (bool): Store value used by the operation.
-				parallel_tool_calls (bool): Optional provider tool configuration.
-				tool_choice (str): Optional provider tool configuration.
+			query (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
+			reasoning_effort (str): Value used by the operation.
+			web_search (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			stop (List[str]): Value used by the operation.
+			stream (bool): Value used by the operation.
+			store (bool): Value used by the operation.
+			parallel_tool_calls (bool): Value used by the operation.
+			tool_choice (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			return self.fetch(
 				query=query,
@@ -1022,39 +897,31 @@ class Grok( Generator ):
 			response_format: str = None, reasoning_effort: str = None,
 			search_domains: Any = None, stream: bool = False, store: bool = True,
 			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str | None:
-		"""Search web.
+		"""Perform the search web operation.
 
 		Purpose:
-				Runs a provider-specific web-search-enabled generation workflow using the
-				configured model and search controls.
+			Executes the search web operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				query (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
-				reasoning_effort (str): Reasoning effort value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				stream (bool): Stream value used by the operation.
-				store (bool): Store value used by the operation.
-				parallel_tool_calls (bool): Optional provider tool configuration.
-				tool_choice (str): Optional provider tool configuration.
+			query (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
+			reasoning_effort (str): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			stream (bool): Value used by the operation.
+			store (bool): Value used by the operation.
+			parallel_tool_calls (bool): Value used by the operation.
+			tool_choice (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			return self.fetch(
 				query=query,
@@ -1084,61 +951,13 @@ class Grok( Generator ):
 			raise exception
 
 class Gemini( Generator ):
-	"""Gemini component.
+	"""Represent the Gemini component.
 
 	Purpose:
-			Provides Google Gemini text generation and grounding support through Gemini-
-			specific configuration building, thinking controls, tool construction, response
-			extraction, and request execution.
-
-	Attributes:
-			api_key (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			client (Optional[Any]): Runtime state or configuration value maintained by the
-			component.
-			model (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			response (Optional[Any]): Runtime state or configuration value maintained by the
-			component.
-			query (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			params (Optional[Dict[str, Any]]): Runtime state or configuration value
-			maintained by the component.
-			temperature (Optional[float]): Runtime state or configuration value maintained
-			by the component.
-			max_tokens (Optional[int]): Runtime state or configuration value maintained by
-			the component.
-			top_p (Optional[float]): Runtime state or configuration value maintained by the
-			component.
-			top_k (Optional[int]): Runtime state or configuration value maintained by the
-			component.
-			candidate_count (Optional[int]): Runtime state or configuration value maintained
-			by the component.
-			seed (Optional[int]): Runtime state or configuration value maintained by the
-			component.
-			system_instructions (Optional[str]): Runtime state or configuration value
-			maintained by the component.
-			response_format (Optional[str]): Runtime state or configuration value maintained
-			by the component.
-			stop_sequences (Optional[List[str]]): Runtime state or configuration value
-			maintained by the component.
-			grounding (Optional[bool]): Runtime state or configuration value maintained by
-			the component.
-			search_domains (Optional[List[str]]): Runtime state or configuration value
-			maintained by the component.
-			reasoning (Optional[bool]): Runtime state or configuration value maintained by
-			the component.
-			thinking_level (Optional[str]): Runtime state or configuration value maintained
-			by the component.
-			thinking_budget (Optional[int]): Runtime state or configuration value maintained
-			by the component.
-			include_thoughts (Optional[bool]): Runtime state or configuration value
-			maintained by the component.
-			tools (Optional[List[Any]]): Runtime state or configuration value maintained by
-			the component.
-			config (Optional[Any]): Runtime state or configuration value maintained by the
-			component.
-		"""
+		Provides the Gemini object used by Foo workflows. This class keeps its runtime state and
+		public interface available for loading, fetching, generation, scraping, or supporting
+		operations without altering the executable behavior of the original implementation.
+	"""
 	
 	api_key: Optional[ str ]
 	client: Optional[ Any ]
@@ -1168,10 +987,9 @@ class Gemini( Generator ):
 		"""Initialize instance.
 
 		Purpose:
-				Initializes the object with default configuration, runtime state, and
-				compatibility fields required by later method calls. The constructor performs
-				local setup and does not execute a provider request.
-			"""
+			Initializes the Gemini instance with the default runtime state and configuration required by
+			later method calls. The constructor preserves the original initialization behavior.
+		"""
 		super( ).__init__( )
 		self.api_key = cfg.GOOGLE_API_KEY
 		self.client = genai.Client( api_key=self.api_key )
@@ -1198,15 +1016,15 @@ class Gemini( Generator ):
 		self.config = None
 	
 	def __dir__( self ) -> List[ str ]:
-		"""Return member names.
+		"""Return visible member names.
 
 		Purpose:
-				Returns a stable ordering of public attributes and methods for interactive
-				inspection, documentation surfaces, and UI member displays.
+			Returns the stable list of public members exposed for introspection, documentation, and UI
+			display.
 
 		Returns:
-				Ordered public member names exposed by the object.
-			"""
+			Result produced by the operation.
+		"""
 		return [
 				'api_key',
 				'client',
@@ -1246,22 +1064,18 @@ class Gemini( Generator ):
 		]
 	
 	def normalize_domains( self, domains: Any ) -> List[ str ]:
-		"""Normalize domains.
+		"""Perform the normalize domains operation.
 
 		Purpose:
-				Normalizes user-supplied domain values into canonical, de-duplicated domain
-				names suitable for provider web-search restrictions.
+			Executes the normalize domains operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				domains (Any): Optional domain restriction values for provider web-search tools.
+			domains (Any): Value used by the operation.
 
 		Returns:
-				Normalized values suitable for the provider request.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if domains is None:
 				return [ ]
@@ -1309,22 +1123,19 @@ class Gemini( Generator ):
 			raise exception
 	
 	def normalize_stop_sequences( self, stop_sequences: Any ) -> List[ str ]:
-		"""Normalize stop sequences.
+		"""Perform the normalize stop sequences operation.
 
 		Purpose:
-				Normalizes stop-sequence input into a clean list of provider-compatible stop
-				strings.
+			Executes the normalize stop sequences operation using the existing Foo implementation. The
+			method preserves original runtime behavior while exposing documentation compatible with
+			MkDocs.
 
 		Args:
-				stop_sequences (Any): Stop sequences value used by the operation.
+			stop_sequences (Any): Value used by the operation.
 
 		Returns:
-				Normalized values suitable for the provider request.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if stop_sequences is None:
 				return [ ]
@@ -1353,22 +1164,19 @@ class Gemini( Generator ):
 			raise exception
 	
 	def supports_thinking_level( self, model: str ) -> bool:
-		"""Supports thinking level.
+		"""Perform the supports thinking level operation.
 
 		Purpose:
-				Determines whether the selected Gemini model supports an explicit thinking-level
-				option.
+			Executes the supports thinking level operation using the existing Foo implementation. The
+			method preserves original runtime behavior while exposing documentation compatible with
+			MkDocs.
 
 		Args:
-				model (str): Provider model identifier used for the request.
+			model (str): Value used by the operation.
 
 		Returns:
-				Boolean indicator for the requested provider capability.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'model', model )
 			return str( model ).strip( ).lower( ).startswith( 'gemini-3' )
@@ -1382,22 +1190,19 @@ class Gemini( Generator ):
 			raise exception
 	
 	def supports_thinking_budget( self, model: str ) -> bool:
-		"""Supports thinking budget.
+		"""Perform the supports thinking budget operation.
 
 		Purpose:
-				Determines whether the selected Gemini model supports an explicit thinking-
-				budget option.
+			Executes the supports thinking budget operation using the existing Foo implementation. The
+			method preserves original runtime behavior while exposing documentation compatible with
+			MkDocs.
 
 		Args:
-				model (str): Provider model identifier used for the request.
+			model (str): Value used by the operation.
 
 		Returns:
-				Boolean indicator for the requested provider capability.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'model', model )
 			return str( model ).strip( ).lower( ).startswith( 'gemini-2.5' )
@@ -1412,27 +1217,22 @@ class Gemini( Generator ):
 	
 	def build_system_instruction( self, system: str = None, response_format: str = None,
 			grounding: bool = False, search_domains: Any = None ) -> str | None:
-		"""Build system instruction.
+		"""Perform the build system instruction operation.
 
 		Purpose:
-				Builds the final Gemini system instruction text from system guidance, response-
-				format requirements, and optional grounding context.
+			Executes the build system instruction operation using the existing Foo implementation. The
+			method preserves original runtime behavior while exposing documentation compatible with
+			MkDocs.
 
 		Args:
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
-				grounding (bool): Grounding value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
+			grounding (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			parts: List[ str ] = [ ]
 			if system and str( system ).strip( ):
@@ -1467,26 +1267,23 @@ class Gemini( Generator ):
 	def build_thinking_config( self, model: str, reasoning: bool = False,
 			thinking_level: str = None, thinking_budget: int | None = None,
 			include_thoughts: bool = False ) -> Any:
-		"""Build thinking config.
+		"""Perform the build thinking config operation.
 
 		Purpose:
-				Builds Gemini thinking configuration from model capability, reasoning flags,
-				thinking level, budget, and thought-inclusion controls.
+			Executes the build thinking config operation using the existing Foo implementation. The
+			method preserves original runtime behavior while exposing documentation compatible with
+			MkDocs.
 
 		Args:
-				model (str): Provider model identifier used for the request.
-				reasoning (bool): Reasoning value used by the operation.
-				thinking_level (str): Thinking level value used by the operation.
-				thinking_budget (int | None): Thinking budget value used by the operation.
-				include_thoughts (bool): Include thoughts value used by the operation.
+			model (str): Value used by the operation.
+			reasoning (bool): Value used by the operation.
+			thinking_level (str): Value used by the operation.
+			thinking_budget (int | None): Value used by the operation.
+			include_thoughts (bool): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if not reasoning:
 				return None
@@ -1531,22 +1328,18 @@ class Gemini( Generator ):
 			raise exception
 	
 	def build_tools( self, grounding: bool = False ) -> List[ Any ]:
-		"""Build tools.
+		"""Perform the build tools operation.
 
 		Purpose:
-				Builds provider tool declarations from web-search, grounding, file-search, and
-				vector-store settings supported by the selected provider.
+			Executes the build tools operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				grounding (bool): Grounding value used by the operation.
+			grounding (bool): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if not grounding:
 				return [ ]
@@ -1572,45 +1365,34 @@ class Gemini( Generator ):
 			reasoning: bool = False, thinking_level: str = None,
 			thinking_budget: int | None = None, include_thoughts: bool = False,
 			response_json_schema: Dict[ str, Any ] = None ) -> Any:
-		"""Build config.
+		"""Perform the build config operation.
 
 		Purpose:
-				Builds the Gemini generation configuration from sampling, token, seed, response-
-				format, safety, thinking, and tool settings.
+			Executes the build config operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				top_k (int | None): Sampling or generation control passed to the provider
-				request.
-				candidate_count (int): Sampling or generation control passed to the provider
-				request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
-				stop_sequences (Any): Stop sequences value used by the operation.
-				grounding (bool): Grounding value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				reasoning (bool): Reasoning value used by the operation.
-				thinking_level (str): Thinking level value used by the operation.
-				thinking_budget (int | None): Thinking budget value used by the operation.
-				include_thoughts (bool): Include thoughts value used by the operation.
-				response_json_schema (Dict[str, Any]): Response json schema value used by the
-				operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			top_k (int | None): Value used by the operation.
+			candidate_count (int): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
+			stop_sequences (Any): Value used by the operation.
+			grounding (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			reasoning (bool): Value used by the operation.
+			thinking_level (str): Value used by the operation.
+			thinking_budget (int | None): Value used by the operation.
+			include_thoughts (bool): Value used by the operation.
+			response_json_schema (Dict[str, Any]): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			config_data: Dict[ str, Any ] = {
 					'temperature': float( temperature ),
@@ -1685,22 +1467,18 @@ class Gemini( Generator ):
 			raise exception
 	
 	def extract_text( self, response: Any ) -> str:
-		"""Extract text.
+		"""Perform the extract text operation.
 
 		Purpose:
-				Extracts usable text from provider response shapes while handling common SDK
-				object layouts and fallback representations.
+			Executes the extract text operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				response (Any): Response value used by the operation.
+			response (Any): Value used by the operation.
 
 		Returns:
-				Text extracted from the provider response.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if response is None:
 				return ''
@@ -1751,47 +1529,35 @@ class Gemini( Generator ):
 			reasoning: bool = False, thinking_level: str = None,
 			thinking_budget: int | None = None, include_thoughts: bool = False,
 			response_json_schema: Dict[ str, Any ] = None ) -> str | None:
-		"""Fetch.
+		"""Perform the fetch operation.
 
 		Purpose:
-				Executes the provider-specific generation or retrieval workflow after validating
-				input values and constructing the request payload required by the underlying
-				provider API.
+			Executes the fetch operation using the existing Foo implementation. The method preserves
+			original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				top_k (int | None): Sampling or generation control passed to the provider
-				request.
-				candidate_count (int): Sampling or generation control passed to the provider
-				request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
-				stop_sequences (Any): Stop sequences value used by the operation.
-				grounding (bool): Grounding value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				reasoning (bool): Reasoning value used by the operation.
-				thinking_level (str): Thinking level value used by the operation.
-				thinking_budget (int | None): Thinking budget value used by the operation.
-				include_thoughts (bool): Include thoughts value used by the operation.
-				response_json_schema (Dict[str, Any]): Response json schema value used by the
-				operation.
+			prompt (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			top_k (int | None): Value used by the operation.
+			candidate_count (int): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
+			stop_sequences (Any): Value used by the operation.
+			grounding (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			reasoning (bool): Value used by the operation.
+			thinking_level (str): Value used by the operation.
+			thinking_budget (int | None): Value used by the operation.
+			include_thoughts (bool): Value used by the operation.
+			response_json_schema (Dict[str, Any]): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
@@ -1848,46 +1614,35 @@ class Gemini( Generator ):
 			reasoning: bool = False, thinking_level: str = None,
 			thinking_budget: int | None = None, include_thoughts: bool = False,
 			response_json_schema: Dict[ str, Any ] = None ) -> str | None:
-		"""Generate text.
+		"""Perform the generate text operation.
 
 		Purpose:
-				Generates text output by delegating to the provider-specific fetch path while
-				preserving a simplified call surface for text-generation workflows.
+			Executes the generate text operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				top_k (int | None): Sampling or generation control passed to the provider
-				request.
-				candidate_count (int): Sampling or generation control passed to the provider
-				request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
-				stop_sequences (Any): Stop sequences value used by the operation.
-				grounding (bool): Grounding value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				reasoning (bool): Reasoning value used by the operation.
-				thinking_level (str): Thinking level value used by the operation.
-				thinking_budget (int | None): Thinking budget value used by the operation.
-				include_thoughts (bool): Include thoughts value used by the operation.
-				response_json_schema (Dict[str, Any]): Response json schema value used by the
-				operation.
+			prompt (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			top_k (int | None): Value used by the operation.
+			candidate_count (int): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
+			stop_sequences (Any): Value used by the operation.
+			grounding (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			reasoning (bool): Value used by the operation.
+			thinking_level (str): Value used by the operation.
+			thinking_budget (int | None): Value used by the operation.
+			include_thoughts (bool): Value used by the operation.
+			response_json_schema (Dict[str, Any]): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			return self.fetch( prompt=prompt, model=model, temperature=temperature,
 				max_tokens=max_tokens, top_p=top_p, top_k=top_k,
@@ -1913,45 +1668,34 @@ class Gemini( Generator ):
 			thinking_level: str = None, thinking_budget: int | None = None,
 			include_thoughts: bool = False,
 			response_json_schema: Dict[ str, Any ] = None ) -> str | None:
-		"""Search web.
+		"""Perform the search web operation.
 
 		Purpose:
-				Runs a provider-specific web-search-enabled generation workflow using the
-				configured model and search controls.
+			Executes the search web operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				top_k (int | None): Sampling or generation control passed to the provider
-				request.
-				candidate_count (int): Sampling or generation control passed to the provider
-				request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
-				stop_sequences (Any): Stop sequences value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				reasoning (bool): Reasoning value used by the operation.
-				thinking_level (str): Thinking level value used by the operation.
-				thinking_budget (int | None): Thinking budget value used by the operation.
-				include_thoughts (bool): Include thoughts value used by the operation.
-				response_json_schema (Dict[str, Any]): Response json schema value used by the
-				operation.
+			prompt (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			top_k (int | None): Value used by the operation.
+			candidate_count (int): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
+			stop_sequences (Any): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			reasoning (bool): Value used by the operation.
+			thinking_level (str): Value used by the operation.
+			thinking_budget (int | None): Value used by the operation.
+			include_thoughts (bool): Value used by the operation.
+			response_json_schema (Dict[str, Any]): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			return self.fetch( prompt=prompt, model=model, temperature=temperature,
 				max_tokens=max_tokens, top_p=top_p, top_k=top_k, candidate_count=candidate_count,
@@ -1969,45 +1713,13 @@ class Gemini( Generator ):
 			raise exception
 
 class Claude( Generator ):
-	"""Claude component.
+	"""Represent the Claude component.
 
 	Purpose:
-			Provides Anthropic Claude text generation and search-oriented helper workflows
-			through Claude-specific request construction, thinking support, domain
-			normalization, and output extraction.
-
-	Attributes:
-			client (Optional[Claude]): Runtime state or configuration value maintained by
-			the component.
-			model (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			response (Optional[Any]): Runtime state or configuration value maintained by the
-			component.
-			api_key (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			messages (Optional[List[Dict[str, Any]]]): Runtime state or configuration value
-			maintained by the component.
-			params (Optional[Dict[str, Any]]): Runtime state or configuration value
-			maintained by the component.
-			temperature (Optional[float]): Runtime state or configuration value maintained
-			by the component.
-			max_tokens (Optional[int]): Runtime state or configuration value maintained by
-			the component.
-			top_p (Optional[float]): Runtime state or configuration value maintained by the
-			component.
-			top_k (Optional[int]): Runtime state or configuration value maintained by the
-			component.
-			thinking_budget (Optional[int]): Runtime state or configuration value maintained
-			by the component.
-			system_instructions (Optional[str]): Runtime state or configuration value
-			maintained by the component.
-			web_search (Optional[bool]): Runtime state or configuration value maintained by
-			the component.
-			search_domains (Optional[List[str]]): Runtime state or configuration value
-			maintained by the component.
-			blocked_domains (Optional[List[str]]): Runtime state or configuration value
-			maintained by the component.
-		"""
+		Provides the Claude object used by Foo workflows. This class keeps its runtime state and
+		public interface available for loading, fetching, generation, scraping, or supporting
+		operations without altering the executable behavior of the original implementation.
+	"""
 	client: Optional[ Claude ]
 	model: Optional[ str ]
 	response: Optional[ Any ]
@@ -2028,10 +1740,9 @@ class Claude( Generator ):
 		"""Initialize instance.
 
 		Purpose:
-				Initializes the object with default configuration, runtime state, and
-				compatibility fields required by later method calls. The constructor performs
-				local setup and does not execute a provider request.
-			"""
+			Initializes the Claude instance with the default runtime state and configuration required by
+			later method calls. The constructor preserves the original initialization behavior.
+		"""
 		super( ).__init__( )
 		self.api_key = cfg.CLAUDE_API_KEY
 		self.url = r'https://api.anthropic.com'
@@ -2058,15 +1769,15 @@ class Claude( Generator ):
 			self.headers[ 'User-Agent' ] = self.agents
 	
 	def __dir__( self ) -> List[ str ]:
-		"""Return member names.
+		"""Return visible member names.
 
 		Purpose:
-				Returns a stable ordering of public attributes and methods for interactive
-				inspection, documentation surfaces, and UI member displays.
+			Returns the stable list of public members exposed for introspection, documentation, and UI
+			display.
 
 		Returns:
-				Ordered public member names exposed by the object.
-			"""
+			Result produced by the operation.
+		"""
 		return [ 'content',
 		         'url',
 		         'client',
@@ -2088,22 +1799,18 @@ class Claude( Generator ):
 		         'blocked_domains' ]
 	
 	def _normalize_domains( self, domains: Any ) -> List[ str ]:
-		"""Normalize domains.
+		"""Perform the  normalize domains operation.
 
 		Purpose:
-				Normalizes user-supplied domain values into canonical, de-duplicated domain
-				names suitable for provider web-search restrictions.
+			Executes the  normalize domains operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				domains (Any): Optional domain restriction values for provider web-search tools.
+			domains (Any): Value used by the operation.
 
 		Returns:
-				Normalized values suitable for the provider request.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if domains is None:
 				return [ ]
@@ -2145,22 +1852,18 @@ class Claude( Generator ):
 			raise exception
 	
 	def _supports_thinking( self, model: str ) -> bool:
-		"""Supports thinking.
+		"""Perform the  supports thinking operation.
 
 		Purpose:
-				Determines whether the selected Claude model supports Claude thinking
-				configuration.
+			Executes the  supports thinking operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				model (str): Provider model identifier used for the request.
+			model (str): Value used by the operation.
 
 		Returns:
-				Value produced by the operation.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'model', model )
 			_name = str( model ).strip( ).lower( )
@@ -2174,22 +1877,18 @@ class Claude( Generator ):
 			raise exception
 	
 	def _extract_text( self, response: Any ) -> str:
-		"""Extract text.
+		"""Perform the  extract text operation.
 
 		Purpose:
-				Extracts usable text from provider response shapes while handling common SDK
-				object layouts and fallback representations.
+			Executes the  extract text operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				response (Any): Response value used by the operation.
+			response (Any): Value used by the operation.
 
 		Returns:
-				Text extracted from the provider response.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if response is None:
 				return ''
@@ -2219,39 +1918,30 @@ class Claude( Generator ):
 			system: str = None, stop_sequences: List[ str ] = None,
 			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
 			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
-		"""Fetch.
+		"""Perform the fetch operation.
 
 		Purpose:
-				Executes the provider-specific generation or retrieval workflow after validating
-				input values and constructing the request payload required by the underlying
-				provider API.
+			Executes the fetch operation using the existing Foo implementation. The method preserves
+			original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				query (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				top_k (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				stop_sequences (List[str]): Stop sequences value used by the operation.
-				thinking (bool): Thinking value used by the operation.
-				thinking_budget (int | None): Thinking budget value used by the operation.
-				web_search (bool): Web search value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				blocked_domains (Any): Optional domain restriction values for provider web-
-				search tools.
+			query (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			top_k (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			stop_sequences (List[str]): Value used by the operation.
+			thinking (bool): Value used by the operation.
+			thinking_budget (int | None): Value used by the operation.
+			web_search (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			blocked_domains (Any): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'query', query )
 			throw_if( 'model', model )
@@ -2341,38 +2031,30 @@ class Claude( Generator ):
 			system: str = None, stop_sequences: List[ str ] = None,
 			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
 			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
-		"""Generate text.
+		"""Perform the generate text operation.
 
 		Purpose:
-				Generates text output by delegating to the provider-specific fetch path while
-				preserving a simplified call surface for text-generation workflows.
+			Executes the generate text operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				query (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				top_k (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				stop_sequences (List[str]): Stop sequences value used by the operation.
-				thinking (bool): Thinking value used by the operation.
-				thinking_budget (int | None): Thinking budget value used by the operation.
-				web_search (bool): Web search value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				blocked_domains (Any): Optional domain restriction values for provider web-
-				search tools.
+			query (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			top_k (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			stop_sequences (List[str]): Value used by the operation.
+			thinking (bool): Value used by the operation.
+			thinking_budget (int | None): Value used by the operation.
+			web_search (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			blocked_domains (Any): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			return self.fetch(
 				query=query,
@@ -2402,37 +2084,29 @@ class Claude( Generator ):
 			system: str = None, stop_sequences: List[ str ] = None,
 			thinking: bool = False, thinking_budget: int | None = None,
 			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
-		"""Search web.
+		"""Perform the search web operation.
 
 		Purpose:
-				Runs a provider-specific web-search-enabled generation workflow using the
-				configured model and search controls.
+			Executes the search web operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				query (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				top_k (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				stop_sequences (List[str]): Stop sequences value used by the operation.
-				thinking (bool): Thinking value used by the operation.
-				thinking_budget (int | None): Thinking budget value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				blocked_domains (Any): Optional domain restriction values for provider web-
-				search tools.
+			query (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			top_k (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			stop_sequences (List[str]): Value used by the operation.
+			thinking (bool): Value used by the operation.
+			thinking_budget (int | None): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			blocked_domains (Any): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			return self.fetch(
 				query=query,
@@ -2458,41 +2132,13 @@ class Claude( Generator ):
 			raise exception
 
 class Mistral( Generator ):
-	"""Mistral component.
+	"""Represent the Mistral component.
 
 	Purpose:
-			Provides Mistral text generation and dynamic tool schema support through
-			Mistral-specific request construction, response execution, and output
-			extraction.
-
-	Attributes:
-			client (Optional[MistralAI]): Runtime state or configuration value maintained by
-			the component.
-			model (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			response (Optional[Any]): Runtime state or configuration value maintained by the
-			component.
-			api_key (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			query (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			params (Optional[Dict[str, Any]]): Runtime state or configuration value
-			maintained by the component.
-			temperature (Optional[float]): Runtime state or configuration value maintained
-			by the component.
-			max_tokens (Optional[int]): Runtime state or configuration value maintained by
-			the component.
-			top_p (Optional[float]): Runtime state or configuration value maintained by the
-			component.
-			messages (Optional[List[Dict[str, Any]]]): Runtime state or configuration value
-			maintained by the component.
-			system_instructions (Optional[str]): Runtime state or configuration value
-			maintained by the component.
-			seed (Optional[int]): Runtime state or configuration value maintained by the
-			component.
-			safe_prompt (Optional[bool]): Runtime state or configuration value maintained by
-			the component.
-		"""
+		Provides the Mistral object used by Foo workflows. This class keeps its runtime state and
+		public interface available for loading, fetching, generation, scraping, or supporting
+		operations without altering the executable behavior of the original implementation.
+	"""
 	client: Optional[ MistralAI ]
 	model: Optional[ str ]
 	response: Optional[ Any ]
@@ -2511,10 +2157,9 @@ class Mistral( Generator ):
 		"""Initialize instance.
 
 		Purpose:
-				Initializes the object with default configuration, runtime state, and
-				compatibility fields required by later method calls. The constructor performs
-				local setup and does not execute a provider request.
-			"""
+			Initializes the Mistral instance with the default runtime state and configuration required
+			by later method calls. The constructor preserves the original initialization behavior.
+		"""
 		super( ).__init__( )
 		self.api_key = cfg.MISTRAL_API_KEY
 		self.model = 'mistral-large-latest'
@@ -2538,15 +2183,15 @@ class Mistral( Generator ):
 			self.headers[ 'User-Agent' ] = self.agents
 	
 	def __dir__( self ) -> List[ str ]:
-		"""Return member names.
+		"""Return visible member names.
 
 		Purpose:
-				Returns a stable ordering of public attributes and methods for interactive
-				inspection, documentation surfaces, and UI member displays.
+			Returns the stable list of public members exposed for introspection, documentation, and UI
+			display.
 
 		Returns:
-				Ordered public member names exposed by the object.
-			"""
+			Result produced by the operation.
+		"""
 		return [
 				'content',
 				'client',
@@ -2570,22 +2215,18 @@ class Mistral( Generator ):
 		]
 	
 	def _extract_text( self, response: Any ) -> str:
-		"""Extract text.
+		"""Perform the  extract text operation.
 
 		Purpose:
-				Extracts usable text from provider response shapes while handling common SDK
-				object layouts and fallback representations.
+			Executes the  extract text operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				response (Any): Response value used by the operation.
+			response (Any): Value used by the operation.
 
 		Returns:
-				Text extracted from the provider response.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if response is None:
 				return ''
@@ -2628,32 +2269,25 @@ class Mistral( Generator ):
 	def fetch( self, query: str, model: str = 'mistral-large-latest', temperature: float = 0.7,
 			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
 			safe_mode: bool = False, system: str = None ) -> str | None:
-		"""Fetch.
+		"""Perform the fetch operation.
 
 		Purpose:
-				Executes the provider-specific generation or retrieval workflow after validating
-				input values and constructing the request payload required by the underlying
-				provider API.
+			Executes the fetch operation using the existing Foo implementation. The method preserves
+			original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				query (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				safe_mode (bool): Safe mode value used by the operation.
-				system (str): Optional system-level instruction text.
+			query (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			safe_mode (bool): Value used by the operation.
+			system (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'query', query )
 			throw_if( 'model', model )
@@ -2703,26 +2337,22 @@ class Mistral( Generator ):
 	
 	def create_schema( self, function: str, tool: str,
 			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""Create schema.
+		"""Perform the create schema operation.
 
 		Purpose:
-				Constructs a dynamic tool schema definition from a function name, service name,
-				description, parameter schema, and required-field list.
+			Executes the create schema operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				function (str): Function value used by the operation.
-				tool (str): Optional provider tool configuration.
-				description (str): Description value used by the operation.
-				parameters (dict): Parameters value used by the operation.
-				required (list[str]): Required value used by the operation.
+			function (str): Value used by the operation.
+			tool (str): Value used by the operation.
+			description (str): Value used by the operation.
+			parameters (dict): Value used by the operation.
+			required (list[str]): Value used by the operation.
 
 		Returns:
-				Value produced by the operation.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
@@ -2758,80 +2388,13 @@ class Mistral( Generator ):
 			raise exception
 
 class Chat( Generator ):
-	"""Chat component.
+	"""Represent the Chat component.
 
 	Purpose:
-			Provides the OpenAI chat and multimodal generation wrapper used by Foo. The
-			class coordinates Responses API request construction, text output extraction,
-			image analysis, document summarization, file search, web search, translation,
-			transcription, and provider option helpers.
-
-	Attributes:
-			api_key (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			client (Optional[OpenAI]): Runtime state or configuration value maintained by
-			the component.
-			system_instructions (Optional[str]): Runtime state or configuration value
-			maintained by the component.
-			model (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			number (Optional[int]): Runtime state or configuration value maintained by the
-			component.
-			temperature (Optional[float]): Runtime state or configuration value maintained
-			by the component.
-			top_percent (Optional[float]): Runtime state or configuration value maintained
-			by the component.
-			frequency_penalty (Optional[float]): Runtime state or configuration value
-			maintained by the component.
-			presence_penalty (Optional[float]): Runtime state or configuration value
-			maintained by the component.
-			max_completion_tokens (Optional[int]): Runtime state or configuration value
-			maintained by the component.
-			store (Optional[bool]): Runtime state or configuration value maintained by the
-			component.
-			stream (Optional[bool]): Runtime state or configuration value maintained by the
-			component.
-			modalities (Optional[List[str]]): Runtime state or configuration value
-			maintained by the component.
-			stops (Optional[List[str]]): Runtime state or configuration value maintained by
-			the component.
-			response_format (Optional[str]): Runtime state or configuration value maintained
-			by the component.
-			reasoning_effort (Optional[str]): Runtime state or configuration value
-			maintained by the component.
-			input_text (Optional[str]): Runtime state or configuration value maintained by
-			the component.
-			id (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			vector_store_ids (Optional[List[str]]): Runtime state or configuration value
-			maintained by the component.
-			metadata (Optional[Dict[str, Any]]): Runtime state or configuration value
-			maintained by the component.
-			tools (Optional[List[Dict[str, Any]]]): Runtime state or configuration value
-			maintained by the component.
-			vector_stores (Optional[Dict[str, str]]): Runtime state or configuration value
-			maintained by the component.
-			web_search (Optional[bool]): Runtime state or configuration value maintained by
-			the component.
-			search_domains (Optional[List[str]]): Runtime state or configuration value
-			maintained by the component.
-			parallel_tool_calls (Optional[bool]): Runtime state or configuration value
-			maintained by the component.
-			tool_choice (Optional[str]): Runtime state or configuration value maintained by
-			the component.
-			request (Optional[Dict[str, Any]]): Runtime state or configuration value
-			maintained by the component.
-			response (Optional[Any]): Runtime state or configuration value maintained by the
-			component.
-			query (Optional[str]): Runtime state or configuration value maintained by the
-			component.
-			image_url (Optional[str]): Runtime state or configuration value maintained by
-			the component.
-			input (Optional[Any]): Runtime state or configuration value maintained by the
-			component.
-			messages (Optional[Any]): Runtime state or configuration value maintained by the
-			component.
-		"""
+		Provides the Chat object used by Foo workflows. This class keeps its runtime state and
+		public interface available for loading, fetching, generation, scraping, or supporting
+		operations without altering the executable behavior of the original implementation.
+	"""
 	
 	api_key: Optional[ str ]
 	client: Optional[ OpenAI ]
@@ -2872,20 +2435,19 @@ class Chat( Generator ):
 		"""Initialize instance.
 
 		Purpose:
-				Initializes the object with default configuration, runtime state, and
-				compatibility fields required by later method calls. The constructor performs
-				local setup and does not execute a provider request.
+			Initializes the Chat instance with the default runtime state and configuration required by
+			later method calls. The constructor preserves the original initialization behavior.
 
 		Args:
-				num (int): Num value used by the operation.
-				temp (float): Temp value used by the operation.
-				top (float): Top value used by the operation.
-				freq (float): Freq value used by the operation.
-				pres (float): Pres value used by the operation.
-				iters (int): Iters value used by the operation.
-				store (bool): Store value used by the operation.
-				stream (bool): Stream value used by the operation.
-			"""
+			num (int): Value used by the operation.
+			temp (float): Value used by the operation.
+			top (float): Value used by the operation.
+			freq (float): Value used by the operation.
+			pres (float): Value used by the operation.
+			iters (int): Value used by the operation.
+			store (bool): Value used by the operation.
+			stream (bool): Value used by the operation.
+		"""
 		super( ).__init__( )
 		self.api_key = cfg.OPENAI_API_KEY
 		self.client = OpenAI( api_key=self.api_key )
@@ -2922,15 +2484,15 @@ class Chat( Generator ):
 		self.messages = None
 	
 	def __dir__( self ) -> List[ str ]:
-		"""Return member names.
+		"""Return visible member names.
 
 		Purpose:
-				Returns a stable ordering of public attributes and methods for interactive
-				inspection, documentation surfaces, and UI member displays.
+			Returns the stable list of public members exposed for introspection, documentation, and UI
+			display.
 
 		Returns:
-				Ordered public member names exposed by the object.
-			"""
+			Result produced by the operation.
+		"""
 		return [
 				'api_key',
 				'client',
@@ -2971,22 +2533,18 @@ class Chat( Generator ):
 		]
 	
 	def normalize_domains( self, domains: Any ) -> List[ str ]:
-		"""Normalize domains.
+		"""Perform the normalize domains operation.
 
 		Purpose:
-				Normalizes user-supplied domain values into canonical, de-duplicated domain
-				names suitable for provider web-search restrictions.
+			Executes the normalize domains operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				domains (Any): Optional domain restriction values for provider web-search tools.
+			domains (Any): Value used by the operation.
 
 		Returns:
-				Normalized values suitable for the provider request.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if domains is None:
 				return [ ]
@@ -3037,22 +2595,18 @@ class Chat( Generator ):
 			raise exception
 	
 	def supports_reasoning( self, model: str ) -> bool:
-		"""Supports reasoning.
+		"""Perform the supports reasoning operation.
 
 		Purpose:
-				Determines whether the selected model supports explicit reasoning configuration
-				in the request payload.
+			Executes the supports reasoning operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				model (str): Provider model identifier used for the request.
+			model (str): Value used by the operation.
 
 		Returns:
-				Boolean indicator for the requested provider capability.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'model', model )
 			name = str( model ).strip( ).lower( )
@@ -3069,27 +2623,21 @@ class Chat( Generator ):
 	def build_instructions( self, system: str = None,
 			response_format: str = None, web_search: bool = False,
 			search_domains: Any = None ) -> str | None:
-		"""Build instructions.
+		"""Perform the build instructions operation.
 
 		Purpose:
-				Builds the final instruction text sent to the provider from system text,
-				requested output format, and optional search context.
+			Executes the build instructions operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				system (str): Optional system-level instruction text.
-				response_format (str): Optional response-format or structured-output
-				configuration.
-				web_search (bool): Web search value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
+			system (str): Value used by the operation.
+			response_format (str): Value used by the operation.
+			web_search (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			parts: List[ str ] = [ ]
 			
@@ -3129,27 +2677,21 @@ class Chat( Generator ):
 	def build_text_format( self, response_format: str | Dict[ str, Any ] = None,
 			json_schema: Dict[ str, Any ] = None, schema_name: str = 'structured_response',
 			schema_description: str = 'Structured JSON response.' ) -> Dict[ str, Any ] | None:
-		"""Build text format.
+		"""Perform the build text format operation.
 
 		Purpose:
-				Builds the OpenAI Responses API text-format configuration for plain text, JSON
-				object output, or schema-constrained structured responses.
+			Executes the build text format operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				response_format (str | Dict[str, Any]): Optional response-format or structured-
-				output configuration.
-				json_schema (Dict[str, Any]): Optional response-format or structured-output
-				configuration.
-				schema_name (str): Schema name value used by the operation.
-				schema_description (str): Schema description value used by the operation.
+			response_format (str | Dict[str, Any]): Value used by the operation.
+			json_schema (Dict[str, Any]): Value used by the operation.
+			schema_name (str): Value used by the operation.
+			schema_description (str): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if isinstance( response_format, dict ):
 				return response_format
@@ -3192,27 +2734,22 @@ class Chat( Generator ):
 	def build_tools( self, web_search: bool = False, search_domains: Any = None,
 			file_search: bool = False, vector_store_ids: List[ str ] = None,
 			max_file_results: int = 20 ) -> List[ Dict[ str, Any ] ]:
-		"""Build tools.
+		"""Perform the build tools operation.
 
 		Purpose:
-				Builds provider tool declarations from web-search, grounding, file-search, and
-				vector-store settings supported by the selected provider.
+			Executes the build tools operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				web_search (bool): Web search value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				file_search (bool): File search value used by the operation.
-				vector_store_ids (List[str]): Vector store ids value used by the operation.
-				max_file_results (int): Max file results value used by the operation.
+			web_search (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			file_search (bool): Value used by the operation.
+			vector_store_ids (List[str]): Value used by the operation.
+			max_file_results (int): Value used by the operation.
 
 		Returns:
-				Provider-compatible request configuration produced from the supplied options.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			tools: List[ Dict[ str, Any ] ] = [ ]
 			
@@ -3245,22 +2782,18 @@ class Chat( Generator ):
 			raise exception
 	
 	def extract_output_text( self, response: Any ) -> str:
-		"""Extract output text.
+		"""Perform the extract output text operation.
 
 		Purpose:
-				Extracts usable text from provider response shapes while handling common SDK
-				object layouts and fallback representations.
+			Executes the extract output text operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				response (Any): Response value used by the operation.
+			response (Any): Value used by the operation.
 
 		Returns:
-				Text extracted from the provider response.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			if response is None:
 				return ''
@@ -3328,45 +2861,35 @@ class Chat( Generator ):
 			json_schema: Dict[ str, Any ] = None,
 			schema_name: str = 'structured_response',
 			schema_description: str = 'Structured JSON response.' ) -> str:
-		"""Fetch.
+		"""Perform the fetch operation.
 
 		Purpose:
-				Executes the provider-specific generation or retrieval workflow after validating
-				input values and constructing the request payload required by the underlying
-				provider API.
+			Executes the fetch operation using the existing Foo implementation. The method preserves
+			original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str | Dict[str, Any]): Optional response-format or structured-
-				output configuration.
-				reasoning_effort (str): Reasoning effort value used by the operation.
-				web_search (bool): Web search value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				store (bool): Store value used by the operation.
-				stream (bool): Stream value used by the operation.
-				parallel_tool_calls (bool): Optional provider tool configuration.
-				tool_choice (str): Optional provider tool configuration.
-				json_schema (Dict[str, Any]): Optional response-format or structured-output
-				configuration.
-				schema_name (str): Schema name value used by the operation.
-				schema_description (str): Schema description value used by the operation.
+			prompt (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str | Dict[str, Any]): Value used by the operation.
+			reasoning_effort (str): Value used by the operation.
+			web_search (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			store (bool): Value used by the operation.
+			stream (bool): Value used by the operation.
+			parallel_tool_calls (bool): Value used by the operation.
+			tool_choice (str): Value used by the operation.
+			json_schema (Dict[str, Any]): Value used by the operation.
+			schema_name (str): Value used by the operation.
+			schema_description (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
@@ -3466,42 +2989,33 @@ class Chat( Generator ):
 			search_domains: Any = None, store: bool = True, stream: bool = False,
 			parallel_tool_calls: bool = True, tool_choice: str = 'auto',
 			json_schema: Dict[ str, Any ] = None ) -> str:
-		"""Generate text.
+		"""Perform the generate text operation.
 
 		Purpose:
-				Generates text output by delegating to the provider-specific fetch path while
-				preserving a simplified call surface for text-generation workflows.
+			Executes the generate text operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str | Dict[str, Any]): Optional response-format or structured-
-				output configuration.
-				reasoning_effort (str): Reasoning effort value used by the operation.
-				web_search (bool): Web search value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				store (bool): Store value used by the operation.
-				stream (bool): Stream value used by the operation.
-				parallel_tool_calls (bool): Optional provider tool configuration.
-				tool_choice (str): Optional provider tool configuration.
-				json_schema (Dict[str, Any]): Optional response-format or structured-output
-				configuration.
+			prompt (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str | Dict[str, Any]): Value used by the operation.
+			reasoning_effort (str): Value used by the operation.
+			web_search (bool): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			store (bool): Value used by the operation.
+			stream (bool): Value used by the operation.
+			parallel_tool_calls (bool): Value used by the operation.
+			tool_choice (str): Value used by the operation.
+			json_schema (Dict[str, Any]): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			return self.fetch( prompt=prompt, model=model, temperature=temperature,
 				max_tokens=max_tokens, top_p=top_p, seed=seed, system=system,
@@ -3519,22 +3033,18 @@ class Chat( Generator ):
 			raise exception
 	
 	def generate_image( self, prompt: str ) -> str:
-		"""Generate image.
+		"""Perform the generate image operation.
 
 		Purpose:
-				Generates an image from a prompt using the configured OpenAI image workflow and
-				returns the generated image reference or payload.
+			Executes the generate image operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
+			prompt (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'prompt', prompt )
 			self.input_text = prompt
@@ -3561,23 +3071,19 @@ class Chat( Generator ):
 			raise exception
 	
 	def analyze_image( self, prompt: str, url: str ) -> str:
-		"""Analyze image.
+		"""Perform the analyze image operation.
 
 		Purpose:
-				Analyzes an image with a text prompt by building a multimodal request and
-				returning the provider text response.
+			Executes the analyze image operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
-				url (str): Url value used by the operation.
+			prompt (str): Value used by the operation.
+			url (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'url', url )
@@ -3613,23 +3119,19 @@ class Chat( Generator ):
 			raise exception
 	
 	def summarize_document( self, prompt: str, path: str ) -> str:
-		"""Summarize document.
+		"""Perform the summarize document operation.
 
 		Purpose:
-				Summarizes a document by uploading or referencing file content and submitting a
-				document-aware provider request.
+			Executes the summarize document operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
-				path (str): Path value used by the operation.
+			prompt (str): Value used by the operation.
+			path (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'path', path )
@@ -3677,39 +3179,31 @@ class Chat( Generator ):
 			reasoning_effort: str = None, search_domains: Any = None,
 			store: bool = True, stream: bool = False, parallel_tool_calls: bool = True,
 			tool_choice: str = 'auto' ) -> str:
-		"""Search web.
+		"""Perform the search web operation.
 
 		Purpose:
-				Runs a provider-specific web-search-enabled generation workflow using the
-				configured model and search controls.
+			Executes the search web operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
-				model (str): Provider model identifier used for the request.
-				temperature (float): Sampling or generation control passed to the provider
-				request.
-				max_tokens (int): Sampling or generation control passed to the provider request.
-				top_p (float): Sampling or generation control passed to the provider request.
-				seed (int | None): Sampling or generation control passed to the provider
-				request.
-				system (str): Optional system-level instruction text.
-				response_format (str | Dict[str, Any]): Optional response-format or structured-
-				output configuration.
-				reasoning_effort (str): Reasoning effort value used by the operation.
-				search_domains (Any): Optional domain restriction values for provider web-search
-				tools.
-				store (bool): Store value used by the operation.
-				stream (bool): Stream value used by the operation.
-				parallel_tool_calls (bool): Optional provider tool configuration.
-				tool_choice (str): Optional provider tool configuration.
+			prompt (str): Value used by the operation.
+			model (str): Value used by the operation.
+			temperature (float): Value used by the operation.
+			max_tokens (int): Value used by the operation.
+			top_p (float): Value used by the operation.
+			seed (int | None): Value used by the operation.
+			system (str): Value used by the operation.
+			response_format (str | Dict[str, Any]): Value used by the operation.
+			reasoning_effort (str): Value used by the operation.
+			search_domains (Any): Value used by the operation.
+			store (bool): Value used by the operation.
+			stream (bool): Value used by the operation.
+			parallel_tool_calls (bool): Value used by the operation.
+			tool_choice (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			return self.fetch( prompt=prompt, model=model, temperature=temperature,
 				max_tokens=max_tokens,
@@ -3735,22 +3229,18 @@ class Chat( Generator ):
 			raise exception
 	
 	def search_files( self, prompt: str ) -> str:
-		"""Search files.
+		"""Perform the search files operation.
 
 		Purpose:
-				Searches provider-managed files or vector stores with the supplied prompt and
-				returns the generated text response.
+			Executes the search files operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				prompt (str): Input text submitted to the provider workflow.
+			prompt (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'prompt', prompt )
 			self.query = prompt
@@ -3777,22 +3267,18 @@ class Chat( Generator ):
 			raise exception
 	
 	def translate( self, text: str ) -> str:
-		"""Translate.
+		"""Perform the translate operation.
 
 		Purpose:
-				Translates the supplied text through the provider workflow configured for
-				translation-style output.
+			Executes the translate operation using the existing Foo implementation. The method preserves
+			original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				text (str): Input text submitted to the provider workflow.
+			text (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'text', text )
 			return self.fetch(
@@ -3813,22 +3299,18 @@ class Chat( Generator ):
 			raise exception
 	
 	def transcribe( self, text: str ) -> str:
-		"""Transcribe.
+		"""Perform the transcribe operation.
 
 		Purpose:
-				Transcribes the supplied text or audio-related input through the provider
-				workflow configured for transcription-style output.
+			Executes the transcribe operation using the existing Foo implementation. The method
+			preserves original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Args:
-				text (str): Input text submitted to the provider workflow.
+			text (str): Value used by the operation.
 
 		Returns:
-				Provider response content produced by the requested workflow.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			throw_if( 'text', text )
 			return text
@@ -3842,25 +3324,27 @@ class Chat( Generator ):
 			raise exception
 	
 	def get_format_options( self ) -> List[ str ]:
-		"""Get format options.
+		"""Return get format options.
 
 		Purpose:
-				Returns the response-format options exposed to the Foo user interface.
+			Returns configured option values exposed by this component for selection, validation, or
+			display.
 
 		Returns:
-				Configured values or option names used by the Foo interface.
-			"""
+			Result produced by the operation.
+		"""
 		return [ 'auto', 'text', 'json', 'json_schema' ]
 	
 	def get_model_options( self ) -> List[ str ]:
-		"""Get model options.
+		"""Return get model options.
 
 		Purpose:
-				Returns the provider model options exposed to the Foo user interface.
+			Returns configured option values exposed by this component for selection, validation, or
+			display.
 
 		Returns:
-				Configured values or option names used by the Foo interface.
-			"""
+			Result produced by the operation.
+		"""
 		if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS:
 			return list( cfg.GPT_MODELS )
 		
@@ -3875,26 +3359,27 @@ class Chat( Generator ):
 		]
 	
 	def get_effort_options( self ) -> List[ str ]:
-		"""Get effort options.
+		"""Return get effort options.
 
 		Purpose:
-				Returns the reasoning-effort options exposed to the Foo user interface.
+			Returns configured option values exposed by this component for selection, validation, or
+			display.
 
 		Returns:
-				Configured values or option names used by the Foo interface.
-			"""
+			Result produced by the operation.
+		"""
 		return [ 'minimal', 'low', 'medium', 'high' ]
 	
 	def get_data( self ) -> Dict[ str, Any ]:
-		"""Get data.
+		"""Perform the get data operation.
 
 		Purpose:
-				Returns a structured snapshot of the wrapper state for diagnostics, display, or
-				serialization.
+			Executes the get data operation using the existing Foo implementation. The method preserves
+			original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Returns:
-				Configured values or option names used by the Foo interface.
-			"""
+			Result produced by the operation.
+		"""
 		return {
 				'num': self.number,
 				'model': self.model,
@@ -3916,19 +3401,15 @@ class Chat( Generator ):
 		}
 	
 	def dump( self ) -> str:
-		"""Dump.
+		"""Perform the dump operation.
 
 		Purpose:
-				Serializes the wrapper state into a JSON string for diagnostics, display, or
-				persistence.
+			Executes the dump operation using the existing Foo implementation. The method preserves
+			original runtime behavior while exposing documentation compatible with MkDocs.
 
 		Returns:
-				Value produced by the operation.
-
-		Raises:
-				Error: Re-raised after the source exception is wrapped with structured Foo
-				diagnostic metadata.
-			"""
+			Result produced by the operation.
+		"""
 		try:
 			return str( self.get_data( ) )
 		

@@ -19044,20 +19044,17 @@ class ClimateData( Fetcher ):
 		try:
 			throw_if( 'start_date', start_date )
 			throw_if( 'end_date', end_date )
-			
 			start_value = str( start_date ).strip( )
 			end_value = str( end_date ).strip( )
-			
 			if start_value > end_value:
 				raise ValueError( 'start_date must be on or before end_date.' )
 			
 			return start_value, end_value
-		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
-			exception.method = 'validate_date_range( self, *args, **kwargs ) -> Tuple[ str, str ]' )
+			exception.method = 'validate_date_range( self, *args, **kwargs ) -> Tuple[ str, str ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -19081,11 +19078,7 @@ class ClimateData( Fetcher ):
 				return [ ]
 			
 			if isinstance( payload, list ):
-				return [
-						item
-						for item in payload
-						if isinstance( item, dict )
-				]
+				return [ item for item in payload if isinstance( item, dict ) ]
 			
 			if not isinstance( payload, dict ):
 				return [ ]
@@ -19094,11 +19087,7 @@ class ClimateData( Fetcher ):
 				value = payload.get( key, None )
 				
 				if isinstance( value, list ):
-					return [
-							item
-							for item in value
-							if isinstance( item, dict )
-					]
+					return [ item for item in value if isinstance( item, dict ) ]
 			
 			return [ payload ]
 		
@@ -19106,9 +19095,7 @@ class ClimateData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
-			exception.method = (
-					'coalesce_records( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
-			)
+			exception.method = 'coalesce_records( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -19158,10 +19145,7 @@ class ClimateData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
-			exception.method = (
-					'shape_dataset_rows( self, *args, **kwargs ) '
-					'-> List[ Dict[ str, Any ] ]'
-			)
+			exception.method = 'shape_dataset_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -19223,19 +19207,15 @@ class ClimateData( Fetcher ):
 			first_dataset = ''
 			
 			if rows:
-				first_title = str(
-					rows[ 0 ].get( 'Title', '' )
+				first_title = str( rows[ 0 ].get( 'Title', '' )
 					or rows[ 0 ].get( 'Station', '' )
 					or rows[ 0 ].get( 'Date', '' )
 					or rows[ 0 ].get( 'Start Date', '' )
-					or ''
-				)
-				first_dataset = str(
-					rows[ 0 ].get( 'Dataset', '' )
+					or '' )
+				first_dataset = str( rows[ 0 ].get( 'Dataset', '' )
 					or rows[ 0 ].get( 'Datatype', '' )
 					or rows[ 0 ].get( 'Data Type', '' )
-					or ''
-				)
+					or '' )
 			
 			return {
 					'count': count,
@@ -19277,14 +19257,11 @@ class ClimateData( Fetcher ):
 			}
 			
 			return self.result
-		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
-			exception.method = (
-					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -19331,7 +19308,6 @@ class ClimateData( Fetcher ):
 			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
 				timeout=self.timeout )
 			self.response.raise_for_status( )
-			
 			content_type = str( self.response.headers.get( 'Content-Type', '' ) ).lower( )
 			if 'application/json' in content_type:
 				self.payload = self.response.json( ) or { }
@@ -19399,9 +19375,7 @@ class ClimateData( Fetcher ):
 					'endDate': self.end_date,
 					'limit': self.limit,
 					'offset': self.offset
-			},
-				time=self.timeout )
-			
+			}, time=self.timeout )
 			records = self.coalesce_records( self.payload )
 			rows = self.shape_dataset_rows( records )
 			return self.package_response( rows )
@@ -19506,14 +19480,8 @@ class ClimateData( Fetcher ):
 			self.mode = str( mode or 'datasets' ).strip( ).lower( )
 			
 			if self.mode == 'datasets':
-				return self.fetch_datasets(
-					keyword=keyword,
-					start_date=start_date,
-					end_date=end_date,
-					limit=limit,
-					offset=offset,
-					time=time
-				)
+				return self.fetch_datasets( keyword=keyword, start_date=start_date,
+					end_date=end_date, limit=limit, offset=offset, time=time )
 			
 			if self.mode == 'data':
 				return self.fetch_data( dataset=dataset, start_date=start_date, end_date=end_date,
@@ -19557,9 +19525,7 @@ class ClimateData( Fetcher ):
 			throw_if( 'parameters', parameters )
 			
 			if not isinstance( parameters, dict ):
-				raise ValueError(
-					'parameters must be a dict of param_name -> schema definition.'
-				)
+				raise ValueError( 'parameters must be a dict of param_name -> schema definition.' )
 			
 			if required is None:
 				required = list( parameters.keys( ) )
@@ -19581,9 +19547,7 @@ class ClimateData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'ClimateData'
-			exception.method = (
-					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
-			)
+			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			Logger( ).write( exception )
 			raise exception
 

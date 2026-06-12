@@ -5,38 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="649d1b1c-e24f-435b-9576-30e7d61c1f89" name="Changes" comment="updates">
-      <change afterPath="$PROJECT_DIR$/.github/workflows/docs.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/api/core.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/api/data.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/api/fetchers.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/api/generators.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/api/index.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/api/loaders.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/api/models.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/api/scrapers.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/api/writers.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/architecture.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/assets/stylesheets/foo.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/data-management.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/development.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/fetching-scraping.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/generators.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/github-pages.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/index.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/loading.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/user-guide.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mkdocs.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/boogr/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/boogr/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core.py" beforeDir="false" afterPath="$PROJECT_DIR$/core.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/index.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/index.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/fetchers.py" beforeDir="false" afterPath="$PROJECT_DIR$/fetchers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/generators.py" beforeDir="false" afterPath="$PROJECT_DIR$/generators.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/loaders.py" beforeDir="false" afterPath="$PROJECT_DIR$/loaders.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrapers.py" beforeDir="false" afterPath="$PROJECT_DIR$/scrapers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/writers.py" beforeDir="false" afterPath="$PROJECT_DIR$/writers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements-docs.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements-docs.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -137,7 +111,7 @@
       <workItem from="1779654965957" duration="9637000" />
       <workItem from="1779691287422" duration="25157000" />
       <workItem from="1781264148381" duration="29000" />
-      <workItem from="1781265470013" duration="4945000" />
+      <workItem from="1781265470013" duration="10004000" />
     </task>
     <task id="LOCAL-00001" summary="updates">
       <option name="closed" value="true" />
@@ -459,7 +433,15 @@
       <option name="project" value="LOCAL" />
       <updated>1781266163757</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="updates">
+      <option name="closed" value="true" />
+      <created>1781272440881</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1781272440881</updated>
+    </task>
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
