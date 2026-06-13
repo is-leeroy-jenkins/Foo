@@ -1,4 +1,4 @@
-![](./images/foo-project.png)
+![](./images/foo_logo.png)
 
 ## ✨ Features
 
