@@ -5,12 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="649d1b1c-e24f-435b-9576-30e7d61c1f89" name="Changes" comment="updates">
-      <change afterPath="$PROJECT_DIR$/docs/generation.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/docs.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/docs.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/api/app.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/app.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/generators.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/github-pages.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/github-pages.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/user-guide.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/user-guide.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/github-pages.md" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/mkdocs.yml" beforeDir="false" afterPath="$PROJECT_DIR$/mkdocs.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -118,15 +115,7 @@
       <workItem from="1779654965957" duration="9637000" />
       <workItem from="1779691287422" duration="25157000" />
       <workItem from="1781264148381" duration="29000" />
-      <workItem from="1781265470013" duration="17209000" />
-    </task>
-    <task id="LOCAL-00002" summary="updates">
-      <option name="closed" value="true" />
-      <created>1776272164547</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1776272164547</updated>
+      <workItem from="1781265470013" duration="18630000" />
     </task>
     <task id="LOCAL-00003" summary="updates">
       <option name="closed" value="true" />
@@ -512,7 +501,15 @@
       <option name="project" value="LOCAL" />
       <updated>1781302652423</updated>
     </task>
-    <option name="localTasksCounter" value="51" />
+    <task id="LOCAL-00051" summary="updates">
+      <option name="closed" value="true" />
+      <created>1781303478874</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1781303478874</updated>
+    </task>
+    <option name="localTasksCounter" value="52" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
