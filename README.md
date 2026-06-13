@@ -29,7 +29,9 @@ supports local files, web pages, public archives, Google services, government da
 geospatial APIs, environmental APIs, astronomical APIs, demographic APIs, and multiple LLM
 providers.
 
+- Oficial Documentation
 
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue?logo=github)](https://is-leeroy-jenkins.github.io/Foo/)
 
 ## 🎥 Demo
 
