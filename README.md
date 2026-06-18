@@ -40,24 +40,22 @@ ___
 
 ## 🧊 Azure
 
-- Container App
-
 [![Containerized](https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white)](https://foo.internal.jollyground-d0d90837.eastus.azurecontainerapps.io)
 
+- Container App
 
 ## 🔥 Streamlit
 
-- A Python framework to build dynamic, interactive web applications.
-
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
 
+- A Python framework to build dynamic, interactive web applications.
 
 ## 🧱 Databricks
 
+[![Foo](https://img.shields.io/badge/Databricks-Foo-FF3621?logo=databricks&logoColor=white)](https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152437678?o=7474645703081351)
+
 - A data engineering, analytics, and artificial intelligence collaborative workspace
 - Codebase
-
-[![Foo](https://img.shields.io/badge/Databricks-Foo-FF3621?logo=databricks&logoColor=white)](https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152437678?o=7474645703081351)
 
 ## ✨ Features
 
