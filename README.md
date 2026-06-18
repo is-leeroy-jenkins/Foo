@@ -37,8 +37,7 @@ providers.
 
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo-demo.gif)
 
-
-## 🕸️ Streamlit (Web)
+## 🔥 Streamlit
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
 - A Python framework to build dynamic, interactive web applications.
