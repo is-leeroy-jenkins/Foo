@@ -1,7 +1,7 @@
 ###### foo
 
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo_project.png)
-<p align="center">
+<p align="left">
   <a href="#-features">Features</a> ·
   <a href="#-application-modes">Modes</a> ·
   <a href="#%EF%B8%8F-architecture">Architecture</a> ·
@@ -29,9 +29,9 @@ supports local files, web pages, public archives, Google services, government da
 geospatial APIs, environmental APIs, astronomical APIs, demographic APIs, and multiple LLM
 providers.
 
-- Oficial Documentation
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-0078FC?style=for-the-badge&logo=github)](https://is-leeroy-jenkins.github.io/Foo/)
 
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue?logo=github)](https://is-leeroy-jenkins.github.io/Foo/)
+
 
 ## 🎥 Demo
 
