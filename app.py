@@ -3309,8 +3309,8 @@ if mode == 'Loading':
 					key='crawl_domain_lock', )
 				
 				col_run, col_clear, col_save = st.columns( 3 )
-				run_crawl = col_run.button( 'Load', key='crawl_run' )
-				clear_crawl = col_clear.button( 'Clear', key='crawl_clear' )
+				run_crawl = col_run.button( 'Load', key='crawl_run', icon='🏃', )
+				clear_crawl = col_clear.button( 'Clear', key='crawl_clear', icon='🧹', )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'WebCrawler' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3375,8 +3375,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_email = col_load.button( 'Load', key='email_load' )
-				clear_email = col_clear.button( 'Clear', key='email_clear' )
+				load_email = col_load.button( 'Load', key='email_load', icon='📤', )
+				clear_email = col_clear.button( 'Clear', key='email_clear', icon='🧹', )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'EmailLoader' and
 				            isinstance(
@@ -3578,16 +3578,15 @@ if mode == 'Loading':
 					placeholder='OneDrive drive identifier', )
 				
 				onedrive_folder_path = st.text_input( 'Folder Path', value='',
-					key='onedrive_folder_path', placeholder='Optional folder path within the '
-					                                        'drive',
+					key='onedrive_folder_path', placeholder='Optional folder path within the drive',
 					help='Leave blank to load the drive target directly.', )
 				
 				# --------------------------------------------------
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_onedrive = col_load.button( 'Load', key='onedrive_load' )
-				clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear' )
+				load_onedrive = col_load.button( 'Load', key='onedrive_load', icon='📤', )
+				clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear', icon='🧹', )
 				
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'OneDriveDocLoader' and isinstance(
@@ -3667,7 +3666,7 @@ if mode == 'Loading':
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
 				load_gcs_file = col_load.button( 'Load', key='gcs_file_load' )
-				clear_gcs_file = col_clear.button( 'Clear', key='gcs_file_clear' )
+				clear_gcs_file = col_clear.button( 'Clear', key='gcs_file_clear', icon='🧹', )
 				
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'GoogleCloudFileLoader' and isinstance(
