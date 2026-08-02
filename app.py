@@ -2368,9 +2368,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_word = col_load.button( 'Load', key='word_load' )
-				clear_word = col_clear.button( 'Clear', key='word_clear' )
-				
+				load_word = col_load.button( 'Load', key='word_load', icon='📤', )
+				clear_word = col_clear.button( 'Clear', key='word_clear', icon='🧹', )
 				can_save = (st.session_state.get( 'active_loader' ) == 'WordLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
 					'raw_text' ).strip( ))
@@ -2469,8 +2468,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_pdf = col_load.button( 'Load', key='pdf_load' )
-				clear_pdf = col_clear.button( 'Clear', key='pdf_clear' )
+				load_pdf = col_load.button( 'Load', key='pdf_load', icon='📤', )
+				clear_pdf = col_clear.button( 'Clear', key='pdf_clear', icon='🧹', )
 				save_pdf = col_save.empty( )
 				
 				# --------------------------------------------------
@@ -2564,7 +2563,6 @@ if mode == 'Loading':
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
 				load_pptx = col_load.button( 'Load', key='pptx_load', )
-				
 				clear_pptx = col_clear.button( 'Clear', key='pptx_clear', )
 				
 				# ---------- Save
@@ -2713,12 +2711,11 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_excel = col_load.button( 'Load', key='excel_load' )
-				clear_excel = col_clear.button( 'Clear', key='excel_clear' )
-				
+				load_excel = col_load.button( 'Load', key='excel_load', icon='📤', )
+				clear_excel = col_clear.button( 'Clear', key='excel_clear', icon='🧹', )
 				can_save = (st.session_state.get( 'active_loader' ) == 'ExcelLoader' and
-				            isinstance(
-					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+				            isinstance( st.session_state.get(
+					            'raw_text' ), str ) and st.session_state.get(
 					'raw_text' ).strip( ))
 				
 				if can_save:
@@ -2839,14 +2836,12 @@ if mode == 'Loading':
 					     'parsing.' )
 				
 				# --------------------------------------------------
-				# Buttons: Load / Clear / Save (same row, same style)
+				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
 				load_md = col_load.button( 'Load', key='md_load', )
-				
 				clear_md = col_clear.button( 'Clear', key='md_clear', )
 				
-				# Save enabled only when MarkdownLoader is active and raw_text exists
 				can_save = (
 						st.session_state.get( 'active_loader' ) == 'MarkdownLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -2860,14 +2855,14 @@ if mode == 'Loading':
 					col_save.button( 'Save', key='md_save_disabled', disabled=True, icon='💾' )
 				
 				# --------------------------------------------------
-				# Clear (UNCHANGED behavior)
+				# Clear
 				# --------------------------------------------------
 				if clear_md:
 					clear_if_active( 'MarkdownLoader' )
 					st.info( "Markdown Loader state cleared." )
 				
 				# --------------------------------------------------
-				# Load (same behavior, now with explicit mode)
+				# Load
 				# --------------------------------------------------
 				if load_md and md:
 					with tempfile.TemporaryDirectory( ) as tmp:
@@ -2884,7 +2879,6 @@ if mode == 'Loading':
 						hasattr( d, 'page_content' ) and isinstance( d.page_content,
 							str ) and d.page_content.strip( ) )
 					st.session_state.active_loader = "MarkdownLoader"
-					
 					st.success( f"Loaded {len( documents )} Markdown document(s)." )
 			
 			# --------------------------- HTML Loader
@@ -4192,7 +4186,6 @@ if mode == 'Loading':
 				st.bar_chart( df_top, color='#01438A' )
 			
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True, )
-			
 			st.markdown( '#### Corpus Metrics' )
 			
 			# ------------ Corpus Metrics
@@ -4232,7 +4225,6 @@ if mode == 'Loading':
 						'Proportion of content-bearing words.' )
 			
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True, )
-			
 			st.markdown( '#### Comprehension Metrics' )
 			
 			# ------------ Readability
@@ -4702,7 +4694,6 @@ elif mode == 'Scraping':
 elif mode == 'Retrieval':
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
-	
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'🏛️ Public Collections & Archives' )
@@ -4710,7 +4701,6 @@ elif mode == 'Retrieval':
 		# -------- ArXiv
 		with st.expander( label='ArXiv', icon='📘', expanded=False  ):
 			st.badge( label='Information', help=cfg.ARXIV )
-			
 			if 'arxiv_results' not in st.session_state:
 				st.session_state[ 'arxiv_results' ] = [ ]
 			
@@ -4731,12 +4721,10 @@ elif mode == 'Retrieval':
 			col1, col2 = st.columns( [ 0.4, 0.6 ], border=True, gap='xxsmall' )
 			with col1:
 				arxiv_input = st.text_area( 'Query', height=80, key='arxiv_input',
-					placeholder=(
-							'Examples:\n'
-							'What is the ImageBind model?\n'
-							'2401.01234\n'
-							'graph neural networks for molecular property prediction'
-					), )
+					placeholder=('Examples:\n'
+					             'What is the ImageBind model?\n'
+					             '2401.01234\n'
+					             'graph neural networks for molecular property prediction'), )
 				
 				c1, c2 = st.columns( 2, vertical_alignment='center' )
 				with c1:
