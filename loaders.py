@@ -4856,9 +4856,6 @@ class AwsBucketLoader( Loader ):
 			exception = Error( e )
 			exception.module = 'loaders'
 			exception.cause = 'AmazonBucketLoader'
-			exception.method = (
-					'split( self, chunk: int=1000, overlap: int=200 ) '
-					'-> List[ Document ] | None'
-			)
+			exception.method = 'split( self, **kwargs ) -> List[ Document ] | None'
 			Logger( ).write( exception )
 			raise exception
