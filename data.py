@@ -60,27 +60,29 @@ import chromadb
 from chromadb.config import Settings
 import config as cfg
 
+
 def throw_if( name: str, value: object ) -> None:
-	"""Validate a required argument.
-	
-	Purpose:
-		Validates that a required argument contains a usable value before database or
-		vector-store work proceeds. This helper gives data-layer operations a consistent
-		guard for missing values and prevents downstream SQL, file, or provider calls from
-		receiving empty required inputs.
-	
-	Args:
-		name (str): Name of the argument being validated.
-		value (object): Value to validate.
-	
-	Raises:
-		ValueError: Raised when the value is ``None`` or an empty string.
-	"""
+	"""Throw if.
+    
+        Purpose:
+            Provides a input guard used by the Gipity Streamlit application. The function
+            supports UI state management, provider coordination, data normalization, or display
+            behavior required by the surrounding workflow.
+    
+        Args:
+            name (str): Value supplied to the helper.
+            value (object): Value supplied to the helper.
+    
+        Raises:
+            Error: Re-raised after the exception is wrapped and written to the application logger.
+    """
 	if value is None:
-		raise ValueError( f'Argument "{name}" cannot be None.' )
-	
-	if isinstance( value, str ) and not value.strip( ):
-		raise ValueError( f'Argument "{name}" cannot be empty.' )
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	if isinstance( value, str ) and (not value.strip( )):
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	if isinstance( value, (list, tuple, dict, set) ) and len( value ) == 0:
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+
 
 class DB( ):
 	"""Provide database provider configuration helpers.
@@ -310,28 +312,10 @@ class SQLite( DB ):
 		Returns:
 			Ordered member names exposed by the SQLite wrapper.
 		"""
-		return [ 'db_path',
-		         'connection',
-		         'cursor',
-		         'path',
-		         'where',
-		         'pairs',
-		         'sql',
-		         'file_name',
-		         'table_name',
-		         'placeholders',
-		         'columns',
-		         'params',
-		         'column_names',
-		         'tables',
-		         'close',
-		         'import_excel',
-		         'delete',
-		         'update',
-		         'insert',
-		         'create_table',
-		         'fetch_one',
-		         'fetch_all' ]
+		return [ 'db_path', 'connection', 'cursor', 'path', 'where', 'pairs', 'sql', 'file_name',
+			'table_name', 'placeholders', 'columns', 'params', 'column_names', 'tables', 'close',
+			'import_excel', 'delete', 'update', 'insert', 'create_table', 'fetch_one',
+			'fetch_all' ]
 	
 	def create( self ) -> None:
 		"""Create the embeddings table.

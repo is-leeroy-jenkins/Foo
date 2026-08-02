@@ -60,22 +60,28 @@ from mistralai import Mistral as MistralAI
 import re
 import urllib
 
+
 def throw_if( name: str, value: object ) -> None:
-	"""Perform the throw if operation.
-
-	Purpose:
-		Executes the throw if operation using the existing Foo implementation. The method preserves
-		original runtime behavior while exposing documentation compatible with MkDocs.
-
-	Args:
-		name (str): Value used by the operation.
-		value (object): Value used by the operation.
-	"""
+	"""Throw if.
+    
+        Purpose:
+            Provides a input guard used by the Gipity Streamlit application. The function
+            supports UI state management, provider coordination, data normalization, or display
+            behavior required by the surrounding workflow.
+    
+        Args:
+            name (str): Value supplied to the helper.
+            value (object): Value supplied to the helper.
+    
+        Raises:
+            Error: Re-raised after the exception is wrapped and written to the application logger.
+    """
 	if value is None:
-		raise ValueError( f'Argument "{name}" cannot be None.' )
-	
-	if isinstance( value, str ) and not value.strip( ):
-		raise ValueError( f'Argument "{name}" cannot be empty.' )
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	if isinstance( value, str ) and (not value.strip( )):
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	if isinstance( value, (list, tuple, dict, set) ) and len( value ) == 0:
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
 
 def encode_image( path: str ) -> str:
 	"""Perform the encode image operation.
@@ -93,7 +99,7 @@ def encode_image( path: str ) -> str:
 	data = Path( path ).read_bytes( )
 	return base64.b64encode( data ).decode( "utf-8" )
 
-class Generator:
+class Generator( ):
 	"""Represent the Generator component.
 
 	Purpose:
@@ -126,19 +132,14 @@ class Generator:
 		"""Return visible member names.
 
 		Purpose:
-			Returns the stable list of public members exposed for introspection, documentation, and UI
+			Returns the stable list of public members exposed for introspection, documentation,
+			and UI
 			display.
 
 		Returns:
 			Result produced by the operation.
 		"""
-		return [ 'timeout',
-		         'headers',
-		         'response',
-		         'url',
-		         'result',
-		         'query',
-		         'fetch' ]
+		return [ 'timeout', 'headers', 'response', 'url', 'result', 'query', 'fetch' ]
 	
 	def fetch( self, query: str, url: str, time: int = 10 ) -> Result | None:
 		"""Perform the fetch operation.
@@ -165,7 +166,6 @@ class Grok( Generator ):
 		public interface available for loading, fetching, generation, scraping, or supporting
 		operations without altering the executable behavior of the original implementation.
 	"""
-	
 	client: Optional[ Xai ]
 	model: Optional[ str ]
 	response: Optional[ Any ]
@@ -222,43 +222,19 @@ class Grok( Generator ):
 		"""Return visible member names.
 
 		Purpose:
-			Returns the stable list of public members exposed for introspection, documentation, and UI
+			Returns the stable list of public members exposed for introspection, documentation,
+			and UI
 			display.
 
 		Returns:
 			Result produced by the operation.
 		"""
-		return [
-				'client',
-				'model',
-				'response',
-				'api_key',
-				'query',
-				'params',
-				'temperature',
-				'max_tokens',
-				'top_p',
-				'reasoning_effort',
-				'stream',
-				'store',
-				'messages',
-				'system_instructions',
-				'web_search',
-				'search_domains',
-				'parallel_tool_calls',
-				'tool_choice',
-				'tools',
-				'normalize_domains',
-				'supports_reasoning_effort',
-				'is_reasoning_model',
-				'build_instructions',
-				'build_tools',
-				'build_response_format',
-				'extract_output_text',
-				'fetch',
-				'generate_text',
-				'search_web'
-		]
+		return [ 'client', 'model', 'response', 'api_key', 'query', 'params', 'temperature',
+			'max_tokens', 'top_p', 'reasoning_effort', 'stream', 'store', 'messages',
+			'system_instructions', 'web_search', 'search_domains', 'parallel_tool_calls',
+			'tool_choice', 'tools', 'normalize_domains', 'supports_reasoning_effort',
+			'is_reasoning_model', 'build_instructions', 'build_tools', 'build_response_format',
+			'extract_output_text', 'fetch', 'generate_text', 'search_web' ]
 	
 	def normalize_domains( self, domains: Any ) -> List[ str ]:
 		"""Perform the normalize domains operation.
@@ -285,10 +261,8 @@ class Grok( Generator ):
 				parts = [ str( domains ) ]
 			
 			values: List[ str ] = [ ]
-			
 			for entry in parts:
 				value = str( entry ).strip( ).lower( )
-				
 				if not value:
 					continue
 				
@@ -296,7 +270,6 @@ class Grok( Generator ):
 				value = value.split( '/' )[ 0 ]
 				value = re.sub( r':\d+$', '', value )
 				value = value.lstrip( '.' )
-				
 				if value.startswith( 'www.' ):
 					value = value[ 4: ]
 				

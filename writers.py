@@ -53,26 +53,28 @@ from typing import Optional
 from core import Result
 from boogr import Error, Logger
 
+
 def throw_if( name: str, value: object ) -> None:
-	"""Validate a required argument.
-	
-	Purpose:
-		Validates that a required argument contains a usable value before the writer
-		workflow continues. This guard centralizes early validation so file-writing
-		operations fail with consistent and readable error messages.
-	
-	Args:
-		name (str): Name of the argument being validated.
-		value (object): Argument value to validate.
-	
-	Raises:
-		ValueError: Raised when the value is ``None`` or an empty string.
-	"""
+	"""Throw if.
+    
+        Purpose:
+            Provides a input guard used by the Gipity Streamlit application. The function
+            supports UI state management, provider coordination, data normalization, or display
+            behavior required by the surrounding workflow.
+    
+        Args:
+            name (str): Value supplied to the helper.
+            value (object): Value supplied to the helper.
+    
+        Raises:
+            Error: Re-raised after the exception is wrapped and written to the application logger.
+    """
 	if value is None:
-		raise ValueError( f'Argument "{name}" cannot be None.' )
-	
-	if isinstance( value, str ) and not value.strip( ):
-		raise ValueError( f'Argument "{name}" cannot be empty.' )
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	if isinstance( value, str ) and (not value.strip( )):
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	if isinstance( value, (list, tuple, dict, set) ) and len( value ) == 0:
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
 
 class Writer( ):
 	"""Write plain text content to Markdown files.

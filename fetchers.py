@@ -87,26 +87,28 @@ from boogr import Error, Logger
 from core import Result
 import xml.etree.ElementTree as ET
 
+
 def throw_if( name: str, value: object ) -> None:
 	"""Throw if.
-	
-	Purpose:
-		Validates that a required argument contains a usable value before the surrounding
-		workflow continues. This guard centralizes early validation so provider wrappers and UI
-		routines fail with consistent, readable error messages.
-	
-	Args:
-		name (str): Name value used by the operation.
-		value (object): Value value used by the operation.
-	
-	Raises:
-		ValueError: Raised when a required value is missing, invalid, or outside the supported range.
-	"""
+    
+        Purpose:
+            Provides a input guard used by the Gipity Streamlit application. The function
+            supports UI state management, provider coordination, data normalization, or display
+            behavior required by the surrounding workflow.
+    
+        Args:
+            name (str): Value supplied to the helper.
+            value (object): Value supplied to the helper.
+    
+        Raises:
+            Error: Re-raised after the exception is wrapped and written to the application logger.
+    """
 	if value is None:
-		raise ValueError( f'Argument "{name}" cannot be None.' )
-	
-	if isinstance( value, str ) and not value.strip( ):
-		raise ValueError( f'Argument "{name}" cannot be empty.' )
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	if isinstance( value, str ) and (not value.strip( )):
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	if isinstance( value, (list, tuple, dict, set) ) and len( value ) == 0:
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
 
 def encode_image( path: str ) -> str:
 	"""Encode image.
@@ -1940,14 +1942,11 @@ class TheNews( Fetcher ):
 		         'limit', 'page', 'params', 'fetch', ]
 	
 	def fetch( self, endpoint: str = 'all', query: str = '', language: str = 'en',
-			categories: str = '',
-			exclude_categories: str = '', locale: str = '', domains: str = '',
+			categories: str = '', exclude_categories: str = '', locale: str = '', domains: str = '',
 			exclude_domains: str = '', source_ids: str = '', exclude_source_ids: str = '',
 			published_after: str = '', published_before: str = '', published_on: str = '',
-			sort: str = 'published_at', limit: int=10, page: int=1,
-			include_similar: bool = True,
-			headlines_per_category: int=6, time: int=10, api_key: str = None ) -> Dict[
-		str, Any ]:
+			sort: str = 'published_at', limit: int=10, page: int=1, include_similar: bool = True,
+			headlines_per_category: int=6, time: int=10, api_key: str = None ) -> Dict[ str, Any ]:
 		"""Fetch.
 		
 		Purpose:
