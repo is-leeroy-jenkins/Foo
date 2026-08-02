@@ -2446,8 +2446,7 @@ if mode == 'Loading':
 					help='Falls back to the existing PdfLoader path instead of geometry '
 					     'extraction.' )
 				
-				band_left, band_right = st.columns( 2, border=True )
-				
+				band_left, band_right = st.columns( 2, border=True )				
 				with band_left:
 					header_band = st.slider( 'Header Band', min_value=0, max_value=30, value=8,
 						step=1, key='pdf_header_band',
@@ -2562,8 +2561,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save (same row, same style)
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_pptx = col_load.button( 'Load', key='pptx_load', )
-				clear_pptx = col_clear.button( 'Clear', key='pptx_clear', )
+				load_pptx = col_load.button( 'Load', key='pptx_load', icon='📤', )
+				clear_pptx = col_clear.button( 'Clear', key='pptx_clear', icon='🧹', )
 				
 				# ---------- Save
 				can_save = (st.session_state.get(
@@ -2622,8 +2621,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_ipynb = col_load.button( 'Load', key='ipynb_load' )
-				clear_ipynb = col_clear.button( 'Clear', key='ipynb_clear' )
+				load_ipynb = col_load.button( 'Load', key='ipynb_load', icon='📤', )
+				clear_ipynb = col_clear.button( 'Clear', key='ipynb_clear', icon='🧹', )
 				
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'JupyterNotebookLoader' and isinstance(
@@ -2839,8 +2838,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_md = col_load.button( 'Load', key='md_load', )
-				clear_md = col_clear.button( 'Clear', key='md_clear', )
+				load_md = col_load.button( 'Load', key='md_load', icon='📤', )
+				clear_md = col_clear.button( 'Clear', key='md_clear', icon='🧹', )
 				
 				can_save = (
 						st.session_state.get( 'active_loader' ) == 'MarkdownLoader' and isinstance(
@@ -2889,10 +2888,9 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save (same row, same style)
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_html = col_load.button( 'Load', key='html_load' )
-				clear_html = col_clear.button( 'Clear', key='html_clear' )
+				load_html = col_load.button( 'Load', key='html_load', icon='📤', )
+				clear_html = col_clear.button( 'Clear', key='html_clear', icon='🧹', )
 				
-				# Save enabled only when HtmlLoader is active and raw_text exists
 				can_save = (st.session_state.get( 'active_loader' ) == 'HtmlLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
 					'raw_text' ).strip( ))
@@ -2953,8 +2951,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_json = col_load.button( 'Load', key='json_load' )
-				clear_json = col_clear.button( 'Clear', key='json_clear' )
+				load_json = col_load.button( 'Load', key='json_load', icon='📤', )
+				clear_json = col_clear.button( 'Clear', key='json_clear', icon='🧹', )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'JsonLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3007,10 +3005,8 @@ if mode == 'Loading':
 					help='Maximum characters read', )
 				
 				col_fetch, col_clear, col_save = st.columns( 3 )
-				arxiv_fetch = col_fetch.button( 'Load',
-					key='arxiv_fetch' )  # label kept as Load button row convention
-				arxiv_clear = col_clear.button( 'Clear', key='arxiv_clear' )
-				
+				arxiv_fetch = col_fetch.button( 'Load', key='arxiv_fetch', icon='📤', )
+				arxiv_clear = col_clear.button( 'Clear', key='arxiv_clear', icon='🧹', )
 				can_save = (st.session_state.get( 'active_loader' ) == 'ArXivLoader' and
 				            isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3065,8 +3061,8 @@ if mode == 'Loading':
 					help='Upper limit on the number of characters', )
 				
 				col_fetch, col_clear, col_save = st.columns( 3 )
-				wiki_fetch = col_fetch.button( 'Load', key='wiki_fetch' )
-				wiki_clear = col_clear.button( 'Clear', key='wiki_clear' )
+				wiki_fetch = col_fetch.button( 'Load', key='wiki_fetch', icon='📤', )
+				wiki_clear = col_clear.button( 'Clear', key='wiki_clear', icon='🧹', )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'WikiLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3129,8 +3125,8 @@ if mode == 'Loading':
 					     "limits.", )
 				
 				col_fetch, col_clear, col_save = st.columns( 3 )
-				gh_fetch = col_fetch.button( "Load", key="gh_fetch" )
-				gh_clear = col_clear.button( "Clear", key="gh_clear" )
+				gh_fetch = col_fetch.button( "Load", key="gh_fetch", icon='📤', )
+				gh_clear = col_clear.button( "Clear", key="gh_clear", icon='🧹', )
 				
 				can_save = (
 						st.session_state.get( "active_loader" ) == "GithubLoader" and isinstance(
@@ -4746,11 +4742,11 @@ elif mode == 'Retrieval':
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					do_submit = st.button( 'Submit', key='arxiv_submit', width='stretch' )
+					do_submit = st.button( 'Submit', key='arxiv_submit', width='stretch', icon='✔️', )
 				
 				with b2:
 					st.button( 'Clear', key='arxiv_clear',
-						on_click=_clear_arxiv_state, width='stretch' )
+						on_click=_clear_arxiv_state, width='stretch', icon='🧹', )
 				
 				if do_submit:
 					try:
@@ -4768,7 +4764,6 @@ elif mode == 'Retrieval':
 								include_metadata=bool( arxiv_include_metadata ) )
 							
 							results: list[ Document ] = [ ]
-							
 							for q in queries:
 								docs = fetcher.fetch(
 									q,
@@ -4789,7 +4784,6 @@ elif mode == 'Retrieval':
 			with col2:
 				st.markdown( 'Results' )
 				results = st.session_state.get( 'arxiv_results', [ ] )
-				
 				if not results:
 					st.text( 'No results.' )
 				else:
@@ -4803,7 +4797,6 @@ elif mode == 'Retrieval':
 							if isinstance( doc, Document ):
 								if doc.metadata:
 									meta_col1, meta_col2 = st.columns( 2 )
-									
 									with meta_col1:
 										if 'Title' in doc.metadata:
 											st.markdown( f"**Title:** {doc.metadata.get( 'Title', '' )}" )
