@@ -3179,8 +3179,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_outlook = col_load.button( 'Load', key='outlook_load' )
-				clear_outlook = col_clear.button( 'Clear', key='outlook_clear' )
+				load_outlook = col_load.button( 'Load', key='outlook_load', icon='📤', )
+				clear_outlook = col_clear.button( 'Clear', key='outlook_clear', icon='🧹', )
 				
 				can_save = (
 						st.session_state.get( 'active_loader' ) == 'OutlookLoader' and isinstance(
@@ -3248,9 +3248,8 @@ if mode == 'Loading':
 					help="Keep loading remaining URLs if one page fails." )
 				
 				col_fetch, col_clear, col_save = st.columns( 3 )
-				load_web = col_fetch.button( "Load", key="web_fetch" )
-				clear_web = col_clear.button( "Clear", key="web_clear" )
-				
+				load_web = col_fetch.button( "Load", key="web_fetch", icon='📤', )
+				clear_web = col_clear.button( "Clear", key="web_clear", icon='🧹', )
 				can_save = (st.session_state.get( "active_loader" ) == "WebLoader" and isinstance(
 					st.session_state.get( "raw_text" ), str ) and st.session_state.get(
 					"raw_text" ).strip( ))
@@ -3270,8 +3269,7 @@ if mode == 'Loading':
 				
 				if load_web and urls.strip( ):
 					loader = WebLoader( recursive=False )
-					new_docs = [ ]
-					
+					new_docs = [ ]					
 					for url in [ u.strip( ) for u in urls.splitlines( ) if u.strip( ) ]:
 						documents = loader.load( urls=url, timeout=int( web_timeout ),
 							ignore=bool( web_ignore ), progress=True ) or [ ]
@@ -3292,8 +3290,7 @@ if mode == 'Loading':
 							st.session_state.raw_documents = list( new_docs )
 						
 						st.session_state.raw_text = rebuild_raw_text_from_documents( )
-						st.session_state.active_loader = "WebLoader"
-						
+						st.session_state.active_loader = "WebLoader"						
 						st.session_state[
 							"_loader_status" ] = f"Fetched {len( new_docs )} web document(s)."
 			
