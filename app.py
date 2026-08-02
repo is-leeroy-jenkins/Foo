@@ -4114,8 +4114,7 @@ if mode == 'Loading':
 			for i, d in enumerate( documents[ :5 ] ):
 				with st.expander( f'Document {i + 1}', expanded=True ):
 					st.json( d.metadata )
-					st.text_area( 'Content', d.page_content[ : ], height=450,
-						key=f'preview_doc_{i}' )
+					st.text_area( 'Content', d.page_content[ : ], height=450, key=f'preview_doc_{i}' )
 	
 	# ------------------------------------------------------------------
 	# NLP METRIC CALCULATIONS
@@ -4734,8 +4733,8 @@ elif mode == 'Retrieval':
 					do_submit = st.button( 'Submit', key='arxiv_submit', width='stretch', icon='✔️', )
 				
 				with b2:
-					st.button( 'Clear', key='arxiv_clear',
-						on_click=_clear_arxiv_state, width='stretch', icon='🧹', )
+					st.button( 'Clear', key='arxiv_clear', on_click=_clear_arxiv_state,
+						width='stretch', icon='🧹', )
 				
 				if do_submit:
 					try:
@@ -4746,17 +4745,13 @@ elif mode == 'Retrieval':
 							st.warning( 'No input provided.' )
 						else:
 							from fetchers import ArXiv
-							
-							fetcher = ArXiv(
-								max_documents=int( arxiv_max_docs ),
+							fetcher = ArXiv( max_documents=int( arxiv_max_docs ),
 								full_documents=bool( arxiv_full_documents ),
 								include_metadata=bool( arxiv_include_metadata ) )
 							
 							results: list[ Document ] = [ ]
 							for q in queries:
-								docs = fetcher.fetch(
-									q,
-									max_documents=int( arxiv_max_docs ),
+								docs = fetcher.fetch( q, max_documents=int( arxiv_max_docs ),
 									full_documents=bool( arxiv_full_documents ),
 									include_metadata=bool( arxiv_include_metadata ) )
 								
@@ -4781,7 +4776,6 @@ elif mode == 'Retrieval':
 						if isinstance( doc, Document ):
 							title = str( doc.metadata.get( 'Title', '' ) ) if doc.metadata else ''
 						label = f'Document {idx}' if not title else f'Document {idx}: {title}'
-						
 						with st.expander( label, expanded=False ):
 							if isinstance( doc, Document ):
 								if doc.metadata:
