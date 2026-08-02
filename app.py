@@ -3665,9 +3665,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_gcs_file = col_load.button( 'Load', key='gcs_file_load' )
+				load_gcs_file = col_load.button( 'Load', key='gcs_file_load', icon='📤', )
 				clear_gcs_file = col_clear.button( 'Clear', key='gcs_file_clear', icon='🧹', )
-				
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'GoogleCloudFileLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3741,7 +3740,6 @@ if mode == 'Loading':
 					key='aws_file_api_version', placeholder='Optional', )
 				
 				aws_file_use_ssl = st.checkbox( 'Use SSL', value=True, key='aws_file_use_ssl', )
-				
 				aws_file_verify = st.text_input( 'Verify', value='', key='aws_file_verify',
 					placeholder='Optional path or True / False',
 					help='Leave blank for default behavior, or provide a CA bundle path.', )
@@ -3851,8 +3849,7 @@ if mode == 'Loading':
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
 				load_gcs_bucket = col_load.button( 'Load', key='gcs_bucket_load', icon='📥' )
-				clear_gcs_bucket = col_clear.button( 'Clear', key='gcs_bucket_clear' )
-				
+				clear_gcs_bucket = col_clear.button( 'Clear', key='gcs_bucket_clear', icon='🧹', )
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'GoogleBucketLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3948,14 +3945,11 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_aws_bucket = col_load.button( 'Load', key='aws_bucket_load' )
-				clear_aws_bucket = col_clear.button( 'Clear', key='aws_bucket_clear' )
-				
-				can_save = (
-						st.session_state.get( 'active_loader' ) == 'AwsBucketLoader' and
-						isinstance(
-					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
-					'raw_text' ).strip( ))
+				load_aws_bucket = col_load.button( 'Load', key='aws_bucket_load', icon='📤', )
+				clear_aws_bucket = col_clear.button( 'Clear', key='aws_bucket_clear', icon='🧹', )				
+				can_save = ( st.session_state.get( 'active_loader' ) == 'AwsBucketLoader' and
+						isinstance( st.session_state.get(
+							'raw_text' ), str ) and st.session_state.get( 'raw_text' ).strip( ))
 				
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
@@ -3981,8 +3975,7 @@ if mode == 'Loading':
 					verify_value: str = None
 					
 					if isinstance( aws_bucket_verify, str ) and aws_bucket_verify.strip( ):
-						verify_text = aws_bucket_verify.strip( )
-						
+						verify_text = aws_bucket_verify.strip( )						
 						if verify_text.lower( ) == 'true':
 							verify_value = True
 						elif verify_text.lower( ) == 'false':
@@ -4047,8 +4040,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_spfx = col_load.button( 'Load', key='spfx_load' )
-				clear_spfx = col_clear.button( 'Clear', key='spfx_clear' )
+				load_spfx = col_load.button( 'Load', key='spfx_load', icon='📤', )
+				clear_spfx = col_clear.button( 'Clear', key='spfx_clear', icon='🧹', )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'SpfxLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
