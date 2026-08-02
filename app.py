@@ -2110,8 +2110,7 @@ if mode == 'Loading':
 						icon='💾', width='stretch' )
 				else:
 					col_save.button( label='Save', key='txt_save_disabled', disabled=True,
-						icon='💾',
-						width='stretch' )
+						icon='💾', width='stretch' )
 				
 				# ------------------------------------------------------------------
 				# Clear
@@ -2163,8 +2162,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_csv = col_load.button( 'Load', key='csv_load' )
-				clear_csv = col_clear.button( 'Clear', key='csv_clear' )
+				load_csv = col_load.button( 'Load', key='csv_load', icon='📤', )
+				clear_csv = col_clear.button( 'Clear', key='csv_clear', icon='🧹', )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'CsvLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -2218,10 +2217,8 @@ if mode == 'Loading':
 					st.session_state.xml_loader = XmlLoader( )
 				
 				loader = st.session_state.xml_loader
-				
 				xml_file = st.file_uploader( label='Select XML file', type=[ 'xml' ],
 					accept_multiple_files=False, key='xml_file_uploader' )
-				
 				st.text( 'Semantic XML Loading (Unstructured)' )
 				
 				col1, col2 = st.columns( 2 )
@@ -2237,7 +2234,7 @@ if mode == 'Loading':
 				# --------------------------------------------------
 				# Semantic Load
 				# --------------------------------------------------
-				if st.button( 'Load XML (Semantic)', use_container_width=True ):
+				if st.button( 'Load XML (Semantic)', use_container_width=True, icon='📤', ):
 					if xml_file is None:
 						st.warning( 'Please select an XML file.' )
 					else:
@@ -2269,7 +2266,7 @@ if mode == 'Loading':
 				# --------------------------------------------------
 				# Split Semantic Documents
 				# --------------------------------------------------
-				if st.button( 'Split Semantic Documents', use_container_width=True ):
+				if st.button( 'Split Semantic Documents', use_container_width=True, icon='➗', ):
 					with st.spinner( 'Splitting documents...' ):
 						split_docs = loader.split( size=int( chunk_size ),
 							amount=int( overlap_amount ) )
@@ -2283,8 +2280,7 @@ if mode == 'Loading':
 				# ------------------------------------------------------------------
 				st.divider( )
 				st.text( 'Structured XML Tree Loading (XPath)' )
-				
-				if st.button( 'Load XML Tree', use_container_width=True ):
+				if st.button( 'Load XML Tree', use_container_width=True, icon='📤', ):
 					if xml_file is None:
 						st.warning( 'Please select an XML file.' )
 					else:
@@ -2328,7 +2324,7 @@ if mode == 'Loading':
 					xpath_expr = st.text_input( 'XPath Expression', value='//*',
 						help='Use namespace prefixes if applicable.' )
 					
-					if st.button( 'Run XPath Query', use_container_width=True ):
+					if st.button( 'Run XPath Query', use_container_width=True, icon='🏃', ):
 						with st.spinner( 'Executing XPath...' ):
 							elements = xml_loader.get_elements( xpath_expr )
 						
