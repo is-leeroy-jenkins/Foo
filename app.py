@@ -4707,7 +4707,7 @@ elif mode == 'Retrieval':
 	st.session_state.setdefault( "arxiv_input", "" )
 	st.session_state.setdefault( "arxiv_results", [ ] )
 	
-	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'🏛️ Public Collections & Archives' )
 		st.divider( )
@@ -8402,7 +8402,7 @@ elif mode == 'Retrieval':
 # ==============================================================================
 elif mode == 'Geospatial':
 	
-	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'📡 Weather & Geospatial Data' )
 		st.divider( )
@@ -11417,7 +11417,7 @@ elif mode == 'Geospatial':
 # ENVIRONMENTAL MODE
 # ==============================================================================
 elif mode == 'Environmental':
-	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'🌍 Environmental Data' )
 		st.divider( )
@@ -15047,7 +15047,7 @@ elif mode == 'Environmental':
 # ASTRONOMICAL MODE
 # ==============================================================================
 elif mode == 'Astronomical':
-	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'🌌 Physics & Astronomical Data' )
 		st.divider( )
@@ -17612,7 +17612,7 @@ elif mode == 'Astronomical':
 # POPULATION MODE
 # ==============================================================================
 elif mode == 'Demographic':
-	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'🩺 Demographics & Health Data' )
 		st.divider( )
@@ -20488,7 +20488,7 @@ elif mode == 'Demographic':
 # TEXT GENERATION MODE
 # ==============================================================================
 elif mode == 'Generation':
-	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'🧠  Generative AI' )
 		st.divider( )
@@ -22237,7 +22237,7 @@ elif mode == 'Generation':
 # DATA MANAGEMENT MODE
 # ==============================================================================
 elif mode == 'Data Management':
-	left, center, right = st.columns( [ 0.1, 0.8, 0.1 ] )
+	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'🏛️ Data Management' )
 		st.divider( )
