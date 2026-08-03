@@ -4357,9 +4357,7 @@ class GoogleBucketLoader( Loader ):
 			exception = Error( e )
 			exception.module = 'loaders'
 			exception.cause = 'GoogleBucketLoader'
-			exception.method = ('load( self, project_name: str, bucket: str, '
-			                    'prefix: Optional[ str ]=None, continue_on_failure: bool=False ) '
-			                    '-> List[ Document ] | None')
+			exception.method = 'load( self, **kwargs ) -> List[ Document ] | None'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -4390,8 +4388,7 @@ class GoogleBucketLoader( Loader ):
 			exception = Error( e )
 			exception.module = 'loaders'
 			exception.cause = 'GoogleBucketLoader'
-			exception.method = ('split( self, chunk: int=1000, overlap: int=200 ) '
-			                    '-> List[ Document ] | None')
+			exception.method = 'split( self, **kwargs0 ) -> List[ Document ] | None'
 			Logger( ).write( exception )
 			raise exception
 
