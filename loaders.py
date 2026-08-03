@@ -4465,20 +4465,19 @@ class AwsBucketLoader( Loader ):
 		    Loads the selected source into LangChain documents using the instance configuration.
 
 		Args:
-		    bucket (str): Bucket supplied by the caller.
-		    prefix (Optional[str]): Prefix supplied by the caller.
+		    bucket (str): Bucket supplied by the caller and interpreted according to the method contract.
+		    prefix (Optional[str]): Prefix supplied by the caller and interpreted according to the method contract.
 		    aws_access_key_id (Optional[str]): Provider identifier of the target aws access key resource.
-		    aws_secret_access_key (Optional[str]): Aws secret access key supplied by the caller.
-		    aws_session_token (Optional[str]): Aws session token supplied by the caller.
-		    region_name (Optional[str]): Region name supplied by the caller.
-		    endpoint_url (Optional[str]): Endpoint url supplied by the caller.
+		    aws_secret_access_key (Optional[str]): Aws secret access key supplied by the caller and interpreted according to the method contract.
+		    aws_session_token (Optional[str]): Aws session token supplied by the caller and interpreted according to the method contract.
+		    region_name (Optional[str]): Region name supplied by the caller and interpreted according to the method contract.
+		    endpoint_url (Optional[str]): Endpoint url supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    List[Document] | None: LangChain documents produced or transformed by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and writes it to the application
-		        logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'bucket', bucket )
@@ -4489,6 +4488,7 @@ class AwsBucketLoader( Loader ):
 			self.aws_session_token = aws_session_token
 			self.region_name = region_name
 			self.endpoint_url = endpoint_url
+			
 			kwargs: Dict[ str, Any ] = { }
 			if self.prefix:
 				kwargs[ 'prefix' ] = self.prefix
@@ -4528,7 +4528,7 @@ class AwsBucketLoader( Loader ):
 		    List[Document] | None: LangChain documents produced or transformed by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with  metadata, writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'documents', self.documents )
