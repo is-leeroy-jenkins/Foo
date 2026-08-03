@@ -5235,12 +5235,8 @@ class OpenScience( Fetcher ):
 				headers=self.headers, timeout=int( time ) )
 			self.response.raise_for_status( )
 			
-			return {
-					'mode': 'metadata',
-					'url': self.url,
-					'params': self.params,
-					'data': self.coerce_response( self.response )
-			}
+			return { 'mode': 'metadata', 'url': self.url, 'params': self.params,
+				'data': self.coerce_response( self.response ) }
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
@@ -5277,30 +5273,19 @@ class OpenScience( Fetcher ):
 			self.format_value = self.validate_format( format_value )
 			self.endpoint = '/v2/query/assays/'
 			self.url = f'{self.base_url}{self.endpoint}'
-			self.params = {
-					'query': self.query_text,
-					'format': self.format_value
-			}
+			self.params = { 'query': self.query_text, 'format': self.format_value }
 			
 			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
 				timeout=int( time ) )
 			self.response.raise_for_status( )
 			
-			return {
-					'mode': 'assays',
-					'url': self.url,
-					'params': self.params,
-					'data': self.coerce_response( self.response )
-			}
+			return { 'mode': 'assays', 'url': self.url, 'params': self.params,
+				'data': self.coerce_response( self.response ) }
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
-			exception.method = (
-					'fetch_assays( self, query: str, format_value: str=json, '
-					'time: int=20 ) -> Dict[ str, Any ]'
-			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5329,34 +5314,20 @@ class OpenScience( Fetcher ):
 			self.format_value = self.validate_format( format_value )
 			self.endpoint = '/v2/query/data/'
 			self.url = f'{self.base_url}{self.endpoint}'
-			self.params = {
-					'query': self.query_text,
-					'format': self.format_value
-			}
+			self.params = { 'query': self.query_text, 'format': self.format_value }
 			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=int( time )
-			)
+			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
+				timeout=int( time ) )
 			self.response.raise_for_status( )
 			
-			return {
-					'mode': 'data',
-					'url': self.url,
-					'params': self.params,
-					'data': self.coerce_response( self.response )
-			}
+			return { 'mode': 'data', 'url': self.url, 'params': self.params,
+				'data': self.coerce_response( self.response ) }
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
-			exception.method = (
-					'fetch_data( self, query: str, format_value: str=json, '
-					'time: int=20 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_data( self, **kwargs ) -> Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5385,44 +5356,24 @@ class OpenScience( Fetcher ):
 			active_mode = str( mode or 'dataset' ).strip( ).lower( )
 			
 			if active_mode == 'dataset':
-				return self.fetch_dataset(
-					accession=accession,
-					time=time
-				)
+				return self.fetch_dataset( accession=accession, time=time )
 			
 			if active_mode == 'metadata':
-				return self.fetch_metadata(
-					query=query,
-					format_value=format_value,
-					time=time
-				)
+				return self.fetch_metadata( query=query, format_value=format_value, time=time )
 			
 			if active_mode == 'assays':
-				return self.fetch_assays(
-					query=query,
-					format_value=format_value,
-					time=time
-				)
+				return self.fetch_assays( query=query, format_value=format_value, time=time )
 			
 			if active_mode == 'data':
-				return self.fetch_data(
-					query=query,
-					format_value=format_value,
-					time=time
-				)
+				return self.fetch_data( query=query, format_value=format_value, time=time )
 			
-			raise ValueError(
-				"Unsupported mode. Use one of: dataset, metadata, assays, data."
-			)
+			raise ValueError( "Unsupported mode. Use one of: dataset, metadata, assays, data." )
 		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
-			exception.method = (
-					'fetch( self, mode: str=dataset, query: str=, accession: str=, '
-					'format_value: str=json, time: int=20 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch( self, **kwarg ) -> Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5473,10 +5424,7 @@ class OpenScience( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
-			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
-			)
+			exception.method = 'create_schema( self, **kwargs ) -> Dict[ str, str ]'
 			Logger( ).write( exception )
 			raise exception
 
@@ -5545,26 +5493,15 @@ class SpaceWeather( Fetcher ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools,
+		    and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'base_url',
-				'api_key',
-				'url',
-				'params',
-				'mode',
-				'start_date',
-				'end_date',
-				'location',
-				'catalog',
-				'notification_type',
-				'fetch_endpoint',
-				'fetch',
-				'create_schema'
-		]
+		return [ 'base_url', 'api_key', 'url', 'params', 'mode', 'start_date', 'end_date',
+			'location', 'catalog', 'notification_type', 'fetch_endpoint', 'fetch',
+			'create_schema' ]
 	
 	def fetch_endpoint( self, endpoint: str, start_date: str, end_date: str,
 			time: int=20, location: str = '', catalog: str = '',
@@ -5608,11 +5545,8 @@ class SpaceWeather( Fetcher ):
 				raise ValueError( 'NASA API key is required for DONKI requests.' )
 			
 			self.url = f'{self.base_url}/{endpoint}'
-			self.params = {
-					'startDate': str( start_date ).strip( ),
-					'endDate': str( end_date ).strip( ),
-					'api_key': active_key
-			}
+			self.params = { 'startDate': str( start_date ).strip( ),
+				'endDate': str( end_date ).strip( ), 'api_key': active_key }
 			
 			if endpoint == 'IPS' and location.strip( ):
 				self.params[ 'location' ] = location.strip( )
@@ -5644,13 +5578,8 @@ class SpaceWeather( Fetcher ):
 			self.response.raise_for_status( )
 			payload = self.response.json( )
 			
-			return {
-					'mode': self.mode,
-					'endpoint': endpoint,
-					'url': self.url,
-					'params': self.params,
-					'data': payload
-			}
+			return { 'mode': self.mode, 'endpoint': endpoint, 'url': self.url,
+				'params': self.params, 'data': payload }
 		
 		except Exception as e:
 			exception = Error( e )
