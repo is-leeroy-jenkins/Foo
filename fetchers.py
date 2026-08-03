@@ -178,13 +178,7 @@ class Fetcher:
 		Returns:
 		    list[str]: Ordered public member names exposed by the instance.
 		"""
-		return [ 'timeout',
-		         'headers',
-		         'response',
-		         'url',
-		         'result',
-		         'query',
-		         'fetch' ]
+		return [ 'timeout', 'headers', 'response', 'url', 'result', 'query', 'fetch' ]
 	
 	def fetch( self, query: str, url: str, time: int=10 ) -> Result | None:
 		"""Fetch.
@@ -18402,7 +18396,7 @@ class ClimateData( Fetcher ):
 			raise exception
 
 class EoNet( Fetcher ):
-	"""EoNet component.
+	"""Queries NASA EONET natural-event and category endpoints.
 
 	Purpose:
 	    Queries NASA EONET natural-event and category endpoints with status, date, and bounding-box filters.
