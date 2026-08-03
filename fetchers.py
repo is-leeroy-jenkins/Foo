@@ -25481,7 +25481,6 @@ class OpenSky( Fetcher ):
 			self.time_value = (self.validate_epoch( 'time_value', time_value )
 			                   if time_value is not None else 0)
 			self.params = { 'icao24': self.icao24, 'time': self.time_value, }
-			
 			self.payload = self.request( '/tracks/all', params=self.params, client_id=client_id,
 				client_secret=client_secret )
 			
