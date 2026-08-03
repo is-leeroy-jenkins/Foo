@@ -47,7 +47,7 @@
   </summary>
   ******************************************************************************************
 '''
-from typing import Optional, List, Pattern, Dict
+from typing import Any, Optional, List, Pattern, Dict
 from bs4 import BeautifulSoup
 from requests import Response, HTTPError
 from boogr import Error, Logger
@@ -82,77 +82,99 @@ def throw_if( name: str, value: object ) -> None:
 
 
 class Extractor( ):
-	"""Extractor component.
+	"""Provide shared state for HTML extraction workflows.
 
 	Purpose:
-	    Defines the minimal HTML parsing state shared by concrete content extractors.
+		Defines the raw-document, parsed-document, and extracted-text state used by concrete
+		extractors. Subclasses populate these members while retrieving and transforming source
+		content for display, indexing, or model-facing workflows.
 
 	Attributes:
-	    raw_html (Optional[str]): Raw HTML retained by the extractor before transformation.
-	    extracted_text (Optional[str]): Plain text produced from the current HTML source.
-	    soup (Optional[BeautifulSoup]): BeautifulSoup document tree for the current HTML content.
+		raw_html (Optional[str]): Unmodified HTML retained before parsing or text conversion.
+		extracted_text (Optional[str]): Plain text produced from the current HTML document.
+		soup (Optional[BeautifulSoup]): Parsed document tree for the current HTML source.
 	"""
 	raw_html: Optional[ str ]
 	extracted_text: Optional[ str ]
 	soup: Optional[ BeautifulSoup ]
-	
-	def __init__( self ):
-		"""Initialize the instance.
+
+	def __init__( self ) -> None:
+		"""Initialize shared extraction state.
 
 		Purpose:
-		    Initializes instance state and provider or loader defaults required by subsequent operations.
+			Creates an empty extraction context that concrete subclasses can populate without
+			performing network, parsing, or transformation work during construction.
 
 		Returns:
-		    Any: Provider, loader, or normalized application value produced by the operation.
+			None: Initializes instance state without returning a value.
 		"""
 		self.raw_html = None
 		self.extracted_text = None
 		self.soup = None
-	
+
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+			Provides a stable public-member ordering for introspection, generated documentation,
+			and interactive tooling that inspects extractor capabilities.
 
 		Returns:
-		    List[str]: Ordered public member names exposed by the instance.
+			List[str]: Ordered public member names exposed by the base extractor.
 		"""
-		return [ 'raw_html', 'extract' ]
+		return [ 'raw_html', 'extracted_text', 'soup' ]
+
 
 class WebExtractor( Extractor ):
-	"""WebExtractor component.
+	"""Fetch and extract structured content from HTML pages.
 
 	Purpose:
-	    Fetches HTML synchronously and extracts plain text, semantic element groups, links, images, and tool schemas.
+		Wraps synchronous HTTP retrieval with reusable HTML parsing operations. The class stores
+		validated request arguments as instance state before invoking ``requests``, then exposes
+		plain-text conversion, semantic element extraction, link and image discovery, and dynamic
+		tool-schema construction for downstream ML and model orchestration workflows.
 
 	Attributes:
-	    soup (Optional[BeautifulSoup]): BeautifulSoup document tree for the current HTML content.
-	    agents (Optional[str]): Configured user-agent string sent with web requests.
-	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
-	    html (Optional[str]): Raw HTML returned by the most recent web request.
-	    re_tag (Optional[Pattern]): Compiled pattern used to remove residual HTML tags.
-	    re_ws (Optional[Pattern]): Compiled pattern used to collapse repeated whitespace.
-	    response (Optional[Response]): Most recent raw response returned by the provider client.
-	    timeout (Any): Maximum request duration, in seconds, applied to provider calls.
-	    headers (Any): HTTP headers sent with the current request.
+		agents (Optional[str]): User-agent value sent with HTTP requests.
+		url (Optional[str]): Normalized URL used by the current request.
+		html (Optional[str]): HTML currently being transformed or parsed.
+		timeout (Optional[int]): Maximum request duration in seconds.
+		headers (Optional[Dict[str, str]]): HTTP headers supplied to the wrapped requests client.
+		response (Optional[Response]): Most recent HTTP response returned by ``requests``.
+		result (Optional[Result]): Canonical Foo result created from the most recent response.
+		re_tag (Optional[Pattern]): Pattern used to remove remaining HTML tags.
+		re_ws (Optional[Pattern]): Pattern used to collapse repeated whitespace.
+		function (Optional[str]): Function name assigned to the current tool schema.
+		tool (Optional[str]): Service name assigned to the current tool schema.
+		description (Optional[str]): Human-readable behavior description for the current schema.
+		parameters (Optional[Dict[str, Any]]): JSON Schema property definitions for tool arguments.
+		required (Optional[List[str]]): Required argument names included in the current schema.
 	"""
-	soup: Optional[ BeautifulSoup ]
 	agents: Optional[ str ]
 	url: Optional[ str ]
 	html: Optional[ str ]
+	timeout: Optional[ int ]
+	headers: Optional[ Dict[ str, str ] ]
+	response: Optional[ Response ]
+	result: Optional[ Result ]
 	re_tag: Optional[ Pattern ]
 	re_ws: Optional[ Pattern ]
-	response: Optional[ Response ]
-	
+	function: Optional[ str ]
+	tool: Optional[ str ]
+	description: Optional[ str ]
+	parameters: Optional[ Dict[ str, Any ] ]
+	required: Optional[ List[ str ] ]
+
 	def __init__( self ) -> None:
-		"""Initialize the instance.
+		"""Initialize the web extraction client.
 
 		Purpose:
-		    Initializes instance state and provider or loader defaults required by subsequent operations.
+			Prepares request headers, timeout defaults, regular-expression helpers, response state,
+			and schema state used by subsequent retrieval and extraction operations. Construction
+			does not perform network activity.
 
 		Returns:
-		    None: This method updates instance state or validates input and does not return a value.
+			None: Initializes instance state without returning a value.
 		"""
 		super( ).__init__( )
 		self.timeout = 10
@@ -161,447 +183,559 @@ class WebExtractor( Extractor ):
 		self.url = None
 		self.html = None
 		self.response = None
+		self.result = None
 		self.headers = { }
 		self.agents = cfg.AGENTS
+		self.function = None
+		self.tool = None
+		self.description = None
+		self.parameters = None
+		self.required = None
+
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
-	
+
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+			Provides a stable ordering of request state, schema state, and extraction operations for
+			introspection, generated documentation, and interactive application tooling.
 
 		Returns:
-		    List[str]: Ordered public member names exposed by the instance.
+			List[str]: Ordered public attribute and method names exposed by the extractor.
 		"""
-		return [ 'agents', 'url', 'html', 'timeout', 'headers', 'fetch', 'html_to_text',
-			'scrape_images', 'scrape_hyperlinks', 'scrape_images', 'scrape_hyperlinks',
-			'scrape_blockquotes', 'scrape_sections', 'scrape_divisions', 'sracpe_headings',
-			'scrape_tables', 'scrape_lists', 'scrape_paragraphse', ]
-	
-	def scrape( self, url: str, time: int = 10 ) -> Result | None:
-		"""Scrape.
+		return [
+			'agents',
+			'url',
+			'html',
+			'timeout',
+			'headers',
+			'response',
+			'result',
+			'raw_html',
+			'extracted_text',
+			'soup',
+			'function',
+			'tool',
+			'description',
+			'parameters',
+			'required',
+			'scrape',
+			'html_to_text',
+			'scrape_paragraphs',
+			'scrape_lists',
+			'scrape_tables',
+			'scrape_articles',
+			'scrape_headings',
+			'scrape_divisions',
+			'scrape_sections',
+			'scrape_blockquotes',
+			'scrape_hyperlinks',
+			'scrape_images',
+			'create_schema'
+		]
+
+	def scrape( self, url: str, time: int=10 ) -> Result | None:
+		"""Fetch an HTML resource and return its canonical result.
 
 		Purpose:
-		    Scrape using the class state and returns data required by the surrounding workflow.
+			Validates and stores the request URL and timeout before invoking ``requests.get``. The
+			method retains the response, verifies its status, captures the response HTML, prepares a
+			BeautifulSoup document tree, and returns Foo's normalized ``Result`` representation.
 
 		Args:
-		    url (str): Absolute endpoint or resource URL.
-		    time (int): Maximum request duration in seconds.
+			url (str): Absolute HTTP or HTTPS URL of the resource to retrieve.
+			time (int): Maximum number of seconds permitted for the HTTP request.
 
 		Returns:
-		    Result | None: Normalized Foo result for the completed provider request, or ``None`` when the selected path does not create one.
+			Result | None: Canonical Foo result containing the successful HTTP response.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'url', url )
-			self.url = url
-			self.timeout = time
-			self.response = requests.get( url=self.url, headers=self.headers,
-				timeout=self.timeout )
+			throw_if( 'time', time )
+			self.url = str( url ).strip( )
+			self.timeout = int( time )
+			self.response = requests.get(
+				url=self.url,
+				headers=self.headers,
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
 			self.result = Result( self.response )
 			return self.result
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
-			exception.cause = 'WebFetcher'
-			exception.method = 'fetch( self, url: str, time: int=10  ) -> Result'
+			exception.cause = 'WebExtractor'
+			exception.method = 'scrape( self, url: str, time: int=10 ) -> Result | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def html_to_text( self, html: str ) -> str:
-		"""Html to text.
+		"""Convert HTML markup into compact plain text.
 
 		Purpose:
-		    Removes non-content HTML, strips remaining markup, and normalizes whitespace into text suitable for indexing or display.
+			Stores the source document before removing script and style blocks, introducing readable
+			boundaries around block elements, stripping residual tags, and collapsing repeated
+			whitespace. The resulting text is suitable for indexing, display, or model input.
 
 		Args:
-		    html (str): Raw HTML document content to parse or convert.
+			html (str): Raw HTML document to transform.
 
 		Returns:
-		    str: Normalized text produced by the operation.
+			str: Normalized plain text extracted from the HTML document.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'html', html )
-			html = re.sub( r'<script[\s\S]*?</script>', ' ', html, flags=re.IGNORECASE )
-			html = re.sub( r'<style[\s\S]*?</style>', ' ', html, flags=re.IGNORECASE )
-			html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', html, flags=re.IGNORECASE )
-			text = re.sub( self.re_tag, ' ', html )
-			text = re.sub( self.re_ws, ' ', text ).strip( )
-			return text
+			self.html = str( html )
+			self.raw_html = self.html
+			self.html = re.sub( r'<script[\s\S]*?</script>', ' ', self.html,
+				flags=re.IGNORECASE )
+			self.html = re.sub( r'<style[\s\S]*?</style>', ' ', self.html,
+				flags=re.IGNORECASE )
+			self.html = re.sub( r'</?(p|div|br|li|h[1-6])[^>]*>', '\n', self.html,
+				flags=re.IGNORECASE )
+			self.extracted_text = re.sub( self.re_tag, ' ', self.html )
+			self.extracted_text = re.sub( self.re_ws, ' ', self.extracted_text ).strip( )
+			return self.extracted_text
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
-			exception.cause = 'WebFetchers'
-			exception.method = 'html2text( )'
+			exception.cause = 'WebExtractor'
+			exception.method = 'html_to_text( self, html: str ) -> str'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_paragraphs( self, uri: str ) -> List[ str ] | None:
-		"""Scrape paragraphs.
+		"""Extract paragraph text from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty paragraphs content for downstream indexing or analysis.
+			Retrieves the supplied page through the configured request state and returns non-empty
+			text from each paragraph element in document order.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty paragraph strings in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
 			blocks = [ p.get_text( ' ', strip=True ) for p in self.soup.find_all( 'p' ) ]
-			return [ b for b in blocks if b ]
+			return [ block for block in blocks if block ]
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_paragraphs( self, uri: str ) -> List[ str ]'
+			exception.method = 'scrape_paragraphs( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_lists( self, uri: str ) -> List[ str ] | None:
-		"""Scrape lists.
+		"""Extract list-item text from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty lists content for downstream indexing or analysis.
+			Retrieves the supplied page and returns the readable content of non-empty ``li`` elements,
+			providing a simple sequence for indexing or downstream content analysis.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty list-item strings in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			items = [ li.get_text( ' ', strip=True ) for li in self.soup.find_all( 'li' ) ]
-			return [ i for i in items if i ]
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
+			items = [ item.get_text( ' ', strip=True ) for item in self.soup.find_all( 'li' ) ]
+			return [ item for item in items if item ]
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_lists( self, uri: str ) -> List[ str ]'
+			exception.method = 'scrape_lists( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_tables( self, uri: str ) -> List[ str ] | None:
-		"""Scrape tables.
+		"""Extract flattened table-cell text from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty tables content for downstream indexing or analysis.
+			Retrieves the target page and flattens non-empty header and data cells from every table
+			into a document-order sequence suitable for quick inspection or text-based indexing.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty ``th`` and ``td`` values in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			_results: List[ str ] = [ ]
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
+			results: List[ str ] = [ ]
 			for table in self.soup.find_all( 'table' ):
 				for row in table.find_all( 'tr' ):
 					for cell in row.find_all( [ 'td', 'th' ] ):
 						text = cell.get_text( ' ', strip=True )
 						if text:
-							_results.append( text )
-			
-			return _results
+							results.append( text )
+			return results
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_tables( self, uri: str ) -> List[ str ]'
+			exception.method = 'scrape_tables( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_articles( self, uri: str ) -> List[ str ] | None:
-		"""Scrape articles.
+		"""Extract article-level text from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty articles content for downstream indexing or analysis.
+			Retrieves the target page and consolidates readable text from each semantic ``article``
+			element so callers can treat article blocks as document-like units.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty article text blocks in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			blocks = [ art.get_text( " ", strip=True ) for art in self.soup.find_all( 'article' ) ]
-			return [ b for b in blocks if b ]
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
+			blocks = [ article.get_text( ' ', strip=True )
+				for article in self.soup.find_all( 'article' ) ]
+			return [ block for block in blocks if block ]
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_articles( self, uri: str ) -> List[ str ]'
+			exception.method = 'scrape_articles( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_headings( self, uri: str ) -> List[ str ] | None:
-		"""Scrape headings.
+		"""Extract heading text from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty headings content for downstream indexing or analysis.
+			Retrieves the target page and returns visible text from ``h1`` through ``h6`` elements,
+			providing a structural outline for summarization, navigation, or content inspection.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty heading strings in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
 			heading_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ]
-			blocks = [ h.get_text( ' ', strip=True ) for h in self.soup.find_all( heading_tags ) ]
-			return [ b for b in blocks if b ]
+			blocks = [ heading.get_text( ' ', strip=True )
+				for heading in self.soup.find_all( heading_tags ) ]
+			return [ block for block in blocks if block ]
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_headings( self, uri: str ) -> List[ str ]'
+			exception.method = 'scrape_headings( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_divisions( self, uri: str ) -> List[ str ] | None:
-		"""Scrape divisions.
+		"""Extract division text from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty divisions content for downstream indexing or analysis.
+			Retrieves the target page and returns cleaned text from generic ``div`` containers,
+			providing broad coverage for pages that do not use semantic content elements.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty division text blocks in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			blocks = [ div.get_text( " ", strip=True ) for div in self.soup.find_all( 'div' ) ]
-			return [ b for b in blocks if b ]
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
+			blocks = [ division.get_text( ' ', strip=True )
+				for division in self.soup.find_all( 'div' ) ]
+			return [ block for block in blocks if block ]
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_divisions( self, uri: str ) -> List[ str ]'
+			exception.method = 'scrape_divisions( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_sections( self, uri: str ) -> List[ str ] | None:
-		"""Scrape sections.
+		"""Extract semantic section text from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty sections content for downstream indexing or analysis.
+			Retrieves the target page and returns readable content from semantic ``section`` elements,
+			preserving page-level content groupings for indexing or analysis.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty section text blocks in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			blocks = [ sec.get_text( " ", strip=True ) for sec in self.soup.find_all( 'section' ) ]
-			return [ b for b in blocks if b ]
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
+			blocks = [ section.get_text( ' ', strip=True )
+				for section in self.soup.find_all( 'section' ) ]
+			return [ block for block in blocks if block ]
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_sections( self, uri: str ) -> List[ str ]'
+			exception.method = 'scrape_sections( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_blockquotes( self, uri: str ) -> List[ str ] | None:
-		"""Scrape blockquotes.
+		"""Extract blockquote text from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty blockquotes content for downstream indexing or analysis.
+			Retrieves the target page and returns readable text from semantic ``blockquote`` elements,
+			capturing quoted or cited material separately from surrounding prose.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty blockquote strings in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			blocks = [ bq.get_text( ' ', strip=True ) for bq in self.soup.find_all( 'blockquote' ) ]
-			return [ b for b in blocks if b ]
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
+			blocks = [ quote.get_text( ' ', strip=True )
+				for quote in self.soup.find_all( 'blockquote' ) ]
+			return [ block for block in blocks if block ]
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_blockquotes( self, uri: str ) -> List[ str ]'
+			exception.method = 'scrape_blockquotes( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_hyperlinks( self, uri: str ) -> List[ str ] | None:
-		"""Scrape hyperlinks.
+		"""Extract hyperlink references from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty hyperlinks content for downstream indexing or analysis.
+			Retrieves the target page and returns non-empty ``href`` values from anchor elements.
+			References remain in their source form so callers can decide whether and how to resolve
+			relative paths.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty hyperlink references in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			links = [ a.get( 'href' ) for a in self.soup.find_all( 'a' ) if a.get( 'href' ) ]
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
+			links = [ anchor.get( 'href' ) for anchor in self.soup.find_all( 'a' )
+				if anchor.get( 'href' ) ]
 			return links
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_hyperlinks( self, uri: str ) -> List[ str ]'
+			exception.method = 'scrape_hyperlinks( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
+
 	def scrape_images( self, uri: str ) -> List[ str ] | None:
-		"""Scrape images.
+		"""Extract image references from an HTML page.
 
 		Purpose:
-		    Fetches the target page and extracts non-empty images content for downstream indexing or analysis.
+			Retrieves the target page and returns non-empty ``src`` values from image elements.
+			References remain in their source form so callers can resolve or filter them according to
+			the surrounding workflow.
 
 		Args:
-		    uri (str): Fully qualified resource identifier for the target page.
+			uri (str): Fully qualified URL of the HTML page to inspect.
 
 		Returns:
-		    List[str] | None: Ordered values or records produced by the operation.
+			List[str] | None: Non-empty image source references in document order.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'uri', uri )
-			self.response = requests.get( uri, timeout=10 )
+			self.url = str( uri ).strip( )
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.soup = BeautifulSoup( self.response.text, 'html.parser' )
-			images = [ img.get( 'src' ) for img in self.soup.find_all( 'img' ) if img.get( 'src' ) ]
+			self.html = self.response.text or ''
+			self.raw_html = self.html
+			self.soup = BeautifulSoup( self.html, 'html.parser' )
+			images = [ image.get( 'src' ) for image in self.soup.find_all( 'img' )
+				if image.get( 'src' ) ]
 			return images
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'scrapers'
 			exception.cause = 'WebExtractor'
-			exception.method = 'scrape_images( self, uri: str ) -> List[ str ] '
+			exception.method = 'scrape_images( self, uri: str ) -> List[ str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
-		"""Create schema.
+
+	def create_schema( self, function: str, tool: str, description: str,
+			parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+		"""Create a JSON-compatible tool schema.
 
 		Purpose:
-		    Builds a JSON-compatible function schema for model tool-calling and orchestration workflows.
+			Validates and stores schema inputs before constructing a function definition that names
+			the wrapped service, describes its behavior, and declares JSON Schema properties and
+			required arguments for model tool-calling workflows.
 
 		Args:
-		    function (str): Function name exposed in the generated tool schema.
-		    tool (str): Service or tool name referenced by the generated schema.
-		    description (str): Human-readable explanation embedded in the generated schema.
-		    parameters (dict): JSON Schema property definitions for the tool arguments.
-		    required (list[str]): Argument names that callers must supply to the generated tool.
+			function (str): Function name exposed to the model or orchestration layer.
+			tool (str): Service or system used by the generated function.
+			description (str): Human-readable explanation of the function behavior.
+			parameters (dict): Mapping of parameter names to JSON Schema fragments.
+			required (list[str]): Required parameter names. When ``None``, all properties are required.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
+			Dict[str, str] | None: JSON-compatible function schema.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+			Error: Re-raised after the source exception is wrapped with structured diagnostic metadata.
 		"""
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			if not isinstance( parameters, dict ):
-				msg = 'parameters must be a dict of param_name → schema definitions.'
-				raise ValueError( msg )
-			func_name = function.strip( )
-			tool_name = tool.strip( )
-			desc = description.strip( )
-			if required is None:
-				required = list( parameters.keys( ) )
-			_schema = \
-				{
-						'name': func_name,
-						'description': f'{desc} This function uses the {tool_name} service.',
-						'parameters':
-							{
-									'type': 'object',
-									'properties': parameters,
-									'required': required
-							}
+			self.function = str( function ).strip( )
+			self.tool = str( tool ).strip( )
+			self.description = str( description ).strip( )
+			self.parameters = parameters
+			self.required = required
+			
+			if not isinstance( self.parameters, dict ):
+				raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
+
+			if self.required is None:
+				self.required = list( self.parameters.keys( ) )
+
+			return {
+				'name': self.function,
+				'description': (
+					f'{self.description} This function uses the {self.tool} service.'
+				),
+				'parameters': {
+					'type': 'object',
+					'properties': self.parameters,
+					'required': self.required
 				}
-			return _schema
-		except Exception as e:
-			exception = Error( e )
-			exception.module = 'Foo'
-			exception.cause = ''
-			exception.method = ('create_schema( self, *args ) -> Dict[ str, str ]')
+			}
+		except Exception as exc:
+			exception = Error( exc )
+			exception.module = 'scrapers'
+			exception.cause = 'WebExtractor'
+			exception.method = 'create_schema( self, **args ) -> Dict[ str, str ] | None'
 			Logger( ).write( exception )
 			raise exception
-	

@@ -60,3 +60,10 @@ streamlit-extras
 streamlit-pdf
 openai
 chromadb
+
+mkdocs
+mkdocs-material
+mkdocstrings[python]
+mkdocs-autorefs
+pymdown-extensions
+black

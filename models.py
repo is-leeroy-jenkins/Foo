@@ -63,14 +63,10 @@ class Prompt( BaseModel ):
 	Attributes:
 		instructions (Optional[str]): Primary instruction block, usually equivalent to a
 			system message or reusable prompt body.
-		id (Optional[str]): Prompt identifier, friendly name, hash, or upstream object id.
-		version (Optional[str]): Version label used for prompt management and experiments.
 		format (Optional[str]): Format label such as ``chat``, ``json``, or ``completion``.
 		question (Optional[str]): User question or task associated with the prompt.
 	"""
 	instructions: Optional[ str ]
-	id: Optional[ str ]
-	version: Optional[ str ]
 	format: Optional[ str ]
 	question: Optional[ str ]
 

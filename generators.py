@@ -86,8 +86,10 @@ def throw_if( name: str, value: object ) -> None:
 	"""
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	
 	if isinstance( value, str ) and (not value.strip( )):
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	
 	if isinstance( value, (list, tuple, dict, set) ) and len( value ) == 0:
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
 
@@ -320,9 +322,7 @@ class Grok( Generator ):
 					values.append( value )
 			
 			if len( values ) > 5:
-				raise ValueError(
-					'xAI web-search allowed domains are limited to five domains.'
-				)
+				raise ValueError( 'xAI web-search allowed domains are limited to five domains.' )
 			
 			return values
 		
@@ -408,12 +408,8 @@ class Grok( Generator ):
 		try:
 			throw_if( 'model', model )
 			name = str( model ).strip( ).lower( )
-			return (
-					'reasoning' in name
-					or name.startswith( 'grok-4' )
-					or name.startswith( 'grok-4.3' )
-					or name.startswith( 'grok-4.20' )
-			)
+			return ('reasoning' in name or name.startswith( 'grok-4' ) or name.startswith(
+				'grok-4.3' ) or name.startswith( 'grok-4.20' ))
 		
 		except Exception as exc:
 			exception = Error( exc )
@@ -449,8 +445,7 @@ class Grok( Generator ):
 			if response_format and str( response_format ).strip( ).lower( ) == 'json':
 				parts.append(
 					'Return valid JSON only. Do not include markdown fences, prose, '
-					'or commentary outside the JSON value.'
-				)
+					'or commentary outside the JSON value.' )
 			
 			if parts:
 				return '\n\n'.join( parts )
@@ -461,10 +456,7 @@ class Grok( Generator ):
 			exception = Error( exc )
 			exception.module = 'generators'
 			exception.cause = 'Grok'
-			exception.method = (
-					'build_instructions( self, system: str | None=None, '
-					'response_format: str | None=None ) -> str | None'
-			)
+			exception.method = 'build_instructions( self, **kwargs ) -> str | None'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -504,10 +496,7 @@ class Grok( Generator ):
 			exception = Error( exc )
 			exception.module = 'generators'
 			exception.cause = 'Grok'
-			exception.method = (
-					'build_tools( self, web_search: bool=False, '
-					'search_domains: Any=None ) -> List[ Dict[ str, Any ] ]'
-			)
+			exception.method = 'build_tools( self, **kwargs) -> List[ Dict[ str, Any ] ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -546,8 +535,7 @@ class Grok( Generator ):
 			exception.module = 'generators'
 			exception.cause = 'Grok'
 			exception.method = (
-					'build_response_format( self, response_format: str | None=None ) '
-					'-> Dict[ str, Any ] | None'
+					'build_response_format( self, **args ) -> Dict[ str, Any ]'
 			)
 			Logger( ).write( exception )
 			raise exception
@@ -676,11 +664,8 @@ class Grok( Generator ):
 				if isinstance( messages, str ):
 					messages = [ { 'role': 'user', 'content': messages } ]
 				
-				chat_payload = {
-						'model': payload.get( 'model' ),
-						'messages': messages,
-						'stream': payload.get( 'stream', False )
-				}
+				chat_payload = { 'model': payload.get( 'model' ),
+						'messages': messages, 'stream': payload.get( 'stream', False ) }
 				
 				if payload.get( 'temperature' ) is not None:
 					chat_payload[ 'temperature' ] = payload.get( 'temperature' )
@@ -760,7 +745,6 @@ class Grok( Generator ):
 		try:
 			throw_if( 'query', query )
 			throw_if( 'model', model )
-			
 			self.query = str( query )
 			self.model = str( model ).strip( )
 			self.temperature = float( temperature )
@@ -773,31 +757,23 @@ class Grok( Generator ):
 			self.search_domains = self.normalize_domains( search_domains )
 			self.parallel_tool_calls = bool( parallel_tool_calls )
 			self.tool_choice = tool_choice or 'auto'
-			self.system_instructions = self.build_instructions(
-				system=system,
-				response_format=response_format
-			)
-			self.tools = self.build_tools(
-				web_search=self.web_search,
-				search_domains=self.search_domains
-			)
+			self.system_instructions = self.build_instructions( system=system,
+				response_format=response_format )
+			self.tools = self.build_tools( web_search=self.web_search,
+				search_domains=self.search_domains )
 			
 			input_messages: List[ Dict[ str, str ] ] = [ ]
 			
 			if self.system_instructions:
-				input_messages.append(
-					{
+				input_messages.append( {
 							'role': 'system',
 							'content': self.system_instructions
-					}
-				)
+					} )
 			
-			input_messages.append(
-				{
+			input_messages.append( {
 						'role': 'user',
 						'content': self.query
-				}
-			)
+				} )
 			
 			self.params = {
 					'model': self.model,
@@ -831,11 +807,7 @@ class Grok( Generator ):
 				self.params[ 'top_p' ] = self.top_p
 				
 				if stop:
-					self.params[ 'stop' ] = [
-							str( item )
-							for item in stop
-							if str( item ).strip( )
-					]
+					self.params[ 'stop' ] = [ str( item ) for item in stop if str( item ).strip() ]
 			
 			self.response = self.create_response( self.params )
 			return self.extract_output_text( self.response )
@@ -885,24 +857,11 @@ class Grok( Generator ):
 		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			return self.fetch(
-				query=query,
-				model=model,
-				temperature=temperature,
-				max_tokens=max_tokens,
-				top_p=top_p,
-				seed=seed,
-				system=system,
-				response_format=response_format,
-				reasoning_effort=reasoning_effort,
-				web_search=web_search,
-				search_domains=search_domains,
-				stop=stop,
-				stream=stream,
-				store=store,
-				parallel_tool_calls=parallel_tool_calls,
-				tool_choice=tool_choice
-			)
+			return self.fetch( query=query, model=model, temperature=temperature,
+				max_tokens=max_tokens, top_p=top_p, seed=seed, system=system,
+				response_format=response_format, reasoning_effort=reasoning_effort,
+				web_search=web_search, search_domains=search_domains, stop=stop, stream=stream,
+				store=store, parallel_tool_calls=parallel_tool_calls, tool_choice=tool_choice )
 		
 		except Exception as exc:
 			exception = Error( exc )
@@ -946,24 +905,11 @@ class Grok( Generator ):
 		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			return self.fetch(
-				query=query,
-				model=model,
-				temperature=temperature,
-				max_tokens=max_tokens,
-				top_p=top_p,
-				seed=seed,
-				system=system,
-				response_format=response_format,
-				reasoning_effort=reasoning_effort,
-				web_search=True,
-				search_domains=search_domains,
-				stop=None,
-				stream=stream,
-				store=store,
-				parallel_tool_calls=parallel_tool_calls,
-				tool_choice=tool_choice
-			)
+			return self.fetch( query=query, model=model, temperature=temperature,
+				max_tokens=max_tokens, top_p=top_p, seed=seed, system=system,
+				response_format=response_format, reasoning_effort=reasoning_effort,
+				web_search=True, search_domains=search_domains, stop=None, stream=stream,
+				store=store, parallel_tool_calls=parallel_tool_calls, tool_choice=tool_choice )
 		
 		except Exception as exc:
 			exception = Error( exc )
@@ -1067,48 +1013,19 @@ class Gemini( Generator ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools,
+		    and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'api_key',
-				'client',
-				'model',
-				'response',
-				'query',
-				'params',
-				'temperature',
-				'max_tokens',
-				'top_p',
-				'top_k',
-				'candidate_count',
-				'seed',
-				'system_instructions',
-				'response_format',
-				'stop_sequences',
-				'grounding',
-				'search_domains',
-				'reasoning',
-				'thinking_level',
-				'thinking_budget',
-				'include_thoughts',
-				'tools',
-				'config',
-				'normalize_domains',
-				'normalize_stop_sequences',
-				'supports_thinking_level',
-				'supports_thinking_budget',
-				'build_system_instruction',
-				'build_thinking_config',
-				'build_tools',
-				'build_config',
-				'extract_text',
-				'fetch',
-				'generate_text',
-				'search_web'
-		]
+		return [ 'api_key', 'client', 'model', 'response', 'query', 'params', 'temperature',
+			'max_tokens', 'top_p', 'top_k', 'candidate_count', 'seed', 'system_instructions',
+			'response_format', 'stop_sequences', 'grounding', 'search_domains', 'reasoning',
+			'thinking_level', 'thinking_budget', 'include_thoughts', 'tools', 'config',
+			'normalize_domains', 'normalize_stop_sequences', 'supports_thinking_level',
+			'supports_thinking_budget', 'build_system_instruction', 'build_thinking_config',
+			'build_tools', 'build_config', 'extract_text', 'fetch', 'generate_text', 'search_web' ]
 	
 	def normalize_domains( self, domains: Any ) -> List[ str ]:
 		"""Normalize domains.
@@ -1197,11 +1114,7 @@ class Gemini( Generator ):
 			else:
 				parts = [ str( stop_sequences ) ]
 			
-			return [
-					str( item ).strip( )
-					for item in parts
-					if str( item ).strip( )
-			]
+			return [ str( item ).strip( ) for item in parts if str( item ).strip( ) ]
 		
 		except Exception as exc:
 			exception = Error( exc )
@@ -1457,12 +1370,9 @@ class Gemini( Generator ):
 			if seed is not None:
 				config_data[ 'seed' ] = int( seed )
 			
-			system_instruction = self.build_system_instruction(
-				system=system,
-				response_format=response_format,
-				grounding=grounding,
-				search_domains=search_domains
-			)
+			system_instruction = self.build_system_instruction( system=system,
+				response_format=response_format, grounding=grounding,
+				search_domains=search_domains )
 			
 			if system_instruction:
 				config_data[ 'system_instruction' ] = system_instruction
@@ -1482,13 +1392,9 @@ class Gemini( Generator ):
 			if tools_value:
 				config_data[ 'tools' ] = tools_value
 			
-			thinking_config = self.build_thinking_config(
-				model=model,
-				reasoning=reasoning,
-				thinking_level=thinking_level,
-				thinking_budget=thinking_budget,
-				include_thoughts=include_thoughts
-			)
+			thinking_config = self.build_thinking_config( model=model, reasoning=reasoning,
+				thinking_level=thinking_level, thinking_budget=thinking_budget,
+				include_thoughts=include_thoughts )
 			
 			if thinking_config:
 				config_data[ 'thinking_config' ] = thinking_config
@@ -1633,11 +1539,7 @@ class Gemini( Generator ):
 				search_domains=self.search_domains, reasoning=self.reasoning,
 				thinking_level=self.thinking_level, thinking_budget=self.thinking_budget,
 				include_thoughts=self.include_thoughts, response_json_schema=response_json_schema )
-			self.params = {
-					'model': self.model,
-					'contents': self.query,
-					'config': self.config
-			}
+			self.params = { 'model': self.model, 'contents': self.query, 'config': self.config }
 			
 			self.response = self.client.models.generate_content( **self.params )
 			return self.extract_text( self.response )
@@ -1842,32 +1744,17 @@ class Claude( Generator ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools,
+		    and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [ 'content',
-		         'url',
-		         'client',
-		         'timeout',
-		         'headers',
-		         'fetch',
-		         'api_key',
-		         'response',
-		         'params',
-		         'agents',
-		         'messages',
-		         'temperature',
-		         'top_p',
-		         'top_k',
-		         'thinking_budget',
-		         'system_instructions',
-		         'web_search',
-		         'search_domains',
-		         'blocked_domains' ]
+		return [ 'content', 'url', 'client', 'timeout', 'headers', 'fetch', 'api_key', 'response',
+			'params', 'agents', 'messages', 'temperature', 'top_p', 'top_k', 'thinking_budget',
+			'system_instructions', 'web_search', 'search_domains', 'blocked_domains' ]
 	
-	def _normalize_domains( self, domains: Any ) -> List[ str ]:
+	def normalize_domains( self, domains: Any ) -> List[ str ]:
 		"""Normalize domains.
 
 		Purpose:
@@ -1922,7 +1809,7 @@ class Claude( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def _supports_thinking( self, model: str ) -> bool:
+	def supports_thinking( self, model: str ) -> bool:
 		"""Supports thinking.
 
 		Purpose:
@@ -1949,7 +1836,7 @@ class Claude( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def _extract_text( self, response: Any ) -> str:
+	def extract_text( self, response: Any ) -> str:
 		"""Extract text.
 
 		Purpose:
@@ -2022,7 +1909,6 @@ class Claude( Generator ):
 		try:
 			throw_if( 'query', query )
 			throw_if( 'model', model )
-			
 			self.query = query
 			self.model = str( model ).strip( )
 			self.temperature = float( temperature )
@@ -2032,8 +1918,8 @@ class Claude( Generator ):
 			self.system_instructions = system if system and str( system ).strip( ) else None
 			self.web_search = bool( web_search )
 			self.client = Claude( api_key=self.api_key )
-			self.search_domains = self._normalize_domains( search_domains )
-			self.blocked_domains = self._normalize_domains( blocked_domains )
+			self.search_domains = self.normalize_domains( search_domains )
+			self.blocked_domains = self.normalize_domains( blocked_domains )
 			self.thinking_budget = int( thinking_budget ) if thinking_budget is not None else None
 			self.messages = [ { 'role': 'user', 'content': self.query } ]
 			self.params = \
@@ -2049,7 +1935,7 @@ class Claude( Generator ):
 			if stop_sequences:
 				self.params[ 'stop_sequences' ] = stop_sequences
 			
-			if thinking and self._supports_thinking( self.model ):
+			if thinking and self.supports_thinking( self.model ):
 				_budget = self.thinking_budget if self.thinking_budget is not None else 1024
 				if _budget < 1024:
 					_budget = 1024
@@ -2087,7 +1973,7 @@ class Claude( Generator ):
 				self.params[ 'tools' ] = self.tools
 			
 			self.response = self.client.messages.create( **self.params )
-			return self._extract_text( self.response )
+			return self.extract_text( self.response )
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -2128,21 +2014,11 @@ class Claude( Generator ):
 		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			return self.fetch(
-				query=query,
-				model=model,
-				temperature=temperature,
-				max_tokens=max_tokens,
-				top_p=top_p,
-				top_k=top_k,
-				system=system,
-				stop_sequences=stop_sequences,
-				thinking=thinking,
-				thinking_budget=thinking_budget,
-				web_search=web_search,
-				search_domains=search_domains,
-				blocked_domains=blocked_domains,
-			)
+			return self.fetch( query=query, model=model, temperature=temperature,
+				max_tokens=max_tokens, top_p=top_p, top_k=top_k, system=system,
+				stop_sequences=stop_sequences, thinking=thinking, thinking_budget=thinking_budget,
+				web_search=web_search, search_domains=search_domains,
+				blocked_domains=blocked_domains, )
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -2182,21 +2058,10 @@ class Claude( Generator ):
 		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			return self.fetch(
-				query=query,
-				model=model,
-				temperature=temperature,
-				max_tokens=max_tokens,
-				top_p=top_p,
-				top_k=top_k,
-				system=system,
-				stop_sequences=stop_sequences,
-				thinking=thinking,
-				thinking_budget=thinking_budget,
-				web_search=True,
-				search_domains=search_domains,
-				blocked_domains=blocked_domains,
-			)
+			return self.fetch( query=query, model=model, temperature=temperature,
+				max_tokens=max_tokens, top_p=top_p, top_k=top_k, system=system,
+				stop_sequences=stop_sequences, thinking=thinking, thinking_budget=thinking_budget,
+				web_search=True, search_domains=search_domains, blocked_domains=blocked_domains, )
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -2279,32 +2144,15 @@ class Mistral( Generator ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools,
+		    and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'content',
-				'client',
-				'timeout',
-				'headers',
-				'fetch',
-				'api_key',
-				'response',
-				'params',
-				'agents',
-				'model',
-				'temperature',
-				'max_tokens',
-				'top_p',
-				'messages',
-				'system_instructions',
-				'seed',
-				'safe_prompt',
-				'_extract_text',
-				'create_schema',
-		]
+		return [ 'content', 'client', 'timeout', 'headers', 'fetch', 'api_key', 'response',
+			'params', 'agents', 'model', 'temperature', 'max_tokens', 'top_p', 'messages',
+			'system_instructions', 'seed', 'safe_prompt', '_extract_text', 'create_schema', ]
 	
 	def _extract_text( self, response: Any ) -> str:
 		"""Extract text.
@@ -2619,49 +2467,19 @@ class Chat( Generator ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools,
+		    and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'api_key',
-				'client',
-				'system_instructions',
-				'model',
-				'number',
-				'temperature',
-				'top_percent',
-				'frequency_penalty',
-				'presence_penalty',
-				'max_completion_tokens',
-				'store',
-				'stream',
-				'response_format',
-				'reasoning_effort',
-				'web_search',
-				'search_domains',
-				'parallel_tool_calls',
-				'tool_choice',
-				'tools',
-				'vector_store_ids',
-				'request',
-				'response',
-				'fetch',
-				'generate_text',
-				'generate_image',
-				'analyze_image',
-				'summarize_document',
-				'search_web',
-				'search_files',
-				'translate',
-				'transcribe',
-				'get_format_options',
-				'get_model_options',
-				'get_effort_options',
-				'get_data',
-				'dump'
-		]
+		return [ 'api_key', 'client', 'system_instructions', 'model', 'number', 'temperature',
+			'top_percent', 'frequency_penalty', 'presence_penalty', 'max_completion_tokens',
+			'store', 'stream', 'response_format', 'reasoning_effort', 'web_search',
+			'search_domains', 'parallel_tool_calls', 'tool_choice', 'tools', 'vector_store_ids',
+			'request', 'response', 'fetch', 'generate_text', 'generate_image', 'analyze_image',
+			'summarize_document', 'search_web', 'search_files', 'translate', 'transcribe',
+			'get_format_options', 'get_model_options', 'get_effort_options', 'get_data', 'dump' ]
 	
 	def normalize_domains( self, domains: Any ) -> List[ str ]:
 		"""Normalize domains.
@@ -2782,17 +2600,14 @@ class Chat( Generator ):
 				parts.append( str( system ).strip( ) )
 			
 			if response_format and str( response_format ).strip( ).lower( ) == 'json':
-				parts.append(
-					'Return valid JSON only. Do not include markdown fences, prose, '
-					'or commentary outside the JSON value.'
-				)
+				parts.append( 'Return valid JSON only. Do not include markdown fences, prose, '
+				              'or commentary outside the JSON value.' )
 			
 			domains = self.normalize_domains( search_domains )
 			if web_search and domains:
-				parts.append(
-					'When using web search, strongly prefer sources from the following '
-					f'domains when they are relevant and available: {", ".join( domains )}.'
-				)
+				parts.append( 'When using web search, strongly prefer sources from the following '
+				              f'domains when they are relevant and available: '
+				              f'{", ".join( domains )}.' )
 			
 			if parts:
 				return '\n\n'.join( parts )
@@ -2892,13 +2707,11 @@ class Chat( Generator ):
 			if file_search:
 				store_ids = vector_store_ids or self.vector_store_ids
 				throw_if( 'vector_store_ids', store_ids )
-				tools.append(
-					{
+				tools.append( {
 							'type': 'file_search',
 							'vector_store_ids': store_ids,
 							'max_num_results': int( max_file_results )
-					}
-				)
+					} )
 			
 			return tools
 		
@@ -3026,7 +2839,6 @@ class Chat( Generator ):
 		try:
 			throw_if( 'prompt', prompt )
 			throw_if( 'model', model )
-			
 			self.query = prompt
 			self.model = str( model ).strip( )
 			self.temperature = float( temperature )
@@ -3039,26 +2851,14 @@ class Chat( Generator ):
 			self.parallel_tool_calls = bool( parallel_tool_calls )
 			self.tool_choice = tool_choice or 'auto'
 			self.response_format = (
-					str( response_format ).strip( ).lower( )
-					if isinstance( response_format, str )
-					else response_format
-			)
+				str( response_format ).strip( ).lower( ) if isinstance( response_format,
+					str ) else response_format)
 			self.reasoning_effort = reasoning_effort if reasoning_effort else None
-			self.system_instructions = self.build_instructions(
-				system=system,
-				response_format=(
-						response_format
-						if isinstance( response_format, str )
-						else None
-				),
-				web_search=self.web_search,
-				search_domains=self.search_domains
-			)
-			self.tools = self.build_tools(
-				web_search=self.web_search,
-				search_domains=self.search_domains,
-				file_search=False
-			)
+			self.system_instructions = self.build_instructions( system=system,
+				response_format=(response_format if isinstance( response_format, str ) else None),
+				web_search=self.web_search, search_domains=self.search_domains )
+			self.tools = self.build_tools( web_search=self.web_search,
+				search_domains=self.search_domains, file_search=False )
 			
 			self.request = {
 					'model': self.model,
@@ -3174,11 +2974,8 @@ class Chat( Generator ):
 		try:
 			throw_if( 'prompt', prompt )
 			self.input_text = prompt
-			self.response = self.client.images.generate(
-				model='gpt-image-1',
-				prompt=self.input_text,
-				size='1024x1024'
-			)
+			self.response = self.client.images.generate( model='gpt-image-1',
+				prompt=self.input_text, size='1024x1024' )
 			
 			if hasattr( self.response, 'data' ) and self.response.data:
 				image = self.response.data[ 0 ]
@@ -3232,10 +3029,7 @@ class Chat( Generator ):
 							]
 					}
 			]
-			self.response = self.client.responses.create(
-				model=self.model,
-				input=self.input
-			)
+			self.response = self.client.responses.create( model=self.model, input=self.input )
 			return self.extract_output_text( self.response )
 		
 		except Exception as e:
@@ -3271,10 +3065,7 @@ class Chat( Generator ):
 				raise FileNotFoundError( str( file_path ) )
 			
 			with file_path.open( 'rb' ) as stream:
-				uploaded = self.client.files.create(
-					file=stream,
-					purpose='assistants'
-				)
+				uploaded = self.client.files.create( file=stream, purpose='assistants' )
 			
 			self.messages = [
 					{
