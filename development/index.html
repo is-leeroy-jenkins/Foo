@@ -1,0 +1,2481 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for Foo, a Streamlit and Python application for information acquisition and analysis workflows.">
+      
+      
+        <meta name="author" content="Terry D. Eppler">
+      
+      
+        <link rel="canonical" href="https://is-leeroy-jenkins.github.io/Foo/development/">
+      
+      
+        <link rel="prev" href="../outputs/">
+      
+      
+        <link rel="next" href="../api/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Development - Foo Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/stylesheets/foo.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#development" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Foo Documentation" class="md-header__button md-logo" aria-label="Foo Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Foo Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Development
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/is-leeroy-jenkins/Foo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    is-leeroy-jenkins/Foo
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../app/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Application
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../user-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  User Guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../loading/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Loading Data
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../fetching-scraping/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Fetching and Scraping
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../generation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Generation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../data-management/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data Management
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../outputs/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Outputs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Development
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Foo Documentation" class="md-nav__button md-logo" aria-label="Foo Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Foo Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/is-leeroy-jenkins/Foo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    is-leeroy-jenkins/Foo
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loading Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fetching-scraping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fetching and Scraping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../outputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Outputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#development-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Development Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 Source Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ Local Environment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🖥️ Running the Application
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Basic Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 Documentation Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docstring-standards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Docstring Standards
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-docstring-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 Example Docstring Pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-logging-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Error Logging Pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-metadata-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Error Metadata Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#return-annotation-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Return Annotation Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependency-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Dependency Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-development-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧰 Module Development Guidance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧰 Module Development Guidance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apppy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#corepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        core.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loaderspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        loaders.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fetcherspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fetchers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scraperspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scrapers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generatorspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generators.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        data.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modelspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        models.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writerspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        writers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-loader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Adding a New Loader
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-fetcher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌐 Adding a New Fetcher
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Adding a New Generator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-data-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗄️ Adding a Data Operation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-writer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Adding a Writer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-commit-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Pre-Commit Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 Documentation Maintenance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#github-pages-readiness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 GitHub Pages Readiness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/fetchers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fetchers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/scrapers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scrapers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/writers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#development-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Development Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 Source Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ Local Environment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🖥️ Running the Application
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Basic Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 Documentation Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docstring-standards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Docstring Standards
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-docstring-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 Example Docstring Pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-logging-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Error Logging Pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-metadata-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Error Metadata Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#return-annotation-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Return Annotation Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependency-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Dependency Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-development-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧰 Module Development Guidance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧰 Module Development Guidance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apppy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#corepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        core.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loaderspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        loaders.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fetcherspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fetchers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scraperspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scrapers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generatorspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generators.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        data.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modelspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        models.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writerspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        writers.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-loader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Adding a New Loader
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-fetcher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌐 Adding a New Fetcher
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Adding a New Generator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-data-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗄️ Adding a Data Operation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-writer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Adding a Writer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-commit-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Pre-Commit Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 Documentation Maintenance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#github-pages-readiness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 GitHub Pages Readiness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="development">Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h1>
+<p>This page describes how to maintain, extend, document, and validate Foo as a Python and Streamlit
+application.</p>
+<p>Foo is organized as a modular application rather than a single monolithic script. The Streamlit UI
+in <code>app.py</code> coordinates workflow selection and user interaction, while the supporting modules handle
+loading, fetching, scraping, generation, persistence, structured models, and output writing.</p>
+<h2 id="development-goals">🧭 Development Goals<a class="headerlink" href="#development-goals" title="Permanent link">&para;</a></h2>
+<p>Foo development should prioritize stability, traceability, and maintainability.</p>
+<p>The main goals are:</p>
+<ul>
+<li>Preserve existing runtime behavior unless a change is intentional.</li>
+<li>Keep each source module responsible for one clear area of functionality.</li>
+<li>Keep the Streamlit UI focused on orchestration and display.</li>
+<li>Keep provider-specific logic inside provider wrapper classes.</li>
+<li>Keep persistence logic inside the data-management layer.</li>
+<li>Keep output serialization inside writer classes.</li>
+<li>Maintain clean Google-style docstrings for MkDocs and mkdocstrings.</li>
+<li>Keep error logging consistent across all handled exception paths.</li>
+</ul>
+<p>Development work should improve the application without blurring module boundaries.</p>
+<h2 id="source-layout">🧱 Source Layout<a class="headerlink" href="#source-layout" title="Permanent link">&para;</a></h2>
+<p>The core source files are organized by responsibility.</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Development Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>app.py</code></td>
+<td>Streamlit UI, session state, mode selection, layout, controls, and orchestration.</td>
+</tr>
+<tr>
+<td><code>config.py</code></td>
+<td>Application constants, paths, API key references, mode maps, and session defaults.</td>
+</tr>
+<tr>
+<td><code>core.py</code></td>
+<td>Shared result and validation primitives.</td>
+</tr>
+<tr>
+<td><code>loaders.py</code></td>
+<td>Document loading and source ingestion classes.</td>
+</tr>
+<tr>
+<td><code>fetchers.py</code></td>
+<td>Web, API, public-data, science, weather, geospatial, and government-data retrieval classes.</td>
+</tr>
+<tr>
+<td><code>scrapers.py</code></td>
+<td>HTML extraction and web scraping helpers.</td>
+</tr>
+<tr>
+<td><code>generators.py</code></td>
+<td>LLM provider wrappers and generation request handling.</td>
+</tr>
+<tr>
+<td><code>data.py</code></td>
+<td>SQLite and Chroma persistence utilities.</td>
+</tr>
+<tr>
+<td><code>models.py</code></td>
+<td>Pydantic models for structured application objects.</td>
+</tr>
+<tr>
+<td><code>writers.py</code></td>
+<td>Markdown and output writing classes.</td>
+</tr>
+</tbody>
+</table>
+<p>Documentation files live under:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docs/
+</code></pre></div>
+<p>Documentation assets live under:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docs/images/
+</code></pre></div>
+<p>The MkDocs configuration lives at the repository root:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mkdocs.yml
+</code></pre></div>
+<h2 id="local-environment">⚙️ Local Environment<a class="headerlink" href="#local-environment" title="Permanent link">&para;</a></h2>
+<p>Create and activate a virtual environment before installing dependencies.</p>
+<p>On Windows PowerShell:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="p">.</span><span class="n">venv</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="p">.\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">Activate</span><span class="p">.</span><span class="n">ps1</span>
+</code></pre></div>
+<p>Upgrade packaging tools:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="p">-</span><span class="n">-upgrade</span> <span class="n">pip</span> <span class="n">setuptools</span> <span class="n">wheel</span>
+</code></pre></div>
+<p>Install application dependencies:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">-r</span> <span class="n">requirements</span><span class="p">.</span><span class="n">txt</span>
+</code></pre></div>
+<p>Install documentation dependencies:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">-r</span> <span class="n">requirements-docs</span><span class="p">.</span><span class="n">txt</span>
+</code></pre></div>
+<p>If mkdocstrings reports that signature formatting requires Black or Ruff, install one of them:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">black</span>
+</code></pre></div>
+<p>or:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">ruff</span>
+</code></pre></div>
+<h2 id="running-the-application">🖥️ Running the Application<a class="headerlink" href="#running-the-application" title="Permanent link">&para;</a></h2>
+<p>Foo is a Streamlit application.</p>
+<p>Run it from the repository root:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">streamlit</span> <span class="n">run</span> <span class="n">app</span><span class="p">.</span><span class="n">py</span>
+</code></pre></div>
+<p>Streamlit will normally open the application in a browser automatically. If not, use the local URL
+printed in the terminal.</p>
+<p>The Streamlit interface depends on values in <code>config.py</code>, local files, optional API keys, and
+installed provider libraries. Missing optional dependencies or API credentials may affect specific
+modes without necessarily preventing the whole application from starting.</p>
+<h2 id="basic-validation">🧪 Basic Validation<a class="headerlink" href="#basic-validation" title="Permanent link">&para;</a></h2>
+<p>Before committing changes, run a basic syntax validation pass.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">compileall</span> <span class="p">.</span>
+</code></pre></div>
+<p>For a targeted file:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">py_compile</span> <span class="n">loaders</span><span class="p">.</span><span class="n">py</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">py_compile</span> <span class="n">fetchers</span><span class="p">.</span><span class="n">py</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">py_compile</span> <span class="n">generators</span><span class="p">.</span><span class="n">py</span>
+</code></pre></div>
+<p>A file must compile before documentation or runtime behavior can be trusted.</p>
+<h2 id="documentation-build">📚 Documentation Build<a class="headerlink" href="#documentation-build" title="Permanent link">&para;</a></h2>
+<p>Build the documentation locally before pushing documentation changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">mkdocs</span> <span class="n">build</span>
+</code></pre></div>
+<p>For stricter validation:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">mkdocs</span> <span class="n">build</span> <span class="p">-</span><span class="n">-strict</span>
+</code></pre></div>
+<p>Use <code>--strict</code> when preparing changes for GitHub Pages because warnings that appear locally are
+usually the same warnings that will fail or degrade the published site.</p>
+<p>Run the local documentation server:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">mkdocs</span> <span class="n">serve</span>
+</code></pre></div>
+<p>Then open the local URL printed by MkDocs, usually:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>http://127.0.0.1:8000/
+</code></pre></div>
+<h2 id="docstring-standards">🧾 Docstring Standards<a class="headerlink" href="#docstring-standards" title="Permanent link">&para;</a></h2>
+<p>Foo API documentation is generated from source docstrings. Public modules, classes, functions,
+methods, and properties should use Google-style docstrings.</p>
+<p>Use these section names:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>Purpose:
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>Args:
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>Returns:
+</code></pre></div>
+<p>Use <code>Args:</code> only for real parameters in the function or method signature. Do not document <code>self</code>.</p>
+<p>Use <code>Returns:</code> only when the function or method returns a meaningful value.</p>
+<p>Do not add <code>Returns:</code> sections to constructors.</p>
+<p>Do not add generic return entries like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>Returns:
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    None: This method does not return a value.
+</code></pre></div>
+<p>Do not use malformed or old-style headings such as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>Parameters:
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>-----------
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>Returns:
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>--------
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>Purpose:
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>_________
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>Parametes:
+</code></pre></div>
+<p>Those patterns can produce Griffe warnings during <code>mkdocs build</code>.</p>
+<h2 id="example-docstring-pattern">🧩 Example Docstring Pattern<a class="headerlink" href="#example-docstring-pattern" title="Permanent link">&para;</a></h2>
+<p>Use this pattern for functions that validate input and return a value:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">normalize_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize a name value.</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="sd">    Purpose:</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="sd">        Converts a user-supplied name into a normalized string suitable for display,</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="sd">        lookup, or storage. The function trims leading and trailing whitespace and</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="sd">        rejects empty values before returning the normalized result.</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="sd">    Args:</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="sd">        name (str): Name value to normalize.</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="sd">        Normalized name value.</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="sd">        ValueError: Raised when the supplied name is missing or empty.</span>
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a><span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+<p>Use this pattern for procedures that mutate state or render UI but do not return a meaningful value:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">render_controls</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Render Streamlit controls.</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="sd">    Purpose:</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="sd">        Renders the Streamlit controls used to collect runtime options from the user.</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="sd">        The function updates Streamlit state and writes UI elements to the page.</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+<p>Use this pattern for constructors:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the loader.</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="sd">    Purpose:</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="sd">        Initializes default loader state, including file path, document collection,</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="sd">        chunking configuration, and compatibility fields used by later method calls.</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+<h2 id="error-logging-pattern">🔐 Error Logging Pattern<a class="headerlink" href="#error-logging-pattern" title="Permanent link">&para;</a></h2>
+<p>Foo uses the <code>boogr</code> error wrapper and logger pattern in handled exception paths.</p>
+<p>When a method already catches exceptions and wraps them with <code>Error</code>, it should also write the
+structured error before re-raising it.</p>
+<p>Preferred pattern:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="n">exception</span> <span class="o">=</span> <span class="n">Error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="n">exception</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="s2">&quot;loaders&quot;</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>    <span class="n">exception</span><span class="o">.</span><span class="n">cause</span> <span class="o">=</span> <span class="s2">&quot;TextLoader&quot;</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>    <span class="n">exception</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;load( self, filepath: str ) -&gt; List[ Document ] | None&quot;</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>    <span class="n">Logger</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>    <span class="k">raise</span> <span class="n">exception</span>
+</code></pre></div>
+<p>The metadata should be stable and reviewer-safe.</p>
+<p>Do not put live values in <code>exception.method</code>.</p>
+<p>Avoid:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">exception</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;load(</span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">)&quot;</span>
+</code></pre></div>
+<p>Prefer:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">exception</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;load( self, filepath: str ) -&gt; List[ Document ] | None&quot;</span>
+</code></pre></div>
+<h2 id="error-metadata-rules">🛡️ Error Metadata Rules<a class="headerlink" href="#error-metadata-rules" title="Permanent link">&para;</a></h2>
+<p>When adding or updating logging, follow these rules:</p>
+<ul>
+<li>Use the source module name for <code>exception.module</code>.</li>
+<li>Use the class name or functional component for <code>exception.cause</code>.</li>
+<li>Use a stable method or function signature for <code>exception.method</code>.</li>
+<li>Do not include API keys.</li>
+<li>Do not include tokens.</li>
+<li>Do not include full file paths unless explicitly intended.</li>
+<li>Do not include file contents.</li>
+<li>Do not include raw document text.</li>
+<li>Do not include OCR output or scraped page bodies.</li>
+<li>Preserve the existing fallback or re-raise behavior.</li>
+</ul>
+<p>Logging should improve diagnostics without exposing sensitive data.</p>
+<h2 id="return-annotation-rules">🧪 Return Annotation Rules<a class="headerlink" href="#return-annotation-rules" title="Permanent link">&para;</a></h2>
+<p>All public functions, methods, and properties should have return annotations.</p>
+<p>Good examples:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="k">def</span><span class="w"> </span><span class="fm">__dir__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="nd">@property</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">mode_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Document</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+</code></pre></div>
+<p>For methods that do not return a meaningful value:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</code></pre></div>
+<p>If the method returns a value, document that value in the <code>Returns:</code> section. If the method only
+mutates state, renders UI, writes files, logs errors, or closes resources, do not add a <code>Returns:</code>
+section unless the return value is meaningful.</p>
+<h2 id="dependency-management">📦 Dependency Management<a class="headerlink" href="#dependency-management" title="Permanent link">&para;</a></h2>
+<p>Application dependencies belong in:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>requirements.txt
+</code></pre></div>
+<p>Documentation dependencies belong in:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>requirements-docs.txt
+</code></pre></div>
+<p>Keep these separate. Runtime users should not need documentation tooling unless they are building
+the docs.</p>
+<p>When adding a dependency, verify:</p>
+<ul>
+<li>Why it is needed.</li>
+<li>Which module imports it.</li>
+<li>Whether it is required at runtime or only for documentation.</li>
+<li>Whether it has platform-specific installation concerns.</li>
+<li>Whether it should be optional.</li>
+<li>Whether it affects GitHub Actions or deployment.</li>
+</ul>
+<h2 id="module-development-guidance">🧰 Module Development Guidance<a class="headerlink" href="#module-development-guidance" title="Permanent link">&para;</a></h2>
+<h3 id="apppy"><code>app.py</code><a class="headerlink" href="#apppy" title="Permanent link">&para;</a></h3>
+<p>Keep <code>app.py</code> focused on Streamlit orchestration.</p>
+<p>Appropriate responsibilities:</p>
+<ul>
+<li>Page configuration.</li>
+<li>Sidebar controls.</li>
+<li>Mode selection.</li>
+<li>Session-state initialization.</li>
+<li>UI rendering.</li>
+<li>Calling loader, fetcher, scraper, generator, data, and writer classes.</li>
+</ul>
+<p>Avoid putting large provider-specific logic directly in <code>app.py</code>. Move that behavior into the
+appropriate module.</p>
+<h3 id="configpy"><code>config.py</code><a class="headerlink" href="#configpy" title="Permanent link">&para;</a></h3>
+<p>Keep configuration centralized.</p>
+<p>Appropriate responsibilities:</p>
+<ul>
+<li>API key environment lookups.</li>
+<li>Application constants.</li>
+<li>UI labels and mode maps.</li>
+<li>Session-state defaults.</li>
+<li>Paths to local assets and databases.</li>
+<li>Documentation or application-level constants.</li>
+</ul>
+<p>Avoid hard-coding provider credentials or user-specific absolute paths.</p>
+<h3 id="corepy"><code>core.py</code><a class="headerlink" href="#corepy" title="Permanent link">&para;</a></h3>
+<p>Keep <code>core.py</code> small and stable.</p>
+<p>Appropriate responsibilities:</p>
+<ul>
+<li>Shared validation helpers.</li>
+<li>Shared result containers.</li>
+<li>Small cross-module primitives.</li>
+</ul>
+<p>Avoid adding provider-specific logic to <code>core.py</code>.</p>
+<h3 id="loaderspy"><code>loaders.py</code><a class="headerlink" href="#loaderspy" title="Permanent link">&para;</a></h3>
+<p>Keep loading classes source-specific.</p>
+<p>A loader should:</p>
+<ul>
+<li>Validate required inputs.</li>
+<li>Resolve file paths or source identifiers.</li>
+<li>Load source content.</li>
+<li>Return document objects or a documented result.</li>
+<li>Preserve metadata where useful.</li>
+<li>Log wrapped exceptions consistently.</li>
+</ul>
+<p>Avoid mixing unrelated API retrieval logic into loaders. API retrieval belongs in <code>fetchers.py</code>.</p>
+<h3 id="fetcherspy"><code>fetchers.py</code><a class="headerlink" href="#fetcherspy" title="Permanent link">&para;</a></h3>
+<p>Keep fetcher classes focused on retrieval.</p>
+<p>A fetcher should:</p>
+<ul>
+<li>Validate request inputs.</li>
+<li>Build provider or service parameters.</li>
+<li>Make the retrieval call.</li>
+<li>Normalize the result.</li>
+<li>Return a documented object.</li>
+<li>Log wrapped exceptions consistently.</li>
+</ul>
+<p>Avoid UI rendering in fetchers. Display belongs in <code>app.py</code>.</p>
+<h3 id="scraperspy"><code>scrapers.py</code><a class="headerlink" href="#scraperspy" title="Permanent link">&para;</a></h3>
+<p>Keep scraping classes focused on HTML extraction.</p>
+<p>A scraper should:</p>
+<ul>
+<li>Fetch or receive HTML.</li>
+<li>Parse HTML.</li>
+<li>Extract readable content or structured elements.</li>
+<li>Return cleaned text or lists of extracted values.</li>
+<li>Log wrapped exceptions consistently.</li>
+</ul>
+<p>Avoid storing scraped content directly unless the workflow explicitly calls the data layer.</p>
+<h3 id="generatorspy"><code>generators.py</code><a class="headerlink" href="#generatorspy" title="Permanent link">&para;</a></h3>
+<p>Keep generation classes provider-focused.</p>
+<p>A generator should:</p>
+<ul>
+<li>Validate prompt and provider settings.</li>
+<li>Build requests.</li>
+<li>Call the configured provider.</li>
+<li>Extract response text or structured output.</li>
+<li>Log wrapped exceptions consistently.</li>
+</ul>
+<p>Avoid embedding UI-specific state in generator classes.</p>
+<h3 id="datapy"><code>data.py</code><a class="headerlink" href="#datapy" title="Permanent link">&para;</a></h3>
+<p>Keep persistence logic in the data layer.</p>
+<p>Data classes should:</p>
+<ul>
+<li>Manage connections.</li>
+<li>Create tables or collections.</li>
+<li>Insert, update, delete, or retrieve records.</li>
+<li>Validate identifiers.</li>
+<li>Keep SQL behavior explicit and safe.</li>
+<li>Log wrapped exceptions consistently.</li>
+</ul>
+<p>Avoid putting Streamlit rendering or provider calls directly in <code>data.py</code>.</p>
+<h3 id="modelspy"><code>models.py</code><a class="headerlink" href="#modelspy" title="Permanent link">&para;</a></h3>
+<p>Keep models declarative.</p>
+<p>Pydantic models should:</p>
+<ul>
+<li>Define structured fields.</li>
+<li>Use clear type annotations.</li>
+<li>Include class docstrings that explain model purpose.</li>
+<li>Avoid operational side effects.</li>
+</ul>
+<h3 id="writerspy"><code>writers.py</code><a class="headerlink" href="#writerspy" title="Permanent link">&para;</a></h3>
+<p>Keep writer classes focused on output.</p>
+<p>Writers should:</p>
+<ul>
+<li>Validate required inputs.</li>
+<li>Resolve output paths.</li>
+<li>Create parent directories when needed.</li>
+<li>Write the output format.</li>
+<li>Return the written path when meaningful.</li>
+<li>Log wrapped exceptions consistently.</li>
+</ul>
+<h2 id="adding-a-new-loader">🧭 Adding a New Loader<a class="headerlink" href="#adding-a-new-loader" title="Permanent link">&para;</a></h2>
+<p>When adding a new loader:</p>
+<ol>
+<li>Add the class to <code>loaders.py</code>.</li>
+<li>Inherit from <code>Loader</code> when the common loader behavior applies.</li>
+<li>Add typed attributes if the class stores runtime state.</li>
+<li>Add a constructor with initialized defaults.</li>
+<li>Add a <code>__dir__</code> method if consistent with the surrounding loader classes.</li>
+<li>Add a public <code>load(...)</code> method or equivalent operation.</li>
+<li>Validate mandatory arguments.</li>
+<li>Return a documented result type.</li>
+<li>Wrap and log exceptions where the class already uses handled exception paths.</li>
+<li>Update <code>app.py</code> if the loader should be exposed in the UI.</li>
+<li>Update <code>docs/loading.md</code>.</li>
+<li>Confirm the API page renders correctly.</li>
+</ol>
+<h2 id="adding-a-new-fetcher">🌐 Adding a New Fetcher<a class="headerlink" href="#adding-a-new-fetcher" title="Permanent link">&para;</a></h2>
+<p>When adding a new fetcher:</p>
+<ol>
+<li>Add the class to <code>fetchers.py</code>.</li>
+<li>Inherit from <code>Fetcher</code> when the common fetcher behavior applies.</li>
+<li>Store API keys or configuration from <code>config.py</code>.</li>
+<li>Validate required arguments.</li>
+<li>Keep service-specific parameters inside the fetcher class.</li>
+<li>Normalize returned data.</li>
+<li>Return a typed and documented result.</li>
+<li>Use the standard error logging pattern.</li>
+<li>Update <code>app.py</code> if the fetcher should be selectable from the UI.</li>
+<li>Update <code>docs/fetching-scraping.md</code>.</li>
+<li>Confirm the API page renders correctly.</li>
+</ol>
+<h2 id="adding-a-new-generator">🤖 Adding a New Generator<a class="headerlink" href="#adding-a-new-generator" title="Permanent link">&para;</a></h2>
+<p>When adding a new AI provider or generation mode:</p>
+<ol>
+<li>Add the provider wrapper to <code>generators.py</code>.</li>
+<li>Keep provider credentials in <code>config.py</code>.</li>
+<li>Add model-option properties where appropriate.</li>
+<li>Validate prompt and model inputs.</li>
+<li>Keep request construction inside helper methods.</li>
+<li>Keep response extraction inside helper methods.</li>
+<li>Preserve streaming or tool behavior if the provider supports it.</li>
+<li>Use stable error metadata.</li>
+<li>Update the Streamlit UI only after the provider wrapper works.</li>
+<li>Update <code>docs/generation.md</code>.</li>
+<li>Confirm the API page renders without Griffe warnings.</li>
+</ol>
+<h2 id="adding-a-data-operation">🗄️ Adding a Data Operation<a class="headerlink" href="#adding-a-data-operation" title="Permanent link">&para;</a></h2>
+<p>When adding a data operation:</p>
+<ol>
+<li>Add the operation to <code>data.py</code>.</li>
+<li>Annotate arguments and return values.</li>
+<li>Validate table names, column names, and required values.</li>
+<li>Use parameterized SQL for values.</li>
+<li>Avoid accepting destructive SQL from user input.</li>
+<li>Preserve transaction behavior.</li>
+<li>Log wrapped exceptions consistently.</li>
+<li>Update <code>docs/data-management.md</code>.</li>
+<li>Confirm the API page renders correctly.</li>
+</ol>
+<h2 id="adding-a-writer">🧾 Adding a Writer<a class="headerlink" href="#adding-a-writer" title="Permanent link">&para;</a></h2>
+<p>When adding a writer:</p>
+<ol>
+<li>Add the writer class to <code>writers.py</code>.</li>
+<li>Validate required inputs.</li>
+<li>Resolve output paths safely.</li>
+<li>Create parent directories if needed.</li>
+<li>Return the generated output path when meaningful.</li>
+<li>Use the standard logging pattern.</li>
+<li>Update documentation if the output format is user-facing.</li>
+<li>Confirm the API page renders correctly.</li>
+</ol>
+<h2 id="pre-commit-checklist">🧪 Pre-Commit Checklist<a class="headerlink" href="#pre-commit-checklist" title="Permanent link">&para;</a></h2>
+<p>Before committing changes, run through this checklist:</p>
+<ul>
+<li>Source files compile.</li>
+<li>The Streamlit app starts.</li>
+<li>Changed workflows run manually.</li>
+<li>New or changed public functions have docstrings.</li>
+<li>Public return values are annotated.</li>
+<li>Meaningful return values are documented.</li>
+<li>Constructors do not include <code>Returns:</code> sections.</li>
+<li>Existing exception handlers preserve behavior.</li>
+<li>Wrapped exceptions are logged before being re-raised.</li>
+<li>No credentials or raw user content are logged.</li>
+<li>MkDocs builds locally.</li>
+<li>Griffe warnings are resolved.</li>
+<li>Markdown links are valid.</li>
+<li>Referenced images exist under <code>docs/images/</code>.</li>
+<li>GitHub Pages workflow files are still valid.</li>
+</ul>
+<h2 id="documentation-maintenance">📚 Documentation Maintenance<a class="headerlink" href="#documentation-maintenance" title="Permanent link">&para;</a></h2>
+<p>When changing source code, update documentation in the same change set.</p>
+<table>
+<thead>
+<tr>
+<th>Change Type</th>
+<th>Documentation Update</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>New loader</td>
+<td>Update <code>loading.md</code> and <code>api/loaders.md</code>.</td>
+</tr>
+<tr>
+<td>New fetcher</td>
+<td>Update <code>fetching-scraping.md</code> and <code>api/fetchers.md</code>.</td>
+</tr>
+<tr>
+<td>New generator</td>
+<td>Update <code>generation.md</code> and <code>api/generators.md</code>.</td>
+</tr>
+<tr>
+<td>New persistence method</td>
+<td>Update <code>data-management.md</code> and <code>api/data.md</code>.</td>
+</tr>
+<tr>
+<td>New writer</td>
+<td>Update output documentation and <code>api/writers.md</code>.</td>
+</tr>
+<tr>
+<td>New model</td>
+<td>Update model documentation and <code>api/models.md</code>.</td>
+</tr>
+<tr>
+<td>New architecture behavior</td>
+<td>Update <code>architecture.md</code>.</td>
+</tr>
+<tr>
+<td>New dependency</td>
+<td>Update <code>requirements.txt</code> or <code>requirements-docs.txt</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Documentation should explain how the feature is used, where it lives, and how it fits into the
+application.</p>
+<h2 id="github-pages-readiness">🚀 GitHub Pages Readiness<a class="headerlink" href="#github-pages-readiness" title="Permanent link">&para;</a></h2>
+<p>Before publishing to GitHub Pages:</p>
+<ol>
+<li>Build locally with MkDocs.</li>
+<li>Fix warnings.</li>
+<li>Confirm <code>site_url</code> is correct in <code>mkdocs.yml</code>.</li>
+<li>Confirm <code>repo_url</code> is correct in <code>mkdocs.yml</code>.</li>
+<li>Confirm all pages in <code>docs/</code> are represented in navigation if they should be public.</li>
+<li>Confirm images resolve from the published site path.</li>
+<li>Confirm the GitHub Pages workflow builds from the correct branch.</li>
+<li>Confirm repository Pages settings use GitHub Actions as the source.</li>
+</ol>
+<h2 id="summary">✅ Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>Foo development should be deliberate and source-grounded. Keep UI orchestration, loading, fetching,
+scraping, generation, persistence, models, and writing responsibilities separated. Preserve runtime
+behavior when improving documentation. Maintain Google-style docstrings so the API reference stays
+clean. Run local validation before publishing or committing changes.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2025 Terry Eppler
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

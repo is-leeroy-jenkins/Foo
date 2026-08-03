@@ -1,0 +1,2500 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for Foo, a Streamlit and Python application for information acquisition and analysis workflows.">
+      
+      
+        <meta name="author" content="Terry D. Eppler">
+      
+      
+        <link rel="canonical" href="https://is-leeroy-jenkins.github.io/Foo/generation/">
+      
+      
+        <link rel="prev" href="../fetching-scraping/">
+      
+      
+        <link rel="next" href="../data-management/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Generation - Foo Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/stylesheets/foo.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#generation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Foo Documentation" class="md-header__button md-logo" aria-label="Foo Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Foo Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Generation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/is-leeroy-jenkins/Foo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    is-leeroy-jenkins/Foo
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../app/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Application
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../user-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  User Guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../loading/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Loading Data
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../fetching-scraping/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Fetching and Scraping
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Generation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../data-management/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data Management
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../outputs/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Outputs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../development/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Development
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Foo Documentation" class="md-nav__button md-logo" aria-label="Foo Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Foo Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/is-leeroy-jenkins/Foo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    is-leeroy-jenkins/Foo
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loading Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fetching-scraping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fetching and Scraping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generation-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 Generation Layer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-wrappers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Provider Wrappers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generation-mode-in-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ Generation Mode in the Application
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#text-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💬 Text Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#document-summarization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Document Summarization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-assisted-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌐 Search-Assisted Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗂️ File Search
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reasoning-and-thinking-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧠 Reasoning and Thinking Settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧰 Tool Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#response-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Response Formats
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#translation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Translation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transcription" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎙️ Transcription
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🖼️ Image Workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combining-generation-with-other-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔄 Combining Generation with Other Modes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔄 Combining Generation with Other Modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load-and-summarize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load and Summarize
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scrape-and-explain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scrape and Explain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieve-and-draft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieve and Draft
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-and-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query and Report
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompting-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Prompting Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reviewing-generated-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Reviewing Generated Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sensitive-content-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Sensitive Content Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safe-generation-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Safe Generation Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-generation-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚠️ Common Generation Issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-generation-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧰 Adding a New Generation Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 API Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generation-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Generation Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../outputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Outputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/fetchers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fetchers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/scrapers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scrapers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/writers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generation-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 Generation Layer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-wrappers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Provider Wrappers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generation-mode-in-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ Generation Mode in the Application
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#text-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💬 Text Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#document-summarization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Document Summarization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-assisted-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌐 Search-Assisted Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗂️ File Search
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reasoning-and-thinking-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧠 Reasoning and Thinking Settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧰 Tool Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#response-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Response Formats
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#translation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Translation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transcription" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎙️ Transcription
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🖼️ Image Workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combining-generation-with-other-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔄 Combining Generation with Other Modes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔄 Combining Generation with Other Modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load-and-summarize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load and Summarize
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scrape-and-explain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scrape and Explain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieve-and-draft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieve and Draft
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-and-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query and Report
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompting-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Prompting Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reviewing-generated-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Reviewing Generated Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sensitive-content-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Sensitive Content Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safe-generation-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Safe Generation Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-generation-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚠️ Common Generation Issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-generation-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧰 Adding a New Generation Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 API Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generation-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Generation Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="generation">Generation<a class="headerlink" href="#generation" title="Permanent link">&para;</a></h1>
+<p>Foo’s generation workflow provides the user-facing AI layer of the application. It connects the
+Streamlit interface in <code>app.py</code> to provider wrapper classes in <code>generators.py</code>.</p>
+<p>Use Generation mode when the workflow requires model-generated text, search-assisted answers,
+document summarization, translation, transcription, image-related provider workflows, or
+provider-specific reasoning and tool configuration.</p>
+<h2 id="purpose">🧭 Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
+<p>The generation layer gives Foo a consistent place to run AI-provider workflows without embedding
+provider-specific request construction directly in the Streamlit UI.</p>
+<p>Generation mode supports workflows such as:</p>
+<ul>
+<li>Generating text from a prompt.</li>
+<li>Summarizing loaded documents.</li>
+<li>Producing explanations from retrieved or scraped content.</li>
+<li>Creating documentation drafts.</li>
+<li>Translating text.</li>
+<li>Transcribing audio where supported.</li>
+<li>Searching the web through provider-supported tools.</li>
+<li>Searching files through provider-supported tools.</li>
+<li>Analyzing images where supported.</li>
+<li>Generating images where supported.</li>
+<li>Using reasoning or thinking settings where supported by the selected provider and model.</li>
+<li>Extracting usable output text from provider-specific response objects.</li>
+</ul>
+<p>The generation layer should receive user intent and prepared inputs, call the provider wrapper, and
+return generated content for display, storage, or export.</p>
+<h2 id="generation-layer">🧱 Generation Layer<a class="headerlink" href="#generation-layer" title="Permanent link">&para;</a></h2>
+<p>The generation layer sits between the Streamlit application and external AI providers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>User prompt and options
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        |
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        v
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>app.py
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        |
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        v
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>generators.py
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        |
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        +--&gt; Chat
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        +--&gt; Grok
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        +--&gt; Gemini
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        +--&gt; Claude
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        +--&gt; Mistral
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        |
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        v
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>Provider response
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        |
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        v
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>Extracted text or structured output
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        |
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        v
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>Display, store, or export
+</code></pre></div>
+<p><code>app.py</code> should handle controls and result display. <code>generators.py</code> should handle provider-specific
+request building, tool configuration, response extraction, and error handling.</p>
+<h2 id="provider-wrappers">🤖 Provider Wrappers<a class="headerlink" href="#provider-wrappers" title="Permanent link">&para;</a></h2>
+<p>The main provider wrapper classes are:</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Provider / Role</th>
+<th>Typical Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Generator</code></td>
+<td>Base generator class</td>
+<td>Shared generator state and common conceptual contract.</td>
+</tr>
+<tr>
+<td><code>Chat</code></td>
+<td>OpenAI-oriented wrapper</td>
+<td>Text generation, image workflows, document workflows, web search, file search, translation, transcription.</td>
+</tr>
+<tr>
+<td><code>Grok</code></td>
+<td>xAI Grok wrapper</td>
+<td>Text generation and search-assisted generation.</td>
+</tr>
+<tr>
+<td><code>Gemini</code></td>
+<td>Google Gemini wrapper</td>
+<td>Text generation, thinking configuration, and search-assisted generation.</td>
+</tr>
+<tr>
+<td><code>Claude</code></td>
+<td>Anthropic Claude wrapper</td>
+<td>Text generation and web-search-style generation.</td>
+</tr>
+<tr>
+<td><code>Mistral</code></td>
+<td>Mistral wrapper</td>
+<td>Text generation and schema-oriented workflows.</td>
+</tr>
+</tbody>
+</table>
+<p>Each provider exposes different request parameters, tools, response formats, and model capabilities.
+For that reason, provider-specific logic belongs inside the matching wrapper class.</p>
+<h2 id="generation-mode-in-the-application">⚙️ Generation Mode in the Application<a class="headerlink" href="#generation-mode-in-the-application" title="Permanent link">&para;</a></h2>
+<p>Generation mode is coordinated by <code>app.py</code>.</p>
+<p>The UI may expose controls for:</p>
+<ul>
+<li>Provider selection.</li>
+<li>Model selection.</li>
+<li>Prompt input.</li>
+<li>System instructions.</li>
+<li>Message history.</li>
+<li>Temperature.</li>
+<li>Maximum tokens.</li>
+<li>Top-percent or top-p style options.</li>
+<li>Frequency penalty.</li>
+<li>Presence penalty.</li>
+<li>Response format.</li>
+<li>Tool choice.</li>
+<li>Web search.</li>
+<li>Allowed domains.</li>
+<li>File search.</li>
+<li>Reasoning effort.</li>
+<li>Thinking level or thinking budget.</li>
+<li>Streaming.</li>
+<li>Store response setting.</li>
+<li>Image input or image prompt where supported.</li>
+<li>Translation input.</li>
+<li>Transcription input.</li>
+</ul>
+<p>A typical Generation mode workflow is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Select Generation mode
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>        |
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        v
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Choose provider and model
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        |
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        v
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>Enter prompt and options
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        |
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        v
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>Run generation
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        |
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        v
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>Review response
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        |
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        v
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>Store, export, or reuse the result
+</code></pre></div>
+<p>Provider options should only be shown or used when the selected provider and model support them.</p>
+<h2 id="text-generation">💬 Text Generation<a class="headerlink" href="#text-generation" title="Permanent link">&para;</a></h2>
+<p>Text generation is the most common generation workflow.</p>
+<p>Use it when the user wants a written response from a prompt.</p>
+<p>Typical examples:</p>
+<ul>
+<li>Summarize a source document.</li>
+<li>Explain extracted data.</li>
+<li>Draft documentation.</li>
+<li>Rewrite loaded content.</li>
+<li>Create a report outline.</li>
+<li>Generate a comparison.</li>
+<li>Extract likely requirements from source text.</li>
+<li>Convert notes into a structured summary.</li>
+</ul>
+<p>Basic pattern:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">generators</span><span class="w"> </span><span class="kn">import</span> <span class="n">Chat</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">chat</span> <span class="o">=</span> <span class="n">Chat</span><span class="p">()</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">chat</span><span class="o">.</span><span class="n">generate_text</span><span class="p">(</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Summarize Foo&#39;s architecture in five bullets.&quot;</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div>
+<p>Use the exact signatures from the <a href="../api/generators/">Generators API</a> when implementing against the
+current source.</p>
+<h2 id="document-summarization">🧾 Document Summarization<a class="headerlink" href="#document-summarization" title="Permanent link">&para;</a></h2>
+<p>Document summarization should usually begin in Loading mode.</p>
+<p>Recommended workflow:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Loading mode
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    |
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    v
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Load document
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    |
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    v
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>Review loaded text
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    |
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    v
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>Generation mode
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    |
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    v
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>Summarize document
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    |
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    v
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>Review generated summary
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    |
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    v
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>Export if needed
+</code></pre></div>
+<p>Good summarization prompts are specific about the desired output.</p>
+<p>Example prompt:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Summarize the loaded document for a technical maintainer. Focus on purpose, inputs, outputs, dependencies, configuration requirements, and risks.
+</code></pre></div>
+<p>Avoid sending entire large documents into a generation workflow without reviewing chunking, token
+limits, and sensitivity first.</p>
+<h2 id="search-assisted-generation">🌐 Search-Assisted Generation<a class="headerlink" href="#search-assisted-generation" title="Permanent link">&para;</a></h2>
+<p>Search-assisted generation uses provider-supported tools to include external search behavior in the
+generation workflow.</p>
+<p>Use search-assisted generation when the answer depends on:</p>
+<ul>
+<li>Current information.</li>
+<li>External documentation.</li>
+<li>Source discovery.</li>
+<li>Web references.</li>
+<li>Time-sensitive details.</li>
+<li>Official guidance.</li>
+<li>Publicly available supporting sources.</li>
+</ul>
+<p>Typical workflow:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Prompt
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  |
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  v
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>Allowed domains or search settings
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  |
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  v
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>Provider web-search tool
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>  |
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>  v
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>Generated response
+</code></pre></div>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">generators</span><span class="w"> </span><span class="kn">import</span> <span class="n">Chat</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">chat</span> <span class="o">=</span> <span class="n">Chat</span><span class="p">()</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">chat</span><span class="o">.</span><span class="n">search_web</span><span class="p">(</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Find official guidance for MkDocs navigation and summarize the key points.&quot;</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div>
+<p>When source control matters, use allowed domains or narrow search settings.</p>
+<p>Good prompt pattern:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Search only official documentation sources. Summarize the setup steps and note any version-specific caveats.
+</code></pre></div>
+<h2 id="file-search">🗂️ File Search<a class="headerlink" href="#file-search" title="Permanent link">&para;</a></h2>
+<p>File-search workflows allow a provider or retrieval system to use uploaded or indexed files as
+context.</p>
+<p>Use file search when:</p>
+<ul>
+<li>Source documents are already available.</li>
+<li>The answer should be grounded in a known file set.</li>
+<li>You need question-answering over project documentation.</li>
+<li>You need to search internal source documents.</li>
+<li>You want generated output constrained to supplied materials.</li>
+</ul>
+<p>Typical workflow:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Load or register files
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>        |
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>        v
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>Configure file-search tool
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>        |
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        v
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>Ask question or provide instruction
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>        |
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>        v
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>Provider uses file context
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>        |
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>        v
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>Review response
+</code></pre></div>
+<p>File-search behavior varies by provider. Use the API reference and current UI controls for exact
+supported options.</p>
+<h2 id="reasoning-and-thinking-settings">🧠 Reasoning and Thinking Settings<a class="headerlink" href="#reasoning-and-thinking-settings" title="Permanent link">&para;</a></h2>
+<p>Some providers support reasoning or thinking settings. The feature is not consistent across
+providers.</p>
+<p>Examples of provider-specific checks include:</p>
+<table>
+<thead>
+<tr>
+<th>Provider Wrapper</th>
+<th>Capability Checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Chat</code></td>
+<td><code>supports_reasoning(...)</code></td>
+</tr>
+<tr>
+<td><code>Grok</code></td>
+<td><code>supports_reasoning_effort(...)</code>, <code>supports_reasoning_object(...)</code>, <code>is_reasoning_model(...)</code></td>
+</tr>
+<tr>
+<td><code>Gemini</code></td>
+<td><code>supports_thinking_level(...)</code>, <code>supports_thinking_budget(...)</code></td>
+</tr>
+<tr>
+<td><code>Claude</code></td>
+<td><code>_supports_thinking(...)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Use reasoning or thinking controls only when the selected model supports them.</p>
+<p>Do not assume that a setting available for one provider is valid for another provider. The wrapper
+class should decide how to apply provider-specific options.</p>
+<h2 id="tool-configuration">🧰 Tool Configuration<a class="headerlink" href="#tool-configuration" title="Permanent link">&para;</a></h2>
+<p>Provider wrappers may build tool definitions for web search, file search, function-style operations,
+or provider-native tools.</p>
+<p>Tool configuration may include:</p>
+<ul>
+<li>Tool type.</li>
+<li>Tool name.</li>
+<li>Tool description.</li>
+<li>Parameters.</li>
+<li>Required fields.</li>
+<li>Allowed domains.</li>
+<li>Search context size.</li>
+<li>Parallel tool behavior.</li>
+<li>Tool choice.</li>
+<li>Provider-specific options.</li>
+</ul>
+<p>Tool construction should stay in <code>generators.py</code>.</p>
+<p>The Streamlit UI should collect user settings. The provider wrapper should translate those settings
+into the provider-specific request payload.</p>
+<h2 id="response-formats">🧾 Response Formats<a class="headerlink" href="#response-formats" title="Permanent link">&para;</a></h2>
+<p>Generation workflows may support different response formats.</p>
+<p>Common response-format concepts include:</p>
+<ul>
+<li>Plain text.</li>
+<li>JSON-like structured output.</li>
+<li>Provider-specific text format objects.</li>
+<li>Tool-call output.</li>
+<li>Search-grounded responses.</li>
+<li>Image or media references where supported.</li>
+</ul>
+<p>Use plain text unless the workflow explicitly requires structured output.</p>
+<p>Structured output is useful when the result should be parsed, stored, tested, or transformed. For
+example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Return a JSON object with keys: title, summary, risks, next_steps.
+</code></pre></div>
+<p>When using structured output, inspect the provider response before storing or exporting it.</p>
+<h2 id="translation">🧪 Translation<a class="headerlink" href="#translation" title="Permanent link">&para;</a></h2>
+<p>Translation workflows convert source text into another language.</p>
+<p>Recommended workflow:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Provide source text
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>        |
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>        v
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>Choose provider/model
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>        |
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>        v
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>Specify target language
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        |
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>        v
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>Run translation
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>        |
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>        v
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>Review output
+</code></pre></div>
+<p>Example prompt:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Translate the following text into Spanish. Preserve technical terms and Markdown formatting.
+</code></pre></div>
+<p>Review translations before publication, especially for legal, medical, technical, policy, or
+public-facing content.</p>
+<h2 id="transcription">🎙️ Transcription<a class="headerlink" href="#transcription" title="Permanent link">&para;</a></h2>
+<p>Transcription workflows convert audio input into text where supported by the provider wrapper.</p>
+<p>Recommended workflow:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Provide audio input
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>        |
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>        v
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>Choose transcription workflow
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>        |
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>        v
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>Run transcription
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>        |
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>        v
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>Review text output
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>        |
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>        v
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>Store or export if needed
+</code></pre></div>
+<p>Audio workflows may require supported file formats, provider credentials, and provider-specific
+transcription settings.</p>
+<p>Do not treat transcription output as perfect. Review it before using it as an official record or
+documentation source.</p>
+<h2 id="image-workflows">🖼️ Image Workflows<a class="headerlink" href="#image-workflows" title="Permanent link">&para;</a></h2>
+<p>Some provider wrappers may support image generation or image analysis.</p>
+<p>Use image generation when the workflow requires a new visual asset.</p>
+<p>Use image analysis when the workflow requires interpreting an existing image.</p>
+<p>Possible use cases:</p>
+<ul>
+<li>Architecture diagrams.</li>
+<li>Documentation illustrations.</li>
+<li>Screenshot interpretation.</li>
+<li>Visual content summaries.</li>
+<li>UI analysis.</li>
+<li>Generated image assets.</li>
+</ul>
+<p>Image workflows may produce files, URLs, or provider-specific objects. Review the returned object
+shape before trying to store or export it.</p>
+<h2 id="combining-generation-with-other-modes">🔄 Combining Generation with Other Modes<a class="headerlink" href="#combining-generation-with-other-modes" title="Permanent link">&para;</a></h2>
+<p>Generation mode is most useful when paired with other Foo workflows.</p>
+<h3 id="load-and-summarize">Load and Summarize<a class="headerlink" href="#load-and-summarize" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Loading mode
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    |
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    v
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>Load document
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    |
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    v
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>Generation mode
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    |
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>    v
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>Summarize loaded text
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    |
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    v
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>Output workflow
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>    |
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>    v
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>Write Markdown summary
+</code></pre></div>
+<h3 id="scrape-and-explain">Scrape and Explain<a class="headerlink" href="#scrape-and-explain" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Scraping mode
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    |
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    v
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>Extract headings and paragraphs
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    |
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    v
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>Generation mode
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    |
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    v
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>Explain page structure
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>    |
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>    v
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>Output workflow
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>    |
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>    v
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>Write review notes
+</code></pre></div>
+<h3 id="retrieve-and-draft">Retrieve and Draft<a class="headerlink" href="#retrieve-and-draft" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>Retrieval mode
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    |
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    v
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>Fetch public-data records
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    |
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    v
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>Generation mode
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    |
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    v
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>Draft explanation or report
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>    |
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>    v
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>Review and export
+</code></pre></div>
+<h3 id="query-and-report">Query and Report<a class="headerlink" href="#query-and-report" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>Data Management mode
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    |
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    v
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>Query local table
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    |
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    v
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>Generation mode
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    |
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    v
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>Summarize results
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>    |
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>    v
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>Output workflow
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>    |
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>    v
+<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>Write report
+</code></pre></div>
+<h2 id="prompting-guidance">🧪 Prompting Guidance<a class="headerlink" href="#prompting-guidance" title="Permanent link">&para;</a></h2>
+<p>Prompts should be specific, scoped, and testable.</p>
+<p>Weak prompt:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>Tell me about this.
+</code></pre></div>
+<p>Better prompt:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>Summarize the loaded document in five bullets. Include purpose, primary inputs, primary outputs, dependencies, and implementation risks.
+</code></pre></div>
+<p>Weak prompt:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>Make docs.
+</code></pre></div>
+<p>Better prompt:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>Create a MkDocs page for Foo&#39;s data-management layer. Include purpose, SQLite usage, Chroma usage, examples, maintenance guidance, and links to the API reference.
+</code></pre></div>
+<p>Good prompts specify:</p>
+<ul>
+<li>Task.</li>
+<li>Source context.</li>
+<li>Audience.</li>
+<li>Output format.</li>
+<li>Constraints.</li>
+<li>Required sections.</li>
+<li>What to exclude.</li>
+</ul>
+<h2 id="reviewing-generated-output">🔍 Reviewing Generated Output<a class="headerlink" href="#reviewing-generated-output" title="Permanent link">&para;</a></h2>
+<p>Review generated output before using it.</p>
+<p>Check:</p>
+<ul>
+<li>Does it answer the actual prompt?</li>
+<li>Is it grounded in the supplied source?</li>
+<li>Did it invent unsupported features?</li>
+<li>Does it preserve technical terms?</li>
+<li>Does it include unsupported claims?</li>
+<li>Does it expose sensitive information?</li>
+<li>Does the format match the requested output?</li>
+<li>Are code examples syntactically plausible?</li>
+<li>Are Markdown tables and fences valid?</li>
+<li>Should the output be edited before export?</li>
+</ul>
+<p>Generated content should be treated as draft material unless it has been reviewed.</p>
+<h2 id="sensitive-content-guidance">🔐 Sensitive Content Guidance<a class="headerlink" href="#sensitive-content-guidance" title="Permanent link">&para;</a></h2>
+<p>Generation workflows may send user content to external providers. Review source material before
+generation.</p>
+<p>Do not send or store sensitive content unless the workflow explicitly requires it.</p>
+<p>Sensitive content may include:</p>
+<ul>
+<li>API keys.</li>
+<li>Tokens.</li>
+<li>Passwords.</li>
+<li>Credentials.</li>
+<li>Private messages.</li>
+<li>Email content.</li>
+<li>Internal documents.</li>
+<li>Legal records.</li>
+<li>Medical records.</li>
+<li>Financial records.</li>
+<li>Personnel records.</li>
+<li>Raw uploaded files.</li>
+<li>User-identifying paths.</li>
+<li>Proprietary data.</li>
+</ul>
+<p>When logging generation errors, do not log full prompts, full documents, raw provider responses,
+files, audio, image data, or credentials.</p>
+<h2 id="safe-generation-practices">🛡️ Safe Generation Practices<a class="headerlink" href="#safe-generation-practices" title="Permanent link">&para;</a></h2>
+<p>Use these practices:</p>
+<ul>
+<li>Start with a small prompt.</li>
+<li>Use default model settings first.</li>
+<li>Review provider and model selection.</li>
+<li>Use allowed domains for search-assisted generation when source control matters.</li>
+<li>Do not enable tools unnecessarily.</li>
+<li>Do not send large documents without chunking or review.</li>
+<li>Avoid storing sensitive prompts or generated content unintentionally.</li>
+<li>Review output before publishing.</li>
+<li>Keep provider credentials in configuration.</li>
+<li>Keep provider-specific logic inside <code>generators.py</code>.</li>
+<li>Keep UI rendering inside <code>app.py</code>.</li>
+</ul>
+<h2 id="common-generation-issues">⚠️ Common Generation Issues<a class="headerlink" href="#common-generation-issues" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Likely Cause</th>
+<th>Suggested Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Provider call fails</td>
+<td>Missing API key, invalid credential, unavailable service, or unsupported model</td>
+<td>Check <code>config.py</code> and environment variables.</td>
+</tr>
+<tr>
+<td>Prompt is rejected</td>
+<td>Missing required prompt text or invalid provider payload</td>
+<td>Try a shorter prompt with default options.</td>
+</tr>
+<tr>
+<td>Reasoning option fails</td>
+<td>Selected model does not support reasoning/thinking setting</td>
+<td>Disable reasoning or choose a supported model.</td>
+</tr>
+<tr>
+<td>Tool call fails</td>
+<td>Tool configuration is invalid for selected provider</td>
+<td>Disable tools and retest basic generation.</td>
+</tr>
+<tr>
+<td>Search gives poor results</td>
+<td>Query too broad or domains too loose</td>
+<td>Narrow the prompt and allowed domains.</td>
+</tr>
+<tr>
+<td>Output is too long</td>
+<td>Max-token setting too high or prompt too broad</td>
+<td>Add length and format constraints.</td>
+</tr>
+<tr>
+<td>Output is generic</td>
+<td>Prompt lacks source context or concrete requirements</td>
+<td>Include source, audience, and required sections.</td>
+</tr>
+<tr>
+<td>Output invents features</td>
+<td>Prompt asks for documentation without grounding source</td>
+<td>Provide source context and require source-grounded claims.</td>
+</tr>
+<tr>
+<td>Exported Markdown breaks</td>
+<td>Code fences, tables, or links are malformed</td>
+<td>Preview and edit before publishing.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="adding-a-new-generation-workflow">🧰 Adding a New Generation Workflow<a class="headerlink" href="#adding-a-new-generation-workflow" title="Permanent link">&para;</a></h2>
+<p>When adding a new generation workflow:</p>
+<ol>
+<li>Confirm the provider wrapper supports the underlying operation.</li>
+<li>Add provider-specific logic to <code>generators.py</code>, not <code>app.py</code>.</li>
+<li>Keep credentials in <code>config.py</code> or environment-backed configuration.</li>
+<li>Add UI controls in <code>app.py</code>.</li>
+<li>Validate required inputs before provider calls.</li>
+<li>Keep tool construction in the provider wrapper.</li>
+<li>Keep response extraction in the provider wrapper.</li>
+<li>Avoid logging prompts, documents, credentials, or raw provider responses.</li>
+<li>Return a predictable type.</li>
+<li>Add or update documentation.</li>
+<li>Confirm the generated API page renders without Griffe warnings.</li>
+<li>Test the workflow with simple input before complex input.</li>
+</ol>
+<h2 id="api-reference">📖 API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
+<p>Use the generated API page for implementation details:</p>
+<ul>
+<li><a href="../api/generators/">Generators API</a></li>
+</ul>
+<p>The API reference includes provider wrapper classes, method signatures, return annotations, and
+docstrings generated from <code>generators.py</code>.</p>
+<h2 id="generation-checklist">✅ Generation Checklist<a class="headerlink" href="#generation-checklist" title="Permanent link">&para;</a></h2>
+<p>Before treating a generation result as usable, confirm:</p>
+<ul>
+<li>The correct provider was selected.</li>
+<li>The correct model was selected.</li>
+<li>Required credentials are configured.</li>
+<li>Prompt text is present.</li>
+<li>Optional tools are intentional.</li>
+<li>Reasoning or thinking settings are supported by the selected model.</li>
+<li>Search domain restrictions are appropriate.</li>
+<li>The output answers the task.</li>
+<li>The output does not include unsupported claims.</li>
+<li>The output does not expose sensitive content.</li>
+<li>The output is reviewed before export or publication.</li>
+</ul>
+<h2 id="summary">🧭 Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>Foo’s generation workflow connects the Streamlit application to provider wrapper classes in
+<code>generators.py</code>. It supports text generation, search-assisted generation, document summarization,
+translation, transcription, image-related workflows, and provider-specific tool or reasoning
+settings. Keep generation behavior provider-specific, review outputs carefully, and use the output
+layer when generated content needs to become a durable artifact.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2025 Terry Eppler
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

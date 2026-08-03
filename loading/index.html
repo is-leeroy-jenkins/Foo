@@ -1,0 +1,2831 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for Foo, a Streamlit and Python application for information acquisition and analysis workflows.">
+      
+      
+        <meta name="author" content="Terry D. Eppler">
+      
+      
+        <link rel="canonical" href="https://is-leeroy-jenkins.github.io/Foo/loading/">
+      
+      
+        <link rel="prev" href="../user-guide/">
+      
+      
+        <link rel="next" href="../fetching-scraping/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Loading Data - Foo Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/stylesheets/foo.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#loading-data" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Foo Documentation" class="md-header__button md-logo" aria-label="Foo Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Foo Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Loading Data
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/is-leeroy-jenkins/Foo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    is-leeroy-jenkins/Foo
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../app/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Application
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../user-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  User Guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Loading Data
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../fetching-scraping/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Fetching and Scraping
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../generation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Generation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../data-management/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data Management
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../outputs/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Outputs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../development/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Development
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Foo Documentation" class="md-nav__button md-logo" aria-label="Foo Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Foo Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/is-leeroy-jenkins/Foo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    is-leeroy-jenkins/Foo
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loading Data
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loading Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loading-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 Loading Layer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-loader-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Supported Loader Categories
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loading-mode-in-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🖥️ Loading Mode in the Application
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-file-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📄 Local File Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-text-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a Text File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-csv-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a CSV File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-pdf-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a PDF File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-word-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a Word Document
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-an-excel-workbook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load an Excel Workbook
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-markdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load Markdown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load JSON
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#web-and-research-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌐 Web and Research Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-web-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load Web Content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-wikipedia-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load Wikipedia Content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-github-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load GitHub Content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cloud-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ☁️ Cloud Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-google-cloud-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a Google Cloud File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-an-aws-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load an AWS File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#office-and-email-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✉️ Office and Email Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#speech-to-text-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗣️ Speech-to-Text Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#document-result-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Document Result Shape
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reviewing-loaded-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Reviewing Loaded Content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#text-processing-after-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧠 Text Processing After Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-fetching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 Relationship to Fetching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-scraping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 Relationship to Scraping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-data-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗄️ Relationship to Data Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Relationship to Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Relationship to Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sensitive-content-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Sensitive Content Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safe-loading-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Safe Loading Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-loading-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚠️ Common Loading Issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-loading-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Testing Loading Workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-loader-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧰 Adding a New Loader Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 API Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loading-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Loading Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fetching-scraping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fetching and Scraping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../outputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Outputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/fetchers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fetchers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/scrapers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scrapers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/writers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loading-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧱 Loading Layer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-loader-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Supported Loader Categories
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loading-mode-in-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🖥️ Loading Mode in the Application
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-file-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📄 Local File Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-text-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a Text File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-csv-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a CSV File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-pdf-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a PDF File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-word-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a Word Document
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-an-excel-workbook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load an Excel Workbook
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-markdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load Markdown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load JSON
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#web-and-research-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌐 Web and Research Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-web-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load Web Content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-wikipedia-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load Wikipedia Content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-github-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load GitHub Content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cloud-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ☁️ Cloud Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-a-google-cloud-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load a Google Cloud File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-load-an-aws-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Example: Load an AWS File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#office-and-email-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✉️ Office and Email Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#speech-to-text-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗣️ Speech-to-Text Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#document-result-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Document Result Shape
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reviewing-loaded-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Reviewing Loaded Content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#text-processing-after-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧠 Text Processing After Loading
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-fetching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 Relationship to Fetching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-scraping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧩 Relationship to Scraping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-data-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🗄️ Relationship to Data Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Relationship to Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-to-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧾 Relationship to Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sensitive-content-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Sensitive Content Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safe-loading-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Safe Loading Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-loading-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚠️ Common Loading Issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-loading-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Testing Loading Workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-loader-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧰 Adding a New Loader Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 API Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loading-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Loading Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧭 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="loading-data">Loading Data<a class="headerlink" href="#loading-data" title="Permanent link">&para;</a></h1>
+<p>Foo’s loading workflow turns files, documents, notebooks, cloud objects, and document-like sources
+into content that the rest of the application can display, process, summarize, store, search, or
+export.</p>
+<p>The loading layer is implemented in <code>loaders.py</code> and coordinated through the Streamlit interface in
+<code>app.py</code>.</p>
+<h2 id="purpose">🧭 Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
+<p>Use Loading mode when the workflow begins with source material that should be treated as document
+content.</p>
+<p>Loading is appropriate for:</p>
+<ul>
+<li>Reading local files.</li>
+<li>Loading structured files.</li>
+<li>Loading office documents.</li>
+<li>Loading notebooks.</li>
+<li>Loading Markdown and HTML files.</li>
+<li>Loading cloud-backed files.</li>
+<li>Loading repository or web-accessible document content.</li>
+<li>Loading research or reference content into document objects.</li>
+<li>Preparing text for chunking, tokenization, summarization, semantic search, or export.</li>
+</ul>
+<p>The loader layer is not intended to be the primary place for general public API retrieval,
+structured web extraction, database persistence, or AI-provider calls. Those responsibilities belong
+to <code>fetchers.py</code>, <code>scrapers.py</code>, <code>data.py</code>, and <code>generators.py</code>.</p>
+<h2 id="loading-layer">🧱 Loading Layer<a class="headerlink" href="#loading-layer" title="Permanent link">&para;</a></h2>
+<p>The loading layer sits near the beginning of the Foo processing pipeline.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Source file, document, notebook, or cloud object
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                |
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                v
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>            loaders.py
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                |
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                v
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Document objects, raw text, metadata, or structured content
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                |
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                +--&gt; Streamlit preview
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                +--&gt; text processing
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                +--&gt; tokenization
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                +--&gt; chunking
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>                +--&gt; generation
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                +--&gt; SQLite metadata storage
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                +--&gt; Chroma semantic storage
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>                +--&gt; Markdown output
+</code></pre></div>
+<p>A loader’s job is to normalize source material into a form that Foo can use. Later workflow stages
+decide whether that content should be displayed, stored, summarized, searched, or exported.</p>
+<h2 id="supported-loader-categories">📦 Supported Loader Categories<a class="headerlink" href="#supported-loader-categories" title="Permanent link">&para;</a></h2>
+<p>Foo includes loader classes for a broad set of source types.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Loader Classes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plain and structured files</td>
+<td><code>TextLoader</code>, <code>CsvLoader</code>, <code>XmlLoader</code>, <code>JsonLoader</code></td>
+</tr>
+<tr>
+<td>Document formats</td>
+<td><code>PdfLoader</code>, <code>WordLoader</code>, <code>PowerPointLoader</code>, <code>MarkdownLoader</code>, <code>HtmlLoader</code></td>
+</tr>
+<tr>
+<td>Spreadsheet formats</td>
+<td><code>ExcelLoader</code>, <code>CsvLoader</code></td>
+</tr>
+<tr>
+<td>Web and research sources</td>
+<td><code>WebLoader</code>, <code>WebCrawler</code>, <code>ArXivLoader</code>, <code>WikiLoader</code>, <code>GithubLoader</code>, <code>PubMedSearchLoader</code>, <code>OpenCityLoader</code></td>
+</tr>
+<tr>
+<td>Office and email sources</td>
+<td><code>OutlookLoader</code>, <code>EmailLoader</code>, <code>OneDriveDocLoader</code>, <code>SpfxLoader</code></td>
+</tr>
+<tr>
+<td>Cloud and storage sources</td>
+<td><code>GoogleLoader</code>, <code>GoogleCloudFileLoader</code>, <code>AwsFileLoader</code>, <code>GoogleBucketLoader</code>, <code>AwsBucketLoader</code></td>
+</tr>
+<tr>
+<td>Notebook and speech sources</td>
+<td><code>JupyterNotebookLoader</code>, <code>GoogleSpeechToTextLoader</code></td>
+</tr>
+</tbody>
+</table>
+<p>The exact constructor arguments, method signatures, return annotations, and source-specific behavior
+are documented in the generated <a href="../api/loaders/">Loaders API</a>.</p>
+<h2 id="loading-mode-in-the-application">🖥️ Loading Mode in the Application<a class="headerlink" href="#loading-mode-in-the-application" title="Permanent link">&para;</a></h2>
+<p>In the Streamlit application, Loading mode is the user-facing entry point for loader workflows.</p>
+<p>A typical Loading mode workflow is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Select Loading mode
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>        |
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        v
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Choose a loader
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        |
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        v
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>Provide source input
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        |
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        v
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>Run the load action
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        |
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        v
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>Review loaded content
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        |
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        v
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>Reuse, store, summarize, or export the result
+</code></pre></div>
+<p>Depending on the selected loader, source input may be:</p>
+<ul>
+<li>A local file path.</li>
+<li>An uploaded file.</li>
+<li>A URL.</li>
+<li>A GitHub reference.</li>
+<li>A Wikipedia topic.</li>
+<li>An ArXiv query or identifier.</li>
+<li>A cloud object reference.</li>
+<li>A bucket name.</li>
+<li>A notebook path.</li>
+<li>A source-specific identifier.</li>
+</ul>
+<p>The UI should only expose controls that are relevant to the selected loader.</p>
+<h2 id="local-file-loading">📄 Local File Loading<a class="headerlink" href="#local-file-loading" title="Permanent link">&para;</a></h2>
+<p>Use local file loaders when the source is available on disk or uploaded through the UI.</p>
+<p>Common local-file workflows include:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Recommended Loader</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.txt</code></td>
+<td><code>TextLoader</code></td>
+</tr>
+<tr>
+<td><code>.csv</code></td>
+<td><code>CsvLoader</code></td>
+</tr>
+<tr>
+<td><code>.xml</code></td>
+<td><code>XmlLoader</code></td>
+</tr>
+<tr>
+<td><code>.json</code></td>
+<td><code>JsonLoader</code></td>
+</tr>
+<tr>
+<td><code>.pdf</code></td>
+<td><code>PdfLoader</code></td>
+</tr>
+<tr>
+<td><code>.docx</code></td>
+<td><code>WordLoader</code></td>
+</tr>
+<tr>
+<td><code>.xlsx</code></td>
+<td><code>ExcelLoader</code></td>
+</tr>
+<tr>
+<td><code>.pptx</code></td>
+<td><code>PowerPointLoader</code></td>
+</tr>
+<tr>
+<td><code>.md</code></td>
+<td><code>MarkdownLoader</code></td>
+</tr>
+<tr>
+<td><code>.html</code> / <code>.htm</code></td>
+<td><code>HtmlLoader</code></td>
+</tr>
+<tr>
+<td><code>.ipynb</code></td>
+<td><code>JupyterNotebookLoader</code></td>
+</tr>
+</tbody>
+</table>
+<p>Use a local-file loader when the workflow goal is document ingestion rather than API retrieval.</p>
+<h2 id="example-load-a-text-file">🧪 Example: Load a Text File<a class="headerlink" href="#example-load-a-text-file" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextLoader</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">TextLoader</span><span class="p">()</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/example.txt&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">page_content</span><span class="p">)</span>
+</code></pre></div>
+<p>This workflow is useful for simple source text, logs, notes, documentation files, or plain-text
+exports.</p>
+<h2 id="example-load-a-csv-file">🧪 Example: Load a CSV File<a class="headerlink" href="#example-load-a-csv-file" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">CsvLoader</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">CsvLoader</span><span class="p">()</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/example.csv&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">page_content</span><span class="p">)</span>
+</code></pre></div>
+<p>CSV loading is useful when rows need to become document-like records for review, processing,
+summarization, storage, or semantic search.</p>
+<h2 id="example-load-a-pdf-file">🧪 Example: Load a PDF File<a class="headerlink" href="#example-load-a-pdf-file" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">PdfLoader</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">PdfLoader</span><span class="p">()</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/example.pdf&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">page_content</span><span class="p">[:</span><span class="mi">500</span><span class="p">])</span>
+</code></pre></div>
+<p>PDF loading is useful for reports, technical documents, public documents, research papers, manuals,
+forms, and other page-based documents.</p>
+<h2 id="example-load-a-word-document">🧪 Example: Load a Word Document<a class="headerlink" href="#example-load-a-word-document" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">WordLoader</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">WordLoader</span><span class="p">()</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/example.docx&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">page_content</span><span class="p">[:</span><span class="mi">500</span><span class="p">])</span>
+</code></pre></div>
+<p>Word loading is useful for policy documents, drafts, memos, reports, instructions, and other
+office-document workflows.</p>
+<h2 id="example-load-an-excel-workbook">🧪 Example: Load an Excel Workbook<a class="headerlink" href="#example-load-an-excel-workbook" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExcelLoader</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">ExcelLoader</span><span class="p">()</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/example.xlsx&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">page_content</span><span class="p">)</span>
+</code></pre></div>
+<p>Excel loading is useful for workbook review, tabular-data extraction, sheet inspection, and
+workflows that transform spreadsheet rows into document-like content.</p>
+<h2 id="example-load-markdown">🧪 Example: Load Markdown<a class="headerlink" href="#example-load-markdown" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarkdownLoader</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">MarkdownLoader</span><span class="p">()</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;docs/index.md&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">page_content</span><span class="p">)</span>
+</code></pre></div>
+<p>Markdown loading is useful for documentation review, MkDocs site inspection, README analysis, and
+migration workflows.</p>
+<h2 id="example-load-json">🧪 Example: Load JSON<a class="headerlink" href="#example-load-json" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">JsonLoader</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">JsonLoader</span><span class="p">()</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/example.json&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">page_content</span><span class="p">)</span>
+</code></pre></div>
+<p>JSON loading is useful for structured exports, API response captures, configuration snapshots, and
+local data records that need to be normalized for processing.</p>
+<h2 id="web-and-research-loading">🌐 Web and Research Loading<a class="headerlink" href="#web-and-research-loading" title="Permanent link">&para;</a></h2>
+<p>Foo includes loader classes for document-like web and research sources.</p>
+<p>Use these loaders when the source should be treated as document content:</p>
+<table>
+<thead>
+<tr>
+<th>Source Type</th>
+<th>Recommended Loader</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Web page document content</td>
+<td><code>WebLoader</code></td>
+</tr>
+<tr>
+<td>Crawled web content</td>
+<td><code>WebCrawler</code></td>
+</tr>
+<tr>
+<td>ArXiv paper or search result content</td>
+<td><code>ArXivLoader</code></td>
+</tr>
+<tr>
+<td>Wikipedia topic content</td>
+<td><code>WikiLoader</code></td>
+</tr>
+<tr>
+<td>GitHub repository or file content</td>
+<td><code>GithubLoader</code></td>
+</tr>
+<tr>
+<td>PubMed search result content</td>
+<td><code>PubMedSearchLoader</code></td>
+</tr>
+<tr>
+<td>Open city data content</td>
+<td><code>OpenCityLoader</code></td>
+</tr>
+</tbody>
+</table>
+<p>These loaders are appropriate when the output should become document objects or source text.</p>
+<p>Use <code>fetchers.py</code> instead when the workflow requires source-specific API calls, response metadata,
+public-data records, search result payloads, weather data, government data, environmental data, or
+astronomy data.</p>
+<h2 id="example-load-web-content">🧪 Example: Load Web Content<a class="headerlink" href="#example-load-web-content" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebLoader</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">WebLoader</span><span class="p">()</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;https://example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">page_content</span><span class="p">[:</span><span class="mi">500</span><span class="p">])</span>
+</code></pre></div>
+<p>Use this pattern when a web page should be converted into document-like content.</p>
+<h2 id="example-load-wikipedia-content">🧪 Example: Load Wikipedia Content<a class="headerlink" href="#example-load-wikipedia-content" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">WikiLoader</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">WikiLoader</span><span class="p">()</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;Python programming language&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">page_content</span><span class="p">[:</span><span class="mi">500</span><span class="p">])</span>
+</code></pre></div>
+<p>Use this pattern for encyclopedia-style reference content.</p>
+<h2 id="example-load-github-content">🧪 Example: Load GitHub Content<a class="headerlink" href="#example-load-github-content" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">GithubLoader</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">GithubLoader</span><span class="p">()</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;https://github.com/example/project&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+</code></pre></div>
+<p>Use the exact method signature from the <a href="../api/loaders/">Loaders API</a>, because GitHub loading may
+require source-specific arguments.</p>
+<h2 id="cloud-loading">☁️ Cloud Loading<a class="headerlink" href="#cloud-loading" title="Permanent link">&para;</a></h2>
+<p>Foo includes loaders for cloud-backed files and object storage.</p>
+<p>Cloud-oriented loaders include:</p>
+<ul>
+<li><code>OneDriveDocLoader</code></li>
+<li><code>GoogleLoader</code></li>
+<li><code>GoogleCloudFileLoader</code></li>
+<li><code>AwsFileLoader</code></li>
+<li><code>GoogleBucketLoader</code></li>
+<li><code>AwsBucketLoader</code></li>
+</ul>
+<p>Use these loaders when content is stored in a provider-backed location and should be brought into
+Foo’s document pipeline.</p>
+<p>Cloud workflows may require:</p>
+<ul>
+<li>Provider credentials.</li>
+<li>Bucket names.</li>
+<li>Object keys.</li>
+<li>File identifiers.</li>
+<li>Project identifiers.</li>
+<li>Source paths.</li>
+<li>Permissions.</li>
+<li>Optional provider SDK dependencies.</li>
+</ul>
+<p>Keep credentials in environment-backed configuration or <code>config.py</code> references. Do not hard-code
+credentials in source code, examples, Markdown files, or output artifacts.</p>
+<h2 id="example-load-a-google-cloud-file">🧪 Example: Load a Google Cloud File<a class="headerlink" href="#example-load-a-google-cloud-file" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">GoogleCloudFileLoader</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">GoogleCloudFileLoader</span><span class="p">()</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;bucket-or-file-reference&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+</code></pre></div>
+<p>Use the API reference for the exact expected source argument and provider-specific behavior.</p>
+<h2 id="example-load-an-aws-file">🧪 Example: Load an AWS File<a class="headerlink" href="#example-load-an-aws-file" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">AwsFileLoader</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">loader</span> <span class="o">=</span> <span class="n">AwsFileLoader</span><span class="p">()</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;s3-object-reference&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">documents</span> <span class="ow">or</span> <span class="p">[]:</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+</code></pre></div>
+<p>AWS workflows may require configured credentials, bucket names, regions, and object keys.</p>
+<h2 id="office-and-email-loading">✉️ Office and Email Loading<a class="headerlink" href="#office-and-email-loading" title="Permanent link">&para;</a></h2>
+<p>Foo includes loaders for office and email-oriented source material.</p>
+<p>Relevant loaders include:</p>
+<ul>
+<li><code>OutlookLoader</code></li>
+<li><code>EmailLoader</code></li>
+<li><code>OneDriveDocLoader</code></li>
+<li><code>WordLoader</code></li>
+<li><code>PowerPointLoader</code></li>
+<li><code>ExcelLoader</code></li>
+</ul>
+<p>Use these loaders when operational content is stored in office formats or communication sources.</p>
+<p>Common use cases include:</p>
+<ul>
+<li>Loading email content for review.</li>
+<li>Loading Outlook-related content.</li>
+<li>Loading OneDrive documents.</li>
+<li>Loading office documents into text.</li>
+<li>Preparing office content for summarization.</li>
+<li>Exporting office content to Markdown.</li>
+</ul>
+<p>Email and office content can contain sensitive information. Review loaded content before storing,
+exporting, or passing it to a provider workflow.</p>
+<h2 id="speech-to-text-loading">🗣️ Speech-to-Text Loading<a class="headerlink" href="#speech-to-text-loading" title="Permanent link">&para;</a></h2>
+<p><code>GoogleSpeechToTextLoader</code> supports speech-to-text-oriented ingestion.</p>
+<p>Use it when audio-derived text should enter Foo’s document processing pipeline.</p>
+<p>Typical workflow:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Audio source
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>     |
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>     v
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>GoogleSpeechToTextLoader
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>     |
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>     v
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>Text transcript or document-like result
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>     |
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>     v
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>Review, summarize, store, or export
+</code></pre></div>
+<p>Speech-to-text workflows may require provider credentials, supported audio formats, language
+options, and service-specific configuration.</p>
+<h2 id="document-result-shape">🧾 Document Result Shape<a class="headerlink" href="#document-result-shape" title="Permanent link">&para;</a></h2>
+<p>Many loaders return LangChain <code>Document</code> objects or document-like values.</p>
+<p>A typical document object includes:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>page_content</code></td>
+<td>Main loaded text.</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>Source metadata such as path, page number, row number, sheet name, source URI, or provider details.</td>
+</tr>
+</tbody>
+</table>
+<p>Conceptual shape:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">Document</span><span class="p">(</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    <span class="n">page_content</span><span class="o">=</span><span class="s2">&quot;Loaded source text...&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>        <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;data/example.pdf&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>        <span class="s2">&quot;page&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    <span class="p">},</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="p">)</span>
+</code></pre></div>
+<p>Metadata is important because downstream workflows need source traceability.</p>
+<h2 id="reviewing-loaded-content">🔍 Reviewing Loaded Content<a class="headerlink" href="#reviewing-loaded-content" title="Permanent link">&para;</a></h2>
+<p>After loading content, review the result before storing or generating from it.</p>
+<p>Check:</p>
+<ul>
+<li>Did the loader return documents?</li>
+<li>How many documents were returned?</li>
+<li>Is <code>page_content</code> populated?</li>
+<li>Is metadata present?</li>
+<li>Does the source path or URI look correct?</li>
+<li>Are pages, rows, sheets, slides, or records represented as expected?</li>
+<li>Are there encoding issues?</li>
+<li>Are there missing pages or empty rows?</li>
+<li>Does the content contain sensitive information?</li>
+<li>Is the result small enough for downstream processing?</li>
+</ul>
+<p>For large documents, preview a small portion first.</p>
+<h2 id="text-processing-after-loading">🧠 Text Processing After Loading<a class="headerlink" href="#text-processing-after-loading" title="Permanent link">&para;</a></h2>
+<p>Once content is loaded, Foo can apply text-processing workflows.</p>
+<p>Common post-load operations include:</p>
+<ul>
+<li>Text preview.</li>
+<li>Text normalization.</li>
+<li>Chunking.</li>
+<li>Tokenization.</li>
+<li>Vocabulary inspection.</li>
+<li>Token count review.</li>
+<li>Similarity comparison.</li>
+<li>Summarization.</li>
+<li>Semantic indexing.</li>
+<li>Markdown export.</li>
+</ul>
+<p>A common flow is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>Loaded documents
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>        |
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>        v
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>Extract page_content
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>        |
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>        v
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>Normalize text
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>        |
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>        v
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>Chunk text
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>        |
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>        v
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>Store chunks or pass to generation
+</code></pre></div>
+<p>Chunking is useful when content is too large for a single downstream operation.</p>
+<h2 id="relationship-to-fetching">🧩 Relationship to Fetching<a class="headerlink" href="#relationship-to-fetching" title="Permanent link">&para;</a></h2>
+<p>Loading and fetching are related but different.</p>
+<p>Use loading when the source is a document-like object.</p>
+<p>Use fetching when the source is an external service, query, public API, or retrieval endpoint.</p>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“I have a PDF, CSV, Markdown file, or Word document.”</td>
+<td>Loader</td>
+</tr>
+<tr>
+<td>“I need to call a public API or source-specific service.”</td>
+<td>Fetcher</td>
+</tr>
+<tr>
+<td>“I need status code, links, or raw HTML response metadata.”</td>
+<td>Fetcher</td>
+</tr>
+<tr>
+<td>“I need to turn a file or web page into document objects.”</td>
+<td>Loader</td>
+</tr>
+<tr>
+<td>“I need weather, Census, USGS, air-quality, or astronomy records.”</td>
+<td>Fetcher</td>
+</tr>
+</tbody>
+</table>
+<p>If the source is a web page and the goal is document ingestion, use <code>WebLoader</code>. If the goal is
+response inspection or structured retrieval, use <code>WebFetcher</code>.</p>
+<h2 id="relationship-to-scraping">🧩 Relationship to Scraping<a class="headerlink" href="#relationship-to-scraping" title="Permanent link">&para;</a></h2>
+<p>Loading and scraping are also different.</p>
+<p>Use loading when the goal is document ingestion.</p>
+<p>Use scraping when the goal is extracting specific HTML elements.</p>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Load an HTML page as document text</td>
+<td><code>HtmlLoader</code> or <code>WebLoader</code></td>
+</tr>
+<tr>
+<td>Extract headings from a page</td>
+<td><code>WebExtractor.scrape_headings(...)</code></td>
+</tr>
+<tr>
+<td>Extract links from a page</td>
+<td><code>WebExtractor.scrape_hyperlinks(...)</code></td>
+</tr>
+<tr>
+<td>Extract table cells from a page</td>
+<td><code>WebExtractor.scrape_tables(...)</code></td>
+</tr>
+<tr>
+<td>Load Markdown, PDF, or Word content</td>
+<td>Loader</td>
+</tr>
+</tbody>
+</table>
+<p>Scrapers return specific extracted page elements. Loaders return document content.</p>
+<h2 id="relationship-to-data-management">🗄️ Relationship to Data Management<a class="headerlink" href="#relationship-to-data-management" title="Permanent link">&para;</a></h2>
+<p>Loaded results can be stored through the data-management layer.</p>
+<p>Good SQLite candidates include:</p>
+<ul>
+<li>Source path.</li>
+<li>Source URI.</li>
+<li>Loader class name.</li>
+<li>File type.</li>
+<li>Page count.</li>
+<li>Row count.</li>
+<li>Sheet count.</li>
+<li>Document count.</li>
+<li>Chunk count.</li>
+<li>Load timestamp.</li>
+<li>Metadata summary.</li>
+</ul>
+<p>Good Chroma candidates include:</p>
+<ul>
+<li>Loaded text.</li>
+<li>Document chunks.</li>
+<li>Embeddings.</li>
+<li>Chunk metadata.</li>
+<li>Semantic-search collections.</li>
+</ul>
+<p>A common pattern is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>Loader output
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>     |
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>     +--&gt; SQLite for metadata
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>     |
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>     +--&gt; Chroma for searchable text chunks
+</code></pre></div>
+<h2 id="relationship-to-generation">🤖 Relationship to Generation<a class="headerlink" href="#relationship-to-generation" title="Permanent link">&para;</a></h2>
+<p>Loaded content can be passed to generator workflows.</p>
+<p>Common generation tasks include:</p>
+<ul>
+<li>Summarize a loaded document.</li>
+<li>Extract key points.</li>
+<li>Produce documentation from source files.</li>
+<li>Compare two loaded documents.</li>
+<li>Translate loaded text.</li>
+<li>Generate questions and answers.</li>
+<li>Generate an executive summary.</li>
+<li>Create retrieval context for a later prompt.</li>
+</ul>
+<p>Review loaded content before passing it to a provider workflow, especially when it contains private
+or sensitive material.</p>
+<h2 id="relationship-to-output">🧾 Relationship to Output<a class="headerlink" href="#relationship-to-output" title="Permanent link">&para;</a></h2>
+<p>Loaded content can be exported through the output layer.</p>
+<p>Good output artifacts include:</p>
+<ul>
+<li>Document summaries.</li>
+<li>Source inventories.</li>
+<li>Metadata reports.</li>
+<li>Extracted text files.</li>
+<li>Markdown conversions.</li>
+<li>Chunk inventories.</li>
+<li>Review packets.</li>
+<li>Load result reports.</li>
+</ul>
+<p>Use <code>MarkdownWriter</code> when the result should become a reviewable Markdown artifact.</p>
+<h2 id="sensitive-content-guidance">🔐 Sensitive Content Guidance<a class="headerlink" href="#sensitive-content-guidance" title="Permanent link">&para;</a></h2>
+<p>Loaded files can contain sensitive content.</p>
+<p>Before storing, exporting, or sending loaded content to an AI provider, review whether it includes:</p>
+<ul>
+<li>API keys.</li>
+<li>Tokens.</li>
+<li>Passwords.</li>
+<li>Private emails.</li>
+<li>Personal information.</li>
+<li>Sensitive file paths.</li>
+<li>Internal documents.</li>
+<li>Proprietary material.</li>
+<li>Raw legal, financial, or personnel records.</li>
+<li>Unredacted source text.</li>
+</ul>
+<p>Do not write or transmit sensitive loaded content unless the workflow explicitly requires it and the
+user understands the destination.</p>
+<h2 id="safe-loading-practices">🛡️ Safe Loading Practices<a class="headerlink" href="#safe-loading-practices" title="Permanent link">&para;</a></h2>
+<p>Use these practices when loading source material:</p>
+<ul>
+<li>Start with a small known-good file.</li>
+<li>Validate the file path or source reference.</li>
+<li>Confirm the loader matches the file type.</li>
+<li>Avoid loading very large files until the workflow is tested.</li>
+<li>Preview loaded content before storing or exporting.</li>
+<li>Keep credentials outside source code.</li>
+<li>Do not log full file contents.</li>
+<li>Do not log raw document text.</li>
+<li>Use explicit source metadata.</li>
+<li>Keep document ingestion separate from retrieval, scraping, generation, and writing.</li>
+</ul>
+<h2 id="common-loading-issues">⚠️ Common Loading Issues<a class="headerlink" href="#common-loading-issues" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Likely Cause</th>
+<th>Suggested Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Loader returns no documents</td>
+<td>Bad path, unsupported format, empty file, or missing optional dependency</td>
+<td>Test with a small known-good file.</td>
+</tr>
+<tr>
+<td>File not found</td>
+<td>Wrong relative path or working directory</td>
+<td>Run from repository root or use an absolute path during testing.</td>
+</tr>
+<tr>
+<td>Encoding error</td>
+<td>Source text uses unexpected encoding</td>
+<td>Try a smaller sample or convert to UTF-8.</td>
+</tr>
+<tr>
+<td>PDF text is incomplete</td>
+<td>PDF may contain scanned pages or images</td>
+<td>Use OCR workflow if available.</td>
+</tr>
+<tr>
+<td>CSV rows look wrong</td>
+<td>Delimiter, quoting, or encoding issue</td>
+<td>Open the CSV and inspect delimiter/headers.</td>
+</tr>
+<tr>
+<td>Excel loader misses sheets</td>
+<td>Workbook structure or loader setting issue</td>
+<td>Test with a workbook containing one simple sheet.</td>
+</tr>
+<tr>
+<td>Web loading fails</td>
+<td>URL inaccessible, blocked, timed out, or not document-like</td>
+<td>Try <code>WebFetcher</code> for response inspection.</td>
+</tr>
+<tr>
+<td>Cloud loading fails</td>
+<td>Credentials, permissions, bucket name, object key, or dependency issue</td>
+<td>Verify provider configuration.</td>
+</tr>
+<tr>
+<td>Loader works locally but fails in app</td>
+<td>Streamlit working directory or uploaded-file handling issue</td>
+<td>Confirm path handling and session-state values.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="testing-loading-workflows">🧪 Testing Loading Workflows<a class="headerlink" href="#testing-loading-workflows" title="Permanent link">&para;</a></h2>
+<p>When testing loaders, use focused test inputs.</p>
+<p>Recommended test set:</p>
+<ul>
+<li>Small <code>.txt</code> file.</li>
+<li>Small <code>.csv</code> file with headers.</li>
+<li>Simple <code>.json</code> file.</li>
+<li>One-page <code>.pdf</code>.</li>
+<li>Small <code>.docx</code>.</li>
+<li>Small <code>.xlsx</code>.</li>
+<li>Simple <code>.md</code>.</li>
+<li>Simple <code>.html</code>.</li>
+<li>Small <code>.ipynb</code>.</li>
+<li>Known reachable web page.</li>
+<li>Known missing file.</li>
+<li>Empty file where applicable.</li>
+<li>Malformed file where applicable.</li>
+</ul>
+<p>For each test, confirm:</p>
+<ul>
+<li>The loader returns the documented type.</li>
+<li>Empty or missing inputs are handled safely.</li>
+<li>Metadata is preserved.</li>
+<li>Content is readable.</li>
+<li>Errors are understandable.</li>
+<li>Sensitive content is not logged.</li>
+<li>Downstream preview does not crash.</li>
+</ul>
+<h2 id="adding-a-new-loader-workflow">🧰 Adding a New Loader Workflow<a class="headerlink" href="#adding-a-new-loader-workflow" title="Permanent link">&para;</a></h2>
+<p>When adding a new user-facing loader workflow:</p>
+<ol>
+<li>Add or verify the loader class in <code>loaders.py</code>.</li>
+<li>Confirm the loader compiles.</li>
+<li>Confirm the loader has Google-style docstrings.</li>
+<li>Confirm method return annotations are accurate.</li>
+<li>Add Streamlit controls in <code>app.py</code>.</li>
+<li>Use unique widget keys.</li>
+<li>Validate required inputs before calling the loader.</li>
+<li>Display a preview of results.</li>
+<li>Store results in session state only when useful.</li>
+<li>Add export or persistence options only after preview works.</li>
+<li>Update this page if the workflow is user-facing.</li>
+<li>Update <a href="../api/loaders/">Loaders API</a> if the public API changes.</li>
+</ol>
+<h2 id="api-reference">📖 API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
+<p>Use the generated API page for source-level details:</p>
+<ul>
+<li><a href="../api/loaders/">Loaders API</a></li>
+</ul>
+<p>The API reference includes class definitions, method signatures, return annotations, and docstrings
+generated from <code>loaders.py</code>.</p>
+<h2 id="loading-checklist">✅ Loading Checklist<a class="headerlink" href="#loading-checklist" title="Permanent link">&para;</a></h2>
+<p>Before treating a load as successful, confirm:</p>
+<ul>
+<li>The selected loader matches the source type.</li>
+<li>Required input values were provided.</li>
+<li>The loader returned data.</li>
+<li>The result type is expected.</li>
+<li><code>page_content</code> or equivalent content is populated.</li>
+<li>Metadata is present and useful.</li>
+<li>The result preview is readable.</li>
+<li>Sensitive content has been reviewed.</li>
+<li>The content is suitable for downstream use.</li>
+<li>The output or storage destination is appropriate.</li>
+</ul>
+<h2 id="summary">🧭 Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>Foo’s loading workflow is the entry point for document-oriented source material. Loaders convert
+files, documents, notebooks, cloud objects, and source-specific content into usable internal
+representations. Once loaded, content can be reviewed, chunked, stored, summarized, searched, or
+exported by the rest of the application.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2025 Terry Eppler
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "search.suggest", "content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
