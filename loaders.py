@@ -4489,7 +4489,6 @@ class AwsBucketLoader( Loader ):
 			self.aws_session_token = aws_session_token
 			self.region_name = region_name
 			self.endpoint_url = endpoint_url
-			
 			kwargs: Dict[ str, Any ] = { }
 			if self.prefix:
 				kwargs[ 'prefix' ] = self.prefix

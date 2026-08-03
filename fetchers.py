@@ -178,7 +178,13 @@ class Fetcher:
 		Returns:
 		    list[str]: Ordered public member names exposed by the instance.
 		"""
-		return [ 'timeout', 'headers', 'response', 'url', 'result', 'query', 'fetch' ]
+		return [ 'timeout',
+		         'headers',
+		         'response',
+		         'url',
+		         'result',
+		         'query',
+		         'fetch' ]
 	
 	def fetch( self, query: str, url: str, time: int=10 ) -> Result | None:
 		"""Fetch.
@@ -273,13 +279,42 @@ class WebFetcher( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [ 'agents', 'url', 'html', 'text', 'source_url', 'source_html', 'selected_methods',
-			'timeout', 'headers', 'response', 'result', 'soup', 're_tag', 're_ws', 'fetch',
-			'html_to_text', 'coerce_items', 'extract_title', 'truncate_text', 'normalize_url',
-			'same_domain', 'extract_links', 'extract_structured_data', 'scrape_headings',
-			'scrape_paragraphs', 'scrape_lists', 'scrape_tables', 'scrape_articles',
-			'scrape_sections', 'scrape_divisions', 'scrape_blockquotes', 'scrape_hyperlinks',
-			'scrape_images', 'create_schema' ]
+		return [
+				'agents',
+				'url',
+				'html',
+				'text',
+				'source_url',
+				'source_html',
+				'selected_methods',
+				'timeout',
+				'headers',
+				'response',
+				'result',
+				'soup',
+				're_tag',
+				're_ws',
+				'fetch',
+				'html_to_text',
+				'coerce_items',
+				'extract_title',
+				'truncate_text',
+				'normalize_url',
+				'same_domain',
+				'extract_links',
+				'extract_structured_data',
+				'scrape_headings',
+				'scrape_paragraphs',
+				'scrape_lists',
+				'scrape_tables',
+				'scrape_articles',
+				'scrape_sections',
+				'scrape_divisions',
+				'scrape_blockquotes',
+				'scrape_hyperlinks',
+				'scrape_images',
+				'create_schema'
+		]
 	
 	def fetch( self, url: str, time: int=10 ) -> Result | None:
 		"""Fetch.
@@ -295,7 +330,7 @@ class WebFetcher( Fetcher ):
 		    Result | None: Normalized Foo result for the completed provider request, or ``None`` when the selected path does not create one.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'url', url )
@@ -332,7 +367,7 @@ class WebFetcher( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'html', html )
@@ -395,7 +430,7 @@ class WebFetcher( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'html', html )
@@ -437,7 +472,7 @@ class WebFetcher( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'text', text )
@@ -539,7 +574,7 @@ class WebFetcher( Fetcher ):
 		    List[str]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'base_url', base_url )
@@ -584,10 +619,10 @@ class WebFetcher( Fetcher ):
 		    selected_methods (Optional[List[str]]): Extraction method names that determine which HTML element groups are returned.
 
 		Returns:
-		    Dict[str, List[str]]: Dictionary containing normalized provider data.
+		    Dict[str, List[str]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'url', url )
@@ -734,7 +769,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -764,7 +799,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -794,7 +829,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -824,7 +859,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -854,7 +889,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -885,7 +920,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -915,7 +950,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -946,7 +981,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -976,7 +1011,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -1006,7 +1041,7 @@ class WebFetcher( Fetcher ):
 		    List[str] | None: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'uri', uri )
@@ -1038,10 +1073,10 @@ class WebFetcher( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -1081,11 +1116,11 @@ class WebCrawler( WebFetcher ):
 
 	Attributes:
 	    use_playwright (Optional[bool]): Flag controlling whether use playwright behavior is enabled.
-	    browser_context (Optional[Any]): Current browser context retained by the WebCrawler.
+	    browser_context (Optional[Any]): Current browser context retained by the WebCrawler workflow between related operations.
 	    raw_url (Optional[str]): URL associated with the current raw resource or endpoint.
 	    raw_html (Optional[str]): Raw HTML retained by the extractor before transformation.
-	    pages (Optional[List[Dict[str, Any]]]): Current pages retained by the WebCrawler.
-	    summary (Optional[Dict[str, Any]]): Current summary retained by the WebCrawler.
+	    pages (Optional[List[Dict[str, Any]]]): Current pages retained by the WebCrawler workflow between related operations.
+	    summary (Optional[Dict[str, Any]]): Current summary retained by the WebCrawler workflow between related operations.
 	    response (Any): Most recent raw response returned by the provider client.
 	    headers (Any): HTTP headers sent with the current request.
 	"""
@@ -1153,7 +1188,7 @@ class WebCrawler( WebFetcher ):
 		    Result | None: Normalized Foo result for the completed provider request, or ``None`` when the selected path does not create one.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'url', url )
@@ -1191,7 +1226,7 @@ class WebCrawler( WebFetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'url', url )
@@ -1227,11 +1262,11 @@ class WebCrawler( WebFetcher ):
 		    include_basic_text (bool): Whether include basic text behavior is enabled for the operation.
 		    include_raw_html (bool): Whether include raw html behavior is enabled for the operation.
 		    selected_methods (Optional[List[str]]): Extraction method names that determine which HTML element groups are returned.
-		    request_timeout (int): Request timeout supplied by the caller.
-		    max_bytes (int): Max bytes supplied by the caller.
+		    request_timeout (int): Request timeout supplied by the caller and interpreted according to the method contract.
+		    max_bytes (int): Max bytes supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 		"""
 		page_result: Dict[ str, Any ] = \
 			{
@@ -1300,24 +1335,24 @@ class WebCrawler( WebFetcher ):
 		    Crawl using the class state and returns data required by the surrounding workflow.
 
 		Args:
-		    seed_url (str): Seed url supplied by the caller.
+		    seed_url (str): Seed url supplied by the caller and interpreted according to the method contract.
 		    include_title (bool): Whether include title behavior is enabled for the operation.
 		    include_basic_text (bool): Whether include basic text behavior is enabled for the operation.
 		    include_raw_html (bool): Whether include raw html behavior is enabled for the operation.
 		    selected_methods (Optional[List[str]]): Extraction method names that determine which HTML element groups are returned.
 		    recursive (bool): Whether loading follows links or descends into child resources.
 		    max_depth (int): Maximum number of link levels traversed from the starting page.
-		    max_pages (int): Max pages supplied by the caller.
+		    max_pages (int): Max pages supplied by the caller and interpreted according to the method contract.
 		    same_domain_only (bool): Whether same domain only behavior is enabled for the operation.
-		    request_timeout (int): Request timeout supplied by the caller.
-		    delay_seconds (float): Delay seconds supplied by the caller.
-		    max_bytes (int): Max bytes supplied by the caller.
+		    request_timeout (int): Request timeout supplied by the caller and interpreted according to the method contract.
+		    delay_seconds (float): Delay seconds supplied by the caller and interpreted according to the method contract.
+		    max_bytes (int): Max bytes supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'seed_url', seed_url )
@@ -1418,10 +1453,10 @@ class ArXiv( Fetcher ):
 	    Queries the arXiv corpus and converts scholarly search results into LangChain documents for downstream retrieval and analysis.
 
 	Attributes:
-	    fetcher (Optional[ArxivRetriever]): Current fetcher retained by the ArXiv.
+	    fetcher (Optional[ArxivRetriever]): Current fetcher retained by the ArXiv workflow between related operations.
 	    documents (Optional[List[Document]]): LangChain documents loaded or produced by the most recent operation.
 	    max_documents (Optional[int]): Upper bound applied to documents.
-	    full_documents (Optional[bool]): Current full documents retained by the ArXiv.
+	    full_documents (Optional[bool]): Current full documents retained by the ArXiv workflow between related operations.
 	    include_metadata (Optional[bool]): Flag controlling whether include metadata behavior is enabled.
 	    query (Optional[str]): Most recent search text or model prompt submitted by the instance.
 	"""
@@ -1440,7 +1475,7 @@ class ArXiv( Fetcher ):
 		    Initializes instance state and provider or loader defaults required by subsequent operations.
 
 		Args:
-		    max_documents (int): Max documents supplied by the caller.
+		    max_documents (int): Max documents supplied by the caller and interpreted according to the method contract.
 		    full_documents (bool): Whether full documents behavior is enabled for the operation.
 		    include_metadata (bool): Whether include metadata behavior is enabled for the operation.
 
@@ -1463,8 +1498,8 @@ class ArXiv( Fetcher ):
 		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
-		    question (str): Question supplied by the caller.
-		    max_documents (int): Max documents supplied by the caller.
+		    question (str): Question supplied by the caller and interpreted according to the method contract.
+		    max_documents (int): Max documents supplied by the caller and interpreted according to the method contract.
 		    full_documents (bool): Whether full documents behavior is enabled for the operation.
 		    include_metadata (bool): Whether include metadata behavior is enabled for the operation.
 
@@ -1472,7 +1507,7 @@ class ArXiv( Fetcher ):
 		    List[Document] | None: LangChain documents produced or transformed by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'question', question )
@@ -1507,18 +1542,18 @@ class GoogleDrive( Fetcher ):
 	    Searches Google Drive content through the LangChain retriever and returns matching documents with provider metadata.
 
 	Attributes:
-	    fetcher (Optional[GoogleDriveRetriever]): Current fetcher retained by the GoogleDrive.
+	    fetcher (Optional[GoogleDriveRetriever]): Current fetcher retained by the GoogleDrive workflow between related operations.
 	    documents (Optional[List[Document]]): LangChain documents loaded or produced by the most recent operation.
-	    num_results (Optional[int]): Current num results retained by the GoogleDrive.
+	    num_results (Optional[int]): Current num results retained by the GoogleDrive workflow between related operations.
 	    folder_id (Optional[str]): Identifier of the current folder resource.
-	    template (Optional[str]): Current template retained by the GoogleDrive.
+	    template (Optional[str]): Current template retained by the GoogleDrive workflow between related operations.
 	    query (Optional[str]): Most recent search text or model prompt submitted by the instance.
-	    mime_type (Optional[str]): Current mime type retained by the GoogleDrive.
-	    mode (Optional[str]): Current mode retained by the GoogleDrive.
+	    mime_type (Optional[str]): Current mime type retained by the GoogleDrive workflow between related operations.
+	    mode (Optional[str]): Current mode retained by the GoogleDrive workflow between related operations.
 	    credentials_path (Optional[str]): Path associated with the current credentials resource.
 	    token_path (Optional[str]): Path associated with the current token resource.
-	    retriever_kwargs (Optional[Dict[str, Any]]): Current retriever kwargs retained by the GoogleDrive.
-	    invoke_query (Optional[str]): Current invoke query retained by the GoogleDrive.
+	    retriever_kwargs (Optional[Dict[str, Any]]): Current retriever kwargs retained by the GoogleDrive workflow between related operations.
+	    invoke_query (Optional[str]): Current invoke query retained by the GoogleDrive workflow between related operations.
 	"""
 	fetcher: Optional[ GoogleDriveRetriever ]
 	documents: Optional[ List[ Document ] ]
@@ -1581,8 +1616,8 @@ class GoogleDrive( Fetcher ):
 		"""
 		return [ '', 'text/text', 'text/plain', 'text/html', 'text/csv', 'text/markdown',
 			'image/png', 'image/jpeg', 'application/epub+zip', 'application/pdf',
-			'application/rtf',
-			'application/vnd.google-apps.document', 'application/vnd.google-apps.presentation',
+			'application/rtf', 'application/vnd.google-apps.document',
+			'application/vnd.google-apps.presentation',
 			'application/vnd.google-apps.spreadsheet', 'application/vnd.google.colaboratory',
 			'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 			'application/vnd.openxmlformats-officedocument.wordprocessingml.document', ]
@@ -1597,10 +1632,16 @@ class GoogleDrive( Fetcher ):
 		Returns:
 		    List[str]: Ordered values or records produced by the operation.
 		"""
-		return [ 'gdrive-all-in-folder', 'gdrive-query', 'gdrive-by-name',
-			'gdrive-query-in-folder',
-			'gdrive-mime-type', 'gdrive-mime-type-in-folder', 'gdrive-query-with-mime-type',
-			'gdrive-query-with-mime-type-and-folder', ]
+		return [
+				'gdrive-all-in-folder',
+				'gdrive-query',
+				'gdrive-by-name',
+				'gdrive-query-in-folder',
+				'gdrive-mime-type',
+				'gdrive-mime-type-in-folder',
+				'gdrive-query-with-mime-type',
+				'gdrive-query-with-mime-type-and-folder',
+		]
 	
 	@property
 	def mode_options( self ) -> List[ str ]:
@@ -1612,7 +1653,10 @@ class GoogleDrive( Fetcher ):
 		Returns:
 		    List[str]: Ordered values or records produced by the operation.
 		"""
-		return [ 'documents', 'snippets' ]
+		return [
+				'documents',
+				'snippets'
+		]
 	
 	def fetch( self, question: str, folder_id: str = 'root', results: int=10,
 			template: str = 'gdrive-query',
@@ -1623,18 +1667,18 @@ class GoogleDrive( Fetcher ):
 		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
-		    question (str): Question supplied by the caller.
+		    question (str): Question supplied by the caller and interpreted according to the method contract.
 		    folder_id (str): Provider identifier of the target folder resource.
-		    results (int): Results supplied by the caller.
-		    template (str): Template supplied by the caller.
-		    mime_type (str): Mime type supplied by the caller.
+		    results (int): Results supplied by the caller and interpreted according to the method contract.
+		    template (str): Template supplied by the caller and interpreted according to the method contract.
+		    mime_type (str): Mime type supplied by the caller and interpreted according to the method contract.
 		    mode (str): Provider or loader operating mode selected for the request.
 
 		Returns:
 		    List[Document] | None: LangChain documents produced or transformed by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'template', template )
@@ -1718,11 +1762,11 @@ class Wikipedia( Fetcher ):
 	    Retrieves Wikipedia articles as LangChain documents for question answering, summarization, and retrieval-augmented generation.
 
 	Attributes:
-	    fetcher (Optional[WikipediaRetriever]): Current fetcher retained by the Wikipedia.
+	    fetcher (Optional[WikipediaRetriever]): Current fetcher retained by the Wikipedia workflow between related operations.
 	    documents (Optional[List[Document]]): LangChain documents loaded or produced by the most recent operation.
 	    max_documents (Optional[int]): Upper bound applied to documents.
 	    include_metadata (Optional[bool]): Flag controlling whether include metadata behavior is enabled.
-	    language (Optional[str]): Current language retained by the Wikipedia.
+	    language (Optional[str]): Current language retained by the Wikipedia workflow between related operations.
 	    query (Optional[str]): Most recent search text or model prompt submitted by the instance.
 	"""
 	fetcher: Optional[ WikipediaRetriever ]
@@ -1740,8 +1784,8 @@ class Wikipedia( Fetcher ):
 		    Initializes instance state and provider or loader defaults required by subsequent operations.
 
 		Args:
-		    language (str): Language supplied by the caller.
-		    max_documents (int): Max documents supplied by the caller.
+		    language (str): Language supplied by the caller and interpreted according to the method contract.
+		    max_documents (int): Max documents supplied by the caller and interpreted according to the method contract.
 		    include_metadata (bool): Whether include metadata behavior is enabled for the operation.
 
 		Returns:
@@ -1763,16 +1807,16 @@ class Wikipedia( Fetcher ):
 		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
-		    question (str): Question supplied by the caller.
-		    language (str): Language supplied by the caller.
-		    max_documents (int): Max documents supplied by the caller.
+		    question (str): Question supplied by the caller and interpreted according to the method contract.
+		    language (str): Language supplied by the caller and interpreted according to the method contract.
+		    max_documents (int): Max documents supplied by the caller and interpreted according to the method contract.
 		    include_metadata (bool): Whether include metadata behavior is enabled for the operation.
 
 		Returns:
 		    List[Document] | None: LangChain documents produced or transformed by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'question', question )
@@ -1813,9 +1857,9 @@ class TheNews( Fetcher ):
 	    response (Optional[Response]): Most recent raw response returned by the provider client.
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    endpoint (Optional[str]): Current endpoint retained by the TheNews.
-	    limit (Optional[int]): Current limit retained by the TheNews.
-	    page (Optional[int]): Current page retained by the TheNews.
+	    endpoint (Optional[str]): Current endpoint retained by the TheNews workflow between related operations.
+	    limit (Optional[int]): Current limit retained by the TheNews workflow between related operations.
+	    page (Optional[int]): Current page retained by the TheNews workflow between related operations.
 	    timeout (Any): Maximum request duration, in seconds, applied to provider calls.
 	    result (Any): Most recent normalized Foo result produced by the instance.
 	    headers (Any): HTTP headers sent with the current request.
@@ -1881,32 +1925,32 @@ class TheNews( Fetcher ):
 		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    language (str): Language supplied by the caller.
-		    categories (str): Categories supplied by the caller.
-		    exclude_categories (str): Exclude categories supplied by the caller.
-		    locale (str): Locale supplied by the caller.
+		    language (str): Language supplied by the caller and interpreted according to the method contract.
+		    categories (str): Categories supplied by the caller and interpreted according to the method contract.
+		    exclude_categories (str): Exclude categories supplied by the caller and interpreted according to the method contract.
+		    locale (str): Locale supplied by the caller and interpreted according to the method contract.
 		    domains (str): Domain names or URLs used to constrain grounded web search.
-		    exclude_domains (str): Exclude domains supplied by the caller.
-		    source_ids (str): Source ids supplied by the caller.
-		    exclude_source_ids (str): Exclude source ids supplied by the caller.
-		    published_after (str): Published after supplied by the caller.
-		    published_before (str): Published before supplied by the caller.
-		    published_on (str): Published on supplied by the caller.
-		    sort (str): Sort supplied by the caller.
+		    exclude_domains (str): Exclude domains supplied by the caller and interpreted according to the method contract.
+		    source_ids (str): Source ids supplied by the caller and interpreted according to the method contract.
+		    exclude_source_ids (str): Exclude source ids supplied by the caller and interpreted according to the method contract.
+		    published_after (str): Published after supplied by the caller and interpreted according to the method contract.
+		    published_before (str): Published before supplied by the caller and interpreted according to the method contract.
+		    published_on (str): Published on supplied by the caller and interpreted according to the method contract.
+		    sort (str): Sort supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    page (int): One-based result page requested from the provider.
 		    include_similar (bool): Whether include similar behavior is enabled for the operation.
-		    headlines_per_category (int): Headlines per category supplied by the caller.
+		    headlines_per_category (int): Headlines per category supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
-		    api_key (str): Api key supplied by the caller.
+		    api_key (str): Api key supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.endpoint = (endpoint or 'all').strip( ).lower( )
@@ -2027,7 +2071,7 @@ class GoogleSearch( Fetcher ):
 	    Executes Google search requests and returns normalized result data for research and model-assisted workflows.
 
 	Attributes:
-	    keywords (Optional[str]): Current keywords retained by the GoogleSearch.
+	    keywords (Optional[str]): Current keywords retained by the GoogleSearch workflow between related operations.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    re_tag (Optional[Pattern]): Compiled pattern used to remove residual HTML tags.
 	    re_ws (Optional[Pattern]): Compiled pattern used to collapse repeated whitespace.
@@ -2035,24 +2079,24 @@ class GoogleSearch( Fetcher ):
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    cse_id (Optional[str]): Identifier of the current cse resource.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the GoogleSearch.
-	    results (Optional[int]): Current results retained by the GoogleSearch.
-	    start (Optional[int]): Current start retained by the GoogleSearch.
-	    exact_terms (Optional[str]): Current exact terms retained by the GoogleSearch.
-	    exclude_terms (Optional[str]): Current exclude terms retained by the GoogleSearch.
-	    file_type (Optional[str]): Current file type retained by the GoogleSearch.
-	    date_restrict (Optional[str]): Current date restrict retained by the GoogleSearch.
-	    gl (Optional[str]): Current gl retained by the GoogleSearch.
-	    lr (Optional[str]): Current lr retained by the GoogleSearch.
-	    safe (Optional[str]): Current safe retained by the GoogleSearch.
-	    search_type (Optional[str]): Current search type retained by the GoogleSearch.
-	    site_search (Optional[str]): Current site search retained by the GoogleSearch.
-	    site_search_filter (Optional[str]): Current site search filter retained by the GoogleSearch.
-	    sort (Optional[str]): Current sort retained by the GoogleSearch.
-	    img_size (Optional[str]): Current img size retained by the GoogleSearch.
-	    img_type (Optional[str]): Current img type retained by the GoogleSearch.
-	    img_color_type (Optional[str]): Current img color type retained by the GoogleSearch.
-	    img_dominant_color (Optional[str]): Current img dominant color retained by the GoogleSearch.
+	    payload (Optional[Any]): Current payload retained by the GoogleSearch workflow between related operations.
+	    results (Optional[int]): Current results retained by the GoogleSearch workflow between related operations.
+	    start (Optional[int]): Current start retained by the GoogleSearch workflow between related operations.
+	    exact_terms (Optional[str]): Current exact terms retained by the GoogleSearch workflow between related operations.
+	    exclude_terms (Optional[str]): Current exclude terms retained by the GoogleSearch workflow between related operations.
+	    file_type (Optional[str]): Current file type retained by the GoogleSearch workflow between related operations.
+	    date_restrict (Optional[str]): Current date restrict retained by the GoogleSearch workflow between related operations.
+	    gl (Optional[str]): Current gl retained by the GoogleSearch workflow between related operations.
+	    lr (Optional[str]): Current lr retained by the GoogleSearch workflow between related operations.
+	    safe (Optional[str]): Current safe retained by the GoogleSearch workflow between related operations.
+	    search_type (Optional[str]): Current search type retained by the GoogleSearch workflow between related operations.
+	    site_search (Optional[str]): Current site search retained by the GoogleSearch workflow between related operations.
+	    site_search_filter (Optional[str]): Current site search filter retained by the GoogleSearch workflow between related operations.
+	    sort (Optional[str]): Current sort retained by the GoogleSearch workflow between related operations.
+	    img_size (Optional[str]): Current img size retained by the GoogleSearch workflow between related operations.
+	    img_type (Optional[str]): Current img type retained by the GoogleSearch workflow between related operations.
+	    img_color_type (Optional[str]): Current img color type retained by the GoogleSearch workflow between related operations.
+	    img_dominant_color (Optional[str]): Current img dominant color retained by the GoogleSearch workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    headers (Any): HTTP headers sent with the current request.
@@ -2151,46 +2195,44 @@ class GoogleSearch( Fetcher ):
 			'img_dominant_color' ]
 	
 	def fetch( self, keywords: str, results: int=10, start: int=1, exact_terms: str = '',
-			exclude_terms: str = '', file_type: str = '', date_restrict: str = '', gl: str = '',
-			lr: str = '',
-			safe: str = 'off', search_type: str = '', site_search: str = '',
-			site_search_filter: str = '',
-			sort: str = '', img_size: str = '', img_type: str = '', img_color_type: str = '',
-			img_dominant_color: str = '', time: int=10, api_key: str = None,
-			cse_id: str = None ) -> Dict[ str, Any ] | None:
+		exclude_terms: str = '', file_type: str = '', date_restrict: str = '', gl: str = '',
+		lr: str = '', safe: str = 'off', search_type: str = '', site_search: str = '',
+		site_search_filter: str = '', sort: str = '', img_size: str = '', img_type: str = '',
+		img_color_type: str = '', img_dominant_color: str = '', time: int=10, api_key: str = None,
+		cse_id: str = None ) -> Dict[ str, Any ] | None:
 		"""Fetch.
 
 		Purpose:
 		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
-		    keywords (str): Keywords supplied by the caller.
-		    results (int): Results supplied by the caller.
+		    keywords (str): Keywords supplied by the caller and interpreted according to the method contract.
+		    results (int): Results supplied by the caller and interpreted according to the method contract.
 		    start (int): Date boundary or date value used by the request.
-		    exact_terms (str): Exact terms supplied by the caller.
-		    exclude_terms (str): Exclude terms supplied by the caller.
-		    file_type (str): File type supplied by the caller.
-		    date_restrict (str): Date restrict supplied by the caller.
-		    gl (str): Gl supplied by the caller.
-		    lr (str): Lr supplied by the caller.
-		    safe (str): Safe supplied by the caller.
-		    search_type (str): Search type supplied by the caller.
-		    site_search (str): Site search supplied by the caller.
-		    site_search_filter (str): Site search filter supplied by the caller.
-		    sort (str): Sort supplied by the caller.
-		    img_size (str): Img size supplied by the caller.
-		    img_type (str): Img type supplied by the caller.
-		    img_color_type (str): Img color type supplied by the caller.
-		    img_dominant_color (str): Img dominant color supplied by the caller.
+		    exact_terms (str): Exact terms supplied by the caller and interpreted according to the method contract.
+		    exclude_terms (str): Exclude terms supplied by the caller and interpreted according to the method contract.
+		    file_type (str): File type supplied by the caller and interpreted according to the method contract.
+		    date_restrict (str): Date restrict supplied by the caller and interpreted according to the method contract.
+		    gl (str): Gl supplied by the caller and interpreted according to the method contract.
+		    lr (str): Lr supplied by the caller and interpreted according to the method contract.
+		    safe (str): Safe supplied by the caller and interpreted according to the method contract.
+		    search_type (str): Search type supplied by the caller and interpreted according to the method contract.
+		    site_search (str): Site search supplied by the caller and interpreted according to the method contract.
+		    site_search_filter (str): Site search filter supplied by the caller and interpreted according to the method contract.
+		    sort (str): Sort supplied by the caller and interpreted according to the method contract.
+		    img_size (str): Img size supplied by the caller and interpreted according to the method contract.
+		    img_type (str): Img type supplied by the caller and interpreted according to the method contract.
+		    img_color_type (str): Img color type supplied by the caller and interpreted according to the method contract.
+		    img_dominant_color (str): Img dominant color supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
-		    api_key (str): Api key supplied by the caller.
+		    api_key (str): Api key supplied by the caller and interpreted according to the method contract.
 		    cse_id (str): Provider identifier of the target cse resource.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'keywords', keywords )
@@ -2322,19 +2364,19 @@ class GoogleMaps( Fetcher ):
 	Attributes:
 	    file_path (Optional[str]): Resolved filesystem path of the current source or output file.
 	    headers (Optional[Dict[str, Any]]): HTTP headers sent with the current request.
-	    num_results (Optional[int]): Current num results retained by the GoogleMaps.
+	    num_results (Optional[int]): Current num results retained by the GoogleMaps workflow between related operations.
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
-	    mode (Optional[str]): Current mode retained by the GoogleMaps.
-	    latitude (Optional[float]): Current latitude retained by the GoogleMaps.
-	    longitude (Optional[float]): Current longitude retained by the GoogleMaps.
-	    coordinates (Optional[Tuple[float, float]]): Current coordinates retained by the GoogleMaps.
-	    address (Optional[str]): Current address retained by the GoogleMaps.
-	    address_lines (Optional[List[str]]): Current address lines retained by the GoogleMaps.
-	    origin (Optional[str]): Current origin retained by the GoogleMaps.
-	    destination (Optional[str]): Current destination retained by the GoogleMaps.
-	    directions (Optional[Dict[str, Any]]): Current directions retained by the GoogleMaps.
+	    mode (Optional[str]): Current mode retained by the GoogleMaps workflow between related operations.
+	    latitude (Optional[float]): Current latitude retained by the GoogleMaps workflow between related operations.
+	    longitude (Optional[float]): Current longitude retained by the GoogleMaps workflow between related operations.
+	    coordinates (Optional[Tuple[float, float]]): Current coordinates retained by the GoogleMaps workflow between related operations.
+	    address (Optional[str]): Current address retained by the GoogleMaps workflow between related operations.
+	    address_lines (Optional[List[str]]): Current address lines retained by the GoogleMaps workflow between related operations.
+	    origin (Optional[str]): Current origin retained by the GoogleMaps workflow between related operations.
+	    destination (Optional[str]): Current destination retained by the GoogleMaps workflow between related operations.
+	    directions (Optional[Dict[str, Any]]): Current directions retained by the GoogleMaps workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the GoogleMaps.
+	    payload (Optional[Any]): Current payload retained by the GoogleMaps workflow between related operations.
 	    result (Optional[Any]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    timeout (Optional[int]): Maximum request duration, in seconds, applied to provider calls.
@@ -2419,13 +2461,13 @@ class GoogleMaps( Fetcher ):
 		    Resolves location through the configured geocoding service and returns geographic results.
 
 		Args:
-		    address (str): Address supplied by the caller.
+		    address (str): Address supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    Tuple[float, float]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'address', address )
@@ -2473,13 +2515,13 @@ class GoogleMaps( Fetcher ):
 
 		Args:
 		    lat (float): Geographic lat expressed in decimal degrees.
-		    long (float): Long supplied by the caller.
+		    long (float): Long supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str | None: Normalized text produced by the operation, or ``None`` when no text is available.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -2533,13 +2575,13 @@ class GoogleMaps( Fetcher ):
 		    Validates the address against provider constraints and returns the accepted value.
 
 		Args:
-		    address (List[str]): Address supplied by the caller.
+		    address (List[str]): Address supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[Any, Any] | None: Dictionary containing normalized provider data.
+		    Dict[Any, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -2599,15 +2641,15 @@ class GoogleMaps( Fetcher ):
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    origin (str): Origin supplied by the caller.
-		    destination (str): Destination supplied by the caller.
+		    origin (str): Origin supplied by the caller and interpreted according to the method contract.
+		    destination (str): Destination supplied by the caller and interpreted according to the method contract.
 		    mode (str): Provider or loader operating mode selected for the request.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -2667,10 +2709,10 @@ class GoogleMaps( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -2711,23 +2753,23 @@ class GoogleWeather( Fetcher ):
 	    Retrieves current, forecast, historical, and alert weather data after resolving a location to geographic coordinates.
 
 	Attributes:
-	    gmaps (Optional[GoogleMaps]): Current gmaps retained by the GoogleWeather.
+	    gmaps (Optional[GoogleMaps]): Current gmaps retained by the GoogleWeather workflow between related operations.
 	    headers (Optional[Dict[str, Any]]): HTTP headers sent with the current request.
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
-	    mode (Optional[str]): Current mode retained by the GoogleWeather.
-	    latitude (Optional[float]): Current latitude retained by the GoogleWeather.
-	    longitude (Optional[float]): Current longitude retained by the GoogleWeather.
-	    coordinates (Optional[Tuple[float, float]]): Current coordinates retained by the GoogleWeather.
-	    address (Optional[str]): Current address retained by the GoogleWeather.
+	    mode (Optional[str]): Current mode retained by the GoogleWeather workflow between related operations.
+	    latitude (Optional[float]): Current latitude retained by the GoogleWeather workflow between related operations.
+	    longitude (Optional[float]): Current longitude retained by the GoogleWeather workflow between related operations.
+	    coordinates (Optional[Tuple[float, float]]): Current coordinates retained by the GoogleWeather workflow between related operations.
+	    address (Optional[str]): Current address retained by the GoogleWeather workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
 	    response (Optional[Response]): Most recent raw response returned by the provider client.
-	    payload (Optional[Dict[str, Any]]): Current payload retained by the GoogleWeather.
+	    payload (Optional[Dict[str, Any]]): Current payload retained by the GoogleWeather workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
-	    units_system (Optional[str]): Current units system retained by the GoogleWeather.
-	    language_code (Optional[str]): Current language code retained by the GoogleWeather.
-	    hours (Optional[int]): Current hours retained by the GoogleWeather.
-	    days (Optional[int]): Current days retained by the GoogleWeather.
-	    path (Optional[str]): Current path retained by the GoogleWeather.
+	    units_system (Optional[str]): Current units system retained by the GoogleWeather workflow between related operations.
+	    language_code (Optional[str]): Current language code retained by the GoogleWeather workflow between related operations.
+	    hours (Optional[int]): Current hours retained by the GoogleWeather workflow between related operations.
+	    days (Optional[int]): Current days retained by the GoogleWeather workflow between related operations.
+	    path (Optional[str]): Current path retained by the GoogleWeather workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    url (Any): Most recent endpoint or resource URL used by the instance.
 	    timeout (Any): Maximum request duration, in seconds, applied to provider calls.
@@ -2810,13 +2852,13 @@ class GoogleWeather( Fetcher ):
 		    Resolve coordinates using the class state and returns data required by the surrounding workflow.
 
 		Args:
-		    address (str): Address supplied by the caller.
+		    address (str): Address supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    Tuple[float, float]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'address', address )
@@ -2846,14 +2888,14 @@ class GoogleWeather( Fetcher ):
 
 		Args:
 		    path (str): Filesystem or resource path identifying the input or output.
-		    params (Dict[str, Any]): Params supplied by the caller.
+		    params (Dict[str, Any]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -2908,10 +2950,10 @@ class GoogleWeather( Fetcher ):
 		    Combines normalized records, summary metrics, and request metadata into the standard response payload.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if not isinstance( self.result, dict ):
@@ -2943,16 +2985,16 @@ class GoogleWeather( Fetcher ):
 		    Retrieves current from the configured provider and returns normalized response data.
 
 		Args:
-		    address (str): Address supplied by the caller.
-		    units_system (str): Units system supplied by the caller.
+		    address (str): Address supplied by the caller and interpreted according to the method contract.
+		    units_system (str): Units system supplied by the caller and interpreted according to the method contract.
 		    language_code (str): Code identifying the requested language value.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'address', address )
@@ -3000,17 +3042,17 @@ class GoogleWeather( Fetcher ):
 		    Retrieves hourly forecast from the configured provider and returns normalized response data.
 
 		Args:
-		    address (str): Address supplied by the caller.
-		    hours (int): Hours supplied by the caller.
-		    units_system (str): Units system supplied by the caller.
+		    address (str): Address supplied by the caller and interpreted according to the method contract.
+		    hours (int): Hours supplied by the caller and interpreted according to the method contract.
+		    units_system (str): Units system supplied by the caller and interpreted according to the method contract.
 		    language_code (str): Code identifying the requested language value.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'address', address )
@@ -3065,17 +3107,17 @@ class GoogleWeather( Fetcher ):
 		    Retrieves daily forecast from the configured provider and returns normalized response data.
 
 		Args:
-		    address (str): Address supplied by the caller.
-		    days (int): Days supplied by the caller.
-		    units_system (str): Units system supplied by the caller.
+		    address (str): Address supplied by the caller and interpreted according to the method contract.
+		    days (int): Days supplied by the caller and interpreted according to the method contract.
+		    units_system (str): Units system supplied by the caller and interpreted according to the method contract.
 		    language_code (str): Code identifying the requested language value.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'address', address )
@@ -3130,17 +3172,17 @@ class GoogleWeather( Fetcher ):
 		    Retrieves hourly history from the configured provider and returns normalized response data.
 
 		Args:
-		    address (str): Address supplied by the caller.
-		    hours (int): Hours supplied by the caller.
-		    units_system (str): Units system supplied by the caller.
+		    address (str): Address supplied by the caller and interpreted according to the method contract.
+		    hours (int): Hours supplied by the caller and interpreted according to the method contract.
+		    units_system (str): Units system supplied by the caller and interpreted according to the method contract.
 		    language_code (str): Code identifying the requested language value.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'address', address )
@@ -3194,15 +3236,15 @@ class GoogleWeather( Fetcher ):
 		    Retrieves alerts from the configured provider and returns normalized response data.
 
 		Args:
-		    address (str): Address supplied by the caller.
+		    address (str): Address supplied by the caller and interpreted according to the method contract.
 		    language_code (str): Code identifying the requested language value.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'address', address )
@@ -3247,11 +3289,11 @@ class NavalObservatory( Fetcher ):
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    date_value (Optional[str]): Current date value retained by the NavalObservatory.
-	    time_value (Optional[str]): Current time value retained by the NavalObservatory.
-	    latitude (Optional[float]): Current latitude retained by the NavalObservatory.
-	    longitude (Optional[float]): Current longitude retained by the NavalObservatory.
-	    location_label (Optional[str]): Current location label retained by the NavalObservatory.
+	    date_value (Optional[str]): Current date value retained by the NavalObservatory workflow between related operations.
+	    time_value (Optional[str]): Current time value retained by the NavalObservatory workflow between related operations.
+	    latitude (Optional[float]): Current latitude retained by the NavalObservatory workflow between related operations.
+	    longitude (Optional[float]): Current longitude retained by the NavalObservatory workflow between related operations.
+	    location_label (Optional[str]): Current location label retained by the NavalObservatory workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    headers (Any): HTTP headers sent with the current request.
 	"""
@@ -3308,13 +3350,13 @@ class NavalObservatory( Fetcher ):
 		    Validates the date against provider constraints and returns the accepted value.
 
 		Args:
-		    date_value (str): Date value supplied by the caller.
+		    date_value (str): Date value supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( date_value ).strip( )
@@ -3336,13 +3378,13 @@ class NavalObservatory( Fetcher ):
 		    Validates the time against provider constraints and returns the accepted value.
 
 		Args:
-		    time_value (str): Time value supplied by the caller.
+		    time_value (str): Time value supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( time_value ).strip( )
@@ -3379,7 +3421,7 @@ class NavalObservatory( Fetcher ):
 		    tuple[float, float]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			lat = float( latitude )
@@ -3408,18 +3450,18 @@ class NavalObservatory( Fetcher ):
 		    Retrieves celnav from the configured provider and returns normalized response data.
 
 		Args:
-		    date_value (str): Date value supplied by the caller.
-		    time_value (str): Time value supplied by the caller.
+		    date_value (str): Date value supplied by the caller and interpreted according to the method contract.
+		    time_value (str): Time value supplied by the caller and interpreted according to the method contract.
 		    latitude (float): Geographic latitude expressed in decimal degrees.
 		    longitude (float): Geographic longitude expressed in decimal degrees.
-		    location_label (str): Location label supplied by the caller.
+		    location_label (str): Location label supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.date_value = self.validate_date( date_value )
@@ -3457,18 +3499,18 @@ class NavalObservatory( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    date_value (str): Date value supplied by the caller.
-		    time_value (str): Time value supplied by the caller.
+		    date_value (str): Date value supplied by the caller and interpreted according to the method contract.
+		    time_value (str): Time value supplied by the caller and interpreted according to the method contract.
 		    latitude (float): Geographic latitude expressed in decimal degrees.
 		    longitude (float): Geographic longitude expressed in decimal degrees.
-		    location_label (str): Location label supplied by the caller.
+		    location_label (str): Location label supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = str( mode or 'celnav' ).strip( ).lower( )
@@ -3501,10 +3543,10 @@ class NavalObservatory( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -3542,11 +3584,11 @@ class SatelliteCenter( Fetcher ):
 	    Retrieves satellite observatory, ground-station, and location reference data from the configured space-science service.
 
 	Attributes:
-	    ssc (Optional[SscWs]): Current ssc retained by the SatelliteCenter.
+	    ssc (Optional[SscWs]): Current ssc retained by the SatelliteCenter workflow between related operations.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    observatories (Optional[List[Dict[str, Any]]]): Current observatories retained by the SatelliteCenter.
-	    ground_stations (Optional[List[Dict[str, Any]]]): Current ground stations retained by the SatelliteCenter.
+	    observatories (Optional[List[Dict[str, Any]]]): Current observatories retained by the SatelliteCenter workflow between related operations.
+	    ground_stations (Optional[List[Dict[str, Any]]]): Current ground stations retained by the SatelliteCenter workflow between related operations.
 	    timeout (Optional[int]): Maximum request duration, in seconds, applied to provider calls.
 	    headers (Any): HTTP headers sent with the current request.
 	    agents (Any): Configured user-agent string sent with web requests.
@@ -3602,10 +3644,10 @@ class SatelliteCenter( Fetcher ):
 		    Retrieves observatories from the configured provider and returns normalized response data.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.ssc = SscWs( user_agent=self.agents, timeout=self.timeout )
@@ -3626,10 +3668,10 @@ class SatelliteCenter( Fetcher ):
 		    Retrieves ground stations from the configured provider and returns normalized response data.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.ssc = SscWs( user_agent=self.agents, timeout=self.timeout )
@@ -3652,18 +3694,18 @@ class SatelliteCenter( Fetcher ):
 		    Retrieves locations from the configured provider and returns normalized response data.
 
 		Args:
-		    observatories (str): Observatories supplied by the caller.
-		    start_time (str): Start time supplied by the caller.
-		    end_time (str): End time supplied by the caller.
-		    coordinate_systems (str): Coordinate systems supplied by the caller.
-		    resolution_factor (int): Resolution factor supplied by the caller.
+		    observatories (str): Observatories supplied by the caller and interpreted according to the method contract.
+		    start_time (str): Start time supplied by the caller and interpreted according to the method contract.
+		    end_time (str): End time supplied by the caller and interpreted according to the method contract.
+		    coordinate_systems (str): Coordinate systems supplied by the caller and interpreted according to the method contract.
+		    resolution_factor (int): Resolution factor supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'observatories', observatories )
@@ -3704,17 +3746,17 @@ class SatelliteCenter( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    start_time (str): Start time supplied by the caller.
-		    end_time (str): End time supplied by the caller.
-		    coordinate_systems (str): Coordinate systems supplied by the caller.
-		    resolution_factor (int): Resolution factor supplied by the caller.
+		    start_time (str): Start time supplied by the caller and interpreted according to the method contract.
+		    end_time (str): End time supplied by the caller and interpreted according to the method contract.
+		    coordinate_systems (str): Coordinate systems supplied by the caller and interpreted according to the method contract.
+		    resolution_factor (int): Resolution factor supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = (mode or 'observatories').strip( ).lower( )
@@ -3748,14 +3790,14 @@ class EarthObservatory( Fetcher ):
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    mode (Optional[str]): Current mode retained by the EarthObservatory.
-	    status (Optional[str]): Current status retained by the EarthObservatory.
-	    category (Optional[str]): Current category retained by the EarthObservatory.
-	    source (Optional[str]): Current source retained by the EarthObservatory.
-	    days (Optional[int]): Current days retained by the EarthObservatory.
-	    limit (Optional[int]): Current limit retained by the EarthObservatory.
-	    start_date (Optional[str]): Current start date retained by the EarthObservatory.
-	    end_date (Optional[str]): Current end date retained by the EarthObservatory.
+	    mode (Optional[str]): Current mode retained by the EarthObservatory workflow between related operations.
+	    status (Optional[str]): Current status retained by the EarthObservatory workflow between related operations.
+	    category (Optional[str]): Current category retained by the EarthObservatory workflow between related operations.
+	    source (Optional[str]): Current source retained by the EarthObservatory workflow between related operations.
+	    days (Optional[int]): Current days retained by the EarthObservatory workflow between related operations.
+	    limit (Optional[int]): Current limit retained by the EarthObservatory workflow between related operations.
+	    start_date (Optional[str]): Current start date retained by the EarthObservatory workflow between related operations.
+	    end_date (Optional[str]): Current end date retained by the EarthObservatory workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    headers (Any): HTTP headers sent with the current request.
 	"""
@@ -3808,9 +3850,25 @@ class EarthObservatory( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [ 'base_url', 'url', 'params', 'mode', 'status', 'category', 'source', 'days',
-			'limit', 'start_date', 'end_date', 'fetch_events', 'fetch_categories', 'fetch_sources',
-			'fetch_layers', 'fetch', 'create_schema' ]
+		return [
+				'base_url',
+				'url',
+				'params',
+				'mode',
+				'status',
+				'category',
+				'source',
+				'days',
+				'limit',
+				'start_date',
+				'end_date',
+				'fetch_events',
+				'fetch_categories',
+				'fetch_sources',
+				'fetch_layers',
+				'fetch',
+				'create_schema'
+		]
 	
 	def fetch_events( self, status: str = 'open', category: str = '', source: str = '',
 			limit: int=20,
@@ -3822,20 +3880,20 @@ class EarthObservatory( Fetcher ):
 		    Retrieves events from the configured provider and returns normalized response data.
 
 		Args:
-		    status (str): Status supplied by the caller.
-		    category (str): Category supplied by the caller.
-		    source (str): Source supplied by the caller.
+		    status (str): Status supplied by the caller and interpreted according to the method contract.
+		    category (str): Category supplied by the caller and interpreted according to the method contract.
+		    source (str): Source supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
-		    days (int): Days supplied by the caller.
+		    days (int): Days supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'events'
@@ -3899,10 +3957,10 @@ class EarthObservatory( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'categories'
@@ -3938,10 +3996,10 @@ class EarthObservatory( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'sources'
@@ -3974,14 +4032,14 @@ class EarthObservatory( Fetcher ):
 		    Retrieves layers from the configured provider and returns normalized response data.
 
 		Args:
-		    category (str): Category supplied by the caller.
+		    category (str): Category supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'layers'
@@ -4024,20 +4082,20 @@ class EarthObservatory( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    status (str): Status supplied by the caller.
-		    category (str): Category supplied by the caller.
-		    source (str): Source supplied by the caller.
+		    status (str): Status supplied by the caller and interpreted according to the method contract.
+		    category (str): Category supplied by the caller and interpreted according to the method contract.
+		    source (str): Source supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
-		    days (int): Days supplied by the caller.
+		    days (int): Days supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = (mode or 'events').strip( ).lower( )
@@ -4079,10 +4137,10 @@ class EarthObservatory( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -4124,21 +4182,21 @@ class GlobalImagery( Fetcher ):
 	    file_path (Optional[str]): Resolved filesystem path of the current source or output file.
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
-	    latitude (Optional[float]): Current latitude retained by the GlobalImagery.
-	    longitude (Optional[float]): Current longitude retained by the GlobalImagery.
-	    coordinates (Optional[Tuple[float, float]]): Current coordinates retained by the GlobalImagery.
-	    calendar_date (Optional[dt.datetime]): Current calendar date retained by the GlobalImagery.
-	    julian_date (Optional[float]): Current julian date retained by the GlobalImagery.
-	    sidereal_time (Optional[str]): Current sidereal time retained by the GlobalImagery.
-	    utc_time (Optional[dt.time]): Current utc time retained by the GlobalImagery.
-	    local_time (Optional[dt.time]): Current local time retained by the GlobalImagery.
+	    latitude (Optional[float]): Current latitude retained by the GlobalImagery workflow between related operations.
+	    longitude (Optional[float]): Current longitude retained by the GlobalImagery workflow between related operations.
+	    coordinates (Optional[Tuple[float, float]]): Current coordinates retained by the GlobalImagery workflow between related operations.
+	    calendar_date (Optional[dt.datetime]): Current calendar date retained by the GlobalImagery workflow between related operations.
+	    julian_date (Optional[float]): Current julian date retained by the GlobalImagery workflow between related operations.
+	    sidereal_time (Optional[str]): Current sidereal time retained by the GlobalImagery workflow between related operations.
+	    utc_time (Optional[dt.time]): Current utc time retained by the GlobalImagery workflow between related operations.
+	    local_time (Optional[dt.time]): Current local time retained by the GlobalImagery workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    era (Optional[str]): Current era retained by the GlobalImagery.
-	    year (Optional[str]): Current year retained by the GlobalImagery.
-	    month (Optional[str]): Current month retained by the GlobalImagery.
-	    day (Optional[str]): Current day retained by the GlobalImagery.
-	    mode (Any): Current mode retained by the GlobalImagery.
-	    fetcher (Any): Current fetcher retained by the GlobalImagery.
+	    era (Optional[str]): Current era retained by the GlobalImagery workflow between related operations.
+	    year (Optional[str]): Current year retained by the GlobalImagery workflow between related operations.
+	    month (Optional[str]): Current month retained by the GlobalImagery workflow between related operations.
+	    day (Optional[str]): Current day retained by the GlobalImagery workflow between related operations.
+	    mode (Any): Current mode retained by the GlobalImagery workflow between related operations.
+	    fetcher (Any): Current fetcher retained by the GlobalImagery workflow between related operations.
 	    response (Any): Most recent raw response returned by the provider client.
 	    result (Any): Most recent normalized Foo result produced by the instance.
 	    timeout (Any): Maximum request duration, in seconds, applied to provider calls.
@@ -4220,15 +4278,15 @@ class GlobalImagery( Fetcher ):
 		    Get capabilities url using the class state and returns data required by the surrounding workflow.
 
 		Args:
-		    projection (str): Projection supplied by the caller.
-		    quality (str): Quality supplied by the caller.
-		    version (str): Version supplied by the caller.
+		    projection (str): Projection supplied by the caller and interpreted according to the method contract.
+		    quality (str): Quality supplied by the caller and interpreted according to the method contract.
+		    version (str): Version supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			projection_value = str( projection or 'epsg4326' ).strip( ).lower( )
@@ -4269,22 +4327,22 @@ class GlobalImagery( Fetcher ):
 		    Constructs the wms url payload required by the downstream provider or loader.
 
 		Args:
-		    layer (str): Layer supplied by the caller.
+		    layer (str): Layer supplied by the caller and interpreted according to the method contract.
 		    image_date (str): Date boundary or date value used by the request.
-		    bbox (Tuple[float, float, float, float]): Bbox supplied by the caller.
-		    width (int): Width supplied by the caller.
-		    height (int): Height supplied by the caller.
-		    projection (str): Projection supplied by the caller.
-		    quality (str): Quality supplied by the caller.
-		    image_format (str): Image format supplied by the caller.
+		    bbox (Tuple[float, float, float, float]): Bbox supplied by the caller and interpreted according to the method contract.
+		    width (int): Width supplied by the caller and interpreted according to the method contract.
+		    height (int): Height supplied by the caller and interpreted according to the method contract.
+		    projection (str): Projection supplied by the caller and interpreted according to the method contract.
+		    quality (str): Quality supplied by the caller and interpreted according to the method contract.
+		    image_format (str): Image format supplied by the caller and interpreted according to the method contract.
 		    transparent (bool): Whether transparent behavior is enabled for the operation.
-		    version (str): Version supplied by the caller.
+		    version (str): Version supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'layer', layer )
@@ -4345,24 +4403,24 @@ class GlobalImagery( Fetcher ):
 		    Retrieves wms map from the configured provider and returns normalized response data.
 
 		Args:
-		    layer (str): Layer supplied by the caller.
+		    layer (str): Layer supplied by the caller and interpreted according to the method contract.
 		    image_date (str): Date boundary or date value used by the request.
-		    bbox (Tuple[float, float, float, float]): Bbox supplied by the caller.
-		    width (int): Width supplied by the caller.
-		    height (int): Height supplied by the caller.
-		    projection (str): Projection supplied by the caller.
-		    quality (str): Quality supplied by the caller.
-		    image_format (str): Image format supplied by the caller.
+		    bbox (Tuple[float, float, float, float]): Bbox supplied by the caller and interpreted according to the method contract.
+		    width (int): Width supplied by the caller and interpreted according to the method contract.
+		    height (int): Height supplied by the caller and interpreted according to the method contract.
+		    projection (str): Projection supplied by the caller and interpreted according to the method contract.
+		    quality (str): Quality supplied by the caller and interpreted according to the method contract.
+		    image_format (str): Image format supplied by the caller and interpreted according to the method contract.
 		    transparent (bool): Whether transparent behavior is enabled for the operation.
-		    output_dir (str): Output dir supplied by the caller.
-		    output_name (str): Output name supplied by the caller.
+		    output_dir (str): Output dir supplied by the caller and interpreted according to the method contract.
+		    output_name (str): Output name supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'wms_map'
@@ -4447,10 +4505,10 @@ class GlobalImagery( Fetcher ):
 		    Retrieves map services from the configured provider and returns normalized response data.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'fetch_map_services'
@@ -4476,13 +4534,13 @@ class GlobalImagery( Fetcher ):
 		    Retrieves mercator map from the configured provider and returns normalized response data.
 
 		Args:
-		    ccrs (Any): Ccrs supplied by the caller.
+		    ccrs (Any): Ccrs supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'mercator_map'
@@ -4517,10 +4575,10 @@ class GlobalImagery( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -4565,14 +4623,14 @@ class NearbyObjects( Fetcher ):
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    mode (Optional[str]): Current mode retained by the NearbyObjects.
-	    start_date (Optional[str]): Current start date retained by the NearbyObjects.
-	    end_date (Optional[str]): Current end date retained by the NearbyObjects.
+	    mode (Optional[str]): Current mode retained by the NearbyObjects workflow between related operations.
+	    start_date (Optional[str]): Current start date retained by the NearbyObjects workflow between related operations.
+	    end_date (Optional[str]): Current end date retained by the NearbyObjects workflow between related operations.
 	    query (Optional[str]): Most recent search text or model prompt submitted by the instance.
-	    dist_max (Optional[str]): Current dist max retained by the NearbyObjects.
+	    dist_max (Optional[str]): Current dist max retained by the NearbyObjects workflow between related operations.
 	    body (Optional[str]): Text body retained for serialization by the writer.
-	    sort (Optional[str]): Current sort retained by the NearbyObjects.
-	    limit (Optional[int]): Current limit retained by the NearbyObjects.
+	    sort (Optional[str]): Current sort retained by the NearbyObjects workflow between related operations.
+	    limit (Optional[int]): Current limit retained by the NearbyObjects workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    headers (Any): HTTP headers sent with the current request.
 	"""
@@ -4625,14 +4683,12 @@ class NearbyObjects( Fetcher ):
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
 		return [ 'base_url', 'url', 'params', 'mode', 'start_date', 'end_date', 'query',
-			'dist_max',
-			'body', 'sort', 'limit', 'fetch_close_approaches', 'fetch_object_lookup',
+			'dist_max', 'body', 'sort', 'limit', 'fetch_close_approaches', 'fetch_object_lookup',
 			'fetch_nhats_summary', 'fetch_nhats_object', 'fetch_fireballs', 'fetch',
 			'create_schema' ]
 	
 	def fetch_close_approaches( self, start_date: str, end_date: str, dist_max: str = '10LD',
-			body: str = 'Earth', sort: str = 'date', limit: int=20, time: int=20 ) -> Dict[
-				                                                                              str, Any ] | None:
+			body: str = 'Earth', sort: str = 'date', limit: int=20, time: int=20 ) -> Dict[str,Any]:
 		"""Fetch close approaches.
 
 		Purpose:
@@ -4641,17 +4697,17 @@ class NearbyObjects( Fetcher ):
 		Args:
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    dist_max (str): Dist max supplied by the caller.
-		    body (str): Body supplied by the caller.
-		    sort (str): Sort supplied by the caller.
+		    dist_max (str): Dist max supplied by the caller and interpreted according to the method contract.
+		    body (str): Body supplied by the caller and interpreted according to the method contract.
+		    sort (str): Sort supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'start_date', start_date )
@@ -4664,28 +4720,17 @@ class NearbyObjects( Fetcher ):
 			self.sort = str( sort or 'date' ).strip( )
 			self.limit = int( limit )
 			self.url = f'{self.base_url}/cad.api'
-			self.params = {
-					'date-min': self.start_date,
-					'date-max': self.end_date,
-					'dist-max': self.dist_max,
-					'body': self.body,
-					'sort': self.sort,
-					'limit': self.limit
-			}
+			self.params = { 'date-min': self.start_date, 'date-max': self.end_date,
+				'dist-max': self.dist_max, 'body': self.body, 'sort': self.sort,
+				'limit': self.limit }
 			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
 				timeout=int( time ) )
 			self.response.raise_for_status( )
 			payload = self.response.json( ) or { }
 			
-			return {
-					'mode': self.mode,
-					'url': self.url,
-					'params': self.params,
-					'count': payload.get( 'count', 0 ),
-					'fields': payload.get( 'fields', [ ] ),
-					'data': payload.get( 'data', [ ] ),
-					'signature': payload.get( 'signature', { } )
-			}
+			return { 'mode': self.mode, 'url': self.url, 'params': self.params,
+				'count': payload.get( 'count', 0 ), 'fields': payload.get( 'fields', [ ] ),
+				'data': payload.get( 'data', [ ] ), 'signature': payload.get( 'signature', { } ) }
 		
 		except Exception as e:
 			exception = Error( e )
@@ -4706,18 +4751,18 @@ class NearbyObjects( Fetcher ):
 
 		Args:
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    query_type (str): Query type supplied by the caller.
+		    query_type (str): Query type supplied by the caller and interpreted according to the method contract.
 		    include_physical (bool): Whether include physical behavior is enabled for the operation.
 		    include_close_approaches (bool): Whether include close approaches behavior is enabled for the operation.
-		    ca_body (str): Ca body supplied by the caller.
+		    ca_body (str): Ca body supplied by the caller and interpreted according to the method contract.
 		    include_discovery (bool): Whether include discovery behavior is enabled for the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query', query )
@@ -4766,19 +4811,19 @@ class NearbyObjects( Fetcher ):
 		    Retrieves nhats summary from the configured provider and returns normalized response data.
 
 		Args:
-		    dv (float): Dv supplied by the caller.
-		    dur (int): Dur supplied by the caller.
-		    stay (int): Stay supplied by the caller.
-		    launch (str): Launch supplied by the caller.
-		    h (float): H supplied by the caller.
-		    occ (int): Occ supplied by the caller.
+		    dv (float): Dv supplied by the caller and interpreted according to the method contract.
+		    dur (int): Dur supplied by the caller and interpreted according to the method contract.
+		    stay (int): Stay supplied by the caller and interpreted according to the method contract.
+		    launch (str): Launch supplied by the caller and interpreted according to the method contract.
+		    h (float): H supplied by the caller and interpreted according to the method contract.
+		    occ (int): Occ supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'nhats_summary'
@@ -4820,18 +4865,18 @@ class NearbyObjects( Fetcher ):
 		    Retrieves nhats object from the configured provider and returns normalized response data.
 
 		Args:
-		    designation (str): Designation supplied by the caller.
-		    dv (float): Dv supplied by the caller.
-		    dur (int): Dur supplied by the caller.
-		    stay (int): Stay supplied by the caller.
-		    launch (str): Launch supplied by the caller.
+		    designation (str): Designation supplied by the caller and interpreted according to the method contract.
+		    dv (float): Dv supplied by the caller and interpreted according to the method contract.
+		    dur (int): Dur supplied by the caller and interpreted according to the method contract.
+		    stay (int): Stay supplied by the caller and interpreted according to the method contract.
+		    launch (str): Launch supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'designation', designation )
@@ -4874,15 +4919,15 @@ class NearbyObjects( Fetcher ):
 		    Retrieves fireballs from the configured provider and returns normalized response data.
 
 		Args:
-		    date_min (str): Date min supplied by the caller.
+		    date_min (str): Date min supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'fireballs'
@@ -4933,28 +4978,28 @@ class NearbyObjects( Fetcher ):
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    query_type (str): Query type supplied by the caller.
-		    dist_max (str): Dist max supplied by the caller.
-		    body (str): Body supplied by the caller.
-		    sort (str): Sort supplied by the caller.
+		    query_type (str): Query type supplied by the caller and interpreted according to the method contract.
+		    dist_max (str): Dist max supplied by the caller and interpreted according to the method contract.
+		    body (str): Body supplied by the caller and interpreted according to the method contract.
+		    sort (str): Sort supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
-		    dv (float): Dv supplied by the caller.
-		    dur (int): Dur supplied by the caller.
-		    stay (int): Stay supplied by the caller.
-		    launch (str): Launch supplied by the caller.
-		    h (float): H supplied by the caller.
-		    occ (int): Occ supplied by the caller.
+		    dv (float): Dv supplied by the caller and interpreted according to the method contract.
+		    dur (int): Dur supplied by the caller and interpreted according to the method contract.
+		    stay (int): Stay supplied by the caller and interpreted according to the method contract.
+		    launch (str): Launch supplied by the caller and interpreted according to the method contract.
+		    h (float): H supplied by the caller and interpreted according to the method contract.
+		    occ (int): Occ supplied by the caller and interpreted according to the method contract.
 		    include_physical (bool): Whether include physical behavior is enabled for the operation.
 		    include_close_approaches (bool): Whether include close approaches behavior is enabled for the operation.
-		    ca_body (str): Ca body supplied by the caller.
+		    ca_body (str): Ca body supplied by the caller and interpreted according to the method contract.
 		    include_discovery (bool): Whether include discovery behavior is enabled for the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = str( mode or 'close_approaches' ).strip( ).lower( )
@@ -5007,10 +5052,10 @@ class NearbyObjects( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -5052,10 +5097,10 @@ class OpenScience( Fetcher ):
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    query_text (Optional[str]): Current query text retained by the OpenScience.
-	    format_value (Optional[str]): Current format value retained by the OpenScience.
-	    size (Optional[int]): Current size retained by the OpenScience.
-	    endpoint (Optional[str]): Current endpoint retained by the OpenScience.
+	    query_text (Optional[str]): Current query text retained by the OpenScience workflow between related operations.
+	    format_value (Optional[str]): Current format value retained by the OpenScience workflow between related operations.
+	    size (Optional[int]): Current size retained by the OpenScience workflow between related operations.
+	    endpoint (Optional[str]): Current endpoint retained by the OpenScience workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    headers (Any): HTTP headers sent with the current request.
 	"""
@@ -5111,20 +5156,22 @@ class OpenScience( Fetcher ):
 		    Validates the format against provider constraints and returns the accepted value.
 
 		Args:
-		    format_value (str): Format value supplied by the caller.
+		    format_value (str): Format value supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( format_value or 'json' ).strip( ).lower( )
 			
 			allowed = { 'json', 'csv', 'tsv', 'browser' }
 			if value not in allowed:
-				raise ValueError( "Unsupported format. Use one of: json, csv, tsv, browser." )
+				raise ValueError(
+					"Unsupported format. Use one of: json, csv, tsv, browser."
+				)
 			
 			return value
 		
@@ -5146,10 +5193,10 @@ class OpenScience( Fetcher ):
 		    response (requests.Response): Provider response object or event stream to inspect.
 
 		Returns:
-		    Dict[str, Any] | str: Dictionary containing normalized provider data.
+		    Dict[str, Any] | str: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			content_type = str( response.headers.get( 'Content-Type', '' ) ).lower( )
@@ -5166,7 +5213,10 @@ class OpenScience( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
-			exception.method = 'coerce_response( self, response: requests.Response ) -> Dict[str,Any]'
+			exception.method = (
+					'coerce_response( self, response: requests.Response ) '
+					'-> Dict[ str, Any ] | str'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5177,14 +5227,14 @@ class OpenScience( Fetcher ):
 		    Retrieves dataset from the configured provider and returns normalized response data.
 
 		Args:
-		    accession (str): Accession supplied by the caller.
+		    accession (str): Accession supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'accession', accession )
@@ -5196,8 +5246,12 @@ class OpenScience( Fetcher ):
 				timeout=int( time ) )
 			self.response.raise_for_status( )
 			
-			return { 'mode': 'dataset', 'url': self.url, 'params': self.params,
-				'data': self.coerce_response( self.response ) }
+			return {
+					'mode': 'dataset',
+					'url': self.url,
+					'params': self.params,
+					'data': self.coerce_response( self.response )
+			}
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
@@ -5215,14 +5269,14 @@ class OpenScience( Fetcher ):
 
 		Args:
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    format_value (str): Format value supplied by the caller.
+		    format_value (str): Format value supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query', query )
@@ -5235,8 +5289,12 @@ class OpenScience( Fetcher ):
 				headers=self.headers, timeout=int( time ) )
 			self.response.raise_for_status( )
 			
-			return { 'mode': 'metadata', 'url': self.url, 'params': self.params,
-				'data': self.coerce_response( self.response ) }
+			return {
+					'mode': 'metadata',
+					'url': self.url,
+					'params': self.params,
+					'data': self.coerce_response( self.response )
+			}
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
@@ -5257,14 +5315,14 @@ class OpenScience( Fetcher ):
 
 		Args:
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    format_value (str): Format value supplied by the caller.
+		    format_value (str): Format value supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query', query )
@@ -5273,19 +5331,30 @@ class OpenScience( Fetcher ):
 			self.format_value = self.validate_format( format_value )
 			self.endpoint = '/v2/query/assays/'
 			self.url = f'{self.base_url}{self.endpoint}'
-			self.params = { 'query': self.query_text, 'format': self.format_value }
+			self.params = {
+					'query': self.query_text,
+					'format': self.format_value
+			}
 			
 			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
 				timeout=int( time ) )
 			self.response.raise_for_status( )
 			
-			return { 'mode': 'assays', 'url': self.url, 'params': self.params,
-				'data': self.coerce_response( self.response ) }
+			return {
+					'mode': 'assays',
+					'url': self.url,
+					'params': self.params,
+					'data': self.coerce_response( self.response )
+			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
+			exception.method = (
+					'fetch_assays( self, query: str, format_value: str=json, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5298,14 +5367,14 @@ class OpenScience( Fetcher ):
 
 		Args:
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    format_value (str): Format value supplied by the caller.
+		    format_value (str): Format value supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query', query )
@@ -5314,20 +5383,34 @@ class OpenScience( Fetcher ):
 			self.format_value = self.validate_format( format_value )
 			self.endpoint = '/v2/query/data/'
 			self.url = f'{self.base_url}{self.endpoint}'
-			self.params = { 'query': self.query_text, 'format': self.format_value }
+			self.params = {
+					'query': self.query_text,
+					'format': self.format_value
+			}
 			
-			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
-				timeout=int( time ) )
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=int( time )
+			)
 			self.response.raise_for_status( )
 			
-			return { 'mode': 'data', 'url': self.url, 'params': self.params,
-				'data': self.coerce_response( self.response ) }
+			return {
+					'mode': 'data',
+					'url': self.url,
+					'params': self.params,
+					'data': self.coerce_response( self.response )
+			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
-			exception.method = 'fetch_data( self, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_data( self, query: str, format_value: str=json, '
+					'time: int=20 ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5342,38 +5425,58 @@ class OpenScience( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    accession (str): Accession supplied by the caller.
-		    format_value (str): Format value supplied by the caller.
+		    accession (str): Accession supplied by the caller and interpreted according to the method contract.
+		    format_value (str): Format value supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = str( mode or 'dataset' ).strip( ).lower( )
 			
 			if active_mode == 'dataset':
-				return self.fetch_dataset( accession=accession, time=time )
+				return self.fetch_dataset(
+					accession=accession,
+					time=time
+				)
 			
 			if active_mode == 'metadata':
-				return self.fetch_metadata( query=query, format_value=format_value, time=time )
+				return self.fetch_metadata(
+					query=query,
+					format_value=format_value,
+					time=time
+				)
 			
 			if active_mode == 'assays':
-				return self.fetch_assays( query=query, format_value=format_value, time=time )
+				return self.fetch_assays(
+					query=query,
+					format_value=format_value,
+					time=time
+				)
 			
 			if active_mode == 'data':
-				return self.fetch_data( query=query, format_value=format_value, time=time )
+				return self.fetch_data(
+					query=query,
+					format_value=format_value,
+					time=time
+				)
 			
-			raise ValueError( "Unsupported mode. Use one of: dataset, metadata, assays, data." )
+			raise ValueError(
+				"Unsupported mode. Use one of: dataset, metadata, assays, data."
+			)
 		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
-			exception.method = 'fetch( self, **kwarg ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch( self, mode: str=dataset, query: str=, accession: str=, '
+					'format_value: str=json, time: int=20 ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5393,10 +5496,10 @@ class OpenScience( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -5424,7 +5527,10 @@ class OpenScience( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenScience'
-			exception.method = 'create_schema( self, **kwargs ) -> Dict[ str, str ]'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 
@@ -5439,13 +5545,13 @@ class SpaceWeather( Fetcher ):
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    mode (Optional[str]): Current mode retained by the SpaceWeather.
-	    start_date (Optional[str]): Current start date retained by the SpaceWeather.
-	    end_date (Optional[str]): Current end date retained by the SpaceWeather.
-	    location (Optional[str]): Current location retained by the SpaceWeather.
-	    catalog (Optional[str]): Current catalog retained by the SpaceWeather.
-	    notification_type (Optional[str]): Current notification type retained by the SpaceWeather.
-	    limit_note (Optional[str]): Current limit note retained by the SpaceWeather.
+	    mode (Optional[str]): Current mode retained by the SpaceWeather workflow between related operations.
+	    start_date (Optional[str]): Current start date retained by the SpaceWeather workflow between related operations.
+	    end_date (Optional[str]): Current end date retained by the SpaceWeather workflow between related operations.
+	    location (Optional[str]): Current location retained by the SpaceWeather workflow between related operations.
+	    catalog (Optional[str]): Current catalog retained by the SpaceWeather workflow between related operations.
+	    notification_type (Optional[str]): Current notification type retained by the SpaceWeather workflow between related operations.
+	    limit_note (Optional[str]): Current limit note retained by the SpaceWeather workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    headers (Any): HTTP headers sent with the current request.
 	"""
@@ -5493,8 +5599,7 @@ class SpaceWeather( Fetcher ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools,
-		    and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
@@ -5515,25 +5620,25 @@ class SpaceWeather( Fetcher ):
 		    Retrieves endpoint from the configured provider and returns normalized response data.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
 		    time (int): Maximum request duration in seconds.
-		    location (str): Location supplied by the caller.
-		    catalog (str): Catalog supplied by the caller.
-		    notification_type (str): Notification type supplied by the caller.
+		    location (str): Location supplied by the caller and interpreted according to the method contract.
+		    catalog (str): Catalog supplied by the caller and interpreted according to the method contract.
+		    notification_type (str): Notification type supplied by the caller and interpreted according to the method contract.
 		    most_accurate_only (bool): Whether most accurate only behavior is enabled for the operation.
 		    complete_entry_only (bool): Whether complete entry only behavior is enabled for the operation.
-		    speed (int): Speed supplied by the caller.
-		    half_angle (int): Half angle supplied by the caller.
-		    keyword (str): Keyword supplied by the caller.
-		    api_key (str): Api key supplied by the caller.
+		    speed (int): Speed supplied by the caller and interpreted according to the method contract.
+		    half_angle (int): Half angle supplied by the caller and interpreted according to the method contract.
+		    keyword (str): Keyword supplied by the caller and interpreted according to the method contract.
+		    api_key (str): Api key supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
@@ -5578,8 +5683,13 @@ class SpaceWeather( Fetcher ):
 			self.response.raise_for_status( )
 			payload = self.response.json( )
 			
-			return { 'mode': self.mode, 'endpoint': endpoint, 'url': self.url,
-				'params': self.params, 'data': payload }
+			return {
+					'mode': self.mode,
+					'endpoint': endpoint,
+					'url': self.url,
+					'params': self.params,
+					'data': payload
+			}
 		
 		except Exception as e:
 			exception = Error( e )
@@ -5605,29 +5715,39 @@ class SpaceWeather( Fetcher ):
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
 		    time (int): Maximum request duration in seconds.
-		    location (str): Location supplied by the caller.
-		    catalog (str): Catalog supplied by the caller.
-		    notification_type (str): Notification type supplied by the caller.
+		    location (str): Location supplied by the caller and interpreted according to the method contract.
+		    catalog (str): Catalog supplied by the caller and interpreted according to the method contract.
+		    notification_type (str): Notification type supplied by the caller and interpreted according to the method contract.
 		    most_accurate_only (bool): Whether most accurate only behavior is enabled for the operation.
 		    complete_entry_only (bool): Whether complete entry only behavior is enabled for the operation.
-		    speed (int): Speed supplied by the caller.
-		    half_angle (int): Half angle supplied by the caller.
-		    keyword (str): Keyword supplied by the caller.
-		    api_key (str): Api key supplied by the caller.
+		    speed (int): Speed supplied by the caller and interpreted according to the method contract.
+		    half_angle (int): Half angle supplied by the caller and interpreted according to the method contract.
+		    keyword (str): Keyword supplied by the caller and interpreted according to the method contract.
+		    api_key (str): Api key supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = str( mode or 'cme' ).strip( ).lower( )
 			self.mode = active_mode
 			
-			endpoint_map = { 'cme': 'CME', 'cme_analysis': 'CMEAnalysis', 'gst': 'GST',
-				'ips': 'IPS', 'flr': 'FLR', 'sep': 'SEP', 'mpc': 'MPC', 'rbe': 'RBE', 'hss': 'HSS',
-				'wsa_enlil': 'WSAEnlilSimulations', 'notifications': 'notifications' }
+			endpoint_map = {
+					'cme': 'CME',
+					'cme_analysis': 'CMEAnalysis',
+					'gst': 'GST',
+					'ips': 'IPS',
+					'flr': 'FLR',
+					'sep': 'SEP',
+					'mpc': 'MPC',
+					'rbe': 'RBE',
+					'hss': 'HSS',
+					'wsa_enlil': 'WSAEnlilSimulations',
+					'notifications': 'notifications'
+			}
 			
 			if active_mode not in endpoint_map:
 				raise ValueError(
@@ -5635,15 +5755,21 @@ class SpaceWeather( Fetcher ):
 					"'flr', 'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', or 'notifications'."
 				)
 			
-			return self.fetch_endpoint( endpoint=endpoint_map[ active_mode ],
-				start_date=str( start_date ).strip( ), end_date=str( end_date ).strip( ),
-				time=int( time ), location=str( location or 'ALL' ).strip( ),
+			return self.fetch_endpoint(
+				endpoint=endpoint_map[ active_mode ],
+				start_date=str( start_date ).strip( ),
+				end_date=str( end_date ).strip( ),
+				time=int( time ),
+				location=str( location or 'ALL' ).strip( ),
 				catalog=str( catalog or 'ALL' ).strip( ),
 				notification_type=str( notification_type or 'all' ).strip( ),
 				most_accurate_only=bool( most_accurate_only ),
-				complete_entry_only=bool( complete_entry_only ), speed=int( speed ),
-				half_angle=int( half_angle ), keyword=str( keyword or '' ).strip( ),
-				api_key=api_key )
+				complete_entry_only=bool( complete_entry_only ),
+				speed=int( speed ),
+				half_angle=int( half_angle ),
+				keyword=str( keyword or '' ).strip( ),
+				api_key=api_key
+			)
 		
 		except Exception as exc:
 			exception = Error( exc )
@@ -5669,10 +5795,10 @@ class SpaceWeather( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -5697,7 +5823,10 @@ class SpaceWeather( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'SpaceWeather'
-			exception.method = 'create_schema( self, **kwargs ) -> Dict[ str, str ]'
+			exception.method = (
+					'create_schema( self, function: str, tool: str, description: str, '
+					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 
@@ -5709,11 +5838,11 @@ class AstroCatalog( Fetcher ):
 
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    format (Optional[str]): Current format retained by the AstroCatalog.
-	    name (Optional[str]): Current name retained by the AstroCatalog.
-	    declination (Optional[str]): Current declination retained by the AstroCatalog.
-	    right_ascension (Optional[str]): Current right ascension retained by the AstroCatalog.
-	    radius (Optional[int]): Current radius retained by the AstroCatalog.
+	    format (Optional[str]): Current format retained by the AstroCatalog workflow between related operations.
+	    name (Optional[str]): Current name retained by the AstroCatalog workflow between related operations.
+	    declination (Optional[str]): Current declination retained by the AstroCatalog workflow between related operations.
+	    right_ascension (Optional[str]): Current right ascension retained by the AstroCatalog workflow between related operations.
+	    radius (Optional[int]): Current radius retained by the AstroCatalog workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
 	    headers (Any): HTTP headers sent with the current request.
 	    timeout (Any): Maximum request duration, in seconds, applied to provider calls.
@@ -5758,8 +5887,7 @@ class AstroCatalog( Fetcher ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools,
-		    and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
@@ -5773,8 +5901,8 @@ class AstroCatalog( Fetcher ):
 		    Normalizes attribute path into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    quantity (str): Quantity supplied by the caller.
-		    attributes (str): Attributes supplied by the caller.
+		    quantity (str): Quantity supplied by the caller and interpreted according to the method contract.
+		    attributes (str): Attributes supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
@@ -5796,10 +5924,10 @@ class AstroCatalog( Fetcher ):
 		    Parses argument into the typed representation expected by the provider request.
 
 		Args:
-		    argument_string (str): Argument string supplied by the caller.
+		    argument_string (str): Argument string supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 		"""
 		params: Dict[ str, Any ] = { }
 		
@@ -5826,21 +5954,25 @@ class AstroCatalog( Fetcher ):
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    route (str): Route supplied by the caller.
-		    params (Dict[str, Any] | None): Params supplied by the caller.
+		    route (str): Route supplied by the caller and interpreted according to the method contract.
+		    params (Dict[str, Any] | None): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
 		    Any: Provider, loader, or normalized application value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.timeout = int( time )
 			self.url = f'{self.base_url}/{route.lstrip( "/" )}'
 			self.params = params or { }
-			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
+			
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
 				timeout=self.timeout )
 			
 			self.response.raise_for_status( )
@@ -5855,7 +5987,7 @@ class AstroCatalog( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
-			exception.method = 'request( self, **kwargs ) -> Any'
+			exception.method = 'request( self, route: str, params: Dict[ str, Any ] | None=None, time: int=20 ) -> Any'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5868,22 +6000,23 @@ class AstroCatalog( Fetcher ):
 
 		Args:
 		    name (str): Argument name included in validation error messages.
-		    quantity (str): Quantity supplied by the caller.
-		    attributes (str): Attributes supplied by the caller.
-		    arguments (str): Arguments supplied by the caller.
-		    data_format (str): Data format supplied by the caller.
+		    quantity (str): Quantity supplied by the caller and interpreted according to the method contract.
+		    attributes (str): Attributes supplied by the caller and interpreted according to the method contract.
+		    arguments (str): Arguments supplied by the caller and interpreted according to the method contract.
+		    data_format (str): Data format supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
 		    Any: Provider, loader, or normalized application value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
 			self.name = name.strip( )
 			self.format = (data_format or 'json').strip( ).lower( )
+			
 			route_parts = [ urllib.parse.quote( self.name ) ]
 			attr_path = self.normalize_attribute_path( quantity, attributes )
 			if attr_path:
@@ -5901,7 +6034,10 @@ class AstroCatalog( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
-			exception.method = 'fetch_object( self, **kwargs ) -> Any'
+			exception.method = (
+					'fetch_object( self, name: str, quantity: str=, attributes: str=, '
+					'arguments: str=, data_format: str=json, time: int=20 ) -> Any'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5914,20 +6050,20 @@ class AstroCatalog( Fetcher ):
 		    Cone search using the class state and returns data required by the surrounding workflow.
 
 		Args:
-		    ra (str): Ra supplied by the caller.
-		    dec (str): Dec supplied by the caller.
-		    radius (int): Radius supplied by the caller.
-		    quantity (str): Quantity supplied by the caller.
-		    attributes (str): Attributes supplied by the caller.
-		    arguments (str): Arguments supplied by the caller.
-		    data_format (str): Data format supplied by the caller.
+		    ra (str): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (str): Dec supplied by the caller and interpreted according to the method contract.
+		    radius (int): Radius supplied by the caller and interpreted according to the method contract.
+		    quantity (str): Quantity supplied by the caller and interpreted according to the method contract.
+		    attributes (str): Attributes supplied by the caller and interpreted according to the method contract.
+		    arguments (str): Arguments supplied by the caller and interpreted according to the method contract.
+		    data_format (str): Data format supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
 		    Any: Provider, loader, or normalized application value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'ra', ra )
@@ -5968,31 +6104,42 @@ class AstroCatalog( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    quantity (str): Quantity supplied by the caller.
-		    attributes (str): Attributes supplied by the caller.
-		    arguments (str): Arguments supplied by the caller.
-		    ra (str): Ra supplied by the caller.
-		    dec (str): Dec supplied by the caller.
-		    radius (int): Radius supplied by the caller.
-		    data_format (str): Data format supplied by the caller.
+		    quantity (str): Quantity supplied by the caller and interpreted according to the method contract.
+		    attributes (str): Attributes supplied by the caller and interpreted according to the method contract.
+		    arguments (str): Arguments supplied by the caller and interpreted according to the method contract.
+		    ra (str): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (str): Dec supplied by the caller and interpreted according to the method contract.
+		    radius (int): Radius supplied by the caller and interpreted according to the method contract.
+		    data_format (str): Data format supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
 		    Any: Provider, loader, or normalized application value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = (mode or 'object_query').strip( ).lower( )
 			
 			if active_mode == 'object_query':
-				return self.fetch_object( name=query, quantity=quantity, attributes=attributes,
-					arguments=arguments, data_format=data_format, time=time )
+				return self.fetch_object(
+					name=query,
+					quantity=quantity,
+					attributes=attributes,
+					arguments=arguments,
+					data_format=data_format,
+					time=time )
 			
 			if active_mode == 'cone_search':
-				return self.cone_search( ra=ra, dec=dec, radius=radius, quantity=quantity,
-					attributes=attributes, arguments=arguments, data_format=data_format,
+				return self.cone_search(
+					ra=ra,
+					dec=dec,
+					radius=radius,
+					quantity=quantity,
+					attributes=attributes,
+					arguments=arguments,
+					data_format=data_format,
 					time=time )
 			
 			raise ValueError( "Unsupported mode. Use 'object_query' or 'cone_search'." )
@@ -6013,12 +6160,12 @@ class AstroQuery( Fetcher ):
 
 	Attributes:
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
-	    radius (Optional[float]): Current radius retained by the AstroQuery.
-	    name (Optional[str]): Current name retained by the AstroQuery.
-	    declination (Optional[str]): Current declination retained by the AstroQuery.
-	    right_ascension (Optional[str]): Current right ascension retained by the AstroQuery.
+	    radius (Optional[float]): Current radius retained by the AstroQuery workflow between related operations.
+	    name (Optional[str]): Current name retained by the AstroQuery workflow between related operations.
+	    declination (Optional[str]): Current declination retained by the AstroQuery workflow between related operations.
+	    right_ascension (Optional[str]): Current right ascension retained by the AstroQuery workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    row_limit (Optional[int]): Current row limit retained by the AstroQuery.
+	    row_limit (Optional[int]): Current row limit retained by the AstroQuery workflow between related operations.
 	    agents (Any): Configured user-agent string sent with web requests.
 	"""
 	url: Optional[ str ]
@@ -6060,14 +6207,7 @@ class AstroQuery( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'headers',
-				'row_limit',
-				'object_search',
-				'object_ids',
-				'region_search',
-				'fetch',
-		]
+		return [ 'headers', 'row_limit', 'object_search', 'object_ids', 'region_search', 'fetch', ]
 	
 	def table_to_records( self, table: Table | None ) -> List[ Dict[ str, Any ] ]:
 		"""Table to records.
@@ -6076,13 +6216,13 @@ class AstroQuery( Fetcher ):
 		    Table to records using the class state and returns data required by the surrounding workflow.
 
 		Args:
-		    table (Table | None): Table supplied by the caller.
+		    table (Table | None): Table supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if table is None:
@@ -6122,13 +6262,13 @@ class AstroQuery( Fetcher ):
 
 		Args:
 		    name (str): Argument name included in validation error messages.
-		    row_limit (int): Row limit supplied by the caller.
+		    row_limit (int): Row limit supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -6163,13 +6303,13 @@ class AstroQuery( Fetcher ):
 
 		Args:
 		    name (str): Argument name included in validation error messages.
-		    row_limit (int): Row limit supplied by the caller.
+		    row_limit (int): Row limit supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -6204,17 +6344,17 @@ class AstroQuery( Fetcher ):
 		    Region search using the class state and returns data required by the surrounding workflow.
 
 		Args:
-		    ra (str): Ra supplied by the caller.
-		    dec (str): Dec supplied by the caller.
-		    radius (float): Radius supplied by the caller.
-		    radius_unit (str): Radius unit supplied by the caller.
-		    row_limit (int): Row limit supplied by the caller.
+		    ra (str): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (str): Dec supplied by the caller and interpreted according to the method contract.
+		    radius (float): Radius supplied by the caller and interpreted according to the method contract.
+		    radius_unit (str): Radius unit supplied by the caller and interpreted according to the method contract.
+		    row_limit (int): Row limit supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'ra', ra )
@@ -6277,17 +6417,17 @@ class AstroQuery( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    ra (str): Ra supplied by the caller.
-		    dec (str): Dec supplied by the caller.
-		    radius (float): Radius supplied by the caller.
-		    radius_unit (str): Radius unit supplied by the caller.
-		    row_limit (int): Row limit supplied by the caller.
+		    ra (str): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (str): Dec supplied by the caller and interpreted according to the method contract.
+		    radius (float): Radius supplied by the caller and interpreted according to the method contract.
+		    radius_unit (str): Radius unit supplied by the caller and interpreted according to the method contract.
+		    row_limit (int): Row limit supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = (mode or 'object_search').strip( ).lower( )
@@ -6331,17 +6471,17 @@ class StarMap( Fetcher ):
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    snapshot_url (Optional[str]): URL associated with the current snapshot resource or endpoint.
-	    image_source (Optional[str]): Current image source retained by the StarMap.
-	    object (Optional[str]): Current object retained by the StarMap.
-	    right_ascension (Optional[float]): Current right ascension retained by the StarMap.
-	    declination (Optional[float]): Current declination retained by the StarMap.
-	    box_color (Optional[str]): Current box color retained by the StarMap.
-	    show_box (Optional[bool]): Current show box retained by the StarMap.
-	    show_grid (Optional[bool]): Current show grid retained by the StarMap.
-	    show_lines (Optional[bool]): Current show lines retained by the StarMap.
-	    show_boundaries (Optional[bool]): Current show boundaries retained by the StarMap.
-	    show_const_names (Optional[bool]): Current show const names retained by the StarMap.
-	    zoom (Optional[int]): Current zoom retained by the StarMap.
+	    image_source (Optional[str]): Current image source retained by the StarMap workflow between related operations.
+	    object (Optional[str]): Current object retained by the StarMap workflow between related operations.
+	    right_ascension (Optional[float]): Current right ascension retained by the StarMap workflow between related operations.
+	    declination (Optional[float]): Current declination retained by the StarMap workflow between related operations.
+	    box_color (Optional[str]): Current box color retained by the StarMap workflow between related operations.
+	    show_box (Optional[bool]): Current show box retained by the StarMap workflow between related operations.
+	    show_grid (Optional[bool]): Current show grid retained by the StarMap workflow between related operations.
+	    show_lines (Optional[bool]): Current show lines retained by the StarMap workflow between related operations.
+	    show_boundaries (Optional[bool]): Current show boundaries retained by the StarMap workflow between related operations.
+	    show_const_names (Optional[bool]): Current show const names retained by the StarMap workflow between related operations.
+	    zoom (Optional[int]): Current zoom retained by the StarMap workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
 	    timeout (Any): Maximum request duration, in seconds, applied to provider calls.
 	    headers (Any): HTTP headers sent with the current request.
@@ -6406,26 +6546,10 @@ class StarMap( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'base_url',
-				'snapshot_url',
-				'object',
-				'right_ascension',
-				'declination',
-				'image_source',
-				'zoom',
-				'show_box',
-				'show_grid',
-				'show_lines',
-				'show_boundaries',
-				'show_const_names',
-				'box_color',
-				'params',
-				'fetch_object_link',
-				'fetch_coordinate_link',
-				'fetch_snapshot',
-				'fetch',
-		]
+		return [ 'base_url', 'snapshot_url', 'object', 'right_ascension', 'declination',
+			'image_source', 'zoom', 'show_box', 'show_grid', 'show_lines', 'show_boundaries',
+			'show_const_names', 'box_color', 'params', 'fetch_object_link',
+			'fetch_coordinate_link', 'fetch_snapshot', 'fetch', ]
 	
 	def normalize( self, value: bool ) -> str:
 		"""Normalize.
@@ -6452,10 +6576,10 @@ class StarMap( Fetcher ):
 		    base_url (str): Base URL used to resolve relative references.
 
 		Returns:
-		    Dict[str, str]: Dictionary containing normalized provider data.
+		    Dict[str, str]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			links: Dict[ str, str ] = { }
@@ -6490,16 +6614,16 @@ class StarMap( Fetcher ):
 
 		Args:
 		    name (str): Argument name included in validation error messages.
-		    zoom (int): Zoom supplied by the caller.
-		    box_color (str): Box color supplied by the caller.
+		    zoom (int): Zoom supplied by the caller and interpreted according to the method contract.
+		    box_color (str): Box color supplied by the caller and interpreted according to the method contract.
 		    show_box (bool): Whether show box behavior is enabled for the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -6559,10 +6683,10 @@ class StarMap( Fetcher ):
 		    Retrieves coordinate link from the configured provider and returns normalized response data.
 
 		Args:
-		    ra (float): Ra supplied by the caller.
-		    dec (float): Dec supplied by the caller.
-		    zoom (int): Zoom supplied by the caller.
-		    box_color (str): Box color supplied by the caller.
+		    ra (float): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (float): Dec supplied by the caller and interpreted according to the method contract.
+		    zoom (int): Zoom supplied by the caller and interpreted according to the method contract.
+		    box_color (str): Box color supplied by the caller and interpreted according to the method contract.
 		    show_box (bool): Whether show box behavior is enabled for the operation.
 		    show_grid (bool): Whether show grid behavior is enabled for the operation.
 		    show_lines (bool): Whether show lines behavior is enabled for the operation.
@@ -6570,10 +6694,10 @@ class StarMap( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'ra', ra )
@@ -6637,10 +6761,10 @@ class StarMap( Fetcher ):
 		    Retrieves snapshot from the configured provider and returns normalized response data.
 
 		Args:
-		    ra (float): Ra supplied by the caller.
-		    dec (float): Dec supplied by the caller.
-		    zoom (int): Zoom supplied by the caller.
-		    image_source (str): Image source supplied by the caller.
+		    ra (float): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (float): Dec supplied by the caller and interpreted according to the method contract.
+		    zoom (int): Zoom supplied by the caller and interpreted according to the method contract.
+		    image_source (str): Image source supplied by the caller and interpreted according to the method contract.
 		    show_grid (bool): Whether show grid behavior is enabled for the operation.
 		    show_lines (bool): Whether show lines behavior is enabled for the operation.
 		    show_boundaries (bool): Whether show boundaries behavior is enabled for the operation.
@@ -6648,10 +6772,10 @@ class StarMap( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'ra', ra )
@@ -6727,11 +6851,11 @@ class StarMap( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    ra (float): Ra supplied by the caller.
-		    dec (float): Dec supplied by the caller.
-		    zoom (int): Zoom supplied by the caller.
-		    image_source (str): Image source supplied by the caller.
-		    box_color (str): Box color supplied by the caller.
+		    ra (float): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (float): Dec supplied by the caller and interpreted according to the method contract.
+		    zoom (int): Zoom supplied by the caller and interpreted according to the method contract.
+		    image_source (str): Image source supplied by the caller and interpreted according to the method contract.
+		    box_color (str): Box color supplied by the caller and interpreted according to the method contract.
 		    show_box (bool): Whether show box behavior is enabled for the operation.
 		    show_grid (bool): Whether show grid behavior is enabled for the operation.
 		    show_lines (bool): Whether show lines behavior is enabled for the operation.
@@ -6740,10 +6864,10 @@ class StarMap( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = (mode or 'object_link').strip( ).lower( )
@@ -6803,17 +6927,17 @@ class GovData( Fetcher ):
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Dict[str, Any]]): Current payload retained by the GovData.
+	    payload (Optional[Dict[str, Any]]): Current payload retained by the GovData workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
-	    mode (Optional[str]): Current mode retained by the GovData.
+	    mode (Optional[str]): Current mode retained by the GovData workflow between related operations.
 	    query (Optional[str]): Most recent search text or model prompt submitted by the instance.
-	    page_size (Optional[int]): Current page size retained by the GovData.
-	    offset_mark (Optional[str]): Current offset mark retained by the GovData.
-	    sort_field (Optional[str]): Current sort field retained by the GovData.
-	    sort_order (Optional[str]): Current sort order retained by the GovData.
+	    page_size (Optional[int]): Current page size retained by the GovData workflow between related operations.
+	    offset_mark (Optional[str]): Current offset mark retained by the GovData workflow between related operations.
+	    sort_field (Optional[str]): Current sort field retained by the GovData workflow between related operations.
+	    sort_order (Optional[str]): Current sort order retained by the GovData workflow between related operations.
 	    package_id (Optional[str]): Identifier of the current package resource.
-	    collection (Optional[str]): Current collection retained by the GovData.
-	    start_date (Optional[str]): Current start date retained by the GovData.
+	    collection (Optional[str]): Current collection retained by the GovData workflow between related operations.
+	    start_date (Optional[str]): Current start date retained by the GovData workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
 	    headers (Any): HTTP headers sent with the current request.
@@ -6877,34 +7001,11 @@ class GovData( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'api_key',
-				'base_url',
-				'url',
-				'params',
-				'payload',
-				'result',
-				'mode',
-				'query',
-				'page_size',
-				'offset_mark',
-				'sort_field',
-				'sort_order',
-				'package_id',
-				'collection',
-				'start_date',
-				'response',
-				'headers',
-				'agents',
-				'validate_page_size',
-				'validate_sort_field',
-				'validate_sort_order',
-				'fetch_search',
-				'fetch_package_summary',
-				'fetch_collection',
-				'fetch',
-				'create_schema'
-		]
+		return [ 'api_key', 'base_url', 'url', 'params', 'payload', 'result', 'mode', 'query',
+			'page_size', 'offset_mark', 'sort_field', 'sort_order', 'package_id', 'collection',
+			'start_date', 'response', 'headers', 'agents', 'validate_page_size',
+			'validate_sort_field', 'validate_sort_order', 'fetch_search', 'fetch_package_summary',
+			'fetch_collection', 'fetch', 'create_schema' ]
 	
 	def validate_page_size( self, page_size: int ) -> int:
 		"""Validate page size.
@@ -6919,7 +7020,7 @@ class GovData( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'page_size', page_size )
@@ -6945,13 +7046,13 @@ class GovData( Fetcher ):
 		    Validates the sort field against provider constraints and returns the accepted value.
 
 		Args:
-		    sort_field (str): Sort field supplied by the caller.
+		    sort_field (str): Sort field supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( sort_field or 'score' ).strip( )
@@ -6979,13 +7080,13 @@ class GovData( Fetcher ):
 		    Validates the sort order against provider constraints and returns the accepted value.
 
 		Args:
-		    sort_order (str): Sort order supplied by the caller.
+		    sort_order (str): Sort order supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( sort_order or 'DESC' ).strip( ).upper( )
@@ -7015,16 +7116,16 @@ class GovData( Fetcher ):
 		Args:
 		    query (str): Search text, prompt, or provider query submitted by the caller.
 		    page_size (int): Maximum number of records requested per page.
-		    offset_mark (str): Offset mark supplied by the caller.
-		    sort_field (str): Sort field supplied by the caller.
-		    sort_order (str): Sort order supplied by the caller.
+		    offset_mark (str): Offset mark supplied by the caller and interpreted according to the method contract.
+		    sort_field (str): Sort field supplied by the caller and interpreted according to the method contract.
+		    sort_order (str): Sort order supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -7093,10 +7194,10 @@ class GovData( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -7144,17 +7245,17 @@ class GovData( Fetcher ):
 		    Retrieves collection from the configured provider and returns normalized response data.
 
 		Args:
-		    collection (str): Collection supplied by the caller.
+		    collection (str): Collection supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    page_size (int): Maximum number of records requested per page.
-		    offset_mark (str): Offset mark supplied by the caller.
+		    offset_mark (str): Offset mark supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -7217,19 +7318,19 @@ class GovData( Fetcher ):
 		    mode (str): Provider or loader operating mode selected for the request.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
 		    page_size (int): Maximum number of records requested per page.
-		    offset_mark (str): Offset mark supplied by the caller.
-		    sort_field (str): Sort field supplied by the caller.
-		    sort_order (str): Sort order supplied by the caller.
+		    offset_mark (str): Offset mark supplied by the caller and interpreted according to the method contract.
+		    sort_field (str): Sort field supplied by the caller and interpreted according to the method contract.
+		    sort_order (str): Sort order supplied by the caller and interpreted according to the method contract.
 		    package_id (str): Provider identifier of the target package resource.
-		    collection (str): Collection supplied by the caller.
+		    collection (str): Collection supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -7291,10 +7392,10 @@ class GovData( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -7340,21 +7441,21 @@ class StarChart( Fetcher ):
 	    image_url (Optional[str]): URL associated with the current image resource or endpoint.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    mode (Optional[str]): Current mode retained by the StarChart.
+	    mode (Optional[str]): Current mode retained by the StarChart workflow between related operations.
 	    query (Optional[str]): Most recent search text or model prompt submitted by the instance.
-	    ra (Optional[float]): Current ra retained by the StarChart.
-	    dec (Optional[float]): Current dec retained by the StarChart.
-	    zoom (Optional[int]): Current zoom retained by the StarChart.
-	    image_source (Optional[str]): Current image source retained by the StarChart.
-	    box_color (Optional[str]): Current box color retained by the StarChart.
-	    show_box (Optional[bool]): Current show box retained by the StarChart.
-	    show_grid (Optional[bool]): Current show grid retained by the StarChart.
-	    show_lines (Optional[bool]): Current show lines retained by the StarChart.
-	    show_boundaries (Optional[bool]): Current show boundaries retained by the StarChart.
-	    show_const_names (Optional[bool]): Current show const names retained by the StarChart.
-	    width (Optional[int]): Current width retained by the StarChart.
-	    height (Optional[int]): Current height retained by the StarChart.
-	    magnitude (Optional[float]): Current magnitude retained by the StarChart.
+	    ra (Optional[float]): Current ra retained by the StarChart workflow between related operations.
+	    dec (Optional[float]): Current dec retained by the StarChart workflow between related operations.
+	    zoom (Optional[int]): Current zoom retained by the StarChart workflow between related operations.
+	    image_source (Optional[str]): Current image source retained by the StarChart workflow between related operations.
+	    box_color (Optional[str]): Current box color retained by the StarChart workflow between related operations.
+	    show_box (Optional[bool]): Current show box retained by the StarChart workflow between related operations.
+	    show_grid (Optional[bool]): Current show grid retained by the StarChart workflow between related operations.
+	    show_lines (Optional[bool]): Current show lines retained by the StarChart workflow between related operations.
+	    show_boundaries (Optional[bool]): Current show boundaries retained by the StarChart workflow between related operations.
+	    show_const_names (Optional[bool]): Current show const names retained by the StarChart workflow between related operations.
+	    width (Optional[int]): Current width retained by the StarChart workflow between related operations.
+	    height (Optional[int]): Current height retained by the StarChart workflow between related operations.
+	    magnitude (Optional[float]): Current magnitude retained by the StarChart workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    headers (Any): HTTP headers sent with the current request.
 	"""
@@ -7425,34 +7526,11 @@ class StarChart( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'search_url',
-				'link_url',
-				'image_url',
-				'url',
-				'params',
-				'mode',
-				'query',
-				'ra',
-				'dec',
-				'zoom',
-				'image_source',
-				'box_color',
-				'show_box',
-				'show_grid',
-				'show_lines',
-				'show_boundaries',
-				'show_const_names',
-				'width',
-				'height',
-				'magnitude',
-				'search_object',
-				'fetch_object_chart',
-				'fetch_coordinate_chart',
-				'fetch_static_chart',
-				'fetch',
-				'create_schema'
-		]
+		return [ 'search_url', 'link_url', 'image_url', 'url', 'params', 'mode', 'query', 'ra',
+			'dec', 'zoom', 'image_source', 'box_color', 'show_box', 'show_grid', 'show_lines',
+			'show_boundaries', 'show_const_names', 'width', 'height', 'magnitude', 'search_object',
+			'fetch_object_chart', 'fetch_coordinate_chart', 'fetch_static_chart', 'fetch',
+			'create_schema' ]
 	
 	def flag( self, value: bool, invert: bool = False ) -> int:
 		"""Flag.
@@ -7483,10 +7561,10 @@ class StarChart( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -7559,17 +7637,17 @@ class StarChart( Fetcher ):
 
 		Args:
 		    name (str): Argument name included in validation error messages.
-		    zoom (int): Zoom supplied by the caller.
-		    box_color (str): Box color supplied by the caller.
+		    zoom (int): Zoom supplied by the caller and interpreted according to the method contract.
+		    box_color (str): Box color supplied by the caller and interpreted according to the method contract.
 		    show_box (bool): Whether show box behavior is enabled for the operation.
-		    image_source (str): Image source supplied by the caller.
+		    image_source (str): Image source supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -7621,21 +7699,21 @@ class StarChart( Fetcher ):
 		    Retrieves coordinate chart from the configured provider and returns normalized response data.
 
 		Args:
-		    ra (float): Ra supplied by the caller.
-		    dec (float): Dec supplied by the caller.
-		    zoom (int): Zoom supplied by the caller.
-		    box_color (str): Box color supplied by the caller.
+		    ra (float): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (float): Dec supplied by the caller and interpreted according to the method contract.
+		    zoom (int): Zoom supplied by the caller and interpreted according to the method contract.
+		    box_color (str): Box color supplied by the caller and interpreted according to the method contract.
 		    show_box (bool): Whether show box behavior is enabled for the operation.
 		    show_grid (bool): Whether show grid behavior is enabled for the operation.
 		    show_lines (bool): Whether show lines behavior is enabled for the operation.
 		    show_boundaries (bool): Whether show boundaries behavior is enabled for the operation.
-		    image_source (str): Image source supplied by the caller.
+		    image_source (str): Image source supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'coordinate_chart'
@@ -7691,23 +7769,23 @@ class StarChart( Fetcher ):
 		    Retrieves static chart from the configured provider and returns normalized response data.
 
 		Args:
-		    ra (float): Ra supplied by the caller.
-		    dec (float): Dec supplied by the caller.
-		    zoom (int): Zoom supplied by the caller.
-		    image_source (str): Image source supplied by the caller.
+		    ra (float): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (float): Dec supplied by the caller and interpreted according to the method contract.
+		    zoom (int): Zoom supplied by the caller and interpreted according to the method contract.
+		    image_source (str): Image source supplied by the caller and interpreted according to the method contract.
 		    show_grid (bool): Whether show grid behavior is enabled for the operation.
 		    show_lines (bool): Whether show lines behavior is enabled for the operation.
 		    show_boundaries (bool): Whether show boundaries behavior is enabled for the operation.
 		    show_const_names (bool): Whether show const names behavior is enabled for the operation.
-		    width (int): Width supplied by the caller.
-		    height (int): Height supplied by the caller.
-		    magnitude (float): Magnitude supplied by the caller.
+		    width (int): Width supplied by the caller and interpreted according to the method contract.
+		    height (int): Height supplied by the caller and interpreted according to the method contract.
+		    magnitude (float): Magnitude supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'static_chart'
@@ -7774,26 +7852,26 @@ class StarChart( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    ra (float): Ra supplied by the caller.
-		    dec (float): Dec supplied by the caller.
-		    zoom (int): Zoom supplied by the caller.
-		    image_source (str): Image source supplied by the caller.
-		    box_color (str): Box color supplied by the caller.
+		    ra (float): Ra supplied by the caller and interpreted according to the method contract.
+		    dec (float): Dec supplied by the caller and interpreted according to the method contract.
+		    zoom (int): Zoom supplied by the caller and interpreted according to the method contract.
+		    image_source (str): Image source supplied by the caller and interpreted according to the method contract.
+		    box_color (str): Box color supplied by the caller and interpreted according to the method contract.
 		    show_box (bool): Whether show box behavior is enabled for the operation.
 		    show_grid (bool): Whether show grid behavior is enabled for the operation.
 		    show_lines (bool): Whether show lines behavior is enabled for the operation.
 		    show_boundaries (bool): Whether show boundaries behavior is enabled for the operation.
 		    show_const_names (bool): Whether show const names behavior is enabled for the operation.
-		    width (int): Width supplied by the caller.
-		    height (int): Height supplied by the caller.
-		    magnitude (float): Magnitude supplied by the caller.
+		    width (int): Width supplied by the caller and interpreted according to the method contract.
+		    height (int): Height supplied by the caller and interpreted according to the method contract.
+		    magnitude (float): Magnitude supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			active_mode = (mode or 'object_chart').strip( ).lower( )
@@ -7859,10 +7937,10 @@ class StarChart( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -7904,22 +7982,22 @@ class Congress( Fetcher ):
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Dict[str, Any]]): Current payload retained by the Congress.
+	    payload (Optional[Dict[str, Any]]): Current payload retained by the Congress workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
-	    mode (Optional[str]): Current mode retained by the Congress.
-	    congress_number (Optional[int]): Current congress number retained by the Congress.
-	    bill_type (Optional[str]): Current bill type retained by the Congress.
-	    bill_number (Optional[int]): Current bill number retained by the Congress.
-	    law_type (Optional[str]): Current law type retained by the Congress.
-	    law_number (Optional[int]): Current law number retained by the Congress.
-	    report_type (Optional[str]): Current report type retained by the Congress.
-	    report_number (Optional[int]): Current report number retained by the Congress.
-	    offset (Optional[int]): Current offset retained by the Congress.
-	    limit (Optional[int]): Current limit retained by the Congress.
-	    sort (Optional[str]): Current sort retained by the Congress.
-	    from_date_time (Optional[str]): Current from date time retained by the Congress.
-	    to_date_time (Optional[str]): Current to date time retained by the Congress.
-	    conference (Optional[bool]): Current conference retained by the Congress.
+	    mode (Optional[str]): Current mode retained by the Congress workflow between related operations.
+	    congress_number (Optional[int]): Current congress number retained by the Congress workflow between related operations.
+	    bill_type (Optional[str]): Current bill type retained by the Congress workflow between related operations.
+	    bill_number (Optional[int]): Current bill number retained by the Congress workflow between related operations.
+	    law_type (Optional[str]): Current law type retained by the Congress workflow between related operations.
+	    law_number (Optional[int]): Current law number retained by the Congress workflow between related operations.
+	    report_type (Optional[str]): Current report type retained by the Congress workflow between related operations.
+	    report_number (Optional[int]): Current report number retained by the Congress workflow between related operations.
+	    offset (Optional[int]): Current offset retained by the Congress workflow between related operations.
+	    limit (Optional[int]): Current limit retained by the Congress workflow between related operations.
+	    sort (Optional[str]): Current sort retained by the Congress workflow between related operations.
+	    from_date_time (Optional[str]): Current from date time retained by the Congress workflow between related operations.
+	    to_date_time (Optional[str]): Current to date time retained by the Congress workflow between related operations.
+	    conference (Optional[bool]): Current conference retained by the Congress workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
 	    headers (Any): HTTP headers sent with the current request.
@@ -7992,47 +8070,13 @@ class Congress( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'api_key',
-				'base_url',
-				'url',
-				'params',
-				'payload',
-				'result',
-				'mode',
-				'congress_number',
-				'bill_type',
-				'bill_number',
-				'law_type',
-				'law_number',
-				'report_type',
-				'report_number',
-				'offset',
-				'limit',
-				'sort',
-				'from_date_time',
-				'to_date_time',
-				'conference',
-				'response',
-				'headers',
-				'agents',
-				'validate_limit',
-				'validate_offset',
-				'normalize_bill_type',
-				'normalize_law_type',
-				'normalize_report_type',
-				'build_params',
-				'request',
-				'fetch_congresses',
-				'fetch_bills',
-				'fetch_bill',
-				'fetch_laws',
-				'fetch_law',
-				'fetch_reports',
-				'fetch_report',
-				'fetch',
-				'create_schema'
-		]
+		return [ 'api_key', 'base_url', 'url', 'params', 'payload', 'result', 'mode',
+			'congress_number', 'bill_type', 'bill_number', 'law_type', 'law_number', 'report_type',
+			'report_number', 'offset', 'limit', 'sort', 'from_date_time', 'to_date_time',
+			'conference', 'response', 'headers', 'agents', 'validate_limit', 'validate_offset',
+			'normalize_bill_type', 'normalize_law_type', 'normalize_report_type', 'build_params',
+			'request', 'fetch_congresses', 'fetch_bills', 'fetch_bill', 'fetch_laws', 'fetch_law',
+			'fetch_reports', 'fetch_report', 'fetch', 'create_schema' ]
 	
 	def validate_limit( self, limit: int ) -> int:
 		"""Validate limit.
@@ -8047,7 +8091,7 @@ class Congress( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -8079,7 +8123,7 @@ class Congress( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if offset is None:
@@ -8106,13 +8150,13 @@ class Congress( Fetcher ):
 		    Normalizes bill type into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    bill_type (str): Bill type supplied by the caller.
+		    bill_type (str): Bill type supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( bill_type or '' ).strip( ).lower( )
@@ -8152,13 +8196,13 @@ class Congress( Fetcher ):
 		    Normalizes law type into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    law_type (str): Law type supplied by the caller.
+		    law_type (str): Law type supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( law_type or '' ).strip( ).lower( )
@@ -8186,13 +8230,13 @@ class Congress( Fetcher ):
 		    Normalizes report type into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    report_type (str): Report type supplied by the caller.
+		    report_type (str): Report type supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( report_type or '' ).strip( ).lower( )
@@ -8225,13 +8269,13 @@ class Congress( Fetcher ):
 		Args:
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    offset (int): Zero-based record offset used for pagination.
-		    sort (str): Sort supplied by the caller.
+		    sort (str): Sort supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -8268,14 +8312,14 @@ class Congress( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    url (str): Absolute endpoint or resource URL.
-		    params (Dict[str, Any]): Params supplied by the caller.
+		    params (Dict[str, Any]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -8328,10 +8372,10 @@ class Congress( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.url = f'{self.base_url}/congress'
@@ -8368,20 +8412,20 @@ class Congress( Fetcher ):
 		    Retrieves bills from the configured provider and returns normalized response data.
 
 		Args:
-		    congress (int): Congress supplied by the caller.
-		    bill_type (str): Bill type supplied by the caller.
+		    congress (int): Congress supplied by the caller and interpreted according to the method contract.
+		    bill_type (str): Bill type supplied by the caller and interpreted according to the method contract.
 		    offset (int): Zero-based record offset used for pagination.
 		    limit (int): Maximum number of records or characters permitted by the operation.
-		    sort (str): Sort supplied by the caller.
-		    from_date_time (str): From date time supplied by the caller.
-		    to_date_time (str): To date time supplied by the caller.
+		    sort (str): Sort supplied by the caller and interpreted according to the method contract.
+		    from_date_time (str): From date time supplied by the caller and interpreted according to the method contract.
+		    to_date_time (str): To date time supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'congress', congress )
@@ -8434,16 +8478,16 @@ class Congress( Fetcher ):
 		    Retrieves bill from the configured provider and returns normalized response data.
 
 		Args:
-		    congress (int): Congress supplied by the caller.
-		    bill_type (str): Bill type supplied by the caller.
-		    bill_number (int): Bill number supplied by the caller.
+		    congress (int): Congress supplied by the caller and interpreted according to the method contract.
+		    bill_type (str): Bill type supplied by the caller and interpreted according to the method contract.
+		    bill_number (int): Bill number supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'congress', congress )
@@ -8488,17 +8532,17 @@ class Congress( Fetcher ):
 		    Retrieves laws from the configured provider and returns normalized response data.
 
 		Args:
-		    congress (int): Congress supplied by the caller.
-		    law_type (str): Law type supplied by the caller.
+		    congress (int): Congress supplied by the caller and interpreted according to the method contract.
+		    law_type (str): Law type supplied by the caller and interpreted according to the method contract.
 		    offset (int): Zero-based record offset used for pagination.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'congress', congress )
@@ -8543,16 +8587,16 @@ class Congress( Fetcher ):
 		    Retrieves law from the configured provider and returns normalized response data.
 
 		Args:
-		    congress (int): Congress supplied by the caller.
-		    law_type (str): Law type supplied by the caller.
-		    law_number (int): Law number supplied by the caller.
+		    congress (int): Congress supplied by the caller and interpreted according to the method contract.
+		    law_type (str): Law type supplied by the caller and interpreted according to the method contract.
+		    law_number (int): Law number supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'congress', congress )
@@ -8597,18 +8641,18 @@ class Congress( Fetcher ):
 		    Retrieves reports from the configured provider and returns normalized response data.
 
 		Args:
-		    congress (int): Congress supplied by the caller.
-		    report_type (str): Report type supplied by the caller.
+		    congress (int): Congress supplied by the caller and interpreted according to the method contract.
+		    report_type (str): Report type supplied by the caller and interpreted according to the method contract.
 		    offset (int): Zero-based record offset used for pagination.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    conference (bool): Whether conference behavior is enabled for the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'congress', congress )
@@ -8658,16 +8702,16 @@ class Congress( Fetcher ):
 		    Retrieves report from the configured provider and returns normalized response data.
 
 		Args:
-		    congress (int): Congress supplied by the caller.
-		    report_type (str): Report type supplied by the caller.
-		    report_number (int): Report number supplied by the caller.
+		    congress (int): Congress supplied by the caller and interpreted according to the method contract.
+		    report_type (str): Report type supplied by the caller and interpreted according to the method contract.
+		    report_number (int): Report number supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'congress', congress )
@@ -8717,26 +8761,26 @@ class Congress( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    congress (int): Congress supplied by the caller.
-		    bill_type (str): Bill type supplied by the caller.
-		    bill_number (int): Bill number supplied by the caller.
-		    law_type (str): Law type supplied by the caller.
-		    law_number (int): Law number supplied by the caller.
-		    report_type (str): Report type supplied by the caller.
-		    report_number (int): Report number supplied by the caller.
+		    congress (int): Congress supplied by the caller and interpreted according to the method contract.
+		    bill_type (str): Bill type supplied by the caller and interpreted according to the method contract.
+		    bill_number (int): Bill number supplied by the caller and interpreted according to the method contract.
+		    law_type (str): Law type supplied by the caller and interpreted according to the method contract.
+		    law_number (int): Law number supplied by the caller and interpreted according to the method contract.
+		    report_type (str): Report type supplied by the caller and interpreted according to the method contract.
+		    report_number (int): Report number supplied by the caller and interpreted according to the method contract.
 		    offset (int): Zero-based record offset used for pagination.
 		    limit (int): Maximum number of records or characters permitted by the operation.
-		    sort (str): Sort supplied by the caller.
-		    from_date_time (str): From date time supplied by the caller.
-		    to_date_time (str): To date time supplied by the caller.
+		    sort (str): Sort supplied by the caller and interpreted according to the method contract.
+		    from_date_time (str): From date time supplied by the caller and interpreted according to the method contract.
+		    to_date_time (str): To date time supplied by the caller and interpreted according to the method contract.
 		    conference (bool): Whether conference behavior is enabled for the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -8835,10 +8879,10 @@ class Congress( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -8879,15 +8923,15 @@ class InternetArchive( Fetcher ):
 	    Searches Internet Archive metadata using generated query expressions and controlled paging.
 
 	Attributes:
-	    keywords (Optional[str]): Current keywords retained by the InternetArchive.
+	    keywords (Optional[str]): Current keywords retained by the InternetArchive workflow between related operations.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    response (Optional[Response]): Most recent raw response returned by the provider client.
-	    fields (Optional[List[str]]): Current fields retained by the InternetArchive.
+	    fields (Optional[List[str]]): Current fields retained by the InternetArchive workflow between related operations.
 	    rows (Optional[int]): Normalized rows returned by the most recent operation.
-	    page (Optional[int]): Current page retained by the InternetArchive.
-	    sort (Optional[str]): Current sort retained by the InternetArchive.
-	    media_type (Optional[str]): Current media type retained by the InternetArchive.
-	    collection (Optional[str]): Current collection retained by the InternetArchive.
+	    page (Optional[int]): Current page retained by the InternetArchive workflow between related operations.
+	    sort (Optional[str]): Current sort retained by the InternetArchive workflow between related operations.
+	    media_type (Optional[str]): Current media type retained by the InternetArchive workflow between related operations.
+	    collection (Optional[str]): Current collection retained by the InternetArchive workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    headers (Any): HTTP headers sent with the current request.
@@ -8952,22 +8996,8 @@ class InternetArchive( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'keywords',
-				'url',
-				'timeout',
-				'headers',
-				'fields',
-				'rows',
-				'page',
-				'sort',
-				'media_type',
-				'collection',
-				'params',
-				'agents',
-				'fetch',
-				'create_schema'
-		]
+		return [ 'keywords', 'url', 'timeout', 'headers', 'fields', 'rows', 'page', 'sort',
+			'media_type', 'collection', 'params', 'agents', 'fetch', 'create_schema' ]
 	
 	def validate_rows( self, rows: int ) -> int:
 		"""Validate rows.
@@ -8982,7 +9012,7 @@ class InternetArchive( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = int( rows )
@@ -9012,7 +9042,7 @@ class InternetArchive( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = int( page )
@@ -9037,15 +9067,15 @@ class InternetArchive( Fetcher ):
 		    Constructs the query payload required by the downstream provider or loader.
 
 		Args:
-		    keywords (str): Keywords supplied by the caller.
-		    media_type (str): Media type supplied by the caller.
-		    collection (str): Collection supplied by the caller.
+		    keywords (str): Keywords supplied by the caller and interpreted according to the method contract.
+		    media_type (str): Media type supplied by the caller and interpreted according to the method contract.
+		    collection (str): Collection supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'keywords', keywords )
@@ -9081,20 +9111,20 @@ class InternetArchive( Fetcher ):
 		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
-		    keywords (str): Keywords supplied by the caller.
-		    fields (List[str] | None): Fields supplied by the caller.
+		    keywords (str): Keywords supplied by the caller and interpreted according to the method contract.
+		    fields (List[str] | None): Fields supplied by the caller and interpreted according to the method contract.
 		    rows (int): Maximum number of records requested from the provider.
 		    page (int): One-based result page requested from the provider.
-		    sort (str): Sort supplied by the caller.
-		    media_type (str): Media type supplied by the caller.
-		    collection (str): Collection supplied by the caller.
+		    sort (str): Sort supplied by the caller and interpreted according to the method contract.
+		    media_type (str): Media type supplied by the caller and interpreted according to the method contract.
+		    collection (str): Collection supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.keywords = str( keywords ).strip( )
@@ -9167,10 +9197,10 @@ class InternetArchive( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -9214,20 +9244,20 @@ class OpenWeather( Fetcher ):
 	Attributes:
 	    geocode_url (Optional[str]): URL associated with the current geocode resource or endpoint.
 	    forecast_url (Optional[str]): URL associated with the current forecast resource or endpoint.
-	    location (Optional[str]): Current location retained by the OpenWeather.
-	    latitude (Optional[float]): Current latitude retained by the OpenWeather.
-	    longitude (Optional[float]): Current longitude retained by the OpenWeather.
-	    timezone (Optional[str]): Current timezone retained by the OpenWeather.
-	    mode (Optional[str]): Current mode retained by the OpenWeather.
-	    current_metrics (Optional[List[str]]): Current current metrics retained by the OpenWeather.
-	    hourly_metrics (Optional[List[str]]): Current hourly metrics retained by the OpenWeather.
-	    daily_metrics (Optional[List[str]]): Current daily metrics retained by the OpenWeather.
-	    windspeed_unit (Optional[str]): Current windspeed unit retained by the OpenWeather.
-	    temperature_unit (Optional[str]): Current temperature unit retained by the OpenWeather.
-	    precipitation_unit (Optional[str]): Current precipitation unit retained by the OpenWeather.
+	    location (Optional[str]): Current location retained by the OpenWeather workflow between related operations.
+	    latitude (Optional[float]): Current latitude retained by the OpenWeather workflow between related operations.
+	    longitude (Optional[float]): Current longitude retained by the OpenWeather workflow between related operations.
+	    timezone (Optional[str]): Current timezone retained by the OpenWeather workflow between related operations.
+	    mode (Optional[str]): Current mode retained by the OpenWeather workflow between related operations.
+	    current_metrics (Optional[List[str]]): Current current metrics retained by the OpenWeather workflow between related operations.
+	    hourly_metrics (Optional[List[str]]): Current hourly metrics retained by the OpenWeather workflow between related operations.
+	    daily_metrics (Optional[List[str]]): Current daily metrics retained by the OpenWeather workflow between related operations.
+	    windspeed_unit (Optional[str]): Current windspeed unit retained by the OpenWeather workflow between related operations.
+	    temperature_unit (Optional[str]): Current temperature unit retained by the OpenWeather workflow between related operations.
+	    precipitation_unit (Optional[str]): Current precipitation unit retained by the OpenWeather workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    geocode_params (Optional[Dict[str, Any]]): Current geocode params retained by the OpenWeather.
-	    result_limit (Optional[int]): Current result limit retained by the OpenWeather.
+	    geocode_params (Optional[Dict[str, Any]]): Current geocode params retained by the OpenWeather workflow between related operations.
+	    result_limit (Optional[int]): Current result limit retained by the OpenWeather workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    headers (Any): HTTP headers sent with the current request.
 	"""
@@ -9274,67 +9304,25 @@ class OpenWeather( Fetcher ):
 		self.precipitation_unit = 'inch'
 		self.geocode_params = None
 		self.params = None
-		
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 		
-		self.current_metrics = [
-				'temperature_2m',
-				'relative_humidity_2m',
-				'apparent_temperature',
-				'is_day',
-				'precipitation',
-				'rain',
-				'showers',
-				'snowfall',
-				'weather_code',
-				'cloud_cover',
-				'pressure_msl',
-				'surface_pressure',
-				'wind_speed_10m',
-				'wind_direction_10m',
-				'wind_gusts_10m'
-		]
+		self.current_metrics = [ 'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
+			'is_day', 'precipitation', 'rain', 'showers', 'snowfall', 'weather_code',
+			'cloud_cover',
+			'pressure_msl', 'surface_pressure', 'wind_speed_10m', 'wind_direction_10m',
+			'wind_gusts_10m' ]
 		
-		self.hourly_metrics = [
-				'temperature_2m',
-				'relative_humidity_2m',
-				'apparent_temperature',
-				'precipitation_probability',
-				'precipitation',
-				'rain',
-				'showers',
-				'snowfall',
-				'weather_code',
-				'cloud_cover',
-				'pressure_msl',
-				'surface_pressure',
-				'visibility',
-				'wind_speed_10m',
-				'wind_direction_10m',
-				'wind_gusts_10m'
-		]
+		self.hourly_metrics = [ 'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
+			'precipitation_probability', 'precipitation', 'rain', 'showers', 'snowfall',
+			'weather_code', 'cloud_cover', 'pressure_msl', 'surface_pressure', 'visibility',
+			'wind_speed_10m', 'wind_direction_10m', 'wind_gusts_10m' ]
 		
-		self.daily_metrics = [
-				'weather_code',
-				'temperature_2m_max',
-				'temperature_2m_min',
-				'apparent_temperature_max',
-				'apparent_temperature_min',
-				'sunrise',
-				'sunset',
-				'daylight_duration',
-				'sunshine_duration',
-				'precipitation_sum',
-				'rain_sum',
-				'showers_sum',
-				'snowfall_sum',
-				'precipitation_hours',
-				'precipitation_probability_max',
-				'wind_speed_10m_max',
-				'wind_gusts_10m_max',
-				'wind_direction_10m_dominant'
-		]
+		self.daily_metrics = [ 'weather_code', 'temperature_2m_max', 'temperature_2m_min',
+			'apparent_temperature_max', 'apparent_temperature_min', 'sunrise', 'sunset',
+			'daylight_duration', 'sunshine_duration', 'precipitation_sum', 'rain_sum',
+			'showers_sum', 'snowfall_sum', 'precipitation_hours', 'precipitation_probability_max',
+			'wind_speed_10m_max', 'wind_gusts_10m_max', 'wind_direction_10m_dominant' ]
 	
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
@@ -9345,30 +9333,11 @@ class OpenWeather( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'geocode_url',
-				'forecast_url',
-				'location',
-				'latitude',
-				'longitude',
-				'timezone',
-				'mode',
-				'current_metrics',
-				'hourly_metrics',
-				'daily_metrics',
-				'windspeed_unit',
-				'temperature_unit',
-				'precipitation_unit',
-				'params',
-				'geocode_params',
-				'result_limit',
-				'geocode_location',
-				'fetch',
-				'fetch_current',
-				'fetch_hourly',
-				'fetch_daily',
-				'create_schema'
-		]
+		return [ 'geocode_url', 'forecast_url', 'location', 'latitude', 'longitude', 'timezone',
+			'mode', 'current_metrics', 'hourly_metrics', 'daily_metrics', 'windspeed_unit',
+			'temperature_unit', 'precipitation_unit', 'params', 'geocode_params', 'result_limit',
+			'geocode_location', 'fetch', 'fetch_current', 'fetch_hourly', 'fetch_daily',
+			'create_schema' ]
 	
 	def geocode_location( self, location: str, count: int=10 ) -> Dict[ str, Any ] | None:
 		"""Geocode location.
@@ -9377,30 +9346,23 @@ class OpenWeather( Fetcher ):
 		    Resolves location through the configured geocoding service and returns geographic results.
 
 		Args:
-		    location (str): Location supplied by the caller.
-		    count (int): Count supplied by the caller.
+		    location (str): Location supplied by the caller and interpreted according to the method contract.
+		    count (int): Count supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'location', location )
 			self.location = location.strip( )
-			self.geocode_params = {
-					'name': self.location,
-					'count': int( count )
-			}
+			self.geocode_params = { 'name': self.location, 'count': int( count ) }
 			
 			self.url = self.geocode_url
-			self.response = requests.get(
-				self.url,
-				params=self.geocode_params,
-				headers=self.headers,
-				timeout=20
-			)
+			self.response = requests.get( self.url, params=self.geocode_params,
+				headers=self.headers, timeout=20 )
 			self.response.raise_for_status( )
 			
 			payload = self.response.json( ) or { }
@@ -9423,10 +9385,7 @@ class OpenWeather( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
-			exception.method = (
-					'geocode_location( self, location: str, count: int=10 ) '
-					'-> Dict[ str, Any ]'
-			)
+			exception.method = 'geocode_location( self, **kwargs ) -> Dict[str, Any]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -9439,67 +9398,48 @@ class OpenWeather( Fetcher ):
 
 		Args:
 		    lat (float): Geographic lat expressed in decimal degrees.
-		    long (float): Long supplied by the caller.
-		    zone (str): Zone supplied by the caller.
-		    past_days (int): Past days supplied by the caller.
+		    long (float): Long supplied by the caller and interpreted according to the method contract.
+		    zone (str): Zone supplied by the caller and interpreted according to the method contract.
+		    past_days (int): Past days supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'lat', lat )
 			throw_if( 'long', long )
 			throw_if( 'zone', zone )
-			
 			self.mode = 'current'
 			self.latitude = float( lat )
 			self.longitude = float( long )
 			self.timezone = str( zone or 'auto' ).strip( )
 			
-			self.params = {
-					'latitude': self.latitude,
-					'longitude': self.longitude,
-					'current': self.current_metrics,
-					'timezone': self.timezone,
-					'temperature_unit': self.temperature_unit,
-					'wind_speed_unit': self.windspeed_unit,
-					'precipitation_unit': self.precipitation_unit,
-					'past_days': int( past_days )
-			}
+			self.params = { 'latitude': self.latitude, 'longitude': self.longitude,
+				'current': self.current_metrics, 'timezone': self.timezone,
+				'temperature_unit': self.temperature_unit, 'wind_speed_unit': self.windspeed_unit,
+				'precipitation_unit': self.precipitation_unit, 'past_days': int( past_days ) }
 			
 			self.url = self.forecast_url
-			self.response = requests.get(
-				self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=30
-			)
+			self.response = requests.get( self.url, params=self.params, headers=self.headers,
+				timeout=30 )
 			self.response.raise_for_status( )
 			
 			payload = self.response.json( ) or { }
 			
-			return {
-					'mode': self.mode,
-					'location': self.location,
-					'latitude': payload.get( 'latitude', self.latitude ),
-					'longitude': payload.get( 'longitude', self.longitude ),
-					'timezone': payload.get( 'timezone', self.timezone ),
-					'url': self.url,
-					'params': self.params,
-					'data': payload
-			}
+			return { 'mode': self.mode, 'location': self.location,
+				'latitude': payload.get( 'latitude', self.latitude ),
+				'longitude': payload.get( 'longitude', self.longitude ),
+				'timezone': payload.get( 'timezone', self.timezone ), 'url': self.url,
+				'params': self.params, 'data': payload }
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
-			exception.method = (
-					'fetch_current( self, lat: float, long: float, zone: str=auto, '
-					'past_days: int=0 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_current( self, **kwargs ) -> Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -9512,69 +9452,48 @@ class OpenWeather( Fetcher ):
 
 		Args:
 		    lat (float): Geographic lat expressed in decimal degrees.
-		    long (float): Long supplied by the caller.
-		    zone (str): Zone supplied by the caller.
-		    forecast_days (int): Forecast days supplied by the caller.
-		    past_days (int): Past days supplied by the caller.
+		    long (float): Long supplied by the caller and interpreted according to the method contract.
+		    zone (str): Zone supplied by the caller and interpreted according to the method contract.
+		    forecast_days (int): Forecast days supplied by the caller and interpreted according to the method contract.
+		    past_days (int): Past days supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'lat', lat )
 			throw_if( 'long', long )
 			throw_if( 'zone', zone )
-			
 			self.mode = 'hourly'
 			self.latitude = float( lat )
 			self.longitude = float( long )
 			self.timezone = str( zone or 'auto' ).strip( )
-			
-			self.params = {
-					'latitude': self.latitude,
-					'longitude': self.longitude,
-					'hourly': self.hourly_metrics,
-					'timezone': self.timezone,
-					'forecast_days': int( forecast_days ),
-					'past_days': int( past_days ),
-					'temperature_unit': self.temperature_unit,
-					'wind_speed_unit': self.windspeed_unit,
-					'precipitation_unit': self.precipitation_unit
-			}
+			self.params = { 'latitude': self.latitude, 'longitude': self.longitude,
+				'hourly': self.hourly_metrics, 'timezone': self.timezone,
+				'forecast_days': int( forecast_days ), 'past_days': int( past_days ),
+				'temperature_unit': self.temperature_unit, 'wind_speed_unit': self.windspeed_unit,
+				'precipitation_unit': self.precipitation_unit }
 			
 			self.url = self.forecast_url
-			self.response = requests.get(
-				self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=30
-			)
+			self.response = requests.get( self.url, params=self.params, headers=self.headers,
+				timeout=30 )
 			self.response.raise_for_status( )
-			
 			payload = self.response.json( ) or { }
 			
-			return {
-					'mode': self.mode,
-					'location': self.location,
-					'latitude': payload.get( 'latitude', self.latitude ),
-					'longitude': payload.get( 'longitude', self.longitude ),
-					'timezone': payload.get( 'timezone', self.timezone ),
-					'url': self.url,
-					'params': self.params,
-					'data': payload
-			}
+			return { 'mode': self.mode, 'location': self.location,
+				'latitude': payload.get( 'latitude', self.latitude ),
+				'longitude': payload.get( 'longitude', self.longitude ),
+				'timezone': payload.get( 'timezone', self.timezone ), 'url': self.url,
+				'params': self.params, 'data': payload }
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
-			exception.method = (
-					'fetch_hourly( self, lat: float, long: float, zone: str=auto, '
-					'forecast_days: int=7, past_days: int=0 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_hourly( self, **kwargs  ) -> Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -9587,69 +9506,47 @@ class OpenWeather( Fetcher ):
 
 		Args:
 		    lat (float): Geographic lat expressed in decimal degrees.
-		    long (float): Long supplied by the caller.
-		    zone (str): Zone supplied by the caller.
-		    forecast_days (int): Forecast days supplied by the caller.
-		    past_days (int): Past days supplied by the caller.
+		    long (float): Long supplied by the caller and interpreted according to the method contract.
+		    zone (str): Zone supplied by the caller and interpreted according to the method contract.
+		    forecast_days (int): Forecast days supplied by the caller and interpreted according to the method contract.
+		    past_days (int): Past days supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'lat', lat )
 			throw_if( 'long', long )
 			throw_if( 'zone', zone )
-			
 			self.mode = 'daily'
 			self.latitude = float( lat )
 			self.longitude = float( long )
 			self.timezone = str( zone or 'auto' ).strip( )
-			
-			self.params = {
-					'latitude': self.latitude,
-					'longitude': self.longitude,
-					'daily': self.daily_metrics,
-					'timezone': self.timezone,
-					'forecast_days': int( forecast_days ),
-					'past_days': int( past_days ),
-					'temperature_unit': self.temperature_unit,
-					'wind_speed_unit': self.windspeed_unit,
-					'precipitation_unit': self.precipitation_unit
-			}
+			self.params = { 'latitude': self.latitude, 'longitude': self.longitude,
+				'daily': self.daily_metrics, 'timezone': self.timezone,
+				'forecast_days': int( forecast_days ), 'past_days': int( past_days ),
+				'temperature_unit': self.temperature_unit, 'wind_speed_unit': self.windspeed_unit,
+				'precipitation_unit': self.precipitation_unit }
 			
 			self.url = self.forecast_url
-			self.response = requests.get(
-				self.url,
-				params=self.params,
-				headers=self.headers,
-				timeout=30
-			)
+			self.response = requests.get( self.url, params=self.params, headers=self.headers,
+				timeout=30 )
 			self.response.raise_for_status( )
-			
 			payload = self.response.json( ) or { }
-			
-			return {
-					'mode': self.mode,
-					'location': self.location,
-					'latitude': payload.get( 'latitude', self.latitude ),
-					'longitude': payload.get( 'longitude', self.longitude ),
-					'timezone': payload.get( 'timezone', self.timezone ),
-					'url': self.url,
-					'params': self.params,
-					'data': payload
-			}
+			return { 'mode': self.mode, 'location': self.location,
+				'latitude': payload.get( 'latitude', self.latitude ),
+				'longitude': payload.get( 'longitude', self.longitude ),
+				'timezone': payload.get( 'timezone', self.timezone ), 'url': self.url,
+				'params': self.params, 'data': payload }
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
-			exception.method = (
-					'fetch_daily( self, lat: float, long: float, zone: str=auto, '
-					'forecast_days: int=7, past_days: int=0 ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch_daily( self, **kwargs ) -> Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -9662,95 +9559,64 @@ class OpenWeather( Fetcher ):
 		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
-		    location (str): Location supplied by the caller.
+		    location (str): Location supplied by the caller and interpreted according to the method contract.
 		    mode (str): Provider or loader operating mode selected for the request.
-		    zone (str): Zone supplied by the caller.
-		    forecast_days (int): Forecast days supplied by the caller.
-		    past_days (int): Past days supplied by the caller.
-		    count (int): Count supplied by the caller.
+		    zone (str): Zone supplied by the caller and interpreted according to the method contract.
+		    forecast_days (int): Forecast days supplied by the caller and interpreted according to the method contract.
+		    past_days (int): Past days supplied by the caller and interpreted according to the method contract.
+		    count (int): Count supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'location', location )
 			throw_if( 'mode', mode )
 			throw_if( 'zone', zone )
-			
 			selected = self.geocode_location( location=location, count=count )
-			
 			if not selected:
-				return {
-						'location': location,
-						'mode': mode,
-						'message': 'No geocoding results found.',
-						'data': { }
-				}
+				return { 'location': location, 'mode': mode,
+					'message': 'No geocoding results found.', 'data': { } }
 			
 			lat = selected.get( 'latitude', None )
 			long = selected.get( 'longitude', None )
-			
 			if lat is None or long is None:
-				return {
-						'location': location,
-						'mode': mode,
-						'message': 'Geocoding returned no usable coordinates.',
-						'geocoding': selected,
-						'data': { }
-				}
+				return { 'location': location, 'mode': mode,
+					'message': 'Geocoding returned no usable coordinates.', 'geocoding': selected,
+					'data': { } }
 			
 			active_mode = str( mode ).strip( ).lower( )
 			if active_mode == 'current':
-				result = self.fetch_current(
-					lat=float( lat ),
-					long=float( long ),
-					zone=str( zone or 'auto' ).strip( ),
-					past_days=int( past_days )
-				) or { }
+				result = self.fetch_current( lat=float( lat ), long=float( long ),
+					zone=str( zone or 'auto' ).strip( ), past_days=int( past_days ) ) or { }
 			
 			elif active_mode == 'hourly':
-				result = self.fetch_hourly(
-					lat=float( lat ),
-					long=float( long ),
-					zone=str( zone or 'auto' ).strip( ),
-					forecast_days=int( forecast_days ),
-					past_days=int( past_days )
-				) or { }
+				result = self.fetch_hourly( lat=float( lat ), long=float( long ),
+					zone=str( zone or 'auto' ).strip( ), forecast_days=int( forecast_days ),
+					past_days=int( past_days ) ) or { }
 			
 			elif active_mode == 'daily':
-				result = self.fetch_daily(
-					lat=float( lat ),
-					long=float( long ),
-					zone=str( zone or 'auto' ).strip( ),
-					forecast_days=int( forecast_days ),
-					past_days=int( past_days )
-				) or { }
+				result = self.fetch_daily( lat=float( lat ), long=float( long ),
+					zone=str( zone or 'auto' ).strip( ), forecast_days=int( forecast_days ),
+					past_days=int( past_days ) ) or { }
 			
 			else:
-				raise ValueError(
-					"Unsupported mode. Use 'current', 'hourly', or 'daily'."
-				)
+				raise ValueError( "Unsupported mode. Use 'current', 'hourly', or 'daily'." )
 			
 			result[ 'geocoding' ] = selected
 			return result
-		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
-			exception.method = (
-					'fetch( self, location: str, mode: str=current, zone: str=auto, '
-					'forecast_days: int=7, past_days: int=0, count: int=10 ) '
-					'-> Dict[ str, Any ]'
-			)
+			exception.method = 'fetch( self, location: str, **kwargs) -> Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
-	def create_schema( self, function: str, tool: str,
-			description: str, parameters: dict,
+	def create_schema( self, function: str, tool: str, description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""Create schema.
 
@@ -9765,10 +9631,10 @@ class OpenWeather( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -9793,10 +9659,7 @@ class OpenWeather( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenWeather'
-			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
-			)
+			exception.method = 'create_schema( self, **kwargs ) -> Dict[ str, str ]'
 			Logger( ).write( exception )
 			raise exception
 
@@ -9809,19 +9672,19 @@ class HistoricalWeather( Fetcher ):
 	Attributes:
 	    geocode_url (Optional[str]): URL associated with the current geocode resource or endpoint.
 	    archive_url (Optional[str]): URL associated with the current archive resource or endpoint.
-	    location (Optional[str]): Current location retained by the HistoricalWeather.
-	    latitude (Optional[float]): Current latitude retained by the HistoricalWeather.
-	    longitude (Optional[float]): Current longitude retained by the HistoricalWeather.
-	    timezone (Optional[str]): Current timezone retained by the HistoricalWeather.
-	    target_date (Optional[dt.date]): Current target date retained by the HistoricalWeather.
-	    daily_metrics (Optional[List[str]]): Current daily metrics retained by the HistoricalWeather.
-	    hourly_metrics (Optional[List[str]]): Current hourly metrics retained by the HistoricalWeather.
-	    windspeed_unit (Optional[str]): Current windspeed unit retained by the HistoricalWeather.
-	    temperature_unit (Optional[str]): Current temperature unit retained by the HistoricalWeather.
-	    precipitation_unit (Optional[str]): Current precipitation unit retained by the HistoricalWeather.
+	    location (Optional[str]): Current location retained by the HistoricalWeather workflow between related operations.
+	    latitude (Optional[float]): Current latitude retained by the HistoricalWeather workflow between related operations.
+	    longitude (Optional[float]): Current longitude retained by the HistoricalWeather workflow between related operations.
+	    timezone (Optional[str]): Current timezone retained by the HistoricalWeather workflow between related operations.
+	    target_date (Optional[dt.date]): Current target date retained by the HistoricalWeather workflow between related operations.
+	    daily_metrics (Optional[List[str]]): Current daily metrics retained by the HistoricalWeather workflow between related operations.
+	    hourly_metrics (Optional[List[str]]): Current hourly metrics retained by the HistoricalWeather workflow between related operations.
+	    windspeed_unit (Optional[str]): Current windspeed unit retained by the HistoricalWeather workflow between related operations.
+	    temperature_unit (Optional[str]): Current temperature unit retained by the HistoricalWeather workflow between related operations.
+	    precipitation_unit (Optional[str]): Current precipitation unit retained by the HistoricalWeather workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    geocode_params (Optional[Dict[str, Any]]): Current geocode params retained by the HistoricalWeather.
-	    result_limit (Optional[int]): Current result limit retained by the HistoricalWeather.
+	    geocode_params (Optional[Dict[str, Any]]): Current geocode params retained by the HistoricalWeather workflow between related operations.
+	    result_limit (Optional[int]): Current result limit retained by the HistoricalWeather workflow between related operations.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    headers (Any): HTTP headers sent with the current request.
 	"""
@@ -9871,73 +9734,31 @@ class HistoricalWeather( Fetcher ):
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
 		
-		self.daily_metrics = [
-				'weather_code',
-				'temperature_2m_max',
-				'temperature_2m_min',
-				'apparent_temperature_max',
-				'apparent_temperature_min',
-				'sunrise',
-				'sunset',
-				'daylight_duration',
-				'sunshine_duration',
-				'precipitation_sum',
-				'rain_sum',
-				'showers_sum',
-				'snowfall_sum',
-				'precipitation_hours',
-				'wind_speed_10m_max',
-				'wind_gusts_10m_max',
-				'wind_direction_10m_dominant'
-		]
+		self.daily_metrics = [ 'weather_code', 'temperature_2m_max', 'temperature_2m_min',
+			'apparent_temperature_max', 'apparent_temperature_min', 'sunrise', 'sunset',
+			'daylight_duration', 'sunshine_duration', 'precipitation_sum', 'rain_sum',
+			'showers_sum', 'snowfall_sum', 'precipitation_hours', 'wind_speed_10m_max',
+			'wind_gusts_10m_max', 'wind_direction_10m_dominant' ]
 		
-		self.hourly_metrics = [
-				'temperature_2m',
-				'relative_humidity_2m',
-				'apparent_temperature',
-				'precipitation',
-				'rain',
-				'showers',
-				'snowfall',
-				'weather_code',
-				'cloud_cover',
-				'pressure_msl',
-				'surface_pressure',
-				'wind_speed_10m',
-				'wind_direction_10m',
-				'wind_gusts_10m'
-		]
+		self.hourly_metrics = [ 'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
+			'precipitation', 'rain', 'showers', 'snowfall', 'weather_code', 'cloud_cover',
+			'pressure_msl', 'surface_pressure', 'wind_speed_10m', 'wind_direction_10m',
+			'wind_gusts_10m' ]
 	
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools,
+		    and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'geocode_url',
-				'archive_url',
-				'location',
-				'latitude',
-				'longitude',
-				'timezone',
-				'target_date',
-				'daily_metrics',
-				'hourly_metrics',
-				'windspeed_unit',
-				'temperature_unit',
-				'precipitation_unit',
-				'params',
-				'geocode_params',
-				'result_limit',
-				'fetch',
-				'geocode_location',
-				'fetch_historical',
-				'create_schema'
-		]
+		return [ 'geocode_url', 'archive_url', 'location', 'latitude', 'longitude', 'timezone',
+			'target_date', 'daily_metrics', 'hourly_metrics', 'windspeed_unit', 'temperature_unit',
+			'precipitation_unit', 'params', 'geocode_params', 'result_limit', 'fetch',
+			'geocode_location', 'fetch_historical', 'create_schema' ]
 	
 	def geocode_location( self, location: str, count: int=10 ) -> Dict[ str, Any ] | None:
 		"""Geocode location.
@@ -9946,42 +9767,32 @@ class HistoricalWeather( Fetcher ):
 		    Resolves location through the configured geocoding service and returns geographic results.
 
 		Args:
-		    location (str): Location supplied by the caller.
-		    count (int): Count supplied by the caller.
+		    location (str): Location supplied by the caller and interpreted according to the method contract.
+		    count (int): Count supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'location', location )
 			self.location = location.strip( )
-			self.geocode_params = {
-					'name': self.location,
-					'count': int( count )
-			}
+			self.geocode_params = { 'name': self.location, 'count': int( count ) }
 			
 			self.url = self.geocode_url
-			self.response = requests.get(
-				self.url,
-				params=self.geocode_params,
-				headers=self.headers,
-				timeout=20
-			)
+			self.response = requests.get( self.url, params=self.geocode_params,
+				headers=self.headers, timeout=20 )
 			self.response.raise_for_status( )
-			
 			payload = self.response.json( ) or { }
 			results = payload.get( 'results', [ ] ) or [ ]
-			
 			if not results:
 				return None
 			
 			selected = results[ 0 ]
 			self.latitude = selected.get( 'latitude', None )
 			self.longitude = selected.get( 'longitude', None )
-			
 			resolved_timezone = selected.get( 'timezone', None )
 			if resolved_timezone:
 				self.timezone = resolved_timezone
@@ -9992,10 +9803,7 @@ class HistoricalWeather( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'HistoricalWeather'
-			exception.method = (
-					'geocode_location( self, location: str, count: int=10 ) '
-					'-> Dict[ str, Any ]'
-			)
+			exception.method = 'geocode_location( self, **kwargs ) -> Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -10008,15 +9816,15 @@ class HistoricalWeather( Fetcher ):
 
 		Args:
 		    lat (float): Geographic lat expressed in decimal degrees.
-		    long (float): Long supplied by the caller.
-		    date (dt.date): Date supplied by the caller.
-		    zone (str): Zone supplied by the caller.
+		    long (float): Long supplied by the caller and interpreted according to the method contract.
+		    date (dt.date): Date supplied by the caller and interpreted according to the method contract.
+		    zone (str): Zone supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'lat', lat )
@@ -10083,16 +9891,16 @@ class HistoricalWeather( Fetcher ):
 		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
-		    location (str): Location supplied by the caller.
-		    date (dt.date): Date supplied by the caller.
-		    zone (str): Zone supplied by the caller.
-		    count (int): Count supplied by the caller.
+		    location (str): Location supplied by the caller and interpreted according to the method contract.
+		    date (dt.date): Date supplied by the caller and interpreted according to the method contract.
+		    zone (str): Zone supplied by the caller and interpreted according to the method contract.
+		    count (int): Count supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'location', location )
@@ -10158,10 +9966,10 @@ class HistoricalWeather( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -10203,9 +10011,9 @@ class Grokipedia( Fetcher ):
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    client (Optional[GrokipediaClient]): Initialized provider SDK client used to execute API requests.
 	    query (Optional[str]): Most recent search text or model prompt submitted by the instance.
-	    page (Optional[str]): Current page retained by the Grokipedia.
-	    limit (Optional[int]): Current limit retained by the Grokipedia.
-	    offset (Optional[int]): Current offset retained by the Grokipedia.
+	    page (Optional[str]): Current page retained by the Grokipedia workflow between related operations.
+	    limit (Optional[int]): Current limit retained by the Grokipedia workflow between related operations.
+	    offset (Optional[int]): Current offset retained by the Grokipedia workflow between related operations.
 	    include_content (Optional[bool]): Flag controlling whether include content behavior is enabled.
 	    response (Optional[Dict[str, Any]]): Most recent raw response returned by the provider client.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
@@ -10258,22 +10066,9 @@ class Grokipedia( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'api_key',
-				'client',
-				'query',
-				'page',
-				'limit',
-				'offset',
-				'include_content',
-				'response',
-				'params',
-				'result',
-				'fetch_search',
-				'fetch_page',
-				'fetch',
-				'create_schema'
-		]
+		return [ 'api_key', 'client', 'query', 'page', 'limit', 'offset', 'include_content',
+			'response', 'params', 'result', 'fetch_search', 'fetch_page', 'fetch',
+			'create_schema' ]
 	
 	def fetch_search( self, query: str, limit: int=12,
 			offset: int=0 ) -> Dict[ str, Any ] | None:
@@ -10288,10 +10083,10 @@ class Grokipedia( Fetcher ):
 		    offset (int): Zero-based record offset used for pagination.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query', query )
@@ -10303,25 +10098,14 @@ class Grokipedia( Fetcher ):
 			self.offset = int( offset )
 			self.client = GrokipediaClient( )
 			self.url = 'grokipedia.search'
-			self.params = {
-					'query': self.query,
-					'limit': self.limit,
-					'offset': self.offset
-			}
+			self.params = { 'query': self.query, 'limit': self.limit, 'offset': self.offset }
 			
-			self.response = self.client.search(
-				query=self.query,
-				limit=self.limit,
-				offset=self.offset
-			)
+			self.response = self.client.search( query=self.query, limit=self.limit,
+				offset=self.offset )
 			
-			self.result = {
-					'mode': 'search',
-					'url': self.url,
-					'params': self.params,
-					'api_key_configured': bool( str( self.api_key or '' ).strip( ) ),
-					'data': self.response
-			}
+			self.result = { 'mode': 'search', 'url': self.url, 'params': self.params,
+				'api_key_configured': bool( str( self.api_key or '' ).strip( ) ),
+				'data': self.response }
 			
 			return self.result
 		
@@ -10345,35 +10129,22 @@ class Grokipedia( Fetcher ):
 		    include_content (bool): Whether include content behavior is enabled for the operation.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'page', page )
-			
 			self.page = str( page ).strip( )
 			self.include_content = bool( include_content )
 			self.client = GrokipediaClient( )
 			self.url = 'grokipedia.get_page'
-			self.params = {
-					'page': self.page,
-					'include_content': self.include_content
-			}
-			
-			self.response = self.client.get_page(
-				self.page,
-				include_content=self.include_content
-			)
-			
-			self.result = {
-					'mode': 'page',
-					'url': self.url,
-					'params': self.params,
-					'api_key_configured': bool( str( self.api_key or '' ).strip( ) ),
-					'data': self.response
-			}
+			self.params = { 'page': self.page, 'include_content': self.include_content }
+			self.response = self.client.get_page( self.page, include_content=self.include_content )
+			self.result = { 'mode': 'page', 'url': self.url, 'params': self.params,
+				'api_key_configured': bool( str( self.api_key or '' ).strip( ) ),
+				'data': self.response }
 			
 			return self.result
 		
@@ -10402,10 +10173,10 @@ class Grokipedia( Fetcher ):
 		    include_content (bool): Whether include content behavior is enabled for the operation.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -10444,10 +10215,10 @@ class Grokipedia( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -10491,18 +10262,18 @@ class GoogleGeocoding( Fetcher ):
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    url (Optional[str]): Most recent endpoint or resource URL used by the instance.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    mode (Optional[str]): Current mode retained by the GoogleGeocoding.
+	    mode (Optional[str]): Current mode retained by the GoogleGeocoding workflow between related operations.
 	    query (Optional[str]): Most recent search text or model prompt submitted by the instance.
-	    latitude (Optional[float]): Current latitude retained by the GoogleGeocoding.
-	    longitude (Optional[float]): Current longitude retained by the GoogleGeocoding.
+	    latitude (Optional[float]): Current latitude retained by the GoogleGeocoding workflow between related operations.
+	    longitude (Optional[float]): Current longitude retained by the GoogleGeocoding workflow between related operations.
 	    place_id (Optional[str]): Identifier of the current place resource.
-	    language (Optional[str]): Current language retained by the GoogleGeocoding.
-	    region (Optional[str]): Current region retained by the GoogleGeocoding.
-	    result_type (Optional[str]): Current result type retained by the GoogleGeocoding.
-	    location_type (Optional[str]): Current location type retained by the GoogleGeocoding.
+	    language (Optional[str]): Current language retained by the GoogleGeocoding workflow between related operations.
+	    region (Optional[str]): Current region retained by the GoogleGeocoding workflow between related operations.
+	    result_type (Optional[str]): Current result type retained by the GoogleGeocoding workflow between related operations.
+	    location_type (Optional[str]): Current location type retained by the GoogleGeocoding workflow between related operations.
 	    timeout (Optional[int]): Maximum request duration, in seconds, applied to provider calls.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
-	    payload (Optional[Any]): Current payload retained by the GoogleGeocoding.
+	    payload (Optional[Any]): Current payload retained by the GoogleGeocoding workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    response (Any): Most recent raw response returned by the provider client.
 	    headers (Any): HTTP headers sent with the current request.
@@ -10551,10 +10322,7 @@ class GoogleGeocoding( Fetcher ):
 		self.response = None
 		self.payload = { }
 		self.result = { }
-		self.headers = {
-				'Accept': 'application/json',
-				'User-Agent': self.agents
-		}
+		self.headers = { 'Accept': 'application/json', 'User-Agent': self.agents }
 	
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
@@ -10565,31 +10333,10 @@ class GoogleGeocoding( Fetcher ):
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'api_key',
-				'url',
-				'params',
-				'mode',
-				'query',
-				'latitude',
-				'longitude',
-				'place_id',
-				'language',
-				'region',
-				'result_type',
-				'location_type',
-				'timeout',
-				'agents',
-				'response',
-				'payload',
-				'result',
-				'request',
-				'fetch_forward',
-				'fetch_reverse',
-				'fetch_place',
-				'fetch',
-				'create_schema'
-		]
+		return [ 'api_key', 'url', 'params', 'mode', 'query', 'latitude', 'longitude', 'place_id',
+			'language', 'region', 'result_type', 'location_type', 'timeout', 'agents', 'response',
+			'payload', 'result', 'request', 'fetch_forward', 'fetch_reverse', 'fetch_place',
+			'fetch', 'create_schema' ]
 	
 	def request( self, params: Dict[ str, Any ], time: int=10,
 			api_key: Optional[ str ] = None ) -> Dict[ str, Any ] | None:
@@ -10599,15 +10346,15 @@ class GoogleGeocoding( Fetcher ):
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    params (Dict[str, Any]): Params supplied by the caller.
+		    params (Dict[str, Any]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
-		    api_key (Optional[str]): Api key supplied by the caller.
+		    api_key (Optional[str]): Api key supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'params', params )
@@ -10675,16 +10422,16 @@ class GoogleGeocoding( Fetcher ):
 
 		Args:
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    language (str): Language supplied by the caller.
-		    region (str): Region supplied by the caller.
+		    language (str): Language supplied by the caller and interpreted according to the method contract.
+		    region (str): Region supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
-		    api_key (Optional[str]): Api key supplied by the caller.
+		    api_key (Optional[str]): Api key supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query', query )
@@ -10731,17 +10478,17 @@ class GoogleGeocoding( Fetcher ):
 		Args:
 		    latitude (float): Geographic latitude expressed in decimal degrees.
 		    longitude (float): Geographic longitude expressed in decimal degrees.
-		    language (str): Language supplied by the caller.
-		    result_type (str): Result type supplied by the caller.
-		    location_type (str): Location type supplied by the caller.
+		    language (str): Language supplied by the caller and interpreted according to the method contract.
+		    result_type (str): Result type supplied by the caller and interpreted according to the method contract.
+		    location_type (str): Location type supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
-		    api_key (Optional[str]): Api key supplied by the caller.
+		    api_key (Optional[str]): Api key supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'latitude', latitude )
@@ -10792,16 +10539,16 @@ class GoogleGeocoding( Fetcher ):
 
 		Args:
 		    place_id (str): Provider identifier of the target place resource.
-		    language (str): Language supplied by the caller.
-		    region (str): Region supplied by the caller.
+		    language (str): Language supplied by the caller and interpreted according to the method contract.
+		    region (str): Region supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
-		    api_key (Optional[str]): Api key supplied by the caller.
+		    api_key (Optional[str]): Api key supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'place_id', place_id )
@@ -10852,18 +10599,18 @@ class GoogleGeocoding( Fetcher ):
 		    latitude (float): Geographic latitude expressed in decimal degrees.
 		    longitude (float): Geographic longitude expressed in decimal degrees.
 		    place_id (str): Provider identifier of the target place resource.
-		    language (str): Language supplied by the caller.
-		    region (str): Region supplied by the caller.
-		    result_type (str): Result type supplied by the caller.
-		    location_type (str): Location type supplied by the caller.
+		    language (str): Language supplied by the caller and interpreted according to the method contract.
+		    region (str): Region supplied by the caller and interpreted according to the method contract.
+		    result_type (str): Result type supplied by the caller and interpreted according to the method contract.
+		    location_type (str): Location type supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
-		    api_key (Optional[str]): Api key supplied by the caller.
+		    api_key (Optional[str]): Api key supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -10926,10 +10673,10 @@ class GoogleGeocoding( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -10972,15 +10719,15 @@ class CensusData( Fetcher ):
 	Attributes:
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    year (Optional[str]): Current year retained by the CensusData.
-	    dataset (Optional[str]): Current dataset retained by the CensusData.
-	    mode (Optional[str]): Current mode retained by the CensusData.
-	    fields (Optional[List[str]]): Current fields retained by the CensusData.
-	    geography_for (Optional[str]): Current geography for retained by the CensusData.
-	    geography_in (Optional[str]): Current geography in retained by the CensusData.
-	    predicates (Optional[Dict[str, Any]]): Current predicates retained by the CensusData.
+	    year (Optional[str]): Current year retained by the CensusData workflow between related operations.
+	    dataset (Optional[str]): Current dataset retained by the CensusData workflow between related operations.
+	    mode (Optional[str]): Current mode retained by the CensusData workflow between related operations.
+	    fields (Optional[List[str]]): Current fields retained by the CensusData workflow between related operations.
+	    geography_for (Optional[str]): Current geography for retained by the CensusData workflow between related operations.
+	    geography_in (Optional[str]): Current geography in retained by the CensusData workflow between related operations.
+	    predicates (Optional[Dict[str, Any]]): Current predicates retained by the CensusData workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the CensusData.
+	    payload (Optional[Any]): Current payload retained by the CensusData workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -11076,13 +10823,13 @@ class CensusData( Fetcher ):
 		    Normalizes fields into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    fields (str): Fields supplied by the caller.
+		    fields (str): Fields supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'fields', fields )
@@ -11113,13 +10860,13 @@ class CensusData( Fetcher ):
 		    Parses predicates into the typed representation expected by the provider request.
 
 		Args:
-		    predicates (str): Predicates supplied by the caller.
+		    predicates (str): Predicates supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.predicates = { }
@@ -11154,7 +10901,9 @@ class CensusData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
-			exception.method = 'parse_predicates( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'parse_predicates( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -11162,20 +10911,24 @@ class CensusData( Fetcher ):
 		"""Shape table.
 
 		Purpose:
-		    Transforms provider table into stable dictionaries suitable for tables and analysis.
+		    Transforms provider table into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
 		    rows (List[Any]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if not rows:
-				return { 'columns': [ ], 'rows': [ ], 'count': 0, }
+				return {
+						'columns': [ ],
+						'rows': [ ],
+						'count': 0,
+				}
 			
 			headers = rows[ 0 ] if isinstance( rows[ 0 ], list ) else [ ]
 			data_rows = rows[ 1: ] if len( rows ) > 1 else [ ]
@@ -11200,7 +10953,9 @@ class CensusData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
-			exception.method = 'shape_table( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'shape_table( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -11212,15 +10967,15 @@ class CensusData( Fetcher ):
 		    Retrieves variables from the configured provider and returns normalized response data.
 
 		Args:
-		    year (str): Year supplied by the caller.
-		    dataset (str): Dataset supplied by the caller.
+		    year (str): Year supplied by the caller and interpreted according to the method contract.
+		    dataset (str): Dataset supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'year', year )
@@ -11236,12 +10991,20 @@ class CensusData( Fetcher ):
 			if self.api_key:
 				self.params[ 'key' ] = self.api_key
 			
-			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			self.payload = self.response.json( )
-			self.result = { 'mode': self.mode, 'url': self.response.url, 'params': self.params,
-				'data': self.payload, }
+			self.result = {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.payload,
+			}
 			
 			return self.result
 		
@@ -11249,7 +11012,9 @@ class CensusData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
-			exception.method = 'fetch_variables( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch_variables( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -11262,19 +11027,19 @@ class CensusData( Fetcher ):
 		    Retrieves data from the configured provider and returns normalized response data.
 
 		Args:
-		    year (str): Year supplied by the caller.
-		    dataset (str): Dataset supplied by the caller.
-		    fields (str): Fields supplied by the caller.
-		    geography_for (str): Geography for supplied by the caller.
-		    geography_in (str): Geography in supplied by the caller.
-		    predicates (str): Predicates supplied by the caller.
+		    year (str): Year supplied by the caller and interpreted according to the method contract.
+		    dataset (str): Dataset supplied by the caller and interpreted according to the method contract.
+		    fields (str): Fields supplied by the caller and interpreted according to the method contract.
+		    geography_for (str): Geography for supplied by the caller and interpreted according to the method contract.
+		    geography_in (str): Geography in supplied by the caller and interpreted according to the method contract.
+		    predicates (str): Predicates supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'year', year )
@@ -11282,6 +11047,7 @@ class CensusData( Fetcher ):
 			throw_if( 'fields', fields )
 			throw_if( 'geography_for', geography_for )
 			throw_if( 'time', time )
+			
 			self.mode = 'data'
 			self.year = str( year ).strip( )
 			self.dataset = str( dataset ).strip( ).strip( '/' )
@@ -11290,7 +11056,11 @@ class CensusData( Fetcher ):
 			self.predicates = self.parse_predicates( predicates )
 			self.timeout = int( time )
 			self.url = f'{self.base_url}/{self.year}/{self.dataset}'
-			self.params = { 'get': self.normalize_fields( fields ), 'for': self.geography_for, }
+			self.params = {
+					'get': self.normalize_fields( fields ),
+					'for': self.geography_for,
+			}
+			
 			if self.geography_in:
 				self.params[ 'in' ] = self.geography_in
 			
@@ -11300,12 +11070,21 @@ class CensusData( Fetcher ):
 			if self.api_key:
 				self.params[ 'key' ] = self.api_key
 			
-			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			self.payload = self.response.json( )
-			self.result = { 'mode': self.mode, 'url': self.response.url, 'params': self.params,
-				'data': self.shape_table( self.payload ), 'raw': self.payload, }
+			self.result = {
+					'mode': self.mode,
+					'url': self.response.url,
+					'params': self.params,
+					'data': self.shape_table( self.payload ),
+					'raw': self.payload,
+			}
 			
 			return self.result
 		
@@ -11313,7 +11092,9 @@ class CensusData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
-			exception.method = 'fetch_data( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch_data( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -11328,19 +11109,19 @@ class CensusData( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    year (str): Year supplied by the caller.
-		    dataset (str): Dataset supplied by the caller.
-		    fields (str): Fields supplied by the caller.
-		    geography_for (str): Geography for supplied by the caller.
-		    geography_in (str): Geography in supplied by the caller.
-		    predicates (str): Predicates supplied by the caller.
+		    year (str): Year supplied by the caller and interpreted according to the method contract.
+		    dataset (str): Dataset supplied by the caller and interpreted according to the method contract.
+		    fields (str): Fields supplied by the caller and interpreted according to the method contract.
+		    geography_for (str): Geography for supplied by the caller and interpreted according to the method contract.
+		    geography_in (str): Geography in supplied by the caller and interpreted according to the method contract.
+		    predicates (str): Predicates supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -11348,12 +11129,22 @@ class CensusData( Fetcher ):
 			self.mode = str( mode ).strip( ).lower( )
 			
 			if self.mode == 'variables':
-				return self.fetch_variables( year=year, dataset=dataset, time=time )
+				return self.fetch_variables(
+					year=year,
+					dataset=dataset,
+					time=time
+				)
 			
 			if self.mode == 'data':
-				return self.fetch_data( year=year, dataset=dataset, fields=fields,
-					geography_for=geography_for, geography_in=geography_in, predicates=predicates,
-					time=time )
+				return self.fetch_data(
+					year=year,
+					dataset=dataset,
+					fields=fields,
+					geography_for=geography_for,
+					geography_in=geography_in,
+					predicates=predicates,
+					time=time
+				)
 			
 			raise ValueError( "Unsupported Census mode. Use 'variables' or 'data'." )
 		
@@ -11361,7 +11152,9 @@ class CensusData( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'CensusData'
-			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -11381,10 +11174,10 @@ class CensusData( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -11426,17 +11219,17 @@ class Socrata( Fetcher ):
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    metadata_url (Optional[str]): URL associated with the current metadata resource or endpoint.
-	    domain (Optional[str]): Current domain retained by the Socrata.
+	    domain (Optional[str]): Current domain retained by the Socrata workflow between related operations.
 	    dataset_id (Optional[str]): Identifier of the current dataset resource.
-	    mode (Optional[str]): Current mode retained by the Socrata.
-	    select_clause (Optional[str]): Current select clause retained by the Socrata.
-	    where_clause (Optional[str]): Current where clause retained by the Socrata.
-	    order_clause (Optional[str]): Current order clause retained by the Socrata.
-	    group_clause (Optional[str]): Current group clause retained by the Socrata.
-	    limit_value (Optional[int]): Current limit value retained by the Socrata.
-	    offset_value (Optional[int]): Current offset value retained by the Socrata.
+	    mode (Optional[str]): Current mode retained by the Socrata workflow between related operations.
+	    select_clause (Optional[str]): Current select clause retained by the Socrata workflow between related operations.
+	    where_clause (Optional[str]): Current where clause retained by the Socrata workflow between related operations.
+	    order_clause (Optional[str]): Current order clause retained by the Socrata workflow between related operations.
+	    group_clause (Optional[str]): Current group clause retained by the Socrata workflow between related operations.
+	    limit_value (Optional[int]): Current limit value retained by the Socrata workflow between related operations.
+	    offset_value (Optional[int]): Current offset value retained by the Socrata workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the Socrata.
+	    payload (Optional[Any]): Current payload retained by the Socrata workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -11490,7 +11283,10 @@ class Socrata( Fetcher ):
 		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.headers = { 'Accept': 'application/json', 'User-Agent': self.agents }
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
 		
 		if self.api_key:
 			self.headers[ 'X-App-Token' ] = self.api_key
@@ -11499,8 +11295,7 @@ class Socrata( Fetcher ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools,
-		    and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
@@ -11518,13 +11313,13 @@ class Socrata( Fetcher ):
 		    Normalizes domain into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    domain (str): Domain supplied by the caller.
+		    domain (str): Domain supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'domain', domain )
@@ -11558,7 +11353,7 @@ class Socrata( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'dataset_id', dataset_id )
@@ -11592,7 +11387,7 @@ class Socrata( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -11624,7 +11419,7 @@ class Socrata( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if offset is None:
@@ -11652,15 +11447,15 @@ class Socrata( Fetcher ):
 		    Retrieves metadata from the configured provider and returns normalized response data.
 
 		Args:
-		    domain (str): Domain supplied by the caller.
+		    domain (str): Domain supplied by the caller and interpreted according to the method contract.
 		    dataset_id (str): Provider identifier of the target dataset resource.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -11719,21 +11514,21 @@ class Socrata( Fetcher ):
 		    Retrieves rows from the configured provider and returns normalized response data.
 
 		Args:
-		    domain (str): Domain supplied by the caller.
+		    domain (str): Domain supplied by the caller and interpreted according to the method contract.
 		    dataset_id (str): Provider identifier of the target dataset resource.
-		    select (str): Select supplied by the caller.
-		    where (str): Where supplied by the caller.
-		    order (str): Order supplied by the caller.
-		    group (str): Group supplied by the caller.
+		    select (str): Select supplied by the caller and interpreted according to the method contract.
+		    where (str): Where supplied by the caller and interpreted according to the method contract.
+		    order (str): Order supplied by the caller and interpreted according to the method contract.
+		    group (str): Group supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    offset (int): Zero-based record offset used for pagination.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -11816,21 +11611,21 @@ class Socrata( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    domain (str): Domain supplied by the caller.
+		    domain (str): Domain supplied by the caller and interpreted according to the method contract.
 		    dataset_id (str): Provider identifier of the target dataset resource.
-		    select (str): Select supplied by the caller.
-		    where (str): Where supplied by the caller.
-		    order (str): Order supplied by the caller.
-		    group (str): Group supplied by the caller.
+		    select (str): Select supplied by the caller and interpreted according to the method contract.
+		    where (str): Where supplied by the caller and interpreted according to the method contract.
+		    order (str): Order supplied by the caller and interpreted according to the method contract.
+		    group (str): Group supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    offset (int): Zero-based record offset used for pagination.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -11885,10 +11680,10 @@ class Socrata( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -11932,17 +11727,17 @@ class HealthData( Fetcher ):
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    metadata_url (Optional[str]): URL associated with the current metadata resource or endpoint.
-	    domain (Optional[str]): Current domain retained by the HealthData.
+	    domain (Optional[str]): Current domain retained by the HealthData workflow between related operations.
 	    dataset_id (Optional[str]): Identifier of the current dataset resource.
-	    mode (Optional[str]): Current mode retained by the HealthData.
-	    select_clause (Optional[str]): Current select clause retained by the HealthData.
-	    where_clause (Optional[str]): Current where clause retained by the HealthData.
-	    order_clause (Optional[str]): Current order clause retained by the HealthData.
-	    group_clause (Optional[str]): Current group clause retained by the HealthData.
-	    limit_value (Optional[int]): Current limit value retained by the HealthData.
-	    offset_value (Optional[int]): Current offset value retained by the HealthData.
+	    mode (Optional[str]): Current mode retained by the HealthData workflow between related operations.
+	    select_clause (Optional[str]): Current select clause retained by the HealthData workflow between related operations.
+	    where_clause (Optional[str]): Current where clause retained by the HealthData workflow between related operations.
+	    order_clause (Optional[str]): Current order clause retained by the HealthData workflow between related operations.
+	    group_clause (Optional[str]): Current group clause retained by the HealthData workflow between related operations.
+	    limit_value (Optional[int]): Current limit value retained by the HealthData workflow between related operations.
+	    offset_value (Optional[int]): Current offset value retained by the HealthData workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the HealthData.
+	    payload (Optional[Any]): Current payload retained by the HealthData workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -12026,13 +11821,13 @@ class HealthData( Fetcher ):
 		    Normalizes domain into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    domain (str): Domain supplied by the caller.
+		    domain (str): Domain supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'domain', domain )
@@ -12066,7 +11861,7 @@ class HealthData( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'dataset_id', dataset_id )
@@ -12100,7 +11895,7 @@ class HealthData( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -12132,7 +11927,7 @@ class HealthData( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if offset is None:
@@ -12160,15 +11955,15 @@ class HealthData( Fetcher ):
 		    Retrieves metadata from the configured provider and returns normalized response data.
 
 		Args:
-		    domain (str): Domain supplied by the caller.
+		    domain (str): Domain supplied by the caller and interpreted according to the method contract.
 		    dataset_id (str): Provider identifier of the target dataset resource.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -12227,21 +12022,21 @@ class HealthData( Fetcher ):
 		    Retrieves rows from the configured provider and returns normalized response data.
 
 		Args:
-		    domain (str): Domain supplied by the caller.
+		    domain (str): Domain supplied by the caller and interpreted according to the method contract.
 		    dataset_id (str): Provider identifier of the target dataset resource.
-		    select (str): Select supplied by the caller.
-		    where (str): Where supplied by the caller.
-		    order (str): Order supplied by the caller.
-		    group (str): Group supplied by the caller.
+		    select (str): Select supplied by the caller and interpreted according to the method contract.
+		    where (str): Where supplied by the caller and interpreted according to the method contract.
+		    order (str): Order supplied by the caller and interpreted according to the method contract.
+		    group (str): Group supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    offset (int): Zero-based record offset used for pagination.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -12324,21 +12119,21 @@ class HealthData( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    domain (str): Domain supplied by the caller.
+		    domain (str): Domain supplied by the caller and interpreted according to the method contract.
 		    dataset_id (str): Provider identifier of the target dataset resource.
-		    select (str): Select supplied by the caller.
-		    where (str): Where supplied by the caller.
-		    order (str): Order supplied by the caller.
-		    group (str): Group supplied by the caller.
+		    select (str): Select supplied by the caller and interpreted according to the method contract.
+		    where (str): Where supplied by the caller and interpreted according to the method contract.
+		    order (str): Order supplied by the caller and interpreted according to the method contract.
+		    group (str): Group supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    offset (int): Zero-based record offset used for pagination.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -12393,10 +12188,10 @@ class HealthData( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -12440,11 +12235,11 @@ class GlobalHealthData( Fetcher ):
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    athena_base_url (Optional[str]): URL associated with the current athena base resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the GlobalHealthData.
+	    mode (Optional[str]): Current mode retained by the GlobalHealthData workflow between related operations.
 	    query_path (Optional[str]): Path associated with the current query resource.
-	    fmt (Optional[str]): Current fmt retained by the GlobalHealthData.
+	    fmt (Optional[str]): Current fmt retained by the GlobalHealthData workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the GlobalHealthData.
+	    payload (Optional[Any]): Current payload retained by the GlobalHealthData workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -12515,13 +12310,13 @@ class GlobalHealthData( Fetcher ):
 		    Normalizes query path into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    query_path (str): Query path supplied by the caller.
+		    query_path (str): Query path supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query_path', query_path )
@@ -12557,10 +12352,10 @@ class GlobalHealthData( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -12621,15 +12416,15 @@ class GlobalHealthData( Fetcher ):
 		    Retrieves athena from the configured provider and returns normalized response data.
 
 		Args:
-		    query_path (str): Query path supplied by the caller.
-		    fmt (str): Fmt supplied by the caller.
+		    query_path (str): Query path supplied by the caller and interpreted according to the method contract.
+		    fmt (str): Fmt supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query_path', query_path )
@@ -12696,15 +12491,15 @@ class GlobalHealthData( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    query_path (str): Query path supplied by the caller.
-		    fmt (str): Fmt supplied by the caller.
+		    query_path (str): Query path supplied by the caller and interpreted according to the method contract.
+		    fmt (str): Fmt supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -12754,10 +12549,10 @@ class GlobalHealthData( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -12800,10 +12595,10 @@ class UnitedNations( Fetcher ):
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    catalog_url (Optional[str]): URL associated with the current catalog resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the UnitedNations.
+	    mode (Optional[str]): Current mode retained by the UnitedNations workflow between related operations.
 	    query_path (Optional[str]): Path associated with the current query resource.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the UnitedNations.
+	    payload (Optional[Any]): Current payload retained by the UnitedNations workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -12841,16 +12636,15 @@ class UnitedNations( Fetcher ):
 		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.headers = {
-				'Accept': 'application/json, text/json, text/csv, text/xml, */*',
-				'User-Agent': self.agents
-		}
+		self.headers = { 'Accept': 'application/json, text/json, text/csv, text/xml, */*',
+			'User-Agent': self.agents }
 	
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools,
+		    and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
@@ -12866,13 +12660,13 @@ class UnitedNations( Fetcher ):
 		    Normalizes query path into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    query_path (str): Query path supplied by the caller.
+		    query_path (str): Query path supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query_path', query_path )
@@ -12908,10 +12702,10 @@ class UnitedNations( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -12968,14 +12762,14 @@ class UnitedNations( Fetcher ):
 		    Retrieves sdmx query from the configured provider and returns normalized response data.
 
 		Args:
-		    query_path (str): Query path supplied by the caller.
+		    query_path (str): Query path supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query_path', query_path )
@@ -13036,14 +12830,14 @@ class UnitedNations( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    query_path (str): Query path supplied by the caller.
+		    query_path (str): Query path supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -13089,10 +12883,10 @@ class UnitedNations( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -13135,13 +12929,13 @@ class WorldPopulation( Fetcher ):
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    stac_url (Optional[str]): URL associated with the current stac resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the WorldPopulation.
-	    query_text (Optional[str]): Current query text retained by the WorldPopulation.
+	    mode (Optional[str]): Current mode retained by the WorldPopulation workflow between related operations.
+	    query_text (Optional[str]): Current query text retained by the WorldPopulation workflow between related operations.
 	    asset_path (Optional[str]): Path associated with the current asset resource.
-	    page (Optional[int]): Current page retained by the WorldPopulation.
-	    page_size (Optional[int]): Current page size retained by the WorldPopulation.
+	    page (Optional[int]): Current page retained by the WorldPopulation workflow between related operations.
+	    page_size (Optional[int]): Current page size retained by the WorldPopulation workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the WorldPopulation.
+	    payload (Optional[Any]): Current payload retained by the WorldPopulation workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -13185,10 +12979,8 @@ class WorldPopulation( Fetcher ):
 		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.headers = {
-				'Accept': 'application/json, text/html, text/plain, */*',
-				'User-Agent': self.agents
-		}
+		self.headers = { 'Accept': 'application/json, text/html, text/plain, */*',
+			'User-Agent': self.agents }
 	
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
@@ -13211,13 +13003,13 @@ class WorldPopulation( Fetcher ):
 		    Normalizes asset path into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    asset_path (str): Asset path supplied by the caller.
+		    asset_path (str): Asset path supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'asset_path', asset_path )
@@ -13256,7 +13048,7 @@ class WorldPopulation( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'page', page )
@@ -13288,7 +13080,7 @@ class WorldPopulation( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'page_size', page_size )
@@ -13317,10 +13109,10 @@ class WorldPopulation( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -13383,10 +13175,10 @@ class WorldPopulation( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'query', query )
@@ -13451,14 +13243,14 @@ class WorldPopulation( Fetcher ):
 		    Retrieves raster metadata from the configured provider and returns normalized response data.
 
 		Args:
-		    asset_path (str): Asset path supplied by the caller.
+		    asset_path (str): Asset path supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'asset_path', asset_path )
@@ -13521,16 +13313,16 @@ class WorldPopulation( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    query (str): Search text, prompt, or provider query submitted by the caller.
-		    asset_path (str): Asset path supplied by the caller.
+		    asset_path (str): Asset path supplied by the caller and interpreted according to the method contract.
 		    page (int): One-based result page requested from the provider.
 		    page_size (int): Maximum number of records requested per page.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -13587,10 +13379,10 @@ class WorldPopulation( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -13632,11 +13424,11 @@ class Wonder( Fetcher ):
 
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the Wonder.
+	    mode (Optional[str]): Current mode retained by the Wonder workflow between related operations.
 	    dataset_id (Optional[str]): Identifier of the current dataset resource.
-	    request_xml (Optional[str]): Current request xml retained by the Wonder.
+	    request_xml (Optional[str]): Current request xml retained by the Wonder workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the Wonder.
+	    payload (Optional[Any]): Current payload retained by the Wonder workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -13706,7 +13498,7 @@ class Wonder( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'dataset_id', dataset_id )
@@ -13714,8 +13506,10 @@ class Wonder( Fetcher ):
 			value = str( dataset_id ).strip( ).upper( )
 			
 			if not re.fullmatch( r'D\d{1,4}', value ):
-				raise ValueError( 'CDC WONDER Dataset ID must use the format D followed by digits, '
-					'such as D76.' )
+				raise ValueError(
+					'CDC WONDER Dataset ID must use the format D followed by digits, '
+					'such as D76.'
+				)
 			
 			return value
 		
@@ -13740,7 +13534,7 @@ class Wonder( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.dataset_id = self.normalize_dataset_id( dataset_id )
@@ -13787,10 +13581,10 @@ class Wonder( Fetcher ):
 		    dataset_id (str): Provider identifier of the target dataset resource.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'metadata_template'
@@ -13836,14 +13630,14 @@ class Wonder( Fetcher ):
 
 		Args:
 		    dataset_id (str): Provider identifier of the target dataset resource.
-		    request_xml (str): Request xml supplied by the caller.
+		    request_xml (str): Request xml supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'dataset_id', dataset_id )
@@ -13906,14 +13700,14 @@ class Wonder( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    dataset_id (str): Provider identifier of the target dataset resource.
-		    request_xml (str): Request xml supplied by the caller.
+		    request_xml (str): Request xml supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -13962,10 +13756,10 @@ class Wonder( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -14013,20 +13807,20 @@ class USGSEarthquakes( Fetcher ):
 	Attributes:
 	    feed_url (Optional[str]): URL associated with the current feed resource or endpoint.
 	    search_url (Optional[str]): URL associated with the current search resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the USGSEarthquakes.
-	    feed (Optional[str]): Current feed retained by the USGSEarthquakes.
-	    start_date (Optional[str]): Current start date retained by the USGSEarthquakes.
-	    end_date (Optional[str]): Current end date retained by the USGSEarthquakes.
+	    mode (Optional[str]): Current mode retained by the USGSEarthquakes workflow between related operations.
+	    feed (Optional[str]): Current feed retained by the USGSEarthquakes workflow between related operations.
+	    start_date (Optional[str]): Current start date retained by the USGSEarthquakes workflow between related operations.
+	    end_date (Optional[str]): Current end date retained by the USGSEarthquakes workflow between related operations.
 	    min_magnitude (Optional[float]): Lower bound applied to magnitude.
 	    max_magnitude (Optional[float]): Upper bound applied to magnitude.
-	    limit (Optional[int]): Current limit retained by the USGSEarthquakes.
-	    order_by (Optional[str]): Current order by retained by the USGSEarthquakes.
-	    event_type (Optional[str]): Current event type retained by the USGSEarthquakes.
-	    latitude (Optional[float]): Current latitude retained by the USGSEarthquakes.
-	    longitude (Optional[float]): Current longitude retained by the USGSEarthquakes.
+	    limit (Optional[int]): Current limit retained by the USGSEarthquakes workflow between related operations.
+	    order_by (Optional[str]): Current order by retained by the USGSEarthquakes workflow between related operations.
+	    event_type (Optional[str]): Current event type retained by the USGSEarthquakes workflow between related operations.
+	    latitude (Optional[float]): Current latitude retained by the USGSEarthquakes workflow between related operations.
+	    longitude (Optional[float]): Current longitude retained by the USGSEarthquakes workflow between related operations.
 	    max_radius_km (Optional[float]): Upper bound applied to radius km.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Dict[str, Any]]): Current payload retained by the USGSEarthquakes.
+	    payload (Optional[Dict[str, Any]]): Current payload retained by the USGSEarthquakes workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -14114,13 +13908,13 @@ class USGSEarthquakes( Fetcher ):
 		    Validates the feed against provider constraints and returns the accepted value.
 
 		Args:
-		    feed (str): Feed supplied by the caller.
+		    feed (str): Feed supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'feed', feed )
@@ -14175,7 +13969,7 @@ class USGSEarthquakes( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -14208,7 +14002,7 @@ class USGSEarthquakes( Fetcher ):
 		    float: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -14235,13 +14029,13 @@ class USGSEarthquakes( Fetcher ):
 		    Validates the order by against provider constraints and returns the accepted value.
 
 		Args:
-		    order_by (str): Order by supplied by the caller.
+		    order_by (str): Order by supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'order_by', order_by )
@@ -14283,7 +14077,7 @@ class USGSEarthquakes( Fetcher ):
 		    float: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'latitude', latitude )
@@ -14315,7 +14109,7 @@ class USGSEarthquakes( Fetcher ):
 		    float: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'longitude', longitude )
@@ -14341,13 +14135,13 @@ class USGSEarthquakes( Fetcher ):
 		    Validates the radius against provider constraints and returns the accepted value.
 
 		Args:
-		    radius (float): Radius supplied by the caller.
+		    radius (float): Radius supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    float: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'max_radius_km', radius )
@@ -14379,7 +14173,7 @@ class USGSEarthquakes( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'date', value )
@@ -14421,16 +14215,16 @@ class USGSEarthquakes( Fetcher ):
 		"""Shape feature rows.
 
 		Purpose:
-		    Transforms provider feature rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider feature rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    features (List[Dict[str, Any]]): Features supplied by the caller.
+		    features (List[Dict[str, Any]]): Features supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -14487,10 +14281,10 @@ class USGSEarthquakes( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -14536,10 +14330,10 @@ class USGSEarthquakes( Fetcher ):
 		    Combines normalized records, summary metrics, and request metadata into the standard response payload.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			metadata = self.payload.get( 'metadata', { } ) or { }
@@ -14578,14 +14372,14 @@ class USGSEarthquakes( Fetcher ):
 		    Retrieves feed from the configured provider and returns normalized response data.
 
 		Args:
-		    feed (str): Feed supplied by the caller.
+		    feed (str): Feed supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -14635,21 +14429,21 @@ class USGSEarthquakes( Fetcher ):
 		Args:
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    min_magnitude (float): Min magnitude supplied by the caller.
-		    max_magnitude (float): Max magnitude supplied by the caller.
+		    min_magnitude (float): Min magnitude supplied by the caller and interpreted according to the method contract.
+		    max_magnitude (float): Max magnitude supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
-		    order_by (str): Order by supplied by the caller.
-		    event_type (str): Event type supplied by the caller.
+		    order_by (str): Order by supplied by the caller and interpreted according to the method contract.
+		    event_type (str): Event type supplied by the caller and interpreted according to the method contract.
 		    latitude (float | None): Geographic latitude expressed in decimal degrees.
 		    longitude (float | None): Geographic longitude expressed in decimal degrees.
-		    max_radius_km (float | None): Max radius km supplied by the caller.
+		    max_radius_km (float | None): Max radius km supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'start_date', start_date )
@@ -14741,24 +14535,24 @@ class USGSEarthquakes( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    feed (str): Feed supplied by the caller.
+		    feed (str): Feed supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    min_magnitude (float): Min magnitude supplied by the caller.
-		    max_magnitude (float): Max magnitude supplied by the caller.
+		    min_magnitude (float): Min magnitude supplied by the caller and interpreted according to the method contract.
+		    max_magnitude (float): Max magnitude supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
-		    order_by (str): Order by supplied by the caller.
-		    event_type (str): Event type supplied by the caller.
+		    order_by (str): Order by supplied by the caller and interpreted according to the method contract.
+		    event_type (str): Event type supplied by the caller and interpreted according to the method contract.
 		    latitude (float | None): Geographic latitude expressed in decimal degrees.
 		    longitude (float | None): Geographic longitude expressed in decimal degrees.
-		    max_radius_km (float | None): Max radius km supplied by the caller.
+		    max_radius_km (float | None): Max radius km supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -14814,10 +14608,10 @@ class USGSEarthquakes( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -14865,16 +14659,16 @@ class USGSWaterData( Fetcher ):
 	Attributes:
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the USGSWaterData.
-	    collection (Optional[str]): Current collection retained by the USGSWaterData.
+	    mode (Optional[str]): Current mode retained by the USGSWaterData workflow between related operations.
+	    collection (Optional[str]): Current collection retained by the USGSWaterData workflow between related operations.
 	    monitoring_location_id (Optional[str]): Identifier of the current monitoring location resource.
-	    state_code (Optional[str]): Current state code retained by the USGSWaterData.
-	    county_code (Optional[str]): Current county code retained by the USGSWaterData.
-	    site_type (Optional[str]): Current site type retained by the USGSWaterData.
-	    parameter_code (Optional[str]): Current parameter code retained by the USGSWaterData.
-	    limit (Optional[int]): Current limit retained by the USGSWaterData.
+	    state_code (Optional[str]): Current state code retained by the USGSWaterData workflow between related operations.
+	    county_code (Optional[str]): Current county code retained by the USGSWaterData workflow between related operations.
+	    site_type (Optional[str]): Current site type retained by the USGSWaterData workflow between related operations.
+	    parameter_code (Optional[str]): Current parameter code retained by the USGSWaterData workflow between related operations.
+	    limit (Optional[int]): Current limit retained by the USGSWaterData workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the USGSWaterData.
+	    payload (Optional[Any]): Current payload retained by the USGSWaterData workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -14957,20 +14751,24 @@ class USGSWaterData( Fetcher ):
 		    Validates the collection against provider constraints and returns the accepted value.
 
 		Args:
-		    collection (str): Collection supplied by the caller.
+		    collection (str): Collection supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'collection', collection )
 			
 			value = str( collection ).strip( )
-			allowed = { 'monitoring-locations', 'time-series-metadata', 'latest-continuous',
-				'latest-daily' }
+			allowed = {
+					'monitoring-locations',
+					'time-series-metadata',
+					'latest-continuous',
+					'latest-daily'
+			}
 			
 			if value not in allowed:
 				raise ValueError(
@@ -15002,7 +14800,7 @@ class USGSWaterData( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -15034,7 +14832,7 @@ class USGSWaterData( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( parameter_code or '' ).strip( )
@@ -15062,10 +14860,10 @@ class USGSWaterData( Fetcher ):
 		    payload (Any): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if payload is None:
@@ -15116,16 +14914,16 @@ class USGSWaterData( Fetcher ):
 		"""Shape monitoring locations.
 
 		Purpose:
-		    Transforms provider monitoring locations into stable dictionaries suitable for tables and analysis.
+		    Transforms provider monitoring locations into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -15194,16 +14992,16 @@ class USGSWaterData( Fetcher ):
 		"""Shape time series metadata.
 
 		Purpose:
-		    Transforms provider time series metadata into stable dictionaries suitable for tables and analysis.
+		    Transforms provider time series metadata into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -15268,16 +15066,16 @@ class USGSWaterData( Fetcher ):
 		"""Shape latest values.
 
 		Purpose:
-		    Transforms provider latest values into stable dictionaries suitable for tables and analysis.
+		    Transforms provider latest values into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -15353,10 +15151,10 @@ class USGSWaterData( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -15407,10 +15205,10 @@ class USGSWaterData( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.result = {
@@ -15442,15 +15240,15 @@ class USGSWaterData( Fetcher ):
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    collection (str): Collection supplied by the caller.
-		    params (Dict[str, Any]): Params supplied by the caller.
+		    collection (str): Collection supplied by the caller and interpreted according to the method contract.
+		    params (Dict[str, Any]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'collection', collection )
@@ -15515,15 +15313,15 @@ class USGSWaterData( Fetcher ):
 		    monitoring_location_id (str): Provider identifier of the target monitoring location resource.
 		    state_code (str): Code identifying the requested state value.
 		    county_code (str): Code identifying the requested county value.
-		    site_type (str): Site type supplied by the caller.
+		    site_type (str): Site type supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -15580,10 +15378,10 @@ class USGSWaterData( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'monitoring_location_id', monitoring_location_id )
@@ -15637,10 +15435,10 @@ class USGSWaterData( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'monitoring_location_id', monitoring_location_id )
@@ -15694,10 +15492,10 @@ class USGSWaterData( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'monitoring_location_id', monitoring_location_id )
@@ -15751,16 +15549,16 @@ class USGSWaterData( Fetcher ):
 		    monitoring_location_id (str): Provider identifier of the target monitoring location resource.
 		    state_code (str): Code identifying the requested state value.
 		    county_code (str): Code identifying the requested county value.
-		    site_type (str): Site type supplied by the caller.
+		    site_type (str): Site type supplied by the caller and interpreted according to the method contract.
 		    parameter_code (str): Code identifying the requested parameter value.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -15832,10 +15630,10 @@ class USGSWaterData( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -15882,16 +15680,16 @@ class USGSTheNationalMap( Fetcher ):
 
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the USGSTheNationalMap.
-	    endpoint (Optional[str]): Current endpoint retained by the USGSTheNationalMap.
-	    dataset (Optional[str]): Current dataset retained by the USGSTheNationalMap.
-	    query_text (Optional[str]): Current query text retained by the USGSTheNationalMap.
-	    bbox (Optional[str]): Current bbox retained by the USGSTheNationalMap.
-	    prod_formats (Optional[str]): Current prod formats retained by the USGSTheNationalMap.
+	    mode (Optional[str]): Current mode retained by the USGSTheNationalMap workflow between related operations.
+	    endpoint (Optional[str]): Current endpoint retained by the USGSTheNationalMap workflow between related operations.
+	    dataset (Optional[str]): Current dataset retained by the USGSTheNationalMap workflow between related operations.
+	    query_text (Optional[str]): Current query text retained by the USGSTheNationalMap workflow between related operations.
+	    bbox (Optional[str]): Current bbox retained by the USGSTheNationalMap workflow between related operations.
+	    prod_formats (Optional[str]): Current prod formats retained by the USGSTheNationalMap workflow between related operations.
 	    max_items (Optional[int]): Upper bound applied to items.
-	    offset (Optional[int]): Current offset retained by the USGSTheNationalMap.
+	    offset (Optional[int]): Current offset retained by the USGSTheNationalMap workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the USGSTheNationalMap.
+	    payload (Optional[Any]): Current payload retained by the USGSTheNationalMap workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -15967,22 +15765,19 @@ class USGSTheNationalMap( Fetcher ):
 		    Validates the endpoint against provider constraints and returns the accepted value.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
 			
 			value = str( endpoint ).strip( ).lower( )
-			allowed = {
-					'datasets',
-					'products'
-			}
+			allowed = { 'datasets', 'products' }
 			
 			if value not in allowed:
 				raise ValueError( "endpoint must be 'datasets' or 'products'." )
@@ -16004,13 +15799,13 @@ class USGSTheNationalMap( Fetcher ):
 		    Validates the max items against provider constraints and returns the accepted value.
 
 		Args:
-		    max_items (int): Max items supplied by the caller.
+		    max_items (int): Max items supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'max_items', max_items )
@@ -16042,7 +15837,7 @@ class USGSTheNationalMap( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if offset is None:
@@ -16069,13 +15864,13 @@ class USGSTheNationalMap( Fetcher ):
 		    Validates the bbox against provider constraints and returns the accepted value.
 
 		Args:
-		    bbox (str): Bbox supplied by the caller.
+		    bbox (str): Bbox supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( bbox or '' ).strip( )
@@ -16120,10 +15915,10 @@ class USGSTheNationalMap( Fetcher ):
 		    payload (Any): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if payload is None:
@@ -16167,16 +15962,16 @@ class USGSTheNationalMap( Fetcher ):
 		"""Shape dataset rows.
 
 		Purpose:
-		    Transforms provider dataset rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider dataset rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -16221,16 +16016,16 @@ class USGSTheNationalMap( Fetcher ):
 		"""Shape product rows.
 
 		Purpose:
-		    Transforms provider product rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider product rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -16308,10 +16103,10 @@ class USGSTheNationalMap( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -16353,10 +16148,10 @@ class USGSTheNationalMap( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.result = {
@@ -16388,15 +16183,15 @@ class USGSTheNationalMap( Fetcher ):
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
-		    params (Dict[str, Any]): Params supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
+		    params (Dict[str, Any]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
@@ -16456,10 +16251,10 @@ class USGSTheNationalMap( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -16497,19 +16292,19 @@ class USGSTheNationalMap( Fetcher ):
 		    Retrieves products from the configured provider and returns normalized response data.
 
 		Args:
-		    dataset (str): Dataset supplied by the caller.
-		    q (str): Q supplied by the caller.
-		    bbox (str): Bbox supplied by the caller.
-		    prod_formats (str): Prod formats supplied by the caller.
-		    max_items (int): Max items supplied by the caller.
+		    dataset (str): Dataset supplied by the caller and interpreted according to the method contract.
+		    q (str): Q supplied by the caller and interpreted according to the method contract.
+		    bbox (str): Bbox supplied by the caller and interpreted according to the method contract.
+		    prod_formats (str): Prod formats supplied by the caller and interpreted according to the method contract.
+		    max_items (int): Max items supplied by the caller and interpreted according to the method contract.
 		    offset (int): Zero-based record offset used for pagination.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'max_items', max_items )
@@ -16564,19 +16359,19 @@ class USGSTheNationalMap( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    dataset (str): Dataset supplied by the caller.
-		    q (str): Q supplied by the caller.
-		    bbox (str): Bbox supplied by the caller.
-		    prod_formats (str): Prod formats supplied by the caller.
-		    max_items (int): Max items supplied by the caller.
+		    dataset (str): Dataset supplied by the caller and interpreted according to the method contract.
+		    q (str): Q supplied by the caller and interpreted according to the method contract.
+		    bbox (str): Bbox supplied by the caller and interpreted according to the method contract.
+		    prod_formats (str): Prod formats supplied by the caller and interpreted according to the method contract.
+		    max_items (int): Max items supplied by the caller and interpreted according to the method contract.
 		    offset (int): Zero-based record offset used for pagination.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -16624,10 +16419,10 @@ class USGSTheNationalMap( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -16670,15 +16465,15 @@ class USGSScienceBase( Fetcher ):
 
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the USGSScienceBase.
-	    endpoint (Optional[str]): Current endpoint retained by the USGSScienceBase.
+	    mode (Optional[str]): Current mode retained by the USGSScienceBase workflow between related operations.
+	    endpoint (Optional[str]): Current endpoint retained by the USGSScienceBase workflow between related operations.
 	    item_id (Optional[str]): Identifier of the current item resource.
-	    query_text (Optional[str]): Current query text retained by the USGSScienceBase.
+	    query_text (Optional[str]): Current query text retained by the USGSScienceBase workflow between related operations.
 	    max_items (Optional[int]): Upper bound applied to items.
-	    offset (Optional[int]): Current offset retained by the USGSScienceBase.
-	    fields (Optional[str]): Current fields retained by the USGSScienceBase.
+	    offset (Optional[int]): Current offset retained by the USGSScienceBase workflow between related operations.
+	    fields (Optional[str]): Current fields retained by the USGSScienceBase workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Dict[str, Any]]): Current payload retained by the USGSScienceBase.
+	    payload (Optional[Dict[str, Any]]): Current payload retained by the USGSScienceBase workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -16751,13 +16546,13 @@ class USGSScienceBase( Fetcher ):
 		    Validates the endpoint against provider constraints and returns the accepted value.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
@@ -16793,13 +16588,13 @@ class USGSScienceBase( Fetcher ):
 		    Validates the max items against provider constraints and returns the accepted value.
 
 		Args:
-		    max_items (int): Max items supplied by the caller.
+		    max_items (int): Max items supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'max_items', max_items )
@@ -16831,7 +16626,7 @@ class USGSScienceBase( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if offset is None:
@@ -16861,10 +16656,10 @@ class USGSScienceBase( Fetcher ):
 		    payload (Any): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if payload is None:
@@ -16907,16 +16702,16 @@ class USGSScienceBase( Fetcher ):
 		"""Shape single item.
 
 		Purpose:
-		    Transforms provider single item into stable dictionaries suitable for tables and analysis.
+		    Transforms provider single item into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    item (Dict[str, Any]): Item supplied by the caller.
+		    item (Dict[str, Any]): Item supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if not isinstance( item, dict ):
@@ -16954,7 +16749,9 @@ class USGSScienceBase( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'USGSScienceBase'
-			exception.method = 'shape_single_item( self, *args, **kwargs ) -> Dict[ str, Any ]' 
+			exception.method = (
+					'shape_single_item( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -16963,16 +16760,16 @@ class USGSScienceBase( Fetcher ):
 		"""Shape item rows.
 
 		Purpose:
-		    Transforms provider item rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider item rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -17003,10 +16800,10 @@ class USGSScienceBase( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -17049,10 +16846,10 @@ class USGSScienceBase( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.result = {
@@ -17082,19 +16879,18 @@ class USGSScienceBase( Fetcher ):
 		"""Request.
 
 		Purpose:
-		    Executes the provider request with the instance parameters and returns the decoded 
-		        response payload.
+		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
-		    params (Optional[Dict[str, Any]]): Params supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
+		    params (Optional[Dict[str, Any]]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and writes it to the logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
@@ -17117,11 +16913,19 @@ class USGSScienceBase( Fetcher ):
 				
 				self.params[ key ] = value
 			
-			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			self.payload = self.response.json( ) or { }
-			self.result = { 'url': self.response.url, 'params': self.params, 'raw': self.payload }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
 			
 			return self.result
 		
@@ -17142,17 +16946,17 @@ class USGSScienceBase( Fetcher ):
 		    Retrieves items from the configured provider and returns normalized response data.
 
 		Args:
-		    q (str): Q supplied by the caller.
-		    max_items (int): Max items supplied by the caller.
+		    q (str): Q supplied by the caller and interpreted according to the method contract.
+		    max_items (int): Max items supplied by the caller and interpreted according to the method contract.
 		    offset (int): Zero-based record offset used for pagination.
-		    fields (str): Fields supplied by the caller.
+		    fields (str): Fields supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'max_items', max_items )
@@ -17196,10 +17000,10 @@ class USGSScienceBase( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'item_id', item_id )
@@ -17227,18 +17031,18 @@ class USGSScienceBase( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    q (str): Q supplied by the caller.
+		    q (str): Q supplied by the caller and interpreted according to the method contract.
 		    item_id (str): Provider identifier of the target item resource.
-		    max_items (int): Max items supplied by the caller.
+		    max_items (int): Max items supplied by the caller and interpreted according to the method contract.
 		    offset (int): Zero-based record offset used for pagination.
-		    fields (str): Fields supplied by the caller.
+		    fields (str): Fields supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -17275,10 +17079,10 @@ class USGSScienceBase( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -17323,17 +17127,17 @@ class AirNow( Fetcher ):
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
-	    mode (Optional[str]): Current mode retained by the AirNow.
+	    mode (Optional[str]): Current mode retained by the AirNow workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the AirNow.
+	    payload (Optional[Any]): Current payload retained by the AirNow workflow between related operations.
 	    timeout (Optional[int]): Maximum request duration, in seconds, applied to provider calls.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
-	    endpoint (Optional[str]): Current endpoint retained by the AirNow.
-	    zip_code (Optional[str]): Current zip code retained by the AirNow.
-	    latitude (Optional[float]): Current latitude retained by the AirNow.
-	    longitude (Optional[float]): Current longitude retained by the AirNow.
-	    date (Optional[str]): Current date retained by the AirNow.
-	    distance (Optional[int]): Current distance retained by the AirNow.
+	    endpoint (Optional[str]): Current endpoint retained by the AirNow workflow between related operations.
+	    zip_code (Optional[str]): Current zip code retained by the AirNow workflow between related operations.
+	    latitude (Optional[float]): Current latitude retained by the AirNow workflow between related operations.
+	    longitude (Optional[float]): Current longitude retained by the AirNow workflow between related operations.
+	    date (Optional[str]): Current date retained by the AirNow workflow between related operations.
+	    distance (Optional[int]): Current distance retained by the AirNow workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    response (Any): Most recent raw response returned by the provider client.
 	    headers (Any): HTTP headers sent with the current request.
@@ -17406,15 +17210,15 @@ class AirNow( Fetcher ):
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
-		    params (Optional[Dict[str, Any]]): Params supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
+		    params (Optional[Dict[str, Any]]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -17470,16 +17274,16 @@ class AirNow( Fetcher ):
 		"""Shape rows.
 
 		Purpose:
-		    Transforms provider rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -17528,10 +17332,10 @@ class AirNow( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -17582,10 +17386,10 @@ class AirNow( Fetcher ):
 		    Combines normalized records, summary metrics, and request metadata into the standard response payload.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			records = self.result.get( 'raw', [ ] ) if isinstance( self.result, dict ) else [ ]
@@ -17620,14 +17424,14 @@ class AirNow( Fetcher ):
 
 		Args:
 		    zip_code (str): Code identifying the requested zip value.
-		    distance (int): Distance supplied by the caller.
+		    distance (int): Distance supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'zip_code', zip_code )
@@ -17671,14 +17475,14 @@ class AirNow( Fetcher ):
 		Args:
 		    latitude (float): Geographic latitude expressed in decimal degrees.
 		    longitude (float): Geographic longitude expressed in decimal degrees.
-		    distance (int): Distance supplied by the caller.
+		    distance (int): Distance supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'latitude', latitude )
@@ -17721,15 +17525,15 @@ class AirNow( Fetcher ):
 
 		Args:
 		    zip_code (str): Code identifying the requested zip value.
-		    date (str): Date supplied by the caller.
-		    distance (int): Distance supplied by the caller.
+		    date (str): Date supplied by the caller and interpreted according to the method contract.
+		    distance (int): Distance supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'zip_code', zip_code )
@@ -17776,15 +17580,15 @@ class AirNow( Fetcher ):
 		Args:
 		    latitude (float): Geographic latitude expressed in decimal degrees.
 		    longitude (float): Geographic longitude expressed in decimal degrees.
-		    date (str): Date supplied by the caller.
-		    distance (int): Distance supplied by the caller.
+		    date (str): Date supplied by the caller and interpreted according to the method contract.
+		    distance (int): Distance supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'latitude', latitude )
@@ -17835,15 +17639,15 @@ class AirNow( Fetcher ):
 		    zip_code (str): Code identifying the requested zip value.
 		    latitude (float | None): Geographic latitude expressed in decimal degrees.
 		    longitude (float | None): Geographic longitude expressed in decimal degrees.
-		    date (str): Date supplied by the caller.
-		    distance (int): Distance supplied by the caller.
+		    date (str): Date supplied by the caller and interpreted according to the method contract.
+		    distance (int): Distance supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -17890,10 +17694,10 @@ class AirNow( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -17934,17 +17738,17 @@ class ClimateData( Fetcher ):
 	Attributes:
 	    data_url (Optional[str]): URL associated with the current data resource or endpoint.
 	    search_url (Optional[str]): URL associated with the current search resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the ClimateData.
-	    keyword (Optional[str]): Current keyword retained by the ClimateData.
-	    dataset (Optional[str]): Current dataset retained by the ClimateData.
-	    start_date (Optional[str]): Current start date retained by the ClimateData.
-	    end_date (Optional[str]): Current end date retained by the ClimateData.
-	    stations (Optional[str]): Current stations retained by the ClimateData.
-	    data_types (Optional[str]): Current data types retained by the ClimateData.
-	    limit (Optional[int]): Current limit retained by the ClimateData.
-	    offset (Optional[int]): Current offset retained by the ClimateData.
+	    mode (Optional[str]): Current mode retained by the ClimateData workflow between related operations.
+	    keyword (Optional[str]): Current keyword retained by the ClimateData workflow between related operations.
+	    dataset (Optional[str]): Current dataset retained by the ClimateData workflow between related operations.
+	    start_date (Optional[str]): Current start date retained by the ClimateData workflow between related operations.
+	    end_date (Optional[str]): Current end date retained by the ClimateData workflow between related operations.
+	    stations (Optional[str]): Current stations retained by the ClimateData workflow between related operations.
+	    data_types (Optional[str]): Current data types retained by the ClimateData workflow between related operations.
+	    limit (Optional[int]): Current limit retained by the ClimateData workflow between related operations.
+	    offset (Optional[int]): Current offset retained by the ClimateData workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the ClimateData.
+	    payload (Optional[Any]): Current payload retained by the ClimateData workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -18027,7 +17831,7 @@ class ClimateData( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -18059,7 +17863,7 @@ class ClimateData( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if offset is None:
@@ -18093,7 +17897,7 @@ class ClimateData( Fetcher ):
 		    Tuple[str, str]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'start_date', start_date )
@@ -18122,10 +17926,10 @@ class ClimateData( Fetcher ):
 		    payload (Any): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if payload is None:
@@ -18158,16 +17962,16 @@ class ClimateData( Fetcher ):
 		"""Shape dataset rows.
 
 		Purpose:
-		    Transforms provider dataset rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider dataset rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -18207,16 +18011,16 @@ class ClimateData( Fetcher ):
 		"""Shape data rows.
 
 		Purpose:
-		    Transforms provider data rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider data rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -18249,10 +18053,10 @@ class ClimateData( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -18294,10 +18098,10 @@ class ClimateData( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.result = {
@@ -18327,14 +18131,14 @@ class ClimateData( Fetcher ):
 
 		Args:
 		    url (str): Absolute endpoint or resource URL.
-		    params (Dict[str, Any]): Params supplied by the caller.
+		    params (Dict[str, Any]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'url', url )
@@ -18390,7 +18194,7 @@ class ClimateData( Fetcher ):
 		    Retrieves datasets from the configured provider and returns normalized response data.
 
 		Args:
-		    keyword (str): Keyword supplied by the caller.
+		    keyword (str): Keyword supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
 		    limit (int): Maximum number of records or characters permitted by the operation.
@@ -18398,10 +18202,10 @@ class ClimateData( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -18446,19 +18250,19 @@ class ClimateData( Fetcher ):
 		    Retrieves data from the configured provider and returns normalized response data.
 
 		Args:
-		    dataset (str): Dataset supplied by the caller.
+		    dataset (str): Dataset supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    stations (str): Stations supplied by the caller.
-		    data_types (str): Data types supplied by the caller.
+		    stations (str): Stations supplied by the caller and interpreted according to the method contract.
+		    data_types (str): Data types supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'dataset', dataset )
@@ -18505,21 +18309,21 @@ class ClimateData( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    keyword (str): Keyword supplied by the caller.
-		    dataset (str): Dataset supplied by the caller.
+		    keyword (str): Keyword supplied by the caller and interpreted according to the method contract.
+		    dataset (str): Dataset supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    stations (str): Stations supplied by the caller.
-		    data_types (str): Data types supplied by the caller.
+		    stations (str): Stations supplied by the caller and interpreted according to the method contract.
+		    data_types (str): Data types supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    offset (int): Zero-based record offset used for pagination.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -18559,10 +18363,10 @@ class ClimateData( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -18605,18 +18409,18 @@ class EoNet( Fetcher ):
 
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the EoNet.
-	    endpoint (Optional[str]): Current endpoint retained by the EoNet.
-	    source (Optional[str]): Current source retained by the EoNet.
-	    category (Optional[str]): Current category retained by the EoNet.
-	    status (Optional[str]): Current status retained by the EoNet.
-	    limit (Optional[int]): Current limit retained by the EoNet.
-	    days (Optional[int]): Current days retained by the EoNet.
-	    start_date (Optional[str]): Current start date retained by the EoNet.
-	    end_date (Optional[str]): Current end date retained by the EoNet.
-	    bbox (Optional[str]): Current bbox retained by the EoNet.
+	    mode (Optional[str]): Current mode retained by the EoNet workflow between related operations.
+	    endpoint (Optional[str]): Current endpoint retained by the EoNet workflow between related operations.
+	    source (Optional[str]): Current source retained by the EoNet workflow between related operations.
+	    category (Optional[str]): Current category retained by the EoNet workflow between related operations.
+	    status (Optional[str]): Current status retained by the EoNet workflow between related operations.
+	    limit (Optional[int]): Current limit retained by the EoNet workflow between related operations.
+	    days (Optional[int]): Current days retained by the EoNet workflow between related operations.
+	    start_date (Optional[str]): Current start date retained by the EoNet workflow between related operations.
+	    end_date (Optional[str]): Current end date retained by the EoNet workflow between related operations.
+	    bbox (Optional[str]): Current bbox retained by the EoNet workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the EoNet.
+	    payload (Optional[Any]): Current payload retained by the EoNet workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -18696,13 +18500,13 @@ class EoNet( Fetcher ):
 		    Validates the endpoint against provider constraints and returns the accepted value.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
@@ -18733,13 +18537,13 @@ class EoNet( Fetcher ):
 		    Validates the status against provider constraints and returns the accepted value.
 
 		Args:
-		    status (str): Status supplied by the caller.
+		    status (str): Status supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'status', status )
@@ -18777,7 +18581,7 @@ class EoNet( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -18803,13 +18607,13 @@ class EoNet( Fetcher ):
 		    Validates the days against provider constraints and returns the accepted value.
 
 		Args:
-		    days (int): Days supplied by the caller.
+		    days (int): Days supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'days', days )
@@ -18835,13 +18639,13 @@ class EoNet( Fetcher ):
 		    Validates the bbox against provider constraints and returns the accepted value.
 
 		Args:
-		    bbox (str): Bbox supplied by the caller.
+		    bbox (str): Bbox supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( bbox or '' ).strip( )
@@ -18904,7 +18708,7 @@ class EoNet( Fetcher ):
 		    Tuple[str, str]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			start_value = str( start_date or '' ).strip( )
@@ -18935,16 +18739,16 @@ class EoNet( Fetcher ):
 		"""Shape event rows.
 
 		Purpose:
-		    Transforms provider event rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider event rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -19016,16 +18820,16 @@ class EoNet( Fetcher ):
 		"""Shape category rows.
 
 		Purpose:
-		    Transforms provider category rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider category rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -19063,10 +18867,10 @@ class EoNet( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -19109,10 +18913,10 @@ class EoNet( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.result = {
@@ -19144,15 +18948,15 @@ class EoNet( Fetcher ):
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
-		    params (Optional[Dict[str, Any]]): Params supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
+		    params (Optional[Dict[str, Any]]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
@@ -19211,21 +19015,21 @@ class EoNet( Fetcher ):
 		    Retrieves events from the configured provider and returns normalized response data.
 
 		Args:
-		    source (str): Source supplied by the caller.
-		    category (str): Category supplied by the caller.
-		    status (str): Status supplied by the caller.
+		    source (str): Source supplied by the caller and interpreted according to the method contract.
+		    category (str): Category supplied by the caller and interpreted according to the method contract.
+		    status (str): Status supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
-		    days (int): Days supplied by the caller.
+		    days (int): Days supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    bbox (str): Bbox supplied by the caller.
+		    bbox (str): Bbox supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'status', status )
@@ -19290,10 +19094,10 @@ class EoNet( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time', time )
@@ -19337,21 +19141,21 @@ class EoNet( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    source (str): Source supplied by the caller.
-		    category (str): Category supplied by the caller.
-		    status (str): Status supplied by the caller.
+		    source (str): Source supplied by the caller and interpreted according to the method contract.
+		    category (str): Category supplied by the caller and interpreted according to the method contract.
+		    status (str): Status supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
-		    days (int): Days supplied by the caller.
+		    days (int): Days supplied by the caller and interpreted according to the method contract.
 		    start_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    bbox (str): Bbox supplied by the caller.
+		    bbox (str): Bbox supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -19404,10 +19208,10 @@ class EoNet( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -19452,14 +19256,14 @@ class EnviroFacts( Fetcher ):
 
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the EnviroFacts.
-	    table_name (Optional[str]): Current table name retained by the EnviroFacts.
-	    state_code (Optional[str]): Current state code retained by the EnviroFacts.
-	    facility_name (Optional[str]): Current facility name retained by the EnviroFacts.
-	    limit (Optional[int]): Current limit retained by the EnviroFacts.
-	    path (Optional[str]): Current path retained by the EnviroFacts.
+	    mode (Optional[str]): Current mode retained by the EnviroFacts workflow between related operations.
+	    table_name (Optional[str]): Current table name retained by the EnviroFacts workflow between related operations.
+	    state_code (Optional[str]): Current state code retained by the EnviroFacts workflow between related operations.
+	    facility_name (Optional[str]): Current facility name retained by the EnviroFacts workflow between related operations.
+	    limit (Optional[int]): Current limit retained by the EnviroFacts workflow between related operations.
+	    path (Optional[str]): Current path retained by the EnviroFacts workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the EnviroFacts.
+	    payload (Optional[Any]): Current payload retained by the EnviroFacts workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -19530,13 +19334,13 @@ class EnviroFacts( Fetcher ):
 		    Validates the table name against provider constraints and returns the accepted value.
 
 		Args:
-		    table_name (str): Table name supplied by the caller.
+		    table_name (str): Table name supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'table_name', table_name )
@@ -19577,7 +19381,7 @@ class EnviroFacts( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( state_code or '' ).strip( ).upper( )
@@ -19611,7 +19415,7 @@ class EnviroFacts( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'limit', limit )
@@ -19638,39 +19442,73 @@ class EnviroFacts( Fetcher ):
 		    Resolve table path using the class state and returns data required by the surrounding workflow.
 
 		Args:
-		    table_name (str): Table name supplied by the caller.
+		    table_name (str): Table name supplied by the caller and interpreted according to the method contract.
 		    state_code (str): Code identifying the requested state value.
-		    facility_name (str): Facility name supplied by the caller.
+		    facility_name (str): Facility name supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.table_name = self.validate_table_name( table_name )
 			self.state_code = self.validate_state_code( state_code )
 			self.facility_name = str( facility_name or '' ).strip( )
-			self.limit = self.validate_limit( limit )			
-			segments: List[ str ] = [ self.table_name ]			
+			self.limit = self.validate_limit( limit )
+			
+			segments: List[ str ] = [
+					self.table_name
+			]
+			
 			if self.state_code:
 				if self.table_name == 'EF_W_EMISSIONS_SOURCE_GHG':
-					segments.extend( [ 'STATE', self.state_code ] )
+					segments.extend(
+						[
+								'STATE',
+								self.state_code
+						]
+					)
 				else:
-					segments.extend( [ 'ST', self.state_code ] )
+					segments.extend(
+						[
+								'ST',
+								self.state_code
+						]
+					)
 			
 			if self.facility_name:
 				if self.table_name == 'EF_W_EMISSIONS_SOURCE_GHG':
-					segments.extend( [ 'FACILITY_NAME', self.facility_name ] )
+					segments.extend(
+						[
+								'FACILITY_NAME',
+								self.facility_name
+						]
+					)
 				else:
-					segments.extend( [ 'FACILITY_NAME', self.facility_name ] )
+					segments.extend(
+						[
+								'FACILITY_NAME',
+								self.facility_name
+						]
+					)
 			
-			segments.extend( [ 'ROWS', str( self.limit ), 'JSON' ] )
+			segments.extend(
+				[
+						'ROWS',
+						str( self.limit ),
+						'JSON'
+				]
+			)
 			
 			self.path = '/'.join(
-				[ urllib.parse.quote( str( segment ), safe='' ) for segment in segments ] )
+				[
+						urllib.parse.quote( str( segment ), safe='' )
+						for segment in segments
+				]
+			)
 			
 			return self.path
 		
@@ -19688,16 +19526,16 @@ class EnviroFacts( Fetcher ):
 		"""Shape rows.
 
 		Purpose:
-		    Transforms provider rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -19736,10 +19574,10 @@ class EnviroFacts( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -19748,20 +19586,32 @@ class EnviroFacts( Fetcher ):
 			
 			if rows:
 				first_facility = str(
-					rows[ 0 ].get( 'Facility Name', '' ) or rows[ 0 ].get( 'Primary Name', '' ) or
-					rows[ 0 ].get( 'Name', '' ) or '' )
+					rows[ 0 ].get( 'Facility Name', '' )
+					or rows[ 0 ].get( 'Primary Name', '' )
+					or rows[ 0 ].get( 'Name', '' )
+					or ''
+				)
 				
 				first_state = str(
-					rows[ 0 ].get( 'State', '' ) or rows[ 0 ].get( 'State Abbr', '' ) or rows[
-						0 ].get( 'St', '' ) or '' )
+					rows[ 0 ].get( 'State', '' )
+					or rows[ 0 ].get( 'State Abbr', '' )
+					or rows[ 0 ].get( 'St', '' )
+					or ''
+				)
 			
-			return { 'count': count, 'first_facility': first_facility, 'first_state': first_state }
+			return {
+					'count': count,
+					'first_facility': first_facility,
+					'first_state': first_state
+			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'EnviroFacts'
-			exception.method = 'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -19775,10 +19625,10 @@ class EnviroFacts( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.result = {
@@ -19814,10 +19664,10 @@ class EnviroFacts( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'url', url )
@@ -19863,17 +19713,17 @@ class EnviroFacts( Fetcher ):
 		    Retrieves table from the configured provider and returns normalized response data.
 
 		Args:
-		    table_name (str): Table name supplied by the caller.
+		    table_name (str): Table name supplied by the caller and interpreted according to the method contract.
 		    state_code (str): Code identifying the requested state value.
-		    facility_name (str): Facility name supplied by the caller.
+		    facility_name (str): Facility name supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'table_name', table_name )
@@ -19920,21 +19770,20 @@ class EnviroFacts( Fetcher ):
 		"""Fetch.
 
 		Purpose:
-		    Dispatches the requested retrieval or generation operation using the class configuration 
-		        and returns the normalized result.
+		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
-		    table_name (str): Table name supplied by the caller.
+		    table_name (str): Table name supplied by the caller and interpreted according to the method contract.
 		    state_code (str): Code identifying the requested state value.
-		    facility_name (str): Facility name supplied by the caller.
+		    facility_name (str): Facility name supplied by the caller and interpreted according to the method contract.
 		    limit (int): Maximum number of records or characters permitted by the operation.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			return self.fetch_table(
@@ -19971,10 +19820,10 @@ class EnviroFacts( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -20022,16 +19871,16 @@ class TidesAndCurrents( Fetcher ):
 	Attributes:
 	    data_url (Optional[str]): URL associated with the current data resource or endpoint.
 	    metadata_url (Optional[str]): URL associated with the current metadata resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the TidesAndCurrents.
+	    mode (Optional[str]): Current mode retained by the TidesAndCurrents workflow between related operations.
 	    station_id (Optional[str]): Identifier of the current station resource.
-	    begin_date (Optional[str]): Current begin date retained by the TidesAndCurrents.
-	    end_date (Optional[str]): Current end date retained by the TidesAndCurrents.
-	    datum (Optional[str]): Current datum retained by the TidesAndCurrents.
-	    units (Optional[str]): Current units retained by the TidesAndCurrents.
-	    time_zone (Optional[str]): Current time zone retained by the TidesAndCurrents.
-	    interval (Optional[str]): Current interval retained by the TidesAndCurrents.
+	    begin_date (Optional[str]): Current begin date retained by the TidesAndCurrents workflow between related operations.
+	    end_date (Optional[str]): Current end date retained by the TidesAndCurrents workflow between related operations.
+	    datum (Optional[str]): Current datum retained by the TidesAndCurrents workflow between related operations.
+	    units (Optional[str]): Current units retained by the TidesAndCurrents workflow between related operations.
+	    time_zone (Optional[str]): Current time zone retained by the TidesAndCurrents workflow between related operations.
+	    interval (Optional[str]): Current interval retained by the TidesAndCurrents workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the TidesAndCurrents.
+	    payload (Optional[Any]): Current payload retained by the TidesAndCurrents workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -20081,14 +19930,16 @@ class TidesAndCurrents( Fetcher ):
 		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.headers = { 'Accept': 'application/json', 'User-Agent': self.agents }
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
 	
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools,
-		    and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
@@ -20114,17 +19965,23 @@ class TidesAndCurrents( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
 			
 			value = str( mode ).strip( ).lower( )
-			allowed = { 'station', 'water-level', 'tide-predictions' }
+			allowed = {
+					'station',
+					'water-level',
+					'tide-predictions'
+			}
 			
 			if value not in allowed:
-				raise ValueError( "Unsupported NOAA Tides & Currents mode. Use 'station', "
-				                  "'water-level', or 'tide-predictions'." )
+				raise ValueError(
+					"Unsupported NOAA Tides & Currents mode. Use 'station', "
+					"'water-level', or 'tide-predictions'."
+				)
 			
 			return value
 		
@@ -20149,7 +20006,7 @@ class TidesAndCurrents( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'station_id', station_id )
@@ -20186,7 +20043,7 @@ class TidesAndCurrents( Fetcher ):
 		    Tuple[str, str]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'begin_date', begin_date )
@@ -20223,23 +20080,34 @@ class TidesAndCurrents( Fetcher ):
 		    Validates the datum against provider constraints and returns the accepted value.
 
 		Args:
-		    datum (str): Datum supplied by the caller.
+		    datum (str): Datum supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'datum', datum )
 			
 			value = str( datum ).strip( ).upper( )
-			allowed = { 'MLLW', 'MHHW', 'MHW', 'MTL', 'MSL', 'MLW', 'NAVD', 'STND' }
+			allowed = {
+					'MLLW',
+					'MHHW',
+					'MHW',
+					'MTL',
+					'MSL',
+					'MLW',
+					'NAVD',
+					'STND'
+			}
 			
 			if value not in allowed:
-				raise ValueError( 'datum must be one of MLLW, MHHW, MHW, MTL, MSL, MLW, NAVD, '
-				                  'or STND.' )
+				raise ValueError(
+					'datum must be one of MLLW, MHHW, MHW, MTL, MSL, MLW, NAVD, '
+					'or STND.'
+				)
 			
 			return value
 		
@@ -20258,13 +20126,13 @@ class TidesAndCurrents( Fetcher ):
 		    Validates the units against provider constraints and returns the accepted value.
 
 		Args:
-		    units (str): Units supplied by the caller.
+		    units (str): Units supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'units', units )
@@ -20295,19 +20163,23 @@ class TidesAndCurrents( Fetcher ):
 		    Validates the time zone against provider constraints and returns the accepted value.
 
 		Args:
-		    time_zone (str): Time zone supplied by the caller.
+		    time_zone (str): Time zone supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'time_zone', time_zone )
 			
 			value = str( time_zone ).strip( ).lower( )
-			allowed = { 'gmt', 'lst', 'lst_ldt' }
+			allowed = {
+					'gmt',
+					'lst',
+					'lst_ldt'
+			}
 			
 			if value not in allowed:
 				raise ValueError( "time_zone must be 'gmt', 'lst', or 'lst_ldt'." )
@@ -20329,21 +20201,35 @@ class TidesAndCurrents( Fetcher ):
 		    Validates the interval against provider constraints and returns the accepted value.
 
 		Args:
-		    interval (str): Interval supplied by the caller.
+		    interval (str): Interval supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'interval', interval )
+			
 			value = str( interval ).strip( ).lower( )
-			allowed = { 'hilo', 'h', '1', '5', '6', '10', '15', '30', '60' }
+			allowed = {
+					'hilo',
+					'h',
+					'1',
+					'5',
+					'6',
+					'10',
+					'15',
+					'30',
+					'60'
+			}
+			
 			if value not in allowed:
-				raise ValueError( "interval must be one of 'hilo', 'h', '1', '5', '6', '10', "
-				                  "'15', '30', or '60'." )
+				raise ValueError(
+					"interval must be one of 'hilo', 'h', '1', '5', '6', '10', "
+					"'15', '30', or '60'."
+				)
 			
 			return value
 		
@@ -20359,16 +20245,16 @@ class TidesAndCurrents( Fetcher ):
 		"""Shape station rows.
 
 		Purpose:
-		    Transforms provider station rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider station rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
 		    payload (Dict[str, Any]): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			station = payload.get( 'stations', None ) if isinstance( payload, dict ) else None
@@ -20397,7 +20283,10 @@ class TidesAndCurrents( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
-			exception.method = 'shape_station_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
+			exception.method = (
+					'shape_station_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -20405,16 +20294,16 @@ class TidesAndCurrents( Fetcher ):
 		"""Shape data rows.
 
 		Purpose:
-		    Transforms provider data rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider data rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
 		    payload (Dict[str, Any]): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -20462,10 +20351,10 @@ class TidesAndCurrents( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -20474,23 +20363,40 @@ class TidesAndCurrents( Fetcher ):
 			first_time = ''
 			
 			if rows:
-				first_station = str( rows[ 0 ].get( 'Name', '' ) or rows[ 0 ].get( 'Station Id',
-					'' ) or self.station_id or '' )
+				first_station = str(
+					rows[ 0 ].get( 'Name', '' )
+					or rows[ 0 ].get( 'Station Id', '' )
+					or self.station_id
+					or ''
+				)
 				first_value = str(
-					rows[ 0 ].get( 'V', '' ) or rows[ 0 ].get( 'Value', '' ) or rows[ 0 ].get(
-						'Prediction', '' ) or rows[ 0 ].get( 'Predicted Wl', '' ) or '' )
+					rows[ 0 ].get( 'V', '' )
+					or rows[ 0 ].get( 'Value', '' )
+					or rows[ 0 ].get( 'Prediction', '' )
+					or rows[ 0 ].get( 'Predicted Wl', '' )
+					or ''
+				)
 				first_time = str(
-					rows[ 0 ].get( 'T', '' ) or rows[ 0 ].get( 'Time', '' ) or rows[ 0 ].get(
-						'Date Time', '' ) or '' )
+					rows[ 0 ].get( 'T', '' )
+					or rows[ 0 ].get( 'Time', '' )
+					or rows[ 0 ].get( 'Date Time', '' )
+					or ''
+				)
 			
-			return { 'count': count, 'first_station': first_station, 'first_value': first_value,
-				'first_time': first_time }
+			return {
+					'count': count,
+					'first_station': first_station,
+					'first_value': first_value,
+					'first_time': first_time
+			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
-			exception.method = 'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -20504,15 +20410,21 @@ class TidesAndCurrents( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			self.result = { 'mode': self.mode, 'station_id': self.station_id, 'url': self.url,
-				'params': self.params, 'summary': self.summarize_rows( rows ), 'rows': rows,
-				'raw': self.payload }
+			self.result = {
+					'mode': self.mode,
+					'station_id': self.station_id,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
 			
 			return self.result
 		
@@ -20520,7 +20432,9 @@ class TidesAndCurrents( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
-			exception.method = 'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -20533,14 +20447,14 @@ class TidesAndCurrents( Fetcher ):
 
 		Args:
 		    url (str): Absolute endpoint or resource URL.
-		    params (Optional[Dict[str, Any]]): Params supplied by the caller.
+		    params (Optional[Dict[str, Any]]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'url', url )
@@ -20562,11 +20476,19 @@ class TidesAndCurrents( Fetcher ):
 				
 				self.params[ key ] = value
 			
-			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get(
+				url=self.url,
+				params=self.params,
+				headers=self.headers,
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			self.payload = self.response.json( ) or { }
-			self.result = { 'url': self.response.url, 'params': self.params, 'raw': self.payload }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
 			
 			return self.result
 		
@@ -20574,7 +20496,9 @@ class TidesAndCurrents( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
-			exception.method = 'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -20590,10 +20514,10 @@ class TidesAndCurrents( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'station_id', station_id )
@@ -20602,10 +20526,15 @@ class TidesAndCurrents( Fetcher ):
 			self.mode = 'station'
 			self.station_id = self.validate_station_id( station_id )
 			self.timeout = int( time )
-			self.request( url=f'{self.metadata_url}/stations/{self.station_id}.json', params={ },
-				time=self.timeout )
+			
+			self.request(
+				url=f'{self.metadata_url}/stations/{self.station_id}.json',
+				params={ },
+				time=self.timeout
+			)
 			
 			rows = self.shape_station_rows( self.payload )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
@@ -20630,16 +20559,16 @@ class TidesAndCurrents( Fetcher ):
 		    station_id (str): Provider identifier of the target station resource.
 		    begin_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    datum (str): Datum supplied by the caller.
-		    units (str): Units supplied by the caller.
-		    time_zone (str): Time zone supplied by the caller.
+		    datum (str): Datum supplied by the caller and interpreted according to the method contract.
+		    units (str): Units supplied by the caller and interpreted according to the method contract.
+		    time_zone (str): Time zone supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'station_id', station_id )
@@ -20649,26 +20578,42 @@ class TidesAndCurrents( Fetcher ):
 			
 			self.mode = 'water-level'
 			self.station_id = self.validate_station_id( station_id )
-			self.begin_date, self.end_date = self.validate_date_range( begin_date, end_date )
+			self.begin_date, self.end_date = self.validate_date_range(
+				begin_date,
+				end_date
+			)
 			self.datum = self.validate_datum( datum )
 			self.units = self.validate_units( units )
 			self.time_zone = self.validate_time_zone( time_zone )
 			self.timeout = int( time )
 			
-			self.request( url=self.data_url,
-				params={ 'product': 'water_level', 'application': 'Foo', 'station':
-					self.station_id, 'begin_date': self.begin_date, 'end_date': self.end_date,
-					'datum': self.datum, 'units': self.units, 'time_zone': self.time_zone,
-					'format': 'json' }, time=self.timeout )
+			self.request(
+				url=self.data_url,
+				params={
+						'product': 'water_level',
+						'application': 'Foo',
+						'station': self.station_id,
+						'begin_date': self.begin_date,
+						'end_date': self.end_date,
+						'datum': self.datum,
+						'units': self.units,
+						'time_zone': self.time_zone,
+						'format': 'json'
+				},
+				time=self.timeout
+			)
 			
 			rows = self.shape_data_rows( self.payload )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
-			exception.method = 'fetch_water_level( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_water_level( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -20685,45 +20630,65 @@ class TidesAndCurrents( Fetcher ):
 		    station_id (str): Provider identifier of the target station resource.
 		    begin_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    datum (str): Datum supplied by the caller.
-		    units (str): Units supplied by the caller.
-		    time_zone (str): Time zone supplied by the caller.
-		    interval (str): Interval supplied by the caller.
+		    datum (str): Datum supplied by the caller and interpreted according to the method contract.
+		    units (str): Units supplied by the caller and interpreted according to the method contract.
+		    time_zone (str): Time zone supplied by the caller and interpreted according to the method contract.
+		    interval (str): Interval supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'station_id', station_id )
 			throw_if( 'begin_date', begin_date )
 			throw_if( 'end_date', end_date )
 			throw_if( 'time', time )
+			
 			self.mode = 'tide-predictions'
 			self.station_id = self.validate_station_id( station_id )
-			self.begin_date, self.end_date = self.validate_date_range( begin_date, end_date )
+			self.begin_date, self.end_date = self.validate_date_range(
+				begin_date,
+				end_date
+			)
 			self.datum = self.validate_datum( datum )
 			self.units = self.validate_units( units )
 			self.time_zone = self.validate_time_zone( time_zone )
 			self.interval = self.validate_interval( interval )
 			self.timeout = int( time )
-			self.request( url=self.data_url,
-				params={ 'product': 'predictions', 'application': 'Foo', 'station':
-					self.station_id, 'begin_date': self.begin_date, 'end_date': self.end_date,
-					'datum': self.datum, 'units': self.units, 'time_zone': self.time_zone,
-					'interval': self.interval, 'format': 'json' }, time=self.timeout )
+			
+			self.request(
+				url=self.data_url,
+				params={
+						'product': 'predictions',
+						'application': 'Foo',
+						'station': self.station_id,
+						'begin_date': self.begin_date,
+						'end_date': self.end_date,
+						'datum': self.datum,
+						'units': self.units,
+						'time_zone': self.time_zone,
+						'interval': self.interval,
+						'format': 'json'
+				},
+				time=self.timeout
+			)
 			
 			rows = self.shape_data_rows( self.payload )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
-			exception.method ='fetch_tide_predictions( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_tide_predictions( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -20741,41 +20706,62 @@ class TidesAndCurrents( Fetcher ):
 		    station_id (str): Provider identifier of the target station resource.
 		    begin_date (str): Date boundary or date value used by the request.
 		    end_date (str): Date boundary or date value used by the request.
-		    datum (str): Datum supplied by the caller.
-		    units (str): Units supplied by the caller.
-		    time_zone (str): Time zone supplied by the caller.
-		    interval (str): Interval supplied by the caller.
+		    datum (str): Datum supplied by the caller and interpreted according to the method contract.
+		    units (str): Units supplied by the caller and interpreted according to the method contract.
+		    time_zone (str): Time zone supplied by the caller and interpreted according to the method contract.
+		    interval (str): Interval supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = self.validate_mode( mode )
 			
 			if self.mode == 'station':
-				return self.fetch_station( station_id=station_id, time=time )
+				return self.fetch_station(
+					station_id=station_id,
+					time=time
+				)
 			
 			if self.mode == 'water-level':
-				return self.fetch_water_level( station_id=station_id, begin_date=begin_date,
-					end_date=end_date, datum=datum, units=units, time_zone=time_zone, time=time )
+				return self.fetch_water_level(
+					station_id=station_id,
+					begin_date=begin_date,
+					end_date=end_date,
+					datum=datum,
+					units=units,
+					time_zone=time_zone,
+					time=time
+				)
 			
 			if self.mode == 'tide-predictions':
-				return self.fetch_tide_predictions( station_id=station_id, begin_date=begin_date,
-					end_date=end_date, datum=datum, units=units, time_zone=time_zone,
-					interval=interval, time=time )
+				return self.fetch_tide_predictions(
+					station_id=station_id,
+					begin_date=begin_date,
+					end_date=end_date,
+					datum=datum,
+					units=units,
+					time_zone=time_zone,
+					interval=interval,
+					time=time
+				)
 			
-			raise ValueError( "Unsupported mode. Use 'station', 'water-level', or "
-			                  "'tide-predictions'." )
+			raise ValueError(
+				"Unsupported mode. Use 'station', 'water-level', or "
+				"'tide-predictions'."
+			)
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
-			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -20795,10 +20781,10 @@ class TidesAndCurrents( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -20807,7 +20793,9 @@ class TidesAndCurrents( Fetcher ):
 			throw_if( 'parameters', parameters )
 			
 			if not isinstance( parameters, dict ):
-				raise ValueError( 'parameters must be a dict of param_name -> schema definition.' )
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
 			
 			if required is None:
 				required = list( parameters.keys( ) )
@@ -20829,7 +20817,9 @@ class TidesAndCurrents( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'TidesAndCurrents'
-			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			exception.method = (
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 
@@ -20841,13 +20831,13 @@ class UvIndex( Fetcher ):
 
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    mode (Optional[str]): Current mode retained by the UvIndex.
-	    zip_code (Optional[str]): Current zip code retained by the UvIndex.
-	    city (Optional[str]): Current city retained by the UvIndex.
-	    state (Optional[str]): Current state retained by the UvIndex.
-	    endpoint (Optional[str]): Current endpoint retained by the UvIndex.
+	    mode (Optional[str]): Current mode retained by the UvIndex workflow between related operations.
+	    zip_code (Optional[str]): Current zip code retained by the UvIndex workflow between related operations.
+	    city (Optional[str]): Current city retained by the UvIndex workflow between related operations.
+	    state (Optional[str]): Current state retained by the UvIndex workflow between related operations.
+	    endpoint (Optional[str]): Current endpoint retained by the UvIndex workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the UvIndex.
+	    payload (Optional[Any]): Current payload retained by the UvIndex workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -20870,12 +20860,10 @@ class UvIndex( Fetcher ):
 		"""Initialize the instance.
 
 		Purpose:
-		    Initializes instance state and provider or loader defaults required by subsequent
-		    operations.
+		    Initializes instance state and provider or loader defaults required by subsequent operations.
 
 		Returns:
-		    None: This method updates instance state or validates input and does not return a
-		    value.
+		    None: This method updates instance state or validates input and does not return a value.
 		"""
 		super( ).__init__( )
 		self.base_url = 'https://enviro.epa.gov/enviro/efservice'
@@ -20891,14 +20879,16 @@ class UvIndex( Fetcher ):
 		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.headers = { 'Accept': 'application/json', 'User-Agent': self.agents }
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
 	
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools,
-		    and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
@@ -20922,14 +20912,13 @@ class UvIndex( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it
+		    to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
-			
 			value = str( mode ).strip( ).lower( )
 			allowed = { 'daily-zip', 'daily-city-state', 'hourly-zip', 'hourly-city-state' }
-			
 			if value not in allowed:
 				raise ValueError( "Unsupported EPA UV Index mode. Use 'daily-zip', "
 				                  "'daily-city-state', 'hourly-zip', or 'hourly-city-state'." )
@@ -20957,11 +20946,13 @@ class UvIndex( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'zip_code', zip_code )
+			
 			value = str( zip_code ).strip( )
+			
 			if not re.fullmatch( r'\d{5}(?:-\d{4})?', value ):
 				raise ValueError( 'zip_code must be a valid 5-digit ZIP or ZIP+4 value.' )
 			
@@ -20982,17 +20973,19 @@ class UvIndex( Fetcher ):
 		    Validates the city against provider constraints and returns the accepted value.
 
 		Args:
-		    city (str): City supplied by the caller.
+		    city (str): City supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'city', city )
+			
 			value = str( city ).strip( )
+			
 			if not value:
 				raise ValueError( 'city cannot be empty.' )
 			
@@ -21016,17 +21009,19 @@ class UvIndex( Fetcher ):
 		    Validates the state against provider constraints and returns the accepted value.
 
 		Args:
-		    state (str): State supplied by the caller.
+		    state (str): State supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'state', state )
+			
 			value = str( state ).strip( ).upper( )
+			
 			if not re.fullmatch( r'[A-Z]{2}', value ):
 				raise ValueError( 'state must be a two-letter abbreviation.' )
 			
@@ -21044,16 +21039,16 @@ class UvIndex( Fetcher ):
 		"""Shape rows.
 
 		Purpose:
-		    Transforms provider rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
-		    records (List[Dict[str, Any]]): Records supplied by the caller.
+		    records (List[Dict[str, Any]]): Records supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -21076,7 +21071,9 @@ class UvIndex( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'shape_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
+			exception.method = (
+					'shape_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21090,27 +21087,38 @@ class UvIndex( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
 			max_uv = None
 			first_location = ''
 			first_alert = ''
+			
 			for row in rows or [ ]:
 				if not first_location:
 					first_location = str(
-						row.get( 'City', '' ) or row.get( 'Zip', '' ) or row.get( 'State',
-							'' ) or '' )
+						row.get( 'City', '' )
+						or row.get( 'Zip', '' )
+						or row.get( 'State', '' )
+						or ''
+					)
 				
 				if not first_alert:
-					first_alert = str( row.get( 'Uv Alert', '' ) or row.get( 'Alert', '' ) or '' )
+					first_alert = str(
+						row.get( 'Uv Alert', '' )
+						or row.get( 'Alert', '' )
+						or ''
+					)
 				
-				uv_value = (row.get( 'Uv Value', None ) or row.get( 'Index', None ) or row.get(
-					'Uv Index', None ))
+				uv_value = (
+						row.get( 'Uv Value', None )
+						or row.get( 'Index', None )
+						or row.get( 'Uv Index', None )
+				)
 				
 				try:
 					if uv_value is not None and str( uv_value ).strip( ):
@@ -21119,14 +21127,20 @@ class UvIndex( Fetcher ):
 				except Exception:
 					pass
 			
-			return { 'count': count, 'max_uv': max_uv, 'first_location': first_location,
-				'first_alert': first_alert }
+			return {
+					'count': count,
+					'max_uv': max_uv,
+					'first_location': first_location,
+					'first_alert': first_alert
+			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21140,14 +21154,20 @@ class UvIndex( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			self.result = { 'mode': self.mode, 'url': self.url, 'params': self.params,
-				'summary': self.summarize_rows( rows ), 'rows': rows, 'raw': self.payload }
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
 			
 			return self.result
 		
@@ -21155,7 +21175,9 @@ class UvIndex( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21168,19 +21190,20 @@ class UvIndex( Fetcher ):
 
 		Args:
 		    url (str): Absolute endpoint or resource URL.
-		    params (Dict[str, Any]): Params supplied by the caller.
+		    params (Dict[str, Any]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'url', url )
 			throw_if( 'params', params )
 			throw_if( 'time', time )
+			
 			self.url = str( url ).strip( )
 			self.params = params
 			self.timeout = int( time )
@@ -21188,11 +21211,18 @@ class UvIndex( Fetcher ):
 			if self.timeout < 1:
 				raise ValueError( 'time must be greater than or equal to 1.' )
 			
-			self.response = requests.get( url=self.url, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get(
+				url=self.url,
+				headers=self.headers,
+				timeout=self.timeout
+			)
 			self.response.raise_for_status( )
 			self.payload = self.response.json( ) or [ ]
-			self.result = { 'url': self.url, 'params': self.params, 'raw': self.payload }
+			self.result = {
+					'url': self.url,
+					'params': self.params,
+					'raw': self.payload
+			}
 			
 			return self.result
 		
@@ -21200,7 +21230,9 @@ class UvIndex( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21216,10 +21248,10 @@ class UvIndex( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'zip_code', zip_code )
@@ -21229,11 +21261,19 @@ class UvIndex( Fetcher ):
 			self.zip_code = self.validate_zip_code( zip_code )
 			self.endpoint = 'getEnvirofactsUVDAILY'
 			self.timeout = int( time )
-			self.params = { 'zip_code': self.zip_code }
-			self.url = (f'{self.base_url}/{self.endpoint}/ZIP/'
-			            f'{urllib.parse.quote( self.zip_code, safe="" )}/JSON')
+			self.params = {
+					'zip_code': self.zip_code
+			}
+			self.url = (
+					f'{self.base_url}/{self.endpoint}/ZIP/'
+					f'{urllib.parse.quote( self.zip_code, safe="" )}/JSON'
+			)
 			
-			self.request( url=self.url, params=self.params, time=self.timeout )
+			self.request(
+				url=self.url,
+				params=self.params,
+				time=self.timeout
+			)
 			
 			records = self.payload if isinstance( self.payload, list ) else [ ]
 			rows = self.shape_rows( records )
@@ -21244,7 +21284,9 @@ class UvIndex( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'fetch_daily_zip( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch_daily_zip( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21256,15 +21298,15 @@ class UvIndex( Fetcher ):
 		    Retrieves daily city state from the configured provider and returns normalized response data.
 
 		Args:
-		    city (str): City supplied by the caller.
-		    state (str): State supplied by the caller.
+		    city (str): City supplied by the caller and interpreted according to the method contract.
+		    state (str): State supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'city', city )
@@ -21276,12 +21318,21 @@ class UvIndex( Fetcher ):
 			self.state = self.validate_state( state )
 			self.endpoint = 'getEnvirofactsUVDAILY'
 			self.timeout = int( time )
-			self.params = { 'city': self.city, 'state': self.state }
-			self.url = (f'{self.base_url}/{self.endpoint}/CITY/'
-			            f'{urllib.parse.quote( self.city, safe="" )}/STATE/'
-			            f'{urllib.parse.quote( self.state, safe="" )}/JSON')
+			self.params = {
+					'city': self.city,
+					'state': self.state
+			}
+			self.url = (
+					f'{self.base_url}/{self.endpoint}/CITY/'
+					f'{urllib.parse.quote( self.city, safe="" )}/STATE/'
+					f'{urllib.parse.quote( self.state, safe="" )}/JSON'
+			)
 			
-			self.request( url=self.url, params=self.params, time=self.timeout )
+			self.request(
+				url=self.url,
+				params=self.params,
+				time=self.timeout
+			)
 			
 			records = self.payload if isinstance( self.payload, list ) else [ ]
 			rows = self.shape_rows( records )
@@ -21292,7 +21343,10 @@ class UvIndex( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'fetch_daily_city_state( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_daily_city_state( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21308,10 +21362,10 @@ class UvIndex( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'zip_code', zip_code )
@@ -21321,20 +21375,32 @@ class UvIndex( Fetcher ):
 			self.zip_code = self.validate_zip_code( zip_code )
 			self.endpoint = 'getEnvirofactsUVHOURLY'
 			self.timeout = int( time )
-			self.params = { 'zip_code': self.zip_code }
-			self.url = (f'{self.base_url}/{self.endpoint}/ZIP/'
-			            f'{urllib.parse.quote( self.zip_code, safe="" )}/JSON')
+			self.params = {
+					'zip_code': self.zip_code
+			}
+			self.url = (
+					f'{self.base_url}/{self.endpoint}/ZIP/'
+					f'{urllib.parse.quote( self.zip_code, safe="" )}/JSON'
+			)
 			
-			self.request( url=self.url, params=self.params, time=self.timeout )
+			self.request(
+				url=self.url,
+				params=self.params,
+				time=self.timeout
+			)
+			
 			records = self.payload if isinstance( self.payload, list ) else [ ]
 			rows = self.shape_rows( records )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'fetch_hourly_zip( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_hourly_zip( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21346,15 +21412,15 @@ class UvIndex( Fetcher ):
 		    Retrieves hourly city state from the configured provider and returns normalized response data.
 
 		Args:
-		    city (str): City supplied by the caller.
-		    state (str): State supplied by the caller.
+		    city (str): City supplied by the caller and interpreted according to the method contract.
+		    state (str): State supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'city', city )
@@ -21366,21 +21432,35 @@ class UvIndex( Fetcher ):
 			self.state = self.validate_state( state )
 			self.endpoint = 'getEnvirofactsUVHOURLY'
 			self.timeout = int( time )
-			self.params = { 'city': self.city, 'state': self.state }
-			self.url = (f'{self.base_url}/{self.endpoint}/CITY/'
-			            f'{urllib.parse.quote( self.city, safe="" )}/STATE/'
-			            f'{urllib.parse.quote( self.state, safe="" )}/JSON')
+			self.params = {
+					'city': self.city,
+					'state': self.state
+			}
+			self.url = (
+					f'{self.base_url}/{self.endpoint}/CITY/'
+					f'{urllib.parse.quote( self.city, safe="" )}/STATE/'
+					f'{urllib.parse.quote( self.state, safe="" )}/JSON'
+			)
 			
-			self.request( url=self.url, params=self.params, time=self.timeout )
+			self.request(
+				url=self.url,
+				params=self.params,
+				time=self.timeout
+			)
+			
 			records = self.payload if isinstance( self.payload, list ) else [ ]
 			rows = self.shape_rows( records )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'fetch_hourly_city_state( self, *args, **kwargs )-> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_hourly_city_state( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21394,39 +21474,57 @@ class UvIndex( Fetcher ):
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    zip_code (str): Code identifying the requested zip value.
-		    city (str): City supplied by the caller.
-		    state (str): State supplied by the caller.
+		    city (str): City supplied by the caller and interpreted according to the method contract.
+		    state (str): State supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = self.validate_mode( mode )
 			
 			if self.mode == 'daily-zip':
-				return self.fetch_daily_zip( zip_code=zip_code, time=time )
+				return self.fetch_daily_zip(
+					zip_code=zip_code,
+					time=time
+				)
 			
 			if self.mode == 'daily-city-state':
-				return self.fetch_daily_city_state( city=city, state=state, time=time )
+				return self.fetch_daily_city_state(
+					city=city,
+					state=state,
+					time=time
+				)
 			
 			if self.mode == 'hourly-zip':
-				return self.fetch_hourly_zip( zip_code=zip_code, time=time )
+				return self.fetch_hourly_zip(
+					zip_code=zip_code,
+					time=time
+				)
 			
 			if self.mode == 'hourly-city-state':
-				return self.fetch_hourly_city_state( city=city, state=state, time=time )
+				return self.fetch_hourly_city_state(
+					city=city,
+					state=state,
+					time=time
+				)
 			
-			raise ValueError( "Unsupported mode. Use 'daily-zip', 'daily-city-state', "
-			                  "'hourly-zip', or 'hourly-city-state'." )
+			raise ValueError(
+				"Unsupported mode. Use 'daily-zip', 'daily-city-state', "
+				"'hourly-zip', or 'hourly-city-state'."
+			)
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21446,10 +21544,10 @@ class UvIndex( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -21482,7 +21580,9 @@ class UvIndex( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'UvIndex'
-			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			exception.method = (
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 
@@ -21495,19 +21595,19 @@ class PurpleAir( Fetcher ):
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
-	    mode (Optional[str]): Current mode retained by the PurpleAir.
-	    endpoint (Optional[str]): Current endpoint retained by the PurpleAir.
-	    sensor_index (Optional[int]): Current sensor index retained by the PurpleAir.
-	    nwlng (Optional[float]): Current nwlng retained by the PurpleAir.
-	    nwlat (Optional[float]): Current nwlat retained by the PurpleAir.
-	    selng (Optional[float]): Current selng retained by the PurpleAir.
-	    selat (Optional[float]): Current selat retained by the PurpleAir.
-	    location_type (Optional[int]): Current location type retained by the PurpleAir.
+	    mode (Optional[str]): Current mode retained by the PurpleAir workflow between related operations.
+	    endpoint (Optional[str]): Current endpoint retained by the PurpleAir workflow between related operations.
+	    sensor_index (Optional[int]): Current sensor index retained by the PurpleAir workflow between related operations.
+	    nwlng (Optional[float]): Current nwlng retained by the PurpleAir workflow between related operations.
+	    nwlat (Optional[float]): Current nwlat retained by the PurpleAir workflow between related operations.
+	    selng (Optional[float]): Current selng retained by the PurpleAir workflow between related operations.
+	    selat (Optional[float]): Current selat retained by the PurpleAir workflow between related operations.
+	    location_type (Optional[int]): Current location type retained by the PurpleAir workflow between related operations.
 	    max_age (Optional[int]): Upper bound applied to age.
-	    modified_since (Optional[int]): Current modified since retained by the PurpleAir.
-	    fields (Optional[str]): Current fields retained by the PurpleAir.
+	    modified_since (Optional[int]): Current modified since retained by the PurpleAir workflow between related operations.
+	    fields (Optional[str]): Current fields retained by the PurpleAir workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the PurpleAir.
+	    payload (Optional[Any]): Current payload retained by the PurpleAir workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -21537,12 +21637,10 @@ class PurpleAir( Fetcher ):
 		"""Initialize the instance.
 
 		Purpose:
-		    Initializes instance state and provider or loader defaults required by subsequent
-		    operations.
+		    Initializes instance state and provider or loader defaults required by subsequent operations.
 
 		Returns:
-		    None: This method updates instance state or validates input and does not return a
-		    value.
+		    None: This method updates instance state or validates input and does not return a value.
 		"""
 		super( ).__init__( )
 		self.base_url = 'https://api.purpleair.com/v1'
@@ -21565,7 +21663,10 @@ class PurpleAir( Fetcher ):
 		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.headers = { 'Accept': 'application/json', 'User-Agent': self.agents }
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
 		
 		if self.api_key:
 			self.headers[ 'X-API-Key' ] = self.api_key
@@ -21574,8 +21675,7 @@ class PurpleAir( Fetcher ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools,
-		    and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
@@ -21599,7 +21699,7 @@ class PurpleAir( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -21626,13 +21726,16 @@ class PurpleAir( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
 			
 			value = str( mode ).strip( ).lower( )
-			allowed = { 'sensors', 'sensor' }
+			allowed = {
+					'sensors',
+					'sensor'
+			}
 			
 			if value not in allowed:
 				raise ValueError( "Unsupported PurpleAir mode. Use 'sensors' or 'sensor'." )
@@ -21654,13 +21757,13 @@ class PurpleAir( Fetcher ):
 		    Validates the endpoint against provider constraints and returns the accepted value.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
@@ -21693,13 +21796,13 @@ class PurpleAir( Fetcher ):
 		    Validates the sensor index against provider constraints and returns the accepted value.
 
 		Args:
-		    sensor_index (int): Sensor index supplied by the caller.
+		    sensor_index (int): Sensor index supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'sensor_index', sensor_index )
@@ -21732,7 +21835,7 @@ class PurpleAir( Fetcher ):
 		    float: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -21766,7 +21869,7 @@ class PurpleAir( Fetcher ):
 		    float: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -21794,16 +21897,16 @@ class PurpleAir( Fetcher ):
 		    Validates the bbox against provider constraints and returns the accepted value.
 
 		Args:
-		    nwlng (float): Nwlng supplied by the caller.
-		    nwlat (float): Nwlat supplied by the caller.
-		    selng (float): Selng supplied by the caller.
-		    selat (float): Selat supplied by the caller.
+		    nwlng (float): Nwlng supplied by the caller and interpreted according to the method contract.
+		    nwlat (float): Nwlat supplied by the caller and interpreted according to the method contract.
+		    selng (float): Selng supplied by the caller and interpreted according to the method contract.
+		    selat (float): Selat supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    Tuple[float, float, float, float]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			nw_lng = self.validate_longitude( 'nwlng', nwlng )
@@ -21823,7 +21926,10 @@ class PurpleAir( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'validate_bbox( self, *args, **kwargs ) -> Tuple[float,float,float,float]'
+			exception.method = (
+					'validate_bbox( self, *args, **kwargs ) '
+					'-> Tuple[ float, float, float, float ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21834,13 +21940,13 @@ class PurpleAir( Fetcher ):
 		    Validates the location type against provider constraints and returns the accepted value.
 
 		Args:
-		    location_type (int): Location type supplied by the caller.
+		    location_type (int): Location type supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'location_type', location_type if location_type == 0 else location_type )
@@ -21873,7 +21979,7 @@ class PurpleAir( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -21891,7 +21997,9 @@ class PurpleAir( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'validate_non_negative_integer( self, *args, **kwargs ) -> int'
+			exception.method = (
+					'validate_non_negative_integer( self, *args, **kwargs ) -> int'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21902,14 +22010,14 @@ class PurpleAir( Fetcher ):
 		    Normalizes fields into the canonical representation expected by the surrounding workflow.
 
 		Args:
-		    fields (str): Fields supplied by the caller.
-		    default_fields (str): Default fields supplied by the caller.
+		    fields (str): Fields supplied by the caller and interpreted according to the method contract.
+		    default_fields (str): Default fields supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'default_fields', default_fields )
@@ -21919,8 +22027,11 @@ class PurpleAir( Fetcher ):
 			if not selected:
 				selected = str( default_fields ).strip( )
 			
-			field_list = [ field.strip( ) for field in selected.split( ',' ) if
-				field and field.strip( ) ]
+			field_list = [
+					field.strip( )
+					for field in selected.split( ',' )
+					if field and field.strip( )
+			]
 			
 			if not field_list:
 				raise ValueError( 'At least one PurpleAir field is required.' )
@@ -21942,16 +22053,16 @@ class PurpleAir( Fetcher ):
 		"""Shape sensor list rows.
 
 		Purpose:
-		    Transforms provider sensor list rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider sensor list rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
 		    payload (Dict[str, Any]): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -21966,10 +22077,13 @@ class PurpleAir( Fetcher ):
 				if not isinstance( record, list ):
 					continue
 				
-				sensor = { fields[ index ]: record[ index ] if index < len( record ) else None for
-					index in range( len( fields ) ) }
+				sensor = {
+						fields[ index ]: record[ index ] if index < len( record ) else None
+						for index in range( len( fields ) )
+				}
 				
-				rows.append( {
+				rows.append(
+					{
 							'Sensor Index': sensor.get( 'sensor_index', None ),
 							'Name': sensor.get( 'name', '' ),
 							'PM2.5': sensor.get( 'pm2.5', None ),
@@ -21979,7 +22093,8 @@ class PurpleAir( Fetcher ):
 							'Longitude': sensor.get( 'longitude', None ),
 							'Last Seen': sensor.get( 'last_seen', None ),
 							'Location Type': sensor.get( 'location_type', None )
-					} )
+					}
+				)
 			
 			return rows
 		
@@ -21987,7 +22102,10 @@ class PurpleAir( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'shape_sensor_list_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ]]'
+			exception.method = (
+					'shape_sensor_list_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -21996,16 +22114,16 @@ class PurpleAir( Fetcher ):
 		"""Shape sensor detail rows.
 
 		Purpose:
-		    Transforms provider sensor detail rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider sensor detail rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
 		    payload (Dict[str, Any]): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if not isinstance( payload, dict ):
@@ -22036,7 +22154,10 @@ class PurpleAir( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'shape_sensor_detail_rows( self, *args, **kwargs ) -> List[ Dict[ str, Any ] ]'
+			exception.method = (
+					'shape_sensor_detail_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22050,21 +22171,26 @@ class PurpleAir( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
 			max_pm25 = None
 			first_name = ''
+			
 			for row in rows or [ ]:
 				if not first_name:
-					first_name = str( row.get( 'Name', '' ) or row.get( 'Sensor Index', '' ) or
-					                  '' )
+					first_name = str(
+						row.get( 'Name', '' )
+						or row.get( 'Sensor Index', '' )
+						or ''
+					)
 				
 				pm25_value = row.get( 'PM2.5', None )
+				
 				if pm25_value is None:
 					pm25_value = row.get( 'PM2.5 Cf 1 A', None )
 				
@@ -22075,13 +22201,19 @@ class PurpleAir( Fetcher ):
 				except Exception:
 					pass
 			
-			return { 'count': count, 'max_pm25': max_pm25, 'first_name': first_name }
+			return {
+					'count': count,
+					'max_pm25': max_pm25,
+					'first_name': first_name
+			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22094,17 +22226,23 @@ class PurpleAir( Fetcher ):
 
 		Args:
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
-		    params (Dict[str, Any]): Params supplied by the caller.
+		    params (Dict[str, Any]): Params supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			self.result = { 'mode': self.mode, 'url': self.url, 'params': params,
-				'summary': self.summarize_rows( rows ), 'rows': rows, 'raw': self.payload }
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
 			
 			return self.result
 		
@@ -22112,7 +22250,9 @@ class PurpleAir( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22124,15 +22264,15 @@ class PurpleAir( Fetcher ):
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
-		    params (Optional[Dict[str, Any]]): Params supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
+		    params (Optional[Dict[str, Any]]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.validate_api_key( )
@@ -22160,7 +22300,11 @@ class PurpleAir( Fetcher ):
 				timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.payload = self.response.json( ) or { }
-			self.result = { 'url': self.response.url, 'params': self.params, 'raw': self.payload }
+			self.result = {
+					'url': self.response.url,
+					'params': self.params,
+					'raw': self.payload
+			}
 			
 			return self.result
 		
@@ -22181,41 +22325,61 @@ class PurpleAir( Fetcher ):
 		    Retrieves sensors from the configured provider and returns normalized response data.
 
 		Args:
-		    nwlng (float): Nwlng supplied by the caller.
-		    nwlat (float): Nwlat supplied by the caller.
-		    selng (float): Selng supplied by the caller.
-		    selat (float): Selat supplied by the caller.
-		    location_type (int): Location type supplied by the caller.
-		    max_age (int): Max age supplied by the caller.
-		    modified_since (int): Modified since supplied by the caller.
-		    fields (str): Fields supplied by the caller.
+		    nwlng (float): Nwlng supplied by the caller and interpreted according to the method contract.
+		    nwlat (float): Nwlat supplied by the caller and interpreted according to the method contract.
+		    selng (float): Selng supplied by the caller and interpreted according to the method contract.
+		    selat (float): Selat supplied by the caller and interpreted according to the method contract.
+		    location_type (int): Location type supplied by the caller and interpreted according to the method contract.
+		    max_age (int): Max age supplied by the caller and interpreted according to the method contract.
+		    modified_since (int): Modified since supplied by the caller and interpreted according to the method contract.
+		    fields (str): Fields supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			default_fields = ( 'name,pm2.5,temperature,humidity,latitude,longitude,last_seen,'
-					'location_type' )
+			default_fields = (
+					'name,pm2.5,temperature,humidity,latitude,longitude,last_seen,'
+					'location_type'
+			)
 			
 			self.mode = 'sensors'
-			self.nwlng, self.nwlat, self.selng, self.selat = self.validate_bbox( nwlng=nwlng,
-				nwlat=nwlat, selng=selng, selat=selat )
+			self.nwlng, self.nwlat, self.selng, self.selat = self.validate_bbox(
+				nwlng=nwlng,
+				nwlat=nwlat,
+				selng=selng,
+				selat=selat
+			)
 			self.location_type = self.validate_location_type( location_type )
 			self.max_age = self.validate_non_negative_integer( 'max_age', max_age )
-			self.modified_since = self.validate_non_negative_integer( 'modified_since',
-				modified_since )
-			self.fields = self.normalize_fields( fields=fields, default_fields=default_fields )
+			self.modified_since = self.validate_non_negative_integer(
+				'modified_since',
+				modified_since
+			)
+			self.fields = self.normalize_fields(
+				fields=fields,
+				default_fields=default_fields
+			)
 			self.timeout = int( time )
 			
-			self.request( endpoint='sensors',
-				params={ 'fields': self.fields, 'location_type': self.location_type,
-					'nwlng': self.nwlng, 'nwlat': self.nwlat, 'selng': self.selng,
-					'selat': self.selat, 'max_age': self.max_age,
-					'modified_since': self.modified_since }, time=self.timeout )
+			self.request(
+				endpoint='sensors',
+				params={
+						'fields': self.fields,
+						'location_type': self.location_type,
+						'nwlng': self.nwlng,
+						'nwlat': self.nwlat,
+						'selng': self.selng,
+						'selat': self.selat,
+						'max_age': self.max_age,
+						'modified_since': self.modified_since
+				},
+				time=self.timeout
+			)
 			
 			rows = self.shape_sensor_list_rows( self.payload )
 			
@@ -22228,7 +22392,9 @@ class PurpleAir( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'fetch_sensors( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch_sensors( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22240,36 +22406,55 @@ class PurpleAir( Fetcher ):
 		    Retrieves sensor from the configured provider and returns normalized response data.
 
 		Args:
-		    sensor_index (int): Sensor index supplied by the caller.
-		    fields (str): Fields supplied by the caller.
+		    sensor_index (int): Sensor index supplied by the caller and interpreted according to the method contract.
+		    fields (str): Fields supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			default_fields = ('name,model,hardware,pm2.5_cf_1_a,pm2.5_cf_1_b,temperature,'
-			                  'humidity,pressure,latitude,longitude,last_seen,firmware_version,'
-			                  'rssi')
+			default_fields = (
+					'name,model,hardware,pm2.5_cf_1_a,pm2.5_cf_1_b,temperature,'
+					'humidity,pressure,latitude,longitude,last_seen,firmware_version,rssi'
+			)
 			
 			self.mode = 'sensor'
 			self.sensor_index = self.validate_sensor_index( sensor_index )
-			self.fields = self.normalize_fields( fields=fields, default_fields=default_fields )
+			self.fields = self.normalize_fields(
+				fields=fields,
+				default_fields=default_fields
+			)
 			self.timeout = int( time )
-			self.request( endpoint=f'sensors/{self.sensor_index}', params={ 'fields':
-				self.fields }, time=self.timeout )
+			
+			self.request(
+				endpoint=f'sensors/{self.sensor_index}',
+				params={
+						'fields': self.fields
+				},
+				time=self.timeout
+			)
 			
 			rows = self.shape_sensor_detail_rows( self.payload )
-			return self.package_response( rows=rows,
-				params={ 'sensor_index': self.sensor_index, 'fields': self.fields } )
+			
+			return self.package_response(
+				rows=rows,
+				params={
+						'sensor_index': self.sensor_index,
+						'fields': self.fields
+				}
+			)
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'fetch_sensor( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch_sensor( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22285,33 +22470,45 @@ class PurpleAir( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    sensor_index (int): Sensor index supplied by the caller.
-		    nwlng (float | None): Nwlng supplied by the caller.
-		    nwlat (float | None): Nwlat supplied by the caller.
-		    selng (float | None): Selng supplied by the caller.
-		    selat (float | None): Selat supplied by the caller.
-		    location_type (int): Location type supplied by the caller.
-		    max_age (int): Max age supplied by the caller.
-		    modified_since (int): Modified since supplied by the caller.
-		    fields (str): Fields supplied by the caller.
+		    sensor_index (int): Sensor index supplied by the caller and interpreted according to the method contract.
+		    nwlng (float | None): Nwlng supplied by the caller and interpreted according to the method contract.
+		    nwlat (float | None): Nwlat supplied by the caller and interpreted according to the method contract.
+		    selng (float | None): Selng supplied by the caller and interpreted according to the method contract.
+		    selat (float | None): Selat supplied by the caller and interpreted according to the method contract.
+		    location_type (int): Location type supplied by the caller and interpreted according to the method contract.
+		    max_age (int): Max age supplied by the caller and interpreted according to the method contract.
+		    modified_since (int): Modified since supplied by the caller and interpreted according to the method contract.
+		    fields (str): Fields supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = self.validate_mode( mode )
 			
 			if self.mode == 'sensors':
-				return self.fetch_sensors( nwlng=nwlng, nwlat=nwlat, selng=selng, selat=selat,
-					location_type=location_type, max_age=max_age, modified_since=modified_since,
-					fields=fields, time=time )
+				return self.fetch_sensors(
+					nwlng=nwlng,
+					nwlat=nwlat,
+					selng=selng,
+					selat=selat,
+					location_type=location_type,
+					max_age=max_age,
+					modified_since=modified_since,
+					fields=fields,
+					time=time
+				)
 			
 			if self.mode == 'sensor':
-				return self.fetch_sensor( sensor_index=sensor_index, fields=fields, time=time )
+				return self.fetch_sensor(
+					sensor_index=sensor_index,
+					fields=fields,
+					time=time
+				)
 			
 			raise ValueError( "Unsupported PurpleAir mode. Use 'sensors' or 'sensor'." )
 		
@@ -22319,7 +22516,9 @@ class PurpleAir( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22339,10 +22538,10 @@ class PurpleAir( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -22351,7 +22550,9 @@ class PurpleAir( Fetcher ):
 			throw_if( 'parameters', parameters )
 			
 			if not isinstance( parameters, dict ):
-				raise ValueError( 'parameters must be a dict of param_name -> schema definition.' )
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
 			
 			if required is None:
 				required = list( parameters.keys( ) )
@@ -22373,7 +22574,9 @@ class PurpleAir( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'PurpleAir'
-			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			exception.method = (
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 
@@ -22386,19 +22589,19 @@ class OpenAQ( Fetcher ):
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
-	    mode (Optional[str]): Current mode retained by the OpenAQ.
-	    endpoint (Optional[str]): Current endpoint retained by the OpenAQ.
+	    mode (Optional[str]): Current mode retained by the OpenAQ workflow between related operations.
+	    endpoint (Optional[str]): Current endpoint retained by the OpenAQ workflow between related operations.
 	    location_id (Optional[int]): Identifier of the current location resource.
 	    parameter_id (Optional[int]): Identifier of the current parameter resource.
 	    country_id (Optional[int]): Identifier of the current country resource.
-	    coordinates (Optional[str]): Current coordinates retained by the OpenAQ.
-	    radius (Optional[int]): Current radius retained by the OpenAQ.
+	    coordinates (Optional[str]): Current coordinates retained by the OpenAQ workflow between related operations.
+	    radius (Optional[int]): Current radius retained by the OpenAQ workflow between related operations.
 	    providers_id (Optional[str]): Identifier of the current providers resource.
 	    parameters_id (Optional[str]): Identifier of the current parameters resource.
-	    limit (Optional[int]): Current limit retained by the OpenAQ.
-	    page (Optional[int]): Current page retained by the OpenAQ.
+	    limit (Optional[int]): Current limit retained by the OpenAQ workflow between related operations.
+	    page (Optional[int]): Current page retained by the OpenAQ workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the OpenAQ.
+	    payload (Optional[Any]): Current payload retained by the OpenAQ workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -22454,7 +22657,10 @@ class OpenAQ( Fetcher ):
 		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.headers = { 'Accept': 'application/json', 'User-Agent': self.agents }
+		self.headers = {
+				'Accept': 'application/json',
+				'User-Agent': self.agents
+		}
 		
 		if self.api_key:
 			self.headers[ 'X-API-Key' ] = self.api_key
@@ -22463,8 +22669,7 @@ class OpenAQ( Fetcher ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools,
-		    and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
@@ -22490,7 +22695,7 @@ class OpenAQ( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'api_key', self.api_key )
@@ -22517,18 +22722,26 @@ class OpenAQ( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
 			
 			value = str( mode ).strip( ).lower( )
-			allowed = { 'countries', 'providers', 'parameters', 'parameter_latest', 'locations',
-				'latest' }
+			allowed = {
+					'countries',
+					'providers',
+					'parameters',
+					'parameter_latest',
+					'locations',
+					'latest'
+			}
 			
 			if value not in allowed:
-				raise ValueError( 'Unsupported OpenAQ mode. Use countries, providers, parameters, '
-				                  'parameter_latest, locations, or latest.' )
+				raise ValueError(
+					'Unsupported OpenAQ mode. Use countries, providers, parameters, '
+					'parameter_latest, locations, or latest.'
+				)
 			
 			return value
 		
@@ -22547,27 +22760,33 @@ class OpenAQ( Fetcher ):
 		    Validates the endpoint against provider constraints and returns the accepted value.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
+			
 			value = str( endpoint ).strip( ).strip( '/' )
+			
 			if value.startswith( 'http://' ) or value.startswith( 'https://' ):
 				raise ValueError( 'endpoint must be a path segment, not a full URL.' )
 			
 			if '..' in value:
 				raise ValueError( 'endpoint cannot contain parent-directory markers.' )
 			
-			if not re.fullmatch( r'(countries|providers|parameters|locations|'
+			if not re.fullmatch(
+					r'(countries|providers|parameters|locations|'
 					r'parameters/\d+/latest|locations/\d+/latest)',
-					value ):
-				raise ValueError( 'Unsupported OpenAQ endpoint path.' )
+					value
+			):
+				raise ValueError(
+					'Unsupported OpenAQ endpoint path.'
+				)
 			
 			return value
 		
@@ -22589,13 +22808,13 @@ class OpenAQ( Fetcher ):
 		Args:
 		    name (str): Argument name included in validation error messages.
 		    value (Any): Candidate value to validate or normalize.
-		    maximum (int | None): Maximum supplied by the caller.
+		    maximum (int | None): Maximum supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -22615,7 +22834,9 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'validate_positive_integer( self, *args, **kwargs ) -> int'
+			exception.method = (
+					'validate_positive_integer( self, *args, **kwargs ) -> int'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22633,7 +22854,7 @@ class OpenAQ( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
@@ -22652,7 +22873,9 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'validate_non_negative_integer( self, *args, **kwargs ) -> int'
+			exception.method = (
+					'validate_non_negative_integer( self, *args, **kwargs ) -> int'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22663,26 +22886,31 @@ class OpenAQ( Fetcher ):
 		    Validates the coordinates against provider constraints and returns the accepted value.
 
 		Args:
-		    coordinates (str): Coordinates supplied by the caller.
+		    coordinates (str): Coordinates supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( coordinates or '' ).strip( )
+			
 			if not value:
 				return ''
 			
-			parts = [ part.strip( ) for part in value.split( ',' ) ]
+			parts = [
+					part.strip( )
+					for part in value.split( ',' )
+			]
 			
 			if len( parts ) != 2:
 				raise ValueError( 'coordinates must use latitude,longitude format.' )
 			
 			latitude = float( parts[ 0 ] )
 			longitude = float( parts[ 1 ] )
+			
 			if latitude < -90.0 or latitude > 90.0:
 				raise ValueError( 'coordinates latitude must be between -90 and 90.' )
 			
@@ -22706,16 +22934,21 @@ class OpenAQ( Fetcher ):
 		    Validates the radius against provider constraints and returns the accepted value.
 
 		Args:
-		    radius (int): Radius supplied by the caller.
+		    radius (int): Radius supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			value = self.validate_positive_integer( name='radius', value=radius, maximum=100000 )
+			value = self.validate_positive_integer(
+				name='radius',
+				value=radius,
+				maximum=100000
+			)
+			
 			return value
 		
 		except Exception as e:
@@ -22736,24 +22969,33 @@ class OpenAQ( Fetcher ):
 		    payload (Any): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if payload is None:
 				return [ ]
 			
 			if isinstance( payload, list ):
-				return [ item for item in payload if isinstance( item, dict ) ]
+				return [
+						item
+						for item in payload
+						if isinstance( item, dict )
+				]
 			
 			if not isinstance( payload, dict ):
 				return [ ]
 			
 			results = payload.get( 'results', [ ] )
+			
 			if isinstance( results, list ):
-				return [ item for item in results if isinstance( item, dict ) ]
+				return [
+						item
+						for item in results
+						if isinstance( item, dict )
+				]
 			
 			return [ ]
 		
@@ -22761,7 +23003,10 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'coalesce_results( self, *args, **kwargs ) -> List[Dict[ str, Any]]'
+			exception.method = (
+					'coalesce_results( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22770,21 +23015,23 @@ class OpenAQ( Fetcher ):
 		"""Shape resource rows.
 
 		Purpose:
-		    Transforms provider resource rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider resource rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
 		    payload (Any): Validated request dictionary forwarded to the provider client.
-		    resource_name (str): Resource name supplied by the caller.
+		    resource_name (str): Resource name supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'resource_name', resource_name )
+			
 			rows: List[ Dict[ str, Any ] ] = [ ]
+			
 			for item in self.coalesce_results( payload ):
 				row = {
 						'Id': item.get( 'id', '' ),
@@ -22803,9 +23050,11 @@ class OpenAQ( Fetcher ):
 				parameters = item.get( 'parameters', [ ] )
 				if isinstance( parameters, list ) and parameters:
 					row[ 'Parameter Count' ] = len( parameters )
-					row[ 'First Parameter' ] = ( parameters[ 0 ].get( 'name', '' )
+					row[ 'First Parameter' ] = (
+							parameters[ 0 ].get( 'name', '' )
 							if isinstance( parameters[ 0 ], dict )
-							else '' )
+							else ''
+					)
 				
 				rows.append( row )
 			
@@ -22815,7 +23064,10 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'shape_resource_rows( self, *args, **kwargs ) -> List[Dict[str,Any]]'
+			exception.method = (
+					'shape_resource_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22823,16 +23075,16 @@ class OpenAQ( Fetcher ):
 		"""Shape location rows.
 
 		Purpose:
-		    Transforms provider location rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider location rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
 		    payload (Any): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -22843,26 +23095,56 @@ class OpenAQ( Fetcher ):
 				provider = item.get( 'provider', { } ) or item.get( 'owner', { } ) or { }
 				parameters = item.get( 'parameters', [ ] ) or [ ]
 				
-				latitude = (coordinates.get( 'latitude', None ) if isinstance( coordinates,
-					dict ) else None)
-				longitude = (coordinates.get( 'longitude', None ) if isinstance( coordinates,
-					dict ) else None)
+				latitude = (
+						coordinates.get( 'latitude', None )
+						if isinstance( coordinates, dict )
+						else None
+				)
+				longitude = (
+						coordinates.get( 'longitude', None )
+						if isinstance( coordinates, dict )
+						else None
+				)
 				
-				rows.append( { 'Location Id': item.get( 'id', '' ), 'Name': item.get( 'name', '' ),
-					'Locality': item.get( 'locality', '' ), 'Timezone': item.get( 'timezone', '' ),
-					'Country': (
-						country.get( 'name', '' ) if isinstance( country, dict ) else country),
-					'Country Code': (
-						country.get( 'code', '' ) if isinstance( country, dict ) else ''),
-					'Provider': (
-						provider.get( 'name', '' ) if isinstance( provider, dict ) else provider),
-					'Parameter Count': (len( parameters ) if isinstance( parameters, list ) else 0),
-					'First Parameter': (parameters[ 0 ].get( 'name', '' ) if isinstance(
-						parameters, list ) and parameters and isinstance(
-						parameters[ 0 ], dict ) else ''),
-					'Latitude': latitude, 'Longitude': longitude,
-					'First Datetime': item.get( 'datetimeFirst', '' ),
-					'Last Datetime': item.get( 'datetimeLast', '' ) } )
+				rows.append(
+					{
+							'Location Id': item.get( 'id', '' ),
+							'Name': item.get( 'name', '' ),
+							'Locality': item.get( 'locality', '' ),
+							'Timezone': item.get( 'timezone', '' ),
+							'Country': (
+									country.get( 'name', '' )
+									if isinstance( country, dict )
+									else country
+							),
+							'Country Code': (
+									country.get( 'code', '' )
+									if isinstance( country, dict )
+									else ''
+							),
+							'Provider': (
+									provider.get( 'name', '' )
+									if isinstance( provider, dict )
+									else provider
+							),
+							'Parameter Count': (
+									len( parameters )
+									if isinstance( parameters, list )
+									else 0
+							),
+							'First Parameter': (
+									parameters[ 0 ].get( 'name', '' )
+									if isinstance( parameters, list )
+									   and parameters
+									   and isinstance( parameters[ 0 ], dict )
+									else ''
+							),
+							'Latitude': latitude,
+							'Longitude': longitude,
+							'First Datetime': item.get( 'datetimeFirst', '' ),
+							'Last Datetime': item.get( 'datetimeLast', '' )
+					}
+				)
 			
 			return rows
 		
@@ -22870,7 +23152,10 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'shape_location_rows( self, *args, **kwargs ) -> List[Dict[str,Any]]'
+			exception.method = (
+					'shape_location_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22878,16 +23163,16 @@ class OpenAQ( Fetcher ):
 		"""Shape latest rows.
 
 		Purpose:
-		    Transforms provider latest rows into stable dictionaries suitable for tables and analysis.
+		    Transforms provider latest rows into stable row dictionaries suitable for tables, serialization, and analysis.
 
 		Args:
 		    payload (Any): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			rows: List[ Dict[ str, Any ] ] = [ ]
@@ -22899,7 +23184,8 @@ class OpenAQ( Fetcher ):
 				period = item.get( 'period', { } ) or { }
 				datetime_value = item.get( 'datetime', { } ) or item.get( 'date', { } ) or { }
 				
-				rows.append( {
+				rows.append(
+					{
 							'Location Id': (
 									location.get( 'id', '' )
 									if isinstance( location, dict )
@@ -22942,7 +23228,8 @@ class OpenAQ( Fetcher ):
 									if isinstance( coordinates, dict )
 									else None
 							)
-					} )
+					}
+				)
 			
 			return rows
 		
@@ -22950,7 +23237,10 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'shape_latest_rows( self, *args, **kwargs ) -> List[Dict[str,Any]]'
+			exception.method = (
+					'shape_latest_rows( self, *args, **kwargs ) '
+					'-> List[ Dict[ str, Any ] ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -22964,10 +23254,10 @@ class OpenAQ( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
@@ -22977,22 +23267,37 @@ class OpenAQ( Fetcher ):
 			
 			if rows:
 				first_result = str(
-					rows[ 0 ].get( 'Name', '' ) or rows[ 0 ].get( 'Display Name', '' ) or rows[
-						0 ].get( 'Location Id', '' ) or rows[ 0 ].get( 'Id', '' ) or '' )
+					rows[ 0 ].get( 'Name', '' )
+					or rows[ 0 ].get( 'Display Name', '' )
+					or rows[ 0 ].get( 'Location Id', '' )
+					or rows[ 0 ].get( 'Id', '' )
+					or ''
+				)
 				first_parameter = str(
-					rows[ 0 ].get( 'First Parameter', '' ) or rows[ 0 ].get( 'Parameter',
-						'' ) or '' )
+					rows[ 0 ].get( 'First Parameter', '' )
+					or rows[ 0 ].get( 'Parameter', '' )
+					or ''
+				)
 				first_country = str(
-					rows[ 0 ].get( 'Country', '' ) or rows[ 0 ].get( 'Country Code', '' ) or '' )
+					rows[ 0 ].get( 'Country', '' )
+					or rows[ 0 ].get( 'Country Code', '' )
+					or ''
+				)
 			
-			return { 'count': count, 'first_result': first_result,
-				'first_parameter': first_parameter, 'first_country': first_country }
+			return {
+					'count': count,
+					'first_result': first_result,
+					'first_parameter': first_parameter,
+					'first_country': first_country
+			}
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'summarize_rows( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23005,18 +23310,23 @@ class OpenAQ( Fetcher ):
 
 		Args:
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
-		    params (Optional[Dict[str, Any]]): Params supplied by the caller.
+		    params (Optional[Dict[str, Any]]): Params supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			self.result = { 'mode': self.mode, 'url': self.url,
-				'params': params if params is not None else self.params,
-				'summary': self.summarize_rows( rows ), 'rows': rows, 'raw': self.payload }
+			self.result = {
+					'mode': self.mode,
+					'url': self.url,
+					'params': params if params is not None else self.params,
+					'summary': self.summarize_rows( rows ),
+					'rows': rows,
+					'raw': self.payload
+			}
 			
 			return self.result
 		
@@ -23024,7 +23334,9 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'package_response( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23036,15 +23348,15 @@ class OpenAQ( Fetcher ):
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
-		    params (Optional[Dict[str, Any]]): Params supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
+		    params (Optional[Dict[str, Any]]): Params supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.validate_api_key( )
@@ -23088,7 +23400,9 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'request( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23108,10 +23422,10 @@ class OpenAQ( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'countries'
@@ -23120,17 +23434,29 @@ class OpenAQ( Fetcher ):
 			self.limit = self.validate_positive_integer( 'limit', limit, maximum=1000 )
 			self.page = self.validate_positive_integer( 'page', page )
 			self.timeout = int( time )
-			self.request( endpoint='countries', params={ 'providers_id': self.providers_id,
-				'parameters_id': self.parameters_id, 'limit': self.limit, 'page': self.page },
-				time=self.timeout )
+			
+			self.request(
+				endpoint='countries',
+				params={
+						'providers_id': self.providers_id,
+						'parameters_id': self.parameters_id,
+						'limit': self.limit,
+						'page': self.page
+				},
+				time=self.timeout
+			)
 			
 			rows = self.shape_resource_rows( self.payload, 'countries' )
+			
 			return self.package_response( rows )
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'fetch_countries( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch_countries( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23147,27 +23473,37 @@ class OpenAQ( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'providers'
 			self.limit = self.validate_positive_integer( 'limit', limit, maximum=1000 )
 			self.page = self.validate_positive_integer( 'page', page )
 			self.timeout = int( time )
-			self.request( endpoint='providers', params={ 'limit': self.limit, 'page': self.page },
-				time=self.timeout )
+			
+			self.request(
+				endpoint='providers',
+				params={
+						'limit': self.limit,
+						'page': self.page
+				},
+				time=self.timeout
+			)
 			
 			rows = self.shape_resource_rows( self.payload, 'providers' )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'fetch_providers( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch_providers( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23184,27 +23520,37 @@ class OpenAQ( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'parameters'
 			self.limit = self.validate_positive_integer( 'limit', limit, maximum=1000 )
 			self.page = self.validate_positive_integer( 'page', page )
 			self.timeout = int( time )
-			self.request( endpoint='parameters', params={ 'limit': self.limit, 'page': self.page },
-				time=self.timeout )
+			
+			self.request(
+				endpoint='parameters',
+				params={
+						'limit': self.limit,
+						'page': self.page
+				},
+				time=self.timeout
+			)
 			
 			rows = self.shape_resource_rows( self.payload, 'parameters' )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'fetch_parameters( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch_parameters( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23222,33 +23568,49 @@ class OpenAQ( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'parameter_latest'
-			self.parameter_id = self.validate_positive_integer( name='parameter_id',
-				value=parameter_id )
+			self.parameter_id = self.validate_positive_integer(
+				name='parameter_id',
+				value=parameter_id
+			)
 			self.limit = self.validate_positive_integer( 'limit', limit, maximum=1000 )
 			self.page = self.validate_positive_integer( 'page', page )
 			self.timeout = int( time )
-			self.request( endpoint=f'parameters/{self.parameter_id}/latest',
-				params={ 'limit': self.limit, 'page': self.page }, time=self.timeout )
+			
+			self.request(
+				endpoint=f'parameters/{self.parameter_id}/latest',
+				params={
+						'limit': self.limit,
+						'page': self.page
+				},
+				time=self.timeout
+			)
 			
 			rows = self.shape_latest_rows( self.payload )
 			
-			return self.package_response( rows=rows,
-				params={ 'parameter_id': self.parameter_id,
+			return self.package_response(
+				rows=rows,
+				params={
+						'parameter_id': self.parameter_id,
 						'limit': self.limit,
-						'page': self.page } )
+						'page': self.page
+				}
+			)
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'fetch_parameter_latest( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_parameter_latest( self, *args, **kwargs ) '
+					'-> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23263,8 +23625,8 @@ class OpenAQ( Fetcher ):
 
 		Args:
 		    country_id (int): Provider identifier of the target country resource.
-		    coordinates (str): Coordinates supplied by the caller.
-		    radius (int): Radius supplied by the caller.
+		    coordinates (str): Coordinates supplied by the caller and interpreted according to the method contract.
+		    radius (int): Radius supplied by the caller and interpreted according to the method contract.
 		    providers_id (str): Provider identifier of the target providers resource.
 		    parameters_id (str): Provider identifier of the target parameters resource.
 		    limit (int): Maximum number of records or characters permitted by the operation.
@@ -23272,15 +23634,18 @@ class OpenAQ( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'locations'
-			self.country_id = ( None if country_id is None else self.validate_positive_integer(
-				'country_id', country_id ))
+			self.country_id = (
+					None
+					if country_id is None
+					else self.validate_positive_integer( 'country_id', country_id )
+			)
 			self.coordinates = self.validate_coordinates( coordinates )
 			self.radius = self.validate_radius( radius )
 			self.providers_id = str( providers_id or '' ).strip( )
@@ -23289,20 +23654,31 @@ class OpenAQ( Fetcher ):
 			self.page = self.validate_positive_integer( 'page', page )
 			self.timeout = int( time )
 			
-			self.request( endpoint='locations',
-				params={ 'country_id': self.country_id, 'coordinates': self.coordinates,
-					'radius': self.radius, 'providers_id': self.providers_id,
-					'parameters_id': self.parameters_id, 'limit': self.limit, 'page': self.page },
-				time=self.timeout )
+			self.request(
+				endpoint='locations',
+				params={
+						'country_id': self.country_id,
+						'coordinates': self.coordinates,
+						'radius': self.radius,
+						'providers_id': self.providers_id,
+						'parameters_id': self.parameters_id,
+						'limit': self.limit,
+						'page': self.page
+				},
+				time=self.timeout
+			)
 			
 			rows = self.shape_location_rows( self.payload )
+			
 			return self.package_response( rows )
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'fetch_locations( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = (
+					'fetch_locations( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23318,29 +23694,41 @@ class OpenAQ( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'latest'
-			self.location_id = self.validate_positive_integer( name='location_id',
-				value=location_id )
+			self.location_id = self.validate_positive_integer(
+				name='location_id',
+				value=location_id
+			)
 			self.timeout = int( time )
 			
-			self.request( endpoint=f'locations/{self.location_id}/latest', params={ },
-				time=self.timeout )
+			self.request(
+				endpoint=f'locations/{self.location_id}/latest',
+				params={ },
+				time=self.timeout
+			)
 			
 			rows = self.shape_latest_rows( self.payload )
 			
-			return self.package_response( rows=rows, params={ 'location_id': self.location_id } )
+			return self.package_response(
+				rows=rows,
+				params={
+						'location_id': self.location_id
+				}
+			)
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'fetch_latest( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch_latest( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23353,16 +23741,15 @@ class OpenAQ( Fetcher ):
 		"""Fetch.
 
 		Purpose:
-		    Dispatches the requested retrieval or generation operation using the class configuration 
-		        and returns the normalized result.
+		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
 		    location_id (int): Provider identifier of the target location resource.
 		    parameter_id (int): Provider identifier of the target parameter resource.
 		    country_id (int): Provider identifier of the target country resource.
-		    coordinates (str): Coordinates supplied by the caller.
-		    radius (int): Radius supplied by the caller.
+		    coordinates (str): Coordinates supplied by the caller and interpreted according to the method contract.
+		    radius (int): Radius supplied by the caller and interpreted according to the method contract.
 		    providers_id (str): Provider identifier of the target providers resource.
 		    parameters_id (str): Provider identifier of the target parameters resource.
 		    limit (int): Maximum number of records or characters permitted by the operation.
@@ -23370,49 +23757,80 @@ class OpenAQ( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = self.validate_mode( mode )
 			
 			if self.mode == 'countries':
-				return self.fetch_countries( providers_id=providers_id, 
+				return self.fetch_countries(
+					providers_id=providers_id,
 					parameters_id=parameters_id,
-					limit=limit, page=page, time=time )
+					limit=limit,
+					page=page,
+					time=time
+				)
 			
 			if self.mode == 'providers':
-				return self.fetch_providers( limit=limit, page=page, time=time )
+				return self.fetch_providers(
+					limit=limit,
+					page=page,
+					time=time
+				)
 			
 			if self.mode == 'parameters':
-				return self.fetch_parameters( limit=limit, page=page, time=time )
+				return self.fetch_parameters(
+					limit=limit,
+					page=page,
+					time=time
+				)
 			
 			if self.mode == 'parameter_latest':
-				return self.fetch_parameter_latest( parameter_id=parameter_id, limit=limit,
-					page=page, time=time )
+				return self.fetch_parameter_latest(
+					parameter_id=parameter_id,
+					limit=limit,
+					page=page,
+					time=time
+				)
 			
 			if self.mode == 'locations':
-				return self.fetch_locations( country_id=country_id, coordinates=coordinates,
-					radius=radius, providers_id=providers_id, parameters_id=parameters_id,
-					limit=limit, page=page, time=time )
+				return self.fetch_locations(
+					country_id=country_id,
+					coordinates=coordinates,
+					radius=radius,
+					providers_id=providers_id,
+					parameters_id=parameters_id,
+					limit=limit,
+					page=page,
+					time=time
+				)
 			
 			if self.mode == 'latest':
-				return self.fetch_latest( location_id=location_id, time=time )
+				return self.fetch_latest(
+					location_id=location_id,
+					time=time
+				)
 			
-			raise ValueError( 'Unsupported OpenAQ mode. Use countries, providers, parameters, '
-			                  'parameter_latest, locations, or latest.' )
+			raise ValueError(
+				'Unsupported OpenAQ mode. Use countries, providers, parameters, '
+				'parameter_latest, locations, or latest.'
+			)
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method = (
+					'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 	
-	def create_schema( self, function: str, tool: str, description: str, parameters: dict,
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
 			required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""Create schema.
 
@@ -23427,18 +23845,21 @@ class OpenAQ( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
+			
 			if not isinstance( parameters, dict ):
-				raise ValueError( 'parameters must be a dict of param_name -> schema definition.' )
+				raise ValueError(
+					'parameters must be a dict of param_name -> schema definition.'
+				)
 			
 			if required is None:
 				required = list( parameters.keys( ) )
@@ -23460,7 +23881,9 @@ class OpenAQ( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenAQ'
-			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			exception.method = (
+					'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			)
 			Logger( ).write( exception )
 			raise exception
 
@@ -23472,15 +23895,15 @@ class Firms( Fetcher ):
 
 	Attributes:
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
-	    map_key (Optional[str]): Current map key retained by the Firms.
-	    mode (Optional[str]): Current mode retained by the Firms.
-	    source (Optional[str]): Current source retained by the Firms.
-	    area_coordinates (Optional[str]): Current area coordinates retained by the Firms.
-	    day_range (Optional[int]): Current day range retained by the Firms.
-	    date (Optional[str]): Current date retained by the Firms.
-	    sensor (Optional[str]): Current sensor retained by the Firms.
+	    map_key (Optional[str]): Current map key retained by the Firms workflow between related operations.
+	    mode (Optional[str]): Current mode retained by the Firms workflow between related operations.
+	    source (Optional[str]): Current source retained by the Firms workflow between related operations.
+	    area_coordinates (Optional[str]): Current area coordinates retained by the Firms workflow between related operations.
+	    day_range (Optional[int]): Current day range retained by the Firms workflow between related operations.
+	    date (Optional[str]): Current date retained by the Firms workflow between related operations.
+	    sensor (Optional[str]): Current sensor retained by the Firms workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the Firms.
+	    payload (Optional[Any]): Current payload retained by the Firms workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    response (Any): Most recent raw response returned by the provider client.
@@ -23526,14 +23949,16 @@ class Firms( Fetcher ):
 		self.url = None
 		self.timeout = 20
 		self.agents = cfg.AGENTS
-		self.headers = { 'Accept': 'text/csv', 'User-Agent': self.agents }
+		self.headers = {
+				'Accept': 'text/csv',
+				'User-Agent': self.agents
+		}
 	
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, 
-		    and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
@@ -23555,12 +23980,11 @@ class Firms( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'map_key', self.map_key )
 			return str( self.map_key ).strip( )
-		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
@@ -23582,7 +24006,7 @@ class Firms( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'mode', mode )
@@ -23607,13 +24031,13 @@ class Firms( Fetcher ):
 		    Validates the source against provider constraints and returns the accepted value.
 
 		Args:
-		    source (str): Source supplied by the caller.
+		    source (str): Source supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'source', source )
@@ -23626,7 +24050,6 @@ class Firms( Fetcher ):
 				                  'LANDSAT, MODIS, or VIIRS source identifiers.' )
 			
 			return value
-		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
@@ -23642,13 +24065,13 @@ class Firms( Fetcher ):
 		    Validates the sensor against provider constraints and returns the accepted value.
 
 		Args:
-		    sensor (str): Sensor supplied by the caller.
+		    sensor (str): Sensor supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'sensor', sensor )
@@ -23659,7 +24082,6 @@ class Firms( Fetcher ):
 				                  'VIIRS_SNPP, VIIRS_NOAA20, or VIIRS_NOAA21.' )
 			
 			return value
-		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
@@ -23675,19 +24097,20 @@ class Firms( Fetcher ):
 		    Validates the day range against provider constraints and returns the accepted value.
 
 		Args:
-		    day_range (int): Day range supplied by the caller.
+		    day_range (int): Day range supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'day_range', day_range )
 			value = int( day_range )
 			if value < 1 or value > 5:
 				raise ValueError( 'day_range must be between 1 and 5.' )
+			
 			return value
 		except Exception as e:
 			exception = Error( e )
@@ -23704,13 +24127,13 @@ class Firms( Fetcher ):
 		    Validates the date against provider constraints and returns the accepted value.
 
 		Args:
-		    date (str): Date supplied by the caller.
+		    date (str): Date supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			value = str( date or '' ).strip( )
@@ -23719,6 +24142,7 @@ class Firms( Fetcher ):
 			
 			dt.datetime.strptime( value, '%Y-%m-%d' )
 			return value
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
@@ -23734,17 +24158,17 @@ class Firms( Fetcher ):
 		    Validates the area coordinates against provider constraints and returns the accepted value.
 
 		Args:
-		    area_coordinates (str): Area coordinates supplied by the caller.
+		    area_coordinates (str): Area coordinates supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			throw_if( 'area_coordinates', area_coordinates )			
-			value = str( area_coordinates ).strip( )			
+			throw_if( 'area_coordinates', area_coordinates )
+			value = str( area_coordinates ).strip( )
 			if value.lower( ) == 'world':
 				return 'world'
 			
@@ -23752,7 +24176,8 @@ class Firms( Fetcher ):
 			if len( parts ) != 4:
 				raise ValueError( 'area_coordinates must be world or west,south,east,north.' )
 			
-			west, south, east, north = [ float( part ) for part in parts ]			
+			west, south, east, north = [ float( part ) for part in parts ]
+			
 			if west < -180.0 or west > 180.0:
 				raise ValueError( 'west longitude must be between -180 and 180.' )
 			
@@ -23788,32 +24213,37 @@ class Firms( Fetcher ):
 		    Csv to rows using the class state and returns data required by the surrounding workflow.
 
 		Args:
-		    csv_text (str): Csv text supplied by the caller.
+		    csv_text (str): Csv text supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    List[Dict[str, Any]]: Dictionary containing normalized provider data.
+		    List[Dict[str, Any]]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			text = str( csv_text or '' )
+			
 			if not text.strip( ):
 				return [ ]
 			
 			reader = csv.DictReader( io.StringIO( text ) )
 			rows: List[ Dict[ str, Any ] ] = [ ]
+			
 			for record in reader:
 				if not isinstance( record, dict ):
 					continue
 				
 				row: Dict[ str, Any ] = { }
+				
 				for key, value in record.items( ):
 					friendly_key = str( key ).replace( '_', ' ' ).title( )
 					row[ friendly_key ] = value
 				
 				rows.append( row )
+			
 			return rows
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
@@ -23832,22 +24262,26 @@ class Firms( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			count = len( rows or [ ] )
 			first_date = ''
 			first_sensor = ''
 			first_lat = ''
-			first_lon = ''			
+			first_lon = ''
+			
 			if rows:
-				first_date = str( rows[ 0 ].get( 'Acq Date', '' ) or rows[ 0 ].get(
-					'Date', '' ) or rows[ 0  ].get( 'Start Date', '' ) or '' )
-				first_sensor = str( rows[ 0 ].get( 'Sensor', '' ) or rows[ 0 ].get(
-					'Satellite', '' ) or rows[ 0 ].get( 'Source', '' ) or '' )
+				first_date = str(
+					rows[ 0 ].get( 'Acq Date', '' ) or rows[ 0 ].get( 'Date', '' ) or rows[ 0
+					].get(
+						'Start Date', '' ) or '' )
+				first_sensor = str(
+					rows[ 0 ].get( 'Sensor', '' ) or rows[ 0 ].get( 'Satellite', '' ) or rows[
+						0 ].get( 'Source', '' ) or '' )
 				first_lat = str( rows[ 0 ].get( 'Latitude', '' ) or '' )
 				first_lon = str( rows[ 0 ].get( 'Longitude', '' ) or '' )
 			
@@ -23872,10 +24306,10 @@ class Firms( Fetcher ):
 		    rows (List[Dict[str, Any]]): Maximum number of records requested from the provider.
 
 		Returns:
-		    Dict[str, Any]: Dictionary containing normalized provider data.
+		    Dict[str, Any]: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.result = { 'mode': self.mode, 'url': self.url, 'params': self.params,
@@ -23902,10 +24336,10 @@ class Firms( Fetcher ):
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.validate_map_key( )
@@ -23916,40 +24350,41 @@ class Firms( Fetcher ):
 			if self.timeout < 1:
 				raise ValueError( 'time must be greater than or equal to 1.' )
 			
-			self.response = requests.get( url=self.url, headers=self.headers, 
+			self.response = requests.get( url=self.url, headers=self.headers,
 				timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.payload = self.response.text or ''
 			self.result = { 'url': self.url, 'params': self.params, 'raw': self.payload }
+			
 			return self.result
+		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = 'request_csv( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
+			exception.method =  'request_csv( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			Logger( ).write( exception )
 			raise exception
 	
 	def fetch_area( self, source: str, area_coordinates: str = 'world',
-			day_range: int=1, date: str = '',
-			time: int=20 ) -> Dict[ str, Any ] | None:
+			day_range: int=1, date: str = '', time: int=20 ) -> Dict[ str, Any ] | None:
 		"""Fetch area.
 
 		Purpose:
 		    Retrieves area from the configured provider and returns normalized response data.
 
 		Args:
-		    source (str): Source supplied by the caller.
-		    area_coordinates (str): Area coordinates supplied by the caller.
-		    day_range (int): Day range supplied by the caller.
-		    date (str): Date supplied by the caller.
+		    source (str): Source supplied by the caller and interpreted according to the method contract.
+		    area_coordinates (str): Area coordinates supplied by the caller and interpreted according to the method contract.
+		    day_range (int): Day range supplied by the caller and interpreted according to the method contract.
+		    date (str): Date supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'area'
@@ -23965,15 +24400,17 @@ class Firms( Fetcher ):
 			
 			if self.date:
 				self.url = f'{self.url}/{self.date}'
-			self.request_csv( url=self.url, time=self.timeout )			
-			rows = self.csv_to_rows( self.payload )			
+			
+			self.request_csv( url=self.url, time=self.timeout )
+			
+			rows = self.csv_to_rows( self.payload )
+			
 			return self.package_response( rows )
-		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = 'fetch_area( self, *args, **kwargs ) -> Dict[ str, Any ] | None' 
+			exception.method = 'fetch_area( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -23985,14 +24422,14 @@ class Firms( Fetcher ):
 		    Retrieves data availability from the configured provider and returns normalized response data.
 
 		Args:
-		    sensor (str): Sensor supplied by the caller.
+		    sensor (str): Sensor supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'data-availability'
@@ -24005,18 +24442,18 @@ class Firms( Fetcher ):
 			self.request_csv( url=self.url, time=self.timeout )
 			rows = self.csv_to_rows( self.payload )
 			return self.package_response( rows )
-		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = 'fetch_data_availability( self, *args, **kwargs ) -> Dict[ str,Any ]'
+			exception.method = 'fetch_data_availability( self, *args, **kwargs ) -> Dict[str, Any]'
 			Logger( ).write( exception )
 			raise exception
 	
-	def fetch( self, mode: str='area', source: str='VIIRS_SNPP_NRT',
-			area_coordinates: str='world', day_range: int=1,
-			date: str='', sensor: str='ALL', time: int=20 ) -> Dict[ str, Any ] | None:
+	def fetch( self, mode: str = 'area', source: str = 'VIIRS_SNPP_NRT',
+			area_coordinates: str = 'world', day_range: int=1,
+			date: str = '', sensor: str = 'ALL',
+			time: int=20 ) -> Dict[ str, Any ] | None:
 		"""Fetch.
 
 		Purpose:
@@ -24024,21 +24461,21 @@ class Firms( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    source (str): Source supplied by the caller.
-		    area_coordinates (str): Area coordinates supplied by the caller.
-		    day_range (int): Day range supplied by the caller.
-		    date (str): Date supplied by the caller.
-		    sensor (str): Sensor supplied by the caller.
+		    source (str): Source supplied by the caller and interpreted according to the method contract.
+		    area_coordinates (str): Area coordinates supplied by the caller and interpreted according to the method contract.
+		    day_range (int): Day range supplied by the caller and interpreted according to the method contract.
+		    date (str): Date supplied by the caller and interpreted according to the method contract.
+		    sensor (str): Sensor supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			self.mode = self.validate_mode( mode )			
+			self.mode = self.validate_mode( mode )
 			if self.mode == 'area':
 				return self.fetch_area( source=source, area_coordinates=area_coordinates,
 					day_range=day_range, date=date, time=time )
@@ -24052,12 +24489,13 @@ class Firms( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None' 
+			exception.method = 'fetch( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			Logger( ).write( exception )
 			raise exception
 	
-	def create_schema( self, function: str, tool: str, description: str,
-		parameters: dict, required: list[ str ] ) -> Dict[ str, str ] | None:
+	def create_schema( self, function: str, tool: str,
+			description: str, parameters: dict,
+			required: list[ str ] ) -> Dict[ str, str ] | None:
 		"""Create schema.
 
 		Purpose:
@@ -24071,41 +24509,33 @@ class Firms( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
 			throw_if( 'tool', tool )
 			throw_if( 'description', description )
 			throw_if( 'parameters', parameters )
-			
 			if not isinstance( parameters, dict ):
-				raise ValueError( 'parameters must be a dict of param_name -> schema definition.' )
+				raise ValueError( 'parameters must be a dict of param_name -> schema definition.')
 			
 			if required is None:
 				required = list( parameters.keys( ) )
 			
-			return {
-					'name': function.strip( ),
-					'description': (
-							f'{description.strip( )} This function uses the '
-							f'{tool.strip( )} service.'
-					),
-					'parameters': {
-							'type': 'object',
-							'properties': parameters,
-							'required': required,
-					}
-			}
+			return { 'name': function.strip( ),
+				'description': (f'{description.strip( )} This function uses the '
+				                f'{tool.strip( )} service.'),
+				'parameters': { 'type': 'object', 'properties': parameters,
+					'required': required, } }
 		
 		except Exception as e:
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Firms'
-			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
+			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ]'
 			Logger( ).write( exception )
 			raise exception
 
@@ -24119,22 +24549,22 @@ class OpenSky( Fetcher ):
 	    token_url (Optional[str]): URL associated with the current token resource or endpoint.
 	    base_url (Optional[str]): URL associated with the current base resource or endpoint.
 	    client_id (Optional[str]): Identifier of the current client resource.
-	    client_secret (Optional[str]): Current client secret retained by the OpenSky.
-	    access_token (Optional[str]): Current access token retained by the OpenSky.
-	    mode (Optional[str]): Current mode retained by the OpenSky.
-	    endpoint (Optional[str]): Current endpoint retained by the OpenSky.
-	    icao24 (Optional[str]): Current icao24 retained by the OpenSky.
-	    airport (Optional[str]): Current airport retained by the OpenSky.
-	    begin (Optional[int]): Current begin retained by the OpenSky.
-	    end (Optional[int]): Current end retained by the OpenSky.
-	    time_value (Optional[int]): Current time value retained by the OpenSky.
-	    lamin (Optional[float]): Current lamin retained by the OpenSky.
-	    lomin (Optional[float]): Current lomin retained by the OpenSky.
-	    lamax (Optional[float]): Current lamax retained by the OpenSky.
-	    lomax (Optional[float]): Current lomax retained by the OpenSky.
-	    extended (Optional[bool]): Current extended retained by the OpenSky.
+	    client_secret (Optional[str]): Current client secret retained by the OpenSky workflow between related operations.
+	    access_token (Optional[str]): Current access token retained by the OpenSky workflow between related operations.
+	    mode (Optional[str]): Current mode retained by the OpenSky workflow between related operations.
+	    endpoint (Optional[str]): Current endpoint retained by the OpenSky workflow between related operations.
+	    icao24 (Optional[str]): Current icao24 retained by the OpenSky workflow between related operations.
+	    airport (Optional[str]): Current airport retained by the OpenSky workflow between related operations.
+	    begin (Optional[int]): Current begin retained by the OpenSky workflow between related operations.
+	    end (Optional[int]): Current end retained by the OpenSky workflow between related operations.
+	    time_value (Optional[int]): Current time value retained by the OpenSky workflow between related operations.
+	    lamin (Optional[float]): Current lamin retained by the OpenSky workflow between related operations.
+	    lomin (Optional[float]): Current lomin retained by the OpenSky workflow between related operations.
+	    lamax (Optional[float]): Current lamax retained by the OpenSky workflow between related operations.
+	    lomax (Optional[float]): Current lomax retained by the OpenSky workflow between related operations.
+	    extended (Optional[bool]): Current extended retained by the OpenSky workflow between related operations.
 	    params (Optional[Dict[str, Any]]): Request parameters assembled for the most recent provider call.
-	    payload (Optional[Any]): Current payload retained by the OpenSky.
+	    payload (Optional[Any]): Current payload retained by the OpenSky workflow between related operations.
 	    result (Optional[Dict[str, Any]]): Most recent normalized Foo result produced by the instance.
 	    agents (Optional[str]): Configured user-agent string sent with web requests.
 	    timeout (Any): Maximum request duration, in seconds, applied to provider calls.
@@ -24176,8 +24606,8 @@ class OpenSky( Fetcher ):
 		super( ).__init__( )
 		self.timeout = 20
 		self.base_url = 'https://opensky-network.org/api'
-		self.token_url = ( 'https://auth.opensky-network.org/auth/realms/opensky-network/'
-				'protocol/openid-connect/token' )
+		self.token_url = ('https://auth.opensky-network.org/auth/realms/opensky-network/'
+		                  'protocol/openid-connect/token')
 		self.client_id = cfg.OPENSKY_API_CLIENT_ID
 		self.client_secret = cfg.OPENSKY_API_CREDENTIALS
 		self.access_token = None
@@ -24205,7 +24635,7 @@ class OpenSky( Fetcher ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, 
+		    Returns the stable public-member ordering used by introspection, interactive tools,
 		    and generated documentation.
 
 		Returns:
@@ -24213,7 +24643,7 @@ class OpenSky( Fetcher ):
 		"""
 		return [ 'timeout', 'headers', 'response', 'url', 'result', 'query', 'token_url',
 			'base_url', 'client_id', 'client_secret', 'access_token', 'mode', 'endpoint', 'icao24',
-			'airport', 'begin', 'end', 'time_value', 'lamin', 'lomin', 'lamax', 'lomax', 
+			'airport', 'begin', 'end', 'time_value', 'lamin', 'lomin', 'lamax', 'lomax',
 			'extended', 'params', 'payload', 'agents', 'validate_mode', 'validate_endpoint',
 			'validate_icao24', 'validate_airport', 'validate_epoch', 'validate_time_range',
 			'validate_latitude', 'validate_longitude', 'validate_bbox', 'assign_credentials',
@@ -24234,14 +24664,13 @@ class OpenSky( Fetcher ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			throw_if( 'mode', mode )			
+			throw_if( 'mode', mode )
 			value = str( mode ).strip( ).lower( )
-			allowed = { 'states_bbox', 'flights_aircraft', 'arrivals_airport', 
-				'departures_airport',
-				'track_aircraft' }
+			allowed = { 'states_bbox', 'flights_aircraft', 'arrivals_airport',
+				'departures_airport', 'track_aircraft' }
 			
 			if value not in allowed:
 				raise ValueError( "Unsupported OpenSky mode. Use 'states_bbox', "
@@ -24265,19 +24694,17 @@ class OpenSky( Fetcher ):
 		    Validates the endpoint against provider constraints and returns the accepted value.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'endpoint', endpoint )
-			
 			value = str( endpoint ).strip( )
-			
 			if value.startswith( 'http://' ) or value.startswith( 'https://' ):
 				raise ValueError( 'endpoint must be a path segment, not a full URL.' )
 			
@@ -24307,17 +24734,17 @@ class OpenSky( Fetcher ):
 		    Validates the icao24 against provider constraints and returns the accepted value.
 
 		Args:
-		    icao24 (str): Icao24 supplied by the caller.
+		    icao24 (str): Icao24 supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			throw_if( 'icao24', icao24 )			
-			value = str( icao24 ).strip( ).lower( )			
+			throw_if( 'icao24', icao24 )
+			value = str( icao24 ).strip( ).lower( )
 			if not re.fullmatch( r'[0-9a-f]{6}', value ):
 				raise ValueError( 'icao24 must be a six-character hexadecimal address.' )
 			
@@ -24338,21 +24765,22 @@ class OpenSky( Fetcher ):
 		    Validates the airport against provider constraints and returns the accepted value.
 
 		Args:
-		    airport (str): Airport supplied by the caller.
+		    airport (str): Airport supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			throw_if( 'airport', airport )			
-			value = str( airport ).strip( ).upper( )			
+			throw_if( 'airport', airport )
+			value = str( airport ).strip( ).upper( )
 			if not re.fullmatch( r'[A-Z0-9]{4}', value ):
 				raise ValueError( 'airport must be a four-character ICAO airport code.' )
 			
-			return value		
+			return value
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -24375,16 +24803,19 @@ class OpenSky( Fetcher ):
 		    int: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
-			throw_if( name, value )			
-			number = int( value )			
+			throw_if( name, value )
+			
+			number = int( value )
+			
 			if number < 0:
 				raise ValueError( f'{name} must be greater than or equal to 0.' )
 			
-			return number		
+			return number
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -24407,15 +24838,17 @@ class OpenSky( Fetcher ):
 		    Tuple[int, int]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			start = self.validate_epoch( 'begin', begin )
-			stop = self.validate_epoch( 'end', end )			
+			stop = self.validate_epoch( 'end', end )
+			
 			if start > stop:
 				raise ValueError( 'begin must be less than or equal to end.' )
 			
-			return start, stop		
+			return start, stop
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -24438,16 +24871,19 @@ class OpenSky( Fetcher ):
 		    float: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
-			throw_if( name, value )			
-			number = float( value )			
+			throw_if( name, value )
+			
+			number = float( value )
+			
 			if number < -90.0 or number > 90.0:
 				raise ValueError( f'{name} must be between -90 and 90.' )
 			
-			return number		
+			return number
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -24470,15 +24906,19 @@ class OpenSky( Fetcher ):
 		    float: Computed numeric value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'name', name )
-			throw_if( name, value )			
-			number = float( value )			
+			throw_if( name, value )
+			
+			number = float( value )
+			
 			if number < -180.0 or number > 180.0:
-				raise ValueError( f'{name} must be between -180 and 180.' )			
-			return number		
+				raise ValueError( f'{name} must be between -180 and 180.' )
+			
+			return number
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -24487,42 +24927,44 @@ class OpenSky( Fetcher ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def validate_bbox( self, lamin: float, lomin: float, lamax: float,
-		lomax: float ) -> Tuple[ float, float, float, float ]:
+	def validate_bbox( self, lamin: float, lomin: float,
+			lamax: float, lomax: float ) -> Tuple[ float, float, float, float ]:
 		"""Validate bbox.
 
 		Purpose:
 		    Validates the bbox against provider constraints and returns the accepted value.
 
 		Args:
-		    lamin (float): Lamin supplied by the caller.
-		    lomin (float): Lomin supplied by the caller.
-		    lamax (float): Lamax supplied by the caller.
-		    lomax (float): Lomax supplied by the caller.
+		    lamin (float): Lamin supplied by the caller and interpreted according to the method contract.
+		    lomin (float): Lomin supplied by the caller and interpreted according to the method contract.
+		    lamax (float): Lamax supplied by the caller and interpreted according to the method contract.
+		    lomax (float): Lomax supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    Tuple[float, float, float, float]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			min_lat = self.validate_latitude( 'lamin', lamin )
 			min_lon = self.validate_longitude( 'lomin', lomin )
 			max_lat = self.validate_latitude( 'lamax', lamax )
-			max_lon = self.validate_longitude( 'lomax', lomax )			
+			max_lon = self.validate_longitude( 'lomax', lomax )
+			
 			if min_lat >= max_lat:
 				raise ValueError( 'lamin must be less than lamax.' )
 			
 			if min_lon >= max_lon:
 				raise ValueError( 'lomin must be less than lomax.' )
 			
-			return min_lat, min_lon, max_lat, max_lon		
+			return min_lat, min_lon, max_lat, max_lon
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
-			exception.method = 'validate_bbox( self, **kwargs ) -> Tuple[ float,float,float,float ]'
+			exception.method = 'validate_bbox( self, **kwargs ) -> Tuple[float,float,float,float ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -24535,13 +24977,13 @@ class OpenSky( Fetcher ):
 
 		Args:
 		    client_id (str): Provider identifier of the target client resource.
-		    client_secret (str): Client secret supplied by the caller.
+		    client_secret (str): Client secret supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    None: This method updates instance state or validates input and does not return a value.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if client_id is not None and str( client_id ).strip( ):
@@ -24572,7 +25014,7 @@ class OpenSky( Fetcher ):
 		    str | None: Normalized text produced by the operation, or ``None`` when no text is available.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if not self.client_id or not self.client_secret:
@@ -24580,16 +25022,17 @@ class OpenSky( Fetcher ):
 			
 			self.response = requests.post( url=self.token_url,
 				data={ 'grant_type': 'client_credentials', 'client_id': self.client_id,
-						'client_secret': self.client_secret, },
+					'client_secret': self.client_secret, },
 				headers={ 'Accept': 'application/json', 'User-Agent': self.agents, },
 				timeout=self.timeout )
 			self.response.raise_for_status( )
 			token_payload = self.response.json( ) or { }
-			self.access_token = token_payload.get( 'access_token', None )			
+			self.access_token = token_payload.get( 'access_token', None )
 			if self.access_token:
 				self.headers[ 'Authorization' ] = f'Bearer {self.access_token}'
 			
-			return self.access_token		
+			return self.access_token
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -24598,31 +25041,31 @@ class OpenSky( Fetcher ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def request( self, endpoint: str, params: Dict[ str, Any ] | None=None,
-			client_id: str=None, client_secret: str=None ) -> Any:
+	def request( self, endpoint: str, params: Dict[ str, Any ] | None = None,
+			client_id: str = None, client_secret: str = None ) -> Any:
 		"""Request.
 
 		Purpose:
 		    Executes the provider request with the instance parameters and returns the decoded response payload.
 
 		Args:
-		    endpoint (str): Endpoint supplied by the caller.
-		    params (Dict[str, Any] | None): Params supplied by the caller.
+		    endpoint (str): Endpoint supplied by the caller and interpreted according to the method contract.
+		    params (Dict[str, Any] | None): Params supplied by the caller and interpreted according to the method contract.
 		    client_id (str): Provider identifier of the target client resource.
-		    client_secret (str): Client secret supplied by the caller.
+		    client_secret (str): Client secret supplied by the caller and interpreted according to the method contract.
 
 		Returns:
 		    Any: Provider, loader, or normalized application value produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.endpoint = self.validate_endpoint( endpoint )
 			self.assign_credentials( client_id=client_id, client_secret=client_secret )
-			self.authenticate( )			
+			self.authenticate( )
 			self.url = f'{self.base_url}{self.endpoint}'
-			self.params = { }			
+			self.params = { }
 			for key, value in (params or { }).items( ):
 				if value is None:
 					continue
@@ -24635,7 +25078,7 @@ class OpenSky( Fetcher ):
 			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
 				timeout=self.timeout )
 			self.response.raise_for_status( )
-			self.payload = self.response.json( )			
+			self.payload = self.response.json( )
 			return self.payload
 		
 		except Exception as exc:
@@ -24656,24 +25099,23 @@ class OpenSky( Fetcher ):
 		    payload (Dict[str, Any] | None): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			states = [ ]
-			
 			if isinstance( payload, dict ):
 				states = payload.get( 'states', [ ] ) or [ ]
 			
 			items: List[ Dict[ str, Any ] ] = [ ]
-			
 			for row in states:
 				if not isinstance( row, list ):
 					continue
 				
-				items.append( {
+				items.append(
+					{
 							'icao24': row[ 0 ] if len( row ) > 0 else None,
 							'callsign': ( str( row[ 1 ] ).strip( )
 									if len( row ) > 1 and row[ 1 ] is not None
@@ -24693,7 +25135,8 @@ class OpenSky( Fetcher ):
 							'squawk': row[ 14 ] if len( row ) > 14 else None,
 							'spi': row[ 15 ] if len( row ) > 15 else None,
 							'position_source': row[ 16 ] if len( row ) > 16 else None,
-					} )
+					}
+				)
 			
 			self.result = { 'mode': 'states_bbox',
 				'time': payload.get( 'time', None ) if isinstance( payload, dict ) else None,
@@ -24721,35 +25164,38 @@ class OpenSky( Fetcher ):
 		    mode (str): Provider or loader operating mode selected for the request.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			items: List[ Dict[ str, Any ] ] = [ ]			
+			items: List[ Dict[ str, Any ] ] = [ ]
+			
 			for row in payload or [ ]:
 				if not isinstance( row, dict ):
 					continue
 				
-				items.append( { 'icao24': row.get( 'icao24' ), 'first_seen': row.get( 
-					'firstSeen' ),
-					'est_departure_airport': row.get( 'estDepartureAirport' ),
-					'last_seen': row.get( 'lastSeen' ),
-					'est_arrival_airport': row.get( 'estArrivalAirport' ),
-					'callsign': row.get( 'callsign' ),
-					'est_departure_airport_horiz_distance_m': row.get(
-						'estDepartureAirportHorizDistance' ),
-					'est_departure_airport_vert_distance_m': row.get(
-						'estDepartureAirportVertDistance' ),
-					'est_arrival_airport_horiz_distance_m': row.get(
-						'estArrivalAirportHorizDistance' ),
-					'est_arrival_airport_vert_distance_m': row.get(
-						'estArrivalAirportVertDistance' ),
-					'departure_airport_candidates_count': row.get(
-						'departureAirportCandidatesCount' ),
-					'arrival_airport_candidates_count': row.get(
-						'arrivalAirportCandidatesCount' ), } )
+				items.append( {
+							'icao24': row.get( 'icao24' ),
+							'first_seen': row.get( 'firstSeen' ),
+							'est_departure_airport': row.get( 'estDepartureAirport' ),
+							'last_seen': row.get( 'lastSeen' ),
+							'est_arrival_airport': row.get( 'estArrivalAirport' ),
+							'callsign': row.get( 'callsign' ),
+							'est_departure_airport_horiz_distance_m':
+								row.get( 'estDepartureAirportHorizDistance' ),
+							'est_departure_airport_vert_distance_m':
+								row.get( 'estDepartureAirportVertDistance' ),
+							'est_arrival_airport_horiz_distance_m':
+								row.get( 'estArrivalAirportHorizDistance' ),
+							'est_arrival_airport_vert_distance_m':
+								row.get( 'estArrivalAirportVertDistance' ),
+							'departure_airport_candidates_count':
+								row.get( 'departureAirportCandidatesCount' ),
+							'arrival_airport_candidates_count':
+								row.get( 'arrivalAirportCandidatesCount' ),
+					} )
 			
 			self.result = { 'mode': mode, 'count': len( items ), 'items': items, }
 			
@@ -24773,15 +25219,22 @@ class OpenSky( Fetcher ):
 		    payload (Dict[str, Any] | None): Validated request dictionary forwarded to the provider client.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			if not payload:
-				self.result = { 'mode': 'track_aircraft', 'icao24': None, 'callsign': None,
-					'start_time': None, 'end_time': None, 'count': 0, 'items': [ ], }
+				self.result = {
+						'mode': 'track_aircraft',
+						'icao24': None,
+						'callsign': None,
+						'start_time': None,
+						'end_time': None,
+						'count': 0,
+						'items': [ ],
+				}
 				return self.result
 			
 			path = payload.get( 'path' ) or [ ]
@@ -24791,12 +25244,14 @@ class OpenSky( Fetcher ):
 				if not isinstance( row, list ):
 					continue
 				
-				items.append( { 'time': row[ 0 ] if len( row ) > 0 else None,
-					'latitude': row[ 1 ] if len( row ) > 1 else None,
-					'longitude': row[ 2 ] if len( row ) > 2 else None,
-					'baro_altitude_m': row[ 3 ] if len( row ) > 3 else None,
-					'true_track_deg': row[ 4 ] if len( row ) > 4 else None,
-					'on_ground': row[ 5 ] if len( row ) > 5 else None, } )
+				items.append( {
+							'time': row[ 0 ] if len( row ) > 0 else None,
+							'latitude': row[ 1 ] if len( row ) > 1 else None,
+							'longitude': row[ 2 ] if len( row ) > 2 else None,
+							'baro_altitude_m': row[ 3 ] if len( row ) > 3 else None,
+							'true_track_deg': row[ 4 ] if len( row ) > 4 else None,
+							'on_ground': row[ 5 ] if len( row ) > 5 else None,
+					} )
 			
 			self.result = { 'mode': 'track_aircraft', 'icao24': payload.get( 'icao24' ),
 				'callsign': payload.get( 'callsign' ) or payload.get( 'calllsign' ),
@@ -24809,7 +25264,7 @@ class OpenSky( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
-			exception.method = 'normalize_track( self, *args, **kwargs ) -> Dict[ str, Any ]'
+			exception.method = 'normalize_track( self, *args, **kwargs ) -> Dict[ str, Any ] | None'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -24824,27 +25279,27 @@ class OpenSky( Fetcher ):
 		    Retrieves states from the configured provider and returns normalized response data.
 
 		Args:
-		    icao24 (str): Icao24 supplied by the caller.
-		    time_value (int): Time value supplied by the caller.
-		    lamin (float | None): Lamin supplied by the caller.
-		    lomin (float | None): Lomin supplied by the caller.
-		    lamax (float | None): Lamax supplied by the caller.
-		    lomax (float | None): Lomax supplied by the caller.
+		    icao24 (str): Icao24 supplied by the caller and interpreted according to the method contract.
+		    time_value (int): Time value supplied by the caller and interpreted according to the method contract.
+		    lamin (float | None): Lamin supplied by the caller and interpreted according to the method contract.
+		    lomin (float | None): Lomin supplied by the caller and interpreted according to the method contract.
+		    lamax (float | None): Lamax supplied by the caller and interpreted according to the method contract.
+		    lomax (float | None): Lomax supplied by the caller and interpreted according to the method contract.
 		    extended (bool): Whether extended behavior is enabled for the operation.
 		    client_id (str): Provider identifier of the target client resource.
-		    client_secret (str): Client secret supplied by the caller.
+		    client_secret (str): Client secret supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'states_bbox'
 			self.icao24 = self.validate_icao24( icao24 ) if str( icao24 or '' ).strip( ) else ''
 			self.time_value = (
-				self.validate_epoch( 'time_value', time_value ) if time_value is not None else 
+				self.validate_epoch( 'time_value', time_value ) if time_value is not None else
 				None)
 			self.extended = bool( extended )
 			
@@ -24856,8 +25311,9 @@ class OpenSky( Fetcher ):
 			if self.icao24:
 				self.params[ 'icao24' ] = self.icao24
 			
-			has_bbox = all( value is not None for value in [ lamin, lomin, lamax, lomax ] )			
+			has_bbox = all( value is not None for value in [ lamin, lomin, lamax, lomax ] )
 			partial_bbox = any( value is not None for value in [ lamin, lomin, lamax, lomax ] )
+			
 			if partial_bbox and not has_bbox:
 				raise ValueError( 'lamin, lomin, lamax, and lomax must all be supplied together.' )
 			
@@ -24893,17 +25349,17 @@ class OpenSky( Fetcher ):
 		    Retrieves flights aircraft from the configured provider and returns normalized response data.
 
 		Args:
-		    icao24 (str): Icao24 supplied by the caller.
+		    icao24 (str): Icao24 supplied by the caller and interpreted according to the method contract.
 		    begin (int): Date boundary or date value used by the request.
 		    end (int): Date boundary or date value used by the request.
 		    client_id (str): Provider identifier of the target client resource.
-		    client_secret (str): Client secret supplied by the caller.
+		    client_secret (str): Client secret supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'flights_aircraft'
@@ -24931,17 +25387,17 @@ class OpenSky( Fetcher ):
 		    Retrieves arrivals airport from the configured provider and returns normalized response data.
 
 		Args:
-		    airport (str): Airport supplied by the caller.
+		    airport (str): Airport supplied by the caller and interpreted according to the method contract.
 		    begin (int): Date boundary or date value used by the request.
 		    end (int): Date boundary or date value used by the request.
 		    client_id (str): Provider identifier of the target client resource.
-		    client_secret (str): Client secret supplied by the caller.
+		    client_secret (str): Client secret supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'arrivals_airport'
@@ -24952,6 +25408,7 @@ class OpenSky( Fetcher ):
 				client_id=client_id, client_secret=client_secret )
 			
 			return self.normalize_flights( self.payload, self.mode )
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -24968,23 +25425,24 @@ class OpenSky( Fetcher ):
 		    Retrieves departures airport from the configured provider and returns normalized response data.
 
 		Args:
-		    airport (str): Airport supplied by the caller.
+		    airport (str): Airport supplied by the caller and interpreted according to the method contract.
 		    begin (int): Date boundary or date value used by the request.
 		    end (int): Date boundary or date value used by the request.
 		    client_id (str): Provider identifier of the target client resource.
-		    client_secret (str): Client secret supplied by the caller.
+		    client_secret (str): Client secret supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'departures_airport'
 			self.airport = self.validate_airport( airport )
 			self.begin, self.end = self.validate_time_range( begin, end )
 			self.params = { 'airport': self.airport, 'begin': self.begin, 'end': self.end, }
+			
 			self.payload = self.request( '/flights/departure', params=self.params,
 				client_id=client_id, client_secret=client_secret )
 			
@@ -25006,16 +25464,16 @@ class OpenSky( Fetcher ):
 		    Retrieves track aircraft from the configured provider and returns normalized response data.
 
 		Args:
-		    icao24 (str): Icao24 supplied by the caller.
-		    time_value (int): Time value supplied by the caller.
+		    icao24 (str): Icao24 supplied by the caller and interpreted according to the method contract.
+		    time_value (int): Time value supplied by the caller and interpreted according to the method contract.
 		    client_id (str): Provider identifier of the target client resource.
-		    client_secret (str): Client secret supplied by the caller.
+		    client_secret (str): Client secret supplied by the caller and interpreted according to the method contract.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.mode = 'track_aircraft'
@@ -25023,10 +25481,12 @@ class OpenSky( Fetcher ):
 			self.time_value = (self.validate_epoch( 'time_value', time_value )
 			                   if time_value is not None else 0)
 			self.params = { 'icao24': self.icao24, 'time': self.time_value, }
+			
 			self.payload = self.request( '/tracks/all', params=self.params, client_id=client_id,
 				client_secret=client_secret )
 			
 			return self.normalize_track( self.payload )
+		
 		except Exception as exc:
 			exception = Error( exc )
 			exception.module = 'fetchers'
@@ -25048,30 +25508,29 @@ class OpenSky( Fetcher ):
 
 		Args:
 		    mode (str): Provider or loader operating mode selected for the request.
-		    icao24 (str): Icao24 supplied by the caller.
-		    airport (str): Airport supplied by the caller.
+		    icao24 (str): Icao24 supplied by the caller and interpreted according to the method contract.
+		    airport (str): Airport supplied by the caller and interpreted according to the method contract.
 		    begin (int): Date boundary or date value used by the request.
 		    end (int): Date boundary or date value used by the request.
-		    time_value (int): Time value supplied by the caller.
-		    lamin (float | None): Lamin supplied by the caller.
-		    lomin (float | None): Lomin supplied by the caller.
-		    lamax (float | None): Lamax supplied by the caller.
-		    lomax (float | None): Lomax supplied by the caller.
+		    time_value (int): Time value supplied by the caller and interpreted according to the method contract.
+		    lamin (float | None): Lamin supplied by the caller and interpreted according to the method contract.
+		    lomin (float | None): Lomin supplied by the caller and interpreted according to the method contract.
+		    lamax (float | None): Lamax supplied by the caller and interpreted according to the method contract.
+		    lomax (float | None): Lomax supplied by the caller and interpreted according to the method contract.
 		    extended (bool): Whether extended behavior is enabled for the operation.
 		    client_id (str): Provider identifier of the target client resource.
-		    client_secret (str): Client secret supplied by the caller.
+		    client_secret (str): Client secret supplied by the caller and interpreted according to the method contract.
 		    time (int): Maximum request duration in seconds.
 
 		Returns:
-		    Dict[str, Any] | None: Dictionary containing normalized provider data.
+		    Dict[str, Any] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			self.timeout = int( time )
 			self.mode = self.validate_mode( mode )
-			
 			if self.timeout < 1:
 				raise ValueError( 'time must be greater than or equal to 1.' )
 			
@@ -25122,10 +25581,10 @@ class OpenSky( Fetcher ):
 		    required (list[str]): Argument names that callers must supply to the generated tool.
 
 		Returns:
-		    Dict[str, str] | None: Dictionary containing normalized provider data.
+		    Dict[str, str] | None: Dictionary containing normalized provider data, configuration, metadata, or generated schema content.
 
 		Raises:
-		    Error: Wraps the source exception with module and writes it to the application logger.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'function', function )
@@ -25155,6 +25614,6 @@ class OpenSky( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'OpenSky'
-			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None' 
+			exception.method = 'create_schema( self, *args, **kwargs ) -> Dict[ str, str ] | None'
 			Logger( ).write( exception )
 			raise exception
