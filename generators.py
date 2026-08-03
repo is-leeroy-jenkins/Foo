@@ -3338,19 +3338,11 @@ class Chat( Generator ):
 		"""
 		try:
 			return self.fetch( prompt=prompt, model=model, temperature=temperature,
-				max_tokens=max_tokens,
-				top_p=top_p,
-				seed=seed,
-				system=system,
-				response_format=response_format,
-				reasoning_effort=reasoning_effort,
+				max_tokens=max_tokens, top_p=top_p, seed=seed, system=system,
+				response_format=response_format, reasoning_effort=reasoning_effort,
 				web_search=True,
-				search_domains=search_domains,
-				store=store,
-				stream=stream,
-				parallel_tool_calls=parallel_tool_calls,
-				tool_choice=tool_choice
-			)
+				search_domains=search_domains, store=store, stream=stream,
+				parallel_tool_calls=parallel_tool_calls, tool_choice=tool_choice )
 		
 		except Exception as e:
 			exception = Error( e )
@@ -3378,17 +3370,9 @@ class Chat( Generator ):
 		try:
 			throw_if( 'prompt', prompt )
 			self.query = prompt
-			self.tools = self.build_tools(
-				web_search=False,
-				file_search=True,
-				vector_store_ids=self.vector_store_ids,
-				max_file_results=20
-			)
-			self.request = {
-					'model': self.model,
-					'tools': self.tools,
-					'input': prompt
-			}
+			self.tools = self.build_tools( web_search=False, file_search=True,
+				vector_store_ids=self.vector_store_ids, max_file_results=20 )
+			self.request = { 'model': self.model, 'tools': self.tools, 'input': prompt }
 			self.response = self.client.responses.create( **self.request )
 			return self.extract_output_text( self.response )
 		
@@ -3419,12 +3403,8 @@ class Chat( Generator ):
 			throw_if( 'text', text )
 			return self.fetch(
 				prompt=f'Translate the following text faithfully and preserve meaning:\n\n{text}',
-				model=self.model,
-				temperature=0.2,
-				max_tokens=self.max_completion_tokens,
-				top_p=self.top_percent,
-				system=self.system_instructions
-			)
+				model=self.model, temperature=0.2, max_tokens=self.max_completion_tokens,
+				top_p=self.top_percent, system=self.system_instructions )
 		
 		except Exception as e:
 			exception = Error( e )
