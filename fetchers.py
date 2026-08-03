@@ -5625,19 +5625,9 @@ class SpaceWeather( Fetcher ):
 			active_mode = str( mode or 'cme' ).strip( ).lower( )
 			self.mode = active_mode
 			
-			endpoint_map = {
-					'cme': 'CME',
-					'cme_analysis': 'CMEAnalysis',
-					'gst': 'GST',
-					'ips': 'IPS',
-					'flr': 'FLR',
-					'sep': 'SEP',
-					'mpc': 'MPC',
-					'rbe': 'RBE',
-					'hss': 'HSS',
-					'wsa_enlil': 'WSAEnlilSimulations',
-					'notifications': 'notifications'
-			}
+			endpoint_map = { 'cme': 'CME', 'cme_analysis': 'CMEAnalysis', 'gst': 'GST',
+				'ips': 'IPS', 'flr': 'FLR', 'sep': 'SEP', 'mpc': 'MPC', 'rbe': 'RBE', 'hss': 'HSS',
+				'wsa_enlil': 'WSAEnlilSimulations', 'notifications': 'notifications' }
 			
 			if active_mode not in endpoint_map:
 				raise ValueError(
@@ -5645,21 +5635,15 @@ class SpaceWeather( Fetcher ):
 					"'flr', 'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', or 'notifications'."
 				)
 			
-			return self.fetch_endpoint(
-				endpoint=endpoint_map[ active_mode ],
-				start_date=str( start_date ).strip( ),
-				end_date=str( end_date ).strip( ),
-				time=int( time ),
-				location=str( location or 'ALL' ).strip( ),
+			return self.fetch_endpoint( endpoint=endpoint_map[ active_mode ],
+				start_date=str( start_date ).strip( ), end_date=str( end_date ).strip( ),
+				time=int( time ), location=str( location or 'ALL' ).strip( ),
 				catalog=str( catalog or 'ALL' ).strip( ),
 				notification_type=str( notification_type or 'all' ).strip( ),
 				most_accurate_only=bool( most_accurate_only ),
-				complete_entry_only=bool( complete_entry_only ),
-				speed=int( speed ),
-				half_angle=int( half_angle ),
-				keyword=str( keyword or '' ).strip( ),
-				api_key=api_key
-			)
+				complete_entry_only=bool( complete_entry_only ), speed=int( speed ),
+				half_angle=int( half_angle ), keyword=str( keyword or '' ).strip( ),
+				api_key=api_key )
 		
 		except Exception as exc:
 			exception = Error( exc )
@@ -5713,10 +5697,7 @@ class SpaceWeather( Fetcher ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'SpaceWeather'
-			exception.method = (
-					'create_schema( self, function: str, tool: str, description: str, '
-					'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]'
-			)
+			exception.method = 'create_schema( self, **kwargs ) -> Dict[ str, str ]'
 			Logger( ).write( exception )
 			raise exception
 
@@ -5777,19 +5758,13 @@ class AstroCatalog( Fetcher ):
 		"""Return visible member names.
 
 		Purpose:
-		    Returns the stable public-member ordering used by introspection, interactive tools, and generated documentation.
+		    Returns the stable public-member ordering used by introspection, interactive tools,
+		    and generated documentation.
 
 		Returns:
 		    List[str]: Ordered public member names exposed by the instance.
 		"""
-		return [
-				'base_url',
-				'timeout',
-				'headers',
-				'fetch_object',
-				'cone_search',
-				'fetch',
-		]
+		return [ 'base_url', 'timeout', 'headers', 'fetch_object', 'cone_search', 'fetch', ]
 	
 	def normalize_attribute_path( self, quantity: str = '', attributes: str = '' ) -> str:
 		"""Normalize attribute path.
@@ -5865,11 +5840,7 @@ class AstroCatalog( Fetcher ):
 			self.timeout = int( time )
 			self.url = f'{self.base_url}/{route.lstrip( "/" )}'
 			self.params = params or { }
-			
-			self.response = requests.get(
-				url=self.url,
-				params=self.params,
-				headers=self.headers,
+			self.response = requests.get( url=self.url, params=self.params, headers=self.headers,
 				timeout=self.timeout )
 			
 			self.response.raise_for_status( )
@@ -5884,7 +5855,7 @@ class AstroCatalog( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
-			exception.method = 'request( self, route: str, params: Dict[ str, Any ] | None=None, time: int=20 ) -> Any'
+			exception.method = 'request( self, **kwargs ) -> Any'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -5913,7 +5884,6 @@ class AstroCatalog( Fetcher ):
 			throw_if( 'name', name )
 			self.name = name.strip( )
 			self.format = (data_format or 'json').strip( ).lower( )
-			
 			route_parts = [ urllib.parse.quote( self.name ) ]
 			attr_path = self.normalize_attribute_path( quantity, attributes )
 			if attr_path:
@@ -5931,10 +5901,7 @@ class AstroCatalog( Fetcher ):
 			exception = Error( exc )
 			exception.module = 'fetchers'
 			exception.cause = 'AstroCatalog'
-			exception.method = (
-					'fetch_object( self, name: str, quantity: str=, attributes: str=, '
-					'arguments: str=, data_format: str=json, time: int=20 ) -> Any'
-			)
+			exception.method = 'fetch_object( self, **kwargs ) -> Any'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -6020,23 +5987,12 @@ class AstroCatalog( Fetcher ):
 			active_mode = (mode or 'object_query').strip( ).lower( )
 			
 			if active_mode == 'object_query':
-				return self.fetch_object(
-					name=query,
-					quantity=quantity,
-					attributes=attributes,
-					arguments=arguments,
-					data_format=data_format,
-					time=time )
+				return self.fetch_object( name=query, quantity=quantity, attributes=attributes,
+					arguments=arguments, data_format=data_format, time=time )
 			
 			if active_mode == 'cone_search':
-				return self.cone_search(
-					ra=ra,
-					dec=dec,
-					radius=radius,
-					quantity=quantity,
-					attributes=attributes,
-					arguments=arguments,
-					data_format=data_format,
+				return self.cone_search( ra=ra, dec=dec, radius=radius, quantity=quantity,
+					attributes=attributes, arguments=arguments, data_format=data_format,
 					time=time )
 			
 			raise ValueError( "Unsupported mode. Use 'object_query' or 'cone_search'." )
