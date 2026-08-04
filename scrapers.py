@@ -75,11 +75,12 @@ def throw_if( name: str, value: object ) -> None:
 	"""
 	if value is None:
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	
 	if isinstance( value, str ) and (not value.strip( )):
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	
 	if isinstance( value, (list, tuple, dict, set) ) and len( value ) == 0:
 		raise ValueError( f'Argument "{name}" cannot be empty!' )
-
 
 class Extractor( ):
 	"""Provide shared state for HTML extraction workflows.
@@ -191,50 +192,25 @@ class WebExtractor( Extractor ):
 		self.description = None
 		self.parameters = None
 		self.required = None
-
 		if 'User-Agent' not in self.headers:
 			self.headers[ 'User-Agent' ] = self.agents
-
+	
 	def __dir__( self ) -> List[ str ]:
 		"""Return visible member names.
 
 		Purpose:
-			Provides a stable ordering of request state, schema state, and extraction operations for
+			Provides a stable ordering of request state, schema state, and extraction operations
+			for
 			introspection, generated documentation, and interactive application tooling.
 
 		Returns:
 			List[str]: Ordered public attribute and method names exposed by the extractor.
 		"""
-		return [
-			'agents',
-			'url',
-			'html',
-			'timeout',
-			'headers',
-			'response',
-			'result',
-			'raw_html',
-			'extracted_text',
-			'soup',
-			'function',
-			'tool',
-			'description',
-			'parameters',
-			'required',
-			'scrape',
-			'html_to_text',
-			'scrape_paragraphs',
-			'scrape_lists',
-			'scrape_tables',
-			'scrape_articles',
-			'scrape_headings',
-			'scrape_divisions',
-			'scrape_sections',
-			'scrape_blockquotes',
-			'scrape_hyperlinks',
-			'scrape_images',
-			'create_schema'
-		]
+		return [ 'agents', 'url', 'html', 'timeout', 'headers', 'response', 'result', 'raw_html',
+			'extracted_text', 'soup', 'function', 'tool', 'description', 'parameters', 'required',
+			'scrape', 'html_to_text', 'scrape_paragraphs', 'scrape_lists', 'scrape_tables',
+			'scrape_articles', 'scrape_headings', 'scrape_divisions', 'scrape_sections',
+			'scrape_blockquotes', 'scrape_hyperlinks', 'scrape_images', 'create_schema' ]
 
 	def scrape( self, url: str, time: int=10 ) -> Result | None:
 		"""Fetch an HTML resource and return its canonical result.
@@ -259,11 +235,8 @@ class WebExtractor( Extractor ):
 			throw_if( 'time', time )
 			self.url = str( url ).strip( )
 			self.timeout = int( time )
-			self.response = requests.get(
-				url=self.url,
-				headers=self.headers,
-				timeout=self.timeout
-			)
+			self.response = requests.get( url=self.url, headers=self.headers,
+				timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.html = self.response.text or ''
 			self.raw_html = self.html
@@ -405,8 +378,7 @@ class WebExtractor( Extractor ):
 		try:
 			throw_if( 'uri', uri )
 			self.url = str( uri ).strip( )
-			self.response = requests.get( url=self.url, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get( url=self.url, headers=self.headers, timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.html = self.response.text or ''
 			self.raw_html = self.html
@@ -446,8 +418,7 @@ class WebExtractor( Extractor ):
 		try:
 			throw_if( 'uri', uri )
 			self.url = str( uri ).strip( )
-			self.response = requests.get( url=self.url, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get( url=self.url, headers=self.headers, timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.html = self.response.text or ''
 			self.raw_html = self.html
@@ -519,8 +490,7 @@ class WebExtractor( Extractor ):
 		try:
 			throw_if( 'uri', uri )
 			self.url = str( uri ).strip( )
-			self.response = requests.get( url=self.url, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get( url=self.url, headers=self.headers, timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.html = self.response.text or ''
 			self.raw_html = self.html
@@ -555,8 +525,7 @@ class WebExtractor( Extractor ):
 		try:
 			throw_if( 'uri', uri )
 			self.url = str( uri ).strip( )
-			self.response = requests.get( url=self.url, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get( url=self.url, headers=self.headers, timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.html = self.response.text or ''
 			self.raw_html = self.html
@@ -591,8 +560,7 @@ class WebExtractor( Extractor ):
 		try:
 			throw_if( 'uri', uri )
 			self.url = str( uri ).strip( )
-			self.response = requests.get( url=self.url, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get( url=self.url, headers=self.headers, timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.html = self.response.text or ''
 			self.raw_html = self.html
@@ -628,8 +596,7 @@ class WebExtractor( Extractor ):
 		try:
 			throw_if( 'uri', uri )
 			self.url = str( uri ).strip( )
-			self.response = requests.get( url=self.url, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get( url=self.url, headers=self.headers, timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.html = self.response.text or ''
 			self.raw_html = self.html
@@ -665,8 +632,7 @@ class WebExtractor( Extractor ):
 		try:
 			throw_if( 'uri', uri )
 			self.url = str( uri ).strip( )
-			self.response = requests.get( url=self.url, headers=self.headers,
-				timeout=self.timeout )
+			self.response = requests.get( url=self.url, headers=self.headers, timeout=self.timeout )
 			self.response.raise_for_status( )
 			self.html = self.response.text or ''
 			self.raw_html = self.html
@@ -714,7 +680,6 @@ class WebExtractor( Extractor ):
 			self.description = str( description ).strip( )
 			self.parameters = parameters
 			self.required = required
-			
 			if not isinstance( self.parameters, dict ):
 				raise ValueError( 'parameters must be a dict of param_name → schema definitions.' )
 

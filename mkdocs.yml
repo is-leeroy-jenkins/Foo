@@ -28,6 +28,7 @@ nav:
       - Models: api/models.md
       - Scrapers: api/scrapers.md
       - Writers: api/writers.md
+      - Processors: api/processors.md
 
 plugins:
   - search

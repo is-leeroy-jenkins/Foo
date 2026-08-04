@@ -63,11 +63,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from langchain_core.documents import Document
 from lxml import etree
+from processors import PdfParser
 from loaders import (TextLoader, CsvLoader, PdfLoader, ExcelLoader, WordLoader, MarkdownLoader,
                      HtmlLoader, JsonLoader, PowerPointLoader, WikiLoader, GithubLoader, WebLoader,
-                     ArXivLoader, XmlLoader, PubMedSearchLoader, OpenCityLoader,
+                     ArXivLoader, XmlLoader, PubMedSearchLoader, OpenCityLoader, OutlookLoader,
                      JupyterNotebookLoader, AwsFileLoader, OneDriveDocLoader, GoogleCloudFileLoader,
-                     GoogleSpeechToTextLoader, GoogleBucketLoader, AwsBucketLoader)
+                     GoogleSpeechToTextLoader, GoogleBucketLoader, AwsBucketLoader, EmailLoader,
+                     SpfxLoader )
 
 from generators import Chat, Claude, Grok, Mistral, Gemini
 from fetchers import (Wikipedia, TheNews, SatelliteCenter, WebFetcher, GoogleWeather, Grokipedia,
@@ -77,7 +79,8 @@ from fetchers import (Wikipedia, TheNews, SatelliteCenter, WebFetcher, GoogleWea
                       HistoricalWeather, GoogleGeocoding, USGSEarthquakes, USGSWaterData,
                       USGSTheNationalMap, USGSScienceBase, AirNow, ClimateData, EoNet, EnviroFacts,
                       TidesAndCurrents, UvIndex, PurpleAir, OpenAQ, Firms, CensusData, Socrata,
-                      HealthData, GlobalHealthData, UnitedNations, WorldPopulation, Wonder, OpenSky)
+                      HealthData, GlobalHealthData, UnitedNations, WorldPopulation, Wonder, OpenSky,
+                      WebCrawler )
 
 import nltk
 from nltk import sent_tokenize
@@ -1540,7 +1543,6 @@ def _clear_loader_documents( loader_name: str ) -> int:
 	st.session_state.tokens = None
 	st.session_state.vocabulary = None
 	st.session_state.token_counts = None
-	
 	remaining = st.session_state.get( 'documents' ) or [ ]
 	return len( remaining )
 

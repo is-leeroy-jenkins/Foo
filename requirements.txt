@@ -59,6 +59,13 @@ streamlit==1.55.0
 streamlit-extras
 streamlit-pdf
 openai
+gensim
+docx
+scikit-learn
+spacy
+sentence-transformers
+textblob
+tiktoken
 chromadb
 
 mkdocs
