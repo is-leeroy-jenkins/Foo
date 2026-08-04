@@ -1535,7 +1535,7 @@ def _promote_loader_documents( documents: List[ Document ] | None, active_loader
 
 def _clear_loader_documents( loader_name: str ) -> int:
 	clear_if_active( loader_name )
-	st.session_state.raw_text = _rebuild_raw_text_from_documents( ) or ''
+	st.session_state.raw_text = rebuild_raw_text_from_documents( ) or ''
 	st.session_state.processed_text = ''
 	st.session_state.tokens = None
 	st.session_state.vocabulary = None
@@ -1607,7 +1607,7 @@ if mode == 'Loading':
 	# ------------------------------------------------------------------
 	# LEFT COLUMN - LOADERS
 	# ------------------------------------------------------------------
-	left, right = st.columns( [ 0.35, 0.65 ], gap='medium' )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 	with left:
 		_loader_msg = st.session_state.pop( '_loader_status', None )
 		if isinstance( _loader_msg, str ) and _loader_msg.strip( ):
@@ -4273,9 +4273,10 @@ elif mode == 'Retrieval':
 
 	st.subheader( '🏛️ Public Collections & Archives' )
 	st.divider( )
-	left, right = st.columns( [ 0.35, 0.65 ], gap='medium' )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 
 	with left:
+		# -------- Expander (ArXiv)
 		with st.expander( label='ArXiv', icon='📘', expanded=False ):
 			st.badge( label='Information', help=cfg.ARXIV )
 			if 'arxiv_results' not in st.session_state:
@@ -4337,7 +4338,6 @@ elif mode == 'Retrieval':
 						st.warning( 'No input provided.' )
 					else:
 						from fetchers import ArXiv
-						
 						fetcher = ArXiv( max_documents=int( arxiv_max_docs ),
 							full_documents=bool( arxiv_full_documents ),
 							include_metadata=bool( arxiv_include_metadata ) )
@@ -4359,7 +4359,7 @@ elif mode == 'Retrieval':
 					st.error( 'ArXiv request failed.' )
 					st.exception( exc )
 		
-		# -------- Google Drive
+		# -------- Expander (Google Drive)
 		with st.expander( label='Google Drive', icon='🛡️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_DRIVE )
 			if 'googledrive_results' not in st.session_state:
@@ -4461,7 +4461,7 @@ elif mode == 'Retrieval':
 					st.error( 'Google Drive request failed.' )
 					st.exception( exc )
 		
-		# -------- Wikipedia
+		# -------- Expander (Wikipedia)
 		with st.expander( label='Wikipedia', icon='📖', expanded=False ):
 			st.badge( label='Information', help=cfg.WIKIPEDIA )
 			if 'wikipedia_results' not in st.session_state:
@@ -4553,7 +4553,7 @@ elif mode == 'Retrieval':
 			with st.expander( label='Information', expanded=False ):
 				st.help( Wikipedia )
 		
-		# -------- Google Search
+		# -------- Expander (Google Search)
 		with st.expander( label='Google Search', icon='🔍', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_CSE )
 			if 'googlesearch_results' not in st.session_state:
@@ -4740,7 +4740,7 @@ elif mode == 'Retrieval':
 				st.button( 'Clear', key='googlesearch_clear',
 					on_click=_clear_googlesearch_state )
 		
-		# -------- Open Science
+		# -------- Expander (Open Science)
 		with st.expander( label='Open Science', icon='🧪', expanded=False ):
 			st.badge( label='Information', help=cfg.NASA_OPEN_SCIENCE )
 			if 'openscience_results' not in st.session_state:
@@ -4797,7 +4797,7 @@ elif mode == 'Retrieval':
 				st.button( 'Clear', key='openscience_clear', on_click=_clear_openscience_state,
 					use_container_width=True )
 		
-		# -------- Gov Info
+		# -------- Expander (Gov Info)
 		with st.expander( label='Gov Info', icon='🏛️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOV_INFO )
 			if 'govinfo_results' not in st.session_state:
@@ -5022,7 +5022,7 @@ elif mode == 'Retrieval':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 		
-		# -------- Congress
+		# -------- Expander (Congress)
 		with st.expander( label='US Congress', icon='⚖️', expanded=False ):
 			st.badge( label='Information', help=cfg.CONGRESS )
 			if 'congress_results' not in st.session_state:
@@ -5276,7 +5276,7 @@ elif mode == 'Retrieval':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 		
-		# -------- Internet Archive
+		# -------- Expander (Internet Archive)
 		with st.expander( label='Internet Archive', icon='🌐', expanded=False ):
 			st.badge( label='Information', help=cfg.INTERNET_ARCHIVE )
 			if 'internetarchive_results' not in st.session_state:
@@ -5470,7 +5470,7 @@ elif mode == 'Retrieval':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 		
-		# -------- Grokipedia
+		# -------- Expander (Grokipedia)
 		with st.expander( label='Grokipedia', icon='🧠', expanded=False ):
 			st.badge( label='Information', help=cfg.GROKIPEDIA )
 			if 'grokipedia_results' not in st.session_state:
@@ -5710,7 +5710,7 @@ elif mode == 'Retrieval':
 					else:
 						st.info( 'No results returned.' )
 		
-		# -------- Jupyter Notebook
+		# -------- Expander (Jupyter Notebook)
 		with st.expander( label='Jupyter Notebook', icon='🪐', expanded=False ):
 			st.badge( label='Information', help=cfg.JUPYTER_NOTEBOOK )
 			if 'jupyter_notebook_results' not in st.session_state:
@@ -5755,7 +5755,7 @@ elif mode == 'Retrieval':
 					st.button( 'Save', key='jupyter_notebook_save_disabled', disabled=True,
 						use_container_width=True )
 		
-		# -------- Google Cloud File
+		# -------- Expander (Google Cloud File)
 		with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_FILE )
 			if 'google_cloud_file_results' not in st.session_state:
@@ -5793,7 +5793,7 @@ elif mode == 'Retrieval':
 					st.button( 'Save', key='google_cloud_file_save_disabled', disabled=True,
 						use_container_width=True )
 		
-		# -------- AWS S3 File
+		# -------- Expander (AWS S3 File)
 		with st.expander( label='AWS S3 File', icon='📗', expanded=False ):
 			st.badge( label='Information', help=cfg.AWS_FILE )
 			if 'aws_file_results' not in st.session_state:
@@ -5839,7 +5839,7 @@ elif mode == 'Retrieval':
 					st.button( 'Save', key='aws_file_save_disabled', disabled=True,
 						use_container_width=True )
 		
-		# -------- OneDrive
+		# -------- Expander (OneDrive)
 		with st.expander( label='OneDrive', icon='💻', expanded=False ):
 			st.badge( label='Information', help=cfg.ONEDRIVE )
 			if 'onedrive_results' not in st.session_state:
@@ -5881,7 +5881,7 @@ elif mode == 'Retrieval':
 					st.button( 'Save', key='onedrive_save_disabled', disabled=True,
 						use_container_width=True )
 		
-		# -------- Google Speech-to-Text
+		# -------- Expander (Google Speech-to-Text)
 		with st.expander( label='Google Speech-to-Text', icon='🗣️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_STT )
 			if 'google_speech_to_text_results' not in st.session_state:
@@ -5925,7 +5925,7 @@ elif mode == 'Retrieval':
 						disabled=True,
 						use_container_width=True )
 		
-		# -------- AWS S3 Bucket
+		# -------- Expander  (AWS S3 Bucket)
 		with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
 			st.badge( label='Information', help=cfg.AWS_BUCKET )
 			if 'aws_bucket_results' not in st.session_state:
@@ -5974,7 +5974,7 @@ elif mode == 'Retrieval':
 					st.button( 'Save', key='aws_bucket_save_disabled', disabled=True,
 						use_container_width=True )
 		
-		# -------- Google Cloud Bucket
+		# -------- Expander (Google Cloud Bucket)
 		with st.expander( label='Google Cloud Bucket', icon='🧊', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_BUCKET )
 			if 'google_bucket_results' not in st.session_state:
@@ -6052,14 +6052,14 @@ elif mode == 'Retrieval':
 		st.session_state[ 'retrieval_active_source' ] = 'Google Cloud Bucket'
 
 	with right:
-		st.markdown( '### Results' )
+		st.markdown( '##### Results' )
 		active_source = st.session_state.get( 'retrieval_active_source', '' )
-
 		if not active_source:
 			st.info( 'Select a source, configure the request, and submit it to display results.' )
 		else:
 			st.caption( f'Active Source: {active_source}' )
 
+		# -------- ArXiv
 		if active_source == 'ArXiv':
 			st.markdown( 'Results' )
 			results = st.session_state.get( 'arxiv_results', [ ] )
@@ -6102,7 +6102,7 @@ elif mode == 'Retrieval':
 						else:
 							st.write( doc )
 	
-
+		# -------- Google Drive
 		if active_source == 'Google Drive':
 			st.markdown( 'Results', help=cfg.GOOGLE_DRIVE )
 			
@@ -6149,7 +6149,7 @@ elif mode == 'Retrieval':
 						else:
 							st.write( doc )
 	
-
+		# -------- Wikipedia
 		if active_source == 'Wikipedia':
 			st.markdown( 'Results' )
 			
@@ -6195,8 +6195,8 @@ elif mode == 'Retrieval':
 								st.json( doc.metadata )
 						else:
 							st.write( doc )
-		
-
+	
+		# -------- Google Search
 		if active_source == 'Google Search':
 			st.markdown( 'Results' )
 			
@@ -6311,7 +6311,7 @@ elif mode == 'Retrieval':
 							with st.expander( 'Raw Item', expanded=False ):
 								st.json( item )
 	
-
+		# -------- Open Science
 		if active_source == 'Open Science':
 			st.markdown( 'Results' )
 			
@@ -6403,11 +6403,7 @@ elif mode == 'Retrieval':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-
-
-
-
-
+		# -------- Jupyter Notebook
 		if active_source == 'Jupyter Notebook':
 			if jupyter_clear:
 				st.session_state[ 'jupyter_notebook_results' ] = { }
@@ -6487,7 +6483,7 @@ elif mode == 'Retrieval':
 				
 				_render_fallback_raw( result )
 	
-
+		# -------- Google Cloud FIle
 		if active_source == 'Google Cloud File':
 			if google_cloud_file_clear:
 				st.session_state[ 'google_cloud_file_results' ] = { }
@@ -6562,7 +6558,7 @@ elif mode == 'Retrieval':
 			
 			_render_fallback_raw( result )
 	
-
+		# -------- AWS S3 File
 		if active_source == 'AWS S3 File':
 			if aws_file_clear:
 				st.session_state[ 'aws_file_results' ] = { }
@@ -6638,7 +6634,7 @@ elif mode == 'Retrieval':
 				
 				_render_fallback_raw( result )
 	
-
+		# -------- OneDrive
 		if active_source == 'OneDrive':
 			if onedrive_clear:
 				st.session_state[ 'onedrive_results' ] = { }
@@ -6717,7 +6713,7 @@ elif mode == 'Retrieval':
 				
 				_render_fallback_raw( result )
 	
-
+		# -------- Google STT
 		if active_source == 'Google Speech-to-Text':
 			if google_speech_clear:
 				st.session_state[ 'google_speech_to_text_results' ] = { }
@@ -6808,7 +6804,7 @@ elif mode == 'Retrieval':
 				
 				_render_fallback_raw( result )
 	
-
+		# -------- AWS S3 Bucket
 		if active_source == 'AWS S3 Bucket':
 			if aws_bucket_clear:
 				st.session_state[ 'aws_bucket_results' ] = { }
@@ -6888,7 +6884,7 @@ elif mode == 'Retrieval':
 				
 				_render_fallback_raw( result )
 	
-
+		# -------- Google Cloud Bucket
 		if active_source == 'Google Cloud Bucket':
 			if google_bucket_clear:
 				st.session_state[ 'google_bucket_results' ] = { }
@@ -7049,11 +7045,12 @@ elif mode == 'Geospatial':
 		st.session_state[ 'active_loader' ] = source
 		return documents
 
-	st.subheader( '📡 Weather & Geospatial Data' )
+	st.subheader( '📡 Geospatial & Weather' )
 	st.divider( )
-	left, right = st.columns( [ 0.35, 0.65 ], gap='medium' )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 
 	with left:
+		# ------  Geocoding
 		with st.expander( label='Geocoding', icon='📍', expanded=False ):
 			if 'googlegeocoding_results' not in st.session_state:
 				st.session_state[ 'googlegeocoding_results' ] = { }
@@ -7096,7 +7093,6 @@ elif mode == 'Geospatial':
 				disabled=(googlegeocoding_mode != 'forward') )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				googlegeocoding_latitude = st.number_input( 'Latitude', min_value=-90.0,
 					max_value=90.0,
@@ -7117,7 +7113,6 @@ elif mode == 'Geospatial':
 				disabled=(googlegeocoding_mode != 'place') )
 			
 			c3, c4 = st.columns( 2 )
-			
 			with c3:
 				googlegeocoding_language = st.text_input( 'Language',
 					value=st.session_state.get( 'googlegeocoding_language', 'en' ),
@@ -7130,7 +7125,6 @@ elif mode == 'Geospatial':
 					disabled=(googlegeocoding_mode == 'reverse') )
 			
 			c5, c6 = st.columns( 2 )
-			
 			with c5:
 				googlegeocoding_result_type = st.text_input( 'Result Type',
 					value=st.session_state.get( 'googlegeocoding_result_type', '' ),
@@ -7145,7 +7139,6 @@ elif mode == 'Geospatial':
 					disabled=(googlegeocoding_mode != 'reverse') )
 			
 			c7, c8 = st.columns( 2 )
-			
 			with c7:
 				googlegeocoding_api_key = st.text_input( 'API Key', value='', type='password',
 					key='googlegeocoding_api_key',
@@ -7161,7 +7154,6 @@ elif mode == 'Geospatial':
 			            'Result filters apply to reverse geocoding only.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				googlegeocoding_submit = st.button( 'Submit', key='googlegeocoding_submit',
 					use_container_width=True )
@@ -7173,6 +7165,7 @@ elif mode == 'Geospatial':
 			if googlegeocoding_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Geocoding'
 
+		# ------ Google Maps
 		with st.expander( label='Google Maps', icon='🗺️', expanded=False ):
 			GOOGLEMAPS_MODES = [ 'geocode_location', 'geocode_coordinates', 'validate_address',
 				'request_directions' ]
@@ -7319,6 +7312,7 @@ elif mode == 'Geospatial':
 			if googlemaps_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Google Maps'
 
+		# ------ Google Weather
 		with st.expander( label='Google Weather', icon='🌤️', expanded=False ):
 			GOOGLEWEATHER_MODES = [ 'current', 'hourly_forecast', 'daily_forecast',
 				'hourly_history', 'alerts' ]
@@ -7437,6 +7431,7 @@ elif mode == 'Geospatial':
 			if gw_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Google Weather'
 
+		# ------ Open Weather
 		with st.expander( label='Open Weather', icon='🌦️', expanded=False ):
 			if 'openweather_results' not in st.session_state:
 				st.session_state[ 'openweather_results' ] = { }
@@ -7507,6 +7502,7 @@ elif mode == 'Geospatial':
 			if openweather_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Open Weather'
 
+		# ------ Historical Weather
 		with st.expander( label='Historical Weather', icon='📈', expanded=False ):
 			if 'historicalweather_results' not in st.session_state:
 				st.session_state[ 'historicalweather_results' ] = { }
@@ -7563,6 +7559,7 @@ elif mode == 'Geospatial':
 			if historicalweather_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Historical Weather'
 
+		# ------  USGS Earthquakes
 		with st.expander( label='USGS Earthquakes', icon='🌎', expanded=False ):
 			USGSEARTHQUAKES_MODES = [ 'feed', 'search' ]
 			
@@ -7756,6 +7753,7 @@ elif mode == 'Geospatial':
 			if usgseq_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'USGS Earthquakes'
 
+		# ------ NASA Earth Observatory
 		with st.expander( label='NASA Earth Observatory', icon='🛰️', expanded=False ):
 			if 'earthobservatory_results' not in st.session_state:
 				st.session_state[ 'earthobservatory_results' ] = { }
@@ -7847,6 +7845,7 @@ elif mode == 'Geospatial':
 			if earth_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'NASA Earth Observatory'
 
+		# ------ The National Map
 		with st.expander( label='The National Map', icon='🗺️', expanded=False ):
 			USGSTNM_MODES = [ 'products', 'datasets' ]
 			
@@ -7986,6 +7985,7 @@ elif mode == 'Geospatial':
 			if usgstnm_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'The National Map'
 
+		# ------ USGS Science Base
 		with st.expander( label='USGS Science Base', icon='🔬', expanded=False ):
 			USGSSB_MODES = [ 'items', 'item' ]
 			
@@ -8090,6 +8090,7 @@ elif mode == 'Geospatial':
 			if usgssb_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'USGS Science Base'
 
+		# ------ Open Sky
 		with st.expander( label='Open Sky', icon='✈️', expanded=False ):
 			def _clear_opensky_state( ) -> None:
 				st.session_state[ 'opensky_results' ] = { }
@@ -8225,23 +8226,19 @@ elif mode == 'Geospatial':
 
 	with right:
 		active_source = st.session_state.get( 'geospatial_active_source', '' )
-		result_keys: Dict[ str, str ] = {
-			'Geocoding': 'googlegeocoding_results',
-			'Google Maps': 'googlemaps_results',
-			'Google Weather': 'googleweather_results',
+		result_keys: Dict[ str, str ] = { 'Geocoding': 'googlegeocoding_results',
+			'Google Maps': 'googlemaps_results', 'Google Weather': 'googleweather_results',
 			'Open Weather': 'openweather_results',
 			'Historical Weather': 'historicalweather_results',
 			'USGS Earthquakes': 'usgsearthquakes_results',
 			'NASA Earth Observatory': 'earthobservatory_results',
-			'The National Map': 'usgstnm_results',
-			'USGS Science Base': 'usgssb_results',
-			'Open Sky': 'opensky_results',
-		}
+			'The National Map': 'usgstnm_results', 'USGS Science Base': 'usgssb_results',
+			'Open Sky': 'opensky_results', }
 		if active_source in result_keys:
 			active_result = st.session_state.get( result_keys[ active_source ] )
 			_promote_geospatial_result( source=active_source, result=active_result )
 
-		st.markdown( '### Results' )
+		st.markdown( '##### Results' )
 		if not active_source:
 			st.info( 'Select a source, configure the request, and submit it to display results.' )
 		else:
@@ -9320,8 +9317,7 @@ elif mode == 'Environmental':
 
 	st.subheader( '🌍 Environmental Data' )
 	st.divider( )
-	left, right = st.columns( [ 0.35, 0.65 ], gap='medium' )
-
+	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 	with left:
 		with st.expander( label='Air Now', icon='🌫️', expanded=False ):
 			if 'airnow_results' not in st.session_state:
@@ -9400,7 +9396,6 @@ elif mode == 'Environmental':
 
 		with st.expander( label='NOAA Climate Data', icon='🌡️', expanded=False ):
 			CLIMATEDATA_MODES = [ 'datasets', 'data' ]
-			
 			CLIMATEDATA_DATASETS = [ 'daily-summaries', 'global-summary-of-the-day',
 				'global-hourly', 'local-climatological-data', 'normals-daily', 'normals-monthly',
 				'normals-annualseasonal' ]
@@ -9478,7 +9473,6 @@ elif mode == 'Environmental':
 				help='NCEI dataset identifier passed to the Access Data Service.' )
 			
 			date_c1, date_c2 = st.columns( 2 )
-			
 			with date_c1:
 				climatedata_start_date = st.date_input( 'Start Date',
 					value=st.session_state.get( 'climatedata_start_date',
@@ -9501,7 +9495,6 @@ elif mode == 'Environmental':
 				placeholder='Comma-separated datatype IDs' )
 			
 			page_c1, page_c2 = st.columns( 2 )
-			
 			with page_c1:
 				climatedata_limit = st.number_input( 'Limit', min_value=1, max_value=500,
 					value=int( st.session_state.get( 'climatedata_limit', 25 ) ), step=1,
@@ -9520,7 +9513,6 @@ elif mode == 'Environmental':
 			            'subsetted climate records from a selected dataset.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				climatedata_submit = st.button( 'Submit', key='climatedata_submit' )
 			
@@ -9534,7 +9526,6 @@ elif mode == 'Environmental':
 
 		with st.expander( label='NASA EONET', icon='🌎', expanded=False ):
 			EONET_MODES = [ 'events', 'categories' ]
-			
 			EONET_STATUSES = [ 'open', 'closed', 'all' ]
 			
 			def _clear_eonet_state( ) -> None:
@@ -9556,13 +9547,11 @@ elif mode == 'Environmental':
 					return ''
 				
 				parts = [ item.strip( ) for item in text.split( ',' ) if item.strip( ) ]
-				
 				if len( parts ) != 4:
 					raise ValueError( 'Bounding Box must contain four comma-separated values: '
 					                  'min_lon,max_lat,max_lon,min_lat.' )
 				
 				min_lon, max_lat, max_lon, min_lat = [ float( item ) for item in parts ]
-				
 				if min_lon < -180 or max_lon > 180:
 					raise ValueError( 'Longitude values must be within -180 and 180.' )
 				
@@ -9636,7 +9625,6 @@ elif mode == 'Environmental':
 				key='eonet_status', disabled=(eonet_mode != 'events') )
 			
 			filter_c1, filter_c2 = st.columns( 2 )
-			
 			with filter_c1:
 				eonet_source = st.text_input( 'Source',
 					value=st.session_state.get( 'eonet_source', '' ), key='eonet_source',
@@ -9648,7 +9636,6 @@ elif mode == 'Environmental':
 					disabled=(eonet_mode != 'events'), placeholder='Optional category ID' )
 			
 			count_c1, count_c2 = st.columns( 2 )
-			
 			with count_c1:
 				eonet_limit = st.number_input( 'Limit', min_value=1, max_value=500,
 					value=int( st.session_state.get( 'eonet_limit', 25 ) ), step=1,
@@ -9660,7 +9647,6 @@ elif mode == 'Environmental':
 					key='eonet_days', disabled=(eonet_mode != 'events') )
 			
 			date_c1, date_c2 = st.columns( 2 )
-			
 			with date_c1:
 				eonet_start_date = st.text_input( 'Start Date',
 					value=st.session_state.get( 'eonet_start_date', '' ),
@@ -9685,7 +9671,6 @@ elif mode == 'Environmental':
 			            'available EONET event categories.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				eonet_submit = st.button( 'Submit', key='eonet_submit' )
 			
@@ -9698,7 +9683,6 @@ elif mode == 'Environmental':
 
 		with st.expander( label='EPA Envirofacts', icon='♻️', expanded=False ):
 			ENVIROFACTS_TABLES = [ 'TRI_FACILITY', 'TRI_RELEASE', 'EF_W_EMISSIONS_SOURCE_GHG' ]
-			
 			ENVIROFACTS_STATE_CODES = [ '', 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC',
 				'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI',
 				'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK',
@@ -9767,7 +9751,6 @@ elif mode == 'Environmental':
 			            'common tables so the output remains human-readable and easy to use.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				envirofacts_submit = st.button( 'Submit', key='envirofacts_submit' )
 			
@@ -9781,14 +9764,9 @@ elif mode == 'Environmental':
 
 		with st.expander( label='NOAA Tides & Currents', icon='🌊', expanded=False ):
 			TIDESANDCURRENTS_MODES = [ 'station', 'water-level', 'tide-predictions' ]
-			
-			TIDESANDCURRENTS_DATUMS = [ 'MLLW', 'MHHW', 'MHW', 'MTL', 'MSL', 'MLW', 'NAVD',
-				'STND' ]
-			
+			TIDESANDCURRENTS_DATUMS = [ 'MLLW', 'MHHW', 'MHW', 'MTL', 'MSL', 'MLW', 'NAVD', 'STND' ]
 			TIDESANDCURRENTS_UNITS = [ 'metric', 'english' ]
-			
 			TIDESANDCURRENTS_TIME_ZONES = [ 'gmt', 'lst', 'lst_ldt' ]
-			
 			TIDESANDCURRENTS_INTERVALS = [ 'hilo', 'h', '1', '5', '6', '10', '15', '30', '60' ]
 			
 			def _clear_tidesandcurrents_state( ) -> None:
@@ -9857,7 +9835,6 @@ elif mode == 'Environmental':
 				key='tidesandcurrents_station_id', placeholder='Example: 8724580' )
 			
 			date_c1, date_c2 = st.columns( 2 )
-			
 			with date_c1:
 				tac_begin_date = st.date_input( 'Begin Date',
 					value=st.session_state.get( 'tidesandcurrents_begin_date',
@@ -9872,7 +9849,6 @@ elif mode == 'Environmental':
 					key='tidesandcurrents_end_date', disabled=(tac_mode == 'station') )
 			
 			option_c1, option_c2 = st.columns( 2 )
-			
 			with option_c1:
 				tac_datum = st.selectbox( 'Datum', options=TIDESANDCURRENTS_DATUMS,
 					index=TIDESANDCURRENTS_DATUMS.index(
@@ -9886,7 +9862,6 @@ elif mode == 'Environmental':
 					key='tidesandcurrents_units', disabled=(tac_mode == 'station') )
 			
 			option_c3, option_c4 = st.columns( 2 )
-			
 			with option_c3:
 				tac_time_zone = st.selectbox( 'Time Zone', options=TIDESANDCURRENTS_TIME_ZONES,
 					index=TIDESANDCURRENTS_TIME_ZONES.index(
@@ -9909,7 +9884,6 @@ elif mode == 'Environmental':
 			            'dates.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				tac_submit = st.button( 'Submit', key='tidesandcurrents_submit' )
 			
@@ -9923,7 +9897,6 @@ elif mode == 'Environmental':
 
 		with st.expander( label='EPA UV Index', icon='☀️', expanded=False ):
 			UVINDEX_MODES = [ 'daily-zip', 'daily-city-state', 'hourly-zip', 'hourly-city-state' ]
-			
 			UVINDEX_STATE_CODES = [ 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL',
 				'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN',
 				'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR',
@@ -9973,7 +9946,6 @@ elif mode == 'Environmental':
 				placeholder='Example: 22201' )
 			
 			city_c1, city_c2 = st.columns( 2 )
-			
 			with city_c1:
 				uvindex_city = st.text_input( 'City',
 					value=st.session_state.get( 'uvindex_city', '' ), key='uvindex_city',
@@ -9995,7 +9967,6 @@ elif mode == 'Environmental':
 			            'by city and state.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				uvindex_submit = st.button( 'Submit', key='uvindex_submit' )
 			
@@ -10008,7 +9979,6 @@ elif mode == 'Environmental':
 
 		with st.expander( label='Purple Air', icon='🟣', expanded=False ):
 			PURPLEAIR_MODES = [ 'sensors', 'sensor' ]
-			
 			PURPLEAIR_FIELD_OPTIONS = [ 'name', 'pm2.5', 'temperature', 'humidity', 'latitude',
 				'longitude', 'last_seen', 'location_type', 'model', 'hardware', 'pm2.5_cf_1_a',
 				'pm2.5_cf_1_b', 'pressure', 'firmware_version', 'rssi' ]
@@ -10153,7 +10123,6 @@ elif mode == 'Environmental':
 					disabled=(purpleair_mode != 'sensors') )
 			
 			bbox_c3, bbox_c4 = st.columns( 2 )
-			
 			with bbox_c3:
 				purpleair_selng = st.text_input( 'SE Longitude',
 					value=st.session_state.get( 'purpleair_selng', '' ), key='purpleair_selng',
@@ -10165,7 +10134,6 @@ elif mode == 'Environmental':
 					disabled=(purpleair_mode != 'sensors') )
 			
 			opt_c1, opt_c2 = st.columns( 2 )
-			
 			with opt_c1:
 				location_labels = list( PURPLEAIR_LOCATION_TYPES.keys( ) )
 				current_location_label = st.session_state.get( 'purpleair_location_type_label',
@@ -10200,7 +10168,6 @@ elif mode == 'Environmental':
 			            'the fields needed for the request.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				purpleair_submit = st.button( 'Submit', key='purpleair_submit' )
 			
@@ -10220,7 +10187,6 @@ elif mode == 'Environmental':
 			
 			def _coerce_optional_integer( value: object ) -> int | None:
 				text = str( value or '' ).strip( )
-				
 				if not text:
 					return None
 				
@@ -10313,7 +10279,6 @@ elif mode == 'Environmental':
 				key='openaq_radius', disabled=(openaq_mode != 'locations') )
 			
 			filter_c1, filter_c2 = st.columns( 2 )
-			
 			with filter_c1:
 				openaq_providers_id = st.text_input( 'Providers ID',
 					value=st.session_state.get( 'openaq_providers_id', '' ),
@@ -10329,7 +10294,6 @@ elif mode == 'Environmental':
 					placeholder='Optional parameter ID' )
 			
 			page_c1, page_c2 = st.columns( 2 )
-			
 			with page_c1:
 				openaq_limit = st.number_input( 'Limit', min_value=1, max_value=500,
 					value=int( st.session_state.get( 'openaq_limit', 25 ) ), step=1,
@@ -10349,7 +10313,6 @@ elif mode == 'Environmental':
 			            'measurements by location or parameter.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				openaq_submit = st.button( 'Submit', key='openaq_submit' )
 			
@@ -10362,7 +10325,6 @@ elif mode == 'Environmental':
 
 		with st.expander( label='NASA FIRMS', icon='🔥', expanded=False ):
 			FIRMS_MODES = [ 'area', 'data-availability' ]
-			
 			FIRMS_SOURCES = [ 'LANDSAT_NRT', 'MODIS_NRT', 'MODIS_SP', 'VIIRS_NOAA20_NRT',
 				'VIIRS_NOAA20_SP', 'VIIRS_NOAA21_NRT', 'VIIRS_SNPP_NRT', 'VIIRS_SNPP_SP' ]
 			
@@ -10480,7 +10442,6 @@ elif mode == 'Environmental':
 			            'returns supported date ranges by sensor.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				firms_submit = st.button( 'Submit', key='firms_submit' )
 			
@@ -10567,7 +10528,6 @@ elif mode == 'Environmental':
 				placeholder='Example: USGS-01491000' )
 			
 			meta_c1, meta_c2 = st.columns( 2 )
-			
 			with meta_c1:
 				usgswd_state_code = st.selectbox( 'State Code',
 					options=USGSWATERDATA_STATE_CODES, index=USGSWATERDATA_STATE_CODES.index(
@@ -10611,7 +10571,6 @@ elif mode == 'Environmental':
 			            'daily values.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				usgswd_submit = st.button( 'Submit', key='usgswaterdata_submit' )
 			
@@ -10626,14 +10585,12 @@ elif mode == 'Environmental':
 	with right:
 		st.markdown( '### Results' )
 		active_source = st.session_state.get( 'environmental_active_source', '' )
-
 		if not active_source:
 			st.info( 'Select a source, configure the request, and submit it to display results.' )
 		else:
 			st.caption( f'Active Source: {active_source}' )
 
 		# -------- Air Now
-
 		if active_source == 'Air Now':
 			if airnow_submit:
 				try:
@@ -10762,13 +10719,10 @@ elif mode == 'Environmental':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
-	
-	# -------- NOAA Climate Data
 			
 			_promote_environmental_result( source='Air Now', result=result )
 
 		# -------- NOAA Climate Data
-
 		if active_source == 'NOAA Climate Data':
 			if climatedata_submit:
 				try:
@@ -10802,7 +10756,6 @@ elif mode == 'Environmental':
 				st.text( 'No results.' )
 			else:
 				meta_c1, meta_c2 = st.columns( 2 )
-				
 				with meta_c1:
 					if 'mode' in result:
 						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
@@ -10821,7 +10774,6 @@ elif mode == 'Environmental':
 					st.markdown( '#### Result Summary' )
 					
 					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
 					with sum_c1:
 						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
 					
@@ -10848,7 +10800,6 @@ elif mode == 'Environmental':
 				if rows:
 					st.markdown( '#### Climate Results' )
 					df_climatedata = pd.DataFrame( rows )
-					
 					if not df_climatedata.empty:
 						st.dataframe( df_climatedata, use_container_width=True,
 							hide_index=True )
@@ -10868,12 +10819,9 @@ elif mode == 'Environmental':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- NASA EONET
-			
 			_promote_environmental_result( source='NOAA Climate Data', result=result )
 
 		# -------- NASA EONET
-
 		if active_source == 'NASA EONET':
 			if eonet_submit:
 				try:
@@ -10996,12 +10944,9 @@ elif mode == 'Environmental':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- EPA Envirofacts
-			
 			_promote_environmental_result( source='NASA EONET', result=result )
 
 		# -------- EPA Envirofacts
-
 		if active_source == 'EPA Envirofacts':
 			if envirofacts_submit:
 				try:
@@ -11087,13 +11032,9 @@ elif mode == 'Environmental':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
-	
-	# -------- NOAA Tides & Currents
-			
 			_promote_environmental_result( source='EPA Envirofacts', result=result )
 
 		# -------- NOAA Tides & Currents
-
 		if active_source == 'NOAA Tides & Currents':
 			if tac_submit:
 				try:
@@ -11141,7 +11082,6 @@ elif mode == 'Environmental':
 					st.markdown( '#### Result Summary' )
 					
 					sum_c1, sum_c2, sum_c3 = st.columns( 3 )
-					
 					with sum_c1:
 						st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
 					
@@ -11191,13 +11131,10 @@ elif mode == 'Environmental':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
-	
-	# -------- EPA UV Index
-			
+					
 			_promote_environmental_result( source='NOAA Tides & Currents', result=result )
 
 		# -------- EPA UV Index
-
 		if active_source == 'EPA UV Index':
 			if uvindex_submit:
 				try:
@@ -11234,7 +11171,6 @@ elif mode == 'Environmental':
 					st.exception( exc )
 			
 			result = st.session_state.get( 'uvindex_results', { } )
-			
 			if not result:
 				st.text( 'No results.' )
 			else:
@@ -11305,13 +11241,10 @@ elif mode == 'Environmental':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
-	
-	# -------- PurpleAir
 			
 			_promote_environmental_result( source='EPA UV Index', result=result )
 
 		# -------- Purple Air
-
 		if active_source == 'Purple Air':
 			if purpleair_submit:
 				try:
@@ -11433,13 +11366,10 @@ elif mode == 'Environmental':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
-	
-	# -------- OpenAQ
-			
+					
 			_promote_environmental_result( source='Purple Air', result=result )
 
 		# -------- Open Air Quality
-
 		if active_source == 'Open Air Quality':
 			if openaq_submit:
 				try:
@@ -11560,13 +11490,10 @@ elif mode == 'Environmental':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
-	
-	# -------- NASA FIRMS
-			
+					
 			_promote_environmental_result( source='Open Air Quality', result=result )
 
 		# -------- NASA FIRMS
-
 		if active_source == 'NASA FIRMS':
 			if firms_submit:
 				try:
@@ -11678,13 +11605,10 @@ elif mode == 'Environmental':
 				
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
-	
-	# -------- USGS Water Data
-			
+					
 			_promote_environmental_result( source='NASA FIRMS', result=result )
 
 		# -------- USGS Water Data
-
 		if active_source == 'USGS Water Data':
 			if usgswd_submit:
 				try:
@@ -11895,7 +11819,7 @@ elif mode == 'Astronomical':
 
 	st.subheader( '🌌 Physics & Astronomical Data' )
 	st.divider( )
-	left, right = st.columns( [ 0.35, 0.65 ], gap='medium' )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 
 	with left:
 		with st.expander( label='US Naval Observatory', icon='⚓', expanded=False ):
@@ -13857,15 +13781,13 @@ elif mode == 'Astronomical':
 # POPULATION MODE
 # ==============================================================================
 elif mode == 'Demographic':
-	left, right = st.columns( [ 0.35, 0.65 ], gap='medium' )
-
+	st.subheader( f'🩺 Demographics & Health Data' )
+	st.divider( )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 	if 'demographic_active_source' not in st.session_state:
 		st.session_state[ 'demographic_active_source' ] = ''
 
 	with left:
-		st.subheader( f'🩺 Demographics & Health Data' )
-		st.divider( )
-		
 		# -------- U.S. Census Bureau
 		with st.expander( label='U.S. Census Bureau', icon='📊', expanded=False ):
 			CENSUS_MODES = [ 'variables', 'data' ]
@@ -13875,7 +13797,6 @@ elif mode == 'Demographic':
 			
 			def _validate_census_year( value: object ) -> str:
 				text = str( value or '' ).strip( )
-				
 				if not re.fullmatch( r'\d{4}', text ):
 					raise ValueError( 'Year must be a four-digit Census API vintage year.' )
 				
@@ -13883,7 +13804,6 @@ elif mode == 'Demographic':
 			
 			def _validate_census_dataset( value: object ) -> str:
 				text = str( value or '' ).strip( ).strip( '/' )
-				
 				if not text:
 					raise ValueError( 'Dataset is required.' )
 				
@@ -14022,7 +13942,6 @@ elif mode == 'Demographic':
 
 			if census_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_census_bureau'
-
 		
 		# -------- CDC SOCRATA
 		with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
@@ -14165,7 +14084,6 @@ elif mode == 'Demographic':
 
 			if socrata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_socrata'
-
 		
 		# -------- US Health Data
 		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
@@ -14311,7 +14229,6 @@ elif mode == 'Demographic':
 
 			if healthdata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_health'
-
 		
 		# -------- WHO Global Health
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
@@ -14430,7 +14347,6 @@ elif mode == 'Demographic':
 
 			if who_submit:
 				st.session_state[ 'demographic_active_source' ] = 'who_global'
-
 		
 		# -------- United Nations Data
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
@@ -14540,7 +14456,6 @@ elif mode == 'Demographic':
 
 			if un_submit:
 				st.session_state[ 'demographic_active_source' ] = 'united_nations'
-
 		
 		# -------- World Population
 		with st.expander( label='World Population', icon='👥', expanded=False ):
@@ -14696,7 +14611,6 @@ elif mode == 'Demographic':
 
 			if worldpop_submit:
 				st.session_state[ 'demographic_active_source' ] = 'world_population'
-
 		
 		# -------- CDC WONDER
 		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
@@ -14822,7 +14736,6 @@ elif mode == 'Demographic':
 
 			if wonder_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_wonder'
-
 		
 		# -------- Pub Med
 		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
@@ -14885,7 +14798,6 @@ elif mode == 'Demographic':
 
 			if pubmed_submit:
 				st.session_state[ 'demographic_active_source' ] = 'pub_med_search'
-
 		
 		# -------- Open City
 		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
@@ -15018,34 +14930,25 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'open_city_data'
 
 	with right:
-		st.markdown( '### Results' )
+		st.markdown( '##### Results' )
 		active_source = st.session_state.get( 'demographic_active_source', '' )
-		display_names: Dict[ str, str ] = {
-			'u_s_census_bureau': 'U.S. Census Bureau',
-			'cdc_socrata': 'CDC Socrata',
-			'u_s_health': 'U.S. Health',
-			'who_global': 'WHO Global',
-			'united_nations': 'United Nations',
-			'world_population': 'World Population',
-			'cdc_wonder': 'CDC Wonder',
-			'pub_med_search': 'Pub Med Search',
-			'open_city_data': 'Open City Data',
-		}
-
+		display_names: Dict[ str, str ] = { 'u_s_census_bureau': 'U.S. Census Bureau',
+			'cdc_socrata': 'CDC Socrata', 'u_s_health': 'U.S. Health', 'who_global': 'WHO Global',
+			'united_nations': 'United Nations', 'world_population': 'World Population',
+			'cdc_wonder': 'CDC Wonder', 'pub_med_search': 'Pub Med Search',
+			'open_city_data': 'Open City Data', }
 		if not active_source:
 			st.info( 'Select a source, configure the request, and submit it to display results.' )
 		else:
 			st.caption( f"Active Source: {display_names.get( active_source, active_source )}" )
 
 		if active_source == 'u_s_census_bureau':
-			st.markdown( '### U.S. Census Bureau' )
+			st.markdown( '##### U.S. Census Bureau' )
 			result = st.session_state.get( 'census_results', { } )
-			
 			if census_submit:
 				try:
 					clean_year = _validate_census_year( census_year )
 					clean_dataset = _validate_census_dataset( census_dataset )
-					
 					if census_mode == 'data':
 						clean_fields = _validate_census_fields( census_fields )
 						clean_for = _validate_census_geography_clause( name='For',
@@ -15091,42 +14994,34 @@ elif mode == 'Demographic':
 									'Group': meta.get( 'group', '' ),
 									'Limit': meta.get( 'limit', '' ), } )
 					
-					_render_summary_kv( '#### Summary',
-						{ 'Year': census_year, 'Dataset': census_dataset,
+					_render_summary_kv( '#### Summary', { 'Year': census_year, 'Dataset': census_dataset,
 							'VariableCount': len( rows ), } )
 					_render_rows_table( '#### Variables', rows )
 				
 				elif result.get( 'mode', '' ) == 'data':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					rows = payload.get( 'rows', [ ] ) if isinstance( payload, dict ) else [ ]
-					
-					_render_summary_kv( '#### Summary',
-						{ 'Year': census_year, 'Dataset': census_dataset,
+					_render_summary_kv( '#### Summary', { 'Year': census_year, 'Dataset': census_dataset,
 							'Fields': census_fields, 'For': census_for, 'In': census_in,
 							'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
 					_render_rows_table( '#### Data Rows',
 						rows if isinstance( rows, list ) else [ ] )
 				
 				_render_fallback_raw( result )
-
 		elif active_source == 'cdc_socrata':
-			st.markdown( '### CDC Socrata' )
+			st.markdown( '##### CDC Socrata' )
 			result = st.session_state.get( 'socrata_results', { } )
-			
 			if socrata_submit:
 				try:
 					clean_dataset_id = _validate_socrata_dataset_id( socrata_dataset_id )
-					
 					f = Socrata( )
 					result = f.fetch( mode=str( socrata_mode ), domain=str( socrata_domain ),
 						dataset_id=clean_dataset_id, select=str( socrata_select ),
 						where=str( socrata_where ), order=str( socrata_order ),
 						group=str( socrata_group ), limit=int( socrata_limit ),
 						offset=int( socrata_offset ), time=int( socrata_timeout ) )
-					
 					st.session_state[ 'socrata_results' ] = result or { }
 					st.rerun( )
-				
 				except Exception as exc:
 					st.error( 'CDC Socrata request failed.' )
 					st.exception( exc )
@@ -15135,10 +15030,8 @@ elif mode == 'Demographic':
 				st.text( 'No results.' )
 			else:
 				_render_result_metadata( result )
-				
 				if result.get( 'mode', '' ) == 'metadata':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-					
 					_render_summary_kv( '#### Summary', {
 						'Name': payload.get( 'name', '' ) if isinstance( payload,
 							dict ) else '',
@@ -15150,7 +15043,6 @@ elif mode == 'Demographic':
 							dict ) else '',
 						'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload,
 							dict ) else 0, } )
-					
 					rows: List[ Dict[ str, Any ] ] = [ ]
 					columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload,
 						dict ) else [ ]
@@ -15166,18 +15058,15 @@ elif mode == 'Demographic':
 				elif result.get( 'mode', '' ) == 'rows':
 					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
 					
-					_render_summary_kv( '#### Summary',
-						{ 'Domain': socrata_domain, 'DatasetId': socrata_dataset_id,
+					_render_summary_kv( '#### Summary', { 'Domain': socrata_domain, 'DatasetId': socrata_dataset_id,
 							'Limit': int( socrata_limit ), 'Offset': int( socrata_offset ),
 							'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
-					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [
-					
-					] )
+					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [] )
 				
 				_render_fallback_raw( result )
 
 		elif active_source == 'u_s_health':
-			st.markdown( '### U.S. Health' )
+			st.markdown( '##### U.S. Health' )
 			result = st.session_state.get( 'healthdata_results', { } )
 			
 			if healthdata_submit:
@@ -15246,7 +15135,7 @@ elif mode == 'Demographic':
 				_render_fallback_raw( result )
 
 		elif active_source == 'who_global':
-			st.markdown( '### WHO Global' )
+			st.markdown( '##### WHO Global' )
 			result = st.session_state.get( 'who_results', { } )
 			
 			if who_submit:
@@ -15311,7 +15200,7 @@ elif mode == 'Demographic':
 				_render_fallback_raw( result )
 
 		elif active_source == 'united_nations':
-			st.markdown( '### United Nations' )
+			st.markdown( '##### United Nations' )
 			result = st.session_state.get( 'un_results', { } )
 			
 			if un_submit:
@@ -15375,7 +15264,7 @@ elif mode == 'Demographic':
 				_render_fallback_raw( result )
 
 		elif active_source == 'world_population':
-			st.markdown( '### World Population' )
+			st.markdown( '##### World Population' )
 			result = st.session_state.get( 'worldpop_results', { } )
 			
 			if worldpop_submit:
@@ -15456,7 +15345,7 @@ elif mode == 'Demographic':
 				_render_fallback_raw( result )
 
 		elif active_source == 'cdc_wonder':
-			st.markdown( '### CDC Wonder' )
+			st.markdown( '##### CDC Wonder' )
 			result = st.session_state.get( 'wonder_results', { } )
 			
 			if wonder_submit:
@@ -15526,7 +15415,7 @@ elif mode == 'Demographic':
 				_render_fallback_raw( result )
 
 		elif active_source == 'pub_med_search':
-			st.markdown( '### Pub Med Search' )
+			st.markdown( '##### Pub Med Search' )
 			if pubmed_clear:
 				remaining = _clear_loader_documents( 'PubMedSearchLoader' )
 				st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
@@ -15620,7 +15509,7 @@ elif mode == 'Demographic':
 				_render_fallback_raw( result )
 
 		elif active_source == 'open_city_data':
-			st.markdown( '### Open City Data' )
+			st.markdown( '##### Open City Data' )
 			if open_city_clear:
 				remaining = _clear_loader_documents( 'OpenCityLoader' )
 				st.info(
@@ -15796,7 +15685,7 @@ elif mode == 'Generation':
 		st.session_state[ 'generation_raw_result' ] = None
 		st.session_state[ 'generation_active_source' ] = ''
 
-	left, right = st.columns( [ 0.35, 0.65 ], gap='medium' )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 
 	# ------------------------------------------------------------------
 	# LEFT COLUMN — GENERATION CONTROLS
