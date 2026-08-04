@@ -1602,6 +1602,8 @@ if mode == 'Loading':
 	documents = st.session_state[ 'documents' ]
 	raw_text = st.session_state[ 'raw_text' ]
 	
+	st.subheader( '📤 Document Loading' )
+	st.divider( )
 	# ------------------------------------------------------------------
 	# LEFT COLUMN - LOADERS
 	# ------------------------------------------------------------------
@@ -4920,106 +4922,105 @@ elif mode == 'Retrieval':
 				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 				payload = result.get( 'payload', { } ) if isinstance( result, dict ) else { }
 				
-				with col_right:
-					st.markdown( '#### Request Metadata' )
-					st.json( { 'mode': mode_value, 'url': result.get( 'url', '' ), 'params':
-						params,
-						'payload': payload, } )
+				st.markdown( '#### Request Metadata' )
+				st.json( { 'mode': mode_value, 'url': result.get( 'url', '' ), 'params':
+					params,
+					'payload': payload, } )
 					
-					items: List[ Dict[ str, Any ] ] = [ ]
+				items: List[ Dict[ str, Any ] ] = [ ]
+				
+				if isinstance( data, dict ):
+					for key in [ 'packages', 'results', 'items' ]:
+						value = data.get( key, None )
+						if isinstance( value, list ):
+							items = [ item for item in value if isinstance( item, dict ) ]
+							break
+				elif isinstance( data, list ):
+					items = [ item for item in data if isinstance( item, dict ) ]
 					
-					if isinstance( data, dict ):
-						for key in [ 'packages', 'results', 'items' ]:
-							value = data.get( key, None )
-							if isinstance( value, list ):
-								items = [ item for item in value if isinstance( item, dict ) ]
-								break
-					elif isinstance( data, list ):
-						items = [ item for item in data if isinstance( item, dict ) ]
+				if mode_value == 'package_summary' and isinstance( data, dict ) and data:
+					st.markdown( '#### Package Summary' )
 					
-					if mode_value == 'package_summary' and isinstance( data, dict ) and data:
-						st.markdown( '#### Package Summary' )
+					title_value = (
+							data.get( 'title' ) or data.get( 'packageTitle' ) or data.get(
+						'packageId' ) or 'Package')
 						
-						title_value = (
-								data.get( 'title' ) or data.get( 'packageTitle' ) or data.get(
-							'packageId' ) or 'Package')
-						
-						st.markdown( f'### {title_value}' )
-						
-						meta_parts: List[ str ] = [ ]
-						for key in [ 'packageId', 'collectionCode', 'lastModified', 'dateIssued' ]:
-							if key in data and str( data.get( key ) ).strip( ):
-								meta_parts.append( f'{key}: `{data.get( key )}`' )
-						
-						if meta_parts:
-							st.caption( ' | '.join( meta_parts ) )
-						
-						for text_key in [ 'summary', 'description' ]:
-							if text_key in data and str( data.get( text_key ) ).strip( ):
-								st.write( str( data.get( text_key ) ) )
-								break
-						
-						with st.expander( 'Raw Package JSON', expanded=False ):
-							st.json( data )
+					st.markdown( f'### {title_value}' )
 					
-					elif items:
-						st.markdown( '#### Results' )
+					meta_parts: List[ str ] = [ ]
+					for key in [ 'packageId', 'collectionCode', 'lastModified', 'dateIssued' ]:
+						if key in data and str( data.get( key ) ).strip( ):
+							meta_parts.append( f'{key}: `{data.get( key )}`' )
 						
-						for index, item in enumerate( items, start=1 ):
-							title_value = (
-									item.get( 'title' ) or item.get( 'packageTitle' ) or item.get(
-								'packageId' ) or item.get( 'granuleId' ) or f'Result {index}')
-							
-							package_value = (
-									item.get( 'packageId' ) or item.get( 'granuleId' ) or item.get(
-								'id' ) or '')
-							
-							collection_value = (item.get( 'collectionCode' ) or item.get(
-								'collectionName' ) or item.get( 'collection' ) or '')
-							
-							date_value = (item.get( 'lastModified' ) or item.get(
-								'dateIssued' ) or item.get( 'publishDate' ) or '')
-							
-							summary_value = (
-									item.get( 'summary' ) or item.get( 'description' ) or item.get(
-								'snippet' ) or '')
-							
-							with st.container( border=True ):
-								st.markdown( f'**{index}. {title_value}**' )
-								
-								meta_parts: List[ str ] = [ ]
-								
-								if package_value:
-									meta_parts.append( f'ID: `{package_value}`' )
-								
-								if collection_value:
-									meta_parts.append( f'Collection: `{collection_value}`' )
-								
-								if date_value:
-									meta_parts.append( f'Date: `{date_value}`' )
-								
-								if meta_parts:
-									st.caption( ' | '.join( meta_parts ) )
-								
-								if summary_value:
-									st.write( str( summary_value ) )
-								else:
-									st.caption( 'No summary available.' )
-								
-								with st.expander( 'Raw Item', expanded=False ):
-									st.json( item )
-					
-					elif isinstance( data, dict ) and data:
-						st.markdown( '#### Result' )
+					if meta_parts:
+						st.caption( ' | '.join( meta_parts ) )
+						
+					for text_key in [ 'summary', 'description' ]:
+						if text_key in data and str( data.get( text_key ) ).strip( ):
+							st.write( str( data.get( text_key ) ) )
+							break
+						
+					with st.expander( 'Raw Package JSON', expanded=False ):
 						st.json( data )
-					elif data:
-						st.markdown( '#### Result' )
-						st.text_area( 'Output', value=str( data ), height=320 )
-					else:
-						st.info( 'No results returned.' )
 					
-					with st.expander( 'Raw Result', expanded=False ):
-						st.json( result )
+				elif items:
+					st.markdown( '#### Results' )
+					
+					for index, item in enumerate( items, start=1 ):
+						title_value = (
+								item.get( 'title' ) or item.get( 'packageTitle' ) or item.get(
+							'packageId' ) or item.get( 'granuleId' ) or f'Result {index}')
+							
+						package_value = (
+								item.get( 'packageId' ) or item.get( 'granuleId' ) or item.get(
+							'id' ) or '')
+							
+						collection_value = (item.get( 'collectionCode' ) or item.get(
+							'collectionName' ) or item.get( 'collection' ) or '')
+							
+						date_value = (item.get( 'lastModified' ) or item.get(
+							'dateIssued' ) or item.get( 'publishDate' ) or '')
+							
+						summary_value = (
+								item.get( 'summary' ) or item.get( 'description' ) or item.get(
+							'snippet' ) or '')
+							
+						with st.container( border=True ):
+							st.markdown( f'**{index}. {title_value}**' )
+							
+							meta_parts: List[ str ] = [ ]
+							
+							if package_value:
+								meta_parts.append( f'ID: `{package_value}`' )
+								
+							if collection_value:
+								meta_parts.append( f'Collection: `{collection_value}`' )
+								
+							if date_value:
+								meta_parts.append( f'Date: `{date_value}`' )
+								
+							if meta_parts:
+								st.caption( ' | '.join( meta_parts ) )
+								
+							if summary_value:
+								st.write( str( summary_value ) )
+							else:
+								st.caption( 'No summary available.' )
+								
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
+					
+				elif isinstance( data, dict ) and data:
+					st.markdown( '#### Result' )
+					st.json( data )
+				elif data:
+					st.markdown( '#### Result' )
+					st.text_area( 'Output', value=str( data ), height=320 )
+				else:
+					st.info( 'No results returned.' )
+					
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 		
 		# -------- Congress
 		with st.expander( label='US Congress', icon='⚖️', expanded=False ):
@@ -5192,89 +5193,88 @@ elif mode == 'Retrieval':
 				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 				
-				with col_right:
-					st.markdown( '#### Request Metadata' )
-					st.json(
-						{ 'mode': mode_value, 'url': result.get( 'url', '' ), 'params': params, } )
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{ 'mode': mode_value, 'url': result.get( 'url', '' ), 'params': params, } )
 					
-					items: List[ Dict[ str, Any ] ] = [ ]
+				items: List[ Dict[ str, Any ] ] = [ ]
+				
+				if isinstance( data, dict ):
+					for key in [ 'bills', 'laws', 'reports', 'committeeReports', 'congresses',
+						'sessions', 'results', 'items' ]:
+						value = data.get( key, None )
+						if isinstance( value, list ):
+							items = [ item for item in value if isinstance( item, dict ) ]
+							break
+				elif isinstance( data, list ):
+					items = [ item for item in data if isinstance( item, dict ) ]
 					
-					if isinstance( data, dict ):
-						for key in [ 'bills', 'laws', 'reports', 'committeeReports', 'congresses',
-							'sessions', 'results', 'items' ]:
-							value = data.get( key, None )
-							if isinstance( value, list ):
-								items = [ item for item in value if isinstance( item, dict ) ]
-								break
-					elif isinstance( data, list ):
-						items = [ item for item in data if isinstance( item, dict ) ]
+				if items:
+					st.markdown( '#### Results' )
 					
-					if items:
-						st.markdown( '#### Results' )
-						
-						for index, item in enumerate( items, start=1 ):
-							title_value = (item.get( 'title' ) or item.get( 'name' ) or item.get(
-								'number' ) or item.get( 'billNumber' ) or item.get(
-								'lawNumber' ) or item.get( 'reportNumber' ) or f'Result {index}')
+					for index, item in enumerate( items, start=1 ):
+						title_value = (item.get( 'title' ) or item.get( 'name' ) or item.get(
+							'number' ) or item.get( 'billNumber' ) or item.get(
+							'lawNumber' ) or item.get( 'reportNumber' ) or f'Result {index}')
 							
-							id_parts: List[ str ] = [ ]
-							for key in [ 'congress', 'type', 'number', 'billType', 'billNumber',
-								'lawType', 'lawNumber', 'reportType', 'reportNumber' ]:
-								if key in item and str( item.get( key ) ).strip( ):
-									id_parts.append( f'{key}={item.get( key )}' )
-							
-							action_value = (item.get( 'latestAction' ) or item.get(
-								'latestActionText' ) or item.get( 'actionDate' ) or '')
-							
-							with st.container( border=True ):
-								st.markdown( f'**{index}. {title_value}**' )
-								
-								if id_parts:
-									st.caption( ' | '.join( id_parts ) )
-								
-								if isinstance( action_value, dict ):
-									st.write( str( action_value ) )
-								elif action_value:
-									st.write( str( action_value ) )
-								
-								with st.expander( 'Raw Item', expanded=False ):
-									st.json( item )
-					
-					elif isinstance( data, dict ) and data:
-						st.markdown( '#### Detail' )
-						
-						title_value = (data.get( 'title' ) or data.get( 'name' ) or data.get(
-							'number' ) or data.get( 'billNumber' ) or data.get(
-							'lawNumber' ) or data.get( 'reportNumber' ) or 'Result')
-						
-						st.markdown( f'### {title_value}' )
-						
-						summary_fields: Dict[ str, Any ] = { }
+						id_parts: List[ str ] = [ ]
 						for key in [ 'congress', 'type', 'number', 'billType', 'billNumber',
-							'lawType', 'lawNumber', 'reportType', 'reportNumber', 'updateDate',
-							'actionDate' ]:
-							if key in data:
-								summary_fields[ key ] = data.get( key )
-						
-						if summary_fields:
-							st.json( summary_fields )
-						
-						for key in [ 'summary', 'latestAction', 'description' ]:
-							if key in data and str( data.get( key ) ).strip( ):
-								st.markdown( f'#### {key}' )
-								st.write( str( data.get( key ) ) )
-						
-						with st.expander( 'Raw Detail JSON', expanded=False ):
-							st.json( data )
+							'lawType', 'lawNumber', 'reportType', 'reportNumber' ]:
+							if key in item and str( item.get( key ) ).strip( ):
+								id_parts.append( f'{key}={item.get( key )}' )
+							
+						action_value = (item.get( 'latestAction' ) or item.get(
+							'latestActionText' ) or item.get( 'actionDate' ) or '')
+							
+						with st.container( border=True ):
+							st.markdown( f'**{index}. {title_value}**' )
+							
+							if id_parts:
+								st.caption( ' | '.join( id_parts ) )
+								
+							if isinstance( action_value, dict ):
+								st.write( str( action_value ) )
+							elif action_value:
+								st.write( str( action_value ) )
+								
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
 					
-					elif data:
-						st.markdown( '#### Result' )
-						st.text_area( 'Output', value=str( data ), height=320 )
-					else:
-						st.info( 'No results returned.' )
+				elif isinstance( data, dict ) and data:
+					st.markdown( '#### Detail' )
 					
-					with st.expander( 'Raw Result', expanded=False ):
-						st.json( result )
+					title_value = (data.get( 'title' ) or data.get( 'name' ) or data.get(
+						'number' ) or data.get( 'billNumber' ) or data.get(
+						'lawNumber' ) or data.get( 'reportNumber' ) or 'Result')
+						
+					st.markdown( f'### {title_value}' )
+					
+					summary_fields: Dict[ str, Any ] = { }
+					for key in [ 'congress', 'type', 'number', 'billType', 'billNumber',
+						'lawType', 'lawNumber', 'reportType', 'reportNumber', 'updateDate',
+						'actionDate' ]:
+						if key in data:
+							summary_fields[ key ] = data.get( key )
+						
+					if summary_fields:
+						st.json( summary_fields )
+						
+					for key in [ 'summary', 'latestAction', 'description' ]:
+						if key in data and str( data.get( key ) ).strip( ):
+							st.markdown( f'#### {key}' )
+							st.write( str( data.get( key ) ) )
+						
+					with st.expander( 'Raw Detail JSON', expanded=False ):
+						st.json( data )
+					
+				elif data:
+					st.markdown( '#### Result' )
+					st.text_area( 'Output', value=str( data ), height=320 )
+				else:
+					st.info( 'No results returned.' )
+					
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 		
 		# -------- Internet Archive
 		with st.expander( label='Internet Archive', icon='🌐', expanded=False ):
@@ -5379,97 +5379,96 @@ elif mode == 'Retrieval':
 				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 				
-				with col_right:
-					st.markdown( '#### Request Metadata' )
-					st.json(
-						{ 'mode': mode_value, 'url': result.get( 'url', '' ), 'params': params, } )
+				st.markdown( '#### Request Metadata' )
+				st.json(
+					{ 'mode': mode_value, 'url': result.get( 'url', '' ), 'params': params, } )
 					
-					docs: List[ Dict[ str, Any ] ] = [ ]
-					num_found = None
+				docs: List[ Dict[ str, Any ] ] = [ ]
+				num_found = None
+				
+				if isinstance( data, dict ):
+					response_block = data.get( 'response', { } )
 					
-					if isinstance( data, dict ):
-						response_block = data.get( 'response', { } )
+					if isinstance( response_block, dict ):
+						num_found = response_block.get( 'numFound', None )
+						value = response_block.get( 'docs', [ ] )
+						if isinstance( value, list ):
+							docs = [ item for item in value if isinstance( item, dict ) ]
+					
+				if num_found is not None:
+					st.markdown( f'#### Search Results ({num_found})' )
+				else:
+					st.markdown( '#### Search Results' )
+					
+				if docs:
+					for index, item in enumerate( docs, start=1 ):
+						title_value = (item.get( 'title' ) or item.get(
+							'identifier' ) or f'Result {index}')
+							
+						identifier_value = item.get( 'identifier', '' )
+						mediatype_value = item.get( 'mediatype', '' )
 						
-						if isinstance( response_block, dict ):
-							num_found = response_block.get( 'numFound', None )
-							value = response_block.get( 'docs', [ ] )
-							if isinstance( value, list ):
-								docs = [ item for item in value if isinstance( item, dict ) ]
+						collection_value = ''
+						collection_raw = item.get( 'collection', '' )
+						if isinstance( collection_raw, list ) and collection_raw:
+							collection_value = ', '.join(
+								[ str( x ) for x in collection_raw[ :3 ] ] )
+						elif collection_raw:
+							collection_value = str( collection_raw )
+							
+						date_value = (
+								item.get( 'publicdate' ) or item.get( 'date' ) or item.get(
+							'addeddate' ) or '')
+							
+						desc_value = item.get( 'description', '' )
+						if isinstance( desc_value, list ):
+							desc_value = ' '.join( [ str( x ) for x in desc_value[ :2 ] ] )
+							
+						with st.container( border=True ):
+							st.markdown( f'**{index}. {title_value}**' )
+							
+							meta_parts: List[ str ] = [ ]
+							
+							if identifier_value:
+								meta_parts.append( f'Identifier: `{identifier_value}`' )
+								
+							if mediatype_value:
+								meta_parts.append( f'Mediatype: `{mediatype_value}`' )
+								
+							if collection_value:
+								meta_parts.append( f'Collection: `{collection_value}`' )
+								
+							if date_value:
+								meta_parts.append( f'Date: `{date_value}`' )
+								
+							if meta_parts:
+								st.caption( ' | '.join( meta_parts ) )
+								
+							if desc_value:
+								st.write( str( desc_value ) )
+							else:
+								st.caption( 'No description available.' )
+								
+							with st.expander( 'Raw Item', expanded=False ):
+								st.json( item )
 					
-					if num_found is not None:
-						st.markdown( f'#### Search Results ({num_found})' )
+				elif isinstance( data, dict ) and data:
+					st.markdown( '#### Result' )
+					st.json( data )
+				elif isinstance( data, list ) and data:
+					df_ia = pd.DataFrame( data )
+					if not df_ia.empty:
+						st.dataframe( df_ia, use_container_width=True, hide_index=True )
 					else:
-						st.markdown( '#### Search Results' )
-					
-					if docs:
-						for index, item in enumerate( docs, start=1 ):
-							title_value = (item.get( 'title' ) or item.get(
-								'identifier' ) or f'Result {index}')
-							
-							identifier_value = item.get( 'identifier', '' )
-							mediatype_value = item.get( 'mediatype', '' )
-							
-							collection_value = ''
-							collection_raw = item.get( 'collection', '' )
-							if isinstance( collection_raw, list ) and collection_raw:
-								collection_value = ', '.join(
-									[ str( x ) for x in collection_raw[ :3 ] ] )
-							elif collection_raw:
-								collection_value = str( collection_raw )
-							
-							date_value = (
-									item.get( 'publicdate' ) or item.get( 'date' ) or item.get(
-								'addeddate' ) or '')
-							
-							desc_value = item.get( 'description', '' )
-							if isinstance( desc_value, list ):
-								desc_value = ' '.join( [ str( x ) for x in desc_value[ :2 ] ] )
-							
-							with st.container( border=True ):
-								st.markdown( f'**{index}. {title_value}**' )
-								
-								meta_parts: List[ str ] = [ ]
-								
-								if identifier_value:
-									meta_parts.append( f'Identifier: `{identifier_value}`' )
-								
-								if mediatype_value:
-									meta_parts.append( f'Mediatype: `{mediatype_value}`' )
-								
-								if collection_value:
-									meta_parts.append( f'Collection: `{collection_value}`' )
-								
-								if date_value:
-									meta_parts.append( f'Date: `{date_value}`' )
-								
-								if meta_parts:
-									st.caption( ' | '.join( meta_parts ) )
-								
-								if desc_value:
-									st.write( str( desc_value ) )
-								else:
-									st.caption( 'No description available.' )
-								
-								with st.expander( 'Raw Item', expanded=False ):
-									st.json( item )
-					
-					elif isinstance( data, dict ) and data:
-						st.markdown( '#### Result' )
 						st.json( data )
-					elif isinstance( data, list ) and data:
-						df_ia = pd.DataFrame( data )
-						if not df_ia.empty:
-							st.dataframe( df_ia, use_container_width=True, hide_index=True )
-						else:
-							st.json( data )
-					elif data:
-						st.markdown( '#### Result' )
-						st.text_area( 'Output', value=str( data ), height=320 )
-					else:
-						st.info( 'No results returned.' )
+				elif data:
+					st.markdown( '#### Result' )
+					st.text_area( 'Output', value=str( data ), height=320 )
+				else:
+					st.info( 'No results returned.' )
 					
-					with st.expander( 'Raw Result', expanded=False ):
-						st.json( result )
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 		
 		# -------- Grokipedia
 		with st.expander( label='Grokipedia', icon='🧠', expanded=False ):
@@ -5576,141 +5575,140 @@ elif mode == 'Retrieval':
 			result = st.session_state.get( 'grokipedia_results', { } )
 			
 			if not result:
-				grokipedst.text( 'No results.' )
+				st.text( 'No results.' )
 			else:
 				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
 				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 				
-				with col_right:
-					st.markdown( '#### Request Metadata' )
-					st.json( { 'mode': result.get( 'mode', '' ), 'url': result.get( 'url', '' ),
-						'params': result.get( 'params', { } ),
-						'api_key_configured': result.get( 'api_key_configured', False ) } )
+				st.markdown( '#### Request Metadata' )
+				st.json( { 'mode': result.get( 'mode', '' ), 'url': result.get( 'url', '' ),
+					'params': result.get( 'params', { } ),
+					'api_key_configured': result.get( 'api_key_configured', False ) } )
 					
-					if mode_value == 'search':
-						st.markdown( '#### Search Results' )
-						
-						items: List[ Dict[ str, Any ] ] = [ ]
-						
-						if isinstance( data, list ):
-							items = [ item for item in data if isinstance( item, dict ) ]
-						elif isinstance( data, dict ):
-							for key in [ 'results', 'items', 'pages', 'data' ]:
-								value = data.get( key, None )
-								if isinstance( value, list ):
-									items = [ item for item in value if isinstance( item, dict ) ]
-									break
-						
-						if not items:
-							if data:
-								st.info( 'No structured search hits were detected. '
-								         'Showing raw output.' )
-								st.json( data )
-							else:
-								st.info( 'No results returned.' )
-						else:
-							for index, item in enumerate( items, start=1 ):
-								title_value = (
-										item.get( 'title' ) or item.get( 'name' ) or item.get(
-									'slug' ) or item.get( 'id' ) or f'Result {index}')
-								
-								slug_value = (item.get( 'slug' ) or item.get( 'page' ) or item.get(
-									'path' ) or item.get( 'id' ) or '')
-								
-								summary_value = (item.get( 'summary' ) or item.get(
-									'description' ) or item.get( 'excerpt' ) or item.get(
-									'snippet' ) or '')
-								
-								score_value = (
-										item.get( 'score' ) or item.get( 'rank' ) or item.get(
-									'relevance' ))
-								
-								with st.container( border=True ):
-									st.markdown( f'**{index}. {title_value}**' )
-									
-									meta_parts: List[ str ] = [ ]
-									
-									if slug_value:
-										meta_parts.append( f'Slug: `{slug_value}`' )
-									
-									if score_value is not None and str( score_value ).strip( ):
-										meta_parts.append( f'Score: `{score_value}`' )
-									
-									if meta_parts:
-										st.caption( ' | '.join( meta_parts ) )
-									
-									if summary_value:
-										st.write( str( summary_value ) )
-									else:
-										st.caption( 'No summary available.' )
-									
-									ca, cb = st.columns( 2 )
-									
-									with ca:
-										if slug_value:
-											if st.button( 'Load Page',
-													key=f'grokipedia_load_page_{index}_'
-													    f'{slug_value}',
-													use_container_width=True ):
-												_load_grokipedia_page( slug_value )
-												st.rerun( )
-									
-									with cb:
-										with st.expander( 'Raw Item', expanded=False ):
-											st.json( item )
+				if mode_value == 'search':
+					st.markdown( '#### Search Results' )
 					
-					elif mode_value == 'page':
-						st.markdown( '#### Page Result' )
-						
-						page_item: Dict[ str, Any ] = data if isinstance( data, dict ) else { }
-						
-						if not page_item:
-							if data:
-								st.text_area( 'Output', value=str( data ), height=320 )
-							else:
-								st.info( 'No results returned.' )
-						else:
-							title_value = (page_item.get( 'title' ) or page_item.get(
-								'name' ) or page_item.get( 'slug' ) or page_item.get(
-								'id' ) or 'Untitled Page')
-							
-							slug_value = (page_item.get( 'slug' ) or page_item.get(
-								'page' ) or page_item.get( 'path' ) or page_item.get( 'id' ) or '')
-							
-							summary_value = (page_item.get( 'summary' ) or page_item.get(
-								'description' ) or page_item.get( 'excerpt' ) or '')
-							
-							content_value = (page_item.get( 'content' ) or page_item.get(
-								'text' ) or page_item.get( 'body' ) or '')
-							
-							st.markdown( f'### {title_value}' )
-							
-							if slug_value:
-								st.caption( f'Slug: `{slug_value}`' )
-							
-							if summary_value:
-								st.markdown( '#### Summary' )
-								st.write( str( summary_value ) )
-							
-							if content_value:
-								st.markdown( '#### Content' )
-								st.text_area( 'Page Content', value=str( content_value ),
-									height=360 )
-							else:
-								st.info( 'No page content was returned.' )
-							
-							with st.expander( 'Raw Page JSON', expanded=False ):
-								st.json( page_item )
+					items: List[ Dict[ str, Any ] ] = [ ]
 					
-					else:
-						st.markdown( '#### Result' )
+					if isinstance( data, list ):
+						items = [ item for item in data if isinstance( item, dict ) ]
+					elif isinstance( data, dict ):
+						for key in [ 'results', 'items', 'pages', 'data' ]:
+							value = data.get( key, None )
+							if isinstance( value, list ):
+								items = [ item for item in value if isinstance( item, dict ) ]
+								break
 						
-						if isinstance( data, dict ) or isinstance( data, list ):
+					if not items:
+						if data:
+							st.info( 'No structured search hits were detected. '
+							         'Showing raw output.' )
 							st.json( data )
-						elif data:
+						else:
+							st.info( 'No results returned.' )
+					else:
+						for index, item in enumerate( items, start=1 ):
+							title_value = (
+									item.get( 'title' ) or item.get( 'name' ) or item.get(
+								'slug' ) or item.get( 'id' ) or f'Result {index}')
+								
+							slug_value = (item.get( 'slug' ) or item.get( 'page' ) or item.get(
+								'path' ) or item.get( 'id' ) or '')
+								
+							summary_value = (item.get( 'summary' ) or item.get(
+								'description' ) or item.get( 'excerpt' ) or item.get(
+								'snippet' ) or '')
+								
+							score_value = (
+									item.get( 'score' ) or item.get( 'rank' ) or item.get(
+								'relevance' ))
+								
+							with st.container( border=True ):
+								st.markdown( f'**{index}. {title_value}**' )
+								
+								meta_parts: List[ str ] = [ ]
+								
+								if slug_value:
+									meta_parts.append( f'Slug: `{slug_value}`' )
+									
+								if score_value is not None and str( score_value ).strip( ):
+									meta_parts.append( f'Score: `{score_value}`' )
+									
+								if meta_parts:
+									st.caption( ' | '.join( meta_parts ) )
+									
+								if summary_value:
+									st.write( str( summary_value ) )
+								else:
+									st.caption( 'No summary available.' )
+									
+								ca, cb = st.columns( 2 )
+								
+								with ca:
+									if slug_value:
+										if st.button( 'Load Page',
+												key=f'grokipedia_load_page_{index}_'
+												    f'{slug_value}',
+												use_container_width=True ):
+											_load_grokipedia_page( slug_value )
+											st.rerun( )
+									
+								with cb:
+									with st.expander( 'Raw Item', expanded=False ):
+										st.json( item )
+					
+				elif mode_value == 'page':
+					st.markdown( '#### Page Result' )
+					
+					page_item: Dict[ str, Any ] = data if isinstance( data, dict ) else { }
+					
+					if not page_item:
+						if data:
 							st.text_area( 'Output', value=str( data ), height=320 )
 						else:
 							st.info( 'No results returned.' )
+					else:
+						title_value = (page_item.get( 'title' ) or page_item.get(
+							'name' ) or page_item.get( 'slug' ) or page_item.get(
+							'id' ) or 'Untitled Page')
+							
+						slug_value = (page_item.get( 'slug' ) or page_item.get(
+							'page' ) or page_item.get( 'path' ) or page_item.get( 'id' ) or '')
+							
+						summary_value = (page_item.get( 'summary' ) or page_item.get(
+							'description' ) or page_item.get( 'excerpt' ) or '')
+							
+						content_value = (page_item.get( 'content' ) or page_item.get(
+							'text' ) or page_item.get( 'body' ) or '')
+							
+						st.markdown( f'### {title_value}' )
+						
+						if slug_value:
+							st.caption( f'Slug: `{slug_value}`' )
+							
+						if summary_value:
+							st.markdown( '#### Summary' )
+							st.write( str( summary_value ) )
+							
+						if content_value:
+							st.markdown( '#### Content' )
+							st.text_area( 'Page Content', value=str( content_value ),
+								height=360 )
+						else:
+							st.info( 'No page content was returned.' )
+							
+						with st.expander( 'Raw Page JSON', expanded=False ):
+							st.json( page_item )
+					
+				else:
+					st.markdown( '#### Result' )
+					
+					if isinstance( data, dict ) or isinstance( data, list ):
+						st.json( data )
+					elif data:
+						st.text_area( 'Output', value=str( data ), height=320 )
+					else:
+						st.info( 'No results returned.' )
 		
 		# -------- Jupyter Notebook
 		with st.expander( label='Jupyter Notebook', icon='🪐', expanded=False ):
@@ -6054,12 +6052,13 @@ elif mode == 'Retrieval':
 		st.session_state[ 'retrieval_active_source' ] = 'Google Cloud Bucket'
 
 	with right:
+		st.markdown( '### Results' )
 		active_source = st.session_state.get( 'retrieval_active_source', '' )
-		st.markdown( '### Shared Document Viewer' )
-		if active_source:
-			st.caption( f'Active Source: {active_source}' )
+
+		if not active_source:
+			st.info( 'Select a source, configure the request, and submit it to display results.' )
 		else:
-			st.caption( 'Run a Retrieval source to populate the shared document.' )
+			st.caption( f'Active Source: {active_source}' )
 
 		if active_source == 'ArXiv':
 			st.markdown( 'Results' )
@@ -8242,11 +8241,11 @@ elif mode == 'Geospatial':
 			active_result = st.session_state.get( result_keys[ active_source ] )
 			_promote_geospatial_result( source=active_source, result=active_result )
 
-		st.markdown( '### Shared Document Viewer' )
-		if active_source:
-			st.caption( f'Active Source: {active_source}' )
+		st.markdown( '### Results' )
+		if not active_source:
+			st.info( 'Select a source, configure the request, and submit it to display results.' )
 		else:
-			st.caption( 'Run a Geospatial source to populate the shared document.' )
+			st.caption( f'Active Source: {active_source}' )
 
 		if active_source == 'Geocoding':
 			st.markdown( 'Results' )
@@ -8495,7 +8494,8 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-		# -------- Google Weather
+	# -------- Google Weather
+
 		if active_source == 'Google Weather':
 			st.markdown( 'Results' )
 			
@@ -8602,7 +8602,8 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-		# -------- Open Weather
+	# -------- Open Weather
+
 		if active_source == 'Open Weather':
 			if openweather_submit:
 				try:
@@ -8663,7 +8664,8 @@ elif mode == 'Geospatial':
 				if message:
 					st.info( message )
 	
-		# -------- Historical Weather
+	# -------- Historical Weather
+
 		if active_source == 'Historical Weather':
 			if historicalweather_submit:
 				try:
@@ -8722,7 +8724,8 @@ elif mode == 'Geospatial':
 				if message:
 					st.info( message )
 	
-		# -------- USGS Earthquakes
+	# -------- USGS Earthquakes
+
 		if active_source == 'USGS Earthquakes':
 			if usgseq_submit:
 				try:
@@ -8878,7 +8881,8 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-		# -------- Earth Observatory
+	# -------- Earth Observatory
+
 		if active_source == 'NASA Earth Observatory':
 			if earth_submit:
 				try:
@@ -8939,7 +8943,8 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-		# -------- USGS The National Map
+	# -------- USGS The National Map
+
 		if active_source == 'The National Map':
 			if usgstnm_submit:
 				try:
@@ -9034,7 +9039,8 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-		# -------- USGS ScienceBase
+	# -------- USGS ScienceBase
+
 		if active_source == 'USGS Science Base':
 			if usgssb_submit:
 				try:
@@ -9157,7 +9163,8 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-		# -------- Open Sky
+	# -------- Open Sky
+
 		if active_source == 'Open Sky':
 			if opensky_submit:
 				try:
@@ -10617,10 +10624,13 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'USGS Water Data'
 
 	with right:
+		st.markdown( '### Results' )
 		active_source = st.session_state.get( 'environmental_active_source', '' )
 
 		if not active_source:
-			st.info( 'Select an environmental source, configure the request, and submit it to display results.' )
+			st.info( 'Select a source, configure the request, and submit it to display results.' )
+		else:
+			st.caption( f'Active Source: {active_source}' )
 
 		# -------- Air Now
 
@@ -12976,11 +12986,11 @@ elif mode == 'Astronomical':
 			active_result = st.session_state.get( result_keys[ active_source ] )
 			_promote_astronomical_result( source=active_source, result=active_result )
 
-		st.markdown( '### Shared Document Viewer' )
-		if active_source:
-			st.caption( f'Active Source: {active_source}' )
+		st.markdown( '### Results' )
+		if not active_source:
+			st.info( 'Select a source, configure the request, and submit it to display results.' )
 		else:
-			st.caption( 'Run an Astronomical source to populate the shared document.' )
+			st.caption( f'Active Source: {active_source}' )
 
 		if active_source == 'US Naval Observatory':
 			naval_output = st.empty( )
@@ -13008,69 +13018,69 @@ elif mode == 'Astronomical':
 				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 				params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
 
-				with col_right:
-					st.markdown( '#### Request Metadata' )
-					st.json( { 'mode': result.get( 'mode', '' ), 'url': result.get( 'url', '' ),
-						'params': params, 'location_label': result.get( 'location_label', '' ), } )
+				st.markdown( '#### Request Metadata' )
+				st.json( { 'mode': result.get( 'mode', '' ), 'url': result.get( 'url', '' ),
+					'params': params, 'location_label': result.get( 'location_label', '' ), } )
 
-					if not data:
-						st.info( 'No results returned.' )
+				if not data:
+					st.info( 'No results returned.' )
+				else:
+					st.markdown( '#### Observation Summary' )
+
+					c1, c2 = st.columns( 2 )
+
+					with c1:
+						if params.get( 'date', '' ):
+							st.markdown( f"**Date:** {params.get( 'date', '' )}" )
+						if params.get( 'time', '' ):
+							st.markdown( f"**Time:** {params.get( 'time', '' )}" )
+						if result.get( 'location_label', '' ):
+							st.markdown(
+								f"**Location Label:** {result.get( 'location_label', '' )}" )
+
+					with c2:
+						if params.get( 'coords', '' ):
+							st.markdown( f"**Coordinates:** {params.get( 'coords', '' )}" )
+
+					bodies: List[ Dict[ str, Any ] ] = [ ]
+
+					if isinstance( data, dict ):
+						for key in [ 'data', 'bodies', 'results', 'celestialBodies',
+							'celestial_bodies' ]:
+							value = data.get( key, None )
+							if isinstance( value, list ):
+								bodies = [ item for item in value if isinstance( item, dict ) ]
+								break
+
+					if bodies:
+						st.markdown( '#### Celestial Bodies' )
+						df_bodies = pd.DataFrame( bodies )
+						if not df_bodies.empty:
+							st.dataframe( df_bodies, use_container_width=True,
+								hide_index=True )
+						else:
+							st.info( 'No displayable celestial body rows were found.' )
 					else:
-						st.markdown( '#### Observation Summary' )
-
-						c1, c2 = st.columns( 2 )
-
-						with c1:
-							if params.get( 'date', '' ):
-								st.markdown( f"**Date:** {params.get( 'date', '' )}" )
-							if params.get( 'time', '' ):
-								st.markdown( f"**Time:** {params.get( 'time', '' )}" )
-							if result.get( 'location_label', '' ):
-								st.markdown(
-									f"**Location Label:** {result.get( 'location_label', '' )}" )
-
-						with c2:
-							if params.get( 'coords', '' ):
-								st.markdown( f"**Coordinates:** {params.get( 'coords', '' )}" )
-
-						bodies: List[ Dict[ str, Any ] ] = [ ]
+						top_fields = { }
 
 						if isinstance( data, dict ):
-							for key in [ 'data', 'bodies', 'results', 'celestialBodies',
-								'celestial_bodies' ]:
-								value = data.get( key, None )
-								if isinstance( value, list ):
-									bodies = [ item for item in value if isinstance( item, dict ) ]
-									break
+							for key in [ 'gha', 'dec', 'hc', 'zn', 'altitude', 'azimuth',
+								'sunrise', 'sunset', 'moonrise', 'moonset' ]:
+								if key in data:
+									top_fields[ key ] = data.get( key )
 
-						if bodies:
-							st.markdown( '#### Celestial Bodies' )
-							df_bodies = pd.DataFrame( bodies )
-							if not df_bodies.empty:
-								st.dataframe( df_bodies, use_container_width=True,
-									hide_index=True )
-							else:
-								st.info( 'No displayable celestial body rows were found.' )
+						if top_fields:
+							st.markdown( '#### Key Values' )
+							st.json( top_fields )
 						else:
-							top_fields = { }
+							st.markdown( '#### Result' )
+							st.json( data )
 
-							if isinstance( data, dict ):
-								for key in [ 'gha', 'dec', 'hc', 'zn', 'altitude', 'azimuth',
-									'sunrise', 'sunset', 'moonrise', 'moonset' ]:
-									if key in data:
-										top_fields[ key ] = data.get( key )
+				with st.expander( 'Raw Result', expanded=False ):
+					st.json( result )
 
-							if top_fields:
-								st.markdown( '#### Key Values' )
-								st.json( top_fields )
-							else:
-								st.markdown( '#### Result' )
-								st.json( data )
+			# -------- Satellite Center
 
-					with st.expander( 'Raw Result', expanded=False ):
-						st.json( result )
-
-		# -------- Satellite Center
 		if active_source == 'Satellite Center':
 			st.markdown( 'Results' )
 
@@ -13211,7 +13221,8 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-		# -------- Astro Catalog
+			# -------- Astro Catalog
+
 		if active_source == 'Astro Catalog':
 			st.markdown( 'Results' )
 
@@ -13323,7 +13334,8 @@ elif mode == 'Astronomical':
 					else:
 						st.text_area( 'Raw', value=str( result ), height=240 )
 
-		# -------- Astro Query
+			# -------- Astro Query
+
 		if active_source == 'Astro Query':
 			st.markdown( 'Results' )
 
@@ -13400,7 +13412,8 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-		# -------- Star Map
+			# -------- Star Map
+
 		if active_source == 'Star Map':
 			st.markdown( 'Results' )
 
@@ -13474,7 +13487,8 @@ elif mode == 'Astronomical':
 					st.text_area( '', value=result.get( 'html_preview', '' ), height=220,
 						key='starmap_html_preview' )
 
-		# -------- SIMBAD
+			# -------- SIMBAD
+
 		if active_source == 'SIMBAD':
 			st.markdown( 'Results' )
 
@@ -13533,7 +13547,8 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-		# -------- Space Weather
+			# -------- Space Weather
+
 		if active_source == 'Space Weather':
 			if spaceweather_submit:
 				try:
@@ -13635,7 +13650,8 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-		# -------- Star Chart
+			# -------- Star Chart
+
 		if active_source == 'Star Chart':
 			if starchart_submit:
 				try:
@@ -13761,7 +13777,8 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-		# -------- Nearby Objects
+			# -------- Nearby Objects
+
 		if active_source == 'Near Earth Objects':
 			if nearby_submit:
 				try:
@@ -13840,8 +13857,12 @@ elif mode == 'Astronomical':
 # POPULATION MODE
 # ==============================================================================
 elif mode == 'Demographic':
-	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with center:
+	left, right = st.columns( [ 0.35, 0.65 ], gap='medium' )
+
+	if 'demographic_active_source' not in st.session_state:
+		st.session_state[ 'demographic_active_source' ] = ''
+
+	with left:
 		st.subheader( f'🩺 Demographics & Health Data' )
 		st.divider( )
 		
@@ -13946,131 +13967,62 @@ elif mode == 'Demographic':
 				st.session_state[ 'census_results' ] = { }
 				st.session_state[ 'census_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			census_mode = st.selectbox( 'Mode', options=CENSUS_MODES,
+				index=CENSUS_MODES.index( st.session_state.get( 'census_mode', 'variables' ) ),
+				key='census_mode', help=('variables = dataset variable metadata; '
+				                         'data = tabular Census query using get/for/in.') )
 			
-			with col_left:
-				census_mode = st.selectbox( 'Mode', options=CENSUS_MODES,
-					index=CENSUS_MODES.index( st.session_state.get( 'census_mode', 'variables' ) ),
-					key='census_mode', help=('variables = dataset variable metadata; '
-					                         'data = tabular Census query using get/for/in.') )
-				
-				census_year = st.text_input( 'Year',
-					value=st.session_state.get( 'census_year', '2022' ), key='census_year',
-					placeholder='2022' )
-				
-				census_dataset = st.text_input( 'Dataset',
-					value=st.session_state.get( 'census_dataset', 'acs/acs5' ),
-					key='census_dataset', placeholder='acs/acs5' )
-				
-				census_fields = st.text_area( 'Fields (get)',
-					value=st.session_state.get( 'census_fields', 'NAME,B01001_001E' ), height=90,
-					key='census_fields', placeholder='NAME,B01001_001E',
-					disabled=(census_mode != 'data') )
-				
-				c1, c2 = st.columns( 2 )
-				
-				with c1:
-					census_for = st.text_input( 'For',
-						value=st.session_state.get( 'census_for', 'state:*' ), key='census_for',
-						placeholder='state:*', disabled=(census_mode != 'data') )
-				
-				with c2:
-					census_in = st.text_input( 'In', value=st.session_state.get( 'census_in', '' ),
-						key='census_in', placeholder='state:24', disabled=(census_mode != 'data') )
-				
-				census_predicates = st.text_area( 'Predicates',
-					value=st.session_state.get( 'census_predicates', '' ), height=90,
-					key='census_predicates', placeholder='SEX=1\nAGE=15',
-					disabled=(census_mode != 'data'),
-					help='Optional newline-delimited key=value filters.' )
-				
-				census_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
-					value=int( st.session_state.get( 'census_timeout', 20 ) ), step=1,
-					key='census_timeout' )
-				
-				st.caption( 'Examples: dataset = acs/acs5, fields = NAME,B01001_001E, '
-				            'for = state:*' )
-				
-				b1, b2 = st.columns( 2 )
-				
-				with b1:
-					census_submit = st.button( 'Submit', key='census_submit',
-						use_container_width=True )
-				
-				with b2:
-					st.button( 'Clear', key='census_clear', on_click=_clear_census_state,
-						use_container_width=True )
+			census_year = st.text_input( 'Year',
+				value=st.session_state.get( 'census_year', '2022' ), key='census_year',
+				placeholder='2022' )
 			
-			with col_right:
-				result = st.session_state.get( 'census_results', { } )
-				
-				if census_submit:
-					try:
-						clean_year = _validate_census_year( census_year )
-						clean_dataset = _validate_census_dataset( census_dataset )
-						
-						if census_mode == 'data':
-							clean_fields = _validate_census_fields( census_fields )
-							clean_for = _validate_census_geography_clause( name='For',
-								value=census_for, required=True )
-							clean_in = _validate_census_geography_clause( name='In',
-								value=census_in, required=False )
-						else:
-							clean_fields = str( census_fields or '' ).strip( )
-							clean_for = str( census_for or '' ).strip( )
-							clean_in = str( census_in or '' ).strip( )
-						
-						f = CensusData( )
-						result = f.fetch( mode=str( census_mode ), year=clean_year,
-							dataset=clean_dataset, fields=clean_fields, geography_for=clean_for,
-							geography_in=clean_in,
-							predicates=str( census_predicates or '' ).strip( ),
-							time=int( census_timeout ) )
-						
-						st.session_state[ 'census_results' ] = result or { }
-						st.rerun( )
-					
-					except Exception as exc:
-						st.error( 'Census request failed.' )
-						st.exception( exc )
-				
-				if not result:
-					st.text( 'No results.' )
-				else:
-					_render_result_metadata( result )
-					
-					if result.get( 'mode', '' ) == 'variables':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						variables = payload.get( 'variables', { } ) if isinstance( payload,
-							dict ) else { }
-						
-						rows: List[ Dict[ str, Any ] ] = [ ]
-						if isinstance( variables, dict ):
-							for name, meta in variables.items( ):
-								if isinstance( meta, dict ):
-									rows.append( { 'Name': name, 'Label': meta.get( 'label', '' ),
-										'Concept': meta.get( 'concept', '' ),
-										'PredicateType': meta.get( 'predicateType', '' ),
-										'Group': meta.get( 'group', '' ),
-										'Limit': meta.get( 'limit', '' ), } )
-						
-						_render_summary_kv( '#### Summary',
-							{ 'Year': census_year, 'Dataset': census_dataset,
-								'VariableCount': len( rows ), } )
-						_render_rows_table( '#### Variables', rows )
-					
-					elif result.get( 'mode', '' ) == 'data':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						rows = payload.get( 'rows', [ ] ) if isinstance( payload, dict ) else [ ]
-						
-						_render_summary_kv( '#### Summary',
-							{ 'Year': census_year, 'Dataset': census_dataset,
-								'Fields': census_fields, 'For': census_for, 'In': census_in,
-								'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
-						_render_rows_table( '#### Data Rows',
-							rows if isinstance( rows, list ) else [ ] )
-					
-					_render_fallback_raw( result )
+			census_dataset = st.text_input( 'Dataset',
+				value=st.session_state.get( 'census_dataset', 'acs/acs5' ),
+				key='census_dataset', placeholder='acs/acs5' )
+			
+			census_fields = st.text_area( 'Fields (get)',
+				value=st.session_state.get( 'census_fields', 'NAME,B01001_001E' ), height=90,
+				key='census_fields', placeholder='NAME,B01001_001E',
+				disabled=(census_mode != 'data') )
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				census_for = st.text_input( 'For',
+					value=st.session_state.get( 'census_for', 'state:*' ), key='census_for',
+					placeholder='state:*', disabled=(census_mode != 'data') )
+			
+			with c2:
+				census_in = st.text_input( 'In', value=st.session_state.get( 'census_in', '' ),
+					key='census_in', placeholder='state:24', disabled=(census_mode != 'data') )
+			
+			census_predicates = st.text_area( 'Predicates',
+				value=st.session_state.get( 'census_predicates', '' ), height=90,
+				key='census_predicates', placeholder='SEX=1\nAGE=15',
+				disabled=(census_mode != 'data'),
+				help='Optional newline-delimited key=value filters.' )
+			
+			census_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+				value=int( st.session_state.get( 'census_timeout', 20 ) ), step=1,
+				key='census_timeout' )
+			
+			st.caption( 'Examples: dataset = acs/acs5, fields = NAME,B01001_001E, '
+			            'for = state:*' )
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				census_submit = st.button( 'Submit', key='census_submit',
+					use_container_width=True )
+			
+			with b2:
+				st.button( 'Clear', key='census_clear', on_click=_clear_census_state,
+					use_container_width=True )
+		
+
+			if census_submit:
+				st.session_state[ 'demographic_active_source' ] = 'u_s_census_bureau'
+
 		
 		# -------- CDC SOCRATA
 		with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
@@ -14143,141 +14095,77 @@ elif mode == 'Demographic':
 				st.session_state[ 'socrata_results' ] = { }
 				st.session_state[ 'socrata_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			socrata_mode = st.selectbox( 'Mode', options=SOCRATA_MODES,
+				index=SOCRATA_MODES.index( st.session_state.get( 'socrata_mode', 'rows' ) ),
+				key='socrata_mode',
+				help='rows = query dataset rows; metadata = inspect dataset metadata.' )
 			
-			with col_left:
-				socrata_mode = st.selectbox( 'Mode', options=SOCRATA_MODES,
-					index=SOCRATA_MODES.index( st.session_state.get( 'socrata_mode', 'rows' ) ),
-					key='socrata_mode',
-					help='rows = query dataset rows; metadata = inspect dataset metadata.' )
-				
-				socrata_domain = st.selectbox( 'Domain', options=SOCRATA_CDC_DOMAINS,
-					index=SOCRATA_CDC_DOMAINS.index(
-						st.session_state.get( 'socrata_domain', 'data.cdc.gov' ) ),
-					key='socrata_domain', help='CDC Socrata portal domain.' )
-				
-				socrata_dataset_id = st.text_input( 'Dataset ID',
-					value=st.session_state.get( 'socrata_dataset_id', 'q8xq-ygsk' ),
-					key='socrata_dataset_id', placeholder='q8xq-ygsk' )
-				
-				socrata_select = st.text_area( 'Select',
-					value=st.session_state.get( 'socrata_select', '' ), height=80,
-					key='socrata_select', placeholder='locationname,datavaluetype,datavalue',
-					disabled=(socrata_mode != 'rows') )
-				
-				socrata_where = st.text_area( 'Where',
-					value=st.session_state.get( 'socrata_where', '' ), height=100,
-					key='socrata_where', placeholder="year = '2020'",
-					disabled=(socrata_mode != 'rows') )
-				
-				c1, c2 = st.columns( 2 )
-				
-				with c1:
-					socrata_order = st.text_input( 'Order',
-						value=st.session_state.get( 'socrata_order', '' ), key='socrata_order',
-						placeholder='locationname ASC', disabled=(socrata_mode != 'rows') )
-				
-				with c2:
-					socrata_group = st.text_input( 'Group',
-						value=st.session_state.get( 'socrata_group', '' ), key='socrata_group',
-						placeholder='locationname', disabled=(socrata_mode != 'rows') )
-				
-				c3, c4, c5 = st.columns( 3 )
-				
-				with c3:
-					socrata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
-						value=int( st.session_state.get( 'socrata_limit', 25 ) ), step=1,
-						key='socrata_limit', disabled=(socrata_mode != 'rows'),
-						help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.' )
-				
-				with c4:
-					socrata_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
-						value=int( st.session_state.get( 'socrata_offset', 0 ) ), step=1,
-						key='socrata_offset', disabled=(socrata_mode != 'rows') )
-				
-				with c5:
-					socrata_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
-						value=int( st.session_state.get( 'socrata_timeout', 20 ) ), step=1,
-						key='socrata_timeout' )
-				
-				st.caption( 'Example dataset: q8xq-ygsk on data.cdc.gov. '
-				            'Use SoQL clauses for select, where, order, and group.' )
-				
-				b1, b2 = st.columns( 2 )
-				
-				with b1:
-					socrata_submit = st.button( 'Submit', key='socrata_submit',
-						use_container_width=True )
-				
-				with b2:
-					st.button( 'Clear', key='socrata_clear', on_click=_clear_socrata_state,
-						use_container_width=True )
+			socrata_domain = st.selectbox( 'Domain', options=SOCRATA_CDC_DOMAINS,
+				index=SOCRATA_CDC_DOMAINS.index(
+					st.session_state.get( 'socrata_domain', 'data.cdc.gov' ) ),
+				key='socrata_domain', help='CDC Socrata portal domain.' )
 			
-			with col_right:
-				result = st.session_state.get( 'socrata_results', { } )
-				
-				if socrata_submit:
-					try:
-						clean_dataset_id = _validate_socrata_dataset_id( socrata_dataset_id )
-						
-						f = Socrata( )
-						result = f.fetch( mode=str( socrata_mode ), domain=str( socrata_domain ),
-							dataset_id=clean_dataset_id, select=str( socrata_select ),
-							where=str( socrata_where ), order=str( socrata_order ),
-							group=str( socrata_group ), limit=int( socrata_limit ),
-							offset=int( socrata_offset ), time=int( socrata_timeout ) )
-						
-						st.session_state[ 'socrata_results' ] = result or { }
-						st.rerun( )
-					
-					except Exception as exc:
-						st.error( 'CDC Socrata request failed.' )
-						st.exception( exc )
-				
-				if not result:
-					st.text( 'No results.' )
-				else:
-					_render_result_metadata( result )
-					
-					if result.get( 'mode', '' ) == 'metadata':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						_render_summary_kv( '#### Summary', {
-							'Name': payload.get( 'name', '' ) if isinstance( payload,
-								dict ) else '',
-							'Description': payload.get( 'description', '' ) if isinstance( payload,
-								dict ) else '',
-							'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance(
-								payload, dict ) else '',
-							'ViewType': payload.get( 'viewType', '' ) if isinstance( payload,
-								dict ) else '',
-							'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload,
-								dict ) else 0, } )
-						
-						rows: List[ Dict[ str, Any ] ] = [ ]
-						columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload,
-							dict ) else [ ]
-						for item in columns_payload:
-							if isinstance( item, dict ):
-								rows.append( { 'Name': item.get( 'name', '' ),
-									'FieldName': item.get( 'fieldName', '' ),
-									'DataType': item.get( 'dataTypeName', '' ),
-									'Description': item.get( 'description', '' ), } )
-						
-						_render_rows_table( '#### Columns', rows )
-					
-					elif result.get( 'mode', '' ) == 'rows':
-						rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
-						
-						_render_summary_kv( '#### Summary',
-							{ 'Domain': socrata_domain, 'DatasetId': socrata_dataset_id,
-								'Limit': int( socrata_limit ), 'Offset': int( socrata_offset ),
-								'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
-						_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [
-						
-						] )
-					
-					_render_fallback_raw( result )
+			socrata_dataset_id = st.text_input( 'Dataset ID',
+				value=st.session_state.get( 'socrata_dataset_id', 'q8xq-ygsk' ),
+				key='socrata_dataset_id', placeholder='q8xq-ygsk' )
+			
+			socrata_select = st.text_area( 'Select',
+				value=st.session_state.get( 'socrata_select', '' ), height=80,
+				key='socrata_select', placeholder='locationname,datavaluetype,datavalue',
+				disabled=(socrata_mode != 'rows') )
+			
+			socrata_where = st.text_area( 'Where',
+				value=st.session_state.get( 'socrata_where', '' ), height=100,
+				key='socrata_where', placeholder="year = '2020'",
+				disabled=(socrata_mode != 'rows') )
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				socrata_order = st.text_input( 'Order',
+					value=st.session_state.get( 'socrata_order', '' ), key='socrata_order',
+					placeholder='locationname ASC', disabled=(socrata_mode != 'rows') )
+			
+			with c2:
+				socrata_group = st.text_input( 'Group',
+					value=st.session_state.get( 'socrata_group', '' ), key='socrata_group',
+					placeholder='locationname', disabled=(socrata_mode != 'rows') )
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				socrata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
+					value=int( st.session_state.get( 'socrata_limit', 25 ) ), step=1,
+					key='socrata_limit', disabled=(socrata_mode != 'rows'),
+					help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.' )
+			
+			with c4:
+				socrata_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
+					value=int( st.session_state.get( 'socrata_offset', 0 ) ), step=1,
+					key='socrata_offset', disabled=(socrata_mode != 'rows') )
+			
+			with c5:
+				socrata_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'socrata_timeout', 20 ) ), step=1,
+					key='socrata_timeout' )
+			
+			st.caption( 'Example dataset: q8xq-ygsk on data.cdc.gov. '
+			            'Use SoQL clauses for select, where, order, and group.' )
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				socrata_submit = st.button( 'Submit', key='socrata_submit',
+					use_container_width=True )
+			
+			with b2:
+				st.button( 'Clear', key='socrata_clear', on_click=_clear_socrata_state,
+					use_container_width=True )
+		
+
+			if socrata_submit:
+				st.session_state[ 'demographic_active_source' ] = 'cdc_socrata'
+
 		
 		# -------- US Health Data
 		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
@@ -14351,145 +14239,79 @@ elif mode == 'Demographic':
 				st.session_state[ 'healthdata_results' ] = { }
 				st.session_state[ 'healthdata_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			healthdata_mode = st.selectbox( 'Mode', options=HEALTHDATA_MODES,
+				index=HEALTHDATA_MODES.index(
+					st.session_state.get( 'healthdata_mode', 'rows' ) ), key='healthdata_mode',
+				help='rows = query dataset rows; metadata = inspect dataset metadata.' )
 			
-			with col_left:
-				healthdata_mode = st.selectbox( 'Mode', options=HEALTHDATA_MODES,
-					index=HEALTHDATA_MODES.index(
-						st.session_state.get( 'healthdata_mode', 'rows' ) ), key='healthdata_mode',
-					help='rows = query dataset rows; metadata = inspect dataset metadata.' )
-				
-				healthdata_domain = st.selectbox( 'Domain', options=HEALTHDATA_DOMAINS,
-					index=HEALTHDATA_DOMAINS.index(
-						st.session_state.get( 'healthdata_domain', 'healthdata.gov' ) ),
-					key='healthdata_domain', help='HealthData.gov Socrata portal domain.' )
-				
-				healthdata_dataset_id = st.text_input( 'Dataset ID',
-					value=st.session_state.get( 'healthdata_dataset_id', '' ),
-					key='healthdata_dataset_id', placeholder='abcd-1234' )
-				
-				healthdata_select = st.text_area( 'Select',
-					value=st.session_state.get( 'healthdata_select', '' ), height=80,
-					key='healthdata_select', placeholder='column1,column2',
-					disabled=(healthdata_mode != 'rows') )
-				
-				healthdata_where = st.text_area( 'Where',
-					value=st.session_state.get( 'healthdata_where', '' ), height=100,
-					key='healthdata_where', placeholder="year = '2024'",
-					disabled=(healthdata_mode != 'rows') )
-				
-				c1, c2 = st.columns( 2 )
-				
-				with c1:
-					healthdata_order = st.text_input( 'Order',
-						value=st.session_state.get( 'healthdata_order', '' ),
-						key='healthdata_order', placeholder='column1 ASC',
-						disabled=(healthdata_mode != 'rows') )
-				
-				with c2:
-					healthdata_group = st.text_input( 'Group',
-						value=st.session_state.get( 'healthdata_group', '' ),
-						key='healthdata_group', placeholder='column1',
-						disabled=(healthdata_mode != 'rows') )
-				
-				c3, c4, c5 = st.columns( 3 )
-				
-				with c3:
-					healthdata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
-						value=int( st.session_state.get( 'healthdata_limit', 25 ) ), step=1,
-						key='healthdata_limit', disabled=(healthdata_mode != 'rows'),
-						help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.' )
-				
-				with c4:
-					healthdata_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
-						value=int( st.session_state.get( 'healthdata_offset', 0 ) ), step=1,
-						key='healthdata_offset', disabled=(healthdata_mode != 'rows') )
-				
-				with c5:
-					healthdata_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
-						value=int( st.session_state.get( 'healthdata_timeout', 20 ) ), step=1,
-						key='healthdata_timeout' )
-				
-				st.caption( 'HealthData.gov exposes open API access through Socrata. '
-				            'Use SoQL-style clauses for select, where, order, and group.' )
-				
-				b1, b2 = st.columns( 2 )
-				
-				with b1:
-					healthdata_submit = st.button( 'Submit', key='healthdata_submit',
-						use_container_width=True )
-				
-				with b2:
-					st.button( 'Clear', key='healthdata_clear', on_click=_clear_healthdata_state,
-						use_container_width=True )
+			healthdata_domain = st.selectbox( 'Domain', options=HEALTHDATA_DOMAINS,
+				index=HEALTHDATA_DOMAINS.index(
+					st.session_state.get( 'healthdata_domain', 'healthdata.gov' ) ),
+				key='healthdata_domain', help='HealthData.gov Socrata portal domain.' )
 			
-			with col_right:
-				result = st.session_state.get( 'healthdata_results', { } )
-				
-				if healthdata_submit:
-					try:
-						clean_dataset_id = _validate_healthdata_dataset_id( healthdata_dataset_id )
-						
-						f = HealthData( )
-						result = f.fetch( mode=str( healthdata_mode ),
-							domain=str( healthdata_domain ), dataset_id=clean_dataset_id,
-							select=str( healthdata_select ), where=str( healthdata_where ),
-							order=str( healthdata_order ), group=str( healthdata_group ),
-							limit=int( healthdata_limit ), offset=int( healthdata_offset ),
-							time=int( healthdata_timeout ) )
-						
-						st.session_state[ 'healthdata_results' ] = result or { }
-						st.rerun( )
-					
-					except Exception as exc:
-						st.error( 'HealthData request failed.' )
-						st.exception( exc )
-				
-				if not result:
-					st.text( 'No results.' )
-				else:
-					_render_result_metadata( result )
-					
-					if result.get( 'mode', '' ) == 'metadata':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						_render_summary_kv( '#### Summary', {
-							'Name': payload.get( 'name', '' ) if isinstance( payload,
-								dict ) else '',
-							'Description': payload.get( 'description', '' ) if isinstance( payload,
-								dict ) else '',
-							'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance(
-								payload, dict ) else '',
-							'ViewType': payload.get( 'viewType', '' ) if isinstance( payload,
-								dict ) else '',
-							'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload,
-								dict ) else 0, } )
-						
-						rows: List[ Dict[ str, Any ] ] = [ ]
-						columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload,
-							dict ) else [ ]
-						for item in columns_payload:
-							if isinstance( item, dict ):
-								rows.append( { 'Name': item.get( 'name', '' ),
-									'FieldName': item.get( 'fieldName', '' ),
-									'DataType': item.get( 'dataTypeName', '' ),
-									'Description': item.get( 'description', '' ), } )
-						
-						_render_rows_table( '#### Columns', rows )
-					
-					elif result.get( 'mode', '' ) == 'rows':
-						rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
-						
-						_render_summary_kv( '#### Summary',
-							{ 'Domain': healthdata_domain, 'DatasetId': healthdata_dataset_id,
-								'Limit': int( healthdata_limit ),
-								'Offset': int( healthdata_offset ),
-								'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
-						_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [
-						
-						] )
-					
-					_render_fallback_raw( result )
+			healthdata_dataset_id = st.text_input( 'Dataset ID',
+				value=st.session_state.get( 'healthdata_dataset_id', '' ),
+				key='healthdata_dataset_id', placeholder='abcd-1234' )
+			
+			healthdata_select = st.text_area( 'Select',
+				value=st.session_state.get( 'healthdata_select', '' ), height=80,
+				key='healthdata_select', placeholder='column1,column2',
+				disabled=(healthdata_mode != 'rows') )
+			
+			healthdata_where = st.text_area( 'Where',
+				value=st.session_state.get( 'healthdata_where', '' ), height=100,
+				key='healthdata_where', placeholder="year = '2024'",
+				disabled=(healthdata_mode != 'rows') )
+			
+			c1, c2 = st.columns( 2 )
+			
+			with c1:
+				healthdata_order = st.text_input( 'Order',
+					value=st.session_state.get( 'healthdata_order', '' ),
+					key='healthdata_order', placeholder='column1 ASC',
+					disabled=(healthdata_mode != 'rows') )
+			
+			with c2:
+				healthdata_group = st.text_input( 'Group',
+					value=st.session_state.get( 'healthdata_group', '' ),
+					key='healthdata_group', placeholder='column1',
+					disabled=(healthdata_mode != 'rows') )
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				healthdata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
+					value=int( st.session_state.get( 'healthdata_limit', 25 ) ), step=1,
+					key='healthdata_limit', disabled=(healthdata_mode != 'rows'),
+					help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.' )
+			
+			with c4:
+				healthdata_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
+					value=int( st.session_state.get( 'healthdata_offset', 0 ) ), step=1,
+					key='healthdata_offset', disabled=(healthdata_mode != 'rows') )
+			
+			with c5:
+				healthdata_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'healthdata_timeout', 20 ) ), step=1,
+					key='healthdata_timeout' )
+			
+			st.caption( 'HealthData.gov exposes open API access through Socrata. '
+			            'Use SoQL-style clauses for select, where, order, and group.' )
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				healthdata_submit = st.button( 'Submit', key='healthdata_submit',
+					use_container_width=True )
+			
+			with b2:
+				st.button( 'Clear', key='healthdata_clear', on_click=_clear_healthdata_state,
+					use_container_width=True )
+		
+
+			if healthdata_submit:
+				st.session_state[ 'demographic_active_source' ] = 'u_s_health'
+
 		
 		# -------- WHO Global Health
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
@@ -14567,110 +14389,48 @@ elif mode == 'Demographic':
 				st.session_state[ 'who_results' ] = { }
 				st.session_state[ 'who_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			who_mode = st.selectbox( 'Mode', options=WHO_MODES, index=WHO_MODES.index(
+				st.session_state.get( 'who_mode', 'indicator_registry' ) ), key='who_mode',
+				help=('indicator_registry = WHO metadata landing content; '
+				      'athena = configurable WHO GHO query path.') )
 			
-			with col_left:
-				who_mode = st.selectbox( 'Mode', options=WHO_MODES, index=WHO_MODES.index(
-					st.session_state.get( 'who_mode', 'indicator_registry' ) ), key='who_mode',
-					help=('indicator_registry = WHO metadata landing content; '
-					      'athena = configurable WHO GHO query path.') )
-				
-				who_query_choice = st.selectbox( 'Query Path Preset', options=WHO_QUERY_PRESETS,
-					index=WHO_QUERY_PRESETS.index(
-						st.session_state.get( 'who_query_choice', 'Indicator' ) ),
-					key='who_query_choice', disabled=(who_mode != 'athena'),
-					help='Common WHO GHO OData query paths.' )
-				
-				who_custom_query_path = st.text_area( 'Custom Query Path',
-					value=st.session_state.get( 'who_custom_query_path', '' ), height=100,
-					key='who_custom_query_path', placeholder="WHOSIS_000001?$filter=Dim1 eq 'MLE'",
-					disabled=(who_mode != 'athena' or who_query_choice != 'Custom...'),
-					help='Path appended after the WHO GHO API base endpoint.' )
-				
-				who_format = st.selectbox( 'Format', options=WHO_FORMATS,
-					index=WHO_FORMATS.index( st.session_state.get( 'who_format', 'json' ) ),
-					key='who_format', disabled=(who_mode != 'athena') )
-				
-				who_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
-					value=int( st.session_state.get( 'who_timeout', 20 ) ), step=1,
-					key='who_timeout' )
-				
-				st.caption( 'WHO supports GHO OData paths such as Indicator, Dimension, '
-				            'DIMENSION/COUNTRY/DimensionValues, and direct indicator-code '
-				            'queries.' )
-				
-				b1, b2 = st.columns( 2 )
-				
-				with b1:
-					who_submit = st.button( 'Submit', key='who_submit', use_container_width=True )
-				
-				with b2:
-					st.button( 'Clear', key='who_clear', on_click=_clear_who_state,
-						use_container_width=True )
+			who_query_choice = st.selectbox( 'Query Path Preset', options=WHO_QUERY_PRESETS,
+				index=WHO_QUERY_PRESETS.index(
+					st.session_state.get( 'who_query_choice', 'Indicator' ) ),
+				key='who_query_choice', disabled=(who_mode != 'athena'),
+				help='Common WHO GHO OData query paths.' )
 			
-			with col_right:
-				result = st.session_state.get( 'who_results', { } )
-				
-				if who_submit:
-					try:
-						if who_mode == 'athena':
-							selected_query_path = (
-								who_custom_query_path if who_query_choice == 'Custom...' else
-								who_query_choice)
-							clean_query_path = _validate_who_query_path( selected_query_path )
-						else:
-							clean_query_path = ''
-						
-						f = GlobalHealthData( )
-						result = f.fetch( mode=str( who_mode ), query_path=clean_query_path,
-							fmt=str( who_format ), time=int( who_timeout ) )
-						
-						st.session_state[ 'who_query_path' ] = clean_query_path
-						st.session_state[ 'who_results' ] = result or { }
-						st.rerun( )
-					
-					except Exception as exc:
-						st.error( 'WHO Global Health request failed.' )
-						st.exception( exc )
-				
-				if not result:
-					st.text( 'No results.' )
-				else:
-					_render_result_metadata( result )
-					
-					if result.get( 'mode', '' ) == 'indicator_registry':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
-							'HasHtml': (isinstance( payload, dict ) and bool(
-								payload.get( 'html', '' ) )), } )
-						
-						if isinstance( payload, dict ) and payload.get( 'html', '' ):
-							_render_html_preview( '#### Indicator Registry Preview',
-								str( payload.get( 'html', '' ) ) )
-						else:
-							st.json( payload )
-					
-					elif result.get( 'mode', '' ) == 'athena':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						if isinstance( payload, dict ) and isinstance( payload.get( 'value', [ ] ),
-								list ):
-							rows = payload.get( 'value', [ ] )
-							_render_summary_kv( '#### Summary',
-								{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
-									'Format': who_format, 'ResultCount': len( rows ), } )
-							_render_rows_table( '#### Athena Results', rows )
-						elif isinstance( payload, dict ) and payload.get( 'text', '' ):
-							_render_summary_kv( '#### Summary',
-								{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
-									'Format': who_format, 'HasText': True, } )
-							st.markdown( '#### Response' )
-							st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
-						else:
-							st.json( payload )
-					
-					_render_fallback_raw( result )
+			who_custom_query_path = st.text_area( 'Custom Query Path',
+				value=st.session_state.get( 'who_custom_query_path', '' ), height=100,
+				key='who_custom_query_path', placeholder="WHOSIS_000001?$filter=Dim1 eq 'MLE'",
+				disabled=(who_mode != 'athena' or who_query_choice != 'Custom...'),
+				help='Path appended after the WHO GHO API base endpoint.' )
+			
+			who_format = st.selectbox( 'Format', options=WHO_FORMATS,
+				index=WHO_FORMATS.index( st.session_state.get( 'who_format', 'json' ) ),
+				key='who_format', disabled=(who_mode != 'athena') )
+			
+			who_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+				value=int( st.session_state.get( 'who_timeout', 20 ) ), step=1,
+				key='who_timeout' )
+			
+			st.caption( 'WHO supports GHO OData paths such as Indicator, Dimension, '
+			            'DIMENSION/COUNTRY/DimensionValues, and direct indicator-code '
+			            'queries.' )
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				who_submit = st.button( 'Submit', key='who_submit', use_container_width=True )
+			
+			with b2:
+				st.button( 'Clear', key='who_clear', on_click=_clear_who_state,
+					use_container_width=True )
+		
+
+			if who_submit:
+				st.session_state[ 'demographic_active_source' ] = 'who_global'
+
 		
 		# -------- United Nations Data
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
@@ -14743,105 +14503,44 @@ elif mode == 'Demographic':
 				st.session_state[ 'un_results' ] = { }
 				st.session_state[ 'un_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			un_mode = st.selectbox( 'Mode', options=UN_MODES,
+				index=UN_MODES.index( st.session_state.get( 'un_mode', 'datasets' ) ),
+				key='un_mode', help=('datasets = UNdata dataset catalog landing content; '
+				                     'sdmx_query = direct REST SDMX query path.') )
 			
-			with col_left:
-				un_mode = st.selectbox( 'Mode', options=UN_MODES,
-					index=UN_MODES.index( st.session_state.get( 'un_mode', 'datasets' ) ),
-					key='un_mode', help=('datasets = UNdata dataset catalog landing content; '
-					                     'sdmx_query = direct REST SDMX query path.') )
-				
-				un_query_choice = st.selectbox( 'Query Path Preset', options=UN_QUERY_PRESETS,
-					index=UN_QUERY_PRESETS.index(
-						st.session_state.get( 'un_query_choice', 'dataflow' ) ),
-					key='un_query_choice', disabled=(un_mode != 'sdmx_query'),
-					help='Common UNdata SDMX REST artifact paths.' )
-				
-				un_custom_query_path = st.text_area( 'Custom Query Path',
-					value=st.session_state.get( 'un_custom_query_path', '' ), height=120,
-					key='un_custom_query_path',
-					placeholder='data/DF_SDG_GLH/..SI_POV_DAY1...........?',
-					disabled=(un_mode != 'sdmx_query' or un_query_choice != 'Custom...'),
-					help='Path appended after https://data.un.org/WS/rest/' )
-				
-				un_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
-					value=int( st.session_state.get( 'un_timeout', 20 ) ), step=1,
-					key='un_timeout' )
-				
-				st.caption( 'UNdata exposes SDMX REST artifacts such as dataflow, datastructure, '
-				            'codelist, and conceptscheme. Use Custom for dataset-specific paths.' )
-				
-				b1, b2 = st.columns( 2 )
-				
-				with b1:
-					un_submit = st.button( 'Submit', key='un_submit', use_container_width=True )
-				
-				with b2:
-					st.button( 'Clear', key='un_clear', on_click=_clear_un_state,
-						use_container_width=True )
+			un_query_choice = st.selectbox( 'Query Path Preset', options=UN_QUERY_PRESETS,
+				index=UN_QUERY_PRESETS.index(
+					st.session_state.get( 'un_query_choice', 'dataflow' ) ),
+				key='un_query_choice', disabled=(un_mode != 'sdmx_query'),
+				help='Common UNdata SDMX REST artifact paths.' )
 			
-			with col_right:
-				result = st.session_state.get( 'un_results', { } )
-				
-				if un_submit:
-					try:
-						if un_mode == 'sdmx_query':
-							selected_query_path = (
-								un_custom_query_path if un_query_choice == 'Custom...' else
-								un_query_choice)
-							clean_query_path = _validate_un_query_path( selected_query_path )
-						else:
-							clean_query_path = ''
-						
-						f = UnitedNations( )
-						result = f.fetch( mode=str( un_mode ), query_path=clean_query_path,
-							time=int( un_timeout ) )
-						
-						st.session_state[ 'un_query_path' ] = clean_query_path
-						st.session_state[ 'un_results' ] = result or { }
-						st.rerun( )
-					
-					except Exception as exc:
-						st.error( 'United Nations request failed.' )
-						st.exception( exc )
-				
-				if not result:
-					st.text( 'No results.' )
-				else:
-					_render_result_metadata( result )
-					
-					if result.get( 'mode', '' ) == 'datasets':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
-							'HasHtml': (isinstance( payload, dict ) and bool(
-								payload.get( 'html', '' ) )), } )
-						
-						if isinstance( payload, dict ) and payload.get( 'html', '' ):
-							_render_html_preview( '#### Dataset Catalog Preview',
-								str( payload.get( 'html', '' ) ) )
-						else:
-							st.json( payload )
-					
-					elif result.get( 'mode', '' ) == 'sdmx_query':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
-							'QueryPath': st.session_state.get( 'un_query_path', '' ),
-							'TextPayload': (isinstance( payload, dict ) and bool(
-								payload.get( 'text', '' ) )),
-							'JsonPayload': isinstance( payload, (dict, list) ), } )
-						
-						if isinstance( payload, dict ) and payload.get( 'text', '' ):
-							st.markdown( '#### Query Response' )
-							st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
-						elif isinstance( payload, dict ) and payload.get( 'html', '' ):
-							_render_html_preview( '#### Query Response',
-								str( payload.get( 'html', '' ) ) )
-						else:
-							st.json( payload )
-					
-					_render_fallback_raw( result )
+			un_custom_query_path = st.text_area( 'Custom Query Path',
+				value=st.session_state.get( 'un_custom_query_path', '' ), height=120,
+				key='un_custom_query_path',
+				placeholder='data/DF_SDG_GLH/..SI_POV_DAY1...........?',
+				disabled=(un_mode != 'sdmx_query' or un_query_choice != 'Custom...'),
+				help='Path appended after https://data.un.org/WS/rest/' )
+			
+			un_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+				value=int( st.session_state.get( 'un_timeout', 20 ) ), step=1,
+				key='un_timeout' )
+			
+			st.caption( 'UNdata exposes SDMX REST artifacts such as dataflow, datastructure, '
+			            'codelist, and conceptscheme. Use Custom for dataset-specific paths.' )
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				un_submit = st.button( 'Submit', key='un_submit', use_container_width=True )
+			
+			with b2:
+				st.button( 'Clear', key='un_clear', on_click=_clear_un_state,
+					use_container_width=True )
+		
+
+			if un_submit:
+				st.session_state[ 'demographic_active_source' ] = 'united_nations'
+
 		
 		# -------- World Population
 		with st.expander( label='World Population', icon='👥', expanded=False ):
@@ -14937,145 +14636,67 @@ elif mode == 'Demographic':
 				st.session_state[ 'worldpop_results' ] = { }
 				st.session_state[ 'worldpop_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			worldpop_mode = st.selectbox( 'Mode', options=WORLDPOP_MODES,
+				index=WORLDPOP_MODES.index(
+					st.session_state.get( 'worldpop_mode', 'catalog' ) ), key='worldpop_mode',
+				help=('catalog = API landing content; '
+				      'search = catalog-style search; '
+				      'raster_metadata = direct asset or metadata path.') )
 			
-			with col_left:
-				worldpop_mode = st.selectbox( 'Mode', options=WORLDPOP_MODES,
-					index=WORLDPOP_MODES.index(
-						st.session_state.get( 'worldpop_mode', 'catalog' ) ), key='worldpop_mode',
-					help=('catalog = API landing content; '
-					      'search = catalog-style search; '
-					      'raster_metadata = direct asset or metadata path.') )
-				
-				worldpop_query = st.text_area( 'Query',
-					value=st.session_state.get( 'worldpop_query', '' ), height=90,
-					key='worldpop_query', placeholder='population Ghana 2020',
-					disabled=(worldpop_mode != 'search') )
-				
-				worldpop_asset_choice = st.selectbox( 'Asset Path Preset',
-					options=WORLDPOP_ASSET_PRESETS, index=WORLDPOP_ASSET_PRESETS.index(
-						st.session_state.get( 'worldpop_asset_choice', 'data/pop/wpgp?iso3=GHA'
-						) ),
-					key='worldpop_asset_choice', disabled=(worldpop_mode != 'raster_metadata'),
-					help='Common WorldPop API metadata paths. Use Custom for another path.' )
-				
-				worldpop_custom_asset_path = st.text_area( 'Custom Asset Path',
-					value=st.session_state.get( 'worldpop_custom_asset_path', '' ), height=100,
-					key='worldpop_custom_asset_path', placeholder='data/pop/wpgp?iso3=GHA',
-					disabled=(
-							worldpop_mode != 'raster_metadata' or worldpop_asset_choice !=
-							'Custom...') )
-				
-				c1, c2, c3 = st.columns( 3 )
-				
-				with c1:
-					worldpop_page = st.number_input( 'Page', min_value=1, max_value=100000,
-						value=int( st.session_state.get( 'worldpop_page', 1 ) ), step=1,
-						key='worldpop_page', disabled=(worldpop_mode != 'search') )
-				
-				with c2:
-					worldpop_page_size = st.number_input( 'Page Size', min_value=1, max_value=500,
-						value=int( st.session_state.get( 'worldpop_page_size', 25 ) ), step=1,
-						key='worldpop_page_size', disabled=(worldpop_mode != 'search') )
-				
-				with c3:
-					worldpop_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
-						value=int( st.session_state.get( 'worldpop_timeout', 20 ) ), step=1,
-						key='worldpop_timeout' )
-				
-				st.caption( 'WorldPop exposes API access to population and demographic datasets. '
-				            'Raster metadata mode appends a selected path to the current wrapper '
-				            'base URL.' )
-				
-				b1, b2 = st.columns( 2 )
-				
-				with b1:
-					worldpop_submit = st.button( 'Submit', key='worldpop_submit',
-						use_container_width=True )
-				
-				with b2:
-					st.button( 'Clear', key='worldpop_clear', on_click=_clear_worldpop_state,
-						use_container_width=True )
+			worldpop_query = st.text_area( 'Query',
+				value=st.session_state.get( 'worldpop_query', '' ), height=90,
+				key='worldpop_query', placeholder='population Ghana 2020',
+				disabled=(worldpop_mode != 'search') )
 			
-			with col_right:
-				result = st.session_state.get( 'worldpop_results', { } )
-				
-				if worldpop_submit:
-					try:
-						if worldpop_mode == 'search':
-							clean_query = _validate_worldpop_query( worldpop_query )
-							clean_asset_path = ''
-						elif worldpop_mode == 'raster_metadata':
-							selected_asset_path = (
-								worldpop_custom_asset_path if worldpop_asset_choice == 'Custom...'
-								else worldpop_asset_choice)
-							clean_asset_path = _validate_worldpop_asset_path( selected_asset_path )
-							clean_query = ''
-						else:
-							clean_query = ''
-							clean_asset_path = ''
-						
-						f = WorldPopulation( )
-						result = f.fetch( mode=str( worldpop_mode ), query=clean_query,
-							asset_path=clean_asset_path, page=int( worldpop_page ),
-							page_size=int( worldpop_page_size ), time=int( worldpop_timeout ) )
-						
-						st.session_state[ 'worldpop_query' ] = clean_query
-						st.session_state[ 'worldpop_asset_path' ] = clean_asset_path
-						st.session_state[ 'worldpop_results' ] = result or { }
-						st.rerun( )
-					
-					except Exception as exc:
-						st.error( 'World Population request failed.' )
-						st.exception( exc )
-				
-				if not result:
-					st.text( 'No results.' )
-				else:
-					_render_result_metadata( result )
-					
-					if result.get( 'mode', '' ) == 'catalog':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
-							'HasHtml': (isinstance( payload, dict ) and bool(
-								payload.get( 'html', '' ) )), } )
-						
-						if isinstance( payload, dict ) and payload.get( 'html', '' ):
-							_render_html_preview( '#### Catalog Preview',
-								str( payload.get( 'html', '' ) ) )
-						else:
-							st.json( payload )
-					
-					elif result.get( 'mode', '' ) == 'search':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						if isinstance( payload, dict ) and isinstance(
-								payload.get( 'results', [ ] ), list ):
-							rows = payload.get( 'results', [ ] )
-							_render_summary_kv( '#### Summary',
-								{ 'Query': st.session_state.get( 'worldpop_query', '' ),
-									'Page': worldpop_page, 'PageSize': worldpop_page_size,
-									'ResultCount': len( rows ), } )
-							_render_rows_table( '#### Search Results', rows )
-						else:
-							st.json( payload )
-					
-					elif result.get( 'mode', '' ) == 'raster_metadata':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						_render_summary_kv( '#### Summary',
-							{ 'AssetPath': st.session_state.get( 'worldpop_asset_path', '' ),
-								'HasText': (isinstance( payload, dict ) and bool(
-									payload.get( 'text', '' ) )), } )
-						
-						if isinstance( payload, dict ) and payload.get( 'text', '' ):
-							st.markdown( '#### Metadata Response' )
-							st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
-						else:
-							st.json( payload )
-					
-					_render_fallback_raw( result )
+			worldpop_asset_choice = st.selectbox( 'Asset Path Preset',
+				options=WORLDPOP_ASSET_PRESETS, index=WORLDPOP_ASSET_PRESETS.index(
+					st.session_state.get( 'worldpop_asset_choice', 'data/pop/wpgp?iso3=GHA'
+					) ),
+				key='worldpop_asset_choice', disabled=(worldpop_mode != 'raster_metadata'),
+				help='Common WorldPop API metadata paths. Use Custom for another path.' )
+			
+			worldpop_custom_asset_path = st.text_area( 'Custom Asset Path',
+				value=st.session_state.get( 'worldpop_custom_asset_path', '' ), height=100,
+				key='worldpop_custom_asset_path', placeholder='data/pop/wpgp?iso3=GHA',
+				disabled=(
+						worldpop_mode != 'raster_metadata' or worldpop_asset_choice !=
+						'Custom...') )
+			
+			c1, c2, c3 = st.columns( 3 )
+			
+			with c1:
+				worldpop_page = st.number_input( 'Page', min_value=1, max_value=100000,
+					value=int( st.session_state.get( 'worldpop_page', 1 ) ), step=1,
+					key='worldpop_page', disabled=(worldpop_mode != 'search') )
+			
+			with c2:
+				worldpop_page_size = st.number_input( 'Page Size', min_value=1, max_value=500,
+					value=int( st.session_state.get( 'worldpop_page_size', 25 ) ), step=1,
+					key='worldpop_page_size', disabled=(worldpop_mode != 'search') )
+			
+			with c3:
+				worldpop_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'worldpop_timeout', 20 ) ), step=1,
+					key='worldpop_timeout' )
+			
+			st.caption( 'WorldPop exposes API access to population and demographic datasets. '
+			            'Raster metadata mode appends a selected path to the current wrapper '
+			            'base URL.' )
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				worldpop_submit = st.button( 'Submit', key='worldpop_submit',
+					use_container_width=True )
+			
+			with b2:
+				st.button( 'Clear', key='worldpop_clear', on_click=_clear_worldpop_state,
+					use_container_width=True )
+		
+
+			if worldpop_submit:
+				st.session_state[ 'demographic_active_source' ] = 'world_population'
+
 		
 		# -------- CDC WONDER
 		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
@@ -15157,118 +14778,51 @@ elif mode == 'Demographic':
 				st.session_state[ 'wonder_results' ] = { }
 				st.session_state[ 'wonder_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			wonder_mode = st.selectbox( 'Mode', options=WONDER_MODES, index=WONDER_MODES.index(
+				st.session_state.get( 'wonder_mode', 'metadata_template' ) ),
+				key='wonder_mode',
+				help=('metadata_template = build a starter XML request; '
+				      'query_xml = submit a raw XML request to CDC WONDER.') )
 			
-			with col_left:
-				wonder_mode = st.selectbox( 'Mode', options=WONDER_MODES, index=WONDER_MODES.index(
-					st.session_state.get( 'wonder_mode', 'metadata_template' ) ),
-					key='wonder_mode',
-					help=('metadata_template = build a starter XML request; '
-					      'query_xml = submit a raw XML request to CDC WONDER.') )
-				
-				wonder_dataset_choice = st.selectbox( 'Dataset ID', options=WONDER_DATASETS,
-					index=WONDER_DATASETS.index(
-						st.session_state.get( 'wonder_dataset_choice', 'D76' ) ),
-					key='wonder_dataset_choice',
-					help='Common CDC WONDER database identifiers. Use Other for newer IDs.' )
-				
-				wonder_custom_dataset_id = st.text_input( 'Custom Dataset ID',
-					value=st.session_state.get( 'wonder_custom_dataset_id', '' ),
-					key='wonder_custom_dataset_id', placeholder='D76',
-					disabled=(wonder_dataset_choice != 'Other') )
-				
-				wonder_request_xml = st.text_area( 'Request XML',
-					value=st.session_state.get( 'wonder_request_xml', '' ), height=240,
-					key='wonder_request_xml',
-					placeholder='<request-parameters>...</request-parameters>',
-					disabled=(wonder_mode != 'query_xml') )
-				
-				wonder_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
-					value=int( st.session_state.get( 'wonder_timeout', 20 ) ), step=1,
-					key='wonder_timeout' )
-				
-				st.caption( 'CDC WONDER requires POST requests with request_xml and acceptance '
-				            'of data-use restrictions. The wrapper submits '
-				            'accept_datause_restrictions=true.' )
-				
-				b1, b2 = st.columns( 2 )
-				
-				with b1:
-					wonder_submit = st.button( 'Submit', key='wonder_submit',
-						use_container_width=True )
-				
-				with b2:
-					st.button( 'Clear', key='wonder_clear', on_click=_clear_wonder_state,
-						use_container_width=True )
+			wonder_dataset_choice = st.selectbox( 'Dataset ID', options=WONDER_DATASETS,
+				index=WONDER_DATASETS.index(
+					st.session_state.get( 'wonder_dataset_choice', 'D76' ) ),
+				key='wonder_dataset_choice',
+				help='Common CDC WONDER database identifiers. Use Other for newer IDs.' )
 			
-			with col_right:
-				result = st.session_state.get( 'wonder_results', { } )
-				
-				if wonder_submit:
-					try:
-						selected_dataset_id = (
-							wonder_custom_dataset_id if wonder_dataset_choice == 'Other' else
-							wonder_dataset_choice)
-						clean_dataset_id = _validate_wonder_dataset_id( selected_dataset_id )
-						
-						if wonder_mode == 'query_xml':
-							clean_request_xml = _validate_wonder_xml( wonder_request_xml )
-						else:
-							clean_request_xml = str( wonder_request_xml or '' ).strip( )
-						
-						f = Wonder( )
-						result = f.fetch( mode=str( wonder_mode ), dataset_id=clean_dataset_id,
-							request_xml=clean_request_xml, time=int( wonder_timeout ) )
-						
-						st.session_state[ 'wonder_dataset_id' ] = clean_dataset_id
-						st.session_state[ 'wonder_results' ] = result or { }
-						
-						if (wonder_mode == 'metadata_template' and isinstance( result,
-							dict ) and isinstance( result.get( 'data', { } ), dict )):
-							template_xml = result.get( 'data', { } ).get( 'request_xml', '' )
-							st.session_state[ 'wonder_request_xml' ] = template_xml
-						
-						st.rerun( )
-					
-					except Exception as exc:
-						st.error( 'CDC WONDER request failed.' )
-						st.exception( exc )
-				
-				if not result:
-					st.text( 'No results.' )
-				else:
-					_render_result_metadata( result )
-					
-					if result.get( 'mode', '' ) == 'metadata_template':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						if isinstance( payload, dict ):
-							_render_summary_kv( '#### Template Summary',
-								{ 'DatasetId': payload.get( 'dataset_id', '' ),
-									'Notes': payload.get( 'notes', '' ), } )
-							
-							template_xml = str( payload.get( 'request_xml', '' ) )
-							if template_xml:
-								_render_xml_preview( '#### Starter XML', template_xml )
-							else:
-								st.info( 'No starter XML returned.' )
-					
-					elif result.get( 'mode', '' ) == 'query_xml':
-						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-						
-						if isinstance( payload, dict ):
-							xml_text = str( payload.get( 'xml', '' ) )
-							
-							_render_summary_kv( '#### Response Summary',
-								{ 'DatasetId': st.session_state.get( 'wonder_dataset_id', '' ),
-									'Characters': len( xml_text ),
-									'HasXml': bool( xml_text.strip( ) ), } )
-							
-							_render_xml_preview( '#### XML Response', xml_text )
-						else:
-							st.info( 'No XML response returned.' )
-					
-					_render_fallback_raw( result )
+			wonder_custom_dataset_id = st.text_input( 'Custom Dataset ID',
+				value=st.session_state.get( 'wonder_custom_dataset_id', '' ),
+				key='wonder_custom_dataset_id', placeholder='D76',
+				disabled=(wonder_dataset_choice != 'Other') )
+			
+			wonder_request_xml = st.text_area( 'Request XML',
+				value=st.session_state.get( 'wonder_request_xml', '' ), height=240,
+				key='wonder_request_xml',
+				placeholder='<request-parameters>...</request-parameters>',
+				disabled=(wonder_mode != 'query_xml') )
+			
+			wonder_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+				value=int( st.session_state.get( 'wonder_timeout', 20 ) ), step=1,
+				key='wonder_timeout' )
+			
+			st.caption( 'CDC WONDER requires POST requests with request_xml and acceptance '
+			            'of data-use restrictions. The wrapper submits '
+			            'accept_datause_restrictions=true.' )
+			
+			b1, b2 = st.columns( 2 )
+			
+			with b1:
+				wonder_submit = st.button( 'Submit', key='wonder_submit',
+					use_container_width=True )
+			
+			with b2:
+				st.button( 'Clear', key='wonder_clear', on_click=_clear_wonder_state,
+					use_container_width=True )
+		
+
+			if wonder_submit:
+				st.session_state[ 'demographic_active_source' ] = 'cdc_wonder'
+
 		
 		# -------- Pub Med
 		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
@@ -15293,136 +14847,45 @@ elif mode == 'Demographic':
 				st.session_state[ 'pubmed_max_docs' ] = 5
 				st.session_state[ 'pubmed_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			pubmed_query = st.text_input( 'PubMed Query',
+				value=st.session_state.get( 'pubmed_query', '' ), key='pubmed_query',
+				placeholder='Example: machine learning cancer diagnosis' )
 			
-			with col_left:
-				pubmed_query = st.text_input( 'PubMed Query',
-					value=st.session_state.get( 'pubmed_query', '' ), key='pubmed_query',
-					placeholder='Example: machine learning cancer diagnosis' )
-				
-				pubmed_max_docs = st.number_input( 'Max Documents', min_value=1, max_value=100,
-					value=int( st.session_state.get( 'pubmed_max_docs', 5 ) ), step=1,
-					key='pubmed_max_docs' )
-				
-				st.caption( 'PubMed search uses the LangChain PubMedSearchLoader and promotes '
-				            'returned documents into the shared loader state for downstream use.' )
-				
-				b1, b2, b3 = st.columns( 3 )
-				
-				with b1:
-					pubmed_submit = st.button( 'Submit', key='pubmed_submit',
-						use_container_width=True )
-				
-				with b2:
-					pubmed_clear = st.button( 'Clear', key='pubmed_clear',
-						on_click=_clear_pubmed_state, use_container_width=True )
-				
-				with b3:
-					can_save = (st.session_state.get(
-						'active_loader' ) == 'PubMedSearchLoader' and isinstance(
-						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
-						'raw_text' ).strip( ))
-					
-					if can_save:
-						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
-							file_name='pubmed_loader_output.txt', mime='text/plain',
-							key='pubmed_save', use_container_width=True )
-					else:
-						st.button( 'Save', key='pubmed_save_disabled', disabled=True,
-							use_container_width=True )
+			pubmed_max_docs = st.number_input( 'Max Documents', min_value=1, max_value=100,
+				value=int( st.session_state.get( 'pubmed_max_docs', 5 ) ), step=1,
+				key='pubmed_max_docs' )
 			
-			with col_right:
-				if pubmed_clear:
-					remaining = _clear_loader_documents( 'PubMedSearchLoader' )
-					st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
+			st.caption( 'PubMed search uses the LangChain PubMedSearchLoader and promotes '
+			            'returned documents into the shared loader state for downstream use.' )
+			
+			b1, b2, b3 = st.columns( 3 )
+			
+			with b1:
+				pubmed_submit = st.button( 'Submit', key='pubmed_submit',
+					use_container_width=True )
+			
+			with b2:
+				pubmed_clear = st.button( 'Clear', key='pubmed_clear',
+					on_click=_clear_pubmed_state, use_container_width=True )
+			
+			with b3:
+				can_save = (st.session_state.get(
+					'active_loader' ) == 'PubMedSearchLoader' and isinstance(
+					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+					'raw_text' ).strip( ))
 				
-				if pubmed_submit:
-					if not pubmed_query or not pubmed_query.strip( ):
-						st.info( 'Enter a PubMed query.' )
-					else:
-						try:
-							loader = PubMedSearchLoader( )
-							documents = loader.load( query=pubmed_query.strip( ),
-								max_docs=int( pubmed_max_docs ) ) or [ ]
-							
-							count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
-							
-							items: list[ dict[ str, Any ] ] = [ ]
-							
-							for i, doc in enumerate( documents, start=1 ):
-								metadata = (
-									doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
-										dict ) else { })
-								content = str( getattr( doc, 'page_content', '' ) or '' )
-								
-								items.append( { 'Index': i, 'Title': (
-										metadata.get( 'Title' ) or metadata.get( 'title' ) or ''),
-									'Published': (metadata.get( 'Published' ) or metadata.get(
-										'published' ) or ''), 'Copyright': (
-											metadata.get( 'Copyright Information' ) or
-											metadata.get(
-										'copyright' ) or ''), 'Summary': content,
-									'Metadata': metadata, } )
-							
-							st.session_state[ 'pubmed_results' ] = { 'mode': 'pubmed',
-								'query': pubmed_query.strip( ), 'max_docs': int( pubmed_max_docs ),
-								'count': count, 'items': items, }
-							
-							st.success( f'Loaded {count} PubMed document(s).' )
-						
-						except Exception as exc:
-							st.error( 'PubMed request failed.' )
-							st.exception( exc )
-				
-				result = st.session_state.get( 'pubmed_results', { } )
-				
-				if not result:
-					st.text( 'No results.' )
+				if can_save:
+					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+						file_name='pubmed_loader_output.txt', mime='text/plain',
+						key='pubmed_save', use_container_width=True )
 				else:
-					_render_summary_kv( '#### Summary',
-						{ 'Mode': result.get( 'mode', '' ), 'Query': result.get( 'query', '' ),
-							'MaxDocs': result.get( 'max_docs', 0 ),
-							'Returned': result.get( 'count', 0 ), } )
-					
-					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
-					
-					if items:
-						table_rows = [
-							{ 'Index': item.get( 'Index', '' ), 'Title': item.get( 'Title', '' ),
-								'Published': item.get( 'Published', '' ), } for item in items ]
-						df_pubmed = pd.DataFrame( table_rows )
-						st.markdown( '#### Results' )
-						st.dataframe( df_pubmed, use_container_width=True, hide_index=True )
-						first = items[ 0 ]
-						_render_summary_kv( '#### First Result',
-							{ 'Title': first.get( 'Title', '' ),
-								'Published': first.get( 'Published', '' ),
-								'Copyright': first.get( 'Copyright', '' ), } )
-						
-						st.markdown( '#### Abstract Preview' )
-						st.code( str( first.get( 'Summary', '' ) )[ :8000 ] )
-						
-						with st.expander( 'Records', expanded=False ):
-							for item in items:
-								record_label = str(
-									item.get( 'Title', '' ) or f"Record "
-									                           f"{item.get( 'Index', '' )}" )
-								with st.expander(
-										f"Record {item.get( 'Index', '' )}: {record_label}",
-										expanded=False ):
-									st.markdown( f"**Published:** {item.get( 'Published', '' )}" )
-									st.markdown( f"**Copyright:** {item.get( 'Copyright', '' )}" )
-									st.markdown( '##### Summary' )
-									st.code( str( item.get( 'Summary', '' ) )[ :8000 ] )
-									
-									metadata = item.get( 'Metadata', { } )
-									if metadata:
-										with st.expander( 'Metadata', expanded=False ):
-											st.json( metadata )
-					else:
-						st.info( 'No PubMed records returned.' )
-					
-					_render_fallback_raw( result )
+					st.button( 'Save', key='pubmed_save_disabled', disabled=True,
+						use_container_width=True )
+		
+
+			if pubmed_submit:
+				st.session_state[ 'demographic_active_source' ] = 'pub_med_search'
+
 		
 		# -------- Open City
 		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
@@ -15504,140 +14967,744 @@ elif mode == 'Demographic':
 				st.session_state[ 'open_city_limit' ] = 100
 				st.session_state[ 'open_city_clear_request' ] = False
 			
-			col_left, col_right = st.columns( [ 1, 2 ], border=True )
+			open_city_choice = st.selectbox( 'City ID', options=OPEN_CITY_DOMAINS,
+				index=OPEN_CITY_DOMAINS.index(
+					st.session_state.get( 'open_city_choice', 'data.sfgov.org' ) ),
+				key='open_city_choice',
+				help='Common Socrata open-data city domains. Use Other for a custom portal.' )
 			
-			with col_left:
-				open_city_choice = st.selectbox( 'City ID', options=OPEN_CITY_DOMAINS,
-					index=OPEN_CITY_DOMAINS.index(
-						st.session_state.get( 'open_city_choice', 'data.sfgov.org' ) ),
-					key='open_city_choice',
-					help='Common Socrata open-data city domains. Use Other for a custom portal.' )
+			open_city_custom_id = st.text_input( 'Custom City ID',
+				value=st.session_state.get( 'open_city_custom_id', '' ),
+				key='open_city_custom_id', disabled=(open_city_choice != 'Other'),
+				placeholder='data.example.gov' )
+			
+			dataset_id = st.text_input( 'Dataset ID',
+				value=st.session_state.get( 'open_city_dataset_id', '' ),
+				key='open_city_dataset_id', placeholder='vw6y-z8j6' )
+			
+			limit = st.number_input( 'Limit', min_value=1, max_value=5000,
+				value=int( st.session_state.get( 'open_city_limit', 100 ) ), step=10,
+				key='open_city_limit' )
+			
+			st.caption( 'Open City Data uses LangChain OpenCityDataLoader backed by Socrata. '
+			            'Use the API tab on the city dataset page to find the dataset ID.' )
+			
+			b1, b2, b3 = st.columns( 3 )
+			
+			with b1:
+				open_city_submit = st.button( 'Submit', key='open_city_submit',
+					use_container_width=True )
+			
+			with b2:
+				open_city_clear = st.button( 'Clear', key='open_city_clear',
+					on_click=_clear_open_city_state, use_container_width=True )
+			
+			with b3:
+				can_save = (st.session_state.get(
+					'active_loader' ) == 'OpenCityLoader' and isinstance(
+					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+					'raw_text' ).strip( ))
 				
-				open_city_custom_id = st.text_input( 'Custom City ID',
-					value=st.session_state.get( 'open_city_custom_id', '' ),
-					key='open_city_custom_id', disabled=(open_city_choice != 'Other'),
-					placeholder='data.example.gov' )
-				
-				dataset_id = st.text_input( 'Dataset ID',
-					value=st.session_state.get( 'open_city_dataset_id', '' ),
-					key='open_city_dataset_id', placeholder='vw6y-z8j6' )
-				
-				limit = st.number_input( 'Limit', min_value=1, max_value=5000,
-					value=int( st.session_state.get( 'open_city_limit', 100 ) ), step=10,
-					key='open_city_limit' )
-				
-				st.caption( 'Open City Data uses LangChain OpenCityDataLoader backed by Socrata. '
-				            'Use the API tab on the city dataset page to find the dataset ID.' )
-				
-				b1, b2, b3 = st.columns( 3 )
-				
-				with b1:
-					open_city_submit = st.button( 'Submit', key='open_city_submit',
+				if can_save:
+					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+						file_name='open_city_loader_output.txt', mime='text/plain',
+						key='open_city_save', use_container_width=True )
+				else:
+					st.button( 'Save', key='open_city_save_disabled', disabled=True,
 						use_container_width=True )
-				
-				with b2:
-					open_city_clear = st.button( 'Clear', key='open_city_clear',
-						on_click=_clear_open_city_state, use_container_width=True )
-				
-				with b3:
-					can_save = (st.session_state.get(
-						'active_loader' ) == 'OpenCityLoader' and isinstance(
-						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
-						'raw_text' ).strip( ))
-					
-					if can_save:
-						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
-							file_name='open_city_loader_output.txt', mime='text/plain',
-							key='open_city_save', use_container_width=True )
-					else:
-						st.button( 'Save', key='open_city_save_disabled', disabled=True,
-							use_container_width=True )
+		
+
+			if open_city_submit:
+				st.session_state[ 'demographic_active_source' ] = 'open_city_data'
+
+	with right:
+		st.markdown( '### Results' )
+		active_source = st.session_state.get( 'demographic_active_source', '' )
+		display_names: Dict[ str, str ] = {
+			'u_s_census_bureau': 'U.S. Census Bureau',
+			'cdc_socrata': 'CDC Socrata',
+			'u_s_health': 'U.S. Health',
+			'who_global': 'WHO Global',
+			'united_nations': 'United Nations',
+			'world_population': 'World Population',
+			'cdc_wonder': 'CDC Wonder',
+			'pub_med_search': 'Pub Med Search',
+			'open_city_data': 'Open City Data',
+		}
+
+		if not active_source:
+			st.info( 'Select a source, configure the request, and submit it to display results.' )
+		else:
+			st.caption( f"Active Source: {display_names.get( active_source, active_source )}" )
+
+		if active_source == 'u_s_census_bureau':
+			st.markdown( '### U.S. Census Bureau' )
+			result = st.session_state.get( 'census_results', { } )
 			
-			with col_right:
-				if open_city_clear:
-					remaining = _clear_loader_documents( 'OpenCityLoader' )
-					st.info(
-						f'Open City Data Loader state cleared. Remaining documents: {remaining}.' )
+			if census_submit:
+				try:
+					clean_year = _validate_census_year( census_year )
+					clean_dataset = _validate_census_dataset( census_dataset )
+					
+					if census_mode == 'data':
+						clean_fields = _validate_census_fields( census_fields )
+						clean_for = _validate_census_geography_clause( name='For',
+							value=census_for, required=True )
+						clean_in = _validate_census_geography_clause( name='In',
+							value=census_in, required=False )
+					else:
+						clean_fields = str( census_fields or '' ).strip( )
+						clean_for = str( census_for or '' ).strip( )
+						clean_in = str( census_in or '' ).strip( )
+					
+					f = CensusData( )
+					result = f.fetch( mode=str( census_mode ), year=clean_year,
+						dataset=clean_dataset, fields=clean_fields, geography_for=clean_for,
+						geography_in=clean_in,
+						predicates=str( census_predicates or '' ).strip( ),
+						time=int( census_timeout ) )
+					
+					st.session_state[ 'census_results' ] = result or { }
+					st.rerun( )
 				
-				if open_city_submit:
+				except Exception as exc:
+					st.error( 'Census request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'variables':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					variables = payload.get( 'variables', { } ) if isinstance( payload,
+						dict ) else { }
+					
+					rows: List[ Dict[ str, Any ] ] = [ ]
+					if isinstance( variables, dict ):
+						for name, meta in variables.items( ):
+							if isinstance( meta, dict ):
+								rows.append( { 'Name': name, 'Label': meta.get( 'label', '' ),
+									'Concept': meta.get( 'concept', '' ),
+									'PredicateType': meta.get( 'predicateType', '' ),
+									'Group': meta.get( 'group', '' ),
+									'Limit': meta.get( 'limit', '' ), } )
+					
+					_render_summary_kv( '#### Summary',
+						{ 'Year': census_year, 'Dataset': census_dataset,
+							'VariableCount': len( rows ), } )
+					_render_rows_table( '#### Variables', rows )
+				
+				elif result.get( 'mode', '' ) == 'data':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					rows = payload.get( 'rows', [ ] ) if isinstance( payload, dict ) else [ ]
+					
+					_render_summary_kv( '#### Summary',
+						{ 'Year': census_year, 'Dataset': census_dataset,
+							'Fields': census_fields, 'For': census_for, 'In': census_in,
+							'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
+					_render_rows_table( '#### Data Rows',
+						rows if isinstance( rows, list ) else [ ] )
+				
+				_render_fallback_raw( result )
+
+		elif active_source == 'cdc_socrata':
+			st.markdown( '### CDC Socrata' )
+			result = st.session_state.get( 'socrata_results', { } )
+			
+			if socrata_submit:
+				try:
+					clean_dataset_id = _validate_socrata_dataset_id( socrata_dataset_id )
+					
+					f = Socrata( )
+					result = f.fetch( mode=str( socrata_mode ), domain=str( socrata_domain ),
+						dataset_id=clean_dataset_id, select=str( socrata_select ),
+						where=str( socrata_where ), order=str( socrata_order ),
+						group=str( socrata_group ), limit=int( socrata_limit ),
+						offset=int( socrata_offset ), time=int( socrata_timeout ) )
+					
+					st.session_state[ 'socrata_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'CDC Socrata request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'metadata':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', {
+						'Name': payload.get( 'name', '' ) if isinstance( payload,
+							dict ) else '',
+						'Description': payload.get( 'description', '' ) if isinstance( payload,
+							dict ) else '',
+						'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance(
+							payload, dict ) else '',
+						'ViewType': payload.get( 'viewType', '' ) if isinstance( payload,
+							dict ) else '',
+						'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload,
+							dict ) else 0, } )
+					
+					rows: List[ Dict[ str, Any ] ] = [ ]
+					columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload,
+						dict ) else [ ]
+					for item in columns_payload:
+						if isinstance( item, dict ):
+							rows.append( { 'Name': item.get( 'name', '' ),
+								'FieldName': item.get( 'fieldName', '' ),
+								'DataType': item.get( 'dataTypeName', '' ),
+								'Description': item.get( 'description', '' ), } )
+					
+					_render_rows_table( '#### Columns', rows )
+				
+				elif result.get( 'mode', '' ) == 'rows':
+					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					_render_summary_kv( '#### Summary',
+						{ 'Domain': socrata_domain, 'DatasetId': socrata_dataset_id,
+							'Limit': int( socrata_limit ), 'Offset': int( socrata_offset ),
+							'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
+					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [
+					
+					] )
+				
+				_render_fallback_raw( result )
+
+		elif active_source == 'u_s_health':
+			st.markdown( '### U.S. Health' )
+			result = st.session_state.get( 'healthdata_results', { } )
+			
+			if healthdata_submit:
+				try:
+					clean_dataset_id = _validate_healthdata_dataset_id( healthdata_dataset_id )
+					
+					f = HealthData( )
+					result = f.fetch( mode=str( healthdata_mode ),
+						domain=str( healthdata_domain ), dataset_id=clean_dataset_id,
+						select=str( healthdata_select ), where=str( healthdata_where ),
+						order=str( healthdata_order ), group=str( healthdata_group ),
+						limit=int( healthdata_limit ), offset=int( healthdata_offset ),
+						time=int( healthdata_timeout ) )
+					
+					st.session_state[ 'healthdata_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'HealthData request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'metadata':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', {
+						'Name': payload.get( 'name', '' ) if isinstance( payload,
+							dict ) else '',
+						'Description': payload.get( 'description', '' ) if isinstance( payload,
+							dict ) else '',
+						'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance(
+							payload, dict ) else '',
+						'ViewType': payload.get( 'viewType', '' ) if isinstance( payload,
+							dict ) else '',
+						'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload,
+							dict ) else 0, } )
+					
+					rows: List[ Dict[ str, Any ] ] = [ ]
+					columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload,
+						dict ) else [ ]
+					for item in columns_payload:
+						if isinstance( item, dict ):
+							rows.append( { 'Name': item.get( 'name', '' ),
+								'FieldName': item.get( 'fieldName', '' ),
+								'DataType': item.get( 'dataTypeName', '' ),
+								'Description': item.get( 'description', '' ), } )
+					
+					_render_rows_table( '#### Columns', rows )
+				
+				elif result.get( 'mode', '' ) == 'rows':
+					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					_render_summary_kv( '#### Summary',
+						{ 'Domain': healthdata_domain, 'DatasetId': healthdata_dataset_id,
+							'Limit': int( healthdata_limit ),
+							'Offset': int( healthdata_offset ),
+							'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
+					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [
+					
+					] )
+				
+				_render_fallback_raw( result )
+
+		elif active_source == 'who_global':
+			st.markdown( '### WHO Global' )
+			result = st.session_state.get( 'who_results', { } )
+			
+			if who_submit:
+				try:
+					if who_mode == 'athena':
+						selected_query_path = (
+							who_custom_query_path if who_query_choice == 'Custom...' else
+							who_query_choice)
+						clean_query_path = _validate_who_query_path( selected_query_path )
+					else:
+						clean_query_path = ''
+					
+					f = GlobalHealthData( )
+					result = f.fetch( mode=str( who_mode ), query_path=clean_query_path,
+						fmt=str( who_format ), time=int( who_timeout ) )
+					
+					st.session_state[ 'who_query_path' ] = clean_query_path
+					st.session_state[ 'who_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'WHO Global Health request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'indicator_registry':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+						'HasHtml': (isinstance( payload, dict ) and bool(
+							payload.get( 'html', '' ) )), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'html', '' ):
+						_render_html_preview( '#### Indicator Registry Preview',
+							str( payload.get( 'html', '' ) ) )
+					else:
+						st.json( payload )
+				
+				elif result.get( 'mode', '' ) == 'athena':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					if isinstance( payload, dict ) and isinstance( payload.get( 'value', [ ] ),
+							list ):
+						rows = payload.get( 'value', [ ] )
+						_render_summary_kv( '#### Summary',
+							{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
+								'Format': who_format, 'ResultCount': len( rows ), } )
+						_render_rows_table( '#### Athena Results', rows )
+					elif isinstance( payload, dict ) and payload.get( 'text', '' ):
+						_render_summary_kv( '#### Summary',
+							{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
+								'Format': who_format, 'HasText': True, } )
+						st.markdown( '#### Response' )
+						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+					else:
+						st.json( payload )
+				
+				_render_fallback_raw( result )
+
+		elif active_source == 'united_nations':
+			st.markdown( '### United Nations' )
+			result = st.session_state.get( 'un_results', { } )
+			
+			if un_submit:
+				try:
+					if un_mode == 'sdmx_query':
+						selected_query_path = (
+							un_custom_query_path if un_query_choice == 'Custom...' else
+							un_query_choice)
+						clean_query_path = _validate_un_query_path( selected_query_path )
+					else:
+						clean_query_path = ''
+					
+					f = UnitedNations( )
+					result = f.fetch( mode=str( un_mode ), query_path=clean_query_path,
+						time=int( un_timeout ) )
+					
+					st.session_state[ 'un_query_path' ] = clean_query_path
+					st.session_state[ 'un_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'United Nations request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'datasets':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+						'HasHtml': (isinstance( payload, dict ) and bool(
+							payload.get( 'html', '' ) )), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'html', '' ):
+						_render_html_preview( '#### Dataset Catalog Preview',
+							str( payload.get( 'html', '' ) ) )
+					else:
+						st.json( payload )
+				
+				elif result.get( 'mode', '' ) == 'sdmx_query':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+						'QueryPath': st.session_state.get( 'un_query_path', '' ),
+						'TextPayload': (isinstance( payload, dict ) and bool(
+							payload.get( 'text', '' ) )),
+						'JsonPayload': isinstance( payload, (dict, list) ), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'text', '' ):
+						st.markdown( '#### Query Response' )
+						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+					elif isinstance( payload, dict ) and payload.get( 'html', '' ):
+						_render_html_preview( '#### Query Response',
+							str( payload.get( 'html', '' ) ) )
+					else:
+						st.json( payload )
+				
+				_render_fallback_raw( result )
+
+		elif active_source == 'world_population':
+			st.markdown( '### World Population' )
+			result = st.session_state.get( 'worldpop_results', { } )
+			
+			if worldpop_submit:
+				try:
+					if worldpop_mode == 'search':
+						clean_query = _validate_worldpop_query( worldpop_query )
+						clean_asset_path = ''
+					elif worldpop_mode == 'raster_metadata':
+						selected_asset_path = (
+							worldpop_custom_asset_path if worldpop_asset_choice == 'Custom...'
+							else worldpop_asset_choice)
+						clean_asset_path = _validate_worldpop_asset_path( selected_asset_path )
+						clean_query = ''
+					else:
+						clean_query = ''
+						clean_asset_path = ''
+					
+					f = WorldPopulation( )
+					result = f.fetch( mode=str( worldpop_mode ), query=clean_query,
+						asset_path=clean_asset_path, page=int( worldpop_page ),
+						page_size=int( worldpop_page_size ), time=int( worldpop_timeout ) )
+					
+					st.session_state[ 'worldpop_query' ] = clean_query
+					st.session_state[ 'worldpop_asset_path' ] = clean_asset_path
+					st.session_state[ 'worldpop_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'World Population request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'catalog':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+						'HasHtml': (isinstance( payload, dict ) and bool(
+							payload.get( 'html', '' ) )), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'html', '' ):
+						_render_html_preview( '#### Catalog Preview',
+							str( payload.get( 'html', '' ) ) )
+					else:
+						st.json( payload )
+				
+				elif result.get( 'mode', '' ) == 'search':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					if isinstance( payload, dict ) and isinstance(
+							payload.get( 'results', [ ] ), list ):
+						rows = payload.get( 'results', [ ] )
+						_render_summary_kv( '#### Summary',
+							{ 'Query': st.session_state.get( 'worldpop_query', '' ),
+								'Page': worldpop_page, 'PageSize': worldpop_page_size,
+								'ResultCount': len( rows ), } )
+						_render_rows_table( '#### Search Results', rows )
+					else:
+						st.json( payload )
+				
+				elif result.get( 'mode', '' ) == 'raster_metadata':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary',
+						{ 'AssetPath': st.session_state.get( 'worldpop_asset_path', '' ),
+							'HasText': (isinstance( payload, dict ) and bool(
+								payload.get( 'text', '' ) )), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'text', '' ):
+						st.markdown( '#### Metadata Response' )
+						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+					else:
+						st.json( payload )
+				
+				_render_fallback_raw( result )
+
+		elif active_source == 'cdc_wonder':
+			st.markdown( '### CDC Wonder' )
+			result = st.session_state.get( 'wonder_results', { } )
+			
+			if wonder_submit:
+				try:
+					selected_dataset_id = (
+						wonder_custom_dataset_id if wonder_dataset_choice == 'Other' else
+						wonder_dataset_choice)
+					clean_dataset_id = _validate_wonder_dataset_id( selected_dataset_id )
+					
+					if wonder_mode == 'query_xml':
+						clean_request_xml = _validate_wonder_xml( wonder_request_xml )
+					else:
+						clean_request_xml = str( wonder_request_xml or '' ).strip( )
+					
+					f = Wonder( )
+					result = f.fetch( mode=str( wonder_mode ), dataset_id=clean_dataset_id,
+						request_xml=clean_request_xml, time=int( wonder_timeout ) )
+					
+					st.session_state[ 'wonder_dataset_id' ] = clean_dataset_id
+					st.session_state[ 'wonder_results' ] = result or { }
+					
+					if (wonder_mode == 'metadata_template' and isinstance( result,
+						dict ) and isinstance( result.get( 'data', { } ), dict )):
+						template_xml = result.get( 'data', { } ).get( 'request_xml', '' )
+						st.session_state[ 'wonder_request_xml' ] = template_xml
+					
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'CDC WONDER request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'metadata_template':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					if isinstance( payload, dict ):
+						_render_summary_kv( '#### Template Summary',
+							{ 'DatasetId': payload.get( 'dataset_id', '' ),
+								'Notes': payload.get( 'notes', '' ), } )
+						
+						template_xml = str( payload.get( 'request_xml', '' ) )
+						if template_xml:
+							_render_xml_preview( '#### Starter XML', template_xml )
+						else:
+							st.info( 'No starter XML returned.' )
+				
+				elif result.get( 'mode', '' ) == 'query_xml':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					if isinstance( payload, dict ):
+						xml_text = str( payload.get( 'xml', '' ) )
+						
+						_render_summary_kv( '#### Response Summary',
+							{ 'DatasetId': st.session_state.get( 'wonder_dataset_id', '' ),
+								'Characters': len( xml_text ),
+								'HasXml': bool( xml_text.strip( ) ), } )
+						
+						_render_xml_preview( '#### XML Response', xml_text )
+					else:
+						st.info( 'No XML response returned.' )
+				
+				_render_fallback_raw( result )
+
+		elif active_source == 'pub_med_search':
+			st.markdown( '### Pub Med Search' )
+			if pubmed_clear:
+				remaining = _clear_loader_documents( 'PubMedSearchLoader' )
+				st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
+			
+			if pubmed_submit:
+				if not pubmed_query or not pubmed_query.strip( ):
+					st.info( 'Enter a PubMed query.' )
+				else:
 					try:
-						selected_city_id = (
-							open_city_custom_id if open_city_choice == 'Other' else
-							open_city_choice)
-						clean_city_id = _validate_open_city_domain( selected_city_id )
-						clean_dataset_id = _validate_open_city_dataset_id( dataset_id )
+						loader = PubMedSearchLoader( )
+						documents = loader.load( query=pubmed_query.strip( ),
+							max_docs=int( pubmed_max_docs ) ) or [ ]
 						
-						loader = OpenCityLoader( )
-						documents = loader.load( city_id=clean_city_id,
-							dataset_id=clean_dataset_id,
-							limit=int( limit ) ) or [ ]
-						
-						count = _promote_loader_documents( documents, 'OpenCityLoader' )
+						count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
 						
 						items: list[ dict[ str, Any ] ] = [ ]
+						
 						for i, doc in enumerate( documents, start=1 ):
-							metadata = (doc.metadata if isinstance( getattr( doc, 'metadata',
-								{ } ),
-								dict ) else { })
+							metadata = (
+								doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+									dict ) else { })
 							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
-								'Row': content, 'Metadata': metadata, } )
+							
+							items.append( { 'Index': i, 'Title': (
+									metadata.get( 'Title' ) or metadata.get( 'title' ) or ''),
+								'Published': (metadata.get( 'Published' ) or metadata.get(
+									'published' ) or ''), 'Copyright': (
+										metadata.get( 'Copyright Information' ) or
+										metadata.get(
+									'copyright' ) or ''), 'Summary': content,
+								'Metadata': metadata, } )
 						
-						st.session_state[ 'open_city_id' ] = clean_city_id
-						st.session_state[ 'open_city_results' ] = { 'mode': 'open_city',
-							'city_id': clean_city_id, 'dataset_id': clean_dataset_id,
-							'limit': int( limit ), 'count': count, 'items': items, }
+						st.session_state[ 'pubmed_results' ] = { 'mode': 'pubmed',
+							'query': pubmed_query.strip( ), 'max_docs': int( pubmed_max_docs ),
+							'count': count, 'items': items, }
 						
-						st.success( f'Loaded {count} Open City document(s).' )
+						st.success( f'Loaded {count} PubMed document(s).' )
 					
 					except Exception as exc:
-						st.error( 'Open City request failed.' )
+						st.error( 'PubMed request failed.' )
 						st.exception( exc )
+			
+			result = st.session_state.get( 'pubmed_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv( '#### Summary',
+					{ 'Mode': result.get( 'mode', '' ), 'Query': result.get( 'query', '' ),
+						'MaxDocs': result.get( 'max_docs', 0 ),
+						'Returned': result.get( 'count', 0 ), } )
 				
-				result = st.session_state.get( 'open_city_results', { } )
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 				
-				if not result:
-					st.text( 'No results.' )
+				if items:
+					table_rows = [
+						{ 'Index': item.get( 'Index', '' ), 'Title': item.get( 'Title', '' ),
+							'Published': item.get( 'Published', '' ), } for item in items ]
+					df_pubmed = pd.DataFrame( table_rows )
+					st.markdown( '#### Results' )
+					st.dataframe( df_pubmed, use_container_width=True, hide_index=True )
+					first = items[ 0 ]
+					_render_summary_kv( '#### First Result',
+						{ 'Title': first.get( 'Title', '' ),
+							'Published': first.get( 'Published', '' ),
+							'Copyright': first.get( 'Copyright', '' ), } )
+					
+					st.markdown( '#### Abstract Preview' )
+					st.code( str( first.get( 'Summary', '' ) )[ :8000 ] )
+					
+					with st.expander( 'Records', expanded=False ):
+						for item in items:
+							record_label = str(
+								item.get( 'Title', '' ) or f"Record "
+								                           f"{item.get( 'Index', '' )}" )
+							with st.expander(
+									f"Record {item.get( 'Index', '' )}: {record_label}",
+									expanded=False ):
+								st.markdown( f"**Published:** {item.get( 'Published', '' )}" )
+								st.markdown( f"**Copyright:** {item.get( 'Copyright', '' )}" )
+								st.markdown( '##### Summary' )
+								st.code( str( item.get( 'Summary', '' ) )[ :8000 ] )
+								
+								metadata = item.get( 'Metadata', { } )
+								if metadata:
+									with st.expander( 'Metadata', expanded=False ):
+										st.json( metadata )
 				else:
-					_render_summary_kv( '#### Summary',
-						{ 'Mode': result.get( 'mode', '' ), 'CityId': result.get( 'city_id', '' ),
-							'DatasetId': result.get( 'dataset_id', '' ),
-							'Limit': result.get( 'limit', 0 ),
-							'Returned': result.get( 'count', 0 ), } )
+					st.info( 'No PubMed records returned.' )
+				
+				_render_fallback_raw( result )
+
+		elif active_source == 'open_city_data':
+			st.markdown( '### Open City Data' )
+			if open_city_clear:
+				remaining = _clear_loader_documents( 'OpenCityLoader' )
+				st.info(
+					f'Open City Data Loader state cleared. Remaining documents: {remaining}.' )
+			
+			if open_city_submit:
+				try:
+					selected_city_id = (
+						open_city_custom_id if open_city_choice == 'Other' else
+						open_city_choice)
+					clean_city_id = _validate_open_city_domain( selected_city_id )
+					clean_dataset_id = _validate_open_city_dataset_id( dataset_id )
 					
-					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+					loader = OpenCityLoader( )
+					documents = loader.load( city_id=clean_city_id,
+						dataset_id=clean_dataset_id,
+						limit=int( limit ) ) or [ ]
 					
-					if items:
-						table_rows = [
-							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
-								'Preview': str( item.get( 'Row', '' ) )[ :200 ], } for item in
-							items ]
-						
-						df_open_city = pd.DataFrame( table_rows )
-						
-						st.markdown( '#### Results' )
-						st.dataframe( df_open_city, use_container_width=True, hide_index=True )
-						
-						first = items[ 0 ]
-						st.markdown( '#### First Row Preview' )
-						st.code( str( first.get( 'Row', '' ) )[ :8000 ] )
-						
-						with st.expander( 'Records', expanded=False ):
-							for item in items:
-								with st.expander( f"Record {item.get( 'Index', '' )}",
-										expanded=False ):
-									st.markdown( f"**Source:** {item.get( 'Source', '' )}" )
-									st.markdown( '##### Row' )
-									st.code( str( item.get( 'Row', '' ) )[ :8000 ] )
-									
-									metadata = item.get( 'Metadata', { } )
-									if metadata:
-										with st.expander( 'Metadata', expanded=False ):
-											st.json( metadata )
-					else:
-						st.info( 'No city records returned.' )
+					count = _promote_loader_documents( documents, 'OpenCityLoader' )
 					
-					_render_fallback_raw( result )
+					items: list[ dict[ str, Any ] ] = [ ]
+					for i, doc in enumerate( documents, start=1 ):
+						metadata = (doc.metadata if isinstance( getattr( doc, 'metadata',
+							{ } ),
+							dict ) else { })
+						content = str( getattr( doc, 'page_content', '' ) or '' )
+						items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
+							'Row': content, 'Metadata': metadata, } )
+					
+					st.session_state[ 'open_city_id' ] = clean_city_id
+					st.session_state[ 'open_city_results' ] = { 'mode': 'open_city',
+						'city_id': clean_city_id, 'dataset_id': clean_dataset_id,
+						'limit': int( limit ), 'count': count, 'items': items, }
+					
+					st.success( f'Loaded {count} Open City document(s).' )
+				
+				except Exception as exc:
+					st.error( 'Open City request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'open_city_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv( '#### Summary',
+					{ 'Mode': result.get( 'mode', '' ), 'CityId': result.get( 'city_id', '' ),
+						'DatasetId': result.get( 'dataset_id', '' ),
+						'Limit': result.get( 'limit', 0 ),
+						'Returned': result.get( 'count', 0 ), } )
+				
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+						{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+							'Preview': str( item.get( 'Row', '' ) )[ :200 ], } for item in
+						items ]
+					
+					df_open_city = pd.DataFrame( table_rows )
+					
+					st.markdown( '#### Results' )
+					st.dataframe( df_open_city, use_container_width=True, hide_index=True )
+					
+					first = items[ 0 ]
+					st.markdown( '#### First Row Preview' )
+					st.code( str( first.get( 'Row', '' ) )[ :8000 ] )
+					
+					with st.expander( 'Records', expanded=False ):
+						for item in items:
+							with st.expander( f"Record {item.get( 'Index', '' )}",
+									expanded=False ):
+								st.markdown( f"**Source:** {item.get( 'Source', '' )}" )
+								st.markdown( '##### Row' )
+								st.code( str( item.get( 'Row', '' ) )[ :8000 ] )
+								
+								metadata = item.get( 'Metadata', { } )
+								if metadata:
+									with st.expander( 'Metadata', expanded=False ):
+										st.json( metadata )
+				else:
+					st.info( 'No city records returned.' )
+				
+				_render_fallback_raw( result )
 
 # ==============================================================================
 # TEXT GENERATION MODE
@@ -15735,7 +15802,7 @@ elif mode == 'Generation':
 	# LEFT COLUMN — GENERATION CONTROLS
 	# ------------------------------------------------------------------
 	with left:
-		# -------- GPT
+		# ------  GPT 
 		with st.expander( label='ChatGPT', expanded=True ):
 			CHAT_REASONING_EFFORTS = [ 'minimal', 'low', 'medium', 'high' ]
 			
