@@ -60,7 +60,7 @@ streamlit-extras
 streamlit-pdf
 openai
 gensim
-docx
+python-docx
 scikit-learn
 spacy
 sentence-transformers
