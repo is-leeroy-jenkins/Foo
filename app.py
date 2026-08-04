@@ -63,43 +63,21 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from langchain_core.documents import Document
 from lxml import etree
-from loaders import (
-	TextLoader,
-	CsvLoader,
-	PdfLoader,
-	ExcelLoader,
-	WordLoader,
-	MarkdownLoader,
-	HtmlLoader,
-	JsonLoader,
-	PowerPointLoader,
-	WikiLoader,
-	GithubLoader,
-	WebLoader,
-	ArXivLoader,
-	XmlLoader,
-	PubMedSearchLoader,
-	OpenCityLoader,
-	JupyterNotebookLoader,
-	AwsFileLoader,
-	OneDriveDocLoader,
-	GoogleCloudFileLoader,
-	GoogleSpeechToTextLoader,
-	GoogleBucketLoader,
-	AwsBucketLoader
-)
+from loaders import (TextLoader, CsvLoader, PdfLoader, ExcelLoader, WordLoader, MarkdownLoader,
+                     HtmlLoader, JsonLoader, PowerPointLoader, WikiLoader, GithubLoader, WebLoader,
+                     ArXivLoader, XmlLoader, PubMedSearchLoader, OpenCityLoader,
+                     JupyterNotebookLoader, AwsFileLoader, OneDriveDocLoader, GoogleCloudFileLoader,
+                     GoogleSpeechToTextLoader, GoogleBucketLoader, AwsBucketLoader)
 
 from generators import Chat, Claude, Grok, Mistral, Gemini
-from fetchers import (
-	Wikipedia, TheNews, SatelliteCenter, WebFetcher,
-	GoogleWeather, Grokipedia, OpenWeather, NavalObservatory,
-	GoogleSearch, GoogleDrive, GoogleMaps, NearbyObjects, OpenScience,
-	EarthObservatory, SpaceWeather, AstroCatalog, AstroQuery, StarMap,
-	GovData, Congress, InternetArchive, StarChart, HistoricalWeather, GoogleGeocoding,
-	USGSEarthquakes, USGSWaterData, USGSTheNationalMap, USGSScienceBase,
-	AirNow, ClimateData, EoNet, EnviroFacts, TidesAndCurrents, UvIndex, PurpleAir,
-	OpenAQ, Firms, CensusData, Socrata, HealthData, GlobalHealthData,
-	UnitedNations, WorldPopulation, Wonder, OpenSky )
+from fetchers import (Wikipedia, TheNews, SatelliteCenter, WebFetcher, GoogleWeather, Grokipedia,
+                      OpenWeather, NavalObservatory, GoogleSearch, GoogleDrive, GoogleMaps,
+                      NearbyObjects, OpenScience, EarthObservatory, SpaceWeather, AstroCatalog,
+                      AstroQuery, StarMap, GovData, Congress, InternetArchive, StarChart,
+                      HistoricalWeather, GoogleGeocoding, USGSEarthquakes, USGSWaterData,
+                      USGSTheNationalMap, USGSScienceBase, AirNow, ClimateData, EoNet, EnviroFacts,
+                      TidesAndCurrents, UvIndex, PurpleAir, OpenAQ, Firms, CensusData, Socrata,
+                      HealthData, GlobalHealthData, UnitedNations, WorldPopulation, Wonder, OpenSky)
 
 import nltk
 from nltk import sent_tokenize
@@ -127,7 +105,7 @@ except ImportError:
 
 if 'mode' not in st.session_state or st.session_state[ 'mode' ] is None:
 	st.session_state[ 'mode' ] = list( cfg.MODE_MAP.keys( ) )[ 0 ]
-	
+
 # -------- GENERATIVE AI VARIABLES --------------------
 
 if 'model' not in st.session_state:
@@ -229,12 +207,12 @@ for corpus in cfg.REQUIRED_CORPORA:
 		nltk.data.find( f'corpora/{corpus}' )
 	except LookupError:
 		nltk.download( corpus )
-	
+
 # =====================================================================
 # UTILITITES
 # =====================================================================
 
-def _filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ str, Any ]:
+def filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ str, Any ]:
 	try:
 		sig = inspect.signature( fn )
 		accepted = set( sig.parameters.keys( ) )
@@ -245,36 +223,32 @@ def _filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ st
 def _invoke_provider( fetcher: Any, prompt: str, params: dict[ str, Any ] ) -> Any:
 	if hasattr( fetcher, "fetch" ) and callable( getattr( fetcher, "fetch" ) ):
 		fn = getattr( fetcher, "fetch" )
-		safe = _filter_kwargs_for_callable( fn, params )
+		safe = filter_kwargs_for_callable( fn, params )
 		try:
 			return fn( prompt, **safe )
 		except TypeError:
-			safe2 = _filter_kwargs_for_callable( fn, { **safe, "query": prompt } )
+			safe2 = filter_kwargs_for_callable( fn, { **safe, "query": prompt } )
 			return fn( **safe2 )
 	
 	if hasattr( fetcher, "chat" ) and callable( getattr( fetcher, "chat" ) ):
 		fn = getattr( fetcher, "chat" )
-		safe = _filter_kwargs_for_callable( fn, params )
+		safe = filter_kwargs_for_callable( fn, params )
 		try:
 			return fn( prompt, **safe )
 		except TypeError:
-			safe2 = _filter_kwargs_for_callable( fn, { **safe,
-			                                           "prompt": prompt } )
+			safe2 = filter_kwargs_for_callable( fn, { **safe, "prompt": prompt } )
 			return fn( **safe2 )
 	
 	if hasattr( fetcher, "invoke" ) and callable( getattr( fetcher, "invoke" ) ):
 		fn = getattr( fetcher, "invoke" )
-		safe = _filter_kwargs_for_callable( fn, params )
+		safe = filter_kwargs_for_callable( fn, params )
 		try:
 			return fn( prompt, **safe )
 		except TypeError:
-			safe2 = _filter_kwargs_for_callable( fn, { **safe,
-			                                           "input": prompt } )
+			safe2 = filter_kwargs_for_callable( fn, { **safe, "input": prompt } )
 			return fn( **safe2 )
 	
-	raise RuntimeError(
-		f"Provider '{type( fetcher ).__name__}' does not expose fetch/chat/invoke."
-	)
+	raise RuntimeError( f"Provider '{type( fetcher ).__name__}' does not expose fetch/chat/invoke." )
 
 def _render_output( container: Any, result: Any ) -> None:
 	if result is None:
@@ -311,11 +285,8 @@ def _render_result_metadata( result: Dict[ str, Any ] ) -> None:
 	if not isinstance( result, dict ) or not result:
 		return
 	
-	meta = {
-			'Mode': result.get( 'mode', '' ),
-			'URL': result.get( 'url', '' ),
-			'Params': result.get( 'params', { } ),
-	}
+	meta = { 'Mode': result.get( 'mode', '' ), 'URL': result.get( 'url', '' ),
+		'Params': result.get( 'params', { } ), }
 	
 	st.markdown( '#### Request Metadata' )
 	st.json( meta )
@@ -346,19 +317,11 @@ def _render_summary_kv( title: str, data: Dict[ str, Any ] ) -> None:
 	
 	for key, value in data.items( ):
 		if isinstance( value, (str, int, float, bool) ) or value is None:
-			rows.append(
-				{
-						'Field': key,
-						'Value': value,
-				}
-			)
+			rows.append( { 'Field': key, 'Value': value, } )
 	
 	if rows:
 		st.markdown( title )
-		st.dataframe(
-			pd.DataFrame( rows ),
-			use_container_width=True,
-			hide_index=True )
+		st.dataframe( pd.DataFrame( rows ), use_container_width=True, hide_index=True )
 
 def _render_rows_table( title: str, rows: List[ Dict[ str, Any ] ] ) -> None:
 	'''
@@ -390,11 +353,7 @@ def _render_rows_table( title: str, rows: List[ Dict[ str, Any ] ] ) -> None:
 		return
 	
 	st.markdown( title )
-	st.dataframe(
-		df_rows,
-		use_container_width=True,
-		hide_index=True,
-		height=320 )
+	st.dataframe( df_rows, use_container_width=True, hide_index=True, height=320 )
 
 def _render_xml_preview( title: str, xml_text: str, max_chars: int = 12000 ) -> None:
 	'''
@@ -469,18 +428,10 @@ def _render_html_preview( title: str, html_text: str, max_chars: int = 5000 ) ->
 			label = str( anchor.get_text( ' ', strip=True ) or anchor.get( 'href', '' ) ).strip( )
 			href = str( anchor.get( 'href', '' ) ).strip( )
 			if label or href:
-				links.append(
-					{
-							'Label': label,
-							'Link': href,
-					}
-				)
+				links.append( { 'Label': label, 'Link': href, } )
 		
 		if links:
-			st.dataframe(
-				pd.DataFrame( links ),
-				use_container_width=True,
-				hide_index=True,
+			st.dataframe( pd.DataFrame( links ), use_container_width=True, hide_index=True,
 				height=260 )
 		else:
 			st.code( text[ :int( max_chars ) ], language='html' )
@@ -508,7 +459,7 @@ def _render_fallback_raw( result: Any ) -> None:
 			st.json( result )
 		else:
 			st.text_area( 'Output', value=str( result ), height=320 )
-			
+
 def _model_selector( key_prefix: str, label: str, options: list[ str ], default_model: str ) -> str:
 	base_options = options[ : ]
 	if "Custom..." not in base_options:
@@ -516,19 +467,12 @@ def _model_selector( key_prefix: str, label: str, options: list[ str ], default_
 	
 	idx_default = base_options.index( default_model ) if default_model in base_options else 0
 	
-	selected = st.selectbox(
-		label=label,
-		options=base_options,
-		index=idx_default,
-		key=f"{key_prefix}_model_select",
-	)
+	selected = st.selectbox( label=label, options=base_options, index=idx_default,
+		key=f"{key_prefix}_model_select", )
 	
 	if selected == "Custom...":
-		return st.text_input(
-			"Custom Model",
-			value=default_model,
-			key=f"{key_prefix}_model_custom",
-		)
+		return st.text_input( "Custom Model", value=default_model,
+			key=f"{key_prefix}_model_custom", )
 	
 	return selected
 
@@ -587,8 +531,7 @@ def style_subheaders( ) -> None:
 		Sets the style of subheaders in the main UI
 		
 	"""
-	st.markdown(
-		"""
+	st.markdown( """
 		<style>
 		div[data-testid="stMarkdownContainer"] h2,
 		div[data-testid="stMarkdownContainer"] h3,
@@ -597,8 +540,7 @@ def style_subheaders( ) -> None:
 			color: rgb(0, 120, 252) !important;
 		}
 		</style>
-		""",
-		unsafe_allow_html=True, )
+		""", unsafe_allow_html=True, )
 
 def encode_image( path: str ) -> str:
 	"""
@@ -751,86 +693,74 @@ def metric_with_tooltip( label: str, value: str, tooltip: str ):
 	
 	with col_info:
 		if label not in [ 'Characters', 'Tokens', 'Unique Tokens', 'Avg Length' ]:
-			st.markdown(
-				f"""
+			st.markdown( f"""
 	            <span style="
 	                cursor: help;
 	                font-size: 0.85rem;
 	                color:#888;
 	                vertical-align: super;
 	            " title="{tooltip}">ℹ️ </span>
-	            """,
-				unsafe_allow_html=True,
-			)
-			
+	            """, unsafe_allow_html=True, )
+
 # ----------  Database Utilities --------------
 
 def initialize_database( ) -> None:
-	"""
-		Purpose:
-		--------
-		Ensure required SQLite tables exist and that the Prompts table contains the
-		columns required by the prompt utilities and Prompt Engineering mode.
-
-		Parameters:
-		-----------
-		None
-
-		Returns:
-		--------
-		None
-	"""
 	Path( 'stores/sqlite' ).mkdir( parents=True, exist_ok=True )
 	with sqlite3.connect( cfg.DB_PATH ) as conn:
-		conn.execute(
-			"""
-            CREATE TABLE IF NOT EXISTS chat_history
-            (
-                id
-                INTEGER
-                PRIMARY
-                KEY
-                AUTOINCREMENT,
-                role
-                TEXT,
-                content
-                TEXT
-            )
-			"""
-		)
+		conn.execute( """
+                      CREATE TABLE IF NOT EXISTS chat_history
+                      (
+                          id
+                          INTEGER
+                          PRIMARY
+                          KEY
+                          AUTOINCREMENT,
+                          role
+                          TEXT,
+                          content
+                          TEXT
+                      )
+		              """ )
 		
-		conn.execute(
-			"""
-            CREATE TABLE IF NOT EXISTS embeddings
-            (
-                id
-                INTEGER
-                PRIMARY
-                KEY
-                AUTOINCREMENT,
-                chunk
-                TEXT,
-                vector
-                BLOB
-            )
-			"""
-		)
-		conn.execute(
-			"""
-            CREATE TABLE IF NOT EXISTS Prompts
-            (
-                PromptsId INTEGER NOT  NULL PRIMARY KEY AUTOINCREMENT,
-                Caption  TEXT,
-                Name TEXT,
-                Text TEXT,
-                Version TEXT,
-                ID TEXT
-            )
-			"""
-		)
+		conn.execute( """
+                      CREATE TABLE IF NOT EXISTS embeddings
+                      (
+                          id
+                          INTEGER
+                          PRIMARY
+                          KEY
+                          AUTOINCREMENT,
+                          chunk
+                          TEXT,
+                          vector
+                          BLOB
+                      )
+		              """ )
+		conn.execute( """
+                      CREATE TABLE IF NOT EXISTS Prompts
+                      (
+                          PromptsId
+                          INTEGER
+                          NOT
+                          NULL
+                          PRIMARY
+                          KEY
+                          AUTOINCREMENT,
+                          Caption
+                          TEXT,
+                          Name
+                          TEXT,
+                          Text
+                          TEXT,
+                          Version
+                          TEXT,
+                          ID
+                          TEXT
+                      )
+		              """ )
 		
 		prompt_columns = [ row[ 1 ] for row in
-		                   conn.execute( 'PRAGMA table_info("Prompts");' ).fetchall( ) ]
+			conn.execute( 'PRAGMA table_info("Prompts");' ).fetchall( ) ]
 		
 		if 'Caption' not in prompt_columns:
 			conn.execute( 'ALTER TABLE "Prompts" ADD COLUMN "Caption" TEXT;' )
@@ -851,27 +781,6 @@ def create_schema( table: str ) -> List[ Tuple ]:
 		return conn.execute( f'PRAGMA table_info("{table}");' ).fetchall( )
 
 def read_table( table: str, limit: int = None, offset: int = 0 ) -> DataFrame:
-	"""
-	
-		Purpose:
-		--------
-		Read a SQLite table into a pandas DataFrame using a normalized scalar-only path.
-	
-		Parameters:
-		-----------
-		table : str
-			Table name.
-		limit : int = None
-			Optional row limit.
-		offset : int = 0
-			Optional row offset.
-	
-		Returns:
-		--------
-		DataFrame
-			DataFrame of plain Python scalar values.
-	
-	"""
 	if not table:
 		return DataFrame( )
 	
@@ -932,23 +841,6 @@ def read_table( table: str, limit: int = None, offset: int = 0 ) -> DataFrame:
 	return DataFrame( normalized_rows, columns=columns )
 
 def render_table( df: DataFrame ) -> None:
-	"""
-	
-		Purpose:
-		--------
-		Render a DataFrame safely in Streamlit. Use the normal interactive dataframe
-		first, and fall back to HTML rendering if Streamlit/PyArrow serialization fails.
-	
-		Parameters:
-		-----------
-		df : DataFrame
-			The DataFrame to render.
-	
-		Returns:
-		--------
-		None
-	
-	"""
 	if df is None:
 		st.info( 'No data available.' )
 		return
@@ -972,23 +864,11 @@ def make_display_safe( df: DataFrame ) -> DataFrame:
 	display_df = df.copy( )
 	
 	for col in display_df.columns:
-		display_df[ col ] = display_df[ col ].map(
-			lambda x: '' if x is None else str( x )
-		)
+		display_df[ col ] = display_df[ col ].map( lambda x: '' if x is None else str( x ) )
 	
 	return display_df
 
 def drop_table( table: str ) -> None:
-	"""
-		Purpose:
-		--------
-		Safely drop a table if it exists.
-	
-		Parameters:
-		-----------
-		table : str
-			Table name.
-	"""
 	if not table:
 		return
 	
@@ -997,25 +877,6 @@ def drop_table( table: str ) -> None:
 		conn.commit( )
 
 def create_index( table: str, column: str ) -> None:
-	"""
-		Purpose:
-		--------
-		Create a safe SQLite index on a specified table column.
-	
-		Handles:
-			- Spaces in column names
-			- Special characters
-			- Reserved words
-			- Duplicate index names
-			- Validation against actual table schema
-	
-		Parameters:
-		-----------
-		table : str
-			Table name.
-		column : str
-			Column name to index.
-	"""
 	if not table or not column:
 		return
 	
@@ -1049,7 +910,7 @@ def create_index( table: str, column: str ) -> None:
 		conn.execute( sql )
 		conn.commit( )
 
-def apply_filters( df: DataFrame) -> DataFrame:
+def apply_filters( df: DataFrame ) -> DataFrame:
 	st.subheader( 'Advanced Filters' )
 	conditions = [ ]
 	col1, col2, col3 = st.columns( 3 )
@@ -1102,23 +963,6 @@ def create_aggregation( df: DataFrame ):
 	st.metric( 'Result', result )
 
 def create_visualization( df: DataFrame ) -> None:
-	"""
-	
-		Purpose:
-		--------
-		Render data visualizations without passing pandas objects directly into
-		Plotly/Narwhals.
-		
-		Parameters:
-		-----------
-		df : DataFrame
-			The input DataFrame.
-		
-		Returns:
-		--------
-		None
-		
-	"""
 	st.subheader( 'Visualization Engine' )
 	
 	if df is None or df.empty:
@@ -1129,9 +973,7 @@ def create_visualization( df: DataFrame ) -> None:
 	
 	for col in df_plot.columns:
 		if df_plot[ col ].dtype == object:
-			df_plot[ col ] = df_plot[ col ].map(
-				lambda x: '' if x is None else str( x )
-			)
+			df_plot[ col ] = df_plot[ col ].map( lambda x: '' if x is None else str( x ) )
 	
 	numeric_cols: List[ str ] = [ ]
 	for col in df_plot.columns:
@@ -1141,8 +983,7 @@ def create_visualization( df: DataFrame ) -> None:
 	
 	categorical_cols: List[ str ] = [ col for col in df_plot.columns if col not in numeric_cols ]
 	
-	chart = st.selectbox(
-		'Chart Type',
+	chart = st.selectbox( 'Chart Type',
 		[ 'Histogram', 'Bar', 'Line', 'Scatter', 'Box', 'Pie', 'Correlation' ] )
 	
 	if chart == 'Histogram':
@@ -1241,11 +1082,8 @@ def create_visualization( df: DataFrame ) -> None:
 		
 		corr = corr_df.corr( )
 		
-		fig = px.Figure(
-			data=[ px.Heatmap(
-				z=corr.values.tolist( ),
-				x=corr.columns.tolist( ),
-				y=corr.index.tolist( ) ) ] )
+		fig = px.Figure( data=[ px.Heatmap( z=corr.values.tolist( ), x=corr.columns.tolist( ),
+			y=corr.index.tolist( ) ) ] )
 		st.plotly_chart( fig, use_container_width=True )
 
 def convert_dataframe( table_name: str, df: DataFrame ):
@@ -1273,21 +1111,6 @@ def insert_data( table_name: str, df: DataFrame ):
 		conn.commit( )
 
 def get_sqlite_type( dtype ) -> str:
-	"""
-		Purpose:
-		--------
-		Map a pandas dtype to an appropriate SQLite column type.
-	
-		Parameters:
-		-----------
-		dtype : pandas dtype
-			The dtype of a pandas Series.
-	
-		Returns:
-		--------
-		str
-			SQLite column type.
-	"""
 	dtype_str = str( dtype ).lower( )
 	
 	# ------------------------------------------------------------------
@@ -1326,27 +1149,6 @@ def get_sqlite_type( dtype ) -> str:
 	return 'TEXT'
 
 def create_custom_table( table_name: str, columns: list ) -> None:
-	"""
-		Purpose:
-		--------
-		Create a custom SQLite table from column definitions.
-	
-		Parameters:
-		-----------
-		table_name : str
-			Name of table.
-	
-		columns : list of dict
-			[
-				{
-					"name": str,
-					"type": str,
-					"not_null": bool,
-					"primary_key": bool,
-					"auto_increment": bool
-				}
-			]
-	"""
 	if not table_name:
 		raise ValueError( 'Table name required.' )
 	
@@ -1382,23 +1184,6 @@ def create_custom_table( table_name: str, columns: list ) -> None:
 		conn.commit( )
 
 def is_safe_query( query: str ) -> bool:
-	"""
-	
-		Purpose:
-		--------
-		Determine whether a SQL query is read-only and safe to execute.
-	
-		Allows:
-			SELECT
-			WITH (CTE returning SELECT)
-			EXPLAIN SELECT
-			PRAGMA (read-only)
-	
-		Blocks:
-			INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, ATTACH,
-			DETACH, VACUUM, REPLACE, TRIGGER, and multiple statements.
-			
-	"""
 	if not query or not isinstance( query, str ):
 		return False
 	
@@ -1427,8 +1212,8 @@ def is_safe_query( query: str ) -> bool:
 	# ------------------------------------------------------------------
 	# Block dangerous keywords anywhere
 	# ------------------------------------------------------------------
-	blocked_keywords = ('insert ', 'update ', 'delete ', 'drop ', 'alter ',
-	                    'create ', 'attach ', 'detach ', 'vacuum ', 'replace ', 'trigger ')
+	blocked_keywords = ('insert ', 'update ', 'delete ', 'drop ', 'alter ', 'create ', 'attach ',
+		'detach ', 'vacuum ', 'replace ', 'trigger ')
 	
 	for keyword in blocked_keywords:
 		if keyword in q:
@@ -1437,17 +1222,6 @@ def is_safe_query( query: str ) -> bool:
 	return True
 
 def create_identifier( name: str ) -> str:
-	"""
-	
-		Purpose:
-		--------
-		Sanitize a string into a safe SQLite identifier.
-	
-		- Replaces invalid characters with underscores
-		- Ensures it starts with a letter or underscore
-		- Prevents empty names
-		
-	"""
 	if not name or not isinstance( name, str ):
 		raise ValueError( 'Invalid Identifier.' )
 	
@@ -1470,70 +1244,38 @@ def add_column( table: str, column: str, col_type: str ):
 	col_type = col_type.upper( )
 	
 	with create_connection( ) as conn:
-		conn.execute(
-			f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};' )
+		conn.execute( f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type};' )
 		conn.commit( )
 
 def rename_column( table_name: str, old_name: str, new_name: str ) -> None:
-	"""
-	
-		Purpose:
-		--------
-		Rename a column within an existing SQLite table. Attempts native ALTER TABLE rename
-		first; if it fails, falls back to a schema-safe rebuild preserving column order, data,
-		and indexes.
-
-		Parameters:
-		-----------
-		table_name : str
-			Table containing the column.
-
-		old_name : str
-			Existing column name.
-
-		new_name : str
-			New column name.
-
-		Returns:
-		--------
-		None
-		
-	"""
 	if not table_name or not old_name or not new_name:
 		return
 	
 	with create_connection( ) as conn:
 		try:
 			conn.execute(
-				f'ALTER TABLE "{table_name}" RENAME COLUMN "{old_name}" TO "{new_name}";'
-			)
+				f'ALTER TABLE "{table_name}" RENAME COLUMN "{old_name}" TO "{new_name}";' )
 			conn.commit( )
 			return
 		except Exception:
 			pass
 		
-		row = conn.execute(
-			"""
-            SELECT sql
-            FROM sqlite_master
-            WHERE type ='table' AND name =?
-			""",
-			(table_name,)
-		).fetchone( )
+		row = conn.execute( """
+                            SELECT sql
+                            FROM sqlite_master
+                            WHERE type ='table' AND name =?
+		                    """, (table_name,) ).fetchone( )
 		
 		if not row or not row[ 0 ]:
 			raise ValueError( "Table definition not found." )
 		
 		create_sql = row[ 0 ]
 		
-		indexes = conn.execute(
-			"""
-            SELECT sql
-            FROM sqlite_master
-            WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
-			""",
-			(table_name,)
-		).fetchall( )
+		indexes = conn.execute( """
+                                SELECT sql
+                                FROM sqlite_master
+                                WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
+		                        """, (table_name,) ).fetchall( )
 		
 		schema = conn.execute( f'PRAGMA table_info("{table_name}");' ).fetchall( )
 		cols = [ r[ 1 ] for r in schema ]
@@ -1577,8 +1319,7 @@ def rename_column( table_name: str, old_name: str, new_name: str ) -> None:
 		conn.execute( "BEGIN" )
 		conn.execute( new_create_sql )
 		conn.execute(
-			f'INSERT INTO "{temp_table}" ({new_insert}) SELECT {old_select} FROM "{table_name}";'
-		)
+			f'INSERT INTO "{temp_table}" ({new_insert}) SELECT {old_select} FROM "{table_name}";' )
 		
 		conn.execute( f'DROP TABLE "{table_name}";' )
 		conn.execute( f'ALTER TABLE "{temp_table}" RENAME TO "{table_name}";' )
@@ -1599,13 +1340,9 @@ def create_profile_table( table: str ):
 		series = df[ col ]
 		null_count = series.isna( ).sum( )
 		distinct_count = series.nunique( dropna=True )
-		row = \
-			{
-					'column': col, 'dtype': str( series.dtype ),
-					'null_%': round( (null_count / total_rows) * 100, 2 ) if total_rows else 0,
-					'distinct_%': round( (
-							                     distinct_count / total_rows) * 100, 2 ) if total_rows else 0,
-			}
+		row = { 'column': col, 'dtype': str( series.dtype ),
+			'null_%': round( (null_count / total_rows) * 100, 2 ) if total_rows else 0,
+			'distinct_%': round( (distinct_count / total_rows) * 100, 2 ) if total_rows else 0, }
 		
 		if pd.api.types.is_numeric_dtype( series ):
 			row[ 'min' ] = series.min( )
@@ -1628,14 +1365,11 @@ def drop_column( table: str, column: str ):
 		# ------------------------------------------------------------
 		# Fetch original CREATE TABLE statement
 		# ------------------------------------------------------------
-		row = conn.execute(
-			"""
-            SELECT sql
-            FROM sqlite_master
-            WHERE type ='table' AND name =?
-			""",
-			(table,)
-		).fetchone( )
+		row = conn.execute( """
+                            SELECT sql
+                            FROM sqlite_master
+                            WHERE type ='table' AND name =?
+		                    """, (table,) ).fetchone( )
 		
 		if not row or not row[ 0 ]:
 			raise ValueError( 'Table definition not found.' )
@@ -1670,11 +1404,7 @@ def drop_column( table: str, column: str ):
 		# ------------------------------------------------------------
 		temp_table = f"{table}_rebuild_temp"
 		
-		new_create_sql = (
-				f'CREATE TABLE "{temp_table}" ('
-				+ ", ".join( new_defs )
-				+ ");"
-		)
+		new_create_sql = (f'CREATE TABLE "{temp_table}" (' + ", ".join( new_defs ) + ");")
 		
 		# ------------------------------------------------------------
 		# Begin transaction
@@ -1683,32 +1413,22 @@ def drop_column( table: str, column: str ):
 		
 		conn.execute( new_create_sql )
 		
-		remaining_cols = [
-				c.split( )[ 0 ].strip( '"' )
-				for c in new_defs
-		]
+		remaining_cols = [ c.split( )[ 0 ].strip( '"' ) for c in new_defs ]
 		
 		col_list = ", ".join( [ f'"{c}"' for c in remaining_cols ] )
 		
-		conn.execute(
-			f'INSERT INTO "{temp_table}" ({col_list}) '
-			f'SELECT {col_list} FROM "{table}";'
-		)
+		conn.execute( f'INSERT INTO "{temp_table}" ({col_list}) '
+		              f'SELECT {col_list} FROM "{table}";' )
 		
 		# Preserve indexes
-		indexes = conn.execute(
-			"""
-            SELECT sql
-            FROM sqlite_master
-            WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
-			""",
-			(table,)
-		).fetchall( )
+		indexes = conn.execute( """
+                                SELECT sql
+                                FROM sqlite_master
+                                WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
+		                        """, (table,) ).fetchall( )
 		
 		conn.execute( f'DROP TABLE "{table}";' )
-		conn.execute(
-			f'ALTER TABLE "{temp_table}" RENAME TO "{table}";'
-		)
+		conn.execute( f'ALTER TABLE "{temp_table}" RENAME TO "{table}";' )
 		
 		# Recreate indexes
 		for idx in indexes:
@@ -1719,27 +1439,6 @@ def drop_column( table: str, column: str ):
 		conn.commit( )
 
 def rename_table( old_name: str, new_name: str ) -> None:
-	"""
-	
-		Purpose:
-		--------
-		Rename an existing SQLite table. Attempts native ALTER TABLE rename first; if it fails,
-		falls back to a schema-safe rebuild using the original CREATE TABLE statement and
-		preserves indexes.
-
-		Parameters:
-		-----------
-		old_name : str
-			Existing table name.
-
-		new_name : str
-			New table name.
-
-		Returns:
-		--------
-		None
-		
-	"""
 	if not old_name or not new_name:
 		return
 	
@@ -1751,28 +1450,22 @@ def rename_table( old_name: str, new_name: str ) -> None:
 		except Exception:
 			pass
 		
-		row = conn.execute(
-			"""
-            SELECT sql
-            FROM sqlite_master
-            WHERE type ='table' AND name =?
-			""",
-			(old_name,)
-		).fetchone( )
+		row = conn.execute( """
+                            SELECT sql
+                            FROM sqlite_master
+                            WHERE type ='table' AND name =?
+		                    """, (old_name,) ).fetchone( )
 		
 		if not row or not row[ 0 ]:
 			raise ValueError( "Table definition not found." )
 		
 		create_sql = row[ 0 ]
 		
-		indexes = conn.execute(
-			"""
-            SELECT sql
-            FROM sqlite_master
-            WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
-			""",
-			(old_name,)
-		).fetchall( )
+		indexes = conn.execute( """
+                                SELECT sql
+                                FROM sqlite_master
+                                WHERE type ='index' AND tbl_name=? AND sql IS NOT NULL
+		                        """, (old_name,) ).fetchall( )
 		
 		open_paren = create_sql.find( "(" )
 		if open_paren == -1:
@@ -1787,8 +1480,7 @@ def rename_table( old_name: str, new_name: str ) -> None:
 		col_list = ", ".join( [ f'"{c}"' for c in cols ] )
 		
 		conn.execute(
-			f'INSERT INTO "{temp_name}" ({col_list}) SELECT {col_list} FROM "{old_name}";'
-		)
+			f'INSERT INTO "{temp_name}" ({col_list}) SELECT {col_list} FROM "{old_name}";' )
 		
 		conn.execute( f'DROP TABLE "{old_name}";' )
 		conn.execute( f'ALTER TABLE "{temp_name}" RENAME TO "{new_name}";' )
@@ -1827,36 +1519,13 @@ def set_blue_divider( ) -> None:
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 
 def _promote_loader_documents( documents: List[ Document ] | None, active_loader: str ) -> int:
-	'''
-		Purpose:
-		--------
-		Promote loaded LangChain documents into the shared Loading-mode session state
-		using one consistent contract across all loader expanders.
-
-		Parameters:
-		-----------
-		documents (List[Document] | None):
-			LangChain documents returned by a loader.
-
-		active_loader (str):
-			Canonical loader name to store in session state.
-
-		Returns:
-		--------
-		int:
-			Count of promoted documents.
-
-	'''
 	docs: List[ Document ] = list( documents or [ ] )
 	
 	st.session_state.documents = docs
 	st.session_state.raw_documents = list( docs )
-	st.session_state.raw_text = '\n\n'.join(
-		doc.page_content for doc in docs
-		if hasattr( doc, 'page_content' )
-		and isinstance( doc.page_content, str )
-		and doc.page_content.strip( )
-	)
+	st.session_state.raw_text = '\n\n'.join( doc.page_content for doc in docs if
+	hasattr( doc, 'page_content' ) and isinstance( doc.page_content,
+		str ) and doc.page_content.strip( ) )
 	st.session_state.processed_text = ''
 	st.session_state.tokens = None
 	st.session_state.vocabulary = None
@@ -1865,22 +1534,6 @@ def _promote_loader_documents( documents: List[ Document ] | None, active_loader
 	return len( docs )
 
 def _clear_loader_documents( loader_name: str ) -> int:
-	'''
-		Purpose:
-		--------
-		Clear the active loader state and rebuild shared text/cache state consistently.
-
-		Parameters:
-		-----------
-		loader_name (str):
-			Canonical loader name.
-
-		Returns:
-		--------
-		int:
-			Remaining document count after the clear operation.
-
-	'''
 	clear_if_active( loader_name )
 	st.session_state.raw_text = _rebuild_raw_text_from_documents( ) or ''
 	st.session_state.processed_text = ''
@@ -1903,7 +1556,7 @@ for corpus in cfg.REQUIRED_CORPORA:
 		nltk.data.find( f'corpora/{corpus}' )
 	except LookupError:
 		nltk.download( corpus )
-		
+
 # =========================================================================
 # APP SET-UP
 # =========================================================================
@@ -1930,7 +1583,7 @@ with st.sidebar:
 			st.session_state[ 'mode' ] = 'Loaders'
 	
 	st.divider( )
-
+	
 	# ------------- API Keys -------------
 	st.text( '💻 Configuration' )
 	with st.expander( 'API Keys', expanded=False ):
@@ -2110,7 +1763,8 @@ if mode == 'Loading':
 						icon='💾', width='stretch' )
 				else:
 					col_save.button( label='Save', key='txt_save_disabled', disabled=True,
-						icon='💾', width='stretch' )
+						icon='💾',
+						width='stretch' )
 				
 				# ------------------------------------------------------------------
 				# Clear
@@ -2713,8 +2367,8 @@ if mode == 'Loading':
 				load_excel = col_load.button( 'Load', key='excel_load', icon='📤', )
 				clear_excel = col_clear.button( 'Clear', key='excel_clear', icon='🧹', )
 				can_save = (st.session_state.get( 'active_loader' ) == 'ExcelLoader' and
-				            isinstance( st.session_state.get(
-					            'raw_text' ), str ) and st.session_state.get(
+				            isinstance(
+					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
 					'raw_text' ).strip( ))
 				
 				if can_save:
@@ -2743,7 +2397,6 @@ if mode == 'Loading':
 					
 					st.session_state.processed_text = None
 					st.session_state.active_loader = None
-					
 					st.info( "ExcelLoader documents removed." )
 				
 				# --------------------------------------------------
@@ -3314,7 +2967,7 @@ if mode == 'Loading':
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'WebCrawler' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
-					'raw_text' ).strip( ))
+					'raw_text' ).strip( ) )
 				
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
@@ -3578,7 +3231,8 @@ if mode == 'Loading':
 					placeholder='OneDrive drive identifier', )
 				
 				onedrive_folder_path = st.text_input( 'Folder Path', value='',
-					key='onedrive_folder_path', placeholder='Optional folder path within the drive',
+					key='onedrive_folder_path', placeholder='Optional folder path within the '
+					                                        'drive',
 					help='Leave blank to load the drive target directly.', )
 				
 				# --------------------------------------------------
@@ -3947,9 +3601,10 @@ if mode == 'Loading':
 				col_load, col_clear, col_save = st.columns( 3 )
 				load_aws_bucket = col_load.button( 'Load', key='aws_bucket_load', icon='📤', )
 				clear_aws_bucket = col_clear.button( 'Clear', key='aws_bucket_clear', icon='🧹', )
-				can_save = ( st.session_state.get( 'active_loader' ) == 'AwsBucketLoader' and
-						isinstance( st.session_state.get(
-							'raw_text' ), str ) and st.session_state.get( 'raw_text' ).strip( ))
+				can_save = (st.session_state.get(
+					'active_loader' ) == 'AwsBucketLoader' and isinstance(
+					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+					'raw_text' ).strip( ))
 				
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
@@ -4114,7 +3769,8 @@ if mode == 'Loading':
 			for i, d in enumerate( documents[ :5 ] ):
 				with st.expander( f'Document {i + 1}', expanded=True ):
 					st.json( d.metadata )
-					st.text_area( 'Content', d.page_content[ : ], height=450, key=f'preview_doc_{i}' )
+					st.text_area( 'Content', d.page_content[ : ], height=450,
+						key=f'preview_doc_{i}' )
 	
 	# ------------------------------------------------------------------
 	# NLP METRIC CALCULATIONS
@@ -4270,9 +3926,7 @@ elif mode == 'Scraping':
 				if not isinstance( html, str ) or not html.strip( ):
 					return ''
 				
-				match = re.search(
-					r'<title[^>]*>(.*?)</title>',
-					html,
+				match = re.search( r'<title[^>]*>(.*?)</title>', html,
 					flags=re.IGNORECASE | re.DOTALL )
 				
 				if not match:
@@ -4335,24 +3989,12 @@ elif mode == 'Scraping':
 			except Exception:
 				return [ ]
 		
-		def _scrape_single_page(
-				url: str,
-				include_title: bool,
-				include_basic_text: bool,
-				include_raw_html: bool,
-				selected_methods: list[ str ] ) -> dict[ str, Any ]:
-			page_result: dict[ str, Any ] = \
-			{
-					'url': url,
-					'status_code': None,
-					'encoding': None,
-					'title': '',
-					'plain_text': '',
-					'raw_html': '',
-					'links_discovered': [ ],
-					'data': { },
-					'errors': [ ],
-			}
+		def _scrape_single_page( url: str, include_title: bool, include_basic_text: bool,
+			include_raw_html: bool, selected_methods: list[ str ] ) -> dict[ str, Any ]:
+			page_result: dict[ str, Any ] = { 'url': url, 'status_code': None, 'encoding': None,
+				'title': '', 'plain_text': '', 'raw_html': '', 'links_discovered': [ ], 'data':
+					{ },
+				'errors': [ ], }
 			
 			fetcher = WebFetcher( )
 			
@@ -4382,19 +4024,17 @@ elif mode == 'Scraping':
 				page_result[ 'errors' ].append( f'Fetch: {str( exc )}' )
 				return page_result
 			
-			REGISTRY: dict[ str, tuple[ str, callable ] ] = \
-			{
-					'scrape_headings': ('Headings', fetcher.scrape_headings),
-					'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
-					'scrape_lists': ('Lists', fetcher.scrape_lists),
-					'scrape_tables': ('Tables', fetcher.scrape_tables),
-					'scrape_articles': ('Articles', fetcher.scrape_articles),
-					'scrape_sections': ('Sections', fetcher.scrape_sections),
-					'scrape_divisions': ('Divisions', fetcher.scrape_divisions),
-					'scrape_blockquotes': ('Blockquotes', fetcher.scrape_blockquotes),
-					'scrape_hyperlinks': ('Hyperlinks', fetcher.scrape_hyperlinks),
-					'scrape_images': ('Images', fetcher.scrape_images),
-			}
+			REGISTRY: dict[ str, tuple[ str, callable ] ] = {
+				'scrape_headings': ('Headings', fetcher.scrape_headings),
+				'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
+				'scrape_lists': ('Lists', fetcher.scrape_lists),
+				'scrape_tables': ('Tables', fetcher.scrape_tables),
+				'scrape_articles': ('Articles', fetcher.scrape_articles),
+				'scrape_sections': ('Sections', fetcher.scrape_sections),
+				'scrape_divisions': ('Divisions', fetcher.scrape_divisions),
+				'scrape_blockquotes': ('Blockquotes', fetcher.scrape_blockquotes),
+				'scrape_hyperlinks': ('Hyperlinks', fetcher.scrape_hyperlinks),
+				'scrape_images': ('Images', fetcher.scrape_images), }
 			
 			for method_name in selected_methods:
 				if method_name not in REGISTRY:
@@ -4411,9 +4051,9 @@ elif mode == 'Scraping':
 			return page_result
 		
 		def _crawl_pages( seed_url: str, include_title: bool, include_basic_text: bool,
-				include_raw_html: bool, selected_methods: list[ str ], recursive: bool,
-				max_depth: int, max_pages: int,
-				same_domain_only: bool ) -> tuple[ list[ dict[ str, Any ] ], dict[ str, Any ] ]:
+			include_raw_html: bool, selected_methods: list[ str ], recursive: bool, max_depth: int,
+			max_pages: int, same_domain_only: bool ) -> tuple[
+			list[ dict[ str, Any ] ], dict[ str, Any ] ]:
 			results: list[ dict[ str, Any ] ] = [ ]
 			visited: set[ str ] = set( )
 			enqueued: set[ str ] = set( )
@@ -4435,11 +4075,8 @@ elif mode == 'Scraping':
 				
 				visited.add( current_url )
 				
-				page_result = _scrape_single_page(
-					url=current_url,
-					include_title=include_title,
-					include_basic_text=include_basic_text,
-					include_raw_html=include_raw_html,
+				page_result = _scrape_single_page( url=current_url, include_title=include_title,
+					include_basic_text=include_basic_text, include_raw_html=include_raw_html,
 					selected_methods=selected_methods )
 				
 				page_result[ 'depth' ] = depth
@@ -4466,20 +4103,12 @@ elif mode == 'Scraping':
 					queue.append( (next_url, depth + 1) )
 					enqueued.add( next_url )
 			
-			summary: dict[ str, Any ] = \
-			{
-					'mode': 'recursive' if recursive else 'single-page',
-					'seed_url': normalized_seed,
-					'pages_processed': len( results ),
-					'pages_visited': len( visited ),
-					'pages_skipped': len( skipped_urls ),
-					'recursive_requested': bool( recursive ),
-					'max_depth': int( max_depth ),
-					'max_pages': int( max_pages ),
-					'same_domain_only': bool( same_domain_only ),
-					'visited_urls': list( visited ),
-					'skipped_urls': skipped_urls,
-			}
+			summary: dict[ str, Any ] = { 'mode': 'recursive' if recursive else 'single-page',
+				'seed_url': normalized_seed, 'pages_processed': len( results ),
+				'pages_visited': len( visited ), 'pages_skipped': len( skipped_urls ),
+				'recursive_requested': bool( recursive ), 'max_depth': int( max_depth ),
+				'max_pages': int( max_pages ), 'same_domain_only': bool( same_domain_only ),
+				'visited_urls': list( visited ), 'skipped_urls': skipped_urls, }
 			
 			return results, summary
 		
@@ -4490,38 +4119,24 @@ elif mode == 'Scraping':
 			
 			st.markdown( '##### Core Output' )
 			
-			include_title = st.checkbox( 'Page Title', value=True,
-				key='wf_page_title' )
+			include_title = st.checkbox( 'Page Title', value=True, key='wf_page_title' )
 			
-			include_basic_text = st.checkbox(
-				'Basic Text',
-				value=True,
-				key='wf_basic_text' )
+			include_basic_text = st.checkbox( 'Basic Text', value=True, key='wf_basic_text' )
 			
-			include_raw_html = st.checkbox(
-				'Raw HTML',
-				value=False,
-				key='wf_raw_html' )
+			include_raw_html = st.checkbox( 'Raw HTML', value=False, key='wf_raw_html' )
 			
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 			
 			st.markdown( '##### Structured Extraction' )
-	
+			
 			col1, col2 = st.columns( [ 0.5, 0.5 ] )
 			
-			REGISTRY_LABELS: dict[ str, str ] = \
-			{
-					'scrape_headings': 'Headings',
-					'scrape_paragraphs': 'Paragraphs',
-					'scrape_lists': 'Lists',
-					'scrape_tables': 'Tables',
-					'scrape_articles': 'Articles',
-					'scrape_sections': 'Sections',
-					'scrape_divisions': 'Divisions',
-					'scrape_blockquotes': 'Blockquotes',
-					'scrape_hyperlinks': 'Hyperlinks',
-					'scrape_images': 'Images',
-			}
+			REGISTRY_LABELS: dict[ str, str ] = { 'scrape_headings': 'Headings',
+				'scrape_paragraphs': 'Paragraphs', 'scrape_lists': 'Lists',
+				'scrape_tables': 'Tables', 'scrape_articles': 'Articles',
+				'scrape_sections': 'Sections', 'scrape_divisions': 'Divisions',
+				'scrape_blockquotes': 'Blockquotes', 'scrape_hyperlinks': 'Hyperlinks',
+				'scrape_images': 'Images', }
 			
 			selected_methods: list[ str ] = [ ]
 			
@@ -4543,33 +4158,16 @@ elif mode == 'Scraping':
 			
 			st.markdown( '##### Crawl Controls' )
 			
-			enable_recursive = st.checkbox(
-				'Recursive Crawl',
-				value=False,
-				key='wf_recursive' )
+			enable_recursive = st.checkbox( 'Recursive Crawl', value=False, key='wf_recursive' )
 			
-			max_depth = st.number_input(
-				'Max Depth',
-				min_value=0,
-				max_value=10,
-				value=1,
-				step=1,
-				key='wf_max_depth',
-				disabled=(not enable_recursive) )
+			max_depth = st.number_input( 'Max Depth', min_value=0, max_value=10, value=1, step=1,
+				key='wf_max_depth', disabled=(not enable_recursive) )
 			
-			max_pages = st.number_input(
-				'Max Pages',
-				min_value=1,
-				max_value=500,
-				value=10,
-				step=1,
+			max_pages = st.number_input( 'Max Pages', min_value=1, max_value=500, value=10, step=1,
 				key='wf_max_pages' )
 			
-			same_domain_only = st.checkbox(
-				'Same Domain Only',
-				value=True,
-				key='wf_same_domain_only',
-				disabled=(not enable_recursive) )
+			same_domain_only = st.checkbox( 'Same Domain Only', value=True,
+				key='wf_same_domain_only', disabled=(not enable_recursive) )
 			
 			b1, b2 = st.columns( 2 )
 			
@@ -4585,16 +4183,11 @@ elif mode == 'Scraping':
 					if not target_url or not target_url.strip( ):
 						raise ValueError( 'A target URL is required.' )
 					
-					results, summary = _crawl_pages(
-						seed_url=target_url.strip( ),
-						include_title=include_title,
-						include_basic_text=include_basic_text,
-						include_raw_html=include_raw_html,
-						selected_methods=selected_methods,
-						recursive=bool( enable_recursive ),
-						max_depth=int( max_depth ),
-						max_pages=int( max_pages ),
-						same_domain_only=bool( same_domain_only ) )
+					results, summary = _crawl_pages( seed_url=target_url.strip( ),
+						include_title=include_title, include_basic_text=include_basic_text,
+						include_raw_html=include_raw_html, selected_methods=selected_methods,
+						recursive=bool( enable_recursive ), max_depth=int( max_depth ),
+						max_pages=int( max_pages ), same_domain_only=bool( same_domain_only ) )
 					
 					st.session_state[ 'webscrape_results' ] = results
 					st.session_state[ 'webscrape_summary' ] = summary
@@ -4619,7 +4212,8 @@ elif mode == 'Scraping':
 					title = page.get( 'title', '' ) or page.get( 'url', f'Page {idx}' )
 					depth = page.get( 'depth', 0 )
 					
-					with st.expander( f'Page {idx} [Depth {depth}]: {title}', expanded=(idx == 1) ):
+					with st.expander( f'Page {idx} [Depth {depth}]: {title}', expanded=(idx ==
+					                                                                    1) ):
 						meta_col1, meta_col2 = st.columns( 2 )
 						
 						with meta_col1:
@@ -4634,20 +4228,15 @@ elif mode == 'Scraping':
 						plain_text = page.get( 'plain_text', '' )
 						if isinstance( plain_text, str ) and plain_text.strip( ):
 							st.subheader( 'Basic Text' )
-							st.text_area(
-								label='',
-								value=_truncate_text( plain_text, limit=12000 ),
-								height=280,
-								key=f'webscrape_plain_text_{idx}' )
+							st.text_area( label='', value=_truncate_text( plain_text,
+								limit=12000 ),
+								height=280, key=f'webscrape_plain_text_{idx}' )
 						
 						raw_html = page.get( 'raw_html', '' )
 						if isinstance( raw_html, str ) and raw_html.strip( ):
 							st.subheader( 'Raw HTML' )
-							st.text_area(
-								label='',
-								value=_truncate_text( raw_html, limit=12000 ),
-								height=240,
-								key=f'webscrape_raw_html_{idx}' )
+							st.text_area( label='', value=_truncate_text( raw_html, limit=12000 ),
+								height=240, key=f'webscrape_raw_html_{idx}' )
 						
 						discovered_links = page.get( 'links_discovered', [ ] ) or [ ]
 						if discovered_links:
@@ -4671,7 +4260,7 @@ elif mode == 'Scraping':
 							st.subheader( 'Errors' )
 							for err in errors:
 								st.error( err )
-							
+
 # ==============================================================================
 # FETCHING MODE
 # =============================================================================
@@ -4682,8 +4271,9 @@ elif mode == 'Retrieval':
 	with center:
 		st.subheader( f'🏛️ Public Collections & Archives' )
 		st.divider( )
+		
 		# -------- ArXiv
-		with st.expander( label='ArXiv', icon='📘', expanded=False  ):
+		with st.expander( label='ArXiv', icon='📘', expanded=False ):
 			st.badge( label='Information', help=cfg.ARXIV )
 			if 'arxiv_results' not in st.session_state:
 				st.session_state[ 'arxiv_results' ] = [ ]
@@ -4713,8 +4303,8 @@ elif mode == 'Retrieval':
 				c1, c2 = st.columns( 2, vertical_alignment='center' )
 				with c1:
 					arxiv_max_docs = st.number_input( 'Max Docs', min_value=1, max_value=300,
-						value=st.session_state.get( 'arxiv_max_docs', 5 ),
-						step=1, key='arxiv_max_docs',
+						value=st.session_state.get( 'arxiv_max_docs', 5 ), step=1,
+						key='arxiv_max_docs',
 						help='Maximum number of ArXiv documents to retrieve.' )
 				
 				with c2:
@@ -4722,7 +4312,7 @@ elif mode == 'Retrieval':
 						value=st.session_state.get( 'arxiv_full_documents', False ),
 						key='arxiv_full_documents',
 						help='When checked, retrieves full document text.' )
-					
+				
 				arxiv_include_metadata = st.checkbox( 'Include All Metadata',
 					value=st.session_state.get( 'arxiv_include_metadata', False ),
 					key='arxiv_include_metadata',
@@ -4730,7 +4320,8 @@ elif mode == 'Retrieval':
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					do_submit = st.button( 'Submit', key='arxiv_submit', width='stretch', icon='✔️', )
+					do_submit = st.button( 'Submit', key='arxiv_submit', width='stretch',
+						icon='✔️', )
 				
 				with b2:
 					st.button( 'Clear', key='arxiv_clear', on_click=_clear_arxiv_state,
@@ -4739,12 +4330,13 @@ elif mode == 'Retrieval':
 				if do_submit:
 					try:
 						queries = [ q.strip( ) for q in (arxiv_input or '').splitlines( ) if
-						            q.strip( ) ]
+							q.strip( ) ]
 						
 						if not queries:
 							st.warning( 'No input provided.' )
 						else:
 							from fetchers import ArXiv
+							
 							fetcher = ArXiv( max_documents=int( arxiv_max_docs ),
 								full_documents=bool( arxiv_full_documents ),
 								include_metadata=bool( arxiv_include_metadata ) )
@@ -4782,15 +4374,22 @@ elif mode == 'Retrieval':
 									meta_col1, meta_col2 = st.columns( 2 )
 									with meta_col1:
 										if 'Title' in doc.metadata:
-											st.markdown( f"**Title:** {doc.metadata.get( 'Title', '' )}" )
+											st.markdown(
+												f"**Title:** {doc.metadata.get( 'Title', '' )}" )
 										if 'Authors' in doc.metadata:
-											st.markdown( f"**Authors:** {doc.metadata.get( 'Authors', '' )}" )
+											st.markdown(
+												f"**Authors:** "
+												f"{doc.metadata.get( 'Authors', '' )}" )
 									
 									with meta_col2:
 										if 'Published' in doc.metadata:
-											st.markdown( f"**Published:** {doc.metadata.get( 'Published', '' )}" )
+											st.markdown(
+												f"**Published:** "
+												f"{doc.metadata.get( 'Published', '' )}" )
 										if 'Entry ID' in doc.metadata:
-											st.markdown( f"**Entry ID:** {doc.metadata.get( 'Entry ID', '' )}" )
+											st.markdown(
+												f"**Entry ID:** "
+												f"{doc.metadata.get( 'Entry ID', '' )}" )
 								
 								st.text_area( 'Content', value=doc.page_content or '', height=300,
 									key=f'arxiv_doc_{idx}' )
@@ -4799,9 +4398,9 @@ elif mode == 'Retrieval':
 									st.json( doc.metadata )
 							else:
 								st.write( doc )
-				
+		
 		# -------- Google Drive
-		with st.expander( label='Google Drive', icon='🛡️',expanded=False ):
+		with st.expander( label='Google Drive', icon='🛡️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_DRIVE )
 			if 'googledrive_results' not in st.session_state:
 				st.session_state[ 'googledrive_results' ] = [ ]
@@ -4826,20 +4425,22 @@ elif mode == 'Retrieval':
 			with col_left:
 				gd_query = st.text_area( 'Google Drive Query', height=90, key='googledrive_query',
 					placeholder=('Examples:\n'
-							'machine learning\n'
-							'budget execution\n'
-							'FY 2026 operating plan\n'
-							'\n'
-							'Use "*" only when the selected template supports folder-wide or mime-type retrieval.'
-					), )
+					             'machine learning\n'
+					             'budget execution\n'
+					             'FY 2026 operating plan\n'
+					             '\n'
+					             'Use "*" only when the selected template supports folder-wide or '
+					             'mime-type retrieval.'), )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
 					gd_folder_id = st.text_input( 'Folder ID',
-						value=st.session_state.get( 'googledrive_folder_id', cfg.GOOGLE_DRIVE_FOLDER_ID or 'root' ),
-						key='googledrive_folder_id', placeholder='root or a Google Drive folder id',
-						help='Use "root" for your My Drive root, or provide a specific folder id.' )
+						value=st.session_state.get( 'googledrive_folder_id',
+							cfg.GOOGLE_DRIVE_FOLDER_ID or 'root' ), key='googledrive_folder_id',
+						placeholder='root or a Google Drive folder id',
+						help='Use "root" for your My Drive root, or provide a specific folder '
+						     'id.' )
 				
 				with c2:
 					gd_results_limit = st.number_input( 'Max Docs', min_value=1, max_value=100,
@@ -4849,59 +4450,46 @@ elif mode == 'Retrieval':
 				c3, c4 = st.columns( 2 )
 				with c3:
 					gd_template = st.selectbox( 'Template',
-						options=[
-								'gdrive-all-in-folder',
-								'gdrive-query',
-								'gdrive-by-name',
-								'gdrive-query-in-folder',
-								'gdrive-mime-type',
-								'gdrive-mime-type-in-folder',
-								'gdrive-query-with-mime-type',
-								'gdrive-query-with-mime-type-and-folder',
-						], index=1, key='googledrive_template',
-						help='Select the Drive retrieval strategy.' )
+						options=[ 'gdrive-all-in-folder', 'gdrive-query', 'gdrive-by-name',
+							'gdrive-query-in-folder', 'gdrive-mime-type',
+							'gdrive-mime-type-in-folder', 'gdrive-query-with-mime-type',
+							'gdrive-query-with-mime-type-and-folder', ], index=1,
+						key='googledrive_template', help='Select the Drive retrieval strategy.' )
 				
 				with c4:
-					gd_mode = st.selectbox( 'Mode', options=[ 'documents', 'snippets' ],
-						index=0, key='googledrive_mode',
+					gd_mode = st.selectbox( 'Mode', options=[ 'documents', 'snippets' ], index=0,
+						key='googledrive_mode',
 						help='Use snippets for short metadata-driven returns.' )
 				
 				gd_mime_type = st.selectbox( 'MIME Type Filter',
-					options=[
-							'',
-							'text/text',
-							'text/plain',
-							'text/html',
-							'text/csv',
-							'text/markdown',
-							'image/png',
-							'image/jpeg',
-							'application/epub+zip',
-							'application/pdf',
-							'application/rtf',
-							'application/vnd.google-apps.document',
-							'application/vnd.google-apps.presentation',
-							'application/vnd.google-apps.spreadsheet',
-							'application/vnd.google.colaboratory',
-							'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-							'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-					], index=0,
-					key='googledrive_mime_type', help='Optional MIME type restriction.' )
+					options=[ '', 'text/text', 'text/plain', 'text/html', 'text/csv',
+						'text/markdown', 'image/png', 'image/jpeg', 'application/epub+zip',
+						'application/pdf', 'application/rtf',
+						'application/vnd.google-apps.document',
+						'application/vnd.google-apps.presentation',
+						'application/vnd.google-apps.spreadsheet',
+						'application/vnd.google.colaboratory',
+						'application/vnd.openxmlformats-officedocument.presentationml'
+						'.presentation',
+						'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+						'', ],
+					index=0, key='googledrive_mime_type', help='Optional MIME type restriction.' )
 				
 				st.caption( 'Expected auth: GOOGLE_ACCOUNT_FILE for credentials JSON. '
-					'Optional: GOOGLE_DRIVE_TOKEN_PATH for token persistence.' )
+				            'Optional: GOOGLE_DRIVE_TOKEN_PATH for token persistence.' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
 					gd_submit = st.button( 'Submit', key='googledrive_submit', width='stretch' )
 				
 				with b2:
-					st.button( 'Clear', key='googledrive_clear',
-						on_click=_clear_googledrive_state, width='stretch' )
+					st.button( 'Clear', key='googledrive_clear', on_click=_clear_googledrive_state,
+						width='stretch' )
 				
 				if gd_submit:
 					try:
 						from fetchers import GoogleDrive
+						
 						fetcher = GoogleDrive( )
 						docs = fetcher.fetch( question=gd_query, folder_id=gd_folder_id or 'root',
 							results=int( gd_results_limit ), template=gd_template,
@@ -4936,15 +4524,21 @@ elif mode == 'Retrieval':
 									
 									with meta_col1:
 										if 'name' in doc.metadata:
-											st.markdown( f"**Name:** {doc.metadata.get( 'name', '' )}" )
+											st.markdown(
+												f"**Name:** {doc.metadata.get( 'name', '' )}" )
 										if 'id' in doc.metadata:
-											st.markdown( f"**ID:** {doc.metadata.get( 'id', '' )}" )
+											st.markdown( f"**ID:** "
+											             f"{doc.metadata.get( 'id', '' )}" )
 									
 									with meta_col2:
 										if 'mimeType' in doc.metadata:
-											st.markdown( f"**MIME Type:** {doc.metadata.get( 'mimeType', '' )}" )
+											st.markdown(
+												f"**MIME Type:** {doc.metadata.get( 'mimeType',
+													'' )}" )
 										if 'modifiedTime' in doc.metadata:
-											st.markdown( f"**Modified:** {doc.metadata.get( 'modifiedTime', '' )}" )
+											st.markdown(
+												f"**Modified:** "
+												f"{doc.metadata.get( 'modifiedTime', '' )}" )
 								
 								st.text_area( 'Content', value=doc.page_content or '', height=300,
 									key=f'googledrive_doc_{idx}' )
@@ -4953,9 +4547,9 @@ elif mode == 'Retrieval':
 									st.json( doc.metadata )
 							else:
 								st.write( doc )
-						
+		
 		# -------- Wikipedia
-		with st.expander( label='Wikipedia', icon='📖',expanded=False ):
+		with st.expander( label='Wikipedia', icon='📖', expanded=False ):
 			st.badge( label='Information', help=cfg.WIKIPEDIA )
 			if 'wikipedia_results' not in st.session_state:
 				st.session_state[ 'wikipedia_results' ] = [ ]
@@ -4976,52 +4570,34 @@ elif mode == 'Retrieval':
 			
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			with col_left:
-				wiki_query = st.text_area(
-					'Wikipedia Query',
-					height=90,
-					key='wikipedia_query',
-					placeholder=(
-							'Examples:\n'
-							'Alan Turing\n'
-							'History of machine learning\n'
-							'Python (programming language)\n'
-							'Battle of Midway'
-					),
-				)
+				wiki_query = st.text_area( 'Wikipedia Query', height=90, key='wikipedia_query',
+					placeholder=('Examples:\n'
+					             'Alan Turing\n'
+					             'History of machine learning\n'
+					             'Python (programming language)\n'
+					             'Battle of Midway'), )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					wiki_language = st.text_input(
-						'Language Code',
+					wiki_language = st.text_input( 'Language Code',
 						value=st.session_state.get( 'wikipedia_language', 'en' ),
-						key='wikipedia_language',
-						placeholder='en',
-						help='Wikipedia language code, e.g. en, fr, de, ja.'
-					)
+						key='wikipedia_language', placeholder='en',
+						help='Wikipedia language code, e.g. en, fr, de, ja.' )
 				
 				with c2:
-					wiki_max_docs = st.number_input(
-						'Max Docs',
-						min_value=1,
-						max_value=300,
-						value=int( st.session_state.get( 'wikipedia_max_docs', 5 ) ),
-						step=1,
+					wiki_max_docs = st.number_input( 'Max Docs', min_value=1, max_value=300,
+						value=int( st.session_state.get( 'wikipedia_max_docs', 5 ) ), step=1,
 						key='wikipedia_max_docs',
-						help='Maximum number of Wikipedia documents to retrieve.'
-					)
+						help='Maximum number of Wikipedia documents to retrieve.' )
 				
-				wiki_include_metadata = st.checkbox(
-					'Include All Metadata',
+				wiki_include_metadata = st.checkbox( 'Include All Metadata',
 					value=st.session_state.get( 'wikipedia_include_metadata', False ),
 					key='wikipedia_include_metadata',
-					help='Include additional metadata fields when available.'
-				)
+					help='Include additional metadata fields when available.' )
 				
-				st.caption(
-					'No API key is required for Wikipedia retrieval. '
-					'Optional only: LANGSMITH_API_KEY for tracing.'
-				)
+				st.caption( 'No API key is required for Wikipedia retrieval. '
+				            'Optional only: LANGSMITH_API_KEY for tracing.' )
 				
 				b1, b2 = st.columns( 2 )
 				
@@ -5033,24 +4609,22 @@ elif mode == 'Retrieval':
 				
 				if wiki_submit:
 					try:
-						queries = [ q.strip( ) for q in (wiki_query or '').splitlines( ) if q.strip( ) ]
+						queries = [ q.strip( ) for q in (wiki_query or '').splitlines( ) if
+							q.strip( ) ]
 						
 						if not queries:
 							st.warning( 'No input provided.' )
 						else:
 							from fetchers import Wikipedia
 							
-							fetcher = Wikipedia(
-								language=wiki_language or 'en',
+							fetcher = Wikipedia( language=wiki_language or 'en',
 								max_documents=int( wiki_max_docs ),
 								include_metadata=bool( wiki_include_metadata ) )
 							
 							results: list[ Document ] = [ ]
 							
 							for q in queries:
-								docs = fetcher.fetch(
-									q,
-									language=wiki_language or 'en',
+								docs = fetcher.fetch( q, language=wiki_language or 'en',
 									max_documents=int( wiki_max_docs ),
 									include_metadata=bool( wiki_include_metadata ) )
 								
@@ -5086,20 +4660,23 @@ elif mode == 'Retrieval':
 									
 									with meta_col1:
 										if 'title' in doc.metadata:
-											st.markdown( f"**Title:** {doc.metadata.get( 'title', '' )}" )
+											st.markdown(
+												f"**Title:** {doc.metadata.get( 'title', '' )}" )
 										if 'source' in doc.metadata:
-											st.markdown( f"**Source:** {doc.metadata.get( 'source', '' )}" )
+											st.markdown(
+												f"**Source:** {doc.metadata.get( 'source', '' )}" )
 									
 									with meta_col2:
 										if 'categories' in doc.metadata:
-											st.markdown( f"**Categories:** {doc.metadata.get( 'categories', '' )}" )
+											st.markdown(
+												f"**Categories:** "
+												f"{doc.metadata.get( 'categories', '' )}" )
 										if 'pageid' in doc.metadata:
-											st.markdown( f"**Page ID:** {doc.metadata.get( 'pageid', '' )}" )
+											st.markdown(
+												f"**Page ID:** "
+												f"{doc.metadata.get( 'pageid', '' )}" )
 								
-								st.text_area(
-									'Content',
-									value=doc.page_content or '',
-									height=300,
+								st.text_area( 'Content', value=doc.page_content or '', height=300,
 									key=f'wikipedia_doc_{idx}' )
 								
 								if doc.metadata:
@@ -5149,231 +4726,155 @@ elif mode == 'Retrieval':
 			
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			with col_left:
-				google_query = st.text_area(
-					'Query',
-					height=90,
-					key='googlesearch_query',
-					placeholder=(
-							'Examples:\n'
-							'site:epa.gov budget execution\n'
-							'OpenAI GPT-5 reasoning\n'
-							'filetype:pdf appropriations law'
-					),
-				)
+				google_query = st.text_area( 'Query', height=90, key='googlesearch_query',
+					placeholder=('Examples:\n'
+					             'site:epa.gov budget execution\n'
+					             'OpenAI GPT-5 reasoning\n'
+					             'filetype:pdf appropriations law'), )
 				
 				c1, c2, c3 = st.columns( 3 )
 				
 				with c1:
-					google_num_results = st.number_input(
-						'Results / Request',
-						min_value=1,
+					google_num_results = st.number_input( 'Results / Request', min_value=1,
 						max_value=10,
 						value=int( st.session_state.get( 'googlesearch_num_results', 10 ) ),
 						step=1,
 						key='googlesearch_num_results',
-						help='Google Custom Search returns up to 10 results per request.'
-					)
+						help='Google Custom Search returns up to 10 results per request.' )
 				
 				with c2:
-					google_start = st.number_input(
-						'Start Index',
-						min_value=1,
-						max_value=91,
-						value=int( st.session_state.get( 'googlesearch_start', 1 ) ),
-						step=1,
-						key='googlesearch_start'
-					)
+					google_start = st.number_input( 'Start Index', min_value=1, max_value=91,
+						value=int( st.session_state.get( 'googlesearch_start', 1 ) ), step=1,
+						key='googlesearch_start' )
 				
 				with c3:
-					google_timeout = st.number_input(
-						'Timeout',
-						min_value=1,
-						max_value=60,
-						value=int( st.session_state.get( 'googlesearch_timeout', 10 ) ),
-						step=1,
-						key='googlesearch_timeout'
-					)
+					google_timeout = st.number_input( 'Timeout', min_value=1, max_value=60,
+						value=int( st.session_state.get( 'googlesearch_timeout', 10 ) ), step=1,
+						key='googlesearch_timeout' )
 				
 				c4, c5 = st.columns( 2 )
 				
 				with c4:
-					google_exact_terms = st.text_input(
-						'Exact Terms',
+					google_exact_terms = st.text_input( 'Exact Terms',
 						value=st.session_state.get( 'googlesearch_exact_terms', '' ),
-						key='googlesearch_exact_terms'
-					)
+						key='googlesearch_exact_terms' )
 				
 				with c5:
-					google_exclude_terms = st.text_input(
-						'Exclude Terms',
+					google_exclude_terms = st.text_input( 'Exclude Terms',
 						value=st.session_state.get( 'googlesearch_exclude_terms', '' ),
-						key='googlesearch_exclude_terms'
-					)
+						key='googlesearch_exclude_terms' )
 				
 				c6, c7, c8 = st.columns( 3 )
 				
 				with c6:
-					google_file_type = st.text_input(
-						'File Type',
+					google_file_type = st.text_input( 'File Type',
 						value=st.session_state.get( 'googlesearch_file_type', '' ),
-						key='googlesearch_file_type',
-						placeholder='pdf'
-					)
+						key='googlesearch_file_type', placeholder='pdf' )
 				
 				with c7:
-					google_date_restrict = st.text_input(
-						'Date Restrict',
+					google_date_restrict = st.text_input( 'Date Restrict',
 						value=st.session_state.get( 'googlesearch_date_restrict', '' ),
-						key='googlesearch_date_restrict',
-						placeholder='d7, m1, y1'
-					)
+						key='googlesearch_date_restrict', placeholder='d7, m1, y1' )
 				
 				with c8:
-					google_safe = st.selectbox(
-						'Safe Search',
-						options=[ 'off', 'active' ],
+					google_safe = st.selectbox( 'Safe Search', options=[ 'off', 'active' ],
 						index=[ 'off', 'active' ].index(
-							st.session_state.get( 'googlesearch_safe', 'off' )
-						),
-						key='googlesearch_safe'
-					)
+							st.session_state.get( 'googlesearch_safe', 'off' ) ),
+						key='googlesearch_safe' )
 				
 				c9, c10, c11 = st.columns( 3 )
 				
 				with c9:
-					google_gl = st.text_input(
-						'Country (gl)',
-						value=st.session_state.get( 'googlesearch_gl', '' ),
-						key='googlesearch_gl',
-						placeholder='us'
-					)
+					google_gl = st.text_input( 'Country (gl)',
+						value=st.session_state.get( 'googlesearch_gl', '' ), key='googlesearch_gl',
+						placeholder='us' )
 				
 				with c10:
-					google_lr = st.text_input(
-						'Language Restrict (lr)',
-						value=st.session_state.get( 'googlesearch_lr', '' ),
-						key='googlesearch_lr',
-						placeholder='lang_en'
-					)
+					google_lr = st.text_input( 'Language Restrict (lr)',
+						value=st.session_state.get( 'googlesearch_lr', '' ), key='googlesearch_lr',
+						placeholder='lang_en' )
 				
 				with c11:
-					google_search_type = st.selectbox(
-						'Search Type',
-						options=[ '', 'image' ],
+					google_search_type = st.selectbox( 'Search Type', options=[ '', 'image' ],
 						index=[ '', 'image' ].index(
-							st.session_state.get( 'googlesearch_search_type', '' )
-						),
-						key='googlesearch_search_type'
-					)
+							st.session_state.get( 'googlesearch_search_type', '' ) ),
+						key='googlesearch_search_type' )
 				
 				c12, c13 = st.columns( 2 )
 				
 				with c12:
-					google_site_search = st.text_input(
-						'Site Search',
+					google_site_search = st.text_input( 'Site Search',
 						value=st.session_state.get( 'googlesearch_site_search', '' ),
-						key='googlesearch_site_search',
-						placeholder='example.gov'
-					)
+						key='googlesearch_site_search', placeholder='example.gov' )
 				
 				with c13:
-					google_site_search_filter = st.selectbox(
-						'Site Search Filter',
-						options=[ '', 'i', 'e' ],
-						index=[ '', 'i', 'e' ].index(
-							st.session_state.get( 'googlesearch_site_search_filter', '' )
-						),
-						key='googlesearch_site_search_filter',
-						help='i=include, e=exclude'
-					)
+					google_site_search_filter = st.selectbox( 'Site Search Filter',
+						options=[ '', 'i', 'e' ], index=[ '', 'i', 'e' ].index(
+							st.session_state.get( 'googlesearch_site_search_filter', '' ) ),
+						key='googlesearch_site_search_filter', help='i=include, e=exclude' )
 				
-				google_sort = st.text_input(
-					'Sort',
-					value=st.session_state.get( 'googlesearch_sort', '' ),
-					key='googlesearch_sort',
-					placeholder='date'
-				)
+				google_sort = st.text_input( 'Sort',
+					value=st.session_state.get( 'googlesearch_sort', '' ), key='googlesearch_sort',
+					placeholder='date' )
 				
 				c14, c15 = st.columns( 2 )
 				
 				with c14:
-					google_img_size = st.selectbox(
-						'Image Size',
-						options=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge', 'huge' ],
+					google_img_size = st.selectbox( 'Image Size',
+						options=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge',
+							'huge' ],
 						index=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge',
-						        'huge' ].index(
-							st.session_state.get( 'googlesearch_img_size', '' )
-						),
-						key='googlesearch_img_size',
-						disabled=(google_search_type != 'image')
-					)
+							'huge' ].index( st.session_state.get( 'googlesearch_img_size', '' ) ),
+						key='googlesearch_img_size', disabled=(google_search_type != 'image') )
 				
 				with c15:
-					google_img_type = st.selectbox(
-						'Image Type',
+					google_img_type = st.selectbox( 'Image Type',
 						options=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ],
-						index=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo', 'animated' ].index(
-							st.session_state.get( 'googlesearch_img_type', '' )
-						),
-						key='googlesearch_img_type',
-						disabled=(google_search_type != 'image')
-					)
+						index=[ '', 'clipart', 'face', 'lineart', 'stock', 'photo',
+							'animated' ].index(
+							st.session_state.get( 'googlesearch_img_type', '' ) ),
+						key='googlesearch_img_type', disabled=(google_search_type != 'image') )
 				
 				c16, c17 = st.columns( 2 )
 				
 				with c16:
-					google_img_color_type = st.selectbox(
-						'Image Color Type',
+					google_img_color_type = st.selectbox( 'Image Color Type',
 						options=[ '', 'color', 'gray', 'mono', 'trans' ],
 						index=[ '', 'color', 'gray', 'mono', 'trans' ].index(
-							st.session_state.get( 'googlesearch_img_color_type', '' )
-						),
+							st.session_state.get( 'googlesearch_img_color_type', '' ) ),
 						key='googlesearch_img_color_type',
-						disabled=(google_search_type != 'image')
-					)
+						disabled=(google_search_type != 'image') )
 				
 				with c17:
-					google_img_dominant_color = st.selectbox(
-						'Image Dominant Color',
-						options=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange',
-						          'pink', 'purple', 'red', 'teal', 'white', 'yellow' ],
-						index=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange',
-						        'pink', 'purple', 'red', 'teal', 'white', 'yellow' ].index(
-							st.session_state.get( 'googlesearch_img_dominant_color', '' )
-						),
+					google_img_dominant_color = st.selectbox( 'Image Dominant Color',
+						options=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange', 'pink',
+							'purple', 'red', 'teal', 'white', 'yellow' ],
+						index=[ '', 'black', 'blue', 'brown', 'gray', 'green', 'orange', 'pink',
+							'purple', 'red', 'teal', 'white', 'yellow' ].index(
+							st.session_state.get( 'googlesearch_img_dominant_color', '' ) ),
 						key='googlesearch_img_dominant_color',
-						disabled=(google_search_type != 'image')
-					)
+						disabled=(google_search_type != 'image') )
 				
 				c18, c19 = st.columns( 2 )
 				
 				with c18:
-					google_api_key = st.text_input(
-						'API Key',
-						value='',
-						type='password',
+					google_api_key = st.text_input( 'API Key', value='', type='password',
 						key='googlesearch_api_key',
-						placeholder='Uses GOOGLE_API_KEY when left blank.'
-					)
+						placeholder='Uses GOOGLE_API_KEY when left blank.' )
 				
 				with c19:
-					google_cse_id = st.text_input(
-						'CSE ID',
-						value='',
-						key='googlesearch_cse_id',
-						placeholder='Uses GOOGLE_CSE_ID when left blank.'
-					)
+					google_cse_id = st.text_input( 'CSE ID', value='', key='googlesearch_cse_id',
+						placeholder='Uses GOOGLE_CSE_ID when left blank.' )
 				
-				st.caption(
-					'Required keys: GOOGLE_API_KEY and GOOGLE_CSE_ID. '
-					'Endpoint updated to customsearch.googleapis.com/customsearch/v1.'
-				)
+				st.caption( 'Required keys: GOOGLE_API_KEY and GOOGLE_CSE_ID. '
+				            'Endpoint updated to customsearch.googleapis.com/customsearch/v1.' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
 					google_submit = st.button( 'Submit', key='googlesearch_submit' )
 				with b2:
-					st.button( 'Clear', key='googlesearch_clear', on_click=_clear_googlesearch_state )
+					st.button( 'Clear', key='googlesearch_clear',
+						on_click=_clear_googlesearch_state )
 			
 			with col_right:
 				st.markdown( 'Results' )
@@ -5381,29 +4882,18 @@ elif mode == 'Retrieval':
 				if google_submit:
 					try:
 						f = GoogleSearch( )
-						result = f.fetch(
-							keywords=google_query,
-							results=int( google_num_results ),
-							start=int( google_start ),
-							exact_terms=google_exact_terms,
-							exclude_terms=google_exclude_terms,
-							file_type=google_file_type,
-							date_restrict=google_date_restrict,
-							gl=google_gl,
-							lr=google_lr,
-							safe=google_safe,
-							search_type=google_search_type,
+						result = f.fetch( keywords=google_query, results=int( google_num_results ),
+							start=int( google_start ), exact_terms=google_exact_terms,
+							exclude_terms=google_exclude_terms, file_type=google_file_type,
+							date_restrict=google_date_restrict, gl=google_gl, lr=google_lr,
+							safe=google_safe, search_type=google_search_type,
 							site_search=google_site_search,
-							site_search_filter=google_site_search_filter,
-							sort=google_sort,
-							img_size=google_img_size,
-							img_type=google_img_type,
+							site_search_filter=google_site_search_filter, sort=google_sort,
+							img_size=google_img_size, img_type=google_img_type,
 							img_color_type=google_img_color_type,
 							img_dominant_color=google_img_dominant_color,
-							time=int( google_timeout ),
-							api_key=(google_api_key or None),
-							cse_id=(google_cse_id or None)
-						)
+							time=int( google_timeout ), api_key=(google_api_key or None),
+							cse_id=(google_cse_id or None) )
 						
 						st.session_state[ 'googlesearch_results' ] = result or { }
 						st.rerun( )
@@ -5418,7 +4908,8 @@ elif mode == 'Retrieval':
 					st.text( 'No results.' )
 				else:
 					queries = result.get( 'queries', { } ) if isinstance( result, dict ) else { }
-					search_info = result.get( 'searchInformation', { } ) if isinstance( result, dict ) else { }
+					search_info = result.get( 'searchInformation', { } ) if isinstance( result,
+						dict ) else { }
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if queries or search_info:
@@ -5428,7 +4919,7 @@ elif mode == 'Retrieval':
 						
 						if isinstance( search_info, dict ):
 							for key in [ 'searchTime', 'formattedSearchTime', 'totalResults',
-							             'formattedTotalResults' ]:
+								'formattedTotalResults' ]:
 								if key in search_info:
 									meta_summary[ key ] = search_info.get( key )
 						
@@ -5437,8 +4928,8 @@ elif mode == 'Retrieval':
 							if isinstance( requests, list ) and requests:
 								request_item = requests[ 0 ]
 								if isinstance( request_item, dict ):
-									for key in [ 'searchTerms', 'count', 'startIndex', 'inputEncoding',
-									             'outputEncoding' ]:
+									for key in [ 'searchTerms', 'count', 'startIndex',
+										'inputEncoding', 'outputEncoding' ]:
 										if key in request_item:
 											meta_summary[ key ] = request_item.get( key )
 						
@@ -5446,12 +4937,7 @@ elif mode == 'Retrieval':
 							st.json( meta_summary )
 						
 						with st.expander( 'Raw Search Metadata', expanded=False ):
-							st.json(
-								{
-										'queries': queries,
-										'searchInformation': search_info,
-								}
-							)
+							st.json( { 'queries': queries, 'searchInformation': search_info, } )
 					
 					if not items:
 						st.info( 'No results returned.' )
@@ -5470,7 +4956,8 @@ elif mode == 'Retrieval':
 								if display_link:
 									meta_parts.append( f'Domain: `{display_link}`' )
 								
-								pagemap = item.get( 'pagemap', { } ) if isinstance( item, dict ) else { }
+								pagemap = item.get( 'pagemap', { } ) if isinstance( item,
+									dict ) else { }
 								if isinstance( pagemap, dict ):
 									if 'metatags' in pagemap:
 										meta_parts.append( 'Has metatags' )
@@ -5526,69 +5013,41 @@ elif mode == 'Retrieval':
 			
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			with col_left:
-				openscience_mode = st.selectbox(
-					'Mode',
+				openscience_mode = st.selectbox( 'Mode',
 					options=[ 'dataset', 'metadata', 'assays', 'data' ],
 					index=[ 'dataset', 'metadata', 'assays', 'data' ].index(
-						st.session_state.get( 'openscience_mode', 'dataset' )
-					),
-					key='openscience_mode',
-					help=(
-							'dataset = fetch dataset metadata by accession; '
-							'metadata/assays/data = query the corresponding OSDR API endpoint.'
-					)
-				)
+						st.session_state.get( 'openscience_mode', 'dataset' ) ),
+					key='openscience_mode', help=('dataset = fetch dataset metadata by accession; '
+					                              'metadata/assays/data = query the corresponding '
+					                              'OSDR API endpoint.') )
 				
-				openscience_accession = st.text_input(
-					'Dataset Accession',
+				openscience_accession = st.text_input( 'Dataset Accession',
 					value=st.session_state.get( 'openscience_accession', '' ),
-					key='openscience_accession',
-					placeholder='Example: OSD-48'
-				)
+					key='openscience_accession', placeholder='Example: OSD-48' )
 				
-				openscience_query = st.text_area(
-					'Query',
-					value=st.session_state.get( 'openscience_query', '' ),
-					height=120,
-					key='openscience_query',
-					placeholder=(
-							'Example: (id.accession=OSD-48) '
-							'OR study.characteristics.organism=Mus musculus'
-					)
-				)
+				openscience_query = st.text_area( 'Query',
+					value=st.session_state.get( 'openscience_query', '' ), height=120,
+					key='openscience_query', placeholder=('Example: (id.accession=OSD-48) '
+					                                      'OR study.characteristics.organism=Mus '
+					                                      'musculus') )
 				
-				openscience_format = st.selectbox(
-					'Format',
+				openscience_format = st.selectbox( 'Format',
 					options=[ 'json', 'csv', 'tsv', 'browser' ],
 					index=[ 'json', 'csv', 'tsv', 'browser' ].index(
-						st.session_state.get( 'openscience_format', 'json' )
-					),
-					key='openscience_format'
-				)
+						st.session_state.get( 'openscience_format', 'json' ) ),
+					key='openscience_format' )
 				
-				openscience_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'openscience_timeout', 20 ) ),
-					step=1,
-					key='openscience_timeout'
-				)
+				openscience_timeout = st.number_input( 'Timeout (seconds)', min_value=5,
+					max_value=120, value=int( st.session_state.get( 'openscience_timeout', 20 ) ),
+					step=1, key='openscience_timeout' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					openscience_submit = st.button(
-						'Submit',
-						key='openscience_submit',
-						use_container_width=True
-					)
+					openscience_submit = st.button( 'Submit', key='openscience_submit',
+						use_container_width=True )
 				with b2:
-					st.button(
-						'Clear',
-						key='openscience_clear',
-						on_click=_clear_openscience_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='openscience_clear', on_click=_clear_openscience_state,
+						use_container_width=True )
 			
 			with col_right:
 				st.markdown( 'Results' )
@@ -5597,13 +5056,10 @@ elif mode == 'Retrieval':
 					try:
 						f = OpenScience( )
 						
-						result = f.fetch(
-							mode=str( openscience_mode ),
-							query=str( openscience_query ),
-							accession=str( openscience_accession ),
+						result = f.fetch( mode=str( openscience_mode ),
+							query=str( openscience_query ), accession=str( openscience_accession ),
 							format_value=str( openscience_format ),
-							time=int( openscience_timeout )
-						)
+							time=int( openscience_timeout ) )
 						
 						st.session_state[ 'openscience_results' ] = result or { }
 						st.rerun( )
@@ -5622,34 +5078,17 @@ elif mode == 'Retrieval':
 					
 					st.markdown( '#### Request Metadata' )
 					st.json(
-						{
-								'mode': mode_value,
-								'url': result.get( 'url', '' ),
-								'params': params,
-						}
-					)
+						{ 'mode': mode_value, 'url': result.get( 'url', '' ), 'params': params, } )
 					
 					if mode_value == 'dataset' and isinstance( data, dict ) and data:
-						title_value = (
-								data.get( 'title' )
-								or data.get( 'name' )
-								or data.get( 'accession' )
-								or params.get( 'accession', '' )
-								or 'Dataset'
-						)
+						title_value = (data.get( 'title' ) or data.get( 'name' ) or data.get(
+							'accession' ) or params.get( 'accession', '' ) or 'Dataset')
 						
 						st.markdown( f'### {title_value}' )
 						
 						meta_fields: Dict[ str, Any ] = { }
-						for key in [
-								'accession',
-								'identifier',
-								'organism',
-								'platform',
-								'assay',
-								'project',
-								'study'
-						]:
+						for key in [ 'accession', 'identifier', 'organism', 'platform', 'assay',
+							'project', 'study' ]:
 							if key in data:
 								meta_fields[ key ] = data.get( key )
 						
@@ -5679,7 +5118,7 @@ elif mode == 'Retrieval':
 							value = data.get( key, None )
 							if isinstance( value, list ) and value:
 								table_candidates = [ item for item in value if
-								                     isinstance( item, dict ) ]
+									isinstance( item, dict ) ]
 								break
 						
 						if table_candidates:
@@ -5694,11 +5133,7 @@ elif mode == 'Retrieval':
 							st.json( data )
 					
 					elif data:
-						st.text_area(
-							'Output',
-							value=str( data ),
-							height=320
-						)
+						st.text_area( 'Output', value=str( data ), height=320 )
 					else:
 						st.info( 'No results returned.' )
 					
@@ -5729,143 +5164,79 @@ elif mode == 'Retrieval':
 				st.session_state[ 'govinfo_clear_request' ] = False
 			
 			def _clear_govinfo_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Gov Info expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'govinfo_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			with col_left:
-				govinfo_mode = st.selectbox(
-					'Mode',
+				govinfo_mode = st.selectbox( 'Mode',
 					options=[ 'search', 'package_summary', 'collection' ],
 					index=[ 'search', 'package_summary', 'collection' ].index(
-						st.session_state.get( 'govinfo_mode', 'search' )
-					),
-					key='govinfo_mode',
-					help=(
-							'search = GovInfo Search Service; '
-							'package_summary = package details by package ID; '
-							'collection = browse a collection since an ISO timestamp.'
-					)
-				)
+						st.session_state.get( 'govinfo_mode', 'search' ) ), key='govinfo_mode',
+					help=('search = GovInfo Search Service; '
+					      'package_summary = package details by package ID; '
+					      'collection = browse a collection since an ISO timestamp.') )
 				
-				govinfo_query = st.text_area(
-					'Query',
-					value=st.session_state.get( 'govinfo_query', '' ),
-					height=120,
-					key='govinfo_query',
-					placeholder=(
-							'Example: collection:BILLS AND congress:118 '
-							'AND title:"appropriations"'
-					)
-				)
+				govinfo_query = st.text_area( 'Query',
+					value=st.session_state.get( 'govinfo_query', '' ), height=120,
+					key='govinfo_query', placeholder=('Example: collection:BILLS AND congress:118 '
+					                                  'AND title:"appropriations"') )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					govinfo_page_size = st.number_input(
-						'Page Size',
-						min_value=1,
-						max_value=1000,
-						value=int( st.session_state.get( 'govinfo_page_size', 10 ) ),
-						step=1,
-						key='govinfo_page_size'
-					)
+					govinfo_page_size = st.number_input( 'Page Size', min_value=1, max_value=1000,
+						value=int( st.session_state.get( 'govinfo_page_size', 10 ) ), step=1,
+						key='govinfo_page_size' )
 				
 				with c2:
-					govinfo_offset_mark = st.text_input(
-						'Offset Mark',
+					govinfo_offset_mark = st.text_input( 'Offset Mark',
 						value=st.session_state.get( 'govinfo_offset_mark', '*' ),
-						key='govinfo_offset_mark',
-						placeholder='*'
-					)
+						key='govinfo_offset_mark', placeholder='*' )
 				
 				c3, c4 = st.columns( 2 )
 				
 				with c3:
-					govinfo_sort_field = st.selectbox(
-						'Sort Field',
+					govinfo_sort_field = st.selectbox( 'Sort Field',
 						options=[ 'score', 'lastModified' ],
 						index=[ 'score', 'lastModified' ].index(
-							st.session_state.get( 'govinfo_sort_field', 'score' )
-						),
-						key='govinfo_sort_field'
-					)
+							st.session_state.get( 'govinfo_sort_field', 'score' ) ),
+						key='govinfo_sort_field' )
 				
 				with c4:
-					govinfo_sort_order = st.selectbox(
-						'Sort Order',
-						options=[ 'DESC', 'ASC' ],
+					govinfo_sort_order = st.selectbox( 'Sort Order', options=[ 'DESC', 'ASC' ],
 						index=[ 'DESC', 'ASC' ].index(
-							st.session_state.get( 'govinfo_sort_order', 'DESC' )
-						),
-						key='govinfo_sort_order'
-					)
+							st.session_state.get( 'govinfo_sort_order', 'DESC' ) ),
+						key='govinfo_sort_order' )
 				
-				govinfo_package_id = st.text_input(
-					'Package ID',
+				govinfo_package_id = st.text_input( 'Package ID',
 					value=st.session_state.get( 'govinfo_package_id', '' ),
-					key='govinfo_package_id',
-					placeholder='Example: CREC-2018-10-10'
-				)
+					key='govinfo_package_id', placeholder='Example: CREC-2018-10-10' )
 				
 				c5, c6 = st.columns( 2 )
 				
 				with c5:
-					govinfo_collection = st.text_input(
-						'Collection',
+					govinfo_collection = st.text_input( 'Collection',
 						value=st.session_state.get( 'govinfo_collection', '' ),
-						key='govinfo_collection',
-						placeholder='Example: CREC'
-					)
+						key='govinfo_collection', placeholder='Example: CREC' )
 				
 				with c6:
-					govinfo_start_date = st.text_input(
-						'Start Date (ISO)',
-						value=st.session_state.get(
-							'govinfo_start_date',
-							'2025-01-01T00:00:00Z'
-						),
-						key='govinfo_start_date',
-						placeholder='YYYY-MM-DDTHH:MM:SSZ'
-					)
+					govinfo_start_date = st.text_input( 'Start Date (ISO)',
+						value=st.session_state.get( 'govinfo_start_date', '2025-01-01T00:00:00Z' ),
+						key='govinfo_start_date', placeholder='YYYY-MM-DDTHH:MM:SSZ' )
 				
-				govinfo_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'govinfo_timeout', 20 ) ),
-					step=1,
-					key='govinfo_timeout'
-				)
+				govinfo_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'govinfo_timeout', 20 ) ), step=1,
+					key='govinfo_timeout' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					govinfo_submit = st.button(
-						'Submit',
-						key='govinfo_submit',
-						use_container_width=True
-					)
+					govinfo_submit = st.button( 'Submit', key='govinfo_submit',
+						use_container_width=True )
 				
 				with b2:
-					govinfo_clear = st.button(
-						'Clear',
-						key='govinfo_clear',
-						on_click=_clear_govinfo_state,
-						use_container_width=True
-					)
+					govinfo_clear = st.button( 'Clear', key='govinfo_clear',
+						on_click=_clear_govinfo_state, use_container_width=True )
 			
 			with col_right:
 				govinfo_output = st.empty( )
@@ -5876,18 +5247,11 @@ elif mode == 'Retrieval':
 				try:
 					f = GovData( )
 					
-					result = f.fetch(
-						mode=str( govinfo_mode ),
-						query=str( govinfo_query ),
-						page_size=int( govinfo_page_size ),
-						offset_mark=str( govinfo_offset_mark ),
-						sort_field=str( govinfo_sort_field ),
-						sort_order=str( govinfo_sort_order ),
-						package_id=str( govinfo_package_id ),
-						collection=str( govinfo_collection ),
-						start_date=str( govinfo_start_date ),
-						time=int( govinfo_timeout )
-					)
+					result = f.fetch( mode=str( govinfo_mode ), query=str( govinfo_query ),
+						page_size=int( govinfo_page_size ), offset_mark=str( govinfo_offset_mark ),
+						sort_field=str( govinfo_sort_field ), sort_order=str( govinfo_sort_order ),
+						package_id=str( govinfo_package_id ), collection=str( govinfo_collection ),
+						start_date=str( govinfo_start_date ), time=int( govinfo_timeout ) )
 					
 					st.session_state[ 'govinfo_results' ] = result or { }
 					st.rerun( )
@@ -5907,14 +5271,9 @@ elif mode == 'Retrieval':
 				
 				with col_right:
 					st.markdown( '#### Request Metadata' )
-					st.json(
-						{
-								'mode': mode_value,
-								'url': result.get( 'url', '' ),
-								'params': params,
-								'payload': payload,
-						}
-					)
+					st.json( { 'mode': mode_value, 'url': result.get( 'url', '' ), 'params':
+						params,
+						'payload': payload, } )
 					
 					items: List[ Dict[ str, Any ] ] = [ ]
 					
@@ -5931,11 +5290,8 @@ elif mode == 'Retrieval':
 						st.markdown( '#### Package Summary' )
 						
 						title_value = (
-								data.get( 'title' )
-								or data.get( 'packageTitle' )
-								or data.get( 'packageId' )
-								or 'Package'
-						)
+								data.get( 'title' ) or data.get( 'packageTitle' ) or data.get(
+							'packageId' ) or 'Package')
 						
 						st.markdown( f'### {title_value}' )
 						
@@ -5960,40 +5316,22 @@ elif mode == 'Retrieval':
 						
 						for index, item in enumerate( items, start=1 ):
 							title_value = (
-									item.get( 'title' )
-									or item.get( 'packageTitle' )
-									or item.get( 'packageId' )
-									or item.get( 'granuleId' )
-									or f'Result {index}'
-							)
+									item.get( 'title' ) or item.get( 'packageTitle' ) or item.get(
+								'packageId' ) or item.get( 'granuleId' ) or f'Result {index}')
 							
 							package_value = (
-									item.get( 'packageId' )
-									or item.get( 'granuleId' )
-									or item.get( 'id' )
-									or ''
-							)
+									item.get( 'packageId' ) or item.get( 'granuleId' ) or item.get(
+								'id' ) or '')
 							
-							collection_value = (
-									item.get( 'collectionCode' )
-									or item.get( 'collectionName' )
-									or item.get( 'collection' )
-									or ''
-							)
+							collection_value = (item.get( 'collectionCode' ) or item.get(
+								'collectionName' ) or item.get( 'collection' ) or '')
 							
-							date_value = (
-									item.get( 'lastModified' )
-									or item.get( 'dateIssued' )
-									or item.get( 'publishDate' )
-									or ''
-							)
+							date_value = (item.get( 'lastModified' ) or item.get(
+								'dateIssued' ) or item.get( 'publishDate' ) or '')
 							
 							summary_value = (
-									item.get( 'summary' )
-									or item.get( 'description' )
-									or item.get( 'snippet' )
-									or ''
-							)
+									item.get( 'summary' ) or item.get( 'description' ) or item.get(
+								'snippet' ) or '')
 							
 							with st.container( border=True ):
 								st.markdown( f'**{index}. {title_value}**' )
@@ -6025,11 +5363,7 @@ elif mode == 'Retrieval':
 						st.json( data )
 					elif data:
 						st.markdown( '#### Result' )
-						st.text_area(
-							'Output',
-							value=str( data ),
-							height=320
-						)
+						st.text_area( 'Output', value=str( data ), height=320 )
 					else:
 						st.info( 'No results returned.' )
 					
@@ -6065,208 +5399,119 @@ elif mode == 'Retrieval':
 				st.session_state[ 'congress_clear_request' ] = False
 			
 			def _clear_congress_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Congress expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'congress_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				congress_mode = st.selectbox(
-					'Mode',
-					options=[
-							'congresses',
-							'bills',
-							'bill_detail',
-							'laws',
-							'law_detail',
-							'reports',
-							'report_detail'
-					],
-					index=[
-							'congresses',
-							'bills',
-							'bill_detail',
-							'laws',
-							'law_detail',
-							'reports',
-							'report_detail'
-					].index( st.session_state.get( 'congress_mode', 'congresses' ) ),
-					key='congress_mode',
-					help=(
-							'Congress.gov is a structured endpoint API. '
-							'Choose the specific operation you want to perform.'
-					)
-				)
+				congress_mode = st.selectbox( 'Mode',
+					options=[ 'congresses', 'bills', 'bill_detail', 'laws', 'law_detail',
+						'reports',
+						'report_detail' ],
+					index=[ 'congresses', 'bills', 'bill_detail', 'laws', 'law_detail', 'reports',
+						'report_detail' ].index(
+						st.session_state.get( 'congress_mode', 'congresses' ) ),
+					key='congress_mode', help=('Congress.gov is a structured endpoint API. '
+					                           'Choose the specific operation you want to '
+					                           'perform.') )
 				
-				congress_number = st.number_input(
-					'Congress Number',
-					min_value=1,
-					max_value=999,
-					value=int( st.session_state.get( 'congress_number', 119 ) ),
-					step=1,
-					key='congress_number'
-				)
+				congress_number = st.number_input( 'Congress Number', min_value=1, max_value=999,
+					value=int( st.session_state.get( 'congress_number', 119 ) ), step=1,
+					key='congress_number' )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					congress_bill_type = st.selectbox(
-						'Bill Type',
+					congress_bill_type = st.selectbox( 'Bill Type',
 						options=[ '', 'hr', 's', 'hjres', 'sjres', 'hconres', 'sconres', 'hres',
-						          'sres' ],
+							'sres' ],
 						index=[ '', 'hr', 's', 'hjres', 'sjres', 'hconres', 'sconres', 'hres',
-						        'sres' ].index(
-							st.session_state.get( 'congress_bill_type', '' )
-						),
-						key='congress_bill_type'
-					)
+							'sres' ].index( st.session_state.get( 'congress_bill_type', '' ) ),
+						key='congress_bill_type' )
 				
 				with c2:
-					congress_bill_number = st.number_input(
-						'Bill Number',
-						min_value=0,
+					congress_bill_number = st.number_input( 'Bill Number', min_value=0,
 						max_value=999999,
-						value=int( st.session_state.get( 'congress_bill_number', 0 ) ),
-						step=1,
-						key='congress_bill_number'
-					)
+						value=int( st.session_state.get( 'congress_bill_number', 0 ) ), step=1,
+						key='congress_bill_number' )
 				
 				c3, c4 = st.columns( 2 )
 				
 				with c3:
-					congress_law_type = st.selectbox(
-						'Law Type',
-						options=[ '', 'pub', 'priv' ],
+					congress_law_type = st.selectbox( 'Law Type', options=[ '', 'pub', 'priv' ],
 						index=[ '', 'pub', 'priv' ].index(
-							st.session_state.get( 'congress_law_type', '' )
-						),
-						key='congress_law_type'
-					)
+							st.session_state.get( 'congress_law_type', '' ) ),
+						key='congress_law_type' )
 				
 				with c4:
-					congress_law_number = st.number_input(
-						'Law Number',
-						min_value=0,
+					congress_law_number = st.number_input( 'Law Number', min_value=0,
 						max_value=999999,
-						value=int( st.session_state.get( 'congress_law_number', 0 ) ),
-						step=1,
-						key='congress_law_number'
-					)
+						value=int( st.session_state.get( 'congress_law_number', 0 ) ), step=1,
+						key='congress_law_number' )
 				
 				c5, c6 = st.columns( 2 )
 				
 				with c5:
-					congress_report_type = st.selectbox(
-						'Report Type',
+					congress_report_type = st.selectbox( 'Report Type',
 						options=[ '', 'hrpt', 'srpt', 'erpt' ],
 						index=[ '', 'hrpt', 'srpt', 'erpt' ].index(
-							st.session_state.get( 'congress_report_type', '' )
-						),
-						key='congress_report_type'
-					)
+							st.session_state.get( 'congress_report_type', '' ) ),
+						key='congress_report_type' )
 				
 				with c6:
-					congress_report_number = st.number_input(
-						'Report Number',
-						min_value=0,
+					congress_report_number = st.number_input( 'Report Number', min_value=0,
 						max_value=999999,
-						value=int( st.session_state.get( 'congress_report_number', 0 ) ),
-						step=1,
-						key='congress_report_number'
-					)
+						value=int( st.session_state.get( 'congress_report_number', 0 ) ), step=1,
+						key='congress_report_number' )
 				
 				c7, c8 = st.columns( 2 )
 				
 				with c7:
-					congress_offset = st.number_input(
-						'Offset',
-						min_value=0,
-						max_value=1000000,
-						value=int( st.session_state.get( 'congress_offset', 0 ) ),
-						step=1,
-						key='congress_offset'
-					)
+					congress_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
+						value=int( st.session_state.get( 'congress_offset', 0 ) ), step=1,
+						key='congress_offset' )
 				
 				with c8:
-					congress_limit = st.number_input(
-						'Limit',
-						min_value=1,
-						max_value=250,
-						value=int( st.session_state.get( 'congress_limit', 20 ) ),
-						step=1,
-						key='congress_limit'
-					)
+					congress_limit = st.number_input( 'Limit', min_value=1, max_value=250,
+						value=int( st.session_state.get( 'congress_limit', 20 ) ), step=1,
+						key='congress_limit' )
 				
-				congress_sort = st.selectbox(
-					'Sort',
+				congress_sort = st.selectbox( 'Sort',
 					options=[ 'updateDate+desc', 'updateDate+asc' ],
 					index=[ 'updateDate+desc', 'updateDate+asc' ].index(
-						st.session_state.get( 'congress_sort', 'updateDate+desc' )
-					),
-					key='congress_sort'
-				)
+						st.session_state.get( 'congress_sort', 'updateDate+desc' ) ),
+					key='congress_sort' )
 				
 				c9, c10 = st.columns( 2 )
 				
 				with c9:
-					congress_from_datetime = st.text_input(
-						'From DateTime (ISO)',
+					congress_from_datetime = st.text_input( 'From DateTime (ISO)',
 						value=st.session_state.get( 'congress_from_datetime', '' ),
-						key='congress_from_datetime',
-						placeholder='YYYY-MM-DDTHH:MM:SSZ'
-					)
+						key='congress_from_datetime', placeholder='YYYY-MM-DDTHH:MM:SSZ' )
 				
 				with c10:
-					congress_to_datetime = st.text_input(
-						'To DateTime (ISO)',
+					congress_to_datetime = st.text_input( 'To DateTime (ISO)',
 						value=st.session_state.get( 'congress_to_datetime', '' ),
-						key='congress_to_datetime',
-						placeholder='YYYY-MM-DDTHH:MM:SSZ'
-					)
+						key='congress_to_datetime', placeholder='YYYY-MM-DDTHH:MM:SSZ' )
 				
-				congress_conference = st.checkbox(
-					'Conference Reports',
+				congress_conference = st.checkbox( 'Conference Reports',
 					value=bool( st.session_state.get( 'congress_conference', False ) ),
-					key='congress_conference'
-				)
+					key='congress_conference' )
 				
-				congress_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
+				congress_timeout = st.number_input( 'Timeout (seconds)', min_value=5,
 					max_value=120,
-					value=int( st.session_state.get( 'congress_timeout', 20 ) ),
-					step=1,
-					key='congress_timeout'
-				)
+					value=int( st.session_state.get( 'congress_timeout', 20 ) ), step=1,
+					key='congress_timeout' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					congress_submit = st.button(
-						'Submit',
-						key='congress_submit',
-						use_container_width=True
-					)
+					congress_submit = st.button( 'Submit', key='congress_submit',
+						use_container_width=True )
 				
 				with b2:
-					congress_clear = st.button(
-						'Clear',
-						key='congress_clear',
-						on_click=_clear_congress_state,
-						use_container_width=True
-					)
+					congress_clear = st.button( 'Clear', key='congress_clear',
+						on_click=_clear_congress_state, use_container_width=True )
 			
 			with col_right:
 				congress_output = st.empty( )
@@ -6275,30 +5520,23 @@ elif mode == 'Retrieval':
 				try:
 					f = Congress( )
 					
-					result = f.fetch(
-						mode=str( congress_mode ),
-						congress=int( congress_number ),
+					result = f.fetch( mode=str( congress_mode ), congress=int( congress_number ),
 						bill_type=str( congress_bill_type ),
-						bill_number=int( congress_bill_number ),
-						law_type=str( congress_law_type ),
+						bill_number=int( congress_bill_number ), law_type=str( congress_law_type ),
 						law_number=int( congress_law_number ),
 						report_type=str( congress_report_type ),
-						report_number=int( congress_report_number ),
-						offset=int( congress_offset ),
-						limit=int( congress_limit ),
-						sort=str( congress_sort ),
+						report_number=int( congress_report_number ), offset=int( congress_offset ),
+						limit=int( congress_limit ), sort=str( congress_sort ),
 						from_date_time=str( congress_from_datetime ),
 						to_date_time=str( congress_to_datetime ),
-						conference=bool( congress_conference ),
-						time=int( congress_timeout )
-					)
+						conference=bool( congress_conference ), time=int( congress_timeout ) )
 					
 					st.session_state[ 'congress_results' ] = result or { }
 					st.rerun( )
 				
 				except Exception as exc:
 					st.error( str( exc ) )
-					
+			
 			result = st.session_state.get( 'congress_results', { } )
 			
 			if not result:
@@ -6311,26 +5549,13 @@ elif mode == 'Retrieval':
 				with col_right:
 					st.markdown( '#### Request Metadata' )
 					st.json(
-						{
-								'mode': mode_value,
-								'url': result.get( 'url', '' ),
-								'params': params,
-						}
-					)
+						{ 'mode': mode_value, 'url': result.get( 'url', '' ), 'params': params, } )
 					
 					items: List[ Dict[ str, Any ] ] = [ ]
 					
 					if isinstance( data, dict ):
-						for key in [
-								'bills',
-								'laws',
-								'reports',
-								'committeeReports',
-								'congresses',
-								'sessions',
-								'results',
-								'items'
-						]:
+						for key in [ 'bills', 'laws', 'reports', 'committeeReports', 'congresses',
+							'sessions', 'results', 'items' ]:
 							value = data.get( key, None )
 							if isinstance( value, list ):
 								items = [ item for item in value if isinstance( item, dict ) ]
@@ -6342,37 +5567,18 @@ elif mode == 'Retrieval':
 						st.markdown( '#### Results' )
 						
 						for index, item in enumerate( items, start=1 ):
-							title_value = (
-									item.get( 'title' )
-									or item.get( 'name' )
-									or item.get( 'number' )
-									or item.get( 'billNumber' )
-									or item.get( 'lawNumber' )
-									or item.get( 'reportNumber' )
-									or f'Result {index}'
-							)
+							title_value = (item.get( 'title' ) or item.get( 'name' ) or item.get(
+								'number' ) or item.get( 'billNumber' ) or item.get(
+								'lawNumber' ) or item.get( 'reportNumber' ) or f'Result {index}')
 							
 							id_parts: List[ str ] = [ ]
-							for key in [
-									'congress',
-									'type',
-									'number',
-									'billType',
-									'billNumber',
-									'lawType',
-									'lawNumber',
-									'reportType',
-									'reportNumber'
-							]:
+							for key in [ 'congress', 'type', 'number', 'billType', 'billNumber',
+								'lawType', 'lawNumber', 'reportType', 'reportNumber' ]:
 								if key in item and str( item.get( key ) ).strip( ):
 									id_parts.append( f'{key}={item.get( key )}' )
 							
-							action_value = (
-									item.get( 'latestAction' )
-									or item.get( 'latestActionText' )
-									or item.get( 'actionDate' )
-									or ''
-							)
+							action_value = (item.get( 'latestAction' ) or item.get(
+								'latestActionText' ) or item.get( 'actionDate' ) or '')
 							
 							with st.container( border=True ):
 								st.markdown( f'**{index}. {title_value}**' )
@@ -6391,32 +5597,16 @@ elif mode == 'Retrieval':
 					elif isinstance( data, dict ) and data:
 						st.markdown( '#### Detail' )
 						
-						title_value = (
-								data.get( 'title' )
-								or data.get( 'name' )
-								or data.get( 'number' )
-								or data.get( 'billNumber' )
-								or data.get( 'lawNumber' )
-								or data.get( 'reportNumber' )
-								or 'Result'
-						)
+						title_value = (data.get( 'title' ) or data.get( 'name' ) or data.get(
+							'number' ) or data.get( 'billNumber' ) or data.get(
+							'lawNumber' ) or data.get( 'reportNumber' ) or 'Result')
 						
 						st.markdown( f'### {title_value}' )
 						
 						summary_fields: Dict[ str, Any ] = { }
-						for key in [
-								'congress',
-								'type',
-								'number',
-								'billType',
-								'billNumber',
-								'lawType',
-								'lawNumber',
-								'reportType',
-								'reportNumber',
-								'updateDate',
-								'actionDate'
-						]:
+						for key in [ 'congress', 'type', 'number', 'billType', 'billNumber',
+							'lawType', 'lawNumber', 'reportType', 'reportNumber', 'updateDate',
+							'actionDate' ]:
 							if key in data:
 								summary_fields[ key ] = data.get( key )
 						
@@ -6433,11 +5623,7 @@ elif mode == 'Retrieval':
 					
 					elif data:
 						st.markdown( '#### Result' )
-						st.text_area(
-							'Output',
-							value=str( data ),
-							height=320
-						)
+						st.text_area( 'Output', value=str( data ), height=320 )
 					else:
 						st.info( 'No results returned.' )
 					
@@ -6465,151 +5651,84 @@ elif mode == 'Retrieval':
 				st.session_state[ 'internetarchive_clear_request' ] = False
 			
 			def _clear_internetarchive_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Internet Archive expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'internetarchive_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				ia_query = st.text_area(
-					'Query',
-					value=st.session_state.get( 'internetarchive_query', '' ),
-					height=80,
-					key='internetarchive_query',
-					placeholder=(
-							'Examples:\n'
-							'climate change\n'
-							'title:"appropriations" AND creator:"Congress"\n'
-							'budget execution'
-					)
-				)
+				ia_query = st.text_area( 'Query',
+					value=st.session_state.get( 'internetarchive_query', '' ), height=80,
+					key='internetarchive_query', placeholder=('Examples:\n'
+					                                          'climate change\n'
+					                                          'title:"appropriations" AND '
+					                                          'creator:"Congress"\n'
+					                                          'budget execution') )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					ia_rows = st.number_input(
-						'Rows',
-						min_value=1,
-						max_value=100,
-						value=int( st.session_state.get( 'internetarchive_rows', 10 ) ),
-						step=1,
-						key='internetarchive_rows'
-					)
+					ia_rows = st.number_input( 'Rows', min_value=1, max_value=100,
+						value=int( st.session_state.get( 'internetarchive_rows', 10 ) ), step=1,
+						key='internetarchive_rows' )
 				
 				with c2:
-					ia_page = st.number_input(
-						'Page',
-						min_value=1,
-						max_value=100000,
-						value=int( st.session_state.get( 'internetarchive_page', 1 ) ),
-						step=1,
-						key='internetarchive_page'
-					)
+					ia_page = st.number_input( 'Page', min_value=1, max_value=100000,
+						value=int( st.session_state.get( 'internetarchive_page', 1 ) ), step=1,
+						key='internetarchive_page' )
 				
-				ia_sort = st.selectbox(
-					'Sort',
-					options=[
-							'downloads desc',
-							'downloads asc',
-							'publicdate desc',
-							'publicdate asc',
-							'titleSorter asc',
-							'titleSorter desc'
-					],
-					index=[
-							'downloads desc',
-							'downloads asc',
-							'publicdate desc',
-							'publicdate asc',
-							'titleSorter asc',
-							'titleSorter desc'
-					].index(
-						st.session_state.get( 'internetarchive_sort', 'downloads desc' )
-					),
-					key='internetarchive_sort'
-				)
+				ia_sort = st.selectbox( 'Sort',
+					options=[ 'downloads desc', 'downloads asc', 'publicdate desc',
+						'publicdate asc', 'titleSorter asc', 'titleSorter desc' ],
+					index=[ 'downloads desc', 'downloads asc', 'publicdate desc', 'publicdate asc',
+						'titleSorter asc', 'titleSorter desc' ].index(
+						st.session_state.get( 'internetarchive_sort', 'downloads desc' ) ),
+					key='internetarchive_sort' )
 				
 				c3, c4 = st.columns( 2 )
 				
 				with c3:
-					ia_media_type = st.text_input(
-						'Mediatype',
+					ia_media_type = st.text_input( 'Mediatype',
 						value=st.session_state.get( 'internetarchive_media_type', '' ),
-						key='internetarchive_media_type',
-						placeholder='Example: texts'
-					)
+						key='internetarchive_media_type', placeholder='Example: texts' )
 				
 				with c4:
-					ia_collection = st.text_input(
-						'Collection',
+					ia_collection = st.text_input( 'Collection',
 						value=st.session_state.get( 'internetarchive_collection', '' ),
-						key='internetarchive_collection',
-						placeholder='Example: americana'
-					)
+						key='internetarchive_collection', placeholder='Example: americana' )
 				
-				ia_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'internetarchive_timeout', 20 ) ),
-					step=1,
-					key='internetarchive_timeout'
-				)
+				ia_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'internetarchive_timeout', 20 ) ), step=1,
+					key='internetarchive_timeout' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					ia_submit = st.button(
-						'Submit',
-						key='internetarchive_submit',
-						use_container_width=True
-					)
+					ia_submit = st.button( 'Submit', key='internetarchive_submit',
+						use_container_width=True )
 				
 				with b2:
-					ia_clear = st.button(
-						'Clear',
-						key='internetarchive_clear',
-						on_click=_clear_internetarchive_state,
-						use_container_width=True
-					)
+					ia_clear = st.button( 'Clear', key='internetarchive_clear',
+						on_click=_clear_internetarchive_state, use_container_width=True )
 			
 			with col_right:
 				ia_output = st.empty( )
-				
+			
 			result = st.session_state.get( 'internetarchive_results', { } )
 			
 			if ia_submit:
 				try:
 					f = InternetArchive( )
 					
-					result = f.fetch(
-						keywords=str( ia_query ),
-						rows=int( ia_rows ),
-						page=int( ia_page ),
-						sort=str( ia_sort ),
-						media_type=str( ia_media_type ),
-						collection=str( ia_collection ),
-						time=int( ia_timeout )
-					)
+					result = f.fetch( keywords=str( ia_query ), rows=int( ia_rows ),
+						page=int( ia_page ), sort=str( ia_sort ), media_type=str( ia_media_type ),
+						collection=str( ia_collection ), time=int( ia_timeout ) )
 					
 					st.session_state[ 'internetarchive_results' ] = result or { }
 					st.rerun( )
 				
 				except Exception as exc:
 					st.error( str( exc ) )
-					
+				
 				result = st.session_state.get( 'internetarchive_results', { } )
 			
 			if not result:
@@ -6622,12 +5741,7 @@ elif mode == 'Retrieval':
 				with col_right:
 					st.markdown( '#### Request Metadata' )
 					st.json(
-						{
-								'mode': mode_value,
-								'url': result.get( 'url', '' ),
-								'params': params,
-						}
-					)
+						{ 'mode': mode_value, 'url': result.get( 'url', '' ), 'params': params, } )
 					
 					docs: List[ Dict[ str, Any ] ] = [ ]
 					num_found = None
@@ -6648,11 +5762,8 @@ elif mode == 'Retrieval':
 					
 					if docs:
 						for index, item in enumerate( docs, start=1 ):
-							title_value = (
-									item.get( 'title' )
-									or item.get( 'identifier' )
-									or f'Result {index}'
-							)
+							title_value = (item.get( 'title' ) or item.get(
+								'identifier' ) or f'Result {index}')
 							
 							identifier_value = item.get( 'identifier', '' )
 							mediatype_value = item.get( 'mediatype', '' )
@@ -6660,17 +5771,14 @@ elif mode == 'Retrieval':
 							collection_value = ''
 							collection_raw = item.get( 'collection', '' )
 							if isinstance( collection_raw, list ) and collection_raw:
-								collection_value = ', '.join( [ str( x ) for x in
-								                                collection_raw[ :3 ] ] )
+								collection_value = ', '.join(
+									[ str( x ) for x in collection_raw[ :3 ] ] )
 							elif collection_raw:
 								collection_value = str( collection_raw )
 							
 							date_value = (
-									item.get( 'publicdate' )
-									or item.get( 'date' )
-									or item.get( 'addeddate' )
-									or ''
-							)
+									item.get( 'publicdate' ) or item.get( 'date' ) or item.get(
+								'addeddate' ) or '')
 							
 							desc_value = item.get( 'description', '' )
 							if isinstance( desc_value, list ):
@@ -6715,17 +5823,13 @@ elif mode == 'Retrieval':
 							st.json( data )
 					elif data:
 						st.markdown( '#### Result' )
-						st.text_area(
-							'Output',
-							value=str( data ),
-							height=320
-						)
+						st.text_area( 'Output', value=str( data ), height=320 )
 					else:
 						st.info( 'No results returned.' )
 					
 					with st.expander( 'Raw Result', expanded=False ):
 						st.json( result )
-	
+		
 		# -------- Grokipedia
 		with st.expander( label='Grokipedia', icon='🧠', expanded=False ):
 			st.badge( label='Information', help=cfg.GROKIPEDIA )
@@ -6750,37 +5854,9 @@ elif mode == 'Retrieval':
 				st.session_state[ 'grokipedia_clear_request' ] = False
 			
 			def _clear_grokipedia_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Grokipedia expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'grokipedia_clear_request' ] = True
 			
 			def _load_grokipedia_page( slug: str ) -> None:
-				'''
-					Purpose:
-					--------
-					Load a selected Grokipedia slug into the page controls and trigger
-					an immediate page fetch on rerun.
-	
-					Parameters:
-					-----------
-					slug (str):
-						The selected page slug.
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'grokipedia_mode' ] = 'page'
 				st.session_state[ 'grokipedia_page' ] = str( slug ).strip( )
 				st.session_state[ 'grokipedia_include_content' ] = True
@@ -6789,76 +5865,45 @@ elif mode == 'Retrieval':
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				grokipedia_mode = st.selectbox(
-					'Mode',
-					options=[ 'search', 'page' ],
+				grokipedia_mode = st.selectbox( 'Mode', options=[ 'search', 'page' ],
 					index=[ 'search', 'page' ].index(
-						st.session_state.get( 'grokipedia_mode', 'search' )
-					),
+						st.session_state.get( 'grokipedia_mode', 'search' ) ),
 					key='grokipedia_mode',
-					help='search = keyword search; page = fetch a specific page by slug.'
-				)
+					help='search = keyword search; page = fetch a specific page by slug.' )
 				
-				grokipedia_query = st.text_input(
-					'Query',
-					value=st.session_state.get( 'grokipedia_query', '' ),
-					key='grokipedia_query',
-					placeholder='Example: machine learning'
-				)
+				grokipedia_query = st.text_input( 'Query',
+					value=st.session_state.get( 'grokipedia_query', '' ), key='grokipedia_query',
+					placeholder='Example: machine learning' )
 				
-				grokipedia_page = st.text_input(
-					'Page Slug',
-					value=st.session_state.get( 'grokipedia_page', '' ),
-					key='grokipedia_page',
-					placeholder='Example: United_Petroleum'
-				)
+				grokipedia_page = st.text_input( 'Page Slug',
+					value=st.session_state.get( 'grokipedia_page', '' ), key='grokipedia_page',
+					placeholder='Example: United_Petroleum' )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					grokipedia_limit = st.number_input(
-						'Limit',
-						min_value=1,
-						max_value=100,
-						value=int( st.session_state.get( 'grokipedia_limit', 12 ) ),
-						step=1,
-						key='grokipedia_limit'
-					)
+					grokipedia_limit = st.number_input( 'Limit', min_value=1, max_value=100,
+						value=int( st.session_state.get( 'grokipedia_limit', 12 ) ), step=1,
+						key='grokipedia_limit' )
 				
 				with c2:
-					grokipedia_offset = st.number_input(
-						'Offset',
-						min_value=0,
-						max_value=100000,
-						value=int( st.session_state.get( 'grokipedia_offset', 0 ) ),
-						step=1,
-						key='grokipedia_offset'
-					)
+					grokipedia_offset = st.number_input( 'Offset', min_value=0, max_value=100000,
+						value=int( st.session_state.get( 'grokipedia_offset', 0 ) ), step=1,
+						key='grokipedia_offset' )
 				
-				grokipedia_include_content = st.checkbox(
-					'Include Content',
-					value=bool(
-						st.session_state.get( 'grokipedia_include_content', True )
-					),
-					key='grokipedia_include_content'
-				)
+				grokipedia_include_content = st.checkbox( 'Include Content',
+					value=bool( st.session_state.get( 'grokipedia_include_content', True ) ),
+					key='grokipedia_include_content' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					grokipedia_submit = st.button(
-						'Submit',
-						key='grokipedia_submit',
-						use_container_width=True
-					)
+					grokipedia_submit = st.button( 'Submit', key='grokipedia_submit',
+						use_container_width=True )
 				
 				with b2:
-					grokipedia_clear = st.button(
-						'Clear',
-						key='grokipedia_clear',
-						on_click=_clear_grokipedia_state,
-						use_container_width=True
-					)
+					grokipedia_clear = st.button( 'Clear', key='grokipedia_clear',
+						on_click=_clear_grokipedia_state, use_container_width=True )
 			
 			with col_right:
 				grokipedia_output = st.empty( )
@@ -6882,9 +5927,7 @@ elif mode == 'Retrieval':
 						limit=int( st.session_state.get( 'grokipedia_limit', 12 ) ),
 						offset=int( st.session_state.get( 'grokipedia_offset', 0 ) ),
 						include_content=bool(
-							st.session_state.get( 'grokipedia_include_content', True )
-						)
-					)
+							st.session_state.get( 'grokipedia_include_content', True ) ) )
 					
 					st.session_state[ 'grokipedia_results' ] = result or { }
 					st.session_state[ 'grokipedia_auto_fetch_page' ] = False
@@ -6904,14 +5947,9 @@ elif mode == 'Retrieval':
 				
 				with col_right:
 					st.markdown( '#### Request Metadata' )
-					st.json(
-						{
-								'mode': result.get( 'mode', '' ),
-								'url': result.get( 'url', '' ),
-								'params': result.get( 'params', { } ),
-								'api_key_configured': result.get( 'api_key_configured', False )
-						}
-					)
+					st.json( { 'mode': result.get( 'mode', '' ), 'url': result.get( 'url', '' ),
+						'params': result.get( 'params', { } ),
+						'api_key_configured': result.get( 'api_key_configured', False ) } )
 					
 					if mode_value == 'search':
 						st.markdown( '#### Search Results' )
@@ -6929,44 +5967,27 @@ elif mode == 'Retrieval':
 						
 						if not items:
 							if data:
-								st.info(
-									'No structured search hits were detected. '
-									'Showing raw output.'
-								)
+								st.info( 'No structured search hits were detected. '
+								         'Showing raw output.' )
 								st.json( data )
 							else:
 								st.info( 'No results returned.' )
 						else:
 							for index, item in enumerate( items, start=1 ):
 								title_value = (
-										item.get( 'title' )
-										or item.get( 'name' )
-										or item.get( 'slug' )
-										or item.get( 'id' )
-										or f'Result {index}'
-								)
+										item.get( 'title' ) or item.get( 'name' ) or item.get(
+									'slug' ) or item.get( 'id' ) or f'Result {index}')
 								
-								slug_value = (
-										item.get( 'slug' )
-										or item.get( 'page' )
-										or item.get( 'path' )
-										or item.get( 'id' )
-										or ''
-								)
+								slug_value = (item.get( 'slug' ) or item.get( 'page' ) or item.get(
+									'path' ) or item.get( 'id' ) or '')
 								
-								summary_value = (
-										item.get( 'summary' )
-										or item.get( 'description' )
-										or item.get( 'excerpt' )
-										or item.get( 'snippet' )
-										or ''
-								)
+								summary_value = (item.get( 'summary' ) or item.get(
+									'description' ) or item.get( 'excerpt' ) or item.get(
+									'snippet' ) or '')
 								
 								score_value = (
-										item.get( 'score' )
-										or item.get( 'rank' )
-										or item.get( 'relevance' )
-								)
+										item.get( 'score' ) or item.get( 'rank' ) or item.get(
+									'relevance' ))
 								
 								with st.container( border=True ):
 									st.markdown( f'**{index}. {title_value}**' )
@@ -6991,11 +6012,10 @@ elif mode == 'Retrieval':
 									
 									with ca:
 										if slug_value:
-											if st.button(
-													'Load Page',
-													key=f'grokipedia_load_page_{index}_{slug_value}',
-													use_container_width=True
-											):
+											if st.button( 'Load Page',
+													key=f'grokipedia_load_page_{index}_'
+													    f'{slug_value}',
+													use_container_width=True ):
 												_load_grokipedia_page( slug_value )
 												st.rerun( )
 									
@@ -7010,43 +6030,22 @@ elif mode == 'Retrieval':
 						
 						if not page_item:
 							if data:
-								st.text_area(
-									'Output',
-									value=str( data ),
-									height=320
-								)
+								st.text_area( 'Output', value=str( data ), height=320 )
 							else:
 								st.info( 'No results returned.' )
 						else:
-							title_value = (
-									page_item.get( 'title' )
-									or page_item.get( 'name' )
-									or page_item.get( 'slug' )
-									or page_item.get( 'id' )
-									or 'Untitled Page'
-							)
+							title_value = (page_item.get( 'title' ) or page_item.get(
+								'name' ) or page_item.get( 'slug' ) or page_item.get(
+								'id' ) or 'Untitled Page')
 							
-							slug_value = (
-									page_item.get( 'slug' )
-									or page_item.get( 'page' )
-									or page_item.get( 'path' )
-									or page_item.get( 'id' )
-									or ''
-							)
+							slug_value = (page_item.get( 'slug' ) or page_item.get(
+								'page' ) or page_item.get( 'path' ) or page_item.get( 'id' ) or '')
 							
-							summary_value = (
-									page_item.get( 'summary' )
-									or page_item.get( 'description' )
-									or page_item.get( 'excerpt' )
-									or ''
-							)
+							summary_value = (page_item.get( 'summary' ) or page_item.get(
+								'description' ) or page_item.get( 'excerpt' ) or '')
 							
-							content_value = (
-									page_item.get( 'content' )
-									or page_item.get( 'text' )
-									or page_item.get( 'body' )
-									or ''
-							)
+							content_value = (page_item.get( 'content' ) or page_item.get(
+								'text' ) or page_item.get( 'body' ) or '')
 							
 							st.markdown( f'### {title_value}' )
 							
@@ -7059,11 +6058,8 @@ elif mode == 'Retrieval':
 							
 							if content_value:
 								st.markdown( '#### Content' )
-								st.text_area(
-									'Page Content',
-									value=str( content_value ),
-									height=360
-								)
+								st.text_area( 'Page Content', value=str( content_value ),
+									height=360 )
 							else:
 								st.info( 'No page content was returned.' )
 							
@@ -7076,11 +6072,7 @@ elif mode == 'Retrieval':
 						if isinstance( data, dict ) or isinstance( data, list ):
 							st.json( data )
 						elif data:
-							st.text_area(
-								'Output',
-								value=str( data ),
-								height=320
-							)
+							st.text_area( 'Output', value=str( data ), height=320 )
 						else:
 							st.info( 'No results returned.' )
 		
@@ -7093,86 +6085,52 @@ elif mode == 'Retrieval':
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				notebook_file = st.file_uploader(
-					'Upload Notebook',
-					type=[ 'ipynb' ],
-					key='jupyter_notebook_upload'
-				)
+				notebook_file = st.file_uploader( 'Upload Notebook', type=[ 'ipynb' ],
+					key='jupyter_notebook_upload' )
 				
-				include_outputs = st.checkbox(
-					'Include Outputs',
-					value=True,
-					key='jupyter_notebook_include_outputs'
-				)
+				include_outputs = st.checkbox( 'Include Outputs', value=True,
+					key='jupyter_notebook_include_outputs' )
 				
-				max_output_length = st.number_input(
-					'Max Output Length',
-					min_value=1,
-					max_value=20000,
-					value=100,
-					step=10,
-					key='jupyter_notebook_max_output_length'
-				)
+				max_output_length = st.number_input( 'Max Output Length', min_value=1,
+					max_value=20000, value=100, step=10, key='jupyter_notebook_max_output_length' )
 				
-				remove_newline = st.checkbox(
-					'Remove Newline',
-					value=False,
-					key='jupyter_notebook_remove_newline'
-				)
+				remove_newline = st.checkbox( 'Remove Newline', value=False,
+					key='jupyter_notebook_remove_newline' )
 				
-				include_traceback = st.checkbox(
-					'Traceback',
-					value=False,
-					key='jupyter_notebook_traceback'
-				)
+				include_traceback = st.checkbox( 'Traceback', value=False,
+					key='jupyter_notebook_traceback' )
 				
 				b1, b2, b3 = st.columns( 3 )
 				
 				with b1:
-					jupyter_submit = st.button(
-						'Submit',
-						key='jupyter_notebook_submit',
-						use_container_width=True
-					)
+					jupyter_submit = st.button( 'Submit', key='jupyter_notebook_submit',
+						use_container_width=True )
 				
 				with b2:
-					jupyter_clear = st.button(
-						'Clear',
-						key='jupyter_notebook_clear',
-						use_container_width=True
-					)
+					jupyter_clear = st.button( 'Clear', key='jupyter_notebook_clear',
+						use_container_width=True )
 				
 				with b3:
-					can_save = (
-							st.session_state.get( 'active_loader' ) == 'JupyterNotebookLoader'
-							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( )
-					)
+					can_save = (st.session_state.get(
+						'active_loader' ) == 'JupyterNotebookLoader' and isinstance(
+						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+						'raw_text' ).strip( ))
 					
 					if can_save:
-						st.download_button(
-							'Save',
-							data=st.session_state.get( 'raw_text' ),
-							file_name='jupyter_notebook_loader_output.txt',
-							mime='text/plain',
-							key='jupyter_notebook_save',
-							use_container_width=True
-						)
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='jupyter_notebook_loader_output.txt', mime='text/plain',
+							key='jupyter_notebook_save', use_container_width=True )
 					else:
-						st.button(
-							'Save',
-							key='jupyter_notebook_save_disabled',
-							disabled=True,
-							use_container_width=True
-						)
+						st.button( 'Save', key='jupyter_notebook_save_disabled', disabled=True,
+							use_container_width=True )
 			
 			with col_right:
 				if jupyter_clear:
 					st.session_state[ 'jupyter_notebook_results' ] = { }
 					remaining = _clear_loader_documents( 'JupyterNotebookLoader' )
 					st.info(
-						f'Jupyter Notebook Loader state cleared. Remaining documents: {remaining}.'
-					)
+						f'Jupyter Notebook Loader state cleared. Remaining documen'
+						f'ts: {remaining}.' )
 				
 				if jupyter_submit:
 					if not notebook_file:
@@ -7185,41 +6143,29 @@ elif mode == 'Retrieval':
 									f.write( notebook_file.read( ) )
 								
 								loader = JupyterNotebookLoader( )
-								documents = loader.load( path=path, include_outputs=include_outputs,
+								documents = loader.load( path=path,
+									include_outputs=include_outputs,
 									max_output_length=int( max_output_length ),
 									remove_newline=remove_newline,
 									traceback=include_traceback ) or [ ]
 							
-							count = _promote_loader_documents( documents,
-								'JupyterNotebookLoader' )
+							count = _promote_loader_documents( documents, 'JupyterNotebookLoader' )
 							
 							items: list[ dict[ str, Any ] ] = [ ]
 							for i, doc in enumerate( documents, start=1 ):
 								metadata = (
-										doc.metadata
-										if isinstance( getattr( doc, 'metadata', { } ), dict )
-										else { }
-								)
+									doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+										dict ) else { })
 								content = str( getattr( doc, 'page_content', '' ) or '' )
-								items.append(
-									{
-											'Index': i,
-											'Source': metadata.get( 'source', '' ),
-											'Preview': content[ :200 ],
-											'Content': content,
-											'Metadata': metadata,
-									}
-								)
+								items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
+									'Preview': content[ :200 ], 'Content': content,
+									'Metadata': metadata, } )
 							
 							st.session_state[ 'jupyter_notebook_results' ] = {
-									'mode': 'jupyter_notebook',
-									'include_outputs': include_outputs,
-									'max_output_length': int( max_output_length ),
-									'remove_newline': remove_newline,
-									'traceback': include_traceback,
-									'count': count,
-									'items': items,
-							}
+								'mode': 'jupyter_notebook', 'include_outputs': include_outputs,
+								'max_output_length': int( max_output_length ),
+								'remove_newline': remove_newline, 'traceback': include_traceback,
+								'count': count, 'items': items, }
 							
 							st.success( f'Loaded {count} notebook document(s).' )
 						
@@ -7232,29 +6178,19 @@ elif mode == 'Retrieval':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'IncludeOutputs': result.get( 'include_outputs', False ),
-								'MaxOutputLength': result.get( 'max_output_length', 0 ),
-								'RemoveNewline': result.get( 'remove_newline', False ),
-								'Traceback': result.get( 'traceback', False ),
-								'Returned': result.get( 'count', 0 ),
-						}
-					)
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+						'IncludeOutputs': result.get( 'include_outputs', False ),
+						'MaxOutputLength': result.get( 'max_output_length', 0 ),
+						'RemoveNewline': result.get( 'remove_newline', False ),
+						'Traceback': result.get( 'traceback', False ),
+						'Returned': result.get( 'count', 0 ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
 						table_rows = [
-								{
-										'Index': item.get( 'Index', '' ),
-										'Source': item.get( 'Source', '' ),
-										'Preview': item.get( 'Preview', '' ),
-								}
-								for item in items
-						]
+							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+								'Preview': item.get( 'Preview', '' ), } for item in items ]
 						
 						st.markdown( '#### Results' )
 						st.dataframe( table_rows, use_container_width=True, hide_index=True )
@@ -7266,7 +6202,7 @@ elif mode == 'Retrieval':
 						st.info( 'No notebook documents returned.' )
 					
 					_render_fallback_raw( result )
-	
+		
 		# -------- Google Cloud File
 		with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_FILE )
@@ -7276,69 +6212,45 @@ elif mode == 'Retrieval':
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				project_name = st.text_input(
-					'Project Name',
-					key='google_cloud_file_project_name'
-				)
+				project_name = st.text_input( 'Project Name',
+					key='google_cloud_file_project_name' )
 				
-				bucket = st.text_input(
-					'Bucket',
-					key='google_cloud_file_bucket'
-				)
+				bucket = st.text_input( 'Bucket', key='google_cloud_file_bucket' )
 				
-				blob = st.text_input(
-					'Blob',
-					key='google_cloud_file_blob',
-					help='The exact object name in the Google Cloud Storage bucket.'
-				)
+				blob = st.text_input( 'Blob', key='google_cloud_file_blob',
+					help='The exact object name in the Google Cloud Storage bucket.' )
 				
 				b1, b2, b3 = st.columns( 3 )
 				
 				with b1:
-					google_cloud_file_submit = st.button(
-						'Submit',
-						key='google_cloud_file_submit',
-						use_container_width=True
-					)
+					google_cloud_file_submit = st.button( 'Submit', key='google_cloud_file_submit',
+						use_container_width=True )
 				
 				with b2:
-					google_cloud_file_clear = st.button(
-						'Clear',
-						key='google_cloud_file_clear',
-						use_container_width=True
-					)
+					google_cloud_file_clear = st.button( 'Clear', key='google_cloud_file_clear',
+						use_container_width=True )
 				
 				with b3:
-					can_save = (
-							st.session_state.get( 'active_loader' ) == 'GoogleCloudStorageFileLoader'
-							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( )
-					)
+					can_save = (st.session_state.get(
+						'active_loader' ) == 'GoogleCloudStorageFileLoader' and isinstance(
+						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+						'raw_text' ).strip( ))
 					
 					if can_save:
-						st.download_button(
-							'Save',
-							data=st.session_state.get( 'raw_text' ),
-							file_name='google_cloud_file_loader_output.txt',
-							mime='text/plain',
-							key='google_cloud_file_save',
-							use_container_width=True
-						)
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='google_cloud_file_loader_output.txt', mime='text/plain',
+							key='google_cloud_file_save', use_container_width=True )
 					else:
-						st.button(
-							'Save',
-							key='google_cloud_file_save_disabled',
-							disabled=True,
-							use_container_width=True
-						)
+						st.button( 'Save', key='google_cloud_file_save_disabled', disabled=True,
+							use_container_width=True )
 			
 			with col_right:
 				if google_cloud_file_clear:
 					st.session_state[ 'google_cloud_file_results' ] = { }
 					remaining = _clear_loader_documents( 'GoogleCloudStorageFileLoader' )
 					st.info(
-						f'Google Cloud File Loader state cleared. Remaining documents: {remaining}.'
-					)
+						f'Google Cloud File Loader state cleared. Remaining documents: '
+						f'{remaining}.' )
 				
 				if google_cloud_file_submit:
 					if not project_name or not project_name.strip( ):
@@ -7350,44 +6262,26 @@ elif mode == 'Retrieval':
 					else:
 						try:
 							loader = GoogleCloudFileLoader( )
-							documents = loader.load(
-								project_name=project_name.strip( ),
-								bucket=bucket.strip( ),
-								blob=blob.strip( )
-							) or [ ]
+							documents = loader.load( project_name=project_name.strip( ),
+								bucket=bucket.strip( ), blob=blob.strip( ) ) or [ ]
 							
-							count = _promote_loader_documents(
-								documents,
-								'GoogleCloudStorageFileLoader'
-							)
+							count = _promote_loader_documents( documents,
+								'GoogleCloudStorageFileLoader' )
 							
 							items: list[ dict[ str, Any ] ] = [ ]
 							for i, doc in enumerate( documents, start=1 ):
 								metadata = (
-										doc.metadata
-										if isinstance( getattr( doc, 'metadata', { } ), dict )
-										else { }
-								)
+									doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+										dict ) else { })
 								content = str( getattr( doc, 'page_content', '' ) or '' )
-								items.append(
-									{
-											'Index': i,
-											'Source': metadata.get( 'source', '' ),
-											'Blob': blob.strip( ),
-											'Preview': content[ :200 ],
-											'Content': content,
-											'Metadata': metadata,
-									}
-								)
+								items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
+									'Blob': blob.strip( ), 'Preview': content[ :200 ],
+									'Content': content, 'Metadata': metadata, } )
 							
 							st.session_state[ 'google_cloud_file_results' ] = {
-									'mode': 'google_cloud_file',
-									'project_name': project_name.strip( ),
-									'bucket': bucket.strip( ),
-									'blob': blob.strip( ),
-									'count': count,
-									'items': items,
-							}
+								'mode': 'google_cloud_file', 'project_name': project_name.strip( ),
+								'bucket': bucket.strip( ), 'blob': blob.strip( ), 'count': count,
+								'items': items, }
 							
 							st.success( f'Loaded {count} Google Cloud file document(s).' )
 						
@@ -7400,29 +6294,18 @@ elif mode == 'Retrieval':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'ProjectName': result.get( 'project_name', '' ),
-								'Bucket': result.get( 'bucket', '' ),
-								'Blob': result.get( 'blob', '' ),
-								'Returned': result.get( 'count', 0 ),
-						}
-					)
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+						'ProjectName': result.get( 'project_name', '' ),
+						'Bucket': result.get( 'bucket', '' ), 'Blob': result.get( 'blob', '' ),
+						'Returned': result.get( 'count', 0 ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
 						table_rows = [
-								{
-										'Index': item.get( 'Index', '' ),
-										'Source': item.get( 'Source', '' ),
-										'Blob': item.get( 'Blob', '' ),
-										'Preview': item.get( 'Preview', '' ),
-								}
-								for item in items
-						]
+							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+								'Blob': item.get( 'Blob', '' ),
+								'Preview': item.get( 'Preview', '' ), } for item in items ]
 						
 						st.markdown( '#### Results' )
 						st.dataframe( table_rows, use_container_width=True, hide_index=True )
@@ -7432,9 +6315,9 @@ elif mode == 'Retrieval':
 						st.code( str( first.get( 'Content', '' ) )[ :8000 ] )
 					else:
 						st.info( 'No Google Cloud file documents returned.' )
-					
+				
 				_render_fallback_raw( result )
-	
+		
 		# -------- AWS S3 File
 		with st.expander( label='AWS S3 File', icon='📗', expanded=False ):
 			st.badge( label='Information', help=cfg.AWS_FILE )
@@ -7444,85 +6327,52 @@ elif mode == 'Retrieval':
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				bucket = st.text_input(
-					'Bucket',
-					key='aws_file_bucket'
-				)
+				bucket = st.text_input( 'Bucket', key='aws_file_bucket' )
 				
-				key_name = st.text_input(
-					'Key',
-					key='aws_file_key',
-					help='The exact S3 object key to load.'
-				)
+				key_name = st.text_input( 'Key', key='aws_file_key',
+					help='The exact S3 object key to load.' )
 				
-				region_name = st.text_input(
-					'Region (Optional)',
-					key='aws_file_region_name'
-				)
+				region_name = st.text_input( 'Region (Optional)', key='aws_file_region_name' )
 				
-				aws_access_key_id = st.text_input(
-					'AWS Access Key ID (Optional)',
-					type='password',
-					key='aws_file_access_key'
-				)
+				aws_access_key_id = st.text_input( 'AWS Access Key ID (Optional)', type='password',
+					key='aws_file_access_key' )
 				
-				aws_secret_access_key = st.text_input(
-					'AWS Secret Access Key (Optional)',
-					type='password',
-					key='aws_file_secret_key'
-				)
+				aws_secret_access_key = st.text_input( 'AWS Secret Access Key (Optional)',
+					type='password', key='aws_file_secret_key' )
 				
-				aws_session_token = st.text_input(
-					'AWS Session Token (Optional)',
-					type='password',
-					key='aws_file_session_token'
-				)
+				aws_session_token = st.text_input( 'AWS Session Token (Optional)', type='password',
+					key='aws_file_session_token' )
 				
 				b1, b2, b3 = st.columns( 3 )
 				
 				with b1:
-					aws_file_submit = st.button(
-						'Submit',
-						key='aws_file_submit',
-						use_container_width=True
-					)
+					aws_file_submit = st.button( 'Submit', key='aws_file_submit',
+						use_container_width=True )
 				
 				with b2:
-					aws_file_clear = st.button(
-						'Clear',
-						key='aws_file_clear',
-						use_container_width=True
-					)
+					aws_file_clear = st.button( 'Clear', key='aws_file_clear',
+						use_container_width=True )
 				
 				with b3:
-					can_save = (
-							st.session_state.get( 'active_loader' ) == 'AwsFileLoader'
-							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( )
-					)
+					can_save = (st.session_state.get(
+						'active_loader' ) == 'AwsFileLoader' and isinstance(
+						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+						'raw_text' ).strip( ))
 					
 					if can_save:
-						st.download_button(
-							'Save',
-							data=st.session_state.get( 'raw_text' ),
-							file_name='aws_s3_file_loader_output.txt',
-							mime='text/plain',
-							key='aws_file_save',
-							use_container_width=True
-						)
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='aws_s3_file_loader_output.txt', mime='text/plain',
+							key='aws_file_save', use_container_width=True )
 					else:
-						st.button(
-							'Save',
-							key='aws_file_save_disabled',
-							disabled=True,
-							use_container_width=True
-						)
+						st.button( 'Save', key='aws_file_save_disabled', disabled=True,
+							use_container_width=True )
 			
 			with col_right:
 				if aws_file_clear:
 					st.session_state[ 'aws_file_results' ] = { }
 					remaining = _clear_loader_documents( 'AwsFileLoader' )
-					st.info( f'AWS S3 File Loader state cleared. Remaining documents: {remaining}.' )
+					st.info(
+						f'AWS S3 File Loader state cleared. Remaining documents: {remaining}.' )
 				
 				if aws_file_submit:
 					if not bucket or not bucket.strip( ):
@@ -7532,45 +6382,29 @@ elif mode == 'Retrieval':
 					else:
 						try:
 							loader = AwsFileLoader( )
-							documents = loader.load(
-								bucket=bucket.strip( ),
-								key=key_name.strip( ),
+							documents = loader.load( bucket=bucket.strip( ), key=key_name.strip( ),
 								aws_access_key_id=aws_access_key_id.strip( ) or None,
 								aws_secret_access_key=aws_secret_access_key.strip( ) or None,
 								aws_session_token=aws_session_token.strip( ) or None,
-								region_name=region_name.strip( ) or None
-							) or [ ]
+								region_name=region_name.strip( ) or None ) or [ ]
 							
 							count = _promote_loader_documents( documents, 'AwsFileLoader' )
 							
 							items: list[ dict[ str, Any ] ] = [ ]
 							for i, doc in enumerate( documents, start=1 ):
 								metadata = (
-										doc.metadata
-										if isinstance( getattr( doc, 'metadata', { } ), dict )
-										else { }
-								)
+									doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+										dict ) else { })
 								content = str( getattr( doc, 'page_content', '' ) or '' )
-								items.append(
-									{
-											'Index': i,
-											'Source': metadata.get( 'source', '' ),
-											'Bucket': bucket.strip( ),
-											'Key': key_name.strip( ),
-											'Preview': content[ :200 ],
-											'Content': content,
-											'Metadata': metadata,
-									}
-								)
+								items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
+									'Bucket': bucket.strip( ), 'Key': key_name.strip( ),
+									'Preview': content[ :200 ], 'Content': content,
+									'Metadata': metadata, } )
 							
-							st.session_state[ 'aws_file_results' ] = {
-									'mode': 'aws_s3_file',
-									'bucket': bucket.strip( ),
-									'key': key_name.strip( ),
-									'region_name': region_name.strip( ) or '',
-									'count': count,
-									'items': items,
-							}
+							st.session_state[ 'aws_file_results' ] = { 'mode': 'aws_s3_file',
+								'bucket': bucket.strip( ), 'key': key_name.strip( ),
+								'region_name': region_name.strip( ) or '', 'count': count,
+								'items': items, }
 							
 							st.success( f'Loaded {count} AWS S3 file document(s).' )
 						
@@ -7583,30 +6417,19 @@ elif mode == 'Retrieval':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'Bucket': result.get( 'bucket', '' ),
-								'Key': result.get( 'key', '' ),
-								'Region': result.get( 'region_name', '' ),
-								'Returned': result.get( 'count', 0 ),
-						}
-					)
+					_render_summary_kv( '#### Summary',
+						{ 'Mode': result.get( 'mode', '' ), 'Bucket': result.get( 'bucket', '' ),
+							'Key': result.get( 'key', '' ),
+							'Region': result.get( 'region_name', '' ),
+							'Returned': result.get( 'count', 0 ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
 						table_rows = [
-								{
-										'Index': item.get( 'Index', '' ),
-										'Source': item.get( 'Source', '' ),
-										'Bucket': item.get( 'Bucket', '' ),
-										'Key': item.get( 'Key', '' ),
-										'Preview': item.get( 'Preview', '' ),
-								}
-								for item in items
-						]
+							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+								'Bucket': item.get( 'Bucket', '' ), 'Key': item.get( 'Key', '' ),
+								'Preview': item.get( 'Preview', '' ), } for item in items ]
 						
 						st.markdown( '##### Results' )
 						st.dataframe( table_rows, use_container_width=True, hide_index=True )
@@ -7618,7 +6441,7 @@ elif mode == 'Retrieval':
 						st.info( 'No AWS S3 file documents returned.' )
 					
 					_render_fallback_raw( result )
-					
+		
 		# -------- OneDrive
 		with st.expander( label='OneDrive', icon='💻', expanded=False ):
 			st.badge( label='Information', help=cfg.ONEDRIVE )
@@ -7628,68 +6451,41 @@ elif mode == 'Retrieval':
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				drive_id = st.text_input(
-					'Drive ID',
-					key='onedrive_drive_id'
-				)
+				drive_id = st.text_input( 'Drive ID', key='onedrive_drive_id' )
 				
-				folder_path = st.text_input(
-					'Folder Path (Optional)',
-					key='onedrive_folder_path',
-					help='Example: Documents/clients'
-				)
+				folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_folder_path',
+					help='Example: Documents/clients' )
 				
-				object_ids_text = st.text_area(
-					'Object IDs (Optional)',
-					key='onedrive_object_ids',
-					help='Optional comma-separated OneDrive object IDs. Leave blank to load by folder path.'
-				)
+				object_ids_text = st.text_area( 'Object IDs (Optional)', key='onedrive_object_ids',
+					help='Optional comma-separated OneDrive object IDs. Leave blank to load by '
+					     'folder path.' )
 				
-				auth_with_token = st.checkbox(
-					'Authenticate With Cached Token',
-					value=True,
-					key='onedrive_auth_with_token'
-				)
+				auth_with_token = st.checkbox( 'Authenticate With Cached Token', value=True,
+					key='onedrive_auth_with_token' )
 				
 				b1, b2, b3 = st.columns( 3 )
 				
 				with b1:
-					onedrive_submit = st.button(
-						'Submit',
-						key='onedrive_submit',
-						use_container_width=True
-					)
+					onedrive_submit = st.button( 'Submit', key='onedrive_submit',
+						use_container_width=True )
 				
 				with b2:
-					onedrive_clear = st.button(
-						'Clear',
-						key='onedrive_clear',
-						use_container_width=True
-					)
+					onedrive_clear = st.button( 'Clear', key='onedrive_clear',
+						use_container_width=True )
 				
 				with b3:
-					can_save = (
-							st.session_state.get( 'active_loader' ) == 'OneDriveDocLoader'
-							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( )
-					)
+					can_save = (st.session_state.get(
+						'active_loader' ) == 'OneDriveDocLoader' and isinstance(
+						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+						'raw_text' ).strip( ))
 					
 					if can_save:
-						st.download_button(
-							'Save',
-							data=st.session_state.get( 'raw_text' ),
-							file_name='onedrive_loader_output.txt',
-							mime='text/plain',
-							key='onedrive_save',
-							use_container_width=True
-						)
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='onedrive_loader_output.txt', mime='text/plain',
+							key='onedrive_save', use_container_width=True )
 					else:
-						st.button(
-							'Save',
-							key='onedrive_save_disabled',
-							disabled=True,
-							use_container_width=True
-						)
+						st.button( 'Save', key='onedrive_save_disabled', disabled=True,
+							use_container_width=True )
 			
 			with col_right:
 				if onedrive_clear:
@@ -7704,52 +6500,32 @@ elif mode == 'Retrieval':
 						try:
 							object_ids: List[ str ] | None = None
 							if object_ids_text and object_ids_text.strip( ):
-								object_ids = [
-										item.strip( ) for item in object_ids_text.split( ',' )
-										if item and item.strip( )
-								]
+								object_ids = [ item.strip( ) for item in
+									object_ids_text.split( ',' ) if item and item.strip( ) ]
 							
 							loader = OneDriveDocLoader( )
-							documents = loader.load(
-								drive_id=drive_id.strip( ),
-								folder_path=folder_path.strip( ) or None,
-								object_ids=object_ids,
-								auth_with_token=auth_with_token
-							) or [ ]
+							documents = loader.load( drive_id=drive_id.strip( ),
+								folder_path=folder_path.strip( ) or None, object_ids=object_ids,
+								auth_with_token=auth_with_token ) or [ ]
 							
-							count = _promote_loader_documents(
-								documents,
-								'OneDriveDocLoader'
-							)
+							count = _promote_loader_documents( documents, 'OneDriveDocLoader' )
 							
 							items: list[ dict[ str, Any ] ] = [ ]
 							for i, doc in enumerate( documents, start=1 ):
 								metadata = (
-										doc.metadata
-										if isinstance( getattr( doc, 'metadata', { } ), dict )
-										else { }
-								)
+									doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+										dict ) else { })
 								content = str( getattr( doc, 'page_content', '' ) or '' )
-								items.append(
-									{
-											'Index': i,
-											'Source': metadata.get( 'source', '' ),
-											'DriveId': drive_id.strip( ),
-											'Preview': content[ :200 ],
-											'Content': content,
-											'Metadata': metadata,
-									}
-								)
+								items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
+									'DriveId': drive_id.strip( ), 'Preview': content[ :200 ],
+									'Content': content, 'Metadata': metadata, } )
 							
-							st.session_state[ 'onedrive_results' ] = {
-									'mode': 'onedrive',
-									'drive_id': drive_id.strip( ),
-									'folder_path': folder_path.strip( ) or '',
-									'object_ids_count': len( object_ids or [ ] ),
-									'auth_with_token': auth_with_token,
-									'count': count,
-									'items': items,
-							}
+							st.session_state[ 'onedrive_results' ] = { 'mode': 'onedrive',
+								'drive_id': drive_id.strip( ),
+								'folder_path': folder_path.strip( ) or '',
+								'object_ids_count': len( object_ids or [ ] ),
+								'auth_with_token': auth_with_token, 'count': count,
+								'items': items, }
 							
 							st.success( f'Loaded {count} OneDrive document(s).' )
 						
@@ -7762,30 +6538,21 @@ elif mode == 'Retrieval':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'DriveId': result.get( 'drive_id', '' ),
-								'FolderPath': result.get( 'folder_path', '' ),
-								'ObjectIds': result.get( 'object_ids_count', 0 ),
-								'AuthWithToken': result.get( 'auth_with_token', False ),
-								'Returned': result.get( 'count', 0 ),
-						}
-					)
+					_render_summary_kv( '#### Summary',
+						{ 'Mode': result.get( 'mode', '' ), 'DriveId': result.get( 'drive_id',
+							'' ),
+							'FolderPath': result.get( 'folder_path', '' ),
+							'ObjectIds': result.get( 'object_ids_count', 0 ),
+							'AuthWithToken': result.get( 'auth_with_token', False ),
+							'Returned': result.get( 'count', 0 ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
 						table_rows = [
-								{
-										'Index': item.get( 'Index', '' ),
-										'Source': item.get( 'Source', '' ),
-										'DriveId': item.get( 'DriveId', '' ),
-										'Preview': item.get( 'Preview', '' ),
-								}
-								for item in items
-						]
+							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+								'DriveId': item.get( 'DriveId', '' ),
+								'Preview': item.get( 'Preview', '' ), } for item in items ]
 						
 						st.markdown( '##### Results' )
 						st.dataframe( table_rows, use_container_width=True, hide_index=True )
@@ -7797,7 +6564,7 @@ elif mode == 'Retrieval':
 						st.info( 'No OneDrive documents returned.' )
 					
 					_render_fallback_raw( result )
-					
+		
 		# -------- Google Speech-to-Text
 		with st.expander( label='Google Speech-to-Text', icon='🗣️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_STT )
@@ -7807,77 +6574,51 @@ elif mode == 'Retrieval':
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				project_id = st.text_input(
-					'Project ID',
-					key='google_speech_to_text_project_id'
-				)
+				project_id = st.text_input( 'Project ID', key='google_speech_to_text_project_id' )
 				
-				audio_file = st.file_uploader(
-					'Upload Audio File',
+				audio_file = st.file_uploader( 'Upload Audio File',
 					type=[ 'wav', 'flac', 'mp3', 'm4a', 'ogg' ],
-					key='google_speech_to_text_audio_upload'
-				)
+					key='google_speech_to_text_audio_upload' )
 				
-				gcs_audio_uri = st.text_input(
-					'GCS Audio URI (Optional)',
-					placeholder='gs://bucket/path/audio.flac',
-					key='google_speech_to_text_gcs_uri',
-					help='Use either a local upload or a gs:// URI.'
-				)
+				gcs_audio_uri = st.text_input( 'GCS Audio URI (Optional)',
+					placeholder='gs://bucket/path/audio.flac', key='google_speech_to_text_gcs_uri',
+					help='Use either a local upload or a gs:// URI.' )
 				
-				language_code = st.text_input(
-					'Language Code (Optional)',
-					value='en-US',
-					key='google_speech_to_text_language_code'
-				)
+				language_code = st.text_input( 'Language Code (Optional)', value='en-US',
+					key='google_speech_to_text_language_code' )
 				
 				b1, b2, b3 = st.columns( 3 )
 				
 				with b1:
-					google_speech_submit = st.button(
-						'Submit',
-						key='google_speech_to_text_submit',
-						use_container_width=True
-					)
+					google_speech_submit = st.button( 'Submit', key='google_speech_to_text_submit',
+						use_container_width=True )
 				
 				with b2:
-					google_speech_clear = st.button(
-						'Clear',
-						key='google_speech_to_text_clear',
-						use_container_width=True
-					)
+					google_speech_clear = st.button( 'Clear', key='google_speech_to_text_clear',
+						use_container_width=True )
 				
 				with b3:
-					can_save = (
-							st.session_state.get( 'active_loader' ) == 'GoogleSpeechToTextLoader'
-							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( )
-					)
+					can_save = (st.session_state.get(
+						'active_loader' ) == 'GoogleSpeechToTextLoader' and isinstance(
+						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+						'raw_text' ).strip( ))
 					
 					if can_save:
-						st.download_button(
-							'Save',
-							data=st.session_state.get( 'raw_text' ),
-							file_name='google_speech_to_text_loader_output.txt',
-							mime='text/plain',
-							key='google_speech_to_text_save',
-							use_container_width=True
-						)
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='google_speech_to_text_loader_output.txt', mime='text/plain',
+							key='google_speech_to_text_save', use_container_width=True )
 					else:
-						st.button(
-							'Save',
-							key='google_speech_to_text_save_disabled',
+						st.button( 'Save', key='google_speech_to_text_save_disabled',
 							disabled=True,
-							use_container_width=True
-						)
+							use_container_width=True )
 			
 			with col_right:
 				if google_speech_clear:
 					st.session_state[ 'google_speech_to_text_results' ] = { }
 					remaining = _clear_loader_documents( 'GoogleSpeechToTextLoader' )
 					st.info(
-						f'Google Speech-to-Text Loader state cleared. Remaining documents: {remaining}.'
-					)
+						f'Google Speech-to-Text Loader state cleared. Remaining documents: '
+						f'{remaining}.' )
 				
 				if google_speech_submit:
 					if not project_id or not project_id.strip( ):
@@ -7893,11 +6634,8 @@ elif mode == 'Retrieval':
 							if gcs_audio_uri.strip( ):
 								file_path = gcs_audio_uri.strip( )
 								loader = GoogleSpeechToTextLoader( )
-								documents = loader.load(
-									project_id=project_id.strip( ),
-									file_path=file_path,
-									config=config
-								) or [ ]
+								documents = loader.load( project_id=project_id.strip( ),
+									file_path=file_path, config=config ) or [ ]
 							else:
 								with tempfile.TemporaryDirectory( ) as tmp:
 									path = os.path.join( tmp, audio_file.name )
@@ -7905,41 +6643,28 @@ elif mode == 'Retrieval':
 										f.write( audio_file.read( ) )
 									
 									loader = GoogleSpeechToTextLoader( )
-									documents = loader.load(
-										project_id=project_id.strip( ),
-										file_path=path,
-										config=config
-									) or [ ]
+									documents = loader.load( project_id=project_id.strip( ),
+										file_path=path, config=config ) or [ ]
 							
-							count = _promote_loader_documents( documents, 'GoogleSpeechToTextLoader' )
+							count = _promote_loader_documents( documents,
+								'GoogleSpeechToTextLoader' )
 							
 							items: list[ dict[ str, Any ] ] = [ ]
 							for i, doc in enumerate( documents, start=1 ):
 								metadata = (
-										doc.metadata
-										if isinstance( getattr( doc, 'metadata', { } ), dict )
-										else { }
-								)
+									doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+										dict ) else { })
 								content = str( getattr( doc, 'page_content', '' ) or '' )
-								items.append(
-									{
-											'Index': i,
-											'Source': metadata.get( 'source', '' ),
-											'LanguageCode': language_code.strip( ),
-											'Preview': content[ :200 ],
-											'Content': content,
-											'Metadata': metadata,
-									}
-								)
+								items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
+									'LanguageCode': language_code.strip( ),
+									'Preview': content[ :200 ], 'Content': content,
+									'Metadata': metadata, } )
 							
 							st.session_state[ 'google_speech_to_text_results' ] = {
-									'mode': 'google_speech_to_text',
-									'project_id': project_id.strip( ),
-									'file_path': gcs_audio_uri.strip( ) or audio_file.name,
-									'language_code': language_code.strip( ),
-									'count': count,
-									'items': items,
-							}
+								'mode': 'google_speech_to_text', 'project_id': project_id.strip( ),
+								'file_path': gcs_audio_uri.strip( ) or audio_file.name,
+								'language_code': language_code.strip( ), 'count': count,
+								'items': items, }
 							
 							st.success( f'Loaded {count} transcript document(s).' )
 						
@@ -7952,29 +6677,19 @@ elif mode == 'Retrieval':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'ProjectId': result.get( 'project_id', '' ),
-								'FilePath': result.get( 'file_path', '' ),
-								'LanguageCode': result.get( 'language_code', '' ),
-								'Returned': result.get( 'count', 0 ),
-						}
-					)
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+						'ProjectId': result.get( 'project_id', '' ),
+						'FilePath': result.get( 'file_path', '' ),
+						'LanguageCode': result.get( 'language_code', '' ),
+						'Returned': result.get( 'count', 0 ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
 						table_rows = [
-								{
-										'Index': item.get( 'Index', '' ),
-										'Source': item.get( 'Source', '' ),
-										'LanguageCode': item.get( 'LanguageCode', '' ),
-										'Preview': item.get( 'Preview', '' ),
-								}
-								for item in items
-						]
+							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+								'LanguageCode': item.get( 'LanguageCode', '' ),
+								'Preview': item.get( 'Preview', '' ), } for item in items ]
 						
 						st.markdown( '##### Results' )
 						st.dataframe( table_rows, use_container_width=True, hide_index=True )
@@ -7986,7 +6701,7 @@ elif mode == 'Retrieval':
 						st.info( 'No transcript documents returned.' )
 					
 					_render_fallback_raw( result )
-					
+		
 		# -------- AWS S3 Bucket
 		with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
 			st.badge( label='Information', help=cfg.AWS_BUCKET )
@@ -7996,91 +6711,55 @@ elif mode == 'Retrieval':
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				bucket_name = st.text_input(
-					'Bucket',
-					key='aws_bucket_name'
-				)
+				bucket_name = st.text_input( 'Bucket', key='aws_bucket_name' )
 				
-				prefix = st.text_input(
-					'Prefix (Optional)',
-					key='aws_bucket_prefix',
-					help='Optional folder / key prefix inside the bucket.'
-				)
+				prefix = st.text_input( 'Prefix (Optional)', key='aws_bucket_prefix',
+					help='Optional folder / key prefix inside the bucket.' )
 				
-				region_name = st.text_input(
-					'Region (Optional)',
-					key='aws_bucket_region_name'
-				)
+				region_name = st.text_input( 'Region (Optional)', key='aws_bucket_region_name' )
 				
-				endpoint_url = st.text_input(
-					'Endpoint URL (Optional)',
-					key='aws_bucket_endpoint_url',
-					help='Optional S3-compatible endpoint URL.'
-				)
+				endpoint_url = st.text_input( 'Endpoint URL (Optional)',
+					key='aws_bucket_endpoint_url', help='Optional S3-compatible endpoint URL.' )
 				
-				aws_access_key_id = st.text_input(
-					'AWS Access Key ID (Optional)',
-					type='password',
-					key='aws_bucket_access_key'
-				)
+				aws_access_key_id = st.text_input( 'AWS Access Key ID (Optional)', type='password',
+					key='aws_bucket_access_key' )
 				
-				aws_secret_access_key = st.text_input(
-					'AWS Secret Access Key (Optional)',
-					type='password',
-					key='aws_bucket_secret_key'
-				)
+				aws_secret_access_key = st.text_input( 'AWS Secret Access Key (Optional)',
+					type='password', key='aws_bucket_secret_key' )
 				
-				aws_session_token = st.text_input(
-					'AWS Session Token (Optional)',
-					type='password',
-					key='aws_bucket_session_token'
-				)
+				aws_session_token = st.text_input( 'AWS Session Token (Optional)', type='password',
+					key='aws_bucket_session_token' )
 				
 				b1, b2, b3 = st.columns( 3 )
 				
 				with b1:
-					aws_bucket_submit = st.button(
-						'Submit',
-						key='aws_bucket_submit',
-						use_container_width=True
-					)
+					aws_bucket_submit = st.button( 'Submit', key='aws_bucket_submit',
+						use_container_width=True )
 				
 				with b2:
-					aws_bucket_clear = st.button(
-						'Clear',
-						key='aws_bucket_clear',
-						use_container_width=True
-					)
+					aws_bucket_clear = st.button( 'Clear', key='aws_bucket_clear',
+						use_container_width=True )
 				
 				with b3:
-					can_save = (
-							st.session_state.get( 'active_loader' ) == 'AmazonBucketLoader'
-							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( )
-					)
+					can_save = (st.session_state.get(
+						'active_loader' ) == 'AmazonBucketLoader' and isinstance(
+						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+						'raw_text' ).strip( ))
 					
 					if can_save:
-						st.download_button(
-							'Save',
-							data=st.session_state.get( 'raw_text' ),
-							file_name='aws_s3_bucket_loader_output.txt',
-							mime='text/plain',
-							key='aws_bucket_save',
-							use_container_width=True
-						)
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='aws_s3_bucket_loader_output.txt', mime='text/plain',
+							key='aws_bucket_save', use_container_width=True )
 					else:
-						st.button(
-							'Save',
-							key='aws_bucket_save_disabled',
-							disabled=True,
-							use_container_width=True
-						)
+						st.button( 'Save', key='aws_bucket_save_disabled', disabled=True,
+							use_container_width=True )
 			
 			with col_right:
 				if aws_bucket_clear:
 					st.session_state[ 'aws_bucket_results' ] = { }
 					remaining = _clear_loader_documents( 'AmazonBucketLoader' )
-					st.info( f'AWS S3 Bucket Loader state cleared. Remaining documents: {remaining}.' )
+					st.info(
+						f'AWS S3 Bucket Loader state cleared. Remaining documents: {remaining}.' )
 				
 				if aws_bucket_submit:
 					if not bucket_name or not bucket_name.strip( ):
@@ -8088,50 +6767,33 @@ elif mode == 'Retrieval':
 					else:
 						try:
 							loader = AwsBucketLoader( )
-							documents = loader.load(
-								bucket=bucket_name.strip( ),
+							documents = loader.load( bucket=bucket_name.strip( ),
 								prefix=prefix.strip( ) or None,
 								aws_access_key_id=aws_access_key_id.strip( ) or None,
 								aws_secret_access_key=aws_secret_access_key.strip( ) or None,
 								aws_session_token=aws_session_token.strip( ) or None,
 								region_name=region_name.strip( ) or None,
-								endpoint_url=endpoint_url.strip( ) or None
-							) or [ ]
+								endpoint_url=endpoint_url.strip( ) or None ) or [ ]
 							
-							count = _promote_loader_documents(
-								documents,
-								'AmazonBucketLoader'
-							)
+							count = _promote_loader_documents( documents, 'AmazonBucketLoader' )
 							
 							items: list[ dict[ str, Any ] ] = [ ]
 							for i, doc in enumerate( documents, start=1 ):
 								metadata = (
-										doc.metadata
-										if isinstance( getattr( doc, 'metadata', { } ), dict )
-										else { }
-								)
+									doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+										dict ) else { })
 								content = str( getattr( doc, 'page_content', '' ) or '' )
-								items.append(
-									{
-											'Index': i,
-											'Source': metadata.get( 'source', '' ),
-											'Bucket': bucket_name.strip( ),
-											'Prefix': prefix.strip( ) or '',
-											'Preview': content[ :200 ],
-											'Content': content,
-											'Metadata': metadata,
-									}
-								)
+								items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
+									'Bucket': bucket_name.strip( ), 'Prefix': prefix.strip( ) or
+									                                          '',
+									'Preview': content[ :200 ], 'Content': content,
+									'Metadata': metadata, } )
 							
-							st.session_state[ 'aws_bucket_results' ] = {
-									'mode': 'aws_s3_bucket',
-									'bucket': bucket_name.strip( ),
-									'prefix': prefix.strip( ) or '',
-									'region_name': region_name.strip( ) or '',
-									'endpoint_url': endpoint_url.strip( ) or '',
-									'count': count,
-									'items': items,
-							}
+							st.session_state[ 'aws_bucket_results' ] = { 'mode': 'aws_s3_bucket',
+								'bucket': bucket_name.strip( ), 'prefix': prefix.strip( ) or '',
+								'region_name': region_name.strip( ) or '',
+								'endpoint_url': endpoint_url.strip( ) or '', 'count': count,
+								'items': items, }
 							
 							st.success( f'Loaded {count} AWS S3 bucket document(s).' )
 						
@@ -8144,31 +6806,21 @@ elif mode == 'Retrieval':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'Bucket': result.get( 'bucket', '' ),
-								'Prefix': result.get( 'prefix', '' ),
-								'Region': result.get( 'region_name', '' ),
-								'EndpointUrl': result.get( 'endpoint_url', '' ),
-								'Returned': result.get( 'count', 0 ),
-						}
-					)
+					_render_summary_kv( '#### Summary',
+						{ 'Mode': result.get( 'mode', '' ), 'Bucket': result.get( 'bucket', '' ),
+							'Prefix': result.get( 'prefix', '' ),
+							'Region': result.get( 'region_name', '' ),
+							'EndpointUrl': result.get( 'endpoint_url', '' ),
+							'Returned': result.get( 'count', 0 ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
 						table_rows = [
-								{
-										'Index': item.get( 'Index', '' ),
-										'Source': item.get( 'Source', '' ),
-										'Bucket': item.get( 'Bucket', '' ),
-										'Prefix': item.get( 'Prefix', '' ),
-										'Preview': item.get( 'Preview', '' ),
-								}
-								for item in items
-						]
+							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+								'Bucket': item.get( 'Bucket', '' ),
+								'Prefix': item.get( 'Prefix', '' ),
+								'Preview': item.get( 'Preview', '' ), } for item in items ]
 						
 						st.markdown( '#### Results' )
 						st.dataframe( table_rows, use_container_width=True, hide_index=True )
@@ -8180,7 +6832,7 @@ elif mode == 'Retrieval':
 						st.info( 'No AWS S3 bucket documents returned.' )
 					
 					_render_fallback_raw( result )
-	
+		
 		# -------- Google Cloud Bucket
 		with st.expander( label='Google Cloud Bucket', icon='🧊', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_BUCKET )
@@ -8190,74 +6842,47 @@ elif mode == 'Retrieval':
 			col_left, col_right = st.columns( [ 0.4, 0.6 ], border=True )
 			
 			with col_left:
-				project_name = st.text_input(
-					'Project Name',
-					key='google_bucket_project_name'
-				)
+				project_name = st.text_input( 'Project Name', key='google_bucket_project_name' )
 				
-				bucket_name = st.text_input(
-					'Bucket',
-					key='google_bucket_name'
-				)
+				bucket_name = st.text_input( 'Bucket', key='google_bucket_name' )
 				
-				prefix = st.text_input(
-					'Prefix (Optional)',
-					key='google_bucket_prefix',
-					help='Optional folder / object prefix filter inside the bucket.'
-				)
+				prefix = st.text_input( 'Prefix (Optional)', key='google_bucket_prefix',
+					help='Optional folder / object prefix filter inside the bucket.' )
 				
-				continue_on_failure = st.checkbox(
-					'Continue On Failure',
-					value=False,
+				continue_on_failure = st.checkbox( 'Continue On Failure', value=False,
 					key='google_bucket_continue_on_failure',
-					help='Skip objects that fail to load instead of aborting the whole request.'
-				)
+					help='Skip objects that fail to load instead of aborting the whole request.' )
 				
 				b1, b2, b3 = st.columns( 3 )
 				
 				with b1:
-					google_bucket_submit = st.button(
-						'Submit',
-						key='google_bucket_submit',
-						use_container_width=True
-					)
+					google_bucket_submit = st.button( 'Submit', key='google_bucket_submit',
+						use_container_width=True )
 				
 				with b2:
-					google_bucket_clear = st.button(
-						'Clear',
-						key='google_bucket_clear',
-						use_container_width=True
-					)
+					google_bucket_clear = st.button( 'Clear', key='google_bucket_clear',
+						use_container_width=True )
 				
 				with b3:
-					can_save = (
-							st.session_state.get( 'active_loader' ) == 'GoogleBucketLoader'
-							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( )
-					)
+					can_save = (st.session_state.get(
+						'active_loader' ) == 'GoogleBucketLoader' and isinstance(
+						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+						'raw_text' ).strip( ))
 					
 					if can_save:
-						st.download_button(
-							'Save',
-							data=st.session_state.get( 'raw_text' ),
-							file_name='google_bucket_loader_output.txt',
-							mime='text/plain',
-							key='google_bucket_save',
-							use_container_width=True
-						)
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='google_bucket_loader_output.txt', mime='text/plain',
+							key='google_bucket_save', use_container_width=True )
 					else:
-						st.button(
-							'Save',
-							key='google_bucket_save_disabled',
-							disabled=True,
-							use_container_width=True
-						)
+						st.button( 'Save', key='google_bucket_save_disabled', disabled=True,
+							use_container_width=True )
 			
 			with col_right:
 				if google_bucket_clear:
 					st.session_state[ 'google_bucket_results' ] = { }
 					remaining = _clear_loader_documents( 'GoogleBucketLoader' )
-					st.info( f'Google Bucket Loader state cleared. Remaining documents: {remaining}.' )
+					st.info(
+						f'Google Bucket Loader state cleared. Remaining documents: {remaining}.' )
 				
 				if google_bucket_submit:
 					if not project_name or not project_name.strip( ):
@@ -8267,47 +6892,30 @@ elif mode == 'Retrieval':
 					else:
 						try:
 							loader = GoogleBucketLoader( )
-							documents = loader.load(
-								project_name=project_name.strip( ),
-								bucket=bucket_name.strip( ),
-								prefix=prefix.strip( ) or None,
-								continue_on_failure=continue_on_failure
-							) or [ ]
+							documents = loader.load( project_name=project_name.strip( ),
+								bucket=bucket_name.strip( ), prefix=prefix.strip( ) or None,
+								continue_on_failure=continue_on_failure ) or [ ]
 							
-							count = _promote_loader_documents(
-								documents,
-								'GoogleBucketLoader'
-							)
+							count = _promote_loader_documents( documents, 'GoogleBucketLoader' )
 							
 							items: list[ dict[ str, Any ] ] = [ ]
 							for i, doc in enumerate( documents, start=1 ):
 								metadata = (
-										doc.metadata
-										if isinstance( getattr( doc, 'metadata', { } ), dict )
-										else { }
-								)
+									doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+										dict ) else { })
 								content = str( getattr( doc, 'page_content', '' ) or '' )
-								items.append(
-									{
-											'Index': i,
-											'Source': metadata.get( 'source', '' ),
-											'Bucket': bucket_name.strip( ),
-											'Prefix': prefix.strip( ) or '',
-											'Preview': content[ :200 ],
-											'Content': content,
-											'Metadata': metadata,
-									}
-								)
+								items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
+									'Bucket': bucket_name.strip( ), 'Prefix': prefix.strip( ) or
+									                                          '',
+									'Preview': content[ :200 ], 'Content': content,
+									'Metadata': metadata, } )
 							
 							st.session_state[ 'google_bucket_results' ] = {
-									'mode': 'google_cloud_bucket',
-									'project_name': project_name.strip( ),
-									'bucket': bucket_name.strip( ),
-									'prefix': prefix.strip( ) or '',
-									'continue_on_failure': continue_on_failure,
-									'count': count,
-									'items': items,
-							}
+								'mode': 'google_cloud_bucket',
+								'project_name': project_name.strip( ),
+								'bucket': bucket_name.strip( ), 'prefix': prefix.strip( ) or '',
+								'continue_on_failure': continue_on_failure, 'count': count,
+								'items': items, }
 							
 							st.success( f'Loaded {count} Google bucket document(s).' )
 						
@@ -8320,31 +6928,20 @@ elif mode == 'Retrieval':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'ProjectName': result.get( 'project_name', '' ),
-								'Bucket': result.get( 'bucket', '' ),
-								'Prefix': result.get( 'prefix', '' ),
-								'ContinueOnFailure': result.get( 'continue_on_failure', False ),
-								'Returned': result.get( 'count', 0 ),
-						}
-					)
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+						'ProjectName': result.get( 'project_name', '' ),
+						'Bucket': result.get( 'bucket', '' ), 'Prefix': result.get( 'prefix', '' ),
+						'ContinueOnFailure': result.get( 'continue_on_failure', False ),
+						'Returned': result.get( 'count', 0 ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
 						table_rows = [
-								{
-										'Index': item.get( 'Index', '' ),
-										'Source': item.get( 'Source', '' ),
-										'Bucket': item.get( 'Bucket', '' ),
-										'Prefix': item.get( 'Prefix', '' ),
-										'Preview': item.get( 'Preview', '' ),
-								}
-								for item in items
-						]
+							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+								'Bucket': item.get( 'Bucket', '' ),
+								'Prefix': item.get( 'Prefix', '' ),
+								'Preview': item.get( 'Preview', '' ), } for item in items ]
 						
 						st.markdown( '#### Results' )
 						st.dataframe( table_rows, use_container_width=True, hide_index=True )
@@ -8361,7 +6958,6 @@ elif mode == 'Retrieval':
 # GEOSPATIAL MODE
 # ==============================================================================
 elif mode == 'Geospatial':
-	
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'📡 Weather & Geospatial Data' )
@@ -8399,135 +6995,93 @@ elif mode == 'Geospatial':
 				googlegeocoding_mode = st.selectbox( 'Mode',
 					options=[ 'forward', 'reverse', 'place' ],
 					index=[ 'forward', 'reverse', 'place' ].index(
-						st.session_state.get( 'googlegeocoding_mode', 'forward' )
-					), key='googlegeocoding_mode',
-					help='forward = address search; reverse = lat/lng to address; place = place_id lookup.' )
+						st.session_state.get( 'googlegeocoding_mode', 'forward' ) ),
+					key='googlegeocoding_mode',
+					help='forward = address search; reverse = lat/lng to address; place = place_id '
+					     'lookup.' )
 				
-				googlegeocoding_query = st.text_area( 'Address Query',
-					height=80, key='googlegeocoding_query',
-					placeholder=(
-							'Examples:\n'
-							'1600 Amphitheatre Parkway, Mountain View, CA\n'
-							'Arlington, VA\n'
-							'10 Downing Street, London'
-					),
+				googlegeocoding_query = st.text_area( 'Address Query', height=80,
+					key='googlegeocoding_query', placeholder=('Examples:\n'
+					                                          '1600 Amphitheatre Parkway, Mountain '
+					                                          'View, CA\n'
+					                                          'Arlington, VA\n'
+					                                          '10 Downing Street, London'),
 					disabled=(googlegeocoding_mode != 'forward') )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					googlegeocoding_latitude = st.number_input(
-						'Latitude',
-						min_value=-90.0,
+					googlegeocoding_latitude = st.number_input( 'Latitude', min_value=-90.0,
 						max_value=90.0,
 						value=float( st.session_state.get( 'googlegeocoding_latitude', 38.8895 ) ),
-						step=0.0001,
-						format='%.6f',
-						key='googlegeocoding_latitude',
-						disabled=(googlegeocoding_mode != 'reverse')
-					)
+						step=0.0001, format='%.6f', key='googlegeocoding_latitude',
+						disabled=(googlegeocoding_mode != 'reverse') )
 				
 				with c2:
-					googlegeocoding_longitude = st.number_input(
-						'Longitude',
-						min_value=-180.0,
-						max_value=180.0,
-						value=float( st.session_state.get( 'googlegeocoding_longitude', -77.0353 ) ),
-						step=0.0001,
-						format='%.6f',
-						key='googlegeocoding_longitude',
-						disabled=(googlegeocoding_mode != 'reverse')
-					)
+					googlegeocoding_longitude = st.number_input( 'Longitude', min_value=-180.0,
+						max_value=180.0, value=float(
+							st.session_state.get( 'googlegeocoding_longitude', -77.0353 ) ),
+						step=0.0001, format='%.6f', key='googlegeocoding_longitude',
+						disabled=(googlegeocoding_mode != 'reverse') )
 				
-				googlegeocoding_place_id = st.text_input(
-					'Place ID',
+				googlegeocoding_place_id = st.text_input( 'Place ID',
 					value=st.session_state.get( 'googlegeocoding_place_id', '' ),
-					key='googlegeocoding_place_id',
-					placeholder='ChIJ2eUgeAK6j4ARbn5u_wAGqWA',
-					disabled=(googlegeocoding_mode != 'place')
-				)
+					key='googlegeocoding_place_id', placeholder='ChIJ2eUgeAK6j4ARbn5u_wAGqWA',
+					disabled=(googlegeocoding_mode != 'place') )
 				
 				c3, c4 = st.columns( 2 )
 				
 				with c3:
-					googlegeocoding_language = st.text_input(
-						'Language',
+					googlegeocoding_language = st.text_input( 'Language',
 						value=st.session_state.get( 'googlegeocoding_language', 'en' ),
-						key='googlegeocoding_language',
-						placeholder='en'
-					)
+						key='googlegeocoding_language', placeholder='en' )
 				
 				with c4:
-					googlegeocoding_region = st.text_input(
-						'Region Bias',
+					googlegeocoding_region = st.text_input( 'Region Bias',
 						value=st.session_state.get( 'googlegeocoding_region', '' ),
-						key='googlegeocoding_region',
-						placeholder='us',
-						disabled=(googlegeocoding_mode == 'reverse')
-					)
+						key='googlegeocoding_region', placeholder='us',
+						disabled=(googlegeocoding_mode == 'reverse') )
 				
 				c5, c6 = st.columns( 2 )
 				
 				with c5:
-					googlegeocoding_result_type = st.text_input(
-						'Result Type',
+					googlegeocoding_result_type = st.text_input( 'Result Type',
 						value=st.session_state.get( 'googlegeocoding_result_type', '' ),
-						key='googlegeocoding_result_type',
-						placeholder='street_address|premise',
-						disabled=(googlegeocoding_mode != 'reverse')
-					)
+						key='googlegeocoding_result_type', placeholder='street_address|premise',
+						disabled=(googlegeocoding_mode != 'reverse') )
 				
 				with c6:
-					googlegeocoding_location_type = st.text_input(
-						'Location Type',
+					googlegeocoding_location_type = st.text_input( 'Location Type',
 						value=st.session_state.get( 'googlegeocoding_location_type', '' ),
 						key='googlegeocoding_location_type',
 						placeholder='ROOFTOP|GEOMETRIC_CENTER',
-						disabled=(googlegeocoding_mode != 'reverse')
-					)
+						disabled=(googlegeocoding_mode != 'reverse') )
 				
 				c7, c8 = st.columns( 2 )
 				
 				with c7:
-					googlegeocoding_api_key = st.text_input(
-						'API Key',
-						value='',
-						type='password',
+					googlegeocoding_api_key = st.text_input( 'API Key', value='', type='password',
 						key='googlegeocoding_api_key',
-						placeholder='Uses GOOGLE_API_KEY when left blank.'
-					)
+						placeholder='Uses GOOGLE_API_KEY when left blank.' )
 				
 				with c8:
-					googlegeocoding_timeout = st.number_input(
-						'Timeout',
-						min_value=1,
+					googlegeocoding_timeout = st.number_input( 'Timeout', min_value=1,
 						max_value=60,
-						value=int( st.session_state.get( 'googlegeocoding_timeout', 10 ) ),
-						step=1,
-						key='googlegeocoding_timeout'
-					)
+						value=int( st.session_state.get( 'googlegeocoding_timeout', 10 ) ), step=1,
+						key='googlegeocoding_timeout' )
 				
-				st.caption(
-					'Google Geocoding requires billing plus a Google API key. '
-					'Result filters apply to reverse geocoding only.'
-				)
+				st.caption( 'Google Geocoding requires billing plus a Google API key. '
+				            'Result filters apply to reverse geocoding only.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					googlegeocoding_submit = st.button(
-						'Submit',
-						key='googlegeocoding_submit',
-						use_container_width=True
-					)
+					googlegeocoding_submit = st.button( 'Submit', key='googlegeocoding_submit',
+						use_container_width=True )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='googlegeocoding_clear',
-						on_click=_clear_googlegeocoding_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='googlegeocoding_clear',
+						on_click=_clear_googlegeocoding_state, use_container_width=True )
 			
 			with col_right:
 				st.markdown( 'Results' )
@@ -8535,8 +7089,7 @@ elif mode == 'Geospatial':
 				if googlegeocoding_submit:
 					try:
 						f = GoogleGeocoding( )
-						result = f.fetch(
-							mode=str( googlegeocoding_mode ),
+						result = f.fetch( mode=str( googlegeocoding_mode ),
 							query=str( googlegeocoding_query ),
 							latitude=float( googlegeocoding_latitude ),
 							longitude=float( googlegeocoding_longitude ),
@@ -8546,8 +7099,7 @@ elif mode == 'Geospatial':
 							result_type=str( googlegeocoding_result_type or '' ).strip( ),
 							location_type=str( googlegeocoding_location_type or '' ).strip( ),
 							time=int( googlegeocoding_timeout ),
-							api_key=(googlegeocoding_api_key or None)
-						)
+							api_key=(googlegeocoding_api_key or None) )
 						
 						st.session_state[ 'googlegeocoding_results' ] = result or { }
 						st.rerun( )
@@ -8562,16 +7114,12 @@ elif mode == 'Geospatial':
 					st.text( 'No results.' )
 				else:
 					st.markdown( '#### Request Metadata' )
-					st.json(
-						{
-								'mode': result.get( 'mode', '' ),
-								'url': result.get( 'url', '' ),
-								'params': result.get( 'params', { } ),
-								'status': result.get( 'status', '' ),
-						}
-					)
+					st.json( { 'mode': result.get( 'mode', '' ), 'url': result.get( 'url', '' ),
+						'params': result.get( 'params', { } ),
+						'status': result.get( 'status', '' ), } )
 					
-					results_list = result.get( 'results', [ ] ) if isinstance( result, dict ) else [ ]
+					results_list = result.get( 'results', [ ] ) if isinstance( result,
+						dict ) else [ ]
 					
 					if not results_list:
 						st.info( 'No geocoding results returned.' )
@@ -8581,8 +7129,10 @@ elif mode == 'Geospatial':
 							place_id_value = item.get( 'place_id', '' )
 							types_value = item.get( 'types', [ ] )
 							
-							geometry = item.get( 'geometry', { } ) if isinstance( item, dict ) else { }
-							location = geometry.get( 'location', { } ) if isinstance( geometry, dict ) else { }
+							geometry = item.get( 'geometry', { } ) if isinstance( item,
+								dict ) else { }
+							location = geometry.get( 'location', { } ) if isinstance( geometry,
+								dict ) else { }
 							
 							with st.container( border=True ):
 								st.markdown( f'**{idx}. {formatted_address}**' )
@@ -8593,7 +7143,8 @@ elif mode == 'Geospatial':
 									meta_parts.append( f'Place ID: `{place_id_value}`' )
 								
 								if isinstance( types_value, list ) and types_value:
-									meta_parts.append( f"Types: `{', '.join( types_value[ :4 ] )}`" )
+									meta_parts.append(
+										f"Types: `{', '.join( types_value[ :4 ] )}`" )
 								
 								if meta_parts:
 									st.caption( ' | '.join( meta_parts ) )
@@ -8610,20 +7161,16 @@ elif mode == 'Geospatial':
 									for component in address_components:
 										if isinstance( component, dict ):
 											component_rows.append(
-												{
-														'long_name': component.get( 'long_name', '' ),
-														'short_name': component.get( 'short_name', '' ),
-														'types': ', '.join( component.get( 'types', [ ] ) )
-												}
-											)
+												{ 'long_name': component.get( 'long_name', '' ),
+													'short_name': component.get( 'short_name',
+														'' ),
+													'types': ', '.join(
+														component.get( 'types', [ ] ) ) } )
 									
 									if component_rows:
 										with st.expander( 'Address Components', expanded=False ):
-											st.dataframe(
-												pd.DataFrame( component_rows ),
-												use_container_width=True,
-												hide_index=True
-											)
+											st.dataframe( pd.DataFrame( component_rows ),
+												use_container_width=True, hide_index=True )
 								
 								with st.expander( 'Raw Item', expanded=False ):
 									st.json( item )
@@ -8633,59 +7180,17 @@ elif mode == 'Geospatial':
 		
 		# -------- Google Maps
 		with st.expander( label='Google Maps', icon='🗺️', expanded=False ):
-			GOOGLEMAPS_MODES = [
-					'geocode_location',
-					'geocode_coordinates',
-					'validate_address',
-					'request_directions'
-			]
+			GOOGLEMAPS_MODES = [ 'geocode_location', 'geocode_coordinates', 'validate_address',
+				'request_directions' ]
 			
-			GOOGLEMAPS_TRAVEL_MODES = [
-					'driving',
-					'walking',
-					'bicycling',
-					'transit'
-			]
+			GOOGLEMAPS_TRAVEL_MODES = [ 'driving', 'walking', 'bicycling', 'transit' ]
 			
 			def _clear_googlemaps_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Google Maps expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-
-				'''
 				st.session_state[ 'googlemaps_clear_request' ] = True
 			
 			def _split_googlemaps_address_lines( value: str ) -> List[ str ]:
-				'''
-					Purpose:
-					--------
-					Convert a multiline address text value into non-empty address lines for
-					the Google Address Validation API wrapper method.
-
-					Parameters:
-					-----------
-					value (str):
-						Multiline address text supplied by the user.
-
-					Returns:
-					--------
-					List[str]:
-						Non-empty address lines.
-
-				'''
-				lines = [
-						str( line or '' ).strip( )
-						for line in str( value or '' ).splitlines( )
-						if str( line or '' ).strip( ) ]
+				lines = [ str( line or '' ).strip( ) for line in str(
+					value or '' ).splitlines( ) if str( line or '' ).strip( ) ]
 				
 				return lines
 			
@@ -8740,124 +7245,85 @@ elif mode == 'Geospatial':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				googlemaps_mode = st.selectbox(
-					'Mode',
-					options=GOOGLEMAPS_MODES,
+				googlemaps_mode = st.selectbox( 'Mode', options=GOOGLEMAPS_MODES,
 					index=GOOGLEMAPS_MODES.index(
-						st.session_state.get( 'googlemaps_mode', 'geocode_location' )
-					),
-					key='googlemaps_mode',
-					help='Select the Google Maps wrapper operation to run.'
-				)
+						st.session_state.get( 'googlemaps_mode', 'geocode_location' ) ),
+					key='googlemaps_mode', help='Select the Google Maps wrapper operation to '
+					                            'run.' )
 				
-				googlemaps_query = st.text_area(
-					'Address',
-					value=st.session_state.get( 'googlemaps_query', '' ),
-					height=70,
-					key='googlemaps_query',
-					disabled=(googlemaps_mode != 'geocode_location'),
-					placeholder='1600 Pennsylvania Ave NW, Washington, DC'
-				)
+				googlemaps_query = st.text_area( 'Address',
+					value=st.session_state.get( 'googlemaps_query', '' ), height=70,
+					key='googlemaps_query', disabled=(googlemaps_mode != 'geocode_location'),
+					placeholder='1600 Pennsylvania Ave NW, Washington, DC' )
 				
 				coord_c1, coord_c2 = st.columns( 2 )
 				
 				with coord_c1:
-					googlemaps_latitude = st.number_input(
-						'Latitude',
+					googlemaps_latitude = st.number_input( 'Latitude',
 						value=float( st.session_state.get( 'googlemaps_latitude', 38.8895 ) ),
-						step=0.0001,
-						format='%.6f',
-						key='googlemaps_latitude',
-						disabled=(googlemaps_mode != 'geocode_coordinates')
-					)
+						step=0.0001, format='%.6f', key='googlemaps_latitude',
+						disabled=(googlemaps_mode != 'geocode_coordinates') )
 				
 				with coord_c2:
-					googlemaps_longitude = st.number_input(
-						'Longitude',
+					googlemaps_longitude = st.number_input( 'Longitude',
 						value=float( st.session_state.get( 'googlemaps_longitude', -77.0353 ) ),
-						step=0.0001,
-						format='%.6f',
-						key='googlemaps_longitude',
-						disabled=(googlemaps_mode != 'geocode_coordinates')
-					)
+						step=0.0001, format='%.6f', key='googlemaps_longitude',
+						disabled=(googlemaps_mode != 'geocode_coordinates') )
 				
-				googlemaps_address_lines = st.text_area(
-					'Address Lines',
-					value=st.session_state.get( 'googlemaps_address_lines', '' ),
-					height=90,
+				googlemaps_address_lines = st.text_area( 'Address Lines',
+					value=st.session_state.get( 'googlemaps_address_lines', '' ), height=90,
 					key='googlemaps_address_lines',
 					disabled=(googlemaps_mode != 'validate_address'),
-					placeholder=(
-							'1600 Pennsylvania Ave NW\n'
-							'Washington, DC 20500'
-					)
-				)
+					placeholder=('1600 Pennsylvania Ave NW\n'
+					             'Washington, DC 20500') )
 				
 				route_c1, route_c2 = st.columns( 2 )
 				
 				with route_c1:
-					googlemaps_origin = st.text_input(
-						'Origin',
+					googlemaps_origin = st.text_input( 'Origin',
 						value=st.session_state.get( 'googlemaps_origin', '' ),
-						key='googlemaps_origin',
-						disabled=(googlemaps_mode != 'request_directions'),
-						placeholder='Arlington, VA'
-					)
+						key='googlemaps_origin', disabled=(googlemaps_mode !=
+						                                   'request_directions'),
+						placeholder='Arlington, VA' )
 				
 				with route_c2:
-					googlemaps_destination = st.text_input(
-						'Destination',
+					googlemaps_destination = st.text_input( 'Destination',
 						value=st.session_state.get( 'googlemaps_destination', '' ),
 						key='googlemaps_destination',
 						disabled=(googlemaps_mode != 'request_directions'),
-						placeholder='Washington, DC'
-					)
+						placeholder='Washington, DC' )
 				
 				opt_c1, opt_c2 = st.columns( 2 )
 				
 				with opt_c1:
-					googlemaps_travel_mode = st.selectbox(
-						'Travel Mode',
-						options=GOOGLEMAPS_TRAVEL_MODES,
-						index=GOOGLEMAPS_TRAVEL_MODES.index(
-							st.session_state.get( 'googlemaps_travel_mode', 'driving' )
-						),
+					googlemaps_travel_mode = st.selectbox( 'Travel Mode',
+						options=GOOGLEMAPS_TRAVEL_MODES, index=GOOGLEMAPS_TRAVEL_MODES.index(
+							st.session_state.get( 'googlemaps_travel_mode', 'driving' ) ),
 						key='googlemaps_travel_mode',
-						disabled=(googlemaps_mode != 'request_directions')
-					)
+						disabled=(googlemaps_mode != 'request_directions') )
 				
 				with opt_c2:
-					googlemaps_radius = st.number_input(
-						'Radius (meters)',
-						min_value=1,
+					googlemaps_radius = st.number_input( 'Radius (meters)', min_value=1,
 						max_value=50000,
-						value=int( st.session_state.get( 'googlemaps_radius', 5000 ) ),
-						step=100,
+						value=int( st.session_state.get( 'googlemaps_radius', 5000 ) ), step=100,
 						key='googlemaps_radius',
-						help='Preserved legacy control. The current GoogleMaps wrapper does not consume radius.'
-					)
+						help='Preserved legacy control. The current GoogleMaps wrapper does not '
+						     'consume radius.' )
 				
-				st.caption(
-					'Google Maps uses GOOGLE_API_KEY from config. This section now exposes '
-					'forward geocoding, reverse geocoding, address validation, and directions.'
-				)
+				st.caption( 'Google Maps uses GOOGLE_API_KEY from config. This section now '
+				            'exposes '
+				            'forward geocoding, reverse geocoding, address validation, '
+				            'and directions.' )
 				
 				m1, m2 = st.columns( 2 )
 				
 				with m1:
-					googlemaps_submit = st.button(
-						'Submit',
-						key='googlemaps_submit',
-						use_container_width=True
-					)
+					googlemaps_submit = st.button( 'Submit', key='googlemaps_submit',
+						use_container_width=True )
 				
 				with m2:
-					st.button(
-						'Clear',
-						key='googlemaps_clear',
-						on_click=_clear_googlemaps_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='googlemaps_clear', on_click=_clear_googlemaps_state,
+						use_container_width=True )
 			
 			with col_right:
 				st.markdown( 'Results' )
@@ -8868,70 +7334,54 @@ elif mode == 'Geospatial':
 						
 						if googlemaps_mode == 'geocode_location':
 							if not str( googlemaps_query or '' ).strip( ):
-								raise ValueError( 'Address is required for geocode_location mode.' )
+								raise ValueError( 'Address is required for geocode_location '
+								                  'mode.' )
 							
 							coords = gm.geocode_location( str( googlemaps_query ).strip( ) )
-							result = {
-									'mode': googlemaps_mode,
-									'query': str( googlemaps_query ).strip( ),
-									'radius': int( googlemaps_radius ),
-									'latitude': coords[ 0 ],
-									'longitude': coords[ 1 ],
-									'coordinates': f'{coords[ 0 ]}, {coords[ 1 ]}',
-							}
+							result = { 'mode': googlemaps_mode,
+								'query': str( googlemaps_query ).strip( ),
+								'radius': int( googlemaps_radius ), 'latitude': coords[ 0 ],
+								'longitude': coords[ 1 ],
+								'coordinates': f'{coords[ 0 ]}, {coords[ 1 ]}', }
 						
 						elif googlemaps_mode == 'geocode_coordinates':
-							address = gm.geocode_coordinates(
-								lat=float( googlemaps_latitude ),
-								long=float( googlemaps_longitude )
-							)
-							result = {
-									'mode': googlemaps_mode,
-									'latitude': float( googlemaps_latitude ),
-									'longitude': float( googlemaps_longitude ),
-									'address': address,
-							}
+							address = gm.geocode_coordinates( lat=float( googlemaps_latitude ),
+								long=float( googlemaps_longitude ) )
+							result = { 'mode': googlemaps_mode,
+								'latitude': float( googlemaps_latitude ),
+								'longitude': float( googlemaps_longitude ), 'address': address, }
 						
 						elif googlemaps_mode == 'validate_address':
 							address_lines = _split_googlemaps_address_lines(
-								googlemaps_address_lines
-							)
+								googlemaps_address_lines )
 							
 							if not address_lines:
 								raise ValueError(
-									'At least one address line is required for validate_address mode.'
-								)
+									'At least one address line is required for validate_address '
+									'mode.' )
 							
 							payload = gm.validate_address( address_lines )
-							result = {
-									'mode': googlemaps_mode,
-									'address_lines': address_lines,
-									'data': payload or { },
-							}
+							result = { 'mode': googlemaps_mode, 'address_lines': address_lines,
+								'data': payload or { }, }
 						
 						else:
 							if not str( googlemaps_origin or '' ).strip( ):
 								raise ValueError(
-									'Origin is required for request_directions mode.'
-								)
+									'Origin is required for request_directions mode.' )
 							
 							if not str( googlemaps_destination or '' ).strip( ):
 								raise ValueError(
-									'Destination is required for request_directions mode.'
-								)
+									'Destination is required for request_directions mode.' )
 							
 							payload = gm.request_directions(
 								origin=str( googlemaps_origin ).strip( ),
 								destination=str( googlemaps_destination ).strip( ),
-								mode=str( googlemaps_travel_mode ).strip( )
-							)
-							result = {
-									'mode': googlemaps_mode,
-									'origin': str( googlemaps_origin ).strip( ),
-									'destination': str( googlemaps_destination ).strip( ),
-									'travel_mode': str( googlemaps_travel_mode ).strip( ),
-									'data': payload or { },
-							}
+								mode=str( googlemaps_travel_mode ).strip( ) )
+							result = { 'mode': googlemaps_mode,
+								'origin': str( googlemaps_origin ).strip( ),
+								'destination': str( googlemaps_destination ).strip( ),
+								'travel_mode': str( googlemaps_travel_mode ).strip( ),
+								'data': payload or { }, }
 						
 						st.session_state[ 'googlemaps_results' ] = result
 						st.rerun( )
@@ -8953,19 +7403,11 @@ elif mode == 'Geospatial':
 							continue
 						
 						if isinstance( value, (str, int, float, bool) ) or value is None:
-							summary_rows.append(
-								{
-										'Field': key,
-										'Value': value
-								}
-							)
+							summary_rows.append( { 'Field': key, 'Value': value } )
 					
 					if summary_rows:
-						st.dataframe(
-							pd.DataFrame( summary_rows ),
-							use_container_width=True,
-							hide_index=True
-						)
+						st.dataframe( pd.DataFrame( summary_rows ), use_container_width=True,
+							hide_index=True )
 					
 					if result.get( 'mode' ) == 'geocode_location':
 						lat_value = result.get( 'latitude', None )
@@ -8973,39 +7415,21 @@ elif mode == 'Geospatial':
 						
 						if lat_value is not None and lon_value is not None:
 							st.markdown( '#### Coordinates' )
-							st.text_area(
-								'Coords',
-								value=str( result.get( 'coordinates', '' ) ),
-								height=90
-							)
+							st.text_area( 'Coords', value=str( result.get( 'coordinates', '' ) ),
+								height=90 )
 							
 							st.markdown( '#### Map' )
-							st.map(
-								[
-										{
-												'lat': float( lat_value ),
-												'lon': float( lon_value )
-										}
-								]
-							)
+							st.map( [ { 'lat': float( lat_value ), 'lon': float( lon_value ) } ] )
 					
 					elif result.get( 'mode' ) == 'geocode_coordinates':
 						st.markdown( '#### Address' )
-						st.text_area(
-							'Formatted Address',
-							value=str( result.get( 'address', '' ) ),
-							height=120
-						)
+						st.text_area( 'Formatted Address', value=str( result.get( 'address',
+							'' ) ),
+							height=120 )
 						
 						st.markdown( '#### Map' )
-						st.map(
-							[
-									{
-											'lat': float( result.get( 'latitude', 0.0 ) ),
-											'lon': float( result.get( 'longitude', 0.0 ) )
-									}
-							]
-						)
+						st.map( [ { 'lat': float( result.get( 'latitude', 0.0 ) ),
+							'lon': float( result.get( 'longitude', 0.0 ) ) } ] )
 					
 					else:
 						data = result.get( 'data', { } )
@@ -9025,28 +7449,18 @@ elif mode == 'Geospatial':
 									first_leg = legs[ 0 ] if legs else { }
 									
 									route_rows.append(
-										{
-												'Route': idx,
-												'Summary': route.get( 'summary', '' ),
-												'Start': first_leg.get( 'start_address', '' ),
-												'End': first_leg.get( 'end_address', '' ),
-												'Distance': (
-														first_leg.get( 'distance', { } )
-														.get( 'text', '' )
-												),
-												'Duration': (
-														first_leg.get( 'duration', { } )
-														.get( 'text', '' )
-												),
-										}
-									)
+										{ 'Route': idx, 'Summary': route.get( 'summary', '' ),
+											'Start': first_leg.get( 'start_address', '' ),
+											'End': first_leg.get( 'end_address', '' ),
+											'Distance': (
+											first_leg.get( 'distance', { } ).get( 'text', '' )),
+											'Duration': (
+												first_leg.get( 'duration', { } ).get( 'text',
+													'' )), } )
 								
 								st.markdown( '#### Routes' )
-								st.dataframe(
-									pd.DataFrame( route_rows ),
-									use_container_width=True,
-									hide_index=True
-								)
+								st.dataframe( pd.DataFrame( route_rows ), use_container_width=True,
+									hide_index=True )
 							
 							result_payload = data.get( 'result', { } )
 							if isinstance( result_payload, dict ) and result_payload:
@@ -9063,34 +7477,12 @@ elif mode == 'Geospatial':
 		
 		# -------- Google Weather
 		with st.expander( label='Google Weather', icon='🌤️', expanded=False ):
-			GOOGLEWEATHER_MODES = [
-					'current',
-					'hourly_forecast',
-					'daily_forecast',
-					'hourly_history',
-					'alerts'
-			]
+			GOOGLEWEATHER_MODES = [ 'current', 'hourly_forecast', 'daily_forecast',
+				'hourly_history', 'alerts' ]
 			
-			GOOGLEWEATHER_UNITS = [
-					'METRIC',
-					'IMPERIAL'
-			]
+			GOOGLEWEATHER_UNITS = [ 'METRIC', 'IMPERIAL' ]
 			
 			def _clear_googleweather_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Google Weather expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-
-				'''
 				st.session_state[ 'googleweather_clear_request' ] = True
 			
 			if 'googleweather_results' not in st.session_state:
@@ -9139,92 +7531,59 @@ elif mode == 'Geospatial':
 			
 			with col_left:
 				gw_location = st.text_area( 'Location', height=70, key='googleweather_location',
-					placeholder=(
-							'Examples:\n'
-							'Washington, DC\n'
-							'1600 Pennsylvania Ave NW, Washington, DC\n'
-							'Arlington, VA'
-					), )
+					placeholder=('Examples:\n'
+					             'Washington, DC\n'
+					             '1600 Pennsylvania Ave NW, Washington, DC\n'
+					             'Arlington, VA'), )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
 					gw_mode = st.selectbox( 'Mode', options=GOOGLEWEATHER_MODES,
 						index=GOOGLEWEATHER_MODES.index(
-							st.session_state.get( 'googleweather_mode', 'current' )
-						),
+							st.session_state.get( 'googleweather_mode', 'current' ) ),
 						key='googleweather_mode',
 						help='Choose the Google Weather API operation to run.' )
 				
 				with c2:
-					gw_units = st.selectbox( 'Units',
-						options=GOOGLEWEATHER_UNITS,
+					gw_units = st.selectbox( 'Units', options=GOOGLEWEATHER_UNITS,
 						index=GOOGLEWEATHER_UNITS.index(
-							st.session_state.get( 'googleweather_units', 'METRIC' )
-						),
-						key='googleweather_units'
-					)
+							st.session_state.get( 'googleweather_units', 'METRIC' ) ),
+						key='googleweather_units' )
 				
 				c3, c4, c5 = st.columns( 3 )
 				
 				with c3:
-					gw_language = st.text_input(
-						'Language',
+					gw_language = st.text_input( 'Language',
 						value=st.session_state.get( 'googleweather_language', 'en' ),
-						key='googleweather_language',
-						placeholder='en'
-					)
+						key='googleweather_language', placeholder='en' )
 				
 				with c4:
-					gw_hours = st.number_input(
-						'Forecast Hours',
-						min_value=1,
-						max_value=240,
-						value=int( st.session_state.get( 'googleweather_hours', 24 ) ),
-						step=1,
-						key='googleweather_hours',
-						disabled=(gw_mode != 'hourly_forecast')
-					)
+					gw_hours = st.number_input( 'Forecast Hours', min_value=1, max_value=240,
+						value=int( st.session_state.get( 'googleweather_hours', 24 ) ), step=1,
+						key='googleweather_hours', disabled=(gw_mode != 'hourly_forecast') )
 				
 				with c5:
-					gw_days = st.number_input(
-						'Forecast Days',
-						min_value=1,
-						max_value=10,
-						value=int( st.session_state.get( 'googleweather_days', 5 ) ),
-						step=1,
-						key='googleweather_days',
-						disabled=(gw_mode != 'daily_forecast')
-					)
+					gw_days = st.number_input( 'Forecast Days', min_value=1, max_value=10,
+						value=int( st.session_state.get( 'googleweather_days', 5 ) ), step=1,
+						key='googleweather_days', disabled=(gw_mode != 'daily_forecast') )
 				
 				h1, h2 = st.columns( 2 )
 				
 				with h1:
-					gw_history_hours = st.number_input(
-						'History Hours',
-						min_value=1,
-						max_value=24,
+					gw_history_hours = st.number_input( 'History Hours', min_value=1, max_value=24,
 						value=int( st.session_state.get( 'googleweather_history_hours', 24 ) ),
-						step=1,
-						key='googleweather_history_hours',
+						step=1, key='googleweather_history_hours',
 						disabled=(gw_mode != 'hourly_history'),
-						help='Google Weather hourly history supports up to 24 hours.'
-					)
+						help='Google Weather hourly history supports up to 24 hours.' )
 				
 				with h2:
-					gw_timeout = st.number_input(
-						'Timeout',
-						min_value=1,
-						max_value=60,
-						value=int( st.session_state.get( 'googleweather_timeout', 10 ) ),
-						step=1,
-						key='googleweather_timeout'
-					)
+					gw_timeout = st.number_input( 'Timeout', min_value=1, max_value=60,
+						value=int( st.session_state.get( 'googleweather_timeout', 10 ) ), step=1,
+						key='googleweather_timeout' )
 				
-				st.caption(
-					'Required key: GOOGLE_WEATHER_API_KEY. '
-					'Weather API must be enabled in your Google Cloud project.'
-				)
+				st.caption( 'Required key: GOOGLE_WEATHER_API_KEY. '
+				            'Weather API must be enabled in your Google Cloud project.' )
 				
 				b1, b2 = st.columns( 2 )
 				
@@ -9232,11 +7591,8 @@ elif mode == 'Geospatial':
 					gw_submit = st.button( 'Submit', key='googleweather_submit' )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='googleweather_clear',
-						on_click=_clear_googleweather_state
-					)
+					st.button( 'Clear', key='googleweather_clear',
+						on_click=_clear_googleweather_state )
 			
 			with col_right:
 				st.markdown( 'Results' )
@@ -9249,42 +7605,24 @@ elif mode == 'Geospatial':
 						f = GoogleWeather( )
 						
 						if gw_mode == 'current':
-							result = f.fetch_current(
-								address=gw_location,
-								units_system=gw_units,
-								language_code=gw_language,
-								time=int( gw_timeout )
-							)
+							result = f.fetch_current( address=gw_location, units_system=gw_units,
+								language_code=gw_language, time=int( gw_timeout ) )
 						elif gw_mode == 'hourly_forecast':
-							result = f.fetch_hourly_forecast(
-								address=gw_location,
-								hours=int( gw_hours ),
-								units_system=gw_units,
-								language_code=gw_language,
-								time=int( gw_timeout )
-							)
+							result = f.fetch_hourly_forecast( address=gw_location,
+								hours=int( gw_hours ), units_system=gw_units,
+								language_code=gw_language, time=int( gw_timeout ) )
 						elif gw_mode == 'daily_forecast':
-							result = f.fetch_daily_forecast(
-								address=gw_location,
-								days=int( gw_days ),
-								units_system=gw_units,
-								language_code=gw_language,
-								time=int( gw_timeout )
-							)
+							result = f.fetch_daily_forecast( address=gw_location,
+								days=int( gw_days ), units_system=gw_units,
+								language_code=gw_language, time=int( gw_timeout ) )
 						elif gw_mode == 'hourly_history':
-							result = f.fetch_hourly_history(
-								address=gw_location,
-								hours=int( gw_history_hours ),
-								units_system=gw_units,
-								language_code=gw_language,
-								time=int( gw_timeout )
-							)
+							result = f.fetch_hourly_history( address=gw_location,
+								hours=int( gw_history_hours ), units_system=gw_units,
+								language_code=gw_language, time=int( gw_timeout ) )
 						else:
-							result = f.fetch_alerts(
-								address=gw_location,
+							result = f.fetch_alerts( address=gw_location,
 								language_code=gw_language,
-								time=int( gw_timeout )
-							)
+								time=int( gw_timeout ) )
 						
 						st.session_state[ 'googleweather_results' ] = result or { }
 						st.rerun( )
@@ -9304,50 +7642,26 @@ elif mode == 'Geospatial':
 					
 					st.markdown( '#### Request Metadata' )
 					st.json(
-						{
-								'mode': mode_value,
-								'url': result.get( 'url', '' ),
-								'params': params,
-						}
-					)
+						{ 'mode': mode_value, 'url': result.get( 'url', '' ), 'params': params, } )
 					
 					if isinstance( data, dict ) and data:
-						current = (
-								data.get( 'currentWeather' )
-								or data.get( 'current_weather' )
-								or data.get( 'currentConditions' )
-								or data.get( 'current_conditions' )
-								or { }
-						)
+						current = (data.get( 'currentWeather' ) or data.get(
+							'current_weather' ) or data.get( 'currentConditions' ) or data.get(
+							'current_conditions' ) or { })
 						
-						hourly = (
-								data.get( 'hourlyForecasts' )
-								or data.get( 'hourly_forecasts' )
-								or data.get( 'forecastHours' )
-								or data.get( 'hours' )
-								or [ ]
-						)
+						hourly = (data.get( 'hourlyForecasts' ) or data.get(
+							'hourly_forecasts' ) or data.get( 'forecastHours' ) or data.get(
+							'hours' ) or [ ])
 						
-						history = (
-								data.get( 'historyHours' )
-								or data.get( 'history_hours' )
-								or [ ]
-						)
+						history = (data.get( 'historyHours' ) or data.get( 'history_hours' ) or
+						           [ ])
 						
-						daily = (
-								data.get( 'dailyForecasts' )
-								or data.get( 'daily_forecasts' )
-								or data.get( 'forecastDays' )
-								or data.get( 'days' )
-								or [ ]
-						)
+						daily = (data.get( 'dailyForecasts' ) or data.get(
+							'daily_forecasts' ) or data.get( 'forecastDays' ) or data.get(
+							'days' ) or [ ])
 						
-						alerts = (
-								data.get( 'weatherAlerts' )
-								or data.get( 'weather_alerts' )
-								or data.get( 'alerts' )
-								or [ ]
-						)
+						alerts = (data.get( 'weatherAlerts' ) or data.get(
+							'weather_alerts' ) or data.get( 'alerts' ) or [ ])
 						
 						if current:
 							st.markdown( '#### Current Conditions' )
@@ -9356,38 +7670,26 @@ elif mode == 'Geospatial':
 						if hourly:
 							st.markdown( '#### Hourly Forecast' )
 							df_googleweather_hourly = pd.DataFrame( hourly )
-							st.dataframe(
-								df_googleweather_hourly,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_googleweather_hourly, use_container_width=True,
+								hide_index=True )
 						
 						if history:
 							st.markdown( '#### Hourly History' )
 							df_googleweather_history = pd.DataFrame( history )
-							st.dataframe(
-								df_googleweather_history,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_googleweather_history, use_container_width=True,
+								hide_index=True )
 						
 						if daily:
 							st.markdown( '#### Daily Forecast' )
 							df_googleweather_daily = pd.DataFrame( daily )
-							st.dataframe(
-								df_googleweather_daily,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_googleweather_daily, use_container_width=True,
+								hide_index=True )
 						
 						if alerts:
 							st.markdown( '#### Weather Alerts' )
 							df_googleweather_alerts = pd.DataFrame( alerts )
-							st.dataframe(
-								df_googleweather_alerts,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_googleweather_alerts, use_container_width=True,
+								hide_index=True )
 						
 						with st.expander( 'Raw Payload', expanded=False ):
 							st.json( data )
@@ -9417,117 +7719,68 @@ elif mode == 'Geospatial':
 				st.session_state[ 'openweather_clear_request' ] = False
 			
 			def _clear_openweather_state( ) -> None:
-				'''
-	
-					Purpose:
-					--------
-					Flag the Open Weather expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-	
-				'''
 				st.session_state[ 'openweather_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				openweather_location = st.text_area(
-					'Location',
-					height=80,
-					key='openweather_location',
-					placeholder=(
-							'Examples:\n'
-							'Arlington, VA\n'
-							'Paris, France\n'
-							'90210'
-					)
-				)
+				openweather_location = st.text_area( 'Location', height=80,
+					key='openweather_location', placeholder=('Examples:\n'
+					                                         'Arlington, VA\n'
+					                                         'Paris, France\n'
+					                                         '90210') )
 				
-				openweather_mode = st.selectbox(
-					'Mode',
-					options=[ 'current', 'hourly', 'daily' ],
+				openweather_mode = st.selectbox( 'Mode', options=[ 'current', 'hourly', 'daily' ],
 					index=[ 'current', 'hourly', 'daily' ].index(
-						st.session_state.get( 'openweather_mode', 'current' )
-					),
-					key='openweather_mode'
-				)
+						st.session_state.get( 'openweather_mode', 'current' ) ),
+					key='openweather_mode' )
 				
 				cfg_c1, cfg_c2 = st.columns( 2 )
 				
 				with cfg_c1:
-					openweather_forecast_days = st.number_input(
-						'Forecast Days',
-						min_value=1,
+					openweather_forecast_days = st.number_input( 'Forecast Days', min_value=1,
 						max_value=16,
 						value=int( st.session_state.get( 'openweather_forecast_days', 7 ) ),
 						step=1,
-						key='openweather_forecast_days',
-						disabled=(openweather_mode == 'current')
-					)
+						key='openweather_forecast_days', disabled=(openweather_mode == 'current') )
 				
 				with cfg_c2:
-					openweather_past_days = st.number_input(
-						'Past Days',
-						min_value=0,
+					openweather_past_days = st.number_input( 'Past Days', min_value=0,
 						max_value=92,
-						value=int( st.session_state.get( 'openweather_past_days', 0 ) ),
-						step=1,
-						key='openweather_past_days'
-					)
+						value=int( st.session_state.get( 'openweather_past_days', 0 ) ), step=1,
+						key='openweather_past_days' )
 				
 				meta_c1, meta_c2 = st.columns( 2 )
 				
 				with meta_c1:
-					openweather_timezone = st.text_input(
-						'Timezone',
+					openweather_timezone = st.text_input( 'Timezone',
 						value=st.session_state.get( 'openweather_timezone', 'auto' ),
-						key='openweather_timezone',
-						placeholder='auto'
-					)
+						key='openweather_timezone', placeholder='auto' )
 				
 				with meta_c2:
-					openweather_count = st.number_input(
-						'Geocode Matches',
-						min_value=1,
-						max_value=20,
-						value=int( st.session_state.get( 'openweather_count', 10 ) ),
-						step=1,
-						key='openweather_count'
-					)
+					openweather_count = st.number_input( 'Geocode Matches', min_value=1,
+						max_value=20, value=int( st.session_state.get( 'openweather_count', 10 ) ),
+						step=1, key='openweather_count' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					openweather_submit = st.button(
-						'Submit',
-						key='openweather_submit'
-					)
+					openweather_submit = st.button( 'Submit', key='openweather_submit' )
 				
 				with btn_c2:
-					openweather_clear = st.button(
-						'Clear',
-						key='openweather_clear',
-						on_click=_clear_openweather_state
-					)
+					openweather_clear = st.button( 'Clear', key='openweather_clear',
+						on_click=_clear_openweather_state )
 			
 			with col_right:
 				if openweather_submit:
 					try:
 						f = OpenWeather( )
-						result = f.fetch(
-							location=str( openweather_location ),
+						result = f.fetch( location=str( openweather_location ),
 							mode=str( openweather_mode ),
 							zone=str( openweather_timezone or 'auto' ).strip( ),
 							forecast_days=int( openweather_forecast_days ),
-							past_days=int( openweather_past_days ),
-							count=int( openweather_count )
-						)
+							past_days=int( openweather_past_days ), count=int( openweather_count
+							) )
 						
 						st.session_state[ 'openweather_results' ] = result or { }
 						st.rerun( )
@@ -9588,99 +7841,61 @@ elif mode == 'Geospatial':
 			
 			if st.session_state.get( 'historicalweather_clear_request', False ):
 				st.session_state[ 'historicalweather_location' ] = ''
-				st.session_state[ 'historicalweather_date' ] = dt.date.today( ) - dt.timedelta( days=1 )
+				st.session_state[ 'historicalweather_date' ] = dt.date.today( ) - dt.timedelta(
+					days=1 )
 				st.session_state[ 'historicalweather_timezone' ] = 'auto'
 				st.session_state[ 'historicalweather_count' ] = 10
 				st.session_state[ 'historicalweather_results' ] = { }
 				st.session_state[ 'historicalweather_clear_request' ] = False
 			
 			def _clear_historicalweather_state( ) -> None:
-				'''
-	
-					Purpose:
-					--------
-					Flag the Historical Weather expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-	
-				'''
 				st.session_state[ 'historicalweather_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				historicalweather_location = st.text_area(
-					'Location',
-					height=80,
-					key='historicalweather_location',
-					placeholder=(
-							'Examples:\n'
-							'Arlington, VA\n'
-							'Tokyo, Japan\n'
-							'90210'
-					)
-				)
+				historicalweather_location = st.text_area( 'Location', height=80,
+					key='historicalweather_location', placeholder=('Examples:\n'
+					                                               'Arlington, VA\n'
+					                                               'Tokyo, Japan\n'
+					                                               '90210') )
 				
 				date_c1, date_c2 = st.columns( 2 )
 				
 				with date_c1:
-					historicalweather_date = st.date_input(
-						'Date',
-						value=st.session_state.get(
-							'historicalweather_date',
-							dt.date.today( ) - dt.timedelta( days=1 )
-						),
-						key='historicalweather_date'
-					)
+					historicalweather_date = st.date_input( 'Date',
+						value=st.session_state.get( 'historicalweather_date',
+							dt.date.today( ) - dt.timedelta( days=1 ) ),
+						key='historicalweather_date' )
 				
 				with date_c2:
-					historicalweather_count = st.number_input(
-						'Geocode Matches',
-						min_value=1,
+					historicalweather_count = st.number_input( 'Geocode Matches', min_value=1,
 						max_value=20,
-						value=int( st.session_state.get( 'historicalweather_count', 10 ) ),
-						step=1,
-						key='historicalweather_count'
-					)
+						value=int( st.session_state.get( 'historicalweather_count', 10 ) ), step=1,
+						key='historicalweather_count' )
 				
-				historicalweather_timezone = st.text_input(
-					'Timezone',
+				historicalweather_timezone = st.text_input( 'Timezone',
 					value=st.session_state.get( 'historicalweather_timezone', 'auto' ),
-					key='historicalweather_timezone',
-					placeholder='auto'
-				)
+					key='historicalweather_timezone', placeholder='auto' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					historicalweather_submit = st.button(
-						'Submit',
-						key='historicalweather_submit'
-					)
+					historicalweather_submit = st.button( 'Submit',
+						key='historicalweather_submit' )
 				
 				with btn_c2:
-					historicalweather_clear = st.button(
-						'Clear',
-						key='historicalweather_clear',
-						on_click=_clear_historicalweather_state
-					)
+					historicalweather_clear = st.button( 'Clear', key='historicalweather_clear',
+						on_click=_clear_historicalweather_state )
 			
 			with col_right:
 				if historicalweather_submit:
 					try:
 						f = HistoricalWeather( )
-						result = f.fetch(
-							location=str( historicalweather_location ),
+						result = f.fetch( location=str( historicalweather_location ),
 							date=historicalweather_date,
 							zone=str( historicalweather_timezone or 'auto' ).strip( ),
-							count=int( historicalweather_count )
-						)
+							count=int( historicalweather_count ) )
 						
 						st.session_state[ 'historicalweather_results' ] = result or { }
 						st.rerun( )
@@ -9733,95 +7948,25 @@ elif mode == 'Geospatial':
 		
 		# -------- USGS Earthquakes
 		with st.expander( label='USGS Earthquakes', icon='🌎', expanded=False ):
-			USGSEARTHQUAKES_MODES = [
-					'feed',
-					'search'
-			]
+			USGSEARTHQUAKES_MODES = [ 'feed', 'search' ]
 			
-			USGSEARTHQUAKES_FEEDS = [
-					'all_hour.geojson',
-					'all_day.geojson',
-					'all_week.geojson',
-					'all_month.geojson',
-					'significant_hour.geojson',
-					'significant_day.geojson',
-					'significant_week.geojson',
-					'significant_month.geojson',
-					'4.5_hour.geojson',
-					'4.5_day.geojson',
-					'4.5_week.geojson',
-					'4.5_month.geojson',
-					'2.5_hour.geojson',
-					'2.5_day.geojson',
-					'2.5_week.geojson',
-					'2.5_month.geojson',
-					'1.0_hour.geojson',
-					'1.0_day.geojson',
-					'1.0_week.geojson',
-					'1.0_month.geojson'
-			]
+			USGSEARTHQUAKES_FEEDS = [ 'all_hour.geojson', 'all_day.geojson', 'all_week.geojson',
+				'all_month.geojson', 'significant_hour.geojson', 'significant_day.geojson',
+				'significant_week.geojson', 'significant_month.geojson', '4.5_hour.geojson',
+				'4.5_day.geojson', '4.5_week.geojson', '4.5_month.geojson', '2.5_hour.geojson',
+				'2.5_day.geojson', '2.5_week.geojson', '2.5_month.geojson', '1.0_hour.geojson',
+				'1.0_day.geojson', '1.0_week.geojson', '1.0_month.geojson' ]
 			
-			USGSEARTHQUAKES_ORDER_BY = [
-					'time',
-					'time-asc',
-					'magnitude',
-					'magnitude-asc'
-			]
+			USGSEARTHQUAKES_ORDER_BY = [ 'time', 'time-asc', 'magnitude', 'magnitude-asc' ]
 			
-			USGSEARTHQUAKES_EVENT_TYPES = [
-					'earthquake',
-					'quarry blast',
-					'explosion',
-					'ice quake',
-					'landslide',
-					'mining explosion',
-					'other event',
-					'rock burst',
-					'volcanic eruption'
-			]
+			USGSEARTHQUAKES_EVENT_TYPES = [ 'earthquake', 'quarry blast', 'explosion', 'ice quake',
+				'landslide', 'mining explosion', 'other event', 'rock burst', 'volcanic eruption' ]
 			
 			def _clear_usgsearthquakes_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the USGS Earthquakes expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'usgsearthquakes_clear_request' ] = True
 			
 			def _coerce_optional_float( name: str, value: object, min_value: float,
-					max_value: float ) -> float | None:
-				'''
-					Purpose:
-					--------
-					Convert an optional UI value to a float and validate the allowed bounds.
-	
-					Parameters:
-					-----------
-					name (str):
-						Name of the field being validated.
-	
-					value (object):
-						Value supplied by the UI.
-	
-					min_value (float):
-						Minimum valid numeric value.
-	
-					max_value (float):
-						Maximum valid numeric value.
-	
-					Returns:
-					--------
-					float | None:
-						Validated float value, or None when no value was supplied.
-				'''
+				max_value: float ) -> float | None:
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -9830,9 +7975,7 @@ elif mode == 'Geospatial':
 				number = float( text )
 				
 				if number < min_value or number > max_value:
-					raise ValueError(
-						f'{name} must be between {min_value:g} and {max_value:g}.'
-					)
+					raise ValueError( f'{name} must be between {min_value:g} and {max_value:g}.' )
 				
 				return number
 			
@@ -9859,8 +8002,7 @@ elif mode == 'Geospatial':
 			
 			if 'usgsearthquakes_start_date' not in st.session_state:
 				st.session_state[ 'usgsearthquakes_start_date' ] = (
-						dt.date.today( ) - dt.timedelta( days=7 )
-				)
+						dt.date.today( ) - dt.timedelta( days=7 ))
 			
 			if 'usgsearthquakes_end_date' not in st.session_state:
 				st.session_state[ 'usgsearthquakes_end_date' ] = dt.date.today( )
@@ -9890,8 +8032,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'usgsearthquakes_mode' ] = 'feed'
 				st.session_state[ 'usgsearthquakes_feed' ] = 'all_day.geojson'
 				st.session_state[ 'usgsearthquakes_start_date' ] = (
-						dt.date.today( ) - dt.timedelta( days=7 )
-				)
+						dt.date.today( ) - dt.timedelta( days=7 ))
 				st.session_state[ 'usgsearthquakes_end_date' ] = dt.date.today( )
 				st.session_state[ 'usgsearthquakes_min_magnitude' ] = 1.0
 				st.session_state[ 'usgsearthquakes_max_magnitude' ] = 10.0
@@ -9908,24 +8049,15 @@ elif mode == 'Geospatial':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				usgseq_mode = st.selectbox(
-					'Mode',
-					options=USGSEARTHQUAKES_MODES,
+				usgseq_mode = st.selectbox( 'Mode', options=USGSEARTHQUAKES_MODES,
 					index=USGSEARTHQUAKES_MODES.index(
-						st.session_state.get( 'usgsearthquakes_mode', 'feed' )
-					),
-					key='usgsearthquakes_mode'
-				)
+						st.session_state.get( 'usgsearthquakes_mode', 'feed' ) ),
+					key='usgsearthquakes_mode' )
 				
-				usgseq_feed = st.selectbox(
-					'Feed',
-					options=USGSEARTHQUAKES_FEEDS,
+				usgseq_feed = st.selectbox( 'Feed', options=USGSEARTHQUAKES_FEEDS,
 					index=USGSEARTHQUAKES_FEEDS.index(
-						st.session_state.get( 'usgsearthquakes_feed', 'all_day.geojson' )
-					),
-					key='usgsearthquakes_feed',
-					disabled=(usgseq_mode != 'feed')
-				)
+						st.session_state.get( 'usgsearthquakes_feed', 'all_day.geojson' ) ),
+					key='usgsearthquakes_feed', disabled=(usgseq_mode != 'feed') )
 				
 				date_c1, date_c2 = st.columns( 2 )
 				
@@ -9933,42 +8065,35 @@ elif mode == 'Geospatial':
 					usgseq_start_date = st.date_input( 'Start Date',
 						value=st.session_state.get( 'usgsearthquakes_start_date',
 							dt.date.today( ) - dt.timedelta( days=7 ) ),
-						key='usgsearthquakes_start_date',
-						disabled=(usgseq_mode != 'search') )
+						key='usgsearthquakes_start_date', disabled=(usgseq_mode != 'search') )
 				
 				with date_c2:
 					usgseq_end_date = st.date_input( 'End Date',
-						value=st.session_state.get( 'usgsearthquakes_end_date',
-							dt.date.today( ) ), key='usgsearthquakes_end_date',
-						disabled=(usgseq_mode != 'search') )
+						value=st.session_state.get( 'usgsearthquakes_end_date', dt.date.today( ) ),
+						key='usgsearthquakes_end_date', disabled=(usgseq_mode != 'search') )
 				
 				mag_c1, mag_c2 = st.columns( 2 )
 				with mag_c1:
 					usgseq_min_magnitude = st.number_input( 'Min Magnitude', min_value=0.0,
 						max_value=10.0,
-						value=float( st.session_state.get( 'usgsearthquakes_min_magnitude', 1.0 ) ),
+						value=float( st.session_state.get( 'usgsearthquakes_min_magnitude',
+							1.0 ) ),
 						step=0.1, key='usgsearthquakes_min_magnitude',
 						disabled=(usgseq_mode != 'search') )
 				
 				with mag_c2:
-					usgseq_max_magnitude = st.number_input(
-						'Max Magnitude',
-						min_value=0.0,
-						max_value=10.0,
-						value=float(
-							st.session_state.get( 'usgsearthquakes_max_magnitude', 10.0 )
-						),
-						step=0.1,
-						key='usgsearthquakes_max_magnitude',
-						disabled=(usgseq_mode != 'search')
-					)
+					usgseq_max_magnitude = st.number_input( 'Max Magnitude', min_value=0.0,
+						max_value=10.0, value=float(
+							st.session_state.get( 'usgsearthquakes_max_magnitude', 10.0 ) ),
+						step=0.1, key='usgsearthquakes_max_magnitude',
+						disabled=(usgseq_mode != 'search') )
 				
 				opt_c1, opt_c2 = st.columns( 2 )
 				
 				with opt_c1:
 					usgseq_limit = st.number_input( 'Limit', min_value=1, max_value=20000,
-						value=int( st.session_state.get( 'usgsearthquakes_limit', 25 ) ),
-						step=1, key='usgsearthquakes_limit', disabled=(usgseq_mode != 'search'),
+						value=int( st.session_state.get( 'usgsearthquakes_limit', 25 ) ), step=1,
+						key='usgsearthquakes_limit', disabled=(usgseq_mode != 'search'),
 						help='USGS Earthquake Catalog supports limit values through 20000.' )
 				
 				with opt_c2:
@@ -9977,11 +8102,11 @@ elif mode == 'Geospatial':
 							st.session_state.get( 'usgsearthquakes_order_by', 'time' ) ),
 						key='usgsearthquakes_order_by', disabled=(usgseq_mode != 'search') )
 				
-				usgseq_event_type = st.selectbox( 'Event Type', options=USGSEARTHQUAKES_EVENT_TYPES,
+				usgseq_event_type = st.selectbox( 'Event Type',
+					options=USGSEARTHQUAKES_EVENT_TYPES,
 					index=USGSEARTHQUAKES_EVENT_TYPES.index(
 						st.session_state.get( 'usgsearthquakes_event_type', 'earthquake' ) ),
-					key='usgsearthquakes_event_type',
-					disabled=(usgseq_mode != 'search') )
+					key='usgsearthquakes_event_type', disabled=(usgseq_mode != 'search') )
 				
 				coord_c1, coord_c2 = st.columns( 2 )
 				
@@ -9997,16 +8122,14 @@ elif mode == 'Geospatial':
 				
 				usgseq_max_radius_km = st.text_input( 'Max Radius KM (optional)',
 					value=st.session_state.get( 'usgsearthquakes_max_radius_km', '' ),
-					key='usgsearthquakes_max_radius_km',
-					disabled=(usgseq_mode != 'search') )
+					key='usgsearthquakes_max_radius_km', disabled=(usgseq_mode != 'search') )
 				
-				usgseq_timeout = st.number_input( 'Timeout (seconds)', min_value=5,
-					max_value=120, value=int( st.session_state.get( 'usgsearthquakes_timeout', 5 ) ),
-					step=1, key='usgsearthquakes_timeout' )
+				usgseq_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'usgsearthquakes_timeout', 5 ) ), step=1,
+					key='usgsearthquakes_timeout' )
 				
-				st.caption(
-					'Feed mode is best for quick display. Search mode supports date, '
-					'magnitude, event type, and optional radial filtering.' )
+				st.caption( 'Feed mode is best for quick display. Search mode supports date, '
+				            'magnitude, event type, and optional radial filtering.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
@@ -10026,49 +8149,32 @@ elif mode == 'Geospatial':
 							
 							if float( usgseq_min_magnitude ) > float( usgseq_max_magnitude ):
 								raise ValueError(
-									'Min Magnitude must be less than or equal to Max Magnitude.'
-								)
+									'Min Magnitude must be less than or equal to Max Magnitude.' )
 						
-						latitude_value = _coerce_optional_float( name='Latitude', value=usgseq_latitude,
-							min_value=-90.0, max_value=90.0 )
+						latitude_value = _coerce_optional_float( name='Latitude',
+							value=usgseq_latitude, min_value=-90.0, max_value=90.0 )
 						
-						longitude_value = _coerce_optional_float(
-							name='Longitude',
-							value=usgseq_longitude,
-							min_value=-180.0,
-							max_value=180.0
-						)
-						max_radius_value = _coerce_optional_float(
-							name='Max Radius KM',
-							value=usgseq_max_radius_km,
-							min_value=0.0,
-							max_value=20001.6
-						)
+						longitude_value = _coerce_optional_float( name='Longitude',
+							value=usgseq_longitude, min_value=-180.0, max_value=180.0 )
+						max_radius_value = _coerce_optional_float( name='Max Radius KM',
+							value=usgseq_max_radius_km, min_value=0.0, max_value=20001.6 )
 						
-						if (
-								latitude_value is None
-								and longitude_value is not None
-						) or (
-								latitude_value is not None
-								and longitude_value is None
-						):
+						if (latitude_value is None and longitude_value is not None) or (
+								latitude_value is not None and longitude_value is None):
 							raise ValueError(
-								'Latitude and Longitude must both be supplied for radial search.'
-							)
+								'Latitude and Longitude must both be supplied for radial search.' )
 						
 						if max_radius_value is not None and (
-								latitude_value is None or longitude_value is None
-						):
+								latitude_value is None or longitude_value is None):
 							raise ValueError(
-								'Max Radius KM requires both Latitude and Longitude.'
-							)
+								'Max Radius KM requires both Latitude and Longitude.' )
 						
 						f = USGSEarthquakes( )
 						result = f.fetch( mode=str( usgseq_mode ), feed=str( usgseq_feed ),
 							start_date=str( usgseq_start_date ), end_date=str( usgseq_end_date ),
 							min_magnitude=float( usgseq_min_magnitude ),
-							max_magnitude=float( usgseq_max_magnitude ),
-							limit=int( usgseq_limit ), order_by=str( usgseq_order_by ),
+							max_magnitude=float( usgseq_max_magnitude ), limit=int( usgseq_limit ),
+							order_by=str( usgseq_order_by ),
 							event_type=str( usgseq_event_type or 'earthquake' ),
 							latitude=latitude_value, longitude=longitude_value,
 							max_radius_km=max_radius_value, time=int( usgseq_timeout ) )
@@ -10110,16 +8216,12 @@ elif mode == 'Geospatial':
 						
 						with sum_c2:
 							max_mag = summary.get( 'max_magnitude', None )
-							st.metric(
-								'Strongest Magnitude',
-								'' if max_mag is None else str( max_mag )
-							)
+							st.metric( 'Strongest Magnitude',
+								'' if max_mag is None else str( max_mag ) )
 						
 						with sum_c3:
-							st.metric(
-								'Tsunami Flags',
-								int( summary.get( 'tsunami_count', 0 ) or 0 )
-							)
+							st.metric( 'Tsunami Flags',
+								int( summary.get( 'tsunami_count', 0 ) or 0 ) )
 						
 						first_place = str( summary.get( 'first_place', '' ) or '' )
 						if first_place:
@@ -10136,32 +8238,19 @@ elif mode == 'Geospatial':
 						df_usgsearthquakes = pd.DataFrame( rows )
 						
 						if not df_usgsearthquakes.empty:
-							st.dataframe(
-								df_usgsearthquakes,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_usgsearthquakes, use_container_width=True,
+								hide_index=True )
 							
 							map_rows = [ ]
 							for item in rows:
-								latitude = (
-										item.get( 'Latitude', None )
-										or item.get( 'lat', None )
-										or item.get( 'latitude', None )
-								)
-								longitude = (
-										item.get( 'Longitude', None )
-										or item.get( 'lon', None )
-										or item.get( 'longitude', None )
-								)
+								latitude = (item.get( 'Latitude', None ) or item.get( 'lat',
+									None ) or item.get( 'latitude', None ))
+								longitude = (item.get( 'Longitude', None ) or item.get( 'lon',
+									None ) or item.get( 'longitude', None ))
 								
 								if latitude is not None and longitude is not None:
 									map_rows.append(
-										{
-												'lat': float( latitude ),
-												'lon': float( longitude )
-										}
-									)
+										{ 'lat': float( latitude ), 'lon': float( longitude ) } )
 							
 							if map_rows:
 								st.markdown( '#### Event Map' )
@@ -10170,46 +8259,29 @@ elif mode == 'Geospatial':
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
 								label = str(
-									item.get( 'Place', '' ) or
-									item.get( 'Title', '' ) or
-									item.get( 'Id', '' ) or
-									f'Record {idx}'
-								)
+									item.get( 'Place', '' ) or item.get( 'Title', '' ) or item.get(
+										'Id', '' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									left_c, right_c = st.columns( 2 )
 									
 									with left_c:
 										if 'Magnitude' in item:
 											st.markdown(
-												f"**Magnitude:** {item.get( 'Magnitude', '' )}"
-											)
+												f"**Magnitude:** {item.get( 'Magnitude', '' )}" )
 										if 'Place' in item:
-											st.markdown(
-												f"**Place:** {item.get( 'Place', '' )}"
-											)
+											st.markdown( f"**Place:** {item.get( 'Place', '' )}" )
 										if 'Time' in item:
-											st.markdown(
-												f"**Time:** {item.get( 'Time', '' )}"
-											)
+											st.markdown( f"**Time:** {item.get( 'Time', '' )}" )
 									
 									with right_c:
 										if 'Depth' in item:
-											st.markdown(
-												f"**Depth:** {item.get( 'Depth', '' )}"
-											)
+											st.markdown( f"**Depth:** {item.get( 'Depth', '' )}" )
 										if 'Event Type' in item:
-											st.markdown(
-												f"**Event Type:** "
-												f"{item.get( 'Event Type', '' )}"
-											)
+											st.markdown( f"**Event Type:** "
+											             f"{item.get( 'Event Type', '' )}" )
 										if 'URL' in item:
-											st.markdown(
-												f"**URL:** {item.get( 'URL', '' )}"
-											)
+											st.markdown( f"**URL:** {item.get( 'URL', '' )}" )
 									
 									raw_item = item.get( 'Raw Feature', { } )
 									if raw_item:
@@ -10245,19 +8317,6 @@ elif mode == 'Geospatial':
 				st.session_state[ 'earthobservatory_clear_request' ] = False
 			
 			def _clear_earthobservatory_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Earth Observatory expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'earthobservatory_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
@@ -10265,16 +8324,14 @@ elif mode == 'Geospatial':
 				earth_mode = st.selectbox( 'Mode',
 					options=[ 'events', 'categories', 'sources', 'layers' ],
 					index=[ 'events', 'categories', 'sources', 'layers' ].index(
-						st.session_state.get( 'earthobservatory_mode', 'events' )
-					), key='earthobservatory_mode',
-					help='Choose the current documented EONET v3 endpoint.'
-				)
+						st.session_state.get( 'earthobservatory_mode', 'events' ) ),
+					key='earthobservatory_mode',
+					help='Choose the current documented EONET v3 endpoint.' )
 				
 				earth_status = st.selectbox( 'Status', options=[ 'open', 'closed', 'all' ],
 					index=[ 'open', 'closed', 'all' ].index(
 						st.session_state.get( 'earthobservatory_status', 'open' ) ),
-					key='earthobservatory_status',
-					disabled=(earth_mode != 'events') )
+					key='earthobservatory_status', disabled=(earth_mode != 'events') )
 				
 				earth_category = st.text_input( 'Category',
 					value=st.session_state.get( 'earthobservatory_category', '' ),
@@ -10285,92 +8342,58 @@ elif mode == 'Geospatial':
 				
 				earth_source = st.text_input( 'Source',
 					value=st.session_state.get( 'earthobservatory_source', '' ),
-					key='earthobservatory_source',
-					placeholder=(
-							'Examples: InciWeb, InciWeb, EO'
-					),
-					disabled=(earth_mode != 'events')
-				)
+					key='earthobservatory_source', placeholder=('Examples: InciWeb, InciWeb, EO'),
+					disabled=(earth_mode != 'events') )
 				
 				c1, c2 = st.columns( 2 )
 				with c1:
 					earth_limit = st.number_input( 'Limit', min_value=1, max_value=500,
-						value=int( st.session_state.get( 'earthobservatory_limit', 20 ) ),
-						step=1,
-						key='earthobservatory_limit',
-						disabled=(earth_mode != 'events')
-					)
+						value=int( st.session_state.get( 'earthobservatory_limit', 20 ) ), step=1,
+						key='earthobservatory_limit', disabled=(earth_mode != 'events') )
 				
 				with c2:
 					earth_days = st.number_input( 'Days', min_value=1, max_value=3650,
-						value=int( st.session_state.get( 'earthobservatory_days', 30 ) ),
-						step=1, key='earthobservatory_days',
-						disabled=(earth_mode != 'events') )
+						value=int( st.session_state.get( 'earthobservatory_days', 30 ) ), step=1,
+						key='earthobservatory_days', disabled=(earth_mode != 'events') )
 				
 				d1, d2 = st.columns( 2 )
 				with d1:
-					earth_start_date = st.text_input(
-						'Start Date',
+					earth_start_date = st.text_input( 'Start Date',
 						value=st.session_state.get( 'earthobservatory_start_date', '' ),
-						key='earthobservatory_start_date',
-						placeholder='2026-03-01',
-						disabled=(earth_mode != 'events')
-					)
+						key='earthobservatory_start_date', placeholder='2026-03-01',
+						disabled=(earth_mode != 'events') )
 				
 				with d2:
-					earth_end_date = st.text_input(
-						'End Date',
+					earth_end_date = st.text_input( 'End Date',
 						value=st.session_state.get( 'earthobservatory_end_date', '' ),
-						key='earthobservatory_end_date',
-						placeholder='2026-03-15',
-						disabled=(earth_mode != 'events')
-					)
+						key='earthobservatory_end_date', placeholder='2026-03-15',
+						disabled=(earth_mode != 'events') )
 				
-				earth_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'earthobservatory_timeout', 20 ) ),
-					step=1,
-					key='earthobservatory_timeout'
-				)
+				earth_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'earthobservatory_timeout', 20 ) ), step=1,
+					key='earthobservatory_timeout' )
 				
-				st.caption(
-					'Examples: use events + category=wildfires, status=open; '
-					'use sources to list event source providers; '
-					'use layers + category=wildfires to inspect imagery layers.'
-				)
+				st.caption( 'Examples: use events + category=wildfires, status=open; '
+				            'use sources to list event source providers; '
+				            'use layers + category=wildfires to inspect imagery layers.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					earth_submit = st.button(
-						'Submit',
-						key='earthobservatory_submit'
-					)
+					earth_submit = st.button( 'Submit', key='earthobservatory_submit' )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='earthobservatory_clear',
-						on_click=_clear_earthobservatory_state
-					)
+					st.button( 'Clear', key='earthobservatory_clear',
+						on_click=_clear_earthobservatory_state )
 			
 			with col_right:
 				if earth_submit:
 					try:
 						f = EarthObservatory( )
-						result = f.fetch(
-							mode=earth_mode,
-							status=earth_status,
-							category=earth_category,
-							source=earth_source,
-							limit=int( earth_limit ),
-							days=int( earth_days ),
-							start_date=str( earth_start_date ),
-							end_date=str( earth_end_date ),
-							time=int( earth_timeout )
-						)
+						result = f.fetch( mode=earth_mode, status=earth_status,
+							category=earth_category, source=earth_source, limit=int( earth_limit ),
+							days=int( earth_days ), start_date=str( earth_start_date ),
+							end_date=str( earth_end_date ), time=int( earth_timeout ) )
 						
 						st.session_state[ 'earthobservatory_results' ] = result or { }
 						st.rerun( )
@@ -10425,63 +8448,15 @@ elif mode == 'Geospatial':
 		
 		# -------- USGS The National Map
 		with st.expander( label='The National Map', icon='🗺️', expanded=False ):
-			USGSTNM_MODES = [
-					'products',
-					'datasets' ]
+			USGSTNM_MODES = [ 'products', 'datasets' ]
 			
-			USGSTNM_PRODUCT_FORMATS = [
-					'GeoTIFF',
-					'IMG',
-					'LAS',
-					'LAZ',
-					'GeoPackage',
-					'GeoJSON',
-					'Shapefile',
-					'FileGDB',
-					'PDF',
-					'KMZ',
-					'TXT',
-					'CSV',
-					'JPEG',
-					'PNG',
-					'XML',
-					'ZIP' ]
+			USGSTNM_PRODUCT_FORMATS = [ 'GeoTIFF', 'IMG', 'LAS', 'LAZ', 'GeoPackage', 'GeoJSON',
+				'Shapefile', 'FileGDB', 'PDF', 'KMZ', 'TXT', 'CSV', 'JPEG', 'PNG', 'XML', 'ZIP' ]
 			
 			def _clear_usgstnm_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the USGS The National Map expander state for reset on the next
-					rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'usgstnm_clear_request' ] = True
 			
 			def _validate_usgstnm_bbox( value: str ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate an optional TNMAccess bounding box in minx,miny,maxx,maxy
-					order.
-
-					Parameters:
-					-----------
-					value (str):
-						Bounding-box text supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Validated bounding-box text, or an empty string when no bounding box
-						is supplied.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -10490,9 +8465,8 @@ elif mode == 'Geospatial':
 				parts = [ item.strip( ) for item in text.split( ',' ) if item.strip( ) ]
 				
 				if len( parts ) != 4:
-					raise ValueError(
-						'Bounding Box must contain four comma-separated values: '
-						'minx,miny,maxx,maxy.' )
+					raise ValueError( 'Bounding Box must contain four comma-separated values: '
+					                  'minx,miny,maxx,maxy.' )
 				
 				minx, miny, maxx, maxy = [ float( item ) for item in parts ]
 				
@@ -10533,11 +8507,8 @@ elif mode == 'Geospatial':
 			
 			if isinstance( st.session_state.get( 'usgstnm_prod_formats' ), str ):
 				raw_formats = str( st.session_state.get( 'usgstnm_prod_formats', '' ) )
-				st.session_state[ 'usgstnm_prod_formats' ] = [
-						item.strip( )
-						for item in raw_formats.split( ',' )
-						if item.strip( ) in USGSTNM_PRODUCT_FORMATS
-				]
+				st.session_state[ 'usgstnm_prod_formats' ] = [ item.strip( ) for item in
+					raw_formats.split( ',' ) if item.strip( ) in USGSTNM_PRODUCT_FORMATS ]
 			
 			if 'usgstnm_max_items' not in st.session_state:
 				st.session_state[ 'usgstnm_max_items' ] = 25
@@ -10563,106 +8534,57 @@ elif mode == 'Geospatial':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				usgstnm_mode = st.selectbox(
-					'Mode',
-					options=USGSTNM_MODES,
-					index=USGSTNM_MODES.index(
-						st.session_state.get( 'usgstnm_mode', 'products' )
-					),
-					key='usgstnm_mode'
-				)
+				usgstnm_mode = st.selectbox( 'Mode', options=USGSTNM_MODES,
+					index=USGSTNM_MODES.index( st.session_state.get( 'usgstnm_mode', 'products' ) ),
+					key='usgstnm_mode' )
 				
-				usgstnm_dataset = st.text_input(
-					'Dataset',
-					value=st.session_state.get( 'usgstnm_dataset', '' ),
-					key='usgstnm_dataset',
+				usgstnm_dataset = st.text_input( 'Dataset',
+					value=st.session_state.get( 'usgstnm_dataset', '' ), key='usgstnm_dataset',
 					disabled=(usgstnm_mode != 'products'),
-					placeholder='Example: Digital Elevation Model (DEM) 1 meter'
-				)
+					placeholder='Example: Digital Elevation Model (DEM) 1 meter' )
 				
-				usgstnm_q = st.text_input(
-					'Search Text',
-					value=st.session_state.get( 'usgstnm_q', '' ),
-					key='usgstnm_q',
-					disabled=(usgstnm_mode != 'products'),
-					placeholder='Optional keyword search'
-				)
+				usgstnm_q = st.text_input( 'Search Text',
+					value=st.session_state.get( 'usgstnm_q', '' ), key='usgstnm_q',
+					disabled=(usgstnm_mode != 'products'), placeholder='Optional keyword search' )
 				
-				usgstnm_bbox = st.text_input(
-					'Bounding Box',
-					value=st.session_state.get( 'usgstnm_bbox', '' ),
-					key='usgstnm_bbox',
-					disabled=(usgstnm_mode != 'products'),
-					placeholder='minx,miny,maxx,maxy'
-				)
+				usgstnm_bbox = st.text_input( 'Bounding Box',
+					value=st.session_state.get( 'usgstnm_bbox', '' ), key='usgstnm_bbox',
+					disabled=(usgstnm_mode != 'products'), placeholder='minx,miny,maxx,maxy' )
 				
-				usgstnm_prod_formats = st.multiselect(
-					'Product Formats',
+				usgstnm_prod_formats = st.multiselect( 'Product Formats',
 					options=USGSTNM_PRODUCT_FORMATS,
-					default=[
-							value for value in st.session_state.get(
-								'usgstnm_prod_formats',
-								[ ]
-							)
-							if value in USGSTNM_PRODUCT_FORMATS
-					],
-					key='usgstnm_prod_formats',
+					default=[ value for value in st.session_state.get( 'usgstnm_prod_formats',
+						[ ] )
+						if value in USGSTNM_PRODUCT_FORMATS ], key='usgstnm_prod_formats',
 					disabled=(usgstnm_mode != 'products'),
-					help='Optional TNM product-format filter.'
-				)
+					help='Optional TNM product-format filter.' )
 				
 				page_c1, page_c2 = st.columns( 2 )
 				
 				with page_c1:
-					usgstnm_max_items = st.number_input(
-						'Max Items',
-						min_value=1,
-						max_value=500,
-						value=int( st.session_state.get( 'usgstnm_max_items', 25 ) ),
-						step=1,
-						key='usgstnm_max_items',
-						disabled=(usgstnm_mode != 'products')
-					)
+					usgstnm_max_items = st.number_input( 'Max Items', min_value=1, max_value=500,
+						value=int( st.session_state.get( 'usgstnm_max_items', 25 ) ), step=1,
+						key='usgstnm_max_items', disabled=(usgstnm_mode != 'products') )
 				
 				with page_c2:
-					usgstnm_offset = st.number_input(
-						'Offset',
-						min_value=0,
-						max_value=10000,
-						value=int( st.session_state.get( 'usgstnm_offset', 0 ) ),
-						step=1,
-						key='usgstnm_offset',
-						disabled=(usgstnm_mode != 'products')
-					)
+					usgstnm_offset = st.number_input( 'Offset', min_value=0, max_value=10000,
+						value=int( st.session_state.get( 'usgstnm_offset', 0 ) ), step=1,
+						key='usgstnm_offset', disabled=(usgstnm_mode != 'products') )
 				
-				usgstnm_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'usgstnm_timeout', 20 ) ),
-					step=1,
-					key='usgstnm_timeout'
-				)
+				usgstnm_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'usgstnm_timeout', 20 ) ), step=1,
+					key='usgstnm_timeout' )
 				
-				st.caption(
-					'Products mode searches downloadable TNM records. Datasets mode '
-					'returns the dataset catalog for discovery.'
-				)
+				st.caption( 'Products mode searches downloadable TNM records. Datasets mode '
+				            'returns the dataset catalog for discovery.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					usgstnm_submit = st.button(
-						'Submit',
-						key='usgstnm_submit'
-					)
+					usgstnm_submit = st.button( 'Submit', key='usgstnm_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='usgstnm_clear',
-						on_click=_clear_usgstnm_state
-					)
+					st.button( 'Clear', key='usgstnm_clear', on_click=_clear_usgstnm_state )
 			
 			with col_right:
 				if usgstnm_submit:
@@ -10671,16 +8593,11 @@ elif mode == 'Geospatial':
 						clean_product_formats = ','.join( usgstnm_prod_formats or [ ] )
 						
 						f = USGSTheNationalMap( )
-						result = f.fetch(
-							mode=str( usgstnm_mode ),
-							dataset=str( usgstnm_dataset ).strip( ),
-							q=str( usgstnm_q ).strip( ),
-							bbox=clean_bbox,
-							prod_formats=clean_product_formats,
-							max_items=int( usgstnm_max_items ),
-							offset=int( usgstnm_offset ),
-							time=int( usgstnm_timeout )
-						)
+						result = f.fetch( mode=str( usgstnm_mode ),
+							dataset=str( usgstnm_dataset ).strip( ), q=str( usgstnm_q ).strip( ),
+							bbox=clean_bbox, prod_formats=clean_product_formats,
+							max_items=int( usgstnm_max_items ), offset=int( usgstnm_offset ),
+							time=int( usgstnm_timeout ) )
 						
 						st.session_state[ 'usgstnm_results' ] = result or { }
 						st.rerun( )
@@ -10705,17 +8622,11 @@ elif mode == 'Geospatial':
 					with meta_c2:
 						params = result.get( 'params', { } ) or { }
 						if 'datasets' in params:
-							st.markdown(
-								f"**Dataset Filter:** {params.get( 'datasets', '' )}"
-							)
+							st.markdown( f"**Dataset Filter:** {params.get( 'datasets', '' )}" )
 						if 'bbox' in params:
-							st.markdown(
-								f"**Bounding Box:** {params.get( 'bbox', '' )}"
-							)
+							st.markdown( f"**Bounding Box:** {params.get( 'bbox', '' )}" )
 						if 'prodFormats' in params:
-							st.markdown(
-								f"**Formats:** {params.get( 'prodFormats', '' )}"
-							)
+							st.markdown( f"**Formats:** {params.get( 'prodFormats', '' )}" )
 					
 					summary = result.get( 'summary', { } ) or { }
 					if summary:
@@ -10751,25 +8662,15 @@ elif mode == 'Geospatial':
 						df_usgstnm = pd.DataFrame( rows )
 						
 						if not df_usgstnm.empty:
-							st.dataframe(
-								df_usgstnm,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_usgstnm, use_container_width=True, hide_index=True )
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
 								label = str(
-									item.get( 'Title', '' ) or
-									item.get( 'Name', '' ) or
-									item.get( 'Id', '' ) or
-									f'Record {idx}'
-								)
+									item.get( 'Title', '' ) or item.get( 'Name', '' ) or item.get(
+										'Id', '' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable TNM rows were found.' )
@@ -10778,45 +8679,16 @@ elif mode == 'Geospatial':
 					
 					with st.expander( 'Raw Result', expanded=False ):
 						st.json( result )
-	
+		
 		# -------- USGS ScienceBase
 		with st.expander( label='USGS Science Base', icon='🔬', expanded=False ):
 			USGSSB_MODES = [ 'items', 'item' ]
 			
-			USGSSB_FIELD_OPTIONS = [
-					'id',
-					'title',
-					'summary',
-					'body',
-					'itemType',
-					'dateCreated',
-					'dateUpdated',
-					'lastUpdated',
-					'contacts',
-					'tags',
-					'facets',
-					'spatial',
-					'files',
-					'webLinks',
-					'link',
-					'parentId',
-					'hasChildren',
-					'permissions' ]
+			USGSSB_FIELD_OPTIONS = [ 'id', 'title', 'summary', 'body', 'itemType', 'dateCreated',
+				'dateUpdated', 'lastUpdated', 'contacts', 'tags', 'facets', 'spatial', 'files',
+				'webLinks', 'link', 'parentId', 'hasChildren', 'permissions' ]
 			
 			def _clear_usgssb_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the USGS ScienceBase expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'usgssb_clear_request' ] = True
 			
 			if 'usgssb_results' not in st.session_state:
@@ -10845,9 +8717,8 @@ elif mode == 'Geospatial':
 			
 			if isinstance( st.session_state.get( 'usgssb_fields' ), str ):
 				raw_fields = str( st.session_state.get( 'usgssb_fields', '' ) )
-				st.session_state[ 'usgssb_fields' ] = [ item.strip( )
-						for item in raw_fields.split( ',' )
-						if item.strip( ) in USGSSB_FIELD_OPTIONS ]
+				st.session_state[ 'usgssb_fields' ] = [ item.strip( ) for item in
+					raw_fields.split( ',' ) if item.strip( ) in USGSSB_FIELD_OPTIONS ]
 			
 			if 'usgssb_timeout' not in st.session_state:
 				st.session_state[ 'usgssb_timeout' ] = 20
@@ -10866,39 +8737,36 @@ elif mode == 'Geospatial':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			with col_left:
 				usgssb_mode = st.selectbox( 'Mode', options=USGSSB_MODES,
-					index=USGSSB_MODES.index(
-						st.session_state.get( 'usgssb_mode', 'items' )
-					), key='usgssb_mode' )
+					index=USGSSB_MODES.index( st.session_state.get( 'usgssb_mode', 'items' ) ),
+					key='usgssb_mode' )
 				
 				usgssb_q = st.text_input( 'Search Query',
 					value=st.session_state.get( 'usgssb_q', '' ), key='usgssb_q',
-					disabled=(usgssb_mode != 'items'),
-					placeholder='Optional keyword search' )
+					disabled=(usgssb_mode != 'items'), placeholder='Optional keyword search' )
 				
 				usgssb_item_id = st.text_input( 'Item ID',
-					value=st.session_state.get( 'usgssb_item_id', '' ),
-					key='usgssb_item_id',
-					disabled=(usgssb_mode != 'item'),
-					placeholder='ScienceBase item identifier' )
+					value=st.session_state.get( 'usgssb_item_id', '' ), key='usgssb_item_id',
+					disabled=(usgssb_mode != 'item'), placeholder='ScienceBase item identifier' )
 				
 				page_c1, page_c2 = st.columns( 2 )
 				
 				with page_c1:
 					usgssb_max_items = st.number_input( 'Max Items', min_value=5, max_value=1000,
-						value=int( st.session_state.get( 'usgssb_max_items', 25 ) ),
-						step=5, key='usgssb_max_items', disabled=(usgssb_mode != 'items'),
-						help='ScienceBase search guidance limits max to 1000 and uses increments of 5.' )
+						value=int( st.session_state.get( 'usgssb_max_items', 25 ) ), step=5,
+						key='usgssb_max_items', disabled=(usgssb_mode != 'items'),
+						help='ScienceBase search guidance limits max to 1000 and uses increments '
+						     'of 5.' )
 				
 				with page_c2:
 					usgssb_offset = st.number_input( 'Offset', min_value=0, max_value=150000,
-						value=int( st.session_state.get( 'usgssb_offset', 0 ) ),
-						step=5, key='usgssb_offset',
-						disabled=(usgssb_mode != 'items'),
-						help='Paging offset. Use increments of 5 for ScienceBase search requests.' )
+						value=int( st.session_state.get( 'usgssb_offset', 0 ) ), step=5,
+						key='usgssb_offset', disabled=(usgssb_mode != 'items'),
+						help='Paging offset. Use increments of 5 for ScienceBase search '
+						     'requests.' )
 				
 				usgssb_fields = st.multiselect( 'Fields', options=USGSSB_FIELD_OPTIONS,
-					default=[ value for value in st.session_state.get( 'usgssb_fields', [ ] )
-							if value in USGSSB_FIELD_OPTIONS ], key='usgssb_fields',
+					default=[ value for value in st.session_state.get( 'usgssb_fields', [ ] ) if
+						value in USGSSB_FIELD_OPTIONS ], key='usgssb_fields',
 					disabled=(usgssb_mode != 'items'),
 					help='Optional ScienceBase item fields to request.' )
 				
@@ -10920,16 +8788,15 @@ elif mode == 'Geospatial':
 				if usgssb_submit:
 					try:
 						if usgssb_mode == 'item' and not str( usgssb_item_id or '' ).strip( ):
-							raise ValueError(
-								'Item ID is required for ScienceBase item mode.' )
+							raise ValueError( 'Item ID is required for ScienceBase item mode.' )
 						
 						selected_fields = ','.join( usgssb_fields or [ ] )
 						
 						f = USGSScienceBase( )
 						result = f.fetch( mode=str( usgssb_mode ), q=str( usgssb_q ).strip( ),
-							item_id=str( usgssb_item_id ).strip( ), max_items=int( usgssb_max_items ),
-							offset=int( usgssb_offset ), fields=selected_fields,
-							time=int( usgssb_timeout ) )
+							item_id=str( usgssb_item_id ).strip( ),
+							max_items=int( usgssb_max_items ), offset=int( usgssb_offset ),
+							fields=selected_fields, time=int( usgssb_timeout ) )
 						
 						st.session_state[ 'usgssb_results' ] = result or { }
 						st.rerun( )
@@ -10954,13 +8821,9 @@ elif mode == 'Geospatial':
 					with meta_c2:
 						params = result.get( 'params', { } ) or { }
 						if 'q' in params:
-							st.markdown(
-								f"**Search Query:** {params.get( 'q', '' )}"
-							)
+							st.markdown( f"**Search Query:** {params.get( 'q', '' )}" )
 						if 'fields' in params:
-							st.markdown(
-								f"**Fields:** {params.get( 'fields', '' )}"
-							)
+							st.markdown( f"**Fields:** {params.get( 'fields', '' )}" )
 					
 					summary = result.get( 'summary', { } ) or { }
 					if summary:
@@ -10997,52 +8860,34 @@ elif mode == 'Geospatial':
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
-								label = str(
-									item.get( 'Title', '' ) or
-									item.get( 'Id', '' ) or
-									f'Record {idx}'
-								)
+								label = str( item.get( 'Title', '' ) or item.get( 'Id',
+									'' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									left_c, right_c = st.columns( 2 )
 									
 									with left_c:
 										if 'Type' in item:
-											st.markdown(
-												f"**Type:** {item.get( 'Type', '' )}"
-											)
+											st.markdown( f"**Type:** {item.get( 'Type', '' )}" )
 										if 'Updated' in item:
 											st.markdown(
-												f"**Updated:** {item.get( 'Updated', '' )}"
-											)
+												f"**Updated:** {item.get( 'Updated', '' )}" )
 										if 'File Count' in item:
 											st.markdown(
-												f"**Files:** {item.get( 'File Count', '' )}"
-											)
+												f"**Files:** {item.get( 'File Count', '' )}" )
 										if 'Web Link Count' in item:
-											st.markdown(
-												f"**Web Links:** "
-												f"{item.get( 'Web Link Count', '' )}"
-											)
+											st.markdown( f"**Web Links:** "
+											             f"{item.get( 'Web Link Count', '' )}" )
 										if 'Contact Count' in item:
-											st.markdown(
-												f"**Contacts:** "
-												f"{item.get( 'Contact Count', '' )}"
-											)
+											st.markdown( f"**Contacts:** "
+											             f"{item.get( 'Contact Count', '' )}" )
 									
 									with right_c:
 										if 'Has Spatial Metadata' in item:
-											st.markdown(
-												f"**Spatial Metadata:** "
-												f"{item.get( 'Has Spatial Metadata', False )}"
-											)
+											st.markdown( f"**Spatial Metadata:** "
+											             f"{item.get( 'Has Spatial Metadata', False )}" )
 										if 'Id' in item:
-											st.markdown(
-												f"**ID:** `{item.get( 'Id', '' )}`"
-											)
+											st.markdown( f"**ID:** `{item.get( 'Id', '' )}`" )
 									
 									summary_text = str( item.get( 'Summary', '' ) or '' )
 									if summary_text:
@@ -11060,24 +8905,10 @@ elif mode == 'Geospatial':
 					
 					with st.expander( 'Raw Result', expanded=False ):
 						st.json( result )
-			
+		
 		# -------- Open Sky
 		with st.expander( label='Open Sky', icon='✈️', expanded=False ):
 			def _clear_opensky_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Reset the OpenSky controls and result payload to their default values.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-
-				'''
 				st.session_state[ 'opensky_results' ] = { }
 				st.session_state[ 'opensky_mode' ] = 'states_bbox'
 				st.session_state[ 'opensky_icao24' ] = ''
@@ -11095,29 +8926,6 @@ elif mode == 'Geospatial':
 				st.session_state[ 'opensky_timeout' ] = 20
 			
 			def _coerce_opensky_time_value( mode_value: str, raw_value: int ) -> int | None:
-				'''
-					Purpose:
-					--------
-					Normalize the OpenSky time control before calling the wrapper. For live
-					state-vector requests, zero means omit the time parameter so OpenSky uses
-					current time. For aircraft track requests, zero remains valid because the
-					OpenSky track endpoint treats zero as a live/current-track request.
-
-					Parameters:
-					-----------
-					mode_value (str):
-						Selected OpenSky mode.
-
-					raw_value (int):
-						User-entered Unix timestamp value.
-
-					Returns:
-					--------
-					int | None:
-						Validated Unix timestamp or None when the API parameter should be
-						omitted.
-
-				'''
 				active_mode = str( mode_value or 'states_bbox' ).strip( ).lower( )
 				value = int( raw_value or 0 )
 				
@@ -11181,115 +8989,64 @@ elif mode == 'Geospatial':
 			with col_left:
 				mode = st.selectbox( 'Mode',
 					options=[ 'states_bbox', 'flights_aircraft', 'arrivals_airport',
-							'departures_airport', 'track_aircraft', ], key='opensky_mode',
-					help=( 'states_bbox = live aircraft inside a bounding box; '
-							'flights_aircraft = flights for one aircraft; '
-							'arrivals_airport / departures_airport = airport traffic; '
-							'track_aircraft = trajectory waypoints for one aircraft.' ) )
+						'departures_airport', 'track_aircraft', ], key='opensky_mode',
+					help=('states_bbox = live aircraft inside a bounding box; '
+					      'flights_aircraft = flights for one aircraft; '
+					      'arrivals_airport / departures_airport = airport traffic; '
+					      'track_aircraft = trajectory waypoints for one aircraft.') )
 				
-				icao24 = st.text_input( 'ICAO24 (Aircraft Hex ID)', value='',
-					key='opensky_icao24', help='Required for flights_aircraft and track_aircraft.' )
+				icao24 = st.text_input( 'ICAO24 (Aircraft Hex ID)', value='', key='opensky_icao24',
+					help='Required for flights_aircraft and track_aircraft.' )
 				
-				airport = st.text_input(
-					'Airport ICAO',
-					value='',
-					key='opensky_airport',
-					help='Required for arrivals_airport and departures_airport.'
-				)
+				airport = st.text_input( 'Airport ICAO', value='', key='opensky_airport',
+					help='Required for arrivals_airport and departures_airport.' )
 				
-				begin = st.number_input(
-					'Begin (Unix Time)',
-					min_value=0,
-					value=0,
-					step=60,
-					key='opensky_begin',
-					help='Required for aircraft and airport history queries.'
-				)
+				begin = st.number_input( 'Begin (Unix Time)', min_value=0, value=0, step=60,
+					key='opensky_begin', help='Required for aircraft and airport history '
+					                          'queries.' )
 				
-				end = st.number_input(
-					'End (Unix Time)',
-					min_value=0,
-					value=0,
-					step=60,
-					key='opensky_end',
-					help='Required for aircraft and airport history queries.'
-				)
+				end = st.number_input( 'End (Unix Time)', min_value=0, value=0, step=60,
+					key='opensky_end', help='Required for aircraft and airport history queries.' )
 				
-				time_value = st.number_input(
-					'Time (Unix Time / 0 for Live Track)',
-					min_value=0,
-					value=0,
-					step=60,
-					key='opensky_time_value',
-					help=(
-							'Optional for states_bbox. Leave at 0 for current live state '
-							'vectors. Used by track_aircraft, where 0 requests the current '
-							'or latest available track.'
-					)
-				)
+				time_value = st.number_input( 'Time (Unix Time / 0 for Live Track)', min_value=0,
+					value=0, step=60, key='opensky_time_value',
+					help=('Optional for states_bbox. Leave at 0 for current live state '
+					      'vectors. Used by track_aircraft, where 0 requests the current '
+					      'or latest available track.') )
 				
 				lamin = st.number_input( 'Min Latitude', value=39.0, key='opensky_lamin' )
 				lomin = st.number_input( 'Min Longitude', value=-77.5, key='opensky_lomin' )
 				lamax = st.number_input( 'Max Latitude', value=40.5, key='opensky_lamax' )
 				lomax = st.number_input( 'Max Longitude', value=-75.0, key='opensky_lomax' )
 				
-				extended = st.checkbox(
-					'Extended Aircraft Categories',
-					value=False,
-					key='opensky_extended',
-					help='Only applies to states_bbox.'
-				)
+				extended = st.checkbox( 'Extended Aircraft Categories', value=False,
+					key='opensky_extended', help='Only applies to states_bbox.' )
 				
-				client_id = st.text_input(
-					'Client ID (Optional)',
-					value='',
-					key='opensky_client_id'
-				)
+				client_id = st.text_input( 'Client ID (Optional)', value='',
+					key='opensky_client_id' )
 				
-				client_secret = st.text_input(
-					'Client Secret (Optional)',
-					value='',
-					type='password',
-					key='opensky_client_secret'
-				)
+				client_secret = st.text_input( 'Client Secret (Optional)', value='',
+					type='password', key='opensky_client_secret' )
 				
-				timeout = st.slider(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=60,
-					value=20,
-					step=1,
-					key='opensky_timeout'
-				)
+				timeout = st.slider( 'Timeout (seconds)', min_value=5, max_value=60, value=20,
+					step=1, key='opensky_timeout' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					opensky_submit = st.button(
-						'Submit',
-						key='opensky_submit',
-						use_container_width=True
-					)
+					opensky_submit = st.button( 'Submit', key='opensky_submit',
+						use_container_width=True )
 				with b2:
-					st.button(
-						'Clear',
-						key='opensky_clear',
-						on_click=_clear_opensky_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='opensky_clear', on_click=_clear_opensky_state,
+						use_container_width=True )
 			
 			with col_right:
 				if opensky_submit:
 					try:
-						normalized_time_value = _coerce_opensky_time_value(
-							mode_value=mode,
-							raw_value=int( time_value or 0 )
-						)
+						normalized_time_value = _coerce_opensky_time_value( mode_value=mode,
+							raw_value=int( time_value or 0 ) )
 						
 						client = OpenSky( )
-						result = client.fetch(
-							mode=mode,
-							icao24=icao24,
-							airport=airport,
+						result = client.fetch( mode=mode, icao24=icao24, airport=airport,
 							begin=int( begin ) if int( begin or 0 ) > 0 else None,
 							end=int( end ) if int( end or 0 ) > 0 else None,
 							time_value=normalized_time_value,
@@ -11297,11 +9054,8 @@ elif mode == 'Geospatial':
 							lomin=float( lomin ) if lomin is not None else None,
 							lamax=float( lamax ) if lamax is not None else None,
 							lomax=float( lomax ) if lomax is not None else None,
-							extended=bool( extended ),
-							client_id=client_id.strip( ) or None,
-							client_secret=client_secret.strip( ) or None,
-							time=int( timeout ),
-						)
+							extended=bool( extended ), client_id=client_id.strip( ) or None,
+							client_secret=client_secret.strip( ) or None, time=int( timeout ), )
 						st.session_state[ 'opensky_results' ] = result or { }
 					except Exception as exc:
 						st.error( 'OpenSky request failed.' )
@@ -11312,16 +9066,11 @@ elif mode == 'Geospatial':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'Returned': int( result.get( 'count', 0 ) or 0 ),
-								'Time': result.get( 'time', '' ) or result.get( 'start_time', '' ),
-								'ICAO24': result.get( 'icao24', '' ),
-								'Callsign': result.get( 'callsign', '' ),
-						}
-					)
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+						'Returned': int( result.get( 'count', 0 ) or 0 ),
+						'Time': result.get( 'time', '' ) or result.get( 'start_time', '' ),
+						'ICAO24': result.get( 'icao24', '' ),
+						'Callsign': result.get( 'callsign', '' ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
@@ -11330,23 +9079,17 @@ elif mode == 'Geospatial':
 							st.markdown( '#### Live State Vectors' )
 							st.dataframe( items, use_container_width=True, hide_index=True )
 							
-							map_rows = [
-									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-									for x in items
-									if x.get( 'latitude' ) is not None
-									   and x.get( 'longitude' ) is not None
-							]
+							map_rows = [ { 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+								for x in items if x.get( 'latitude' ) is not None and x.get(
+									'longitude' ) is not None ]
 							if map_rows:
 								st.markdown( '#### Aircraft Positions' )
 								st.map( map_rows )
 						else:
 							st.info( 'No aircraft state vectors matched the requested filter.' )
 					
-					elif result.get( 'mode' ) in (
-								'flights_aircraft',
-								'arrivals_airport',
-								'departures_airport'
-					):
+					elif result.get( 'mode' ) in ('flights_aircraft', 'arrivals_airport',
+						'departures_airport'):
 						if items:
 							st.markdown( '#### Flights' )
 							st.dataframe( items, use_container_width=True, hide_index=True )
@@ -11358,12 +9101,9 @@ elif mode == 'Geospatial':
 							st.markdown( '#### Aircraft Track' )
 							st.dataframe( items, use_container_width=True, hide_index=True )
 							
-							map_rows = [
-									{ 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
-									for x in items
-									if x.get( 'latitude' ) is not None
-									   and x.get( 'longitude' ) is not None
-							]
+							map_rows = [ { 'lat': x.get( 'latitude' ), 'lon': x.get( 'longitude' ) }
+								for x in items if x.get( 'latitude' ) is not None and x.get(
+									'longitude' ) is not None ]
 							if map_rows:
 								st.markdown( '#### Track Map' )
 								st.map( map_rows )
@@ -11372,7 +9112,7 @@ elif mode == 'Geospatial':
 					
 					with st.expander( 'Raw Result', expanded=False ):
 						st.json( result )
-			
+
 # ==============================================================================
 # ENVIRONMENTAL MODE
 # ==============================================================================
@@ -11402,115 +9142,60 @@ elif mode == 'Environmental':
 				st.session_state[ 'airnow_clear_request' ] = False
 			
 			def _clear_airnow_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the AirNow expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'airnow_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				airnow_mode = st.selectbox(
-					'Mode',
-					options=[
-							'current-zip',
-							'current-latlon',
-							'forecast-zip',
-							'forecast-latlon'
-					],
-					index=[
-							'current-zip',
-							'current-latlon',
-							'forecast-zip',
-							'forecast-latlon'
-					].index(
-						st.session_state.get( 'airnow_mode', 'current-zip' )
-					),
-					key='airnow_mode'
-				)
+				airnow_mode = st.selectbox( 'Mode',
+					options=[ 'current-zip', 'current-latlon', 'forecast-zip', 'forecast-latlon' ],
+					index=[ 'current-zip', 'current-latlon', 'forecast-zip',
+						'forecast-latlon' ].index(
+						st.session_state.get( 'airnow_mode', 'current-zip' ) ), key='airnow_mode' )
 				
-				airnow_zip_code = st.text_input(
-					'Zip Code',
-					value=st.session_state.get( 'airnow_zip_code', '' ),
-					key='airnow_zip_code',
+				airnow_zip_code = st.text_input( 'Zip Code',
+					value=st.session_state.get( 'airnow_zip_code', '' ), key='airnow_zip_code',
 					disabled=(airnow_mode not in [ 'current-zip', 'forecast-zip' ]),
-					placeholder='Example: 22201'
-				)
+					placeholder='Example: 22201' )
 				
 				coord_c1, coord_c2 = st.columns( 2 )
 				
 				with coord_c1:
-					airnow_latitude = st.text_input(
-						'Latitude',
-						value=st.session_state.get( 'airnow_latitude', '' ),
-						key='airnow_latitude',
+					airnow_latitude = st.text_input( 'Latitude',
+						value=st.session_state.get( 'airnow_latitude', '' ), key='airnow_latitude',
 						disabled=(airnow_mode not in [ 'current-latlon', 'forecast-latlon' ]),
-						placeholder='Example: 38.8816'
-					)
+						placeholder='Example: 38.8816' )
 				
 				with coord_c2:
-					airnow_longitude = st.text_input(
-						'Longitude',
+					airnow_longitude = st.text_input( 'Longitude',
 						value=st.session_state.get( 'airnow_longitude', '' ),
 						key='airnow_longitude',
 						disabled=(airnow_mode not in [ 'current-latlon', 'forecast-latlon' ]),
-						placeholder='Example: -77.0910'
-					)
+						placeholder='Example: -77.0910' )
 				
-				airnow_date = st.date_input(
-					'Forecast Date',
+				airnow_date = st.date_input( 'Forecast Date',
 					value=st.session_state.get( 'airnow_date', dt.date.today( ) ),
 					key='airnow_date',
-					disabled=(airnow_mode not in [ 'forecast-zip', 'forecast-latlon' ])
-				)
+					disabled=(airnow_mode not in [ 'forecast-zip', 'forecast-latlon' ]) )
 				
-				airnow_distance = st.number_input(
-					'Distance (miles)',
-					min_value=0,
-					max_value=500,
-					value=int( st.session_state.get( 'airnow_distance', 25 ) ),
-					step=1,
-					key='airnow_distance'
-				)
+				airnow_distance = st.number_input( 'Distance (miles)', min_value=0, max_value=500,
+					value=int( st.session_state.get( 'airnow_distance', 25 ) ), step=1,
+					key='airnow_distance' )
 				
-				airnow_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'airnow_timeout', 20 ) ),
-					step=1,
-					key='airnow_timeout'
-				)
+				airnow_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'airnow_timeout', 20 ) ), step=1,
+					key='airnow_timeout' )
 				
-				st.caption(
-					'AirNow supports current observations and forecasts by Zip code or '
-					'latitude/longitude.'
-				)
+				st.caption( 'AirNow supports current observations and forecasts by Zip code or '
+				            'latitude/longitude.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					airnow_submit = st.button(
-						'Submit',
-						key='airnow_submit'
-					)
+					airnow_submit = st.button( 'Submit', key='airnow_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='airnow_clear',
-						on_click=_clear_airnow_state
-					)
+					st.button( 'Clear', key='airnow_clear', on_click=_clear_airnow_state )
 			
 			with col_right:
 				if airnow_submit:
@@ -11526,15 +9211,10 @@ elif mode == 'Environmental':
 						if str( airnow_longitude or '' ).strip( ):
 							longitude_value = float( airnow_longitude )
 						
-						result = f.fetch(
-							mode=str( airnow_mode ),
-							zip_code=str( airnow_zip_code ).strip( ),
-							latitude=latitude_value,
-							longitude=longitude_value,
-							date=str( airnow_date ),
-							distance=int( airnow_distance ),
-							time=int( airnow_timeout )
-						)
+						result = f.fetch( mode=str( airnow_mode ),
+							zip_code=str( airnow_zip_code ).strip( ), latitude=latitude_value,
+							longitude=longitude_value, date=str( airnow_date ),
+							distance=int( airnow_distance ), time=int( airnow_timeout ) )
 						
 						st.session_state[ 'airnow_results' ] = result or { }
 						st.rerun( )
@@ -11574,10 +9254,7 @@ elif mode == 'Environmental':
 						
 						with sum_c2:
 							max_aqi = summary.get( 'max_aqi', None )
-							st.metric(
-								'Peak AQI',
-								'' if max_aqi is None else str( max_aqi )
-							)
+							st.metric( 'Peak AQI', '' if max_aqi is None else str( max_aqi ) )
 						
 						with sum_c3:
 							top_category = str( summary.get( 'top_category', '' ) or '' )
@@ -11587,16 +9264,13 @@ elif mode == 'Environmental':
 								st.markdown( '**Category:** N/A' )
 						
 						reporting_area = str( summary.get( 'reporting_area', '' ) or '' )
-						dominant_parameter = str(
-							summary.get( 'dominant_parameter', '' ) or ''
-						)
+						dominant_parameter = str( summary.get( 'dominant_parameter', '' ) or '' )
 						
 						if reporting_area:
 							st.markdown( f"**Reporting Area:** {reporting_area}" )
 						if dominant_parameter:
 							st.markdown(
-								f"**Dominant Parameter in Result Set:** {dominant_parameter}"
-							)
+								f"**Dominant Parameter in Result Set:** {dominant_parameter}" )
 					
 					params = result.get( 'params', { } ) or { }
 					if params:
@@ -11609,55 +9283,37 @@ elif mode == 'Environmental':
 						df_airnow = pd.DataFrame( rows )
 						
 						if not df_airnow.empty:
-							st.dataframe(
-								df_airnow,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_airnow, use_container_width=True, hide_index=True )
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
-								label = str(
-									item.get( 'Reporting Area', '' ) or f'Record {idx}'
-								)
+								label = str( item.get( 'Reporting Area', '' ) or f'Record {idx}' )
 								aqi = item.get( 'AQI', '' )
 								parameter = str( item.get( 'Parameter Name', '' ) or '' )
 								
 								with st.expander(
 										f'Record {idx}: AQI {aqi} - {label} - {parameter}',
-										expanded=False
-								):
+										expanded=False ):
 									left_c, right_c = st.columns( 2 )
 									
 									with left_c:
+										st.markdown( f"**Date Observed:** "
+										             f"{item.get( 'Date Observed', '' )}" )
+										st.markdown( f"**Hour Observed:** "
+										             f"{item.get( 'Hour Observed', '' )}" )
+										st.markdown( f"**Reporting Area:** "
+										             f"{item.get( 'Reporting Area', '' )}" )
 										st.markdown(
-											f"**Date Observed:** "
-											f"{item.get( 'Date Observed', '' )}"
-										)
-										st.markdown(
-											f"**Hour Observed:** "
-											f"{item.get( 'Hour Observed', '' )}"
-										)
-										st.markdown(
-											f"**Reporting Area:** "
-											f"{item.get( 'Reporting Area', '' )}"
-										)
-										st.markdown(
-											f"**State Code:** {item.get( 'State Code', '' )}"
-										)
+											f"**State Code:** {item.get( 'State Code', '' )}" )
 									
 									with right_c:
-										st.markdown(
-											f"**Parameter Name:** "
-											f"{item.get( 'Parameter Name', '' )}"
-										)
+										st.markdown( f"**Parameter Name:** "
+										             f"{item.get( 'Parameter Name', '' )}" )
 										st.markdown( f"**AQI:** {item.get( 'AQI', '' )}" )
+										st.markdown( f"**Category:** "
+										             f"{item.get( 'Category', '' )}" )
 										st.markdown(
-											f"**Category:** {item.get( 'Category', '' )}"
-										)
-										st.markdown(
-											f"**Action Day:** {item.get( 'Action Day', '' )}"
-										)
+											f"**Action Day:** {item.get( 'Action Day', '' )}" )
 									
 									discussion = str( item.get( 'Discussion', '' ) or '' )
 									if discussion:
@@ -11672,35 +9328,13 @@ elif mode == 'Environmental':
 		
 		# -------- NOAA Climate Data
 		with st.expander( label='NOAA Climate Data', icon='🌡️', expanded=False ):
-			CLIMATEDATA_MODES = [
-					'datasets',
-					'data'
-			]
+			CLIMATEDATA_MODES = [ 'datasets', 'data' ]
 			
-			CLIMATEDATA_DATASETS = [
-					'daily-summaries',
-					'global-summary-of-the-day',
-					'global-hourly',
-					'local-climatological-data',
-					'normals-daily',
-					'normals-monthly',
-					'normals-annualseasonal'
-			]
+			CLIMATEDATA_DATASETS = [ 'daily-summaries', 'global-summary-of-the-day',
+				'global-hourly', 'local-climatological-data', 'normals-daily', 'normals-monthly',
+				'normals-annualseasonal' ]
 			
 			def _clear_climatedata_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the NOAA Climate Data expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'climatedata_clear_request' ] = True
 			
 			if 'climatedata_results' not in st.session_state:
@@ -11712,14 +9346,16 @@ elif mode == 'Environmental':
 			if st.session_state.get( 'climatedata_mode', 'datasets' ) not in CLIMATEDATA_MODES:
 				st.session_state[ 'climatedata_mode' ] = 'datasets'
 			
-			if st.session_state.get( 'climatedata_dataset', 'daily-summaries' ) not in CLIMATEDATA_DATASETS:
+			if st.session_state.get( 'climatedata_dataset',
+					'daily-summaries' ) not in CLIMATEDATA_DATASETS:
 				st.session_state[ 'climatedata_dataset' ] = 'daily-summaries'
 			
 			if 'climatedata_keyword' not in st.session_state:
 				st.session_state[ 'climatedata_keyword' ] = ''
 			
 			if 'climatedata_start_date' not in st.session_state:
-				st.session_state[ 'climatedata_start_date' ] = dt.date.today( ) - dt.timedelta( days=30 )
+				st.session_state[ 'climatedata_start_date' ] = dt.date.today( ) - dt.timedelta(
+					days=30 )
 			
 			if 'climatedata_end_date' not in st.session_state:
 				st.session_state[ 'climatedata_end_date' ] = dt.date.today( )
@@ -11744,8 +9380,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'climatedata_keyword' ] = ''
 				st.session_state[ 'climatedata_dataset' ] = 'daily-summaries'
 				st.session_state[ 'climatedata_start_date' ] = (
-						dt.date.today( ) - dt.timedelta( days=30 )
-				)
+						dt.date.today( ) - dt.timedelta( days=30 ))
 				st.session_state[ 'climatedata_end_date' ] = dt.date.today( )
 				st.session_state[ 'climatedata_stations' ] = ''
 				st.session_state[ 'climatedata_data_types' ] = ''
@@ -11758,123 +9393,72 @@ elif mode == 'Environmental':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				climatedata_mode = st.selectbox(
-					'Mode',
-					options=CLIMATEDATA_MODES,
+				climatedata_mode = st.selectbox( 'Mode', options=CLIMATEDATA_MODES,
 					index=CLIMATEDATA_MODES.index(
-						st.session_state.get( 'climatedata_mode', 'datasets' )
-					),
-					key='climatedata_mode'
-				)
+						st.session_state.get( 'climatedata_mode', 'datasets' ) ),
+					key='climatedata_mode' )
 				
-				climatedata_keyword = st.text_input(
-					'Keyword',
+				climatedata_keyword = st.text_input( 'Keyword',
 					value=st.session_state.get( 'climatedata_keyword', '' ),
-					key='climatedata_keyword',
-					disabled=(climatedata_mode != 'datasets'),
-					placeholder='Example: precipitation'
-				)
+					key='climatedata_keyword', disabled=(climatedata_mode != 'datasets'),
+					placeholder='Example: precipitation' )
 				
-				climatedata_dataset = st.selectbox(
-					'Dataset',
-					options=CLIMATEDATA_DATASETS,
+				climatedata_dataset = st.selectbox( 'Dataset', options=CLIMATEDATA_DATASETS,
 					index=CLIMATEDATA_DATASETS.index(
-						st.session_state.get( 'climatedata_dataset', 'daily-summaries' )
-					),
-					key='climatedata_dataset',
-					disabled=(climatedata_mode != 'data'),
-					help='NCEI dataset identifier passed to the Access Data Service.'
-				)
+						st.session_state.get( 'climatedata_dataset', 'daily-summaries' ) ),
+					key='climatedata_dataset', disabled=(climatedata_mode != 'data'),
+					help='NCEI dataset identifier passed to the Access Data Service.' )
 				
 				date_c1, date_c2 = st.columns( 2 )
 				
 				with date_c1:
-					climatedata_start_date = st.date_input(
-						'Start Date',
-						value=st.session_state.get(
-							'climatedata_start_date',
-							dt.date.today( ) - dt.timedelta( days=30 )
-						),
-						key='climatedata_start_date'
-					)
+					climatedata_start_date = st.date_input( 'Start Date',
+						value=st.session_state.get( 'climatedata_start_date',
+							dt.date.today( ) - dt.timedelta( days=30 ) ),
+						key='climatedata_start_date' )
 				
 				with date_c2:
-					climatedata_end_date = st.date_input(
-						'End Date',
-						value=st.session_state.get(
-							'climatedata_end_date',
-							dt.date.today( )
-						),
-						key='climatedata_end_date'
-					)
+					climatedata_end_date = st.date_input( 'End Date',
+						value=st.session_state.get( 'climatedata_end_date', dt.date.today( ) ),
+						key='climatedata_end_date' )
 				
-				climatedata_stations = st.text_input(
-					'Stations',
+				climatedata_stations = st.text_input( 'Stations',
 					value=st.session_state.get( 'climatedata_stations', '' ),
-					key='climatedata_stations',
-					disabled=(climatedata_mode != 'data'),
-					placeholder='Comma-separated station IDs'
-				)
+					key='climatedata_stations', disabled=(climatedata_mode != 'data'),
+					placeholder='Comma-separated station IDs' )
 				
-				climatedata_data_types = st.text_input(
-					'Data Types',
+				climatedata_data_types = st.text_input( 'Data Types',
 					value=st.session_state.get( 'climatedata_data_types', '' ),
-					key='climatedata_data_types',
-					disabled=(climatedata_mode != 'data'),
-					placeholder='Comma-separated datatype IDs'
-				)
+					key='climatedata_data_types', disabled=(climatedata_mode != 'data'),
+					placeholder='Comma-separated datatype IDs' )
 				
 				page_c1, page_c2 = st.columns( 2 )
 				
 				with page_c1:
-					climatedata_limit = st.number_input(
-						'Limit',
-						min_value=1,
-						max_value=500,
-						value=int( st.session_state.get( 'climatedata_limit', 25 ) ),
-						step=1,
-						key='climatedata_limit'
-					)
+					climatedata_limit = st.number_input( 'Limit', min_value=1, max_value=500,
+						value=int( st.session_state.get( 'climatedata_limit', 25 ) ), step=1,
+						key='climatedata_limit' )
 				
 				with page_c2:
-					climatedata_offset = st.number_input(
-						'Offset',
-						min_value=0,
-						max_value=10000,
-						value=int( st.session_state.get( 'climatedata_offset', 0 ) ),
-						step=1,
-						key='climatedata_offset',
-						disabled=(climatedata_mode != 'datasets')
-					)
+					climatedata_offset = st.number_input( 'Offset', min_value=0, max_value=10000,
+						value=int( st.session_state.get( 'climatedata_offset', 0 ) ), step=1,
+						key='climatedata_offset', disabled=(climatedata_mode != 'datasets') )
 				
-				climatedata_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'climatedata_timeout', 20 ) ),
-					step=1,
-					key='climatedata_timeout'
-				)
+				climatedata_timeout = st.number_input( 'Timeout (seconds)', min_value=5,
+					max_value=120, value=int( st.session_state.get( 'climatedata_timeout', 20 ) ),
+					step=1, key='climatedata_timeout' )
 				
-				st.caption(
-					'Datasets mode discovers NOAA climate datasets. Data mode retrieves '
-					'subsetted climate records from a selected dataset.'
-				)
+				st.caption( 'Datasets mode discovers NOAA climate datasets. Data mode retrieves '
+				            'subsetted climate records from a selected dataset.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					climatedata_submit = st.button(
-						'Submit',
-						key='climatedata_submit'
-					)
+					climatedata_submit = st.button( 'Submit', key='climatedata_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='climatedata_clear',
-						on_click=_clear_climatedata_state
-					)
+					st.button( 'Clear', key='climatedata_clear',
+						on_click=_clear_climatedata_state )
 			
 			with col_right:
 				if climatedata_submit:
@@ -11886,18 +9470,15 @@ elif mode == 'Environmental':
 							raise ValueError( 'Dataset is required for data mode.' )
 						
 						f = ClimateData( )
-						result = f.fetch(
-							mode=str( climatedata_mode ),
+						result = f.fetch( mode=str( climatedata_mode ),
 							keyword=str( climatedata_keyword ).strip( ),
 							dataset=str( climatedata_dataset ).strip( ),
 							start_date=str( climatedata_start_date ),
 							end_date=str( climatedata_end_date ),
 							stations=str( climatedata_stations ).strip( ),
 							data_types=str( climatedata_data_types ).strip( ),
-							limit=int( climatedata_limit ),
-							offset=int( climatedata_offset ),
-							time=int( climatedata_timeout )
-						)
+							limit=int( climatedata_limit ), offset=int( climatedata_offset ),
+							time=int( climatedata_timeout ) )
 						
 						st.session_state[ 'climatedata_results' ] = result or { }
 						st.rerun( )
@@ -11960,25 +9541,15 @@ elif mode == 'Environmental':
 						df_climatedata = pd.DataFrame( rows )
 						
 						if not df_climatedata.empty:
-							st.dataframe(
-								df_climatedata,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_climatedata, use_container_width=True,
+								hide_index=True )
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
-								label = str(
-									item.get( 'Title', '' ) or
-									item.get( 'Station', '' ) or
-									item.get( 'Date', '' ) or
-									f'Record {idx}'
-								)
+								label = str( item.get( 'Title', '' ) or item.get( 'Station',
+									'' ) or item.get( 'Date', '' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable NOAA climate rows were found.' )
@@ -11990,52 +9561,14 @@ elif mode == 'Environmental':
 		
 		# -------- NASA EONET
 		with st.expander( label='NASA EONET', icon='🌎', expanded=False ):
-			EONET_MODES = [
-					'events',
-					'categories'
-			]
+			EONET_MODES = [ 'events', 'categories' ]
 			
-			EONET_STATUSES = [
-					'open',
-					'closed',
-					'all'
-			]
+			EONET_STATUSES = [ 'open', 'closed', 'all' ]
 			
 			def _clear_eonet_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the NASA EONET expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'eonet_clear_request' ] = True
 			
 			def _validate_eonet_date( name: str, value: str ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate an optional EONET ISO date value.
-
-					Parameters:
-					-----------
-					name (str):
-						Display name used for validation errors.
-
-					value (str):
-						Date value supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Validated date text, or an empty string when no value is supplied.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -12045,23 +9578,6 @@ elif mode == 'Environmental':
 				return text
 			
 			def _validate_eonet_bbox( value: str ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate an optional EONET bounding box in min_lon,max_lat,max_lon,min_lat
-					order.
-
-					Parameters:
-					-----------
-					value (str):
-						Bounding-box text supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Validated bounding-box text, or an empty string when no value is
-						supplied.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -12070,10 +9586,8 @@ elif mode == 'Environmental':
 				parts = [ item.strip( ) for item in text.split( ',' ) if item.strip( ) ]
 				
 				if len( parts ) != 4:
-					raise ValueError(
-						'Bounding Box must contain four comma-separated values: '
-						'min_lon,max_lat,max_lon,min_lat.'
-					)
+					raise ValueError( 'Bounding Box must contain four comma-separated values: '
+					                  'min_lon,max_lat,max_lon,min_lat.' )
 				
 				min_lon, max_lat, max_lon, min_lat = [ float( item ) for item in parts ]
 				
@@ -12144,174 +9658,99 @@ elif mode == 'Environmental':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				eonet_mode = st.selectbox(
-					'Mode',
-					options=EONET_MODES,
-					index=EONET_MODES.index(
-						st.session_state.get( 'eonet_mode', 'events' )
-					),
-					key='eonet_mode'
-				)
+				eonet_mode = st.selectbox( 'Mode', options=EONET_MODES,
+					index=EONET_MODES.index( st.session_state.get( 'eonet_mode', 'events' ) ),
+					key='eonet_mode' )
 				
-				eonet_status = st.selectbox(
-					'Status',
-					options=EONET_STATUSES,
-					index=EONET_STATUSES.index(
-						st.session_state.get( 'eonet_status', 'open' )
-					),
-					key='eonet_status',
-					disabled=(eonet_mode != 'events')
-				)
+				eonet_status = st.selectbox( 'Status', options=EONET_STATUSES,
+					index=EONET_STATUSES.index( st.session_state.get( 'eonet_status', 'open' ) ),
+					key='eonet_status', disabled=(eonet_mode != 'events') )
 				
 				filter_c1, filter_c2 = st.columns( 2 )
 				
 				with filter_c1:
-					eonet_source = st.text_input(
-						'Source',
-						value=st.session_state.get( 'eonet_source', '' ),
-						key='eonet_source',
-						disabled=(eonet_mode != 'events'),
-						placeholder='Optional source ID'
-					)
+					eonet_source = st.text_input( 'Source',
+						value=st.session_state.get( 'eonet_source', '' ), key='eonet_source',
+						disabled=(eonet_mode != 'events'), placeholder='Optional source ID' )
 				
 				with filter_c2:
-					eonet_category = st.text_input(
-						'Category',
-						value=st.session_state.get( 'eonet_category', '' ),
-						key='eonet_category',
-						disabled=(eonet_mode != 'events'),
-						placeholder='Optional category ID'
-					)
+					eonet_category = st.text_input( 'Category',
+						value=st.session_state.get( 'eonet_category', '' ), key='eonet_category',
+						disabled=(eonet_mode != 'events'), placeholder='Optional category ID' )
 				
 				count_c1, count_c2 = st.columns( 2 )
 				
 				with count_c1:
-					eonet_limit = st.number_input(
-						'Limit',
-						min_value=1,
-						max_value=500,
-						value=int( st.session_state.get( 'eonet_limit', 25 ) ),
-						step=1,
-						key='eonet_limit',
-						disabled=(eonet_mode != 'events')
-					)
+					eonet_limit = st.number_input( 'Limit', min_value=1, max_value=500,
+						value=int( st.session_state.get( 'eonet_limit', 25 ) ), step=1,
+						key='eonet_limit', disabled=(eonet_mode != 'events') )
 				
 				with count_c2:
-					eonet_days = st.number_input(
-						'Days',
-						min_value=1,
-						max_value=3650,
-						value=int( st.session_state.get( 'eonet_days', 30 ) ),
-						step=1,
-						key='eonet_days',
-						disabled=(eonet_mode != 'events')
-					)
+					eonet_days = st.number_input( 'Days', min_value=1, max_value=3650,
+						value=int( st.session_state.get( 'eonet_days', 30 ) ), step=1,
+						key='eonet_days', disabled=(eonet_mode != 'events') )
 				
 				date_c1, date_c2 = st.columns( 2 )
 				
 				with date_c1:
-					eonet_start_date = st.text_input(
-						'Start Date',
+					eonet_start_date = st.text_input( 'Start Date',
 						value=st.session_state.get( 'eonet_start_date', '' ),
-						key='eonet_start_date',
-						disabled=(eonet_mode != 'events'),
-						placeholder='YYYY-MM-DD'
-					)
+						key='eonet_start_date', disabled=(eonet_mode != 'events'),
+						placeholder='YYYY-MM-DD' )
 				
 				with date_c2:
-					eonet_end_date = st.text_input(
-						'End Date',
-						value=st.session_state.get( 'eonet_end_date', '' ),
-						key='eonet_end_date',
-						disabled=(eonet_mode != 'events'),
-						placeholder='YYYY-MM-DD'
-					)
+					eonet_end_date = st.text_input( 'End Date',
+						value=st.session_state.get( 'eonet_end_date', '' ), key='eonet_end_date',
+						disabled=(eonet_mode != 'events'), placeholder='YYYY-MM-DD' )
 				
-				eonet_bbox = st.text_input(
-					'Bounding Box',
-					value=st.session_state.get( 'eonet_bbox', '' ),
-					key='eonet_bbox',
+				eonet_bbox = st.text_input( 'Bounding Box',
+					value=st.session_state.get( 'eonet_bbox', '' ), key='eonet_bbox',
 					disabled=(eonet_mode != 'events'),
-					placeholder='min_lon,max_lat,max_lon,min_lat'
-				)
+					placeholder='min_lon,max_lat,max_lon,min_lat' )
 				
-				eonet_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'eonet_timeout', 20 ) ),
-					step=1,
-					key='eonet_timeout'
-				)
+				eonet_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'eonet_timeout', 20 ) ), step=1,
+					key='eonet_timeout' )
 				
-				st.caption(
-					'Events mode retrieves natural events. Categories mode lists the '
-					'available EONET event categories.'
-				)
+				st.caption( 'Events mode retrieves natural events. Categories mode lists the '
+				            'available EONET event categories.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					eonet_submit = st.button(
-						'Submit',
-						key='eonet_submit'
-					)
+					eonet_submit = st.button( 'Submit', key='eonet_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='eonet_clear',
-						on_click=_clear_eonet_state
-					)
+					st.button( 'Clear', key='eonet_clear', on_click=_clear_eonet_state )
 			
 			with col_right:
 				if eonet_submit:
 					try:
-						clean_start_date = _validate_eonet_date(
-							'Start Date',
-							eonet_start_date
-						)
-						clean_end_date = _validate_eonet_date(
-							'End Date',
-							eonet_end_date
-						)
+						clean_start_date = _validate_eonet_date( 'Start Date', eonet_start_date )
+						clean_end_date = _validate_eonet_date( 'End Date', eonet_end_date )
 						
 						if bool( clean_start_date ) != bool( clean_end_date ):
 							raise ValueError(
 								'Start Date and End Date must either both be supplied or '
-								'both be blank.'
-							)
+								'both be blank.' )
 						
 						if clean_start_date and clean_end_date:
-							start_value = dt.datetime.strptime(
-								clean_start_date,
-								'%Y-%m-%d'
-							).date( )
-							end_value = dt.datetime.strptime(
-								clean_end_date,
-								'%Y-%m-%d'
-							).date( )
+							start_value = dt.datetime.strptime( clean_start_date,
+								'%Y-%m-%d' ).date( )
+							end_value = dt.datetime.strptime( clean_end_date, '%Y-%m-%d' ).date( )
 							
 							if start_value > end_value:
-								raise ValueError(
-									'Start Date must be on or before End Date.'
-								)
+								raise ValueError( 'Start Date must be on or before End Date.' )
 						
 						clean_bbox = _validate_eonet_bbox( eonet_bbox )
 						
 						f = EoNet( )
-						result = f.fetch(
-							mode=str( eonet_mode ),
+						result = f.fetch( mode=str( eonet_mode ),
 							source=str( eonet_source ).strip( ),
 							category=str( eonet_category ).strip( ),
-							status=str( eonet_status ).strip( ),
-							limit=int( eonet_limit ),
-							days=int( eonet_days ),
-							start_date=clean_start_date,
-							end_date=clean_end_date,
-							bbox=clean_bbox,
-							time=int( eonet_timeout )
-						)
+							status=str( eonet_status ).strip( ), limit=int( eonet_limit ),
+							days=int( eonet_days ), start_date=clean_start_date,
+							end_date=clean_end_date, bbox=clean_bbox, time=int( eonet_timeout ) )
 						
 						st.session_state[ 'eonet_results' ] = result or { }
 						st.rerun( )
@@ -12336,9 +9775,7 @@ elif mode == 'Environmental':
 					with meta_c2:
 						params = result.get( 'params', { } ) or { }
 						if 'category' in params:
-							st.markdown(
-								f"**Category Filter:** {params.get( 'category', '' )}"
-							)
+							st.markdown( f"**Category Filter:** {params.get( 'category', '' )}" )
 						if 'status' in params:
 							st.markdown( f"**Status:** {params.get( 'status', '' )}" )
 					
@@ -12352,10 +9789,7 @@ elif mode == 'Environmental':
 							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
 						
 						with sum_c2:
-							st.metric(
-								'Open Records',
-								int( summary.get( 'open_count', 0 ) or 0 )
-							)
+							st.metric( 'Open Records', int( summary.get( 'open_count', 0 ) or 0 ) )
 						
 						with sum_c3:
 							first_title = str( summary.get( 'first_title', '' ) or '' )
@@ -12364,9 +9798,7 @@ elif mode == 'Environmental':
 							else:
 								st.markdown( '**First Event:** N/A' )
 						
-						first_categories = str(
-							summary.get( 'first_categories', '' ) or ''
-						)
+						first_categories = str( summary.get( 'first_categories', '' ) or '' )
 						if first_categories:
 							st.markdown( f"**Categories:** {first_categories}" )
 					
@@ -12381,30 +9813,18 @@ elif mode == 'Environmental':
 						df_eonet = pd.DataFrame( rows )
 						
 						if not df_eonet.empty:
-							st.dataframe(
-								df_eonet,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_eonet, use_container_width=True, hide_index=True )
 							
 							map_rows = [ ]
 							for item in rows:
-								latitude = (
-										item.get( 'Latitude', None )
-										or item.get( 'lat', None )
-								)
+								latitude = (item.get( 'Latitude', None ) or item.get( 'lat',
+									None ))
 								longitude = (
-										item.get( 'Longitude', None )
-										or item.get( 'lon', None )
-								)
+										item.get( 'Longitude', None ) or item.get( 'lon', None ))
 								
 								if latitude is not None and longitude is not None:
 									map_rows.append(
-										{
-												'lat': float( latitude ),
-												'lon': float( longitude )
-										}
-									)
+										{ 'lat': float( latitude ), 'lon': float( longitude ) } )
 							
 							if map_rows:
 								st.markdown( '#### Event Map' )
@@ -12412,17 +9832,10 @@ elif mode == 'Environmental':
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
-								label = str(
-									item.get( 'Title', '' ) or
-									item.get( 'Category', '' ) or
-									item.get( 'ID', '' ) or
-									f'Record {idx}'
-								)
+								label = str( item.get( 'Title', '' ) or item.get( 'Category',
+									'' ) or item.get( 'ID', '' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable EONET rows were found.' )
@@ -12434,86 +9847,15 @@ elif mode == 'Environmental':
 		
 		# -------- EPA Envirofacts
 		with st.expander( label='EPA Envirofacts', icon='♻️', expanded=False ):
-			ENVIROFACTS_TABLES = [
-					'TRI_FACILITY',
-					'TRI_RELEASE',
-					'EF_W_EMISSIONS_SOURCE_GHG'
-			]
+			ENVIROFACTS_TABLES = [ 'TRI_FACILITY', 'TRI_RELEASE', 'EF_W_EMISSIONS_SOURCE_GHG' ]
 			
-			ENVIROFACTS_STATE_CODES = [
-					'',
-					'AL',
-					'AK',
-					'AZ',
-					'AR',
-					'CA',
-					'CO',
-					'CT',
-					'DE',
-					'DC',
-					'FL',
-					'GA',
-					'HI',
-					'ID',
-					'IL',
-					'IN',
-					'IA',
-					'KS',
-					'KY',
-					'LA',
-					'ME',
-					'MD',
-					'MA',
-					'MI',
-					'MN',
-					'MS',
-					'MO',
-					'MT',
-					'NE',
-					'NV',
-					'NH',
-					'NJ',
-					'NM',
-					'NY',
-					'NC',
-					'ND',
-					'OH',
-					'OK',
-					'OR',
-					'PA',
-					'RI',
-					'SC',
-					'SD',
-					'TN',
-					'TX',
-					'UT',
-					'VT',
-					'VA',
-					'WA',
-					'WV',
-					'WI',
-					'WY',
-					'AS',
-					'GU',
-					'MP',
-					'PR',
-					'VI'
-			]
+			ENVIROFACTS_STATE_CODES = [ '', 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC',
+				'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI',
+				'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK',
+				'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
+				'AS', 'GU', 'MP', 'PR', 'VI' ]
 			
 			def _clear_envirofacts_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Envirofacts expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'envirofacts_clear_request' ] = True
 			
 			if 'envirofacts_results' not in st.session_state:
@@ -12522,7 +9864,8 @@ elif mode == 'Environmental':
 			if 'envirofacts_clear_request' not in st.session_state:
 				st.session_state[ 'envirofacts_clear_request' ] = False
 			
-			if st.session_state.get( 'envirofacts_table_name', 'TRI_FACILITY' ) not in ENVIROFACTS_TABLES:
+			if st.session_state.get( 'envirofacts_table_name',
+					'TRI_FACILITY' ) not in ENVIROFACTS_TABLES:
 				st.session_state[ 'envirofacts_table_name' ] = 'TRI_FACILITY'
 			
 			if st.session_state.get( 'envirofacts_state_code', '' ) not in ENVIROFACTS_STATE_CODES:
@@ -12549,82 +9892,50 @@ elif mode == 'Environmental':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				envirofacts_table_name = st.selectbox(
-					'Table',
-					options=ENVIROFACTS_TABLES,
+				envirofacts_table_name = st.selectbox( 'Table', options=ENVIROFACTS_TABLES,
 					index=ENVIROFACTS_TABLES.index(
-						st.session_state.get( 'envirofacts_table_name', 'TRI_FACILITY' )
-					),
-					key='envirofacts_table_name'
-				)
+						st.session_state.get( 'envirofacts_table_name', 'TRI_FACILITY' ) ),
+					key='envirofacts_table_name' )
 				
-				envirofacts_state_code = st.selectbox(
-					'State Code',
-					options=ENVIROFACTS_STATE_CODES,
-					index=ENVIROFACTS_STATE_CODES.index(
-						st.session_state.get( 'envirofacts_state_code', '' )
-					),
+				envirofacts_state_code = st.selectbox( 'State Code',
+					options=ENVIROFACTS_STATE_CODES, index=ENVIROFACTS_STATE_CODES.index(
+						st.session_state.get( 'envirofacts_state_code', '' ) ),
 					key='envirofacts_state_code',
 					format_func=lambda value: 'All' if value == '' else value,
-					help='Optional state or territory filter.'
-				)
+					help='Optional state or territory filter.' )
 				
-				envirofacts_facility_name = st.text_input(
-					'Facility Name Prefix',
+				envirofacts_facility_name = st.text_input( 'Facility Name Prefix',
 					value=st.session_state.get( 'envirofacts_facility_name', '' ),
-					key='envirofacts_facility_name',
-					placeholder='Optional facility-name prefix'
-				)
+					key='envirofacts_facility_name', placeholder='Optional facility-name prefix' )
 				
-				envirofacts_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=500,
-					value=int( st.session_state.get( 'envirofacts_limit', 25 ) ),
-					step=1,
-					key='envirofacts_limit'
-				)
+				envirofacts_limit = st.number_input( 'Limit', min_value=1, max_value=500,
+					value=int( st.session_state.get( 'envirofacts_limit', 25 ) ), step=1,
+					key='envirofacts_limit' )
 				
-				envirofacts_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'envirofacts_timeout', 20 ) ),
-					step=1,
-					key='envirofacts_timeout'
-				)
+				envirofacts_timeout = st.number_input( 'Timeout (seconds)', min_value=5,
+					max_value=120, value=int( st.session_state.get( 'envirofacts_timeout', 20 ) ),
+					step=1, key='envirofacts_timeout' )
 				
-				st.caption(
-					'This first-pass Envirofacts wrapper focuses on a constrained set of '
-					'common tables so the output remains human-readable and easy to use.'
-				)
+				st.caption( 'This first-pass Envirofacts wrapper focuses on a constrained set of '
+				            'common tables so the output remains human-readable and easy to use.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					envirofacts_submit = st.button(
-						'Submit',
-						key='envirofacts_submit'
-					)
+					envirofacts_submit = st.button( 'Submit', key='envirofacts_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='envirofacts_clear',
-						on_click=_clear_envirofacts_state
-					)
+					st.button( 'Clear', key='envirofacts_clear',
+						on_click=_clear_envirofacts_state )
 			
 			with col_right:
 				if envirofacts_submit:
 					try:
 						f = EnviroFacts( )
-						result = f.fetch(
-							table_name=str( envirofacts_table_name ).strip( ),
+						result = f.fetch( table_name=str( envirofacts_table_name ).strip( ),
 							state_code=str( envirofacts_state_code ).strip( ),
 							facility_name=str( envirofacts_facility_name ).strip( ),
-							limit=int( envirofacts_limit ),
-							time=int( envirofacts_timeout )
-						)
+							limit=int( envirofacts_limit ), time=int( envirofacts_timeout ) )
 						
 						st.session_state[ 'envirofacts_results' ] = result or { }
 						st.rerun( )
@@ -12660,9 +9971,7 @@ elif mode == 'Environmental':
 							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
 						
 						with sum_c2:
-							first_facility = str(
-								summary.get( 'first_facility', '' ) or ''
-							)
+							first_facility = str( summary.get( 'first_facility', '' ) or '' )
 							if first_facility:
 								st.markdown( f"**First Facility:** {first_facility}" )
 							else:
@@ -12686,25 +9995,16 @@ elif mode == 'Environmental':
 						df_envirofacts = pd.DataFrame( rows )
 						
 						if not df_envirofacts.empty:
-							st.dataframe(
-								df_envirofacts,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_envirofacts, use_container_width=True,
+								hide_index=True )
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
 								label = str(
-									item.get( 'Facility Name', '' ) or
-									item.get( 'Primary Name', '' ) or
-									item.get( 'Name', '' ) or
-									f'Record {idx}'
-								)
+									item.get( 'Facility Name', '' ) or item.get( 'Primary Name',
+										'' ) or item.get( 'Name', '' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable Envirofacts rows were found.' )
@@ -12716,57 +10016,18 @@ elif mode == 'Environmental':
 		
 		# -------- NOAA Tides & Currents
 		with st.expander( label='NOAA Tides & Currents', icon='🌊', expanded=False ):
-			TIDESANDCURRENTS_MODES = [
-					'station',
-					'water-level',
-					'tide-predictions' ]
+			TIDESANDCURRENTS_MODES = [ 'station', 'water-level', 'tide-predictions' ]
 			
-			TIDESANDCURRENTS_DATUMS = [
-					'MLLW',
-					'MHHW',
-					'MHW',
-					'MTL',
-					'MSL',
-					'MLW',
-					'NAVD',
-					'STND' ]
+			TIDESANDCURRENTS_DATUMS = [ 'MLLW', 'MHHW', 'MHW', 'MTL', 'MSL', 'MLW', 'NAVD',
+				'STND' ]
 			
-			TIDESANDCURRENTS_UNITS = [
-					'metric',
-					'english' ]
+			TIDESANDCURRENTS_UNITS = [ 'metric', 'english' ]
 			
-			TIDESANDCURRENTS_TIME_ZONES = [
-					'gmt',
-					'lst',
-					'lst_ldt' ]
+			TIDESANDCURRENTS_TIME_ZONES = [ 'gmt', 'lst', 'lst_ldt' ]
 			
-			TIDESANDCURRENTS_INTERVALS = [
-					'hilo',
-					'h',
-					'1',
-					'5',
-					'6',
-					'10',
-					'15',
-					'30',
-					'60'
-			]
+			TIDESANDCURRENTS_INTERVALS = [ 'hilo', 'h', '1', '5', '6', '10', '15', '30', '60' ]
 			
 			def _clear_tidesandcurrents_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the NOAA Tides & Currents expander state for reset on the next
-					rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'tidesandcurrents_clear_request' ] = True
 			
 			if 'tidesandcurrents_results' not in st.session_state:
@@ -12775,19 +10036,24 @@ elif mode == 'Environmental':
 			if 'tidesandcurrents_clear_request' not in st.session_state:
 				st.session_state[ 'tidesandcurrents_clear_request' ] = False
 			
-			if st.session_state.get( 'tidesandcurrents_mode', 'water-level' ) not in TIDESANDCURRENTS_MODES:
+			if st.session_state.get( 'tidesandcurrents_mode',
+					'water-level' ) not in TIDESANDCURRENTS_MODES:
 				st.session_state[ 'tidesandcurrents_mode' ] = 'water-level'
 			
-			if st.session_state.get( 'tidesandcurrents_datum', 'MLLW' ) not in TIDESANDCURRENTS_DATUMS:
+			if st.session_state.get( 'tidesandcurrents_datum',
+					'MLLW' ) not in TIDESANDCURRENTS_DATUMS:
 				st.session_state[ 'tidesandcurrents_datum' ] = 'MLLW'
 			
-			if st.session_state.get( 'tidesandcurrents_units', 'metric' ) not in TIDESANDCURRENTS_UNITS:
+			if st.session_state.get( 'tidesandcurrents_units',
+					'metric' ) not in TIDESANDCURRENTS_UNITS:
 				st.session_state[ 'tidesandcurrents_units' ] = 'metric'
 			
-			if st.session_state.get( 'tidesandcurrents_time_zone', 'gmt' ) not in TIDESANDCURRENTS_TIME_ZONES:
+			if st.session_state.get( 'tidesandcurrents_time_zone',
+					'gmt' ) not in TIDESANDCURRENTS_TIME_ZONES:
 				st.session_state[ 'tidesandcurrents_time_zone' ] = 'gmt'
 			
-			if st.session_state.get( 'tidesandcurrents_interval', 'hilo' ) not in TIDESANDCURRENTS_INTERVALS:
+			if st.session_state.get( 'tidesandcurrents_interval',
+					'hilo' ) not in TIDESANDCURRENTS_INTERVALS:
 				st.session_state[ 'tidesandcurrents_interval' ] = 'hilo'
 			
 			if 'tidesandcurrents_station_id' not in st.session_state:
@@ -12795,7 +10061,7 @@ elif mode == 'Environmental':
 			
 			if 'tidesandcurrents_begin_date' not in st.session_state:
 				st.session_state[ 'tidesandcurrents_begin_date' ] = (
-						dt.date.today( ) - dt.timedelta( days=1 ) )
+						dt.date.today( ) - dt.timedelta( days=1 ))
 			
 			if 'tidesandcurrents_end_date' not in st.session_state:
 				st.session_state[ 'tidesandcurrents_end_date' ] = dt.date.today( )
@@ -12807,7 +10073,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'tidesandcurrents_mode' ] = 'water-level'
 				st.session_state[ 'tidesandcurrents_station_id' ] = ''
 				st.session_state[ 'tidesandcurrents_begin_date' ] = (
-						dt.date.today( ) - dt.timedelta( days=1 ) )
+						dt.date.today( ) - dt.timedelta( days=1 ))
 				st.session_state[ 'tidesandcurrents_end_date' ] = dt.date.today( )
 				st.session_state[ 'tidesandcurrents_datum' ] = 'MLLW'
 				st.session_state[ 'tidesandcurrents_units' ] = 'metric'
@@ -12821,8 +10087,9 @@ elif mode == 'Environmental':
 			
 			with col_left:
 				tac_mode = st.selectbox( 'Mode', options=TIDESANDCURRENTS_MODES,
-					index=TIDESANDCURRENTS_MODES.index( st.session_state.get( 'tidesandcurrents_mode',
-							'water-level' ) ), key='tidesandcurrents_mode' )
+					index=TIDESANDCURRENTS_MODES.index(
+						st.session_state.get( 'tidesandcurrents_mode', 'water-level' ) ),
+					key='tidesandcurrents_mode' )
 				
 				tac_station_id = st.text_input( 'Station ID',
 					value=st.session_state.get( 'tidesandcurrents_station_id', '' ),
@@ -12831,129 +10098,81 @@ elif mode == 'Environmental':
 				date_c1, date_c2 = st.columns( 2 )
 				
 				with date_c1:
-					tac_begin_date = st.date_input(
-						'Begin Date',
-						value=st.session_state.get(
-							'tidesandcurrents_begin_date',
-							dt.date.today( ) - dt.timedelta( days=1 )
-						),
-						key='tidesandcurrents_begin_date',
-						disabled=(tac_mode == 'station')
-					)
+					tac_begin_date = st.date_input( 'Begin Date',
+						value=st.session_state.get( 'tidesandcurrents_begin_date',
+							dt.date.today( ) - dt.timedelta( days=1 ) ),
+						key='tidesandcurrents_begin_date', disabled=(tac_mode == 'station') )
 				
 				with date_c2:
-					tac_end_date = st.date_input(
-						'End Date',
-						value=st.session_state.get(
-							'tidesandcurrents_end_date',
-							dt.date.today( )
-						),
-						key='tidesandcurrents_end_date',
-						disabled=(tac_mode == 'station')
-					)
+					tac_end_date = st.date_input( 'End Date',
+						value=st.session_state.get( 'tidesandcurrents_end_date', dt.date.today(
+						
+						) ),
+						key='tidesandcurrents_end_date', disabled=(tac_mode == 'station') )
 				
 				option_c1, option_c2 = st.columns( 2 )
 				
 				with option_c1:
-					tac_datum = st.selectbox(
-						'Datum',
-						options=TIDESANDCURRENTS_DATUMS,
+					tac_datum = st.selectbox( 'Datum', options=TIDESANDCURRENTS_DATUMS,
 						index=TIDESANDCURRENTS_DATUMS.index(
-							st.session_state.get( 'tidesandcurrents_datum', 'MLLW' )
-						),
-						key='tidesandcurrents_datum',
-						disabled=(tac_mode == 'station')
-					)
+							st.session_state.get( 'tidesandcurrents_datum', 'MLLW' ) ),
+						key='tidesandcurrents_datum', disabled=(tac_mode == 'station') )
 				
 				with option_c2:
-					tac_units = st.selectbox(
-						'Units',
-						options=TIDESANDCURRENTS_UNITS,
+					tac_units = st.selectbox( 'Units', options=TIDESANDCURRENTS_UNITS,
 						index=TIDESANDCURRENTS_UNITS.index(
-							st.session_state.get( 'tidesandcurrents_units', 'metric' )
-						),
-						key='tidesandcurrents_units',
-						disabled=(tac_mode == 'station')
-					)
+							st.session_state.get( 'tidesandcurrents_units', 'metric' ) ),
+						key='tidesandcurrents_units', disabled=(tac_mode == 'station') )
 				
 				option_c3, option_c4 = st.columns( 2 )
 				
 				with option_c3:
-					tac_time_zone = st.selectbox(
-						'Time Zone',
-						options=TIDESANDCURRENTS_TIME_ZONES,
+					tac_time_zone = st.selectbox( 'Time Zone', options=TIDESANDCURRENTS_TIME_ZONES,
 						index=TIDESANDCURRENTS_TIME_ZONES.index(
-							st.session_state.get( 'tidesandcurrents_time_zone', 'gmt' )
-						),
-						key='tidesandcurrents_time_zone',
-						disabled=(tac_mode == 'station')
-					)
+							st.session_state.get( 'tidesandcurrents_time_zone', 'gmt' ) ),
+						key='tidesandcurrents_time_zone', disabled=(tac_mode == 'station') )
 				
 				with option_c4:
-					tac_interval = st.selectbox(
-						'Interval',
-						options=TIDESANDCURRENTS_INTERVALS,
+					tac_interval = st.selectbox( 'Interval', options=TIDESANDCURRENTS_INTERVALS,
 						index=TIDESANDCURRENTS_INTERVALS.index(
-							st.session_state.get( 'tidesandcurrents_interval', 'hilo' )
-						),
-						key='tidesandcurrents_interval',
-						disabled=(tac_mode != 'tide-predictions')
-					)
+							st.session_state.get( 'tidesandcurrents_interval', 'hilo' ) ),
+						key='tidesandcurrents_interval', disabled=(tac_mode !=
+						                                           'tide-predictions') )
 				
-				tac_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'tidesandcurrents_timeout', 20 ) ),
-					step=1,
-					key='tidesandcurrents_timeout'
-				)
+				tac_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'tidesandcurrents_timeout', 20 ) ), step=1,
+					key='tidesandcurrents_timeout' )
 				
-				st.caption(
-					'NOAA CO-OPS station metadata uses Station ID only. Water-level and '
-					'tide-prediction requests require Station ID plus begin and end dates.'
-				)
+				st.caption( 'NOAA CO-OPS station metadata uses Station ID only. Water-level and '
+				            'tide-prediction requests require Station ID plus begin and end '
+				            'dates.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					tac_submit = st.button(
-						'Submit',
-						key='tidesandcurrents_submit'
-					)
+					tac_submit = st.button( 'Submit', key='tidesandcurrents_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='tidesandcurrents_clear',
-						on_click=_clear_tidesandcurrents_state
-					)
+					st.button( 'Clear', key='tidesandcurrents_clear',
+						on_click=_clear_tidesandcurrents_state )
 			
 			with col_right:
 				if tac_submit:
 					try:
 						if not str( tac_station_id or '' ).strip( ):
-							raise ValueError(
-								'Station ID is required for NOAA Tides & Currents.'
-							)
+							raise ValueError( 'Station ID is required for NOAA Tides & Currents.' )
 						
 						if tac_mode != 'station' and tac_begin_date > tac_end_date:
-							raise ValueError(
-								'Begin Date must be on or before End Date.'
-							)
+							raise ValueError( 'Begin Date must be on or before End Date.' )
 						
 						f = TidesAndCurrents( )
-						result = f.fetch(
-							mode=str( tac_mode ).strip( ),
+						result = f.fetch( mode=str( tac_mode ).strip( ),
 							station_id=str( tac_station_id ).strip( ),
 							begin_date=dt.datetime.strftime( tac_begin_date, '%Y%m%d' ),
 							end_date=dt.datetime.strftime( tac_end_date, '%Y%m%d' ),
-							datum=str( tac_datum ).strip( ),
-							units=str( tac_units ).strip( ),
+							datum=str( tac_datum ).strip( ), units=str( tac_units ).strip( ),
 							time_zone=str( tac_time_zone ).strip( ),
-							interval=str( tac_interval ).strip( ),
-							time=int( tac_timeout )
-						)
+							interval=str( tac_interval ).strip( ), time=int( tac_timeout ) )
 						
 						st.session_state[ 'tidesandcurrents_results' ] = result or { }
 						st.rerun( )
@@ -13017,25 +10236,15 @@ elif mode == 'Environmental':
 						df_tac = pd.DataFrame( rows )
 						
 						if not df_tac.empty:
-							st.dataframe(
-								df_tac,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_tac, use_container_width=True, hide_index=True )
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
 								label = str(
-									item.get( 'Name', '' ) or
-									item.get( 'Time', '' ) or
-									item.get( 'T', '' ) or
-									f'Record {idx}'
-								)
+									item.get( 'Name', '' ) or item.get( 'Time', '' ) or item.get(
+										'T', '' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable Tides & Currents rows were found.' )
@@ -13047,86 +10256,15 @@ elif mode == 'Environmental':
 		
 		# -------- EPA UV Index
 		with st.expander( label='EPA UV Index', icon='☀️', expanded=False ):
-			UVINDEX_MODES = [
-					'daily-zip',
-					'daily-city-state',
-					'hourly-zip',
-					'hourly-city-state'
-			]
+			UVINDEX_MODES = [ 'daily-zip', 'daily-city-state', 'hourly-zip', 'hourly-city-state' ]
 			
-			UVINDEX_STATE_CODES = [
-					'AL',
-					'AK',
-					'AZ',
-					'AR',
-					'CA',
-					'CO',
-					'CT',
-					'DE',
-					'DC',
-					'FL',
-					'GA',
-					'HI',
-					'ID',
-					'IL',
-					'IN',
-					'IA',
-					'KS',
-					'KY',
-					'LA',
-					'ME',
-					'MD',
-					'MA',
-					'MI',
-					'MN',
-					'MS',
-					'MO',
-					'MT',
-					'NE',
-					'NV',
-					'NH',
-					'NJ',
-					'NM',
-					'NY',
-					'NC',
-					'ND',
-					'OH',
-					'OK',
-					'OR',
-					'PA',
-					'RI',
-					'SC',
-					'SD',
-					'TN',
-					'TX',
-					'UT',
-					'VT',
-					'VA',
-					'WA',
-					'WV',
-					'WI',
-					'WY',
-					'AS',
-					'GU',
-					'MP',
-					'PR',
-					'VI'
-			]
+			UVINDEX_STATE_CODES = [ 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL',
+				'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN',
+				'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR',
+				'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'AS',
+				'GU', 'MP', 'PR', 'VI' ]
 			
 			def _clear_uvindex_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the EPA UV Index expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'uvindex_clear_request' ] = True
 			
 			if 'uvindex_results' not in st.session_state:
@@ -13162,73 +10300,44 @@ elif mode == 'Environmental':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				uvindex_mode = st.selectbox(
-					'Mode',
-					options=UVINDEX_MODES,
+				uvindex_mode = st.selectbox( 'Mode', options=UVINDEX_MODES,
 					index=UVINDEX_MODES.index(
-						st.session_state.get( 'uvindex_mode', 'daily-zip' )
-					),
-					key='uvindex_mode'
-				)
+						st.session_state.get( 'uvindex_mode', 'daily-zip' ) ), key='uvindex_mode' )
 				
-				uvindex_zip_code = st.text_input(
-					'Zip Code',
-					value=st.session_state.get( 'uvindex_zip_code', '' ),
-					key='uvindex_zip_code',
+				uvindex_zip_code = st.text_input( 'Zip Code',
+					value=st.session_state.get( 'uvindex_zip_code', '' ), key='uvindex_zip_code',
 					disabled=(uvindex_mode not in [ 'daily-zip', 'hourly-zip' ]),
-					placeholder='Example: 22201'
-				)
+					placeholder='Example: 22201' )
 				
 				city_c1, city_c2 = st.columns( 2 )
 				
 				with city_c1:
-					uvindex_city = st.text_input(
-						'City',
-						value=st.session_state.get( 'uvindex_city', '' ),
-						key='uvindex_city',
+					uvindex_city = st.text_input( 'City',
+						value=st.session_state.get( 'uvindex_city', '' ), key='uvindex_city',
 						disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state' ]),
-						placeholder='Example: Arlington'
-					)
+						placeholder='Example: Arlington' )
 				
 				with city_c2:
-					uvindex_state = st.selectbox(
-						'State',
-						options=UVINDEX_STATE_CODES,
+					uvindex_state = st.selectbox( 'State', options=UVINDEX_STATE_CODES,
 						index=UVINDEX_STATE_CODES.index(
-							st.session_state.get( 'uvindex_state', 'VA' )
-						),
-						key='uvindex_state',
-						disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state' ])
-					)
+							st.session_state.get( 'uvindex_state', 'VA' ) ), key='uvindex_state',
+						disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state'
+						]) )
 				
-				uvindex_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'uvindex_timeout', 20 ) ),
-					step=1,
-					key='uvindex_timeout'
-				)
+				uvindex_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'uvindex_timeout', 20 ) ), step=1,
+					key='uvindex_timeout' )
 				
-				st.caption(
-					'UV Index forecasts can be retrieved hourly or daily, by ZIP code or '
-					'by city and state.'
-				)
+				st.caption( 'UV Index forecasts can be retrieved hourly or daily, by ZIP code or '
+				            'by city and state.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					uvindex_submit = st.button(
-						'Submit',
-						key='uvindex_submit'
-					)
+					uvindex_submit = st.button( 'Submit', key='uvindex_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='uvindex_clear',
-						on_click=_clear_uvindex_state
-					)
+					st.button( 'Clear', key='uvindex_clear', on_click=_clear_uvindex_state )
 			
 			with col_right:
 				if uvindex_submit:
@@ -13236,34 +10345,27 @@ elif mode == 'Environmental':
 						if uvindex_mode in [ 'daily-zip', 'hourly-zip' ]:
 							if not str( uvindex_zip_code or '' ).strip( ):
 								raise ValueError(
-									'Zip Code is required for ZIP-based UV Index modes.'
-								)
+									'Zip Code is required for ZIP-based UV Index modes.' )
 							
 							if not re.fullmatch( r'\d{5}(?:-\d{4})?',
 									str( uvindex_zip_code ).strip( ) ):
 								raise ValueError(
-									'Zip Code must be a valid 5-digit ZIP or ZIP+4 value.'
-								)
+									'Zip Code must be a valid 5-digit ZIP or ZIP+4 value.' )
 						
 						if uvindex_mode in [ 'daily-city-state', 'hourly-city-state' ]:
 							if not str( uvindex_city or '' ).strip( ):
 								raise ValueError(
-									'City is required for city/state UV Index modes.'
-								)
+									'City is required for city/state UV Index modes.' )
 							
 							if not str( uvindex_state or '' ).strip( ):
 								raise ValueError(
-									'State is required for city/state UV Index modes.'
-								)
+									'State is required for city/state UV Index modes.' )
 						
 						f = UvIndex( )
-						result = f.fetch(
-							mode=str( uvindex_mode ),
+						result = f.fetch( mode=str( uvindex_mode ),
 							zip_code=str( uvindex_zip_code ).strip( ),
-							city=str( uvindex_city ).strip( ),
-							state=str( uvindex_state ).strip( ),
-							time=int( uvindex_timeout )
-						)
+							city=str( uvindex_city ).strip( ), state=str( uvindex_state ).strip( ),
+							time=int( uvindex_timeout ) )
 						
 						st.session_state[ 'uvindex_results' ] = result or { }
 						st.rerun( )
@@ -13290,10 +10392,8 @@ elif mode == 'Environmental':
 						if 'zip_code' in params:
 							st.markdown( f"**Zip Code:** {params.get( 'zip_code', '' )}" )
 						if 'city' in params:
-							st.markdown(
-								f"**City/State:** {params.get( 'city', '' )}, "
-								f"{params.get( 'state', '' )}"
-							)
+							st.markdown( f"**City/State:** {params.get( 'city', '' )}, "
+							             f"{params.get( 'state', '' )}" )
 					
 					summary = result.get( 'summary', { } ) or { }
 					if summary:
@@ -13306,10 +10406,7 @@ elif mode == 'Environmental':
 						
 						with sum_c2:
 							max_uv = summary.get( 'max_uv', None )
-							st.metric(
-								'Peak UV',
-								'' if max_uv is None else str( max_uv )
-							)
+							st.metric( 'Peak UV', '' if max_uv is None else str( max_uv ) )
 						
 						with sum_c3:
 							first_alert = str( summary.get( 'first_alert', '' ) or '' )
@@ -13333,24 +10430,14 @@ elif mode == 'Environmental':
 						df_uvindex = pd.DataFrame( rows )
 						
 						if not df_uvindex.empty:
-							st.dataframe(
-								df_uvindex,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_uvindex, use_container_width=True, hide_index=True )
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
-								label = str(
-									item.get( 'City', '' ) or
-									item.get( 'Zip', '' ) or
-									f'Record {idx}'
-								)
+								label = str( item.get( 'City', '' ) or item.get( 'Zip',
+									'' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable UV Index rows were found.' )
@@ -13362,60 +10449,20 @@ elif mode == 'Environmental':
 		
 		# -------- PurpleAir
 		with st.expander( label='Purple Air', icon='🟣', expanded=False ):
-			PURPLEAIR_MODES = [
-					'sensors',
-					'sensor'
-			]
+			PURPLEAIR_MODES = [ 'sensors', 'sensor' ]
 			
-			PURPLEAIR_FIELD_OPTIONS = [
-					'name',
-					'pm2.5',
-					'temperature',
-					'humidity',
-					'latitude',
-					'longitude',
-					'last_seen',
-					'location_type',
-					'model',
-					'hardware',
-					'pm2.5_cf_1_a',
-					'pm2.5_cf_1_b',
-					'pressure',
-					'firmware_version',
-					'rssi'
-			]
+			PURPLEAIR_FIELD_OPTIONS = [ 'name', 'pm2.5', 'temperature', 'humidity', 'latitude',
+				'longitude', 'last_seen', 'location_type', 'model', 'hardware', 'pm2.5_cf_1_a',
+				'pm2.5_cf_1_b', 'pressure', 'firmware_version', 'rssi' ]
 			
-			PURPLEAIR_SENSOR_LIST_DEFAULT_FIELDS = [
-					'name',
-					'pm2.5',
-					'temperature',
-					'humidity',
-					'latitude',
-					'longitude',
-					'last_seen',
-					'location_type'
-			]
+			PURPLEAIR_SENSOR_LIST_DEFAULT_FIELDS = [ 'name', 'pm2.5', 'temperature', 'humidity',
+				'latitude', 'longitude', 'last_seen', 'location_type' ]
 			
-			PURPLEAIR_SENSOR_DETAIL_DEFAULT_FIELDS = [
-					'name',
-					'model',
-					'hardware',
-					'pm2.5_cf_1_a',
-					'pm2.5_cf_1_b',
-					'temperature',
-					'humidity',
-					'pressure',
-					'latitude',
-					'longitude',
-					'last_seen',
-					'firmware_version',
-					'rssi'
-			]
+			PURPLEAIR_SENSOR_DETAIL_DEFAULT_FIELDS = [ 'name', 'model', 'hardware', 'pm2.5_cf_1_a',
+				'pm2.5_cf_1_b', 'temperature', 'humidity', 'pressure', 'latitude', 'longitude',
+				'last_seen', 'firmware_version', 'rssi' ]
 			
-			PURPLEAIR_LOCATION_TYPES = {
-					'Outdoor': 0,
-					'Indoor': 1
-			}
+			PURPLEAIR_LOCATION_TYPES = { 'Outdoor': 0, 'Indoor': 1 }
 			
 			def _clear_purpleair_state( ) -> None:
 				'''
@@ -13515,153 +10562,95 @@ elif mode == 'Environmental':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				purpleair_mode = st.selectbox(
-					'Mode',
-					options=PURPLEAIR_MODES,
+				purpleair_mode = st.selectbox( 'Mode', options=PURPLEAIR_MODES,
 					index=PURPLEAIR_MODES.index(
-						st.session_state.get( 'purpleair_mode', 'sensors' )
-					),
-					key='purpleair_mode'
-				)
+						st.session_state.get( 'purpleair_mode', 'sensors' ) ),
+					key='purpleair_mode' )
 				
 				default_fields = (
-						PURPLEAIR_SENSOR_DETAIL_DEFAULT_FIELDS
-						if purpleair_mode == 'sensor'
-						else PURPLEAIR_SENSOR_LIST_DEFAULT_FIELDS
-				)
+					PURPLEAIR_SENSOR_DETAIL_DEFAULT_FIELDS if purpleair_mode == 'sensor' else
+					PURPLEAIR_SENSOR_LIST_DEFAULT_FIELDS)
 				
 				if not st.session_state.get( 'purpleair_fields', [ ] ):
 					st.session_state[ 'purpleair_fields' ] = default_fields
 				
-				purpleair_sensor_index = st.text_input(
-					'Sensor Index',
+				purpleair_sensor_index = st.text_input( 'Sensor Index',
 					value=st.session_state.get( 'purpleair_sensor_index', '' ),
-					key='purpleair_sensor_index',
-					disabled=(purpleair_mode != 'sensor'),
-					placeholder='Example: 78307'
-				)
+					key='purpleair_sensor_index', disabled=(purpleair_mode != 'sensor'),
+					placeholder='Example: 78307' )
 				
-				purpleair_fields = st.multiselect(
-					'Fields',
-					options=PURPLEAIR_FIELD_OPTIONS,
-					default=[
-							field for field in st.session_state.get(
-								'purpleair_fields',
-								default_fields
-							)
-							if field in PURPLEAIR_FIELD_OPTIONS
-					],
-					key='purpleair_fields',
-					help='Select only the PurpleAir fields needed for the request.'
-				)
+				purpleair_fields = st.multiselect( 'Fields', options=PURPLEAIR_FIELD_OPTIONS,
+					default=[ field for field in
+						st.session_state.get( 'purpleair_fields', default_fields ) if
+						field in PURPLEAIR_FIELD_OPTIONS ], key='purpleair_fields',
+					help='Select only the PurpleAir fields needed for the request.' )
 				
 				bbox_c1, bbox_c2 = st.columns( 2 )
 				
 				with bbox_c1:
-					purpleair_nwlng = st.text_input(
-						'NW Longitude',
-						value=st.session_state.get( 'purpleair_nwlng', '' ),
-						key='purpleair_nwlng',
-						disabled=(purpleair_mode != 'sensors')
-					)
+					purpleair_nwlng = st.text_input( 'NW Longitude',
+						value=st.session_state.get( 'purpleair_nwlng', '' ), key='purpleair_nwlng',
+						disabled=(purpleair_mode != 'sensors') )
 				
 				with bbox_c2:
-					purpleair_nwlat = st.text_input(
-						'NW Latitude',
-						value=st.session_state.get( 'purpleair_nwlat', '' ),
-						key='purpleair_nwlat',
-						disabled=(purpleair_mode != 'sensors')
-					)
+					purpleair_nwlat = st.text_input( 'NW Latitude',
+						value=st.session_state.get( 'purpleair_nwlat', '' ), key='purpleair_nwlat',
+						disabled=(purpleair_mode != 'sensors') )
 				
 				bbox_c3, bbox_c4 = st.columns( 2 )
 				
 				with bbox_c3:
-					purpleair_selng = st.text_input(
-						'SE Longitude',
-						value=st.session_state.get( 'purpleair_selng', '' ),
-						key='purpleair_selng',
-						disabled=(purpleair_mode != 'sensors')
-					)
+					purpleair_selng = st.text_input( 'SE Longitude',
+						value=st.session_state.get( 'purpleair_selng', '' ), key='purpleair_selng',
+						disabled=(purpleair_mode != 'sensors') )
 				
 				with bbox_c4:
-					purpleair_selat = st.text_input(
-						'SE Latitude',
-						value=st.session_state.get( 'purpleair_selat', '' ),
-						key='purpleair_selat',
-						disabled=(purpleair_mode != 'sensors')
-					)
+					purpleair_selat = st.text_input( 'SE Latitude',
+						value=st.session_state.get( 'purpleair_selat', '' ), key='purpleair_selat',
+						disabled=(purpleair_mode != 'sensors') )
 				
 				opt_c1, opt_c2 = st.columns( 2 )
 				
 				with opt_c1:
 					location_labels = list( PURPLEAIR_LOCATION_TYPES.keys( ) )
-					current_location_label = st.session_state.get(
-						'purpleair_location_type_label',
-						'Outdoor'
-					)
+					current_location_label = st.session_state.get( 'purpleair_location_type_label',
+						'Outdoor' )
 					
 					if current_location_label not in location_labels:
 						current_location_label = 'Outdoor'
 					
-					purpleair_location_type_label = st.selectbox(
-						'Location Type',
+					purpleair_location_type_label = st.selectbox( 'Location Type',
 						options=location_labels,
 						index=location_labels.index( current_location_label ),
 						key='purpleair_location_type_label',
-						disabled=(purpleair_mode != 'sensors')
-					)
+						disabled=(purpleair_mode != 'sensors') )
 				
 				with opt_c2:
-					purpleair_max_age = st.number_input(
-						'Max Age',
-						min_value=0,
-						max_value=1000000,
-						value=int( st.session_state.get( 'purpleair_max_age', 0 ) ),
-						step=1,
-						key='purpleair_max_age',
-						disabled=(purpleair_mode != 'sensors'),
-						help='Maximum age filter in seconds. Use 0 to preserve broad behavior.'
-					)
+					purpleair_max_age = st.number_input( 'Max Age', min_value=0, max_value=1000000,
+						value=int( st.session_state.get( 'purpleair_max_age', 0 ) ), step=1,
+						key='purpleair_max_age', disabled=(purpleair_mode != 'sensors'),
+						help='Maximum age filter in seconds. Use 0 to preserve broad behavior.' )
 				
-				purpleair_modified_since = st.number_input(
-					'Modified Since',
-					min_value=0,
+				purpleair_modified_since = st.number_input( 'Modified Since', min_value=0,
 					max_value=2147483647,
-					value=int( st.session_state.get( 'purpleair_modified_since', 0 ) ),
-					step=1,
-					key='purpleair_modified_since',
-					disabled=(purpleair_mode != 'sensors'),
-					help='Unix timestamp filter. Use 0 to disable the filter.'
-				)
+					value=int( st.session_state.get( 'purpleair_modified_since', 0 ) ), step=1,
+					key='purpleair_modified_since', disabled=(purpleair_mode != 'sensors'),
+					help='Unix timestamp filter. Use 0 to disable the filter.' )
 				
-				purpleair_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'purpleair_timeout', 20 ) ),
-					step=1,
-					key='purpleair_timeout'
-				)
+				purpleair_timeout = st.number_input( 'Timeout (seconds)', min_value=5,
+					max_value=120, value=int( st.session_state.get( 'purpleair_timeout', 20 ) ),
+					step=1, key='purpleair_timeout' )
 				
-				st.caption(
-					'PurpleAir requires an API key and uses a points system. Select only '
-					'the fields needed for the request.'
-				)
+				st.caption( 'PurpleAir requires an API key and uses a points system. Select only '
+				            'the fields needed for the request.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					purpleair_submit = st.button(
-						'Submit',
-						key='purpleair_submit'
-					)
+					purpleair_submit = st.button( 'Submit', key='purpleair_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='purpleair_clear',
-						on_click=_clear_purpleair_state
-					)
+					st.button( 'Clear', key='purpleair_clear', on_click=_clear_purpleair_state )
 			
 			with col_right:
 				if purpleair_submit:
@@ -13686,28 +10675,17 @@ elif mode == 'Environmental':
 								raise ValueError( 'SE Latitude is required for sensors mode.' )
 						
 						f = PurpleAir( )
-						result = f.fetch(
-							mode=str( purpleair_mode ),
-							sensor_index=(
-									None
-									if not str( purpleair_sensor_index ).strip( )
-									else int( purpleair_sensor_index )
-							),
+						result = f.fetch( mode=str( purpleair_mode ), sensor_index=(
+							None if not str( purpleair_sensor_index ).strip( ) else int(
+								purpleair_sensor_index )),
 							nwlng=_coerce_optional_float( purpleair_nwlng ),
 							nwlat=_coerce_optional_float( purpleair_nwlat ),
 							selng=_coerce_optional_float( purpleair_selng ),
-							selat=_coerce_optional_float( purpleair_selat ),
-							location_type=int(
-								PURPLEAIR_LOCATION_TYPES.get(
-									purpleair_location_type_label,
-									0
-								)
-							),
+							selat=_coerce_optional_float( purpleair_selat ), location_type=int(
+								PURPLEAIR_LOCATION_TYPES.get( purpleair_location_type_label, 0 ) ),
 							max_age=int( purpleair_max_age ),
-							modified_since=int( purpleair_modified_since ),
-							fields=selected_fields,
-							time=int( purpleair_timeout )
-						)
+							modified_since=int( purpleair_modified_since ), fields=selected_fields,
+							time=int( purpleair_timeout ) )
 						
 						st.session_state[ 'purpleair_results' ] = result or { }
 						st.rerun( )
@@ -13732,13 +10710,9 @@ elif mode == 'Environmental':
 					with meta_c2:
 						params = result.get( 'params', { } ) or { }
 						if 'sensor_index' in params:
-							st.markdown(
-								f"**Sensor Index:** {params.get( 'sensor_index', '' )}"
-							)
+							st.markdown( f"**Sensor Index:** {params.get( 'sensor_index', '' )}" )
 						if 'fields' in params:
-							st.markdown(
-								f"**Fields:** {params.get( 'fields', '' )}"
-							)
+							st.markdown( f"**Fields:** {params.get( 'fields', '' )}" )
 					
 					summary = result.get( 'summary', { } ) or { }
 					if summary:
@@ -13751,10 +10725,7 @@ elif mode == 'Environmental':
 						
 						with sum_c2:
 							max_pm25 = summary.get( 'max_pm25', None )
-							st.metric(
-								'Peak PM2.5',
-								'' if max_pm25 is None else str( max_pm25 )
-							)
+							st.metric( 'Peak PM2.5', '' if max_pm25 is None else str( max_pm25 ) )
 						
 						with sum_c3:
 							first_name = str( summary.get( 'first_name', '' ) or '' )
@@ -13774,11 +10745,7 @@ elif mode == 'Environmental':
 						df_purpleair = pd.DataFrame( rows )
 						
 						if not df_purpleair.empty:
-							st.dataframe(
-								df_purpleair,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_purpleair, use_container_width=True, hide_index=True )
 							
 							map_rows = [ ]
 							for item in rows:
@@ -13786,12 +10753,7 @@ elif mode == 'Environmental':
 								longitude = item.get( 'Longitude', None )
 								
 								if latitude is not None and longitude is not None:
-									map_rows.append(
-										{
-												'lat': latitude,
-												'lon': longitude
-										}
-									)
+									map_rows.append( { 'lat': latitude, 'lon': longitude } )
 							
 							if map_rows:
 								st.markdown( '#### Sensor Map' )
@@ -13799,16 +10761,10 @@ elif mode == 'Environmental':
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
-								label = str(
-									item.get( 'Name', '' ) or
-									item.get( 'Sensor Index', '' ) or
-									f'Record {idx}'
-								)
+								label = str( item.get( 'Name', '' ) or item.get( 'Sensor Index',
+									'' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable PurpleAir rows were found.' )
@@ -13820,49 +10776,13 @@ elif mode == 'Environmental':
 		
 		# -------- OpenAQ
 		with st.expander( label='Open Air Quality', icon='🌬️', expanded=False ):
-			OPENAQ_MODES = [
-					'countries',
-					'providers',
-					'parameters',
-					'locations',
-					'latest',
-					'parameter_latest'
-			]
+			OPENAQ_MODES = [ 'countries', 'providers', 'parameters', 'locations', 'latest',
+				'parameter_latest' ]
 			
 			def _clear_openaq_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the OpenAQ expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-
-				'''
 				st.session_state[ 'openaq_clear_request' ] = True
 			
 			def _coerce_optional_integer( value: object ) -> int | None:
-				'''
-					Purpose:
-					--------
-					Convert an optional UI value into an integer or None.
-
-					Parameters:
-					-----------
-					value (object):
-						Value supplied by a Streamlit input control.
-
-					Returns:
-					--------
-					int | None:
-						Integer value when supplied; otherwise None.
-
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -13925,137 +10845,82 @@ elif mode == 'Environmental':
 				st.session_state[ 'openaq_clear_request' ] = False
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
-			
 			with col_left:
-				openaq_mode = st.selectbox(
-					'Mode',
-					options=OPENAQ_MODES,
-					index=OPENAQ_MODES.index(
-						st.session_state.get( 'openaq_mode', 'locations' )
-					),
-					key='openaq_mode',
-					help=(
-							'Select one of the wrapper-supported OpenAQ v3 modes. '
-							'Discovery modes return lookup tables; latest modes return '
-							'measurement records.'
-					)
-				)
+				openaq_mode = st.selectbox( 'Mode', options=OPENAQ_MODES,
+					index=OPENAQ_MODES.index( st.session_state.get( 'openaq_mode', 'locations' ) ),
+					key='openaq_mode', help=('Select one of the wrapper-supported OpenAQ v3 '
+					                         'modes. '
+					                         'Discovery modes return lookup tables; latest modes '
+					                         'return '
+					                         'measurement records.') )
 				
-				openaq_location_id = st.text_input(
-					'Location ID',
+				openaq_location_id = st.text_input( 'Location ID',
 					value=st.session_state.get( 'openaq_location_id', '' ),
-					key='openaq_location_id',
-					disabled=(openaq_mode != 'latest'),
-					placeholder='Example: 8118'
-				)
+					key='openaq_location_id', disabled=(openaq_mode != 'latest'),
+					placeholder='Example: 8118' )
 				
-				openaq_parameter_id = st.text_input(
-					'Parameter ID',
+				openaq_parameter_id = st.text_input( 'Parameter ID',
 					value=st.session_state.get( 'openaq_parameter_id', '' ),
-					key='openaq_parameter_id',
-					disabled=(openaq_mode != 'parameter_latest'),
-					placeholder='Example: 2'
-				)
+					key='openaq_parameter_id', disabled=(openaq_mode != 'parameter_latest'),
+					placeholder='Example: 2' )
 				
-				openaq_country_id = st.text_input(
-					'Country ID',
-					value=st.session_state.get( 'openaq_country_id', '' ),
-					key='openaq_country_id',
+				openaq_country_id = st.text_input( 'Country ID',
+					value=st.session_state.get( 'openaq_country_id', '' ), key='openaq_country_id',
 					disabled=(openaq_mode != 'locations'),
-					placeholder='Optional numeric country ID'
-				)
+					placeholder='Optional numeric country ID' )
 				
-				openaq_coordinates = st.text_input(
-					'Coordinates',
+				openaq_coordinates = st.text_input( 'Coordinates',
 					value=st.session_state.get( 'openaq_coordinates', '' ),
-					key='openaq_coordinates',
-					disabled=(openaq_mode != 'locations'),
-					placeholder='latitude,longitude'
-				)
+					key='openaq_coordinates', disabled=(openaq_mode != 'locations'),
+					placeholder='latitude,longitude' )
 				
-				openaq_radius = st.number_input(
-					'Radius (meters)',
-					min_value=1,
-					max_value=500000,
-					value=int( st.session_state.get( 'openaq_radius', 25000 ) ),
-					step=1,
-					key='openaq_radius',
-					disabled=(openaq_mode != 'locations')
-				)
+				openaq_radius = st.number_input( 'Radius (meters)', min_value=1, max_value=500000,
+					value=int( st.session_state.get( 'openaq_radius', 25000 ) ), step=1,
+					key='openaq_radius', disabled=(openaq_mode != 'locations') )
 				
 				filter_c1, filter_c2 = st.columns( 2 )
 				
 				with filter_c1:
-					openaq_providers_id = st.text_input(
-						'Providers ID',
+					openaq_providers_id = st.text_input( 'Providers ID',
 						value=st.session_state.get( 'openaq_providers_id', '' ),
 						key='openaq_providers_id',
 						disabled=(openaq_mode not in [ 'countries', 'locations' ]),
-						placeholder='Optional provider ID'
-					)
+						placeholder='Optional provider ID' )
 				
 				with filter_c2:
-					openaq_parameters_id = st.text_input(
-						'Parameters ID',
+					openaq_parameters_id = st.text_input( 'Parameters ID',
 						value=st.session_state.get( 'openaq_parameters_id', '' ),
 						key='openaq_parameters_id',
 						disabled=(openaq_mode not in [ 'countries', 'locations' ]),
-						placeholder='Optional parameter ID'
-					)
+						placeholder='Optional parameter ID' )
 				
 				page_c1, page_c2 = st.columns( 2 )
 				
 				with page_c1:
-					openaq_limit = st.number_input(
-						'Limit',
-						min_value=1,
-						max_value=500,
-						value=int( st.session_state.get( 'openaq_limit', 25 ) ),
-						step=1,
-						key='openaq_limit',
-						disabled=(openaq_mode == 'latest')
-					)
+					openaq_limit = st.number_input( 'Limit', min_value=1, max_value=500,
+						value=int( st.session_state.get( 'openaq_limit', 25 ) ), step=1,
+						key='openaq_limit', disabled=(openaq_mode == 'latest') )
 				
 				with page_c2:
-					openaq_page = st.number_input(
-						'Page',
-						min_value=1,
-						max_value=10000,
-						value=int( st.session_state.get( 'openaq_page', 1 ) ),
-						step=1,
-						key='openaq_page',
-						disabled=(openaq_mode == 'latest')
-					)
+					openaq_page = st.number_input( 'Page', min_value=1, max_value=10000,
+						value=int( st.session_state.get( 'openaq_page', 1 ) ), step=1,
+						key='openaq_page', disabled=(openaq_mode == 'latest') )
 				
-				openaq_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'openaq_timeout', 20 ) ),
-					step=1,
-					key='openaq_timeout'
-				)
+				openaq_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'openaq_timeout', 20 ) ), step=1,
+					key='openaq_timeout' )
 				
-				st.caption(
-					'OpenAQ v3 requires an API key. Discovery modes return countries, '
-					'providers, parameters, or locations. Latest modes retrieve current '
-					'measurements by location or parameter.'
-				)
+				st.caption( 'OpenAQ v3 requires an API key. Discovery modes return countries, '
+				            'providers, parameters, or locations. Latest modes retrieve current '
+				            'measurements by location or parameter.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					openaq_submit = st.button(
-						'Submit',
-						key='openaq_submit'
-					)
+					openaq_submit = st.button( 'Submit', key='openaq_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='openaq_clear',
-						on_click=_clear_openaq_state
-					)
+					st.button( 'Clear', key='openaq_clear', on_click=_clear_openaq_state )
 			
 			with col_right:
 				if openaq_submit:
@@ -14069,8 +10934,7 @@ elif mode == 'Environmental':
 								'Parameter ID is required for parameter_latest mode.' )
 						
 						f = OpenAQ( )
-						result = f.fetch(
-							mode=str( openaq_mode ),
+						result = f.fetch( mode=str( openaq_mode ),
 							location_id=_coerce_optional_integer( openaq_location_id ),
 							parameter_id=_coerce_optional_integer( openaq_parameter_id ),
 							country_id=_coerce_optional_integer( openaq_country_id ),
@@ -14078,10 +10942,8 @@ elif mode == 'Environmental':
 							radius=int( openaq_radius ),
 							providers_id=str( openaq_providers_id ).strip( ),
 							parameters_id=str( openaq_parameters_id ).strip( ),
-							limit=int( openaq_limit ),
-							page=int( openaq_page ),
-							time=int( openaq_timeout )
-						)
+							limit=int( openaq_limit ), page=int( openaq_page ),
+							time=int( openaq_timeout ) )
 						
 						st.session_state[ 'openaq_results' ] = result or { }
 						st.rerun( )
@@ -14106,17 +10968,11 @@ elif mode == 'Environmental':
 					with meta_c2:
 						params = result.get( 'params', { } ) or { }
 						if 'location_id' in params:
-							st.markdown(
-								f"**Location ID:** {params.get( 'location_id', '' )}"
-							)
+							st.markdown( f"**Location ID:** {params.get( 'location_id', '' )}" )
 						if 'parameter_id' in params:
-							st.markdown(
-								f"**Parameter ID:** {params.get( 'parameter_id', '' )}"
-							)
+							st.markdown( f"**Parameter ID:** {params.get( 'parameter_id', '' )}" )
 						if 'country_id' in params:
-							st.markdown(
-								f"**Country ID:** {params.get( 'country_id', '' )}"
-							)
+							st.markdown( f"**Country ID:** {params.get( 'country_id', '' )}" )
 					
 					summary = result.get( 'summary', { } ) or { }
 					if summary:
@@ -14135,9 +10991,7 @@ elif mode == 'Environmental':
 								st.markdown( '**First Result:** N/A' )
 						
 						with sum_c3:
-							first_parameter = str(
-								summary.get( 'first_parameter', '' ) or ''
-							)
+							first_parameter = str( summary.get( 'first_parameter', '' ) or '' )
 							if first_parameter:
 								st.markdown( f"**First Parameter:** {first_parameter}" )
 							else:
@@ -14158,11 +11012,7 @@ elif mode == 'Environmental':
 						df_openaq = pd.DataFrame( rows )
 						
 						if not df_openaq.empty:
-							st.dataframe(
-								df_openaq,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_openaq, use_container_width=True, hide_index=True )
 							
 							map_rows = [ ]
 							for item in rows:
@@ -14170,12 +11020,7 @@ elif mode == 'Environmental':
 								longitude = item.get( 'Longitude', None )
 								
 								if latitude is not None and longitude is not None:
-									map_rows.append(
-										{
-												'lat': latitude,
-												'lon': longitude
-										}
-									)
+									map_rows.append( { 'lat': latitude, 'lon': longitude } )
 							
 							if map_rows:
 								st.markdown( '#### Location Map' )
@@ -14183,19 +11028,12 @@ elif mode == 'Environmental':
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
-								label = str(
-									item.get( 'Name', '' ) or
-									item.get( 'Location Id', '' ) or
-									item.get( 'Parameter', '' ) or
-									item.get( 'Display Name', '' ) or
-									item.get( 'Id', '' ) or
-									f'Record {idx}'
-								)
+								label = str( item.get( 'Name', '' ) or item.get( 'Location Id',
+									'' ) or item.get( 'Parameter', '' ) or item.get( 'Display '
+								                                                     'Name',
+									'' ) or item.get( 'Id', '' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable OpenAQ rows were found.' )
@@ -14207,73 +11045,23 @@ elif mode == 'Environmental':
 		
 		# -------- NASA FIRMS
 		with st.expander( label='NASA FIRMS', icon='🔥', expanded=False ):
-			FIRMS_MODES = [
-					'area',
-					'data-availability'
-			]
+			FIRMS_MODES = [ 'area', 'data-availability' ]
 			
-			FIRMS_SOURCES = [
-					'LANDSAT_NRT',
-					'MODIS_NRT',
-					'MODIS_SP',
-					'VIIRS_NOAA20_NRT',
-					'VIIRS_NOAA20_SP',
-					'VIIRS_NOAA21_NRT',
-					'VIIRS_SNPP_NRT',
-					'VIIRS_SNPP_SP'
-			]
+			FIRMS_SOURCES = [ 'LANDSAT_NRT', 'MODIS_NRT', 'MODIS_SP', 'VIIRS_NOAA20_NRT',
+				'VIIRS_NOAA20_SP', 'VIIRS_NOAA21_NRT', 'VIIRS_SNPP_NRT', 'VIIRS_SNPP_SP' ]
 			
-			FIRMS_SENSORS = [
-					'ALL',
-					'LANDSAT_NRT',
-					'MODIS_NRT',
-					'MODIS_SP',
-					'VIIRS_NOAA20_NRT',
-					'VIIRS_NOAA20_SP',
-					'VIIRS_NOAA21_NRT',
-					'VIIRS_SNPP_NRT',
-					'VIIRS_SNPP_SP'
-			]
+			FIRMS_SENSORS = [ 'ALL', 'LANDSAT_NRT', 'MODIS_NRT', 'MODIS_SP', 'VIIRS_NOAA20_NRT',
+				'VIIRS_NOAA20_SP', 'VIIRS_NOAA21_NRT', 'VIIRS_SNPP_NRT', 'VIIRS_SNPP_SP' ]
 			
 			def _clear_firms_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the NASA FIRMS expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'firms_clear_request' ] = True
 			
 			def _validate_firms_area_coordinates( value: str ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate NASA FIRMS area coordinates as either "world" or
-					"west,south,east,north".
-	
-					Parameters:
-					-----------
-					value (str):
-						Area coordinate value supplied by the user.
-	
-					Returns:
-					--------
-					str:
-						Validated coordinate string.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
-					raise ValueError(
-						'Area Coordinates must be "world" or west,south,east,north.'
-					)
+					raise ValueError( 'Area Coordinates must be "world" or west,south,east,'
+					                  'north.' )
 				
 				if text.lower( ) == 'world':
 					return 'world'
@@ -14283,8 +11071,7 @@ elif mode == 'Environmental':
 				if len( parts ) != 4:
 					raise ValueError(
 						'Area Coordinates must be "world" or four comma-separated values: '
-						'west,south,east,north.'
-					)
+						'west,south,east,north.' )
 				
 				west, south, east, north = [ float( item ) for item in parts ]
 				
@@ -14343,113 +11130,65 @@ elif mode == 'Environmental':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				firms_mode = st.selectbox(
-					'Mode',
-					options=FIRMS_MODES,
-					index=FIRMS_MODES.index(
-						st.session_state.get( 'firms_mode', 'area' )
-					),
-					key='firms_mode'
-				)
+				firms_mode = st.selectbox( 'Mode', options=FIRMS_MODES,
+					index=FIRMS_MODES.index( st.session_state.get( 'firms_mode', 'area' ) ),
+					key='firms_mode' )
 				
-				firms_source = st.selectbox(
-					'Source',
-					options=FIRMS_SOURCES,
+				firms_source = st.selectbox( 'Source', options=FIRMS_SOURCES,
 					index=FIRMS_SOURCES.index(
-						st.session_state.get( 'firms_source', 'VIIRS_SNPP_NRT' )
-					),
-					key='firms_source',
-					disabled=(firms_mode != 'area')
-				)
+						st.session_state.get( 'firms_source', 'VIIRS_SNPP_NRT' ) ),
+					key='firms_source', disabled=(firms_mode != 'area') )
 				
-				firms_area_coordinates = st.text_input(
-					'Area Coordinates',
+				firms_area_coordinates = st.text_input( 'Area Coordinates',
 					value=st.session_state.get( 'firms_area_coordinates', 'world' ),
-					key='firms_area_coordinates',
-					disabled=(firms_mode != 'area'),
-					placeholder='west,south,east,north or world'
-				)
+					key='firms_area_coordinates', disabled=(firms_mode != 'area'),
+					placeholder='west,south,east,north or world' )
 				
-				firms_day_range = st.number_input(
-					'Day Range',
-					min_value=1,
-					max_value=5,
-					value=int( st.session_state.get( 'firms_day_range', 1 ) ),
-					step=1,
-					key='firms_day_range',
-					disabled=(firms_mode != 'area'),
-					help='NASA FIRMS Area API supports 1 through 5 days per request.'
-				)
+				firms_day_range = st.number_input( 'Day Range', min_value=1, max_value=5,
+					value=int( st.session_state.get( 'firms_day_range', 1 ) ), step=1,
+					key='firms_day_range', disabled=(firms_mode != 'area'),
+					help='NASA FIRMS Area API supports 1 through 5 days per request.' )
 				
-				firms_date = st.text_input(
-					'Date',
-					value=st.session_state.get( 'firms_date', '' ),
-					key='firms_date',
-					disabled=(firms_mode != 'area'),
-					placeholder='YYYY-MM-DD or blank for most recent'
-				)
+				firms_date = st.text_input( 'Date', value=st.session_state.get( 'firms_date', '' ),
+					key='firms_date', disabled=(firms_mode != 'area'),
+					placeholder='YYYY-MM-DD or blank for most recent' )
 				
-				firms_sensor = st.selectbox(
-					'Sensor',
-					options=FIRMS_SENSORS,
-					index=FIRMS_SENSORS.index(
-						st.session_state.get( 'firms_sensor', 'ALL' )
-					),
-					key='firms_sensor',
-					disabled=(firms_mode != 'data-availability')
-				)
+				firms_sensor = st.selectbox( 'Sensor', options=FIRMS_SENSORS,
+					index=FIRMS_SENSORS.index( st.session_state.get( 'firms_sensor', 'ALL' ) ),
+					key='firms_sensor', disabled=(firms_mode != 'data-availability') )
 				
-				firms_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'firms_timeout', 20 ) ),
-					step=1,
-					key='firms_timeout'
-				)
+				firms_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'firms_timeout', 20 ) ), step=1,
+					key='firms_timeout' )
 				
-				st.caption(
-					'NASA FIRMS requires a MAP_KEY in FIRMS_MAP_KEY or NASA_FIRMS_MAP_KEY. '
-					'Area mode retrieves active fire detections. Data availability mode '
-					'returns supported date ranges by sensor.'
-				)
+				st.caption( 'NASA FIRMS requires a MAP_KEY in FIRMS_MAP_KEY or '
+				            'NASA_FIRMS_MAP_KEY. '
+				            'Area mode retrieves active fire detections. Data availability mode '
+				            'returns supported date ranges by sensor.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					firms_submit = st.button(
-						'Submit',
-						key='firms_submit'
-					)
+					firms_submit = st.button( 'Submit', key='firms_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='firms_clear',
-						on_click=_clear_firms_state
-					)
+					st.button( 'Clear', key='firms_clear', on_click=_clear_firms_state )
 			
 			with col_right:
 				if firms_submit:
 					try:
 						clean_area_coordinates = _validate_firms_area_coordinates(
-							firms_area_coordinates
-						)
+							firms_area_coordinates )
 						
 						clean_date = str( firms_date or '' ).strip( )
 						if clean_date:
 							dt.datetime.strptime( clean_date, '%Y-%m-%d' )
 						
 						f = Firms( )
-						result = f.fetch(
-							mode=str( firms_mode ),
-							source=str( firms_source ),
+						result = f.fetch( mode=str( firms_mode ), source=str( firms_source ),
 							area_coordinates=clean_area_coordinates,
-							day_range=int( firms_day_range ),
-							date=clean_date,
-							sensor=str( firms_sensor ),
-							time=int( firms_timeout )
-						)
+							day_range=int( firms_day_range ), date=clean_date,
+							sensor=str( firms_sensor ), time=int( firms_timeout ) )
 						
 						st.session_state[ 'firms_results' ] = result or { }
 						st.rerun( )
@@ -14478,9 +11217,7 @@ elif mode == 'Environmental':
 						if 'sensor' in params:
 							st.markdown( f"**Sensor:** {params.get( 'sensor', '' )}" )
 						if 'area_coordinates' in params:
-							st.markdown(
-								f"**Area:** {params.get( 'area_coordinates', '' )}"
-							)
+							st.markdown( f"**Area:** {params.get( 'area_coordinates', '' )}" )
 					
 					summary = result.get( 'summary', { } ) or { }
 					if summary:
@@ -14516,30 +11253,19 @@ elif mode == 'Environmental':
 						df_firms = pd.DataFrame( rows )
 						
 						if not df_firms.empty:
-							st.dataframe(
-								df_firms,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_firms, use_container_width=True, hide_index=True )
 							
 							map_rows = [ ]
 							for item in rows:
-								latitude = (
-										item.get( 'latitude', None )
-										or item.get( 'Latitude', None )
-								)
-								longitude = (
-										item.get( 'longitude', None )
-										or item.get( 'Longitude', None )
-								)
+								latitude = (item.get( 'latitude', None ) or item.get( 'Latitude',
+									None ))
+								longitude = (item.get( 'longitude', None ) or item.get(
+									'Longitude',
+									None ))
 								
 								if latitude is not None and longitude is not None:
 									map_rows.append(
-										{
-												'lat': float( latitude ),
-												'lon': float( longitude )
-										}
-									)
+										{ 'lat': float( latitude ), 'lon': float( longitude ) } )
 							
 							if map_rows:
 								st.markdown( '#### Fire Detection Map' )
@@ -14547,17 +11273,10 @@ elif mode == 'Environmental':
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
-								label = str(
-									item.get( 'acq_date', '' ) or
-									item.get( 'data_id', '' ) or
-									item.get( 'sensor', '' ) or
-									f'Record {idx}'
-								)
+								label = str( item.get( 'acq_date', '' ) or item.get( 'data_id',
+									'' ) or item.get( 'sensor', '' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable FIRMS rows were found.' )
@@ -14569,123 +11288,23 @@ elif mode == 'Environmental':
 		
 		# -------- USGS Water Data
 		with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
-			USGSWATERDATA_MODES = [
-					'monitoring-locations',
-					'time-series-metadata',
-					'latest-continuous',
-					'latest-daily' ]
+			USGSWATERDATA_MODES = [ 'monitoring-locations', 'time-series-metadata',
+				'latest-continuous', 'latest-daily' ]
 			
-			USGSWATERDATA_STATE_CODES = [
-					'',
-					'AL',
-					'AK',
-					'AZ',
-					'AR',
-					'CA',
-					'CO',
-					'CT',
-					'DE',
-					'DC',
-					'FL',
-					'GA',
-					'HI',
-					'ID',
-					'IL',
-					'IN',
-					'IA',
-					'KS',
-					'KY',
-					'LA',
-					'ME',
-					'MD',
-					'MA',
-					'MI',
-					'MN',
-					'MS',
-					'MO',
-					'MT',
-					'NE',
-					'NV',
-					'NH',
-					'NJ',
-					'NM',
-					'NY',
-					'NC',
-					'ND',
-					'OH',
-					'OK',
-					'OR',
-					'PA',
-					'RI',
-					'SC',
-					'SD',
-					'TN',
-					'TX',
-					'UT',
-					'VT',
-					'VA',
-					'WA',
-					'WV',
-					'WI',
-					'WY',
-					'AS',
-					'GU',
-					'MP',
-					'PR',
-					'VI' ]
+			USGSWATERDATA_STATE_CODES = [ '', 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC',
+				'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI',
+				'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK',
+				'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
+				'AS', 'GU', 'MP', 'PR', 'VI' ]
 			
-			USGSWATERDATA_SITE_TYPES = [ '',
-					'AG',
-					'AT',
-					'ES',
-					'FA',
-					'FA-CI',
-					'FA-CS',
-					'FA-DV',
-					'FA-FON',
-					'FA-GC',
-					'FA-HP',
-					'FA-LF',
-					'FA-OIL',
-					'FA-QC',
-					'FA-SEW',
-					'FA-SPS',
-					'FA-TEP',
-					'FA-WDS',
-					'FA-WIW',
-					'GL',
-					'GW',
-					'GW-CR',
-					'GW-EX',
-					'GW-HZ',
-					'GW-IW',
-					'GW-MW',
-					'GW-TH',
-					'LK',
-					'OC',
-					'OC-CO',
-					'SB',
-					'SP',
-					'ST',
-					'ST-CA',
-					'ST-DCH',
-					'ST-TS',
-					'WE' ]
+			USGSWATERDATA_SITE_TYPES = [ '', 'AG', 'AT', 'ES', 'FA', 'FA-CI', 'FA-CS', 'FA-DV',
+				'FA-FON', 'FA-GC', 'FA-HP', 'FA-LF', 'FA-OIL', 'FA-QC', 'FA-SEW', 'FA-SPS',
+				'FA-TEP', 'FA-WDS', 'FA-WIW', 'GL', 'GW', 'GW-CR', 'GW-EX', 'GW-HZ', 'GW-IW',
+				'GW-MW', 'GW-TH', 'LK', 'OC', 'OC-CO', 'SB', 'SP', 'ST', 'ST-CA', 'ST-DCH',
+				'ST-TS',
+				'WE' ]
 			
 			def _clear_usgswaterdata_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the USGS Water Data expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'usgswaterdata_clear_request' ] = True
 			
 			if 'usgswaterdata_results' not in st.session_state:
@@ -14736,146 +11355,92 @@ elif mode == 'Environmental':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				usgswd_mode = st.selectbox(
-					'Mode',
-					options=USGSWATERDATA_MODES,
+				usgswd_mode = st.selectbox( 'Mode', options=USGSWATERDATA_MODES,
 					index=USGSWATERDATA_MODES.index(
-						st.session_state.get(
-							'usgswaterdata_mode',
-							'monitoring-locations'
-						)
-					),
-					key='usgswaterdata_mode'
-				)
+						st.session_state.get( 'usgswaterdata_mode', 'monitoring-locations' ) ),
+					key='usgswaterdata_mode' )
 				
-				usgswd_monitoring_location_id = st.text_input(
-					'Monitoring Location ID',
-					value=st.session_state.get(
-						'usgswaterdata_monitoring_location_id',
-						''
-					),
+				usgswd_monitoring_location_id = st.text_input( 'Monitoring Location ID',
+					value=st.session_state.get( 'usgswaterdata_monitoring_location_id', '' ),
 					key='usgswaterdata_monitoring_location_id',
-					placeholder='Example: USGS-01491000'
-				)
+					placeholder='Example: USGS-01491000' )
 				
 				meta_c1, meta_c2 = st.columns( 2 )
 				
 				with meta_c1:
-					usgswd_state_code = st.selectbox(
-						'State Code',
-						options=USGSWATERDATA_STATE_CODES,
-						index=USGSWATERDATA_STATE_CODES.index(
-							st.session_state.get( 'usgswaterdata_state_code', '' )
-						),
+					usgswd_state_code = st.selectbox( 'State Code',
+						options=USGSWATERDATA_STATE_CODES, index=USGSWATERDATA_STATE_CODES.index(
+							st.session_state.get( 'usgswaterdata_state_code', '' ) ),
 						key='usgswaterdata_state_code',
 						disabled=(usgswd_mode != 'monitoring-locations'),
-						format_func=lambda value: 'All' if value == '' else value
-					)
+						format_func=lambda value: 'All' if value == '' else value )
 				
 				with meta_c2:
-					usgswd_county_code = st.text_input(
-						'County Code',
+					usgswd_county_code = st.text_input( 'County Code',
 						value=st.session_state.get( 'usgswaterdata_county_code', '' ),
 						key='usgswaterdata_county_code',
 						disabled=(usgswd_mode != 'monitoring-locations'),
-						placeholder='Optional county code'
-					)
+						placeholder='Optional county code' )
 				
-				usgswd_site_type = st.selectbox(
-					'Site Type',
-					options=USGSWATERDATA_SITE_TYPES,
+				usgswd_site_type = st.selectbox( 'Site Type', options=USGSWATERDATA_SITE_TYPES,
 					index=USGSWATERDATA_SITE_TYPES.index(
-						st.session_state.get( 'usgswaterdata_site_type', '' )
-					),
-					key='usgswaterdata_site_type',
-					disabled=(usgswd_mode != 'monitoring-locations'),
+						st.session_state.get( 'usgswaterdata_site_type', '' ) ),
+					key='usgswaterdata_site_type', disabled=(usgswd_mode !=
+					                                         'monitoring-locations'),
 					format_func=lambda value: 'All' if value == '' else value,
-					help='USGS site type code, such as ST for stream or GW for well.'
-				)
+					help='USGS site type code, such as ST for stream or GW for well.' )
 				
-				usgswd_parameter_code = st.text_input(
-					'Parameter Code',
+				usgswd_parameter_code = st.text_input( 'Parameter Code',
 					value=st.session_state.get( 'usgswaterdata_parameter_code', '' ),
 					key='usgswaterdata_parameter_code',
-					disabled=(usgswd_mode == 'monitoring-locations'),
-					placeholder='Example: 00060'
-				)
+					disabled=(usgswd_mode == 'monitoring-locations'), placeholder='Example: '
+					                                                              '00060' )
 				
-				usgswd_limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=50000,
-					value=int( st.session_state.get( 'usgswaterdata_limit', 25 ) ),
-					step=1,
-					key='usgswaterdata_limit'
-				)
+				usgswd_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
+					value=int( st.session_state.get( 'usgswaterdata_limit', 25 ) ), step=1,
+					key='usgswaterdata_limit' )
 				
-				usgswd_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'usgswaterdata_timeout', 20 ) ),
-					step=1,
-					key='usgswaterdata_timeout'
-				)
+				usgswd_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'usgswaterdata_timeout', 20 ) ), step=1,
+					key='usgswaterdata_timeout' )
 				
-				st.caption(
-					'USGS Water Data uses the modern OGC API collections for monitoring '
-					'locations, time-series metadata, latest continuous values, and latest '
-					'daily values.'
-				)
+				st.caption( 'USGS Water Data uses the modern OGC API collections for monitoring '
+				            'locations, time-series metadata, latest continuous values, '
+				            'and latest '
+				            'daily values.' )
 				
 				btn_c1, btn_c2 = st.columns( 2 )
 				
 				with btn_c1:
-					usgswd_submit = st.button(
-						'Submit',
-						key='usgswaterdata_submit'
-					)
+					usgswd_submit = st.button( 'Submit', key='usgswaterdata_submit' )
 				
 				with btn_c2:
-					st.button(
-						'Clear',
-						key='usgswaterdata_clear',
-						on_click=_clear_usgswaterdata_state
-					)
+					st.button( 'Clear', key='usgswaterdata_clear',
+						on_click=_clear_usgswaterdata_state )
 			
 			with col_right:
 				if usgswd_submit:
 					try:
-						if usgswd_mode in [
-								'time-series-metadata',
-								'latest-continuous',
-								'latest-daily'
-						]:
+						if usgswd_mode in [ 'time-series-metadata', 'latest-continuous',
+							'latest-daily' ]:
 							if not str( usgswd_monitoring_location_id or '' ).strip( ):
 								raise ValueError(
 									'Monitoring Location ID is required for time-series '
-									'metadata and latest-value modes.'
-								)
+									'metadata and latest-value modes.' )
 						
 						if str( usgswd_parameter_code or '' ).strip( ):
-							if not re.fullmatch(
-									r'\d{5}',
-									str( usgswd_parameter_code ).strip( )
-							):
+							if not re.fullmatch( r'\d{5}', str( usgswd_parameter_code ).strip( ) ):
 								raise ValueError(
-									'Parameter Code must be a 5-digit USGS parameter code.'
-								)
+									'Parameter Code must be a 5-digit USGS parameter code.' )
 						
 						f = USGSWaterData( )
-						result = f.fetch(
-							mode=str( usgswd_mode ),
-							monitoring_location_id=str(
-								usgswd_monitoring_location_id
-							).strip( ),
+						result = f.fetch( mode=str( usgswd_mode ),
+							monitoring_location_id=str( usgswd_monitoring_location_id ).strip( ),
 							state_code=str( usgswd_state_code ).strip( ),
 							county_code=str( usgswd_county_code ).strip( ),
 							site_type=str( usgswd_site_type ).strip( ),
 							parameter_code=str( usgswd_parameter_code ).strip( ),
-							limit=int( usgswd_limit ),
-							time=int( usgswd_timeout )
-						)
+							limit=int( usgswd_limit ), time=int( usgswd_timeout ) )
 						
 						st.session_state[ 'usgswaterdata_results' ] = result or { }
 						st.rerun( )
@@ -14900,14 +11465,10 @@ elif mode == 'Environmental':
 					with meta_c2:
 						params = result.get( 'params', { } ) or { }
 						if 'monitoring_location_id' in params:
-							st.markdown(
-								f"**Location:** "
-								f"{params.get( 'monitoring_location_id', '' )}"
-							)
+							st.markdown( f"**Location:** "
+							             f"{params.get( 'monitoring_location_id', '' )}" )
 						if 'parameter_code' in params:
-							st.markdown(
-								f"**Parameter:** {params.get( 'parameter_code', '' )}"
-							)
+							st.markdown( f"**Parameter:** {params.get( 'parameter_code', '' )}" )
 					
 					summary = result.get( 'summary', { } ) or { }
 					if summary:
@@ -14919,9 +11480,7 @@ elif mode == 'Environmental':
 							st.metric( 'Count', int( summary.get( 'count', 0 ) or 0 ) )
 						
 						with sum_c2:
-							first_location = str(
-								summary.get( 'first_location', '' ) or ''
-							)
+							first_location = str( summary.get( 'first_location', '' ) or '' )
 							if first_location:
 								st.markdown( f"**First Location:** {first_location}" )
 							else:
@@ -14949,32 +11508,19 @@ elif mode == 'Environmental':
 						df_usgswaterdata = pd.DataFrame( rows )
 						
 						if not df_usgswaterdata.empty:
-							st.dataframe(
-								df_usgswaterdata,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_usgswaterdata, use_container_width=True,
+								hide_index=True )
 							
 							map_rows = [ ]
 							for item in rows:
-								latitude = (
-										item.get( 'Latitude', None )
-										or item.get( 'lat', None )
-										or item.get( 'latitude', None )
-								)
-								longitude = (
-										item.get( 'Longitude', None )
-										or item.get( 'lon', None )
-										or item.get( 'longitude', None )
-								)
+								latitude = (item.get( 'Latitude', None ) or item.get( 'lat',
+									None ) or item.get( 'latitude', None ))
+								longitude = (item.get( 'Longitude', None ) or item.get( 'lon',
+									None ) or item.get( 'longitude', None ))
 								
 								if latitude is not None and longitude is not None:
 									map_rows.append(
-										{
-												'lat': float( latitude ),
-												'lon': float( longitude )
-										}
-									)
+										{ 'lat': float( latitude ), 'lon': float( longitude ) } )
 							
 							if map_rows:
 								st.markdown( '#### Monitoring Location Map' )
@@ -14982,18 +11528,11 @@ elif mode == 'Environmental':
 							
 							top_rows = rows[ : min( 10, len( rows ) ) ]
 							for idx, item in enumerate( top_rows, start=1 ):
-								label = str(
-									item.get( 'Monitoring Location ID', '' ) or
-									item.get( 'Location ID', '' ) or
-									item.get( 'Monitoring Location Name', '' ) or
-									item.get( 'Time', '' ) or
-									f'Record {idx}'
-								)
+								label = str( item.get( 'Monitoring Location ID', '' ) or item.get(
+									'Location ID', '' ) or item.get( 'Monitoring Location Name',
+									'' ) or item.get( 'Time', '' ) or f'Record {idx}' )
 								
-								with st.expander(
-										f'Record {idx}: {label}',
-										expanded=False
-								):
+								with st.expander( f'Record {idx}: {label}', expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No displayable USGS Water Data rows were found.' )
@@ -15031,104 +11570,50 @@ elif mode == 'Astronomical':
 				st.session_state[ 'navalobservatory_clear_request' ] = False
 			
 			def _clear_navalobservatory_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Naval Observatory expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'navalobservatory_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				naval_date = st.date_input(
-					'Date',
-					value=st.session_state.get(
-						'navalobservatory_date',
-						dt.date.today( )
-					),
-					key='navalobservatory_date',
-					help='USNO date parameter in YYYY-MM-DD format.'
-				)
+				naval_date = st.date_input( 'Date',
+					value=st.session_state.get( 'navalobservatory_date', dt.date.today( ) ),
+					key='navalobservatory_date', help='USNO date parameter in YYYY-MM-DD format.' )
 				
-				naval_time = st.time_input(
-					'Time (UTC)',
-					value=st.session_state.get(
-						'navalobservatory_time',
-						dt.time( 12, 0 )
-					),
-					key='navalobservatory_time',
-					help='USNO time parameter in 24-hour format.'
-				)
+				naval_time = st.time_input( 'Time (UTC)',
+					value=st.session_state.get( 'navalobservatory_time', dt.time( 12, 0 ) ),
+					key='navalobservatory_time', help='USNO time parameter in 24-hour format.' )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					naval_latitude = st.number_input(
-						'Latitude',
-						min_value=-90.0,
-						max_value=90.0,
-						value=float(
-							st.session_state.get( 'navalobservatory_latitude', 38.9072 )
-						),
-						step=0.0001,
-						format='%.6f',
-						key='navalobservatory_latitude',
-						help='Decimal degrees. North positive.'
-					)
+					naval_latitude = st.number_input( 'Latitude', min_value=-90.0, max_value=90.0,
+						value=float( st.session_state.get( 'navalobservatory_latitude', 38.9072
+						) ),
+						step=0.0001, format='%.6f', key='navalobservatory_latitude',
+						help='Decimal degrees. North positive.' )
 				
 				with c2:
-					naval_longitude = st.number_input(
-						'Longitude',
-						min_value=-180.0,
-						max_value=180.0,
-						value=float(
-							st.session_state.get( 'navalobservatory_longitude', -77.0369 )
-						),
-						step=0.0001,
-						format='%.6f',
-						key='navalobservatory_longitude',
-						help='Decimal degrees. East positive, west negative.'
-					)
+					naval_longitude = st.number_input( 'Longitude', min_value=-180.0,
+						max_value=180.0, value=float(
+							st.session_state.get( 'navalobservatory_longitude', -77.0369 ) ),
+						step=0.0001, format='%.6f', key='navalobservatory_longitude',
+						help='Decimal degrees. East positive, west negative.' )
 				
-				naval_location_label = st.text_input(
-					'Location Label',
+				naval_location_label = st.text_input( 'Location Label',
 					value=st.session_state.get( 'navalobservatory_location_label', '' ),
-					key='navalobservatory_location_label',
-					placeholder='Example: Washington, DC'
-				)
+					key='navalobservatory_location_label', placeholder='Example: Washington, DC' )
 				
-				naval_timeout = st.number_input(
-					'Timeout (seconds)',
-					min_value=5,
-					max_value=120,
-					value=int( st.session_state.get( 'navalobservatory_timeout', 20 ) ),
-					step=1,
-					key='navalobservatory_timeout'
-				)
+				naval_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
+					value=int( st.session_state.get( 'navalobservatory_timeout', 20 ) ), step=1,
+					key='navalobservatory_timeout' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					naval_submit = st.button(
-						'Submit',
-						key='navalobservatory_submit',
-						use_container_width=True
-					)
+					naval_submit = st.button( 'Submit', key='navalobservatory_submit',
+						use_container_width=True )
 				with b2:
-					naval_clear = st.button(
-						'Clear',
-						key='navalobservatory_clear',
-						on_click=_clear_navalobservatory_state,
-						use_container_width=True
-					)
+					naval_clear = st.button( 'Clear', key='navalobservatory_clear',
+						on_click=_clear_navalobservatory_state, use_container_width=True )
 			
 			with col_right:
 				naval_output = st.empty( )
@@ -15137,15 +11622,10 @@ elif mode == 'Astronomical':
 				try:
 					f = NavalObservatory( )
 					
-					result = f.fetch(
-						mode='celnav',
-						date_value=naval_date.strftime( '%Y-%m-%d' ),
+					result = f.fetch( mode='celnav', date_value=naval_date.strftime( '%Y-%m-%d' ),
 						time_value=naval_time.strftime( '%H:%M:%S' ),
-						latitude=float( naval_latitude ),
-						longitude=float( naval_longitude ),
-						location_label=naval_location_label,
-						time=int( naval_timeout )
-					)
+						latitude=float( naval_latitude ), longitude=float( naval_longitude ),
+						location_label=naval_location_label, time=int( naval_timeout ) )
 					
 					st.session_state[ 'navalobservatory_results' ] = result or { }
 					st.rerun( )
@@ -15163,14 +11643,8 @@ elif mode == 'Astronomical':
 				
 				with col_right:
 					st.markdown( '#### Request Metadata' )
-					st.json(
-						{
-								'mode': result.get( 'mode', '' ),
-								'url': result.get( 'url', '' ),
-								'params': params,
-								'location_label': result.get( 'location_label', '' ),
-						}
-					)
+					st.json( { 'mode': result.get( 'mode', '' ), 'url': result.get( 'url', '' ),
+						'params': params, 'location_label': result.get( 'location_label', '' ), } )
 					
 					if not data:
 						st.info( 'No results returned.' )
@@ -15186,8 +11660,7 @@ elif mode == 'Astronomical':
 								st.markdown( f"**Time:** {params.get( 'time', '' )}" )
 							if result.get( 'location_label', '' ):
 								st.markdown(
-									f"**Location Label:** {result.get( 'location_label', '' )}"
-								)
+									f"**Location Label:** {result.get( 'location_label', '' )}" )
 						
 						with c2:
 							if params.get( 'coords', '' ):
@@ -15197,7 +11670,7 @@ elif mode == 'Astronomical':
 						
 						if isinstance( data, dict ):
 							for key in [ 'data', 'bodies', 'results', 'celestialBodies',
-							             'celestial_bodies' ]:
+								'celestial_bodies' ]:
 								value = data.get( key, None )
 								if isinstance( value, list ):
 									bodies = [ item for item in value if isinstance( item, dict ) ]
@@ -15207,17 +11680,16 @@ elif mode == 'Astronomical':
 							st.markdown( '#### Celestial Bodies' )
 							df_bodies = pd.DataFrame( bodies )
 							if not df_bodies.empty:
-								st.dataframe( df_bodies, use_container_width=True, hide_index=True )
+								st.dataframe( df_bodies, use_container_width=True,
+									hide_index=True )
 							else:
 								st.info( 'No displayable celestial body rows were found.' )
 						else:
 							top_fields = { }
 							
 							if isinstance( data, dict ):
-								for key in [
-										'gha', 'dec', 'hc', 'zn', 'altitude', 'azimuth',
-										'sunrise', 'sunset', 'moonrise', 'moonset'
-								]:
+								for key in [ 'gha', 'dec', 'hc', 'zn', 'altitude', 'azimuth',
+									'sunrise', 'sunset', 'moonrise', 'moonset' ]:
 									if key in data:
 										top_fields[ key ] = data.get( key )
 							
@@ -15280,104 +11752,71 @@ elif mode == 'Astronomical':
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			with col_left:
-				satellite_mode = st.selectbox(
-					'Mode',
+				satellite_mode = st.selectbox( 'Mode',
 					options=[ 'observatories', 'ground_stations', 'locations' ],
 					index=[ 'observatories', 'ground_stations', 'locations' ].index(
-						st.session_state.get( 'satellitecenter_mode', 'observatories' )
-					),
-					key='satellitecenter_mode'
-				)
+						st.session_state.get( 'satellitecenter_mode', 'observatories' ) ),
+					key='satellitecenter_mode' )
 				
-				satellite_query = st.text_area(
-					'Observatory Query',
-					height=90,
-					key='satellitecenter_query',
-					placeholder=(
-							'Examples:\n'
-							'iss\n'
-							'mms1,mms2\n'
-							'themisb\n'
-							'\n'
-							'Used for locations mode only. Leave blank for observatories '
-							'and ground stations.'
-					),
-					disabled=(satellite_mode != 'locations')
-				)
+				satellite_query = st.text_area( 'Observatory Query', height=90,
+					key='satellitecenter_query', placeholder=('Examples:\n'
+					                                          'iss\n'
+					                                          'mms1,mms2\n'
+					                                          'themisb\n'
+					                                          '\n'
+					                                          'Used for locations mode only. Leave '
+					                                          'blank for observatories '
+					                                          'and ground stations.'),
+					disabled=(satellite_mode != 'locations') )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					satellite_start_time = st.text_input(
-						'Start Time (UTC)',
+					satellite_start_time = st.text_input( 'Start Time (UTC)',
 						value=st.session_state.get( 'satellitecenter_start_time', '' ),
-						key='satellitecenter_start_time',
-						placeholder='2026-03-15T00:00:00Z',
-						disabled=(satellite_mode != 'locations')
-					)
+						key='satellitecenter_start_time', placeholder='2026-03-15T00:00:00Z',
+						disabled=(satellite_mode != 'locations') )
 				
 				with c2:
-					satellite_end_time = st.text_input(
-						'End Time (UTC)',
+					satellite_end_time = st.text_input( 'End Time (UTC)',
 						value=st.session_state.get( 'satellitecenter_end_time', '' ),
-						key='satellitecenter_end_time',
-						placeholder='2026-03-15T02:00:00Z',
-						disabled=(satellite_mode != 'locations')
-					)
+						key='satellitecenter_end_time', placeholder='2026-03-15T02:00:00Z',
+						disabled=(satellite_mode != 'locations') )
 				
 				c3, c4, c5 = st.columns( 3 )
 				
 				with c3:
-					satellite_coordinate_systems = st.text_input(
-						'Coordinate Systems',
+					satellite_coordinate_systems = st.text_input( 'Coordinate Systems',
 						value=st.session_state.get( 'satellitecenter_coordinate_systems', 'gse' ),
-						key='satellitecenter_coordinate_systems',
-						placeholder='gse or geo,gsm',
-						disabled=(satellite_mode != 'locations')
-					)
+						key='satellitecenter_coordinate_systems', placeholder='gse or geo,gsm',
+						disabled=(satellite_mode != 'locations') )
 				
 				with c4:
-					satellite_resolution_factor = st.number_input(
-						'Resolution Factor',
+					satellite_resolution_factor = st.number_input( 'Resolution Factor',
 						min_value=1,
 						max_value=1000,
-						value=int( st.session_state.get( 'satellitecenter_resolution_factor', 1 ) ),
-						step=1,
-						key='satellitecenter_resolution_factor',
-						disabled=(satellite_mode != 'locations')
-					)
+						value=int( st.session_state.get( 'satellitecenter_resolution_factor',
+							1 ) ),
+						step=1, key='satellitecenter_resolution_factor',
+						disabled=(satellite_mode != 'locations') )
 				
 				with c5:
-					satellite_timeout = st.number_input(
-						'Timeout',
-						min_value=1,
-						max_value=120,
-						value=int( st.session_state.get( 'satellitecenter_timeout', 20 ) ),
-						step=1,
-						key='satellitecenter_timeout'
-					)
+					satellite_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+						value=int( st.session_state.get( 'satellitecenter_timeout', 20 ) ), step=1,
+						key='satellitecenter_timeout' )
 				
-				st.caption(
-					'No API key is required for SSCWeb. For locations mode, use UTC ISO '
-					'8601 timestamps and observatory IDs returned by the observatories '
-					'service.'
-				)
+				st.caption( 'No API key is required for SSCWeb. For locations mode, use UTC ISO '
+				            '8601 timestamps and observatory IDs returned by the observatories '
+				            'service.' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					satellite_submit = st.button(
-						'Submit',
-						key='satellitecenter_submit',
-						use_container_width=True
-					)
+					satellite_submit = st.button( 'Submit', key='satellitecenter_submit',
+						use_container_width=True )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='satellitecenter_clear',
-						on_click=_clear_satellitecenter_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='satellitecenter_clear',
+						on_click=_clear_satellitecenter_state, use_container_width=True )
 			
 			with col_right:
 				st.markdown( 'Results' )
@@ -15385,28 +11824,18 @@ elif mode == 'Astronomical':
 				if satellite_submit:
 					try:
 						f = SatelliteCenter( )
-						result = f.fetch(
-							mode=satellite_mode,
-							query=satellite_query,
-							start_time=satellite_start_time,
-							end_time=satellite_end_time,
+						result = f.fetch( mode=satellite_mode, query=satellite_query,
+							start_time=satellite_start_time, end_time=satellite_end_time,
 							coordinate_systems=satellite_coordinate_systems,
 							resolution_factor=int( satellite_resolution_factor ),
-							time=int( satellite_timeout )
-						)
+							time=int( satellite_timeout ) )
 						
 						st.session_state[ 'satellitecenter_results' ] = {
-								'request': {
-										'mode': satellite_mode,
-										'query': satellite_query,
-										'start_time': satellite_start_time,
-										'end_time': satellite_end_time,
-										'coordinate_systems': satellite_coordinate_systems,
-										'resolution_factor': int( satellite_resolution_factor ),
-										'timeout': int( satellite_timeout ),
-								},
-								'data': result or { },
-						}
+							'request': { 'mode': satellite_mode, 'query': satellite_query,
+								'start_time': satellite_start_time, 'end_time': satellite_end_time,
+								'coordinate_systems': satellite_coordinate_systems,
+								'resolution_factor': int( satellite_resolution_factor ),
+								'timeout': int( satellite_timeout ), }, 'data': result or { }, }
 						st.rerun( )
 					
 					except Exception as exc:
@@ -15418,23 +11847,16 @@ elif mode == 'Astronomical':
 				if not result_wrapper:
 					st.text( 'No results.' )
 				else:
-					if (
-							isinstance( result_wrapper, dict )
-							and 'request' in result_wrapper
-							and 'data' in result_wrapper
-					):
+					if (isinstance( result_wrapper,
+						dict ) and 'request' in result_wrapper and 'data' in result_wrapper):
 						request_meta = result_wrapper.get( 'request', { } )
 						result = result_wrapper.get( 'data', { } )
 					else:
-						request_meta = {
-								'mode': satellite_mode,
-								'query': satellite_query,
-								'start_time': satellite_start_time,
-								'end_time': satellite_end_time,
-								'coordinate_systems': satellite_coordinate_systems,
-								'resolution_factor': int( satellite_resolution_factor ),
-								'timeout': int( satellite_timeout ),
-						}
+						request_meta = { 'mode': satellite_mode, 'query': satellite_query,
+							'start_time': satellite_start_time, 'end_time': satellite_end_time,
+							'coordinate_systems': satellite_coordinate_systems,
+							'resolution_factor': int( satellite_resolution_factor ),
+							'timeout': int( satellite_timeout ), }
 						result = result_wrapper if isinstance( result_wrapper, dict ) else { }
 					
 					render_mode = str( request_meta.get( 'mode', 'observatories' ) )
@@ -15443,7 +11865,8 @@ elif mode == 'Astronomical':
 					st.json( request_meta )
 					
 					if render_mode == 'observatories':
-						items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
+						items = result.get( 'Observatory', [ ] ) if isinstance( result,
+							dict ) else [ ]
 						
 						if items:
 							summary_rows: List[ Dict[ str, Any ] ] = [ ]
@@ -15459,19 +11882,14 @@ elif mode == 'Astronomical':
 										if str( lat_value ).strip( ) or str( lon_value ).strip( ):
 											location_value = f'{lat_value}, {lon_value}'
 									
-									summary_rows.append(
-										{
-												'Id': item.get( 'Id', '' ),
-												'Name': item.get( 'Name', '' ),
-												'Resolution': item.get( 'Resolution', '' ),
-												'StartTime': item.get( 'StartTime', '' ),
-												'EndTime': item.get( 'EndTime', '' ),
-												'GeoLocation': location_value,
-										}
-									)
+									summary_rows.append( { 'Id': item.get( 'Id', '' ),
+										'Name': item.get( 'Name', '' ),
+										'Resolution': item.get( 'Resolution', '' ),
+										'StartTime': item.get( 'StartTime', '' ),
+										'EndTime': item.get( 'EndTime', '' ),
+										'GeoLocation': location_value, } )
 							
-							_render_satellite_table(
-								f'#### Observatories ({len( summary_rows )})',
+							_render_satellite_table( f'#### Observatories ({len( summary_rows )})',
 								summary_rows )
 						else:
 							st.info( 'No observatories were returned.' )
@@ -15498,18 +11916,13 @@ elif mode == 'Astronomical':
 										if str( lat_value ).strip( ) or str( lon_value ).strip( ):
 											location_value = f'{lat_value}, {lon_value}'
 									
-									summary_rows.append(
-										{
-												'Id': item.get( 'Id', '' ),
-												'Name': item.get( 'Name', '' ),
-												'Code': item.get( 'Code', '' ),
-												'Location': location_value,
-										}
-									)
+									summary_rows.append( { 'Id': item.get( 'Id', '' ),
+										'Name': item.get( 'Name', '' ),
+										'Code': item.get( 'Code', '' ),
+										'Location': location_value, } )
 							
 							_render_satellite_table(
-								f'#### Ground Stations ({len( summary_rows )})',
-								summary_rows )
+								f'#### Ground Stations ({len( summary_rows )})', summary_rows )
 						else:
 							st.markdown( '#### Ground Stations' )
 							st.json( result )
@@ -15519,15 +11932,17 @@ elif mode == 'Astronomical':
 						
 						if isinstance( result, dict ):
 							if 'Data' in result and isinstance( result.get( 'Data' ), list ):
-								_render_satellite_table( '##### Position Samples', result.get( 'Data', [ ] ) )
-							elif 'Coordinates' in result and isinstance( result.get( 'Coordinates' ), list ):
-								_render_satellite_table(
-									'##### Coordinates',
+								_render_satellite_table( '##### Position Samples',
+									result.get( 'Data', [ ] ) )
+							elif 'Coordinates' in result and isinstance(
+									result.get( 'Coordinates' ), list ):
+								_render_satellite_table( '##### Coordinates',
 									result.get( 'Coordinates', [ ] ) )
 							else:
 								flat_rows: List[ Dict[ str, Any ] ] = [ ]
 								for key, value in result.items( ):
-									if isinstance( value, (str, int, float, bool) ) or value is None:
+									if isinstance( value,
+											(str, int, float, bool) ) or value is None:
 										flat_rows.append( { 'Field': key, 'Value': value } )
 								
 								if flat_rows:
@@ -15571,135 +11986,83 @@ elif mode == 'Astronomical':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				astro_mode = st.selectbox(
-					'Mode',
-					options=[ 'object_query', 'cone_search' ],
+				astro_mode = st.selectbox( 'Mode', options=[ 'object_query', 'cone_search' ],
 					index=[ 'object_query', 'cone_search' ].index(
-						st.session_state.get( 'astrocatalog_mode', 'object_query' )
-					),
-					key='astrocatalog_mode'
-				)
+						st.session_state.get( 'astrocatalog_mode', 'object_query' ) ),
+					key='astrocatalog_mode' )
 				
-				astro_query = st.text_area(
-					'Object Query',
-					height=80,
-					key='astrocatalog_query',
-					placeholder=(
-							'Examples:\n'
-							'SN1987A\n'
-							'AT2024abc\n'
-							'GW170817\n'
-							'\n'
-							'Used for object_query mode.'
-					),
-					disabled=(astro_mode != 'object_query')
-				)
+				astro_query = st.text_area( 'Object Query', height=80, key='astrocatalog_query',
+					placeholder=('Examples:\n'
+					             'SN1987A\n'
+					             'AT2024abc\n'
+					             'GW170817\n'
+					             '\n'
+					             'Used for object_query mode.'),
+					disabled=(astro_mode != 'object_query') )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					astro_quantity = st.text_input(
-						'Quantity',
+					astro_quantity = st.text_input( 'Quantity',
 						value=st.session_state.get( 'astrocatalog_quantity', '' ),
-						key='astrocatalog_quantity',
-						placeholder='Example: photometry',
-						disabled=(astro_mode != 'object_query')
-					)
+						key='astrocatalog_quantity', placeholder='Example: photometry',
+						disabled=(astro_mode != 'object_query') )
 				
 				with c2:
-					astro_attributes = st.text_input(
-						'Attributes',
+					astro_attributes = st.text_input( 'Attributes',
 						value=st.session_state.get( 'astrocatalog_attributes', '' ),
-						key='astrocatalog_attributes',
-						placeholder='Example: time,magnitude,band',
-						disabled=(astro_mode != 'object_query')
-					)
+						key='astrocatalog_attributes', placeholder='Example: time,magnitude,band',
+						disabled=(astro_mode != 'object_query') )
 				
-				astro_arguments = st.text_area(
-					'Arguments',
-					height=80,
-					key='astrocatalog_arguments',
-					placeholder=(
-							'Optional query arguments.\n'
-							'Examples:\n'
-							'time=2450000\n'
-							'band=V'
-					),
-					disabled=(astro_mode != 'object_query')
-				)
+				astro_arguments = st.text_area( 'Arguments', height=80,
+					key='astrocatalog_arguments', placeholder=('Optional query arguments.\n'
+					                                           'Examples:\n'
+					                                           'time=2450000\n'
+					                                           'band=V'),
+					disabled=(astro_mode != 'object_query') )
 				
 				c3, c4, c5 = st.columns( 3 )
 				
 				with c3:
-					astro_ra = st.text_input(
-						'RA',
-						value=st.session_state.get( 'astrocatalog_ra', '' ),
-						key='astrocatalog_ra',
-						placeholder='13:09:48.09',
-						disabled=(astro_mode != 'cone_search')
-					)
+					astro_ra = st.text_input( 'RA',
+						value=st.session_state.get( 'astrocatalog_ra', '' ), key='astrocatalog_ra',
+						placeholder='13:09:48.09', disabled=(astro_mode != 'cone_search') )
 				
 				with c4:
-					astro_dec = st.text_input(
-						'Dec',
+					astro_dec = st.text_input( 'Dec',
 						value=st.session_state.get( 'astrocatalog_dec', '' ),
-						key='astrocatalog_dec',
-						placeholder='+27:57:34.8',
-						disabled=(astro_mode != 'cone_search')
-					)
+						key='astrocatalog_dec', placeholder='+27:57:34.8',
+						disabled=(astro_mode != 'cone_search') )
 				
 				with c5:
-					astro_radius = st.number_input(
-						'Radius (arcsec)',
-						min_value=1,
-						max_value=3600,
-						value=int( st.session_state.get( 'astrocatalog_radius', 2 ) ),
-						step=1,
-						key='astrocatalog_radius',
-						disabled=(astro_mode != 'cone_search')
-					)
+					astro_radius = st.number_input( 'Radius (arcsec)', min_value=1, max_value=3600,
+						value=int( st.session_state.get( 'astrocatalog_radius', 2 ) ), step=1,
+						key='astrocatalog_radius', disabled=(astro_mode != 'cone_search') )
 				
 				c6, c7 = st.columns( 2 )
 				
 				with c6:
-					astro_format = st.selectbox(
-						'Format',
-						options=[ 'json', 'csv', 'tsv' ],
+					astro_format = st.selectbox( 'Format', options=[ 'json', 'csv', 'tsv' ],
 						index=[ 'json', 'csv', 'tsv' ].index(
-							st.session_state.get( 'astrocatalog_format', 'json' )
-						),
-						key='astrocatalog_format'
-					)
+							st.session_state.get( 'astrocatalog_format', 'json' ) ),
+						key='astrocatalog_format' )
 				
 				with c7:
-					astro_timeout = st.number_input(
-						'Timeout',
-						min_value=1,
-						max_value=120,
-						value=int( st.session_state.get( 'astrocatalog_timeout', 20 ) ),
-						step=1,
-						key='astrocatalog_timeout'
-					)
+					astro_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+						value=int( st.session_state.get( 'astrocatalog_timeout', 20 ) ), step=1,
+						key='astrocatalog_timeout' )
 				
-				st.caption(
-					'No API key is required for Open Astronomy Catalog. '
-					'Use object_query for named events and cone_search for coordinate searches.'
-				)
+				st.caption( 'No API key is required for Open Astronomy Catalog. '
+				            'Use object_query for named events and cone_search for coordinate '
+				            'searches.' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					astro_submit = st.button(
-						'Submit',
-						key='astrocatalog_submit',
-						use_container_width=True
-					)
+					astro_submit = st.button( 'Submit', key='astrocatalog_submit',
+						use_container_width=True )
 				with b2:
-					st.button(
-						'Clear',
-						key='astrocatalog_clear',
-						on_click=_clear_astrocatalog_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='astrocatalog_clear',
+						on_click=_clear_astrocatalog_state, use_container_width=True )
 			
 			with col_right:
 				st.markdown( 'Results' )
@@ -15707,18 +12070,11 @@ elif mode == 'Astronomical':
 				if astro_submit:
 					try:
 						f = AstroCatalog( )
-						result = f.fetch(
-							mode=astro_mode,
-							query=astro_query,
-							quantity=astro_quantity,
-							attributes=astro_attributes,
-							arguments=astro_arguments,
-							ra=astro_ra,
-							dec=astro_dec,
-							radius=int( astro_radius ),
-							data_format=astro_format,
-							time=int( astro_timeout )
-						)
+						result = f.fetch( mode=astro_mode, query=astro_query,
+							quantity=astro_quantity, attributes=astro_attributes,
+							arguments=astro_arguments, ra=astro_ra, dec=astro_dec,
+							radius=int( astro_radius ), data_format=astro_format,
+							time=int( astro_timeout ) )
 						
 						st.session_state[ 'astrocatalog_results' ] = result or { }
 						st.rerun( )
@@ -15733,19 +12089,11 @@ elif mode == 'Astronomical':
 					st.text( 'No results.' )
 				else:
 					st.markdown( '#### Request Metadata' )
-					st.json(
-						{
-								'mode': astro_mode,
-								'query': astro_query,
-								'quantity': astro_quantity,
-								'attributes': astro_attributes,
-								'arguments': astro_arguments,
-								'ra': astro_ra,
-								'dec': astro_dec,
-								'radius': int( astro_radius ),
-								'format': astro_format,
-						}
-					)
+					st.json( { 'mode': astro_mode, 'query': astro_query, 'quantity':
+						astro_quantity,
+						'attributes': astro_attributes, 'arguments': astro_arguments,
+						'ra': astro_ra, 'dec': astro_dec, 'radius': int( astro_radius ),
+						'format': astro_format, } )
 					
 					parsed_result = result
 					
@@ -15765,17 +12113,9 @@ elif mode == 'Astronomical':
 						
 						df_catalog = pd.DataFrame( parsed_result )
 						if not df_catalog.empty:
-							st.dataframe(
-								df_catalog,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_catalog, use_container_width=True, hide_index=True )
 						else:
-							st.text_area(
-								'Results',
-								value=str( parsed_result ),
-								height=320
-							)
+							st.text_area( 'Results', value=str( parsed_result ), height=320 )
 					
 					elif isinstance( parsed_result, dict ):
 						candidate_rows: List[ Dict[ str, Any ] ] = [ ]
@@ -15783,10 +12123,8 @@ elif mode == 'Astronomical':
 						for key in [ 'results', 'items', 'data', 'objects' ]:
 							value = parsed_result.get( key, None )
 							if isinstance( value, list ) and value:
-								candidate_rows = [
-										item for item in value
-										if isinstance( item, dict )
-								]
+								candidate_rows = [ item for item in value if
+									isinstance( item, dict ) ]
 								break
 						
 						if candidate_rows:
@@ -15794,36 +12132,21 @@ elif mode == 'Astronomical':
 							df_catalog = pd.DataFrame( candidate_rows )
 							
 							if not df_catalog.empty:
-								st.dataframe(
-									df_catalog,
-									use_container_width=True,
-									hide_index=True
-								)
+								st.dataframe( df_catalog, use_container_width=True,
+									hide_index=True )
 							else:
 								st.json( parsed_result )
 						
 						else:
-							title_value = (
-									parsed_result.get( 'name' )
-									or parsed_result.get( 'alias' )
-									or parsed_result.get( 'event' )
-									or parsed_result.get( 'id' )
-									or 'Catalog Result'
-							)
+							title_value = (parsed_result.get( 'name' ) or parsed_result.get(
+								'alias' ) or parsed_result.get( 'event' ) or parsed_result.get(
+								'id' ) or 'Catalog Result')
 							
 							st.markdown( f'### {title_value}' )
 							
 							top_fields: Dict[ str, Any ] = { }
-							for key in [
-									'name',
-									'alias',
-									'ra',
-									'dec',
-									'redshift',
-									'type',
-									'claimedtype',
-									'schema'
-							]:
+							for key in [ 'name', 'alias', 'ra', 'dec', 'redshift', 'type',
+								'claimedtype', 'schema' ]:
 								if key in parsed_result:
 									top_fields[ key ] = parsed_result.get( key )
 							
@@ -15831,7 +12154,8 @@ elif mode == 'Astronomical':
 								st.json( top_fields )
 							
 							for key in [ 'summary', 'description', 'comments' ]:
-								if key in parsed_result and str( parsed_result.get( key ) ).strip( ):
+								if key in parsed_result and str(
+										parsed_result.get( key ) ).strip( ):
 									st.markdown( f'#### {key.title( )}' )
 									st.write( str( parsed_result.get( key ) ) )
 							
@@ -15840,28 +12164,16 @@ elif mode == 'Astronomical':
 					
 					elif isinstance( parsed_result, str ):
 						st.markdown( '#### Result Text' )
-						st.text_area(
-							'Results',
-							value=parsed_result,
-							height=320
-						)
+						st.text_area( 'Results', value=parsed_result, height=320 )
 					
 					else:
-						st.text_area(
-							'Results',
-							value=str( parsed_result ),
-							height=320
-						)
+						st.text_area( 'Results', value=str( parsed_result ), height=320 )
 					
 					with st.expander( 'Raw Result', expanded=False ):
 						if isinstance( result, (dict, list) ):
 							st.json( result )
 						else:
-							st.text_area(
-								'Raw',
-								value=str( result ),
-								height=240
-							)
+							st.text_area( 'Raw', value=str( result ), height=240 )
 		
 		# -------- Astro Query
 		with st.expander( label='Astro Query', icon='🔭', expanded=False ):
@@ -15888,107 +12200,69 @@ elif mode == 'Astronomical':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				astroquery_mode = st.selectbox(
-					'Mode',
+				astroquery_mode = st.selectbox( 'Mode',
 					options=[ 'object_search', 'object_ids', 'region_search' ],
 					index=[ 'object_search', 'object_ids', 'region_search' ].index(
-						st.session_state.get( 'astroquery_mode', 'object_search' )
-					),
-					key='astroquery_mode'
-				)
+						st.session_state.get( 'astroquery_mode', 'object_search' ) ),
+					key='astroquery_mode' )
 				
-				astroquery_query = st.text_area(
-					'Object Query',
-					height=80,
-					key='astroquery_query',
-					placeholder=(
-							'Examples:\n'
-							'M81\n'
-							'Sirius\n'
-							'NGC 1300\n'
-							'\n'
-							'Used for object_search and object_ids.'
-					),
-					disabled=(astroquery_mode == 'region_search')
-				)
+				astroquery_query = st.text_area( 'Object Query', height=80, key='astroquery_query',
+					placeholder=('Examples:\n'
+					             'M81\n'
+					             'Sirius\n'
+					             'NGC 1300\n'
+					             '\n'
+					             'Used for object_search and object_ids.'),
+					disabled=(astroquery_mode == 'region_search') )
 				
 				c1, c2, c3 = st.columns( 3 )
 				
 				with c1:
-					astroquery_ra = st.text_input(
-						'RA',
-						value=st.session_state.get( 'astroquery_ra', '' ),
-						key='astroquery_ra',
-						placeholder='13:09:48.09',
-						disabled=(astroquery_mode != 'region_search'),
-						help='Right Ascension of the search center, e.g. 13:09:48.09.'
-					)
+					astroquery_ra = st.text_input( 'RA',
+						value=st.session_state.get( 'astroquery_ra', '' ), key='astroquery_ra',
+						placeholder='13:09:48.09', disabled=(astroquery_mode != 'region_search'),
+						help='Right Ascension of the search center, e.g. 13:09:48.09.' )
 				
 				with c2:
-					astroquery_dec = st.text_input(
-						'Dec',
-						value=st.session_state.get( 'astroquery_dec', '' ),
-						key='astroquery_dec',
-						placeholder='-23:22:53.3',
-						disabled=(astroquery_mode != 'region_search'),
-						help='Declination of the search center, e.g. -23:22:53.3.'
-					)
+					astroquery_dec = st.text_input( 'Dec',
+						value=st.session_state.get( 'astroquery_dec', '' ), key='astroquery_dec',
+						placeholder='-23:22:53.3', disabled=(astroquery_mode != 'region_search'),
+						help='Declination of the search center, e.g. -23:22:53.3.' )
 				
 				with c3:
-					astroquery_radius = st.number_input(
-						'Radius',
-						min_value=0.001,
-						max_value=60.0,
-						value=float( st.session_state.get( 'astroquery_radius', 0.5 ) ),
-						step=0.1,
-						key='astroquery_radius',
-						disabled=(astroquery_mode != 'region_search'),
-						help='Cone-search radius around the RA/Dec sky position.'
-					)
+					astroquery_radius = st.number_input( 'Radius', min_value=0.001, max_value=60.0,
+						value=float( st.session_state.get( 'astroquery_radius', 0.5 ) ), step=0.1,
+						key='astroquery_radius', disabled=(astroquery_mode != 'region_search'),
+						help='Cone-search radius around the RA/Dec sky position.' )
 				
 				c4, c5 = st.columns( 2 )
 				
 				with c4:
-					astroquery_radius_unit = st.selectbox(
-						'Radius Unit',
+					astroquery_radius_unit = st.selectbox( 'Radius Unit',
 						options=[ 'deg', 'arcmin', 'arcsec' ],
 						index=[ 'deg', 'arcmin', 'arcsec' ].index(
-							st.session_state.get( 'astroquery_radius_unit', 'deg' )
-						),
+							st.session_state.get( 'astroquery_radius_unit', 'deg' ) ),
 						key='astroquery_radius_unit',
-						disabled=(astroquery_mode != 'region_search')
-					)
+						disabled=(astroquery_mode != 'region_search') )
 				
 				with c5:
-					astroquery_row_limit = st.number_input(
-						'Row Limit',
-						min_value=1,
+					astroquery_row_limit = st.number_input( 'Row Limit', min_value=1,
 						max_value=10000,
-						value=int( st.session_state.get( 'astroquery_row_limit', 100 ) ),
-						step=1,
-						key='astroquery_row_limit'
-					)
+						value=int( st.session_state.get( 'astroquery_row_limit', 100 ) ), step=1,
+						key='astroquery_row_limit' )
 				
-				st.caption(
-					'No API key is required for basic astroquery SIMBAD queries. '
-					'Use object_search for a named object, object_ids for alternate names, '
-					'and region_search for a cone search around RA/Dec.'
-				)
+				st.caption( 'No API key is required for basic astroquery SIMBAD queries. '
+				            'Use object_search for a named object, object_ids for alternate '
+				            'names, '
+				            'and region_search for a cone search around RA/Dec.' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
-					astroquery_submit = st.button(
-						'Submit',
-						key='astroquery_submit',
-						use_container_width=True
-					)
+					astroquery_submit = st.button( 'Submit', key='astroquery_submit',
+						use_container_width=True )
 				with b2:
-					st.button(
-						'Clear',
-						key='astroquery_clear',
-						on_click=_clear_astroquery_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='astroquery_clear', on_click=_clear_astroquery_state,
+						use_container_width=True )
 			
 			with col_right:
 				st.markdown( 'Results' )
@@ -15996,15 +12270,11 @@ elif mode == 'Astronomical':
 				if astroquery_submit:
 					try:
 						f = AstroQuery( )
-						result = f.fetch(
-							mode=astroquery_mode,
-							query=astroquery_query,
-							ra=astroquery_ra,
-							dec=astroquery_dec,
-							radius=float( astroquery_radius ),
+						result = f.fetch( mode=astroquery_mode, query=astroquery_query,
+							ra=astroquery_ra, dec=astroquery_dec, radius=float(
+								astroquery_radius ),
 							radius_unit=astroquery_radius_unit,
-							row_limit=int( astroquery_row_limit )
-						)
+							row_limit=int( astroquery_row_limit ) )
 						
 						st.session_state[ 'astroquery_results' ] = result or { }
 						st.rerun( )
@@ -16034,10 +12304,8 @@ elif mode == 'Astronomical':
 						if isinstance( result, dict ) and 'dec' in result:
 							st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
 						if isinstance( result, dict ) and 'radius' in result:
-							st.markdown(
-								f"**Radius:** {result.get( 'radius', '' )} "
-								f"{result.get( 'radius_unit', '' )}"
-							)
+							st.markdown( f"**Radius:** {result.get( 'radius', '' )} "
+							             f"{result.get( 'radius_unit', '' )}" )
 					
 					rows = result.get( 'rows', [ ] ) if isinstance( result, dict ) else [ ]
 					columns = result.get( 'columns', [ ] ) if isinstance( result, dict ) else [ ]
@@ -16059,11 +12327,7 @@ elif mode == 'Astronomical':
 						st.markdown( f'#### Result Rows ({len( df_rows )})' )
 						
 						if not df_rows.empty:
-							st.dataframe(
-								df_rows,
-								use_container_width=True,
-								hide_index=True
-							)
+							st.dataframe( df_rows, use_container_width=True, hide_index=True )
 						else:
 							st.info( 'No displayable rows were returned.' )
 						
@@ -16077,7 +12341,7 @@ elif mode == 'Astronomical':
 						st.json( result )
 		
 		# -------- Star Map
-		with st.expander( label='Star Map', icon='⭐',expanded=False ):
+		with st.expander( label='Star Map', icon='⭐', expanded=False ):
 			if 'starmap_results' not in st.session_state:
 				st.session_state[ 'starmap_results' ] = { }
 			
@@ -16107,140 +12371,92 @@ elif mode == 'Astronomical':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				starmap_mode = st.selectbox(
-					'Mode',
+				starmap_mode = st.selectbox( 'Mode',
 					options=[ 'object_link', 'coordinate_link', 'snapshot' ],
 					index=[ 'object_link', 'coordinate_link', 'snapshot' ].index(
 						st.session_state.get( 'starmap_mode', 'object_link' ) ),
-					key='starmap_mode'
-				)
+					key='starmap_mode' )
 				
-				starmap_query = st.text_area(
-					'Object Query',
-					height=80,
-					key='starmap_query',
-					placeholder='Examples: Polaris, M31, NGC 1300, Used for object_link mode only.',
-					disabled=(starmap_mode != 'object_link')
-				)
+				starmap_query = st.text_area( 'Object Query', height=80, key='starmap_query',
+					placeholder='Examples: Polaris, M31, NGC 1300, Used for object_link mode '
+					            'only.',
+					disabled=(starmap_mode != 'object_link') )
 				
 				c1, c2, c3 = st.columns( 3 )
 				
 				with c1:
-					starmap_ra = st.number_input(
-						'RA (hours)',
-						min_value=0.0,
-						max_value=24.0,
-						value=float( st.session_state.get( 'starmap_ra', 15.2976 ) ),
-						step=0.0001,
-						format='%.4f',
-						key='starmap_ra',
-						disabled=(starmap_mode == 'object_link'),
-						help='Right Ascension of the sky center in hours. Example: 15.2976'
-					)
+					starmap_ra = st.number_input( 'RA (hours)', min_value=0.0, max_value=24.0,
+						value=float( st.session_state.get( 'starmap_ra', 15.2976 ) ), step=0.0001,
+						format='%.4f', key='starmap_ra', disabled=(starmap_mode == 'object_link'),
+						help='Right Ascension of the sky center in hours. Example: 15.2976' )
 				
 				with c2:
-					starmap_dec = st.number_input(
-						'Dec (degrees)',
-						min_value=-90.0,
+					starmap_dec = st.number_input( 'Dec (degrees)', min_value=-90.0,
 						max_value=90.0,
 						value=float( st.session_state.get( 'starmap_dec', -17.5892 ) ),
 						step=0.0001,
-						format='%.4f',
-						key='starmap_dec',
-						disabled=(starmap_mode == 'object_link'),
-						help='Declination of the sky center in degrees. Example: -17.5892'
-					)
+						format='%.4f', key='starmap_dec', disabled=(starmap_mode == 'object_link'),
+						help='Declination of the sky center in degrees. Example: -17.5892' )
 				
 				with c3:
-					starmap_zoom = st.number_input(
-						'Zoom',
-						min_value=1,
-						max_value=18,
-						value=int( st.session_state.get( 'starmap_zoom', 5 ) ),
-						step=1,
+					starmap_zoom = st.number_input( 'Zoom', min_value=1, max_value=18,
+						value=int( st.session_state.get( 'starmap_zoom', 5 ) ), step=1,
 						key='starmap_zoom',
-						help='Smaller values show a wider field; larger values zoom in.'
-					)
+						help='Smaller values show a wider field; larger values zoom in.' )
 				
 				c4, c5 = st.columns( 2 )
 				
 				with c4:
-					starmap_image_source = st.selectbox(
-						'Image Source',
+					starmap_image_source = st.selectbox( 'Image Source',
 						options=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS', 'H-Alpha' ],
-						index=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS', 'H-Alpha' ].index(
+						index=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS',
+							'H-Alpha' ].index(
 							st.session_state.get( 'starmap_image_source', 'DSS2' ) ),
-						key='starmap_image_source',
-						disabled=(starmap_mode != 'snapshot'),
-						help='Sky survey source used for snapshot generation.'
-					)
+						key='starmap_image_source', disabled=(starmap_mode != 'snapshot'),
+						help='Sky survey source used for snapshot generation.' )
 				
 				with c5:
-					starmap_box_color = st.text_input(
-						'Box Color',
+					starmap_box_color = st.text_input( 'Box Color',
 						value=st.session_state.get( 'starmap_box_color', 'yellow' ),
-						key='starmap_box_color',
-						placeholder='yellow',
-						disabled=(starmap_mode == 'snapshot')
-					)
+						key='starmap_box_color', placeholder='yellow',
+						disabled=(starmap_mode == 'snapshot') )
 				
 				c6, c7 = st.columns( 2 )
 				
 				with c6:
-					starmap_show_box = st.checkbox(
-						'Show Box',
+					starmap_show_box = st.checkbox( 'Show Box',
 						value=st.session_state.get( 'starmap_show_box', True ),
-						key='starmap_show_box',
-						disabled=(starmap_mode == 'snapshot')
-					)
+						key='starmap_show_box', disabled=(starmap_mode == 'snapshot') )
 				
 				with c7:
-					starmap_show_grid = st.checkbox(
-						'Show Grid',
+					starmap_show_grid = st.checkbox( 'Show Grid',
 						value=st.session_state.get( 'starmap_show_grid', True ),
-						key='starmap_show_grid',
-						disabled=(starmap_mode == 'object_link')
-					)
+						key='starmap_show_grid', disabled=(starmap_mode == 'object_link') )
 				
 				c8, c9 = st.columns( 2 )
 				
 				with c8:
-					starmap_show_lines = st.checkbox(
-						'Show Constellation Lines',
+					starmap_show_lines = st.checkbox( 'Show Constellation Lines',
 						value=st.session_state.get( 'starmap_show_lines', True ),
-						key='starmap_show_lines',
-						disabled=False
-					)
+						key='starmap_show_lines', disabled=False )
 				
 				with c9:
-					starmap_show_boundaries = st.checkbox(
-						'Show Constellation Boundaries',
+					starmap_show_boundaries = st.checkbox( 'Show Constellation Boundaries',
 						value=st.session_state.get( 'starmap_show_boundaries', True ),
-						key='starmap_show_boundaries',
-						disabled=False
-					)
+						key='starmap_show_boundaries', disabled=False )
 				
-				starmap_show_const_names = st.checkbox(
-					'Show Constellation Names',
+				starmap_show_const_names = st.checkbox( 'Show Constellation Names',
 					value=st.session_state.get( 'starmap_show_const_names', False ),
-					key='starmap_show_const_names',
-					disabled=(starmap_mode != 'snapshot')
-				)
+					key='starmap_show_const_names', disabled=(starmap_mode != 'snapshot') )
 				
-				starmap_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'starmap_timeout', 20 ) ),
-					step=1,
-					key='starmap_timeout'
-				)
+				starmap_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'starmap_timeout', 20 ) ), step=1,
+					key='starmap_timeout' )
 				
-				st.caption(
-					'No API key is required. '
-					'Use object_link for a named object, coordinate_link for RA/Dec-centered interactive maps, '
-					'and snapshot for a static sky image page.'
-				)
+				st.caption( 'No API key is required. '
+				            'Use object_link for a named object, coordinate_link for '
+				            'RA/Dec-centered interactive maps, '
+				            'and snapshot for a static sky image page.' )
 				
 				b1, b2 = st.columns( 2 )
 				with b1:
@@ -16254,15 +12470,10 @@ elif mode == 'Astronomical':
 				if starmap_submit:
 					try:
 						f = StarMap( )
-						result = f.fetch(
-							mode=starmap_mode,
-							query=starmap_query,
-							ra=float( starmap_ra ),
-							dec=float( starmap_dec ),
-							zoom=int( starmap_zoom ),
-							image_source=starmap_image_source,
-							box_color=starmap_box_color,
-							show_box=bool( starmap_show_box ),
+						result = f.fetch( mode=starmap_mode, query=starmap_query,
+							ra=float( starmap_ra ), dec=float( starmap_dec ),
+							zoom=int( starmap_zoom ), image_source=starmap_image_source,
+							box_color=starmap_box_color, show_box=bool( starmap_show_box ),
 							show_grid=bool( starmap_show_grid ),
 							show_lines=bool( starmap_show_lines ),
 							show_boundaries=bool( starmap_show_boundaries ),
@@ -16300,10 +12511,12 @@ elif mode == 'Astronomical':
 							st.markdown( f"**Image Source:** {result.get( 'image_source', '' )}" )
 					
 					if result.get( 'interactive_url', '' ):
-						st.markdown( f"**Interactive URL:** {result.get( 'interactive_url', '' )}" )
+						st.markdown( f"**Interactive URL:** "
+						             f"{result.get( 'interactive_url', '' )}" )
 					
 					if result.get( 'snapshot_page_url', '' ):
-						st.markdown( f"**Snapshot Page URL:** {result.get( 'snapshot_page_url', '' )}" )
+						st.markdown(
+							f"**Snapshot Page URL:** {result.get( 'snapshot_page_url', '' )}" )
 					
 					preferred_image_url = result.get( 'preferred_image_url', '' )
 					if preferred_image_url:
@@ -16321,12 +12534,8 @@ elif mode == 'Astronomical':
 					
 					if result.get( 'html_preview', '' ):
 						st.markdown( '#### HTML Preview' )
-						st.text_area(
-							'',
-							value=result.get( 'html_preview', '' ),
-							height=220,
-							key='starmap_html_preview'
-						)
+						st.text_area( '', value=result.get( 'html_preview', '' ), height=220,
+							key='starmap_html_preview' )
 		
 		# -------- SIMBAD
 		with st.expander( label='SIMBAD', icon='🌌', expanded=False ):
@@ -16348,125 +12557,72 @@ elif mode == 'Astronomical':
 				st.session_state[ 'simbad_clear_request' ] = False
 			
 			def _clear_simbad_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the SIMBAD expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'simbad_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				simbad_mode = st.selectbox(
-					'Mode',
+				simbad_mode = st.selectbox( 'Mode',
 					options=[ 'object_search', 'object_ids', 'region_search' ],
 					index=[ 'object_search', 'object_ids', 'region_search' ].index(
-						st.session_state.get( 'simbad_mode', 'object_search' )
-					),
+						st.session_state.get( 'simbad_mode', 'object_search' ) ),
 					key='simbad_mode',
-					help='Choose named-object lookup, alternate identifiers, or cone search.'
-				)
+					help='Choose named-object lookup, alternate identifiers, or cone search.' )
 				
-				simbad_query = st.text_area(
-					'Object Name',
-					height=80,
-					key='simbad_query',
-					placeholder=(
-							'Examples:\n'
-							'Polaris\n'
-							'M 31\n'
-							'NGC 1300\n'
-							'\n'
-							'Used for object_search and object_ids.'
-					),
-					disabled=(simbad_mode == 'region_search')
-				)
+				simbad_query = st.text_area( 'Object Name', height=80, key='simbad_query',
+					placeholder=('Examples:\n'
+					             'Polaris\n'
+					             'M 31\n'
+					             'NGC 1300\n'
+					             '\n'
+					             'Used for object_search and object_ids.'),
+					disabled=(simbad_mode == 'region_search') )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					simbad_ra = st.text_input(
-						'Right Ascension',
-						value=st.session_state.get( 'simbad_ra', '02:31:49.09' ),
-						key='simbad_ra',
-						placeholder='13:09:48.09',
-						disabled=(simbad_mode != 'region_search'),
-						help='Hourangle format recommended for this wrapper.'
-					)
+					simbad_ra = st.text_input( 'Right Ascension',
+						value=st.session_state.get( 'simbad_ra', '02:31:49.09' ), key='simbad_ra',
+						placeholder='13:09:48.09', disabled=(simbad_mode != 'region_search'),
+						help='Hourangle format recommended for this wrapper.' )
 				
 				with c2:
-					simbad_dec = st.text_input(
-						'Declination',
+					simbad_dec = st.text_input( 'Declination',
 						value=st.session_state.get( 'simbad_dec', '+89:15:50.8' ),
 						key='simbad_dec',
-						placeholder='-23:22:53.3',
-						disabled=(simbad_mode != 'region_search')
-					)
+						placeholder='-23:22:53.3', disabled=(simbad_mode != 'region_search') )
 				
 				c3, c4, c5 = st.columns( 3 )
 				
 				with c3:
-					simbad_radius = st.number_input(
-						'Radius',
-						min_value=0.001,
-						max_value=60.0,
-						value=float( st.session_state.get( 'simbad_radius', 0.5 ) ),
-						step=0.1,
-						key='simbad_radius',
-						disabled=(simbad_mode != 'region_search'),
-						help='Cone-search radius around the RA/Dec position.'
-					)
+					simbad_radius = st.number_input( 'Radius', min_value=0.001, max_value=60.0,
+						value=float( st.session_state.get( 'simbad_radius', 0.5 ) ), step=0.1,
+						key='simbad_radius', disabled=(simbad_mode != 'region_search'),
+						help='Cone-search radius around the RA/Dec position.' )
 				
 				with c4:
-					simbad_radius_unit = st.selectbox(
-						'Radius Unit',
+					simbad_radius_unit = st.selectbox( 'Radius Unit',
 						options=[ 'deg', 'arcmin', 'arcsec' ],
 						index=[ 'deg', 'arcmin', 'arcsec' ].index(
-							st.session_state.get( 'simbad_radius_unit', 'deg' )
-						),
-						key='simbad_radius_unit',
-						disabled=(simbad_mode != 'region_search')
-					)
+							st.session_state.get( 'simbad_radius_unit', 'deg' ) ),
+						key='simbad_radius_unit', disabled=(simbad_mode != 'region_search') )
 				
 				with c5:
-					simbad_row_limit = st.number_input(
-						'Row Limit',
-						min_value=1,
-						max_value=10000,
-						value=int( st.session_state.get( 'simbad_row_limit', 100 ) ),
-						step=1,
-						key='simbad_row_limit'
-					)
+					simbad_row_limit = st.number_input( 'Row Limit', min_value=1, max_value=10000,
+						value=int( st.session_state.get( 'simbad_row_limit', 100 ) ), step=1,
+						key='simbad_row_limit' )
 				
-				st.caption(
-					'SIMBAD named-object queries do not require an API key. '
-					'Use object_search for a record lookup, object_ids for aliases, '
-					'and region_search for a cone search around sky coordinates.'
-				)
+				st.caption( 'SIMBAD named-object queries do not require an API key. '
+				            'Use object_search for a record lookup, object_ids for aliases, '
+				            'and region_search for a cone search around sky coordinates.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					simbad_submit = st.button(
-						'Submit',
-						key='simbad_submit'
-					)
+					simbad_submit = st.button( 'Submit', key='simbad_submit' )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='simbad_clear',
-						on_click=_clear_simbad_state
-					)
+					st.button( 'Clear', key='simbad_clear', on_click=_clear_simbad_state )
 			
 			with col_right:
 				st.markdown( 'Results' )
@@ -16474,15 +12630,9 @@ elif mode == 'Astronomical':
 				if simbad_submit:
 					try:
 						f = AstroQuery( )
-						result = f.fetch(
-							mode=simbad_mode,
-							query=simbad_query,
-							ra=simbad_ra,
-							dec=simbad_dec,
-							radius=float( simbad_radius ),
-							radius_unit=simbad_radius_unit,
-							row_limit=int( simbad_row_limit )
-						)
+						result = f.fetch( mode=simbad_mode, query=simbad_query, ra=simbad_ra,
+							dec=simbad_dec, radius=float( simbad_radius ),
+							radius_unit=simbad_radius_unit, row_limit=int( simbad_row_limit ) )
 						
 						st.session_state[ 'simbad_results' ] = result or { }
 						st.rerun( )
@@ -16512,10 +12662,8 @@ elif mode == 'Astronomical':
 						if isinstance( result, dict ) and 'dec' in result:
 							st.markdown( f"**Dec:** {result.get( 'dec', '' )}" )
 						if isinstance( result, dict ) and 'radius' in result:
-							st.markdown(
-								f"**Radius:** {result.get( 'radius', '' )} "
-								f"{result.get( 'radius_unit', '' )}"
-							)
+							st.markdown( f"**Radius:** {result.get( 'radius', '' )} "
+							             f"{result.get( 'radius_unit', '' )}" )
 					
 					columns = result.get( 'columns', [ ] ) if isinstance( result, dict ) else [ ]
 					rows = result.get( 'rows', [ ] ) if isinstance( result, dict ) else [ ]
@@ -16559,177 +12707,114 @@ elif mode == 'Astronomical':
 				st.session_state[ 'spaceweather_clear_request' ] = False
 			
 			def _clear_spaceweather_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Space Weather expander state for reset on the next rerun.
-	
-					Parameters:
-					-----------
-					None
-	
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'spaceweather_clear_request' ] = True
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				spaceweather_mode = st.selectbox(
-					'Mode',
-					options=[
-							'cme', 'cme_analysis', 'gst', 'ips', 'flr',
-							'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', 'notifications'
-					],
-					index=[
-							'cme', 'cme_analysis', 'gst', 'ips', 'flr',
-							'sep', 'mpc', 'rbe', 'hss', 'wsa_enlil', 'notifications'
-					].index(
-						st.session_state.get( 'spaceweather_mode', 'cme' )
-					),
-					key='spaceweather_mode',
-					help='Choose the documented DONKI endpoint to query.'
-				)
+				spaceweather_mode = st.selectbox( 'Mode',
+					options=[ 'cme', 'cme_analysis', 'gst', 'ips', 'flr', 'sep', 'mpc', 'rbe',
+						'hss', 'wsa_enlil', 'notifications' ],
+					index=[ 'cme', 'cme_analysis', 'gst', 'ips', 'flr', 'sep', 'mpc', 'rbe', 'hss',
+						'wsa_enlil', 'notifications' ].index(
+						st.session_state.get( 'spaceweather_mode', 'cme' ) ),
+					key='spaceweather_mode', help='Choose the documented DONKI endpoint to '
+					                              'query.' )
 				
 				d1, d2 = st.columns( 2 )
 				
 				with d1:
-					spaceweather_start_date = st.text_input(
-						'Start Date',
+					spaceweather_start_date = st.text_input( 'Start Date',
 						value=st.session_state.get( 'spaceweather_start_date', '2026-03-01' ),
-						key='spaceweather_start_date',
-						placeholder='2026-03-01'
-					)
+						key='spaceweather_start_date', placeholder='2026-03-01' )
 				
 				with d2:
-					spaceweather_end_date = st.text_input(
-						'End Date',
+					spaceweather_end_date = st.text_input( 'End Date',
 						value=st.session_state.get( 'spaceweather_end_date', '2026-03-15' ),
-						key='spaceweather_end_date',
-						placeholder='2026-03-15'
-					)
+						key='spaceweather_end_date', placeholder='2026-03-15' )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					spaceweather_location = st.text_input(
-						'Location',
+					spaceweather_location = st.text_input( 'Location',
 						value=st.session_state.get( 'spaceweather_location', 'ALL' ),
-						key='spaceweather_location',
-						placeholder='ALL or Earth',
-						disabled=(spaceweather_mode != 'ips')
-					)
+						key='spaceweather_location', placeholder='ALL or Earth',
+						disabled=(spaceweather_mode != 'ips') )
 				
 				with c2:
-					spaceweather_catalog = st.text_input(
-						'Catalog',
+					spaceweather_catalog = st.text_input( 'Catalog',
 						value=st.session_state.get( 'spaceweather_catalog', 'ALL' ),
-						key='spaceweather_catalog',
-						placeholder='ALL or SWRC_CATALOG',
-						disabled=(spaceweather_mode not in [ 'ips', 'cme_analysis' ])
-					)
+						key='spaceweather_catalog', placeholder='ALL or SWRC_CATALOG',
+						disabled=(spaceweather_mode not in [ 'ips', 'cme_analysis' ]) )
 				
 				c3, c4 = st.columns( 2 )
 				
 				with c3:
-					spaceweather_notification_type = st.text_input(
-						'Notification Type',
+					spaceweather_notification_type = st.text_input( 'Notification Type',
 						value=st.session_state.get( 'spaceweather_notification_type', 'all' ),
-						key='spaceweather_notification_type',
-						placeholder='all or FLR',
-						disabled=(spaceweather_mode != 'notifications')
-					)
+						key='spaceweather_notification_type', placeholder='all or FLR',
+						disabled=(spaceweather_mode != 'notifications') )
 				
 				with c4:
-					spaceweather_keyword = st.text_input(
-						'Keyword',
+					spaceweather_keyword = st.text_input( 'Keyword',
 						value=st.session_state.get( 'spaceweather_keyword', '' ),
-						key='spaceweather_keyword',
-						placeholder='swpc_annex',
-						disabled=(spaceweather_mode != 'cme_analysis')
-					)
+						key='spaceweather_keyword', placeholder='swpc_annex',
+						disabled=(spaceweather_mode != 'cme_analysis') )
 				
 				c5, c6 = st.columns( 2 )
 				
 				with c5:
-					spaceweather_speed = st.number_input(
-						'Speed',
-						min_value=0,
-						max_value=5000,
-						value=int( st.session_state.get( 'spaceweather_speed', 0 ) ),
-						step=10,
-						key='spaceweather_speed',
-						disabled=(spaceweather_mode != 'cme_analysis')
-					)
+					spaceweather_speed = st.number_input( 'Speed', min_value=0, max_value=5000,
+						value=int( st.session_state.get( 'spaceweather_speed', 0 ) ), step=10,
+						key='spaceweather_speed', disabled=(spaceweather_mode != 'cme_analysis') )
 				
 				with c6:
-					spaceweather_half_angle = st.number_input(
-						'Half Angle',
-						min_value=0,
+					spaceweather_half_angle = st.number_input( 'Half Angle', min_value=0,
 						max_value=180,
-						value=int( st.session_state.get( 'spaceweather_half_angle', 0 ) ),
-						step=1,
+						value=int( st.session_state.get( 'spaceweather_half_angle', 0 ) ), step=1,
 						key='spaceweather_half_angle',
-						disabled=(spaceweather_mode != 'cme_analysis')
-					)
+						disabled=(spaceweather_mode != 'cme_analysis') )
 				
 				c7, c8, c9 = st.columns( 3 )
 				
 				with c7:
-					spaceweather_most_accurate_only = st.checkbox(
-						'Most Accurate Only',
-						value=bool( st.session_state.get( 'spaceweather_most_accurate_only', True ) ),
+					spaceweather_most_accurate_only = st.checkbox( 'Most Accurate Only',
+						value=bool(
+						st.session_state.get( 'spaceweather_most_accurate_only', True ) ),
 						key='spaceweather_most_accurate_only',
-						disabled=(spaceweather_mode != 'cme_analysis')
-					)
+						disabled=(spaceweather_mode != 'cme_analysis') )
 				
 				with c8:
-					spaceweather_complete_entry_only = st.checkbox(
-						'Complete Entry Only',
-						value=bool( st.session_state.get( 'spaceweather_complete_entry_only', True ) ),
+					spaceweather_complete_entry_only = st.checkbox( 'Complete Entry Only',
+						value=bool(
+							st.session_state.get( 'spaceweather_complete_entry_only', True ) ),
 						key='spaceweather_complete_entry_only',
-						disabled=(spaceweather_mode != 'cme_analysis')
-					)
+						disabled=(spaceweather_mode != 'cme_analysis') )
 				
 				with c9:
-					spaceweather_timeout = st.number_input(
-						'Timeout',
-						min_value=1,
-						max_value=120,
-						value=int( st.session_state.get( 'spaceweather_timeout', 20 ) ),
-						step=1,
-						key='spaceweather_timeout'
-					)
+					spaceweather_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+						value=int( st.session_state.get( 'spaceweather_timeout', 20 ) ), step=1,
+						key='spaceweather_timeout' )
 				
-				st.caption(
-					'Examples: cme for coronal mass ejections, gst for geomagnetic storms, '
-					'ips with Location=Earth, notifications with Type=all, or '
-					'cme_analysis with Catalog=ALL and Speed=500.'
-				)
+				st.caption( 'Examples: cme for coronal mass ejections, gst for geomagnetic '
+				            'storms, '
+				            'ips with Location=Earth, notifications with Type=all, or '
+				            'cme_analysis with Catalog=ALL and Speed=500.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					spaceweather_submit = st.button(
-						'Submit',
-						key='spaceweather_submit'
-					)
+					spaceweather_submit = st.button( 'Submit', key='spaceweather_submit' )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='spaceweather_clear',
-						on_click=_clear_spaceweather_state
-					)
+					st.button( 'Clear', key='spaceweather_clear',
+						on_click=_clear_spaceweather_state )
 			
 			with col_right:
 				if spaceweather_submit:
 					try:
 						f = SpaceWeather( )
-						result = f.fetch(
-							mode=spaceweather_mode,
+						result = f.fetch( mode=spaceweather_mode,
 							start_date=str( spaceweather_start_date ),
 							end_date=str( spaceweather_end_date ),
 							location=str( spaceweather_location or 'ALL' ),
@@ -16740,8 +12825,7 @@ elif mode == 'Astronomical':
 							speed=int( spaceweather_speed ),
 							half_angle=int( spaceweather_half_angle ),
 							keyword=str( spaceweather_keyword or '' ),
-							time=int( spaceweather_timeout )
-						)
+							time=int( spaceweather_timeout ) )
 						
 						st.session_state[ 'spaceweather_results' ] = result or { }
 						st.rerun( )
@@ -16758,7 +12842,8 @@ elif mode == 'Astronomical':
 					st.markdown( '#### Result Summary' )
 					
 					if satellite_mode == 'observatories':
-						items = result.get( 'Observatory', [ ] ) if isinstance( result, dict ) else [ ]
+						items = result.get( 'Observatory', [ ] ) if isinstance( result,
+							dict ) else [ ]
 						
 						if items:
 							df_sat = pd.DataFrame( items )
@@ -16776,7 +12861,8 @@ elif mode == 'Astronomical':
 							st.info( 'No observatories returned.' )
 					
 					elif satellite_mode == 'ground_stations':
-						items = result.get( 'GroundStation', [ ] ) if isinstance( result, dict ) else [ ]
+						items = result.get( 'GroundStation', [ ] ) if isinstance( result,
+							dict ) else [ ]
 						
 						if items:
 							df_sat = pd.DataFrame( items )
@@ -16788,27 +12874,25 @@ elif mode == 'Astronomical':
 							
 							for idx, item in enumerate( items, start=1 ):
 								label = item.get( 'Id', f'Ground Station {idx}' )
-								with st.expander( f'Ground Station {idx}: {label}', expanded=False ):
+								with st.expander( f'Ground Station {idx}: {label}',
+										expanded=False ):
 									st.json( item )
 						else:
 							st.info( 'No ground stations returned.' )
 					
 					else:
-						data_items = result.get( 'Data', [ ] ) if isinstance( result, dict ) else [ ]
+						data_items = result.get( 'Data', [ ] ) if isinstance( result,
+							dict ) else [ ]
 						
 						if data_items:
 							summary_rows: List[ Dict[ str, Any ] ] = [ ]
 							
 							for item in data_items:
 								if isinstance( item, dict ):
-									summary_rows.append(
-										{
-												'Id': item.get( 'Id', '' ),
-												'CoordinateSystem': item.get( 'CoordinateSystem', '' ),
-												'Start': item.get( 'StartTime', '' ),
-												'End': item.get( 'EndTime', '' )
-										}
-									)
+									summary_rows.append( { 'Id': item.get( 'Id', '' ),
+										'CoordinateSystem': item.get( 'CoordinateSystem', '' ),
+										'Start': item.get( 'StartTime', '' ),
+										'End': item.get( 'EndTime', '' ) } )
 							
 							df_sat = pd.DataFrame( summary_rows )
 							if not df_sat.empty:
@@ -16874,210 +12958,138 @@ elif mode == 'Astronomical':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				starchart_mode = st.selectbox(
-					'Mode',
-					options=[ 'object_search', 'object_chart', 'coordinate_chart', 'static_chart' ],
-					index=[ 'object_search', 'object_chart', 'coordinate_chart', 'static_chart' ].index(
-						st.session_state.get( 'starchart_mode', 'object_chart' )
-					),
-					key='starchart_mode'
-				)
+				starchart_mode = st.selectbox( 'Mode',
+					options=[ 'object_search', 'object_chart', 'coordinate_chart',
+						'static_chart' ],
+					index=[ 'object_search', 'object_chart', 'coordinate_chart',
+						'static_chart' ].index(
+						st.session_state.get( 'starchart_mode', 'object_chart' ) ),
+					key='starchart_mode' )
 				
-				starchart_query = st.text_area(
-					'Object Query',
-					height=80,
-					key='starchart_query',
-					placeholder=(
-							'Examples:\n'
-							'Polaris\n'
-							'M31\n'
-							'NGC 1300\n'
-							'\n'
-							'Used for object_search and object_chart.'
-					),
-					disabled=(starchart_mode not in [ 'object_search', 'object_chart' ])
-				)
+				starchart_query = st.text_area( 'Object Query', height=80, key='starchart_query',
+					placeholder=('Examples:\n'
+					             'Polaris\n'
+					             'M31\n'
+					             'NGC 1300\n'
+					             '\n'
+					             'Used for object_search and object_chart.'),
+					disabled=(starchart_mode not in [ 'object_search', 'object_chart' ]) )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					starchart_ra = st.number_input(
-						'RA',
+					starchart_ra = st.number_input( 'RA',
 						value=float( st.session_state.get( 'starchart_ra', 2.5302 ) ),
-						format='%.4f',
-						key='starchart_ra',
-						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-					)
+						format='%.4f', key='starchart_ra',
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ]) )
 				
 				with c2:
-					starchart_dec = st.number_input(
-						'Dec',
+					starchart_dec = st.number_input( 'Dec',
 						value=float( st.session_state.get( 'starchart_dec', 89.2642 ) ),
-						format='%.4f',
-						key='starchart_dec',
-						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-					)
+						format='%.4f', key='starchart_dec',
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ]) )
 				
 				c3, c4, c5 = st.columns( 3 )
 				
 				with c3:
-					starchart_zoom = st.number_input(
-						'Zoom',
-						min_value=0,
-						max_value=18,
-						value=int( st.session_state.get( 'starchart_zoom', 5 ) ),
-						step=1,
-						key='starchart_zoom'
-					)
+					starchart_zoom = st.number_input( 'Zoom', min_value=0, max_value=18,
+						value=int( st.session_state.get( 'starchart_zoom', 5 ) ), step=1,
+						key='starchart_zoom' )
 				
 				with c4:
-					starchart_width = st.number_input(
-						'Width',
-						min_value=100,
-						max_value=2400,
-						value=int( st.session_state.get( 'starchart_width', 900 ) ),
-						step=50,
-						key='starchart_width',
-						disabled=(starchart_mode != 'static_chart')
-					)
+					starchart_width = st.number_input( 'Width', min_value=100, max_value=2400,
+						value=int( st.session_state.get( 'starchart_width', 900 ) ), step=50,
+						key='starchart_width', disabled=(starchart_mode != 'static_chart') )
 				
 				with c5:
-					starchart_height = st.number_input(
-						'Height',
-						min_value=100,
-						max_value=2400,
-						value=int( st.session_state.get( 'starchart_height', 450 ) ),
-						step=50,
-						key='starchart_height',
-						disabled=(starchart_mode != 'static_chart')
-					)
+					starchart_height = st.number_input( 'Height', min_value=100, max_value=2400,
+						value=int( st.session_state.get( 'starchart_height', 450 ) ), step=50,
+						key='starchart_height', disabled=(starchart_mode != 'static_chart') )
 				
 				c6, c7, c8 = st.columns( 3 )
 				
 				with c6:
-					starchart_image_source = st.selectbox(
-						'Image Source',
-						options=[ 'DSS2', 'SDSS' ],
-						index=[ 'DSS2', 'SDSS' ].index(
-							st.session_state.get( 'starchart_image_source', 'DSS2' )
-						),
-						key='starchart_image_source'
-					)
+					starchart_image_source = st.selectbox( 'Image Source',
+						options=[ 'DSS2', 'SDSS' ], index=[ 'DSS2', 'SDSS' ].index(
+							st.session_state.get( 'starchart_image_source', 'DSS2' ) ),
+						key='starchart_image_source' )
 				
 				with c7:
-					starchart_box_color = st.text_input(
-						'Box Color',
+					starchart_box_color = st.text_input( 'Box Color',
 						value=st.session_state.get( 'starchart_box_color', 'yellow' ),
 						key='starchart_box_color',
-						disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ])
-					)
+						disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ]) )
 				
 				with c8:
-					starchart_magnitude = st.number_input(
-						'Magnitude',
-						min_value=0.0,
+					starchart_magnitude = st.number_input( 'Magnitude', min_value=0.0,
 						max_value=20.0,
 						value=float( st.session_state.get( 'starchart_magnitude', 7.5 ) ),
 						step=0.1,
-						key='starchart_magnitude',
-						disabled=(starchart_mode != 'static_chart')
-					)
+						key='starchart_magnitude', disabled=(starchart_mode != 'static_chart') )
 				
 				c9, c10 = st.columns( 2 )
 				
 				with c9:
-					starchart_show_box = st.checkbox(
-						'Show Box',
+					starchart_show_box = st.checkbox( 'Show Box',
 						value=bool( st.session_state.get( 'starchart_show_box', True ) ),
 						key='starchart_show_box',
-						disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ])
-					)
+						disabled=(starchart_mode not in [ 'object_chart', 'coordinate_chart' ]) )
 				
 				with c10:
-					starchart_show_grid = st.checkbox(
-						'Show Grid',
+					starchart_show_grid = st.checkbox( 'Show Grid',
 						value=bool( st.session_state.get( 'starchart_show_grid', True ) ),
 						key='starchart_show_grid',
-						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-					)
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ]) )
 				
 				c11, c12 = st.columns( 2 )
 				
 				with c11:
-					starchart_show_lines = st.checkbox(
-						'Show Lines',
+					starchart_show_lines = st.checkbox( 'Show Lines',
 						value=bool( st.session_state.get( 'starchart_show_lines', True ) ),
 						key='starchart_show_lines',
-						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-					)
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ]) )
 				
 				with c12:
-					starchart_show_boundaries = st.checkbox(
-						'Show Boundaries',
+					starchart_show_boundaries = st.checkbox( 'Show Boundaries',
 						value=bool( st.session_state.get( 'starchart_show_boundaries', True ) ),
 						key='starchart_show_boundaries',
-						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ])
-					)
+						disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ]) )
 				
-				starchart_show_const_names = st.checkbox(
-					'Show Constellation Names',
+				starchart_show_const_names = st.checkbox( 'Show Constellation Names',
 					value=bool( st.session_state.get( 'starchart_show_const_names', False ) ),
-					key='starchart_show_const_names',
-					disabled=(starchart_mode != 'static_chart')
-				)
+					key='starchart_show_const_names', disabled=(starchart_mode != 'static_chart') )
 				
-				starchart_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'starchart_timeout', 20 ) ),
-					step=1,
-					key='starchart_timeout'
-				)
+				starchart_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'starchart_timeout', 20 ) ), step=1,
+					key='starchart_timeout' )
 				
-				st.caption(
-					'Examples: object_search with Polaris, object_chart with M31, '
-					'coordinate_chart with RA=2.5302 and Dec=89.2642, or '
-					'static_chart with DSS2 and 900x450 output.'
-				)
+				st.caption( 'Examples: object_search with Polaris, object_chart with M31, '
+				            'coordinate_chart with RA=2.5302 and Dec=89.2642, or '
+				            'static_chart with DSS2 and 900x450 output.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					starchart_submit = st.button(
-						'Submit',
-						key='starchart_submit'
-					)
+					starchart_submit = st.button( 'Submit', key='starchart_submit' )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='starchart_clear',
-						on_click=_clear_starchart_state
-					)
+					st.button( 'Clear', key='starchart_clear', on_click=_clear_starchart_state )
 			
 			with col_right:
 				if starchart_submit:
 					try:
 						f = StarChart( )
-						result = f.fetch(
-							mode=starchart_mode,
-							query=str( starchart_query or '' ),
-							ra=float( starchart_ra ),
-							dec=float( starchart_dec ),
-							zoom=int( starchart_zoom ),
-							image_source=str( starchart_image_source ),
+						result = f.fetch( mode=starchart_mode, query=str( starchart_query or '' ),
+							ra=float( starchart_ra ), dec=float( starchart_dec ),
+							zoom=int( starchart_zoom ), image_source=str( starchart_image_source ),
 							box_color=str( starchart_box_color or 'yellow' ),
 							show_box=bool( starchart_show_box ),
 							show_grid=bool( starchart_show_grid ),
 							show_lines=bool( starchart_show_lines ),
 							show_boundaries=bool( starchart_show_boundaries ),
 							show_const_names=bool( starchart_show_const_names ),
-							width=int( starchart_width ),
-							height=int( starchart_height ),
-							magnitude=float( starchart_magnitude ),
-							time=int( starchart_timeout )
-						)
+							width=int( starchart_width ), height=int( starchart_height ),
+							magnitude=float( starchart_magnitude ), time=int( starchart_timeout ) )
 						
 						st.session_state[ 'starchart_results' ] = result or { }
 						st.rerun( )
@@ -17093,7 +13105,8 @@ elif mode == 'Astronomical':
 				else:
 					mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
 					params = result.get( 'params', { } ) if isinstance( result, dict ) else { }
-					search_payload = result.get( 'search', { } ) if isinstance( result, dict ) else { }
+					search_payload = result.get( 'search', { } ) if isinstance( result,
+						dict ) else { }
 					data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					chart_url = result.get( 'chart_url', '' ) if isinstance( result, dict ) else ''
 					image_url = result.get( 'image_url', '' ) if isinstance( result, dict ) else ''
@@ -17111,10 +13124,8 @@ elif mode == 'Astronomical':
 							if 'query' in params and params.get( 'query', '' ):
 								st.markdown( f"**Query:** {params.get( 'query', '' )}" )
 							if 'ra' in params and 'dec' in params:
-								st.markdown(
-									f"**Coordinates:** RA={params.get( 'ra', '' )}, "
-									f"Dec={params.get( 'dec', '' )}"
-								)
+								st.markdown( f"**Coordinates:** RA={params.get( 'ra', '' )}, "
+								             f"Dec={params.get( 'dec', '' )}" )
 					
 					with meta_c2:
 						if chart_url:
@@ -17141,16 +13152,14 @@ elif mode == 'Astronomical':
 						if items:
 							for idx, item in enumerate( items, start=1 ):
 								title_value = (
-										item.get( 'name' )
-										or item.get( 'title' )
-										or item.get( 'object' )
-										or f'Result {idx}'
-								)
+										item.get( 'name' ) or item.get( 'title' ) or item.get(
+									'object' ) or f'Result {idx}')
 								
 								with st.expander( f'Result {idx}: {title_value}', expanded=False ):
 									summary_parts: List[ str ] = [ ]
 									
-									for key in [ 'ra', 'dec', 'type', 'constellation', 'magnitude' ]:
+									for key in [ 'ra', 'dec', 'type', 'constellation',
+										'magnitude' ]:
 										if key in item and str( item.get( key ) ).strip( ):
 											summary_parts.append( f'{key}={item.get( key )}' )
 									
@@ -17173,7 +13182,7 @@ elif mode == 'Astronomical':
 						elif isinstance( data, dict ):
 							key_fields = { }
 							for key in [ 'name', 'title', 'ra', 'dec', 'type', 'constellation',
-							             'magnitude' ]:
+								'magnitude' ]:
 								if key in data:
 									key_fields[ key ] = data.get( key )
 							
@@ -17242,276 +13251,175 @@ elif mode == 'Astronomical':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				nearby_mode = st.selectbox(
-					'Mode',
-					options=[
-							'close_approaches',
-							'object_lookup',
-							'nhats_summary',
-							'nhats_object',
-							'fireballs'
-					],
-					index=[
-							'close_approaches',
-							'object_lookup',
-							'nhats_summary',
-							'nhats_object',
-							'fireballs'
-					].index(
-						st.session_state.get( 'nearbyobjects_mode', 'close_approaches' )
-					),
+				nearby_mode = st.selectbox( 'Mode',
+					options=[ 'close_approaches', 'object_lookup', 'nhats_summary', 'nhats_object',
+						'fireballs' ],
+					index=[ 'close_approaches', 'object_lookup', 'nhats_summary', 'nhats_object',
+						'fireballs' ].index(
+						st.session_state.get( 'nearbyobjects_mode', 'close_approaches' ) ),
 					key='nearbyobjects_mode',
-					help='Choose close approaches, single-object lookup, NHATS screening, or fireball data.'
-				)
+					help='Choose close approaches, single-object lookup, NHATS screening, '
+					     'or fireball data.' )
 				
 				d1, d2 = st.columns( 2 )
 				
 				with d1:
-					nearby_start_date = st.text_input(
-						'Start Date',
+					nearby_start_date = st.text_input( 'Start Date',
 						value=st.session_state.get( 'nearbyobjects_start_date', '2026-03-01' ),
-						key='nearbyobjects_start_date',
-						placeholder='2026-03-01',
-						disabled=(nearby_mode not in [ 'close_approaches', 'fireballs' ])
-					)
+						key='nearbyobjects_start_date', placeholder='2026-03-01',
+						disabled=(nearby_mode not in [ 'close_approaches', 'fireballs' ]) )
 				
 				with d2:
-					nearby_end_date = st.text_input(
-						'End Date',
+					nearby_end_date = st.text_input( 'End Date',
 						value=st.session_state.get( 'nearbyobjects_end_date', '2026-03-31' ),
-						key='nearbyobjects_end_date',
-						placeholder='2026-03-31',
-						disabled=(nearby_mode != 'close_approaches')
-					)
+						key='nearbyobjects_end_date', placeholder='2026-03-31',
+						disabled=(nearby_mode != 'close_approaches') )
 				
-				nearby_query = st.text_area(
-					'Object Query / Designation',
-					height=80,
-					key='nearbyobjects_query',
-					placeholder=(
-							'Examples:\n'
-							'Apophis\n'
-							'Eros\n'
-							'99942\n'
-							'2000 SG344'
-					),
-					disabled=(nearby_mode not in [ 'object_lookup', 'nhats_object' ])
-				)
+				nearby_query = st.text_area( 'Object Query / Designation', height=80,
+					key='nearbyobjects_query', placeholder=('Examples:\n'
+					                                        'Apophis\n'
+					                                        'Eros\n'
+					                                        '99942\n'
+					                                        '2000 SG344'),
+					disabled=(nearby_mode not in [ 'object_lookup', 'nhats_object' ]) )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					nearby_query_type = st.selectbox(
-						'Query Type',
-						options=[ 'sstr', 'spk', 'des' ],
-						index=[ 'sstr', 'spk', 'des' ].index(
-							st.session_state.get( 'nearbyobjects_query_type', 'sstr' )
-						),
-						key='nearbyobjects_query_type',
-						disabled=(nearby_mode != 'object_lookup')
-					)
+					nearby_query_type = st.selectbox( 'Query Type',
+						options=[ 'sstr', 'spk', 'des' ], index=[ 'sstr', 'spk', 'des' ].index(
+							st.session_state.get( 'nearbyobjects_query_type', 'sstr' ) ),
+						key='nearbyobjects_query_type', disabled=(nearby_mode != 'object_lookup') )
 				
 				with c2:
-					nearby_dist_max = st.text_input(
-						'Distance Max',
+					nearby_dist_max = st.text_input( 'Distance Max',
 						value=st.session_state.get( 'nearbyobjects_dist_max', '10LD' ),
-						key='nearbyobjects_dist_max',
-						placeholder='10LD or 0.05AU',
-						disabled=(nearby_mode != 'close_approaches')
-					)
+						key='nearbyobjects_dist_max', placeholder='10LD or 0.05AU',
+						disabled=(nearby_mode != 'close_approaches') )
 				
 				c3, c4, c5 = st.columns( 3 )
 				
 				with c3:
-					nearby_body = st.text_input(
-						'Body',
+					nearby_body = st.text_input( 'Body',
 						value=st.session_state.get( 'nearbyobjects_body', 'Earth' ),
-						key='nearbyobjects_body',
-						placeholder='Earth',
-						disabled=(nearby_mode != 'close_approaches')
-					)
+						key='nearbyobjects_body', placeholder='Earth',
+						disabled=(nearby_mode != 'close_approaches') )
 				
 				with c4:
-					nearby_sort = st.text_input(
-						'Sort',
+					nearby_sort = st.text_input( 'Sort',
 						value=st.session_state.get( 'nearbyobjects_sort', 'date' ),
-						key='nearbyobjects_sort',
-						placeholder='date or dist',
-						disabled=(nearby_mode != 'close_approaches')
-					)
+						key='nearbyobjects_sort', placeholder='date or dist',
+						disabled=(nearby_mode != 'close_approaches') )
 				
 				with c5:
-					nearby_limit = st.number_input(
-						'Limit',
-						min_value=1,
-						max_value=500,
-						value=int( st.session_state.get( 'nearbyobjects_limit', 20 ) ),
-						step=1,
-						key='nearbyobjects_limit'
-					)
+					nearby_limit = st.number_input( 'Limit', min_value=1, max_value=500,
+						value=int( st.session_state.get( 'nearbyobjects_limit', 20 ) ), step=1,
+						key='nearbyobjects_limit' )
 				
 				st.markdown( '#### NHATS Filters' )
 				
 				n1, n2, n3 = st.columns( 3 )
 				
 				with n1:
-					nearby_dv = st.number_input(
-						'ΔV',
-						min_value=0.0,
-						max_value=20.0,
-						value=float( st.session_state.get( 'nearbyobjects_dv', 6.0 ) ),
-						step=0.1,
+					nearby_dv = st.number_input( 'ΔV', min_value=0.0, max_value=20.0,
+						value=float( st.session_state.get( 'nearbyobjects_dv', 6.0 ) ), step=0.1,
 						key='nearbyobjects_dv',
-						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
-					)
+						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ]) )
 				
 				with n2:
-					nearby_dur = st.number_input(
-						'Duration',
-						min_value=1,
-						max_value=3000,
-						value=int( st.session_state.get( 'nearbyobjects_dur', 360 ) ),
-						step=1,
+					nearby_dur = st.number_input( 'Duration', min_value=1, max_value=3000,
+						value=int( st.session_state.get( 'nearbyobjects_dur', 360 ) ), step=1,
 						key='nearbyobjects_dur',
-						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
-					)
+						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ]) )
 				
 				with n3:
-					nearby_stay = st.number_input(
-						'Stay',
-						min_value=0,
-						max_value=365,
-						value=int( st.session_state.get( 'nearbyobjects_stay', 8 ) ),
-						step=1,
+					nearby_stay = st.number_input( 'Stay', min_value=0, max_value=365,
+						value=int( st.session_state.get( 'nearbyobjects_stay', 8 ) ), step=1,
 						key='nearbyobjects_stay',
-						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
-					)
+						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ]) )
 				
 				n4, n5, n6 = st.columns( 3 )
 				
 				with n4:
-					nearby_launch = st.text_input(
-						'Launch Window',
+					nearby_launch = st.text_input( 'Launch Window',
 						value=st.session_state.get( 'nearbyobjects_launch', '2020-2045' ),
-						key='nearbyobjects_launch',
-						placeholder='2020-2045',
-						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ])
-					)
+						key='nearbyobjects_launch', placeholder='2020-2045',
+						disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ]) )
 				
 				with n5:
-					nearby_h = st.number_input(
-						'H Max',
-						min_value=0.0,
-						max_value=40.0,
-						value=float( st.session_state.get( 'nearbyobjects_h', 26.0 ) ),
-						step=0.1,
-						key='nearbyobjects_h',
-						disabled=(nearby_mode != 'nhats_summary')
-					)
+					nearby_h = st.number_input( 'H Max', min_value=0.0, max_value=40.0,
+						value=float( st.session_state.get( 'nearbyobjects_h', 26.0 ) ), step=0.1,
+						key='nearbyobjects_h', disabled=(nearby_mode != 'nhats_summary') )
 				
 				with n6:
-					nearby_occ = st.number_input(
-						'OCC Max',
-						min_value=0,
-						max_value=20,
-						value=int( st.session_state.get( 'nearbyobjects_occ', 7 ) ),
-						step=1,
-						key='nearbyobjects_occ',
-						disabled=(nearby_mode != 'nhats_summary')
-					)
+					nearby_occ = st.number_input( 'OCC Max', min_value=0, max_value=20,
+						value=int( st.session_state.get( 'nearbyobjects_occ', 7 ) ), step=1,
+						key='nearbyobjects_occ', disabled=(nearby_mode != 'nhats_summary') )
 				
 				st.markdown( '#### SBDB Options' )
 				
 				s1, s2, s3 = st.columns( 3 )
 				
 				with s1:
-					nearby_include_physical = st.checkbox(
-						'Physical Params',
-						value=bool( st.session_state.get( 'nearbyobjects_include_physical', True ) ),
+					nearby_include_physical = st.checkbox( 'Physical Params', value=bool(
+						st.session_state.get( 'nearbyobjects_include_physical', True ) ),
 						key='nearbyobjects_include_physical',
-						disabled=(nearby_mode != 'object_lookup')
-					)
+						disabled=(nearby_mode != 'object_lookup') )
 				
 				with s2:
-					nearby_include_close_approaches = st.checkbox(
-						'CA Data',
-						value=bool( st.session_state.get( 'nearbyobjects_include_close_approaches', True ) ),
+					nearby_include_close_approaches = st.checkbox( 'CA Data', value=bool(
+						st.session_state.get( 'nearbyobjects_include_close_approaches', True ) ),
 						key='nearbyobjects_include_close_approaches',
-						disabled=(nearby_mode != 'object_lookup')
-					)
+						disabled=(nearby_mode != 'object_lookup') )
 				
 				with s3:
-					nearby_include_discovery = st.checkbox(
-						'Discovery',
-						value=bool( st.session_state.get( 'nearbyobjects_include_discovery', True ) ),
+					nearby_include_discovery = st.checkbox( 'Discovery', value=bool(
+						st.session_state.get( 'nearbyobjects_include_discovery', True ) ),
 						key='nearbyobjects_include_discovery',
-						disabled=(nearby_mode != 'object_lookup')
-					)
+						disabled=(nearby_mode != 'object_lookup') )
 				
-				nearby_ca_body = st.text_input(
-					'CA Body',
+				nearby_ca_body = st.text_input( 'CA Body',
 					value=st.session_state.get( 'nearbyobjects_ca_body', 'Earth' ),
-					key='nearbyobjects_ca_body',
-					placeholder='Earth',
-					disabled=(nearby_mode != 'object_lookup')
-				)
+					key='nearbyobjects_ca_body', placeholder='Earth',
+					disabled=(nearby_mode != 'object_lookup') )
 				
-				nearby_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'nearbyobjects_timeout', 20 ) ),
-					step=1,
-					key='nearbyobjects_timeout'
-				)
+				nearby_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'nearbyobjects_timeout', 20 ) ), step=1,
+					key='nearbyobjects_timeout' )
 				
-				st.caption(
-					'Examples: close_approaches with Distance Max=10LD and Body=Earth; '
-					'object_lookup with Query=Apophis and Query Type=sstr; '
-					'nhats_object with Query=99942; fireballs with Start Date=2014-01-01.'
-				)
+				st.caption( 'Examples: close_approaches with Distance Max=10LD and Body=Earth; '
+				            'object_lookup with Query=Apophis and Query Type=sstr; '
+				            'nhats_object with Query=99942; fireballs with Start '
+				            'Date=2014-01-01.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					nearby_submit = st.button(
-						'Submit',
-						key='nearbyobjects_submit'
-					)
+					nearby_submit = st.button( 'Submit', key='nearbyobjects_submit' )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='nearbyobjects_clear',
-						on_click=_clear_nearbyobjects_state
-					)
+					st.button( 'Clear', key='nearbyobjects_clear',
+						on_click=_clear_nearbyobjects_state )
 			
 			with col_right:
 				if nearby_submit:
 					try:
 						f = NearbyObjects( )
-						result = f.fetch(
-							mode=nearby_mode,
-							start_date=str( nearby_start_date ),
+						result = f.fetch( mode=nearby_mode, start_date=str( nearby_start_date ),
 							end_date=str( nearby_end_date ),
 							query=str( nearby_query or '' ).strip( ),
 							query_type=str( nearby_query_type ),
 							dist_max=str( nearby_dist_max or '10LD' ),
-							body=str( nearby_body or 'Earth' ),
-							sort=str( nearby_sort or 'date' ),
-							limit=int( nearby_limit ),
-							dv=float( nearby_dv ),
-							dur=int( nearby_dur ),
-							stay=int( nearby_stay ),
-							launch=str( nearby_launch or '2020-2045' ),
-							h=float( nearby_h ),
-							occ=int( nearby_occ ),
+							body=str( nearby_body or 'Earth' ), sort=str( nearby_sort or 'date' ),
+							limit=int( nearby_limit ), dv=float( nearby_dv ), dur=int(
+								nearby_dur ),
+							stay=int( nearby_stay ), launch=str( nearby_launch or '2020-2045' ),
+							h=float( nearby_h ), occ=int( nearby_occ ),
 							include_physical=bool( nearby_include_physical ),
 							include_close_approaches=bool( nearby_include_close_approaches ),
 							ca_body=str( nearby_ca_body or 'Earth' ),
 							include_discovery=bool( nearby_include_discovery ),
-							time=int( nearby_timeout )
-						)
+							time=int( nearby_timeout ) )
 						
 						st.session_state[ 'nearbyobjects_results' ] = result or { }
 						st.rerun( )
@@ -17543,10 +13451,8 @@ elif mode == 'Astronomical':
 					
 					if result.get( 'fields', [ ] ) and result.get( 'data', [ ] ):
 						st.markdown( '#### Results' )
-						df_nearby = pd.DataFrame(
-							result.get( 'data', [ ] ),
-							columns=result.get( 'fields', [ ] )
-						)
+						df_nearby = pd.DataFrame( result.get( 'data', [ ] ),
+							columns=result.get( 'fields', [ ] ) )
 						st.dataframe( df_nearby, use_container_width=True, hide_index=True )
 					
 					elif 'data' in result:
@@ -17555,7 +13461,8 @@ elif mode == 'Astronomical':
 						if isinstance( data, list ):
 							if data:
 								df_nearby = pd.DataFrame( data )
-								st.dataframe( df_nearby, use_container_width=True, hide_index=True )
+								st.dataframe( df_nearby, use_container_width=True,
+									hide_index=True )
 							else:
 								st.text( 'No rows returned.' )
 						else:
@@ -17582,37 +13489,9 @@ elif mode == 'Demographic':
 			CENSUS_MODES = [ 'variables', 'data' ]
 			
 			def _clear_census_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Census expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'census_clear_request' ] = True
 			
 			def _validate_census_year( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a Census API vintage year value.
-
-					Parameters:
-					-----------
-					value (object):
-						Year value supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Four-digit year value.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not re.fullmatch( r'\d{4}', text ):
@@ -17621,21 +13500,6 @@ elif mode == 'Demographic':
 				return text
 			
 			def _validate_census_dataset( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a Census API dataset path.
-
-					Parameters:
-					-----------
-					value (object):
-						Dataset path supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Cleaned dataset path without leading or trailing slashes.
-				'''
 				text = str( value or '' ).strip( ).strip( '/' )
 				
 				if not text:
@@ -17644,27 +13508,11 @@ elif mode == 'Demographic':
 				if not re.fullmatch( r'[A-Za-z0-9_\-/]+', text ):
 					raise ValueError(
 						'Dataset may only contain letters, numbers, underscores, hyphens, '
-						'and forward slashes.'
-					)
+						'and forward slashes.' )
 				
 				return text
 			
 			def _validate_census_fields( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate the Census API get fields expression.
-
-					Parameters:
-					-----------
-					value (object):
-						Comma-delimited field list supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Clean comma-delimited field list.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -17677,35 +13525,12 @@ elif mode == 'Demographic':
 				
 				for field in fields:
 					if not re.fullmatch( r'[A-Za-z0-9_]+', field ):
-						raise ValueError(
-							f'Invalid Census field name: {field}'
-						)
+						raise ValueError( f'Invalid Census field name: {field}' )
 				
 				return ','.join( fields )
 			
 			def _validate_census_geography_clause( name: str, value: object,
-					required: bool = False ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a Census API geography clause such as state:* or county:*.
-
-					Parameters:
-					-----------
-					name (str):
-						Display name used in error messages.
-
-					value (object):
-						Geography clause supplied by the user.
-
-					required (bool):
-						Whether a non-empty value is required.
-
-					Returns:
-					--------
-					str:
-						Cleaned geography clause.
-				'''
+				required: bool = False ) -> str:
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -17763,102 +13588,57 @@ elif mode == 'Demographic':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				census_mode = st.selectbox(
-					'Mode',
-					options=CENSUS_MODES,
-					index=CENSUS_MODES.index(
-						st.session_state.get( 'census_mode', 'variables' )
-					),
-					key='census_mode',
-					help=(
-							'variables = dataset variable metadata; '
-							'data = tabular Census query using get/for/in.'
-					)
-				)
+				census_mode = st.selectbox( 'Mode', options=CENSUS_MODES,
+					index=CENSUS_MODES.index( st.session_state.get( 'census_mode', 'variables' ) ),
+					key='census_mode', help=('variables = dataset variable metadata; '
+					                         'data = tabular Census query using get/for/in.') )
 				
-				census_year = st.text_input(
-					'Year',
-					value=st.session_state.get( 'census_year', '2022' ),
-					key='census_year',
-					placeholder='2022'
-				)
+				census_year = st.text_input( 'Year',
+					value=st.session_state.get( 'census_year', '2022' ), key='census_year',
+					placeholder='2022' )
 				
-				census_dataset = st.text_input(
-					'Dataset',
+				census_dataset = st.text_input( 'Dataset',
 					value=st.session_state.get( 'census_dataset', 'acs/acs5' ),
-					key='census_dataset',
-					placeholder='acs/acs5'
-				)
+					key='census_dataset', placeholder='acs/acs5' )
 				
-				census_fields = st.text_area(
-					'Fields (get)',
-					value=st.session_state.get( 'census_fields', 'NAME,B01001_001E' ),
-					height=90,
-					key='census_fields',
-					placeholder='NAME,B01001_001E',
-					disabled=(census_mode != 'data')
-				)
+				census_fields = st.text_area( 'Fields (get)',
+					value=st.session_state.get( 'census_fields', 'NAME,B01001_001E' ), height=90,
+					key='census_fields', placeholder='NAME,B01001_001E',
+					disabled=(census_mode != 'data') )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					census_for = st.text_input(
-						'For',
-						value=st.session_state.get( 'census_for', 'state:*' ),
-						key='census_for',
-						placeholder='state:*',
-						disabled=(census_mode != 'data')
-					)
+					census_for = st.text_input( 'For',
+						value=st.session_state.get( 'census_for', 'state:*' ), key='census_for',
+						placeholder='state:*', disabled=(census_mode != 'data') )
 				
 				with c2:
-					census_in = st.text_input(
-						'In',
-						value=st.session_state.get( 'census_in', '' ),
-						key='census_in',
-						placeholder='state:24',
-						disabled=(census_mode != 'data')
-					)
+					census_in = st.text_input( 'In', value=st.session_state.get( 'census_in', '' ),
+						key='census_in', placeholder='state:24', disabled=(census_mode != 'data') )
 				
-				census_predicates = st.text_area(
-					'Predicates',
-					value=st.session_state.get( 'census_predicates', '' ),
-					height=90,
-					key='census_predicates',
-					placeholder='SEX=1\nAGE=15',
+				census_predicates = st.text_area( 'Predicates',
+					value=st.session_state.get( 'census_predicates', '' ), height=90,
+					key='census_predicates', placeholder='SEX=1\nAGE=15',
 					disabled=(census_mode != 'data'),
-					help='Optional newline-delimited key=value filters.'
-				)
+					help='Optional newline-delimited key=value filters.' )
 				
-				census_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'census_timeout', 20 ) ),
-					step=1,
-					key='census_timeout'
-				)
+				census_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'census_timeout', 20 ) ), step=1,
+					key='census_timeout' )
 				
-				st.caption(
-					'Examples: dataset = acs/acs5, fields = NAME,B01001_001E, '
-					'for = state:*'
-				)
+				st.caption( 'Examples: dataset = acs/acs5, fields = NAME,B01001_001E, '
+				            'for = state:*' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					census_submit = st.button(
-						'Submit',
-						key='census_submit',
-						use_container_width=True
-					)
+					census_submit = st.button( 'Submit', key='census_submit',
+						use_container_width=True )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='census_clear',
-						on_click=_clear_census_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='census_clear', on_click=_clear_census_state,
+						use_container_width=True )
 			
 			with col_right:
 				result = st.session_state.get( 'census_results', { } )
@@ -17870,32 +13650,21 @@ elif mode == 'Demographic':
 						
 						if census_mode == 'data':
 							clean_fields = _validate_census_fields( census_fields )
-							clean_for = _validate_census_geography_clause(
-								name='For',
-								value=census_for,
-								required=True
-							)
-							clean_in = _validate_census_geography_clause(
-								name='In',
-								value=census_in,
-								required=False
-							)
+							clean_for = _validate_census_geography_clause( name='For',
+								value=census_for, required=True )
+							clean_in = _validate_census_geography_clause( name='In',
+								value=census_in, required=False )
 						else:
 							clean_fields = str( census_fields or '' ).strip( )
 							clean_for = str( census_for or '' ).strip( )
 							clean_in = str( census_in or '' ).strip( )
 						
 						f = CensusData( )
-						result = f.fetch(
-							mode=str( census_mode ),
-							year=clean_year,
-							dataset=clean_dataset,
-							fields=clean_fields,
-							geography_for=clean_for,
+						result = f.fetch( mode=str( census_mode ), year=clean_year,
+							dataset=clean_dataset, fields=clean_fields, geography_for=clean_for,
 							geography_in=clean_in,
 							predicates=str( census_predicates or '' ).strip( ),
-							time=int( census_timeout )
-						)
+							time=int( census_timeout ) )
 						
 						st.session_state[ 'census_results' ] = result or { }
 						st.rerun( )
@@ -17918,106 +13687,48 @@ elif mode == 'Demographic':
 						if isinstance( variables, dict ):
 							for name, meta in variables.items( ):
 								if isinstance( meta, dict ):
-									rows.append(
-										{
-												'Name': name,
-												'Label': meta.get( 'label', '' ),
-												'Concept': meta.get( 'concept', '' ),
-												'PredicateType': meta.get(
-													'predicateType',
-													''
-												),
-												'Group': meta.get( 'group', '' ),
-												'Limit': meta.get( 'limit', '' ),
-										}
-									)
+									rows.append( { 'Name': name, 'Label': meta.get( 'label', '' ),
+										'Concept': meta.get( 'concept', '' ),
+										'PredicateType': meta.get( 'predicateType', '' ),
+										'Group': meta.get( 'group', '' ),
+										'Limit': meta.get( 'limit', '' ), } )
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Year': census_year,
-									'Dataset': census_dataset,
-									'VariableCount': len( rows ),
-							}
-						)
+						_render_summary_kv( '#### Summary',
+							{ 'Year': census_year, 'Dataset': census_dataset,
+								'VariableCount': len( rows ), } )
 						_render_rows_table( '#### Variables', rows )
 					
 					elif result.get( 'mode', '' ) == 'data':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						rows = payload.get( 'rows', [ ] ) if isinstance( payload, dict ) else [ ]
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Year': census_year,
-									'Dataset': census_dataset,
-									'Fields': census_fields,
-									'For': census_for,
-									'In': census_in,
-									'RowCount': len( rows ) if isinstance( rows, list ) else 0,
-							}
-						)
-						_render_rows_table(
-							'#### Data Rows',
-							rows if isinstance( rows, list ) else [ ]
-						)
+						_render_summary_kv( '#### Summary',
+							{ 'Year': census_year, 'Dataset': census_dataset,
+								'Fields': census_fields, 'For': census_for, 'In': census_in,
+								'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
+						_render_rows_table( '#### Data Rows',
+							rows if isinstance( rows, list ) else [ ] )
 					
 					_render_fallback_raw( result )
 		
 		# -------- CDC SOCRATA
 		with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
-			SOCRATA_MODES = [
-					'rows',
-					'metadata'
-			]
+			SOCRATA_MODES = [ 'rows', 'metadata' ]
 			
-			SOCRATA_CDC_DOMAINS = [
-					'data.cdc.gov',
-					'chronicdata.cdc.gov'
-			]
+			SOCRATA_CDC_DOMAINS = [ 'data.cdc.gov', 'chronicdata.cdc.gov' ]
 			
 			def _clear_socrata_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the CDC Socrata expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'socrata_clear_request' ] = True
 			
 			def _validate_socrata_dataset_id( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a Socrata four-by-four dataset identifier.
-
-					Parameters:
-					-----------
-					value (object):
-						Dataset identifier supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Validated dataset identifier without a trailing .json suffix.
-				'''
 				text = str( value or '' ).strip( ).replace( '.json', '' ).strip( '/' )
 				
 				if not text:
 					raise ValueError( 'Dataset ID is required.' )
 				
 				if not re.fullmatch( r'[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}', text ):
-					raise ValueError(
-						'Dataset ID must use the Socrata four-by-four format, '
-						'such as q8xq-ygsk.'
-					)
+					raise ValueError( 'Dataset ID must use the Socrata four-by-four format, '
+					                  'such as q8xq-ygsk.' )
 				
 				return text.lower( )
 			
@@ -18074,150 +13785,86 @@ elif mode == 'Demographic':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				socrata_mode = st.selectbox(
-					'Mode',
-					options=SOCRATA_MODES,
-					index=SOCRATA_MODES.index(
-						st.session_state.get( 'socrata_mode', 'rows' )
-					),
+				socrata_mode = st.selectbox( 'Mode', options=SOCRATA_MODES,
+					index=SOCRATA_MODES.index( st.session_state.get( 'socrata_mode', 'rows' ) ),
 					key='socrata_mode',
-					help='rows = query dataset rows; metadata = inspect dataset metadata.'
-				)
+					help='rows = query dataset rows; metadata = inspect dataset metadata.' )
 				
-				socrata_domain = st.selectbox(
-					'Domain',
-					options=SOCRATA_CDC_DOMAINS,
+				socrata_domain = st.selectbox( 'Domain', options=SOCRATA_CDC_DOMAINS,
 					index=SOCRATA_CDC_DOMAINS.index(
-						st.session_state.get( 'socrata_domain', 'data.cdc.gov' )
-					),
-					key='socrata_domain',
-					help='CDC Socrata portal domain.'
-				)
+						st.session_state.get( 'socrata_domain', 'data.cdc.gov' ) ),
+					key='socrata_domain', help='CDC Socrata portal domain.' )
 				
-				socrata_dataset_id = st.text_input(
-					'Dataset ID',
+				socrata_dataset_id = st.text_input( 'Dataset ID',
 					value=st.session_state.get( 'socrata_dataset_id', 'q8xq-ygsk' ),
-					key='socrata_dataset_id',
-					placeholder='q8xq-ygsk'
-				)
+					key='socrata_dataset_id', placeholder='q8xq-ygsk' )
 				
-				socrata_select = st.text_area(
-					'Select',
-					value=st.session_state.get( 'socrata_select', '' ),
-					height=80,
-					key='socrata_select',
-					placeholder='locationname,datavaluetype,datavalue',
-					disabled=(socrata_mode != 'rows')
-				)
+				socrata_select = st.text_area( 'Select',
+					value=st.session_state.get( 'socrata_select', '' ), height=80,
+					key='socrata_select', placeholder='locationname,datavaluetype,datavalue',
+					disabled=(socrata_mode != 'rows') )
 				
-				socrata_where = st.text_area(
-					'Where',
-					value=st.session_state.get( 'socrata_where', '' ),
-					height=100,
-					key='socrata_where',
-					placeholder="year = '2020'",
-					disabled=(socrata_mode != 'rows')
-				)
+				socrata_where = st.text_area( 'Where',
+					value=st.session_state.get( 'socrata_where', '' ), height=100,
+					key='socrata_where', placeholder="year = '2020'",
+					disabled=(socrata_mode != 'rows') )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					socrata_order = st.text_input(
-						'Order',
-						value=st.session_state.get( 'socrata_order', '' ),
-						key='socrata_order',
-						placeholder='locationname ASC',
-						disabled=(socrata_mode != 'rows')
-					)
+					socrata_order = st.text_input( 'Order',
+						value=st.session_state.get( 'socrata_order', '' ), key='socrata_order',
+						placeholder='locationname ASC', disabled=(socrata_mode != 'rows') )
 				
 				with c2:
-					socrata_group = st.text_input(
-						'Group',
-						value=st.session_state.get( 'socrata_group', '' ),
-						key='socrata_group',
-						placeholder='locationname',
-						disabled=(socrata_mode != 'rows')
-					)
+					socrata_group = st.text_input( 'Group',
+						value=st.session_state.get( 'socrata_group', '' ), key='socrata_group',
+						placeholder='locationname', disabled=(socrata_mode != 'rows') )
 				
 				c3, c4, c5 = st.columns( 3 )
 				
 				with c3:
-					socrata_limit = st.number_input(
-						'Limit',
-						min_value=1,
-						max_value=50000,
-						value=int( st.session_state.get( 'socrata_limit', 25 ) ),
-						step=1,
-						key='socrata_limit',
-						disabled=(socrata_mode != 'rows'),
-						help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.'
-					)
+					socrata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
+						value=int( st.session_state.get( 'socrata_limit', 25 ) ), step=1,
+						key='socrata_limit', disabled=(socrata_mode != 'rows'),
+						help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.' )
 				
 				with c4:
-					socrata_offset = st.number_input(
-						'Offset',
-						min_value=0,
-						max_value=1000000,
-						value=int( st.session_state.get( 'socrata_offset', 0 ) ),
-						step=1,
-						key='socrata_offset',
-						disabled=(socrata_mode != 'rows')
-					)
+					socrata_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
+						value=int( st.session_state.get( 'socrata_offset', 0 ) ), step=1,
+						key='socrata_offset', disabled=(socrata_mode != 'rows') )
 				
 				with c5:
-					socrata_timeout = st.number_input(
-						'Timeout',
-						min_value=1,
-						max_value=120,
-						value=int( st.session_state.get( 'socrata_timeout', 20 ) ),
-						step=1,
-						key='socrata_timeout'
-					)
+					socrata_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+						value=int( st.session_state.get( 'socrata_timeout', 20 ) ), step=1,
+						key='socrata_timeout' )
 				
-				st.caption(
-					'Example dataset: q8xq-ygsk on data.cdc.gov. '
-					'Use SoQL clauses for select, where, order, and group.'
-				)
+				st.caption( 'Example dataset: q8xq-ygsk on data.cdc.gov. '
+				            'Use SoQL clauses for select, where, order, and group.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					socrata_submit = st.button(
-						'Submit',
-						key='socrata_submit',
-						use_container_width=True
-					)
+					socrata_submit = st.button( 'Submit', key='socrata_submit',
+						use_container_width=True )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='socrata_clear',
-						on_click=_clear_socrata_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='socrata_clear', on_click=_clear_socrata_state,
+						use_container_width=True )
 			
 			with col_right:
 				result = st.session_state.get( 'socrata_results', { } )
 				
 				if socrata_submit:
 					try:
-						clean_dataset_id = _validate_socrata_dataset_id(
-							socrata_dataset_id
-						)
+						clean_dataset_id = _validate_socrata_dataset_id( socrata_dataset_id )
 						
 						f = Socrata( )
-						result = f.fetch(
-							mode=str( socrata_mode ),
-							domain=str( socrata_domain ),
-							dataset_id=clean_dataset_id,
-							select=str( socrata_select ),
-							where=str( socrata_where ),
-							order=str( socrata_order ),
-							group=str( socrata_group ),
-							limit=int( socrata_limit ),
-							offset=int( socrata_offset ),
-							time=int( socrata_timeout )
-						)
+						result = f.fetch( mode=str( socrata_mode ), domain=str( socrata_domain ),
+							dataset_id=clean_dataset_id, select=str( socrata_select ),
+							where=str( socrata_where ), order=str( socrata_order ),
+							group=str( socrata_group ), limit=int( socrata_limit ),
+							offset=int( socrata_offset ), time=int( socrata_timeout ) )
 						
 						st.session_state[ 'socrata_results' ] = result or { }
 						st.rerun( )
@@ -18234,104 +13881,61 @@ elif mode == 'Demographic':
 					if result.get( 'mode', '' ) == 'metadata':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Name': payload.get( 'name', '' ) if isinstance( payload,
-										dict ) else '',
-									'Description': payload.get( 'description', '' ) if isinstance(
-										payload, dict ) else '',
-									'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance( payload, dict ) else '',
-									'ViewType': payload.get( 'viewType', '' ) if isinstance( payload, dict ) else '',
-									'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload, dict ) else 0,
-							}
-						)
+						_render_summary_kv( '#### Summary', {
+							'Name': payload.get( 'name', '' ) if isinstance( payload,
+								dict ) else '',
+							'Description': payload.get( 'description', '' ) if isinstance( payload,
+								dict ) else '',
+							'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance(
+								payload, dict ) else '',
+							'ViewType': payload.get( 'viewType', '' ) if isinstance( payload,
+								dict ) else '',
+							'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload,
+								dict ) else 0, } )
 						
 						rows: List[ Dict[ str, Any ] ] = [ ]
-						columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload, dict ) else [ ]
+						columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload,
+							dict ) else [ ]
 						for item in columns_payload:
 							if isinstance( item, dict ):
-								rows.append(
-									{
-											'Name': item.get( 'name', '' ),
-											'FieldName': item.get( 'fieldName', '' ),
-											'DataType': item.get( 'dataTypeName', '' ),
-											'Description': item.get( 'description', '' ),
-									}
-								)
+								rows.append( { 'Name': item.get( 'name', '' ),
+									'FieldName': item.get( 'fieldName', '' ),
+									'DataType': item.get( 'dataTypeName', '' ),
+									'Description': item.get( 'description', '' ), } )
 						
 						_render_rows_table( '#### Columns', rows )
 					
 					elif result.get( 'mode', '' ) == 'rows':
 						rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Domain': socrata_domain,
-									'DatasetId': socrata_dataset_id,
-									'Limit': int( socrata_limit ),
-									'Offset': int( socrata_offset ),
-									'RowCount': len( rows ) if isinstance( rows, list ) else 0,
-							}
-						)
-						_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
+						_render_summary_kv( '#### Summary',
+							{ 'Domain': socrata_domain, 'DatasetId': socrata_dataset_id,
+								'Limit': int( socrata_limit ), 'Offset': int( socrata_offset ),
+								'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
+						_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [
+						
+						] )
 					
 					_render_fallback_raw( result )
 		
 		# -------- US Health Data
 		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
-			HEALTHDATA_MODES = [
-					'rows',
-					'metadata'
-			]
+			HEALTHDATA_MODES = [ 'rows', 'metadata' ]
 			
-			HEALTHDATA_DOMAINS = [
-					'healthdata.gov'
-			]
+			HEALTHDATA_DOMAINS = [ 'healthdata.gov' ]
 			
 			def _clear_healthdata_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the HealthData expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'healthdata_clear_request' ] = True
 			
 			def _validate_healthdata_dataset_id( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a HealthData.gov Socrata dataset identifier.
-
-					Parameters:
-					-----------
-					value (object):
-						Dataset identifier supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Validated dataset identifier without a trailing .json suffix.
-				'''
 				text = str( value or '' ).strip( ).replace( '.json', '' ).strip( '/' )
 				
 				if not text:
 					raise ValueError( 'Dataset ID is required.' )
 				
 				if not re.fullmatch( r'[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}', text ):
-					raise ValueError(
-						'Dataset ID must use the Socrata four-by-four format, '
-						'such as abcd-1234.'
-					)
+					raise ValueError( 'Dataset ID must use the Socrata four-by-four format, '
+					                  'such as abcd-1234.' )
 				
 				return text.lower( )
 			
@@ -18344,7 +13948,8 @@ elif mode == 'Demographic':
 			if st.session_state.get( 'healthdata_mode', 'rows' ) not in HEALTHDATA_MODES:
 				st.session_state[ 'healthdata_mode' ] = 'rows'
 			
-			if st.session_state.get( 'healthdata_domain', 'healthdata.gov' ) not in HEALTHDATA_DOMAINS:
+			if st.session_state.get( 'healthdata_domain',
+					'healthdata.gov' ) not in HEALTHDATA_DOMAINS:
 				st.session_state[ 'healthdata_domain' ] = 'healthdata.gov'
 			
 			if 'healthdata_dataset_id' not in st.session_state:
@@ -18388,150 +13993,89 @@ elif mode == 'Demographic':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				healthdata_mode = st.selectbox(
-					'Mode',
-					options=HEALTHDATA_MODES,
+				healthdata_mode = st.selectbox( 'Mode', options=HEALTHDATA_MODES,
 					index=HEALTHDATA_MODES.index(
-						st.session_state.get( 'healthdata_mode', 'rows' )
-					),
-					key='healthdata_mode',
-					help='rows = query dataset rows; metadata = inspect dataset metadata.'
-				)
+						st.session_state.get( 'healthdata_mode', 'rows' ) ), key='healthdata_mode',
+					help='rows = query dataset rows; metadata = inspect dataset metadata.' )
 				
-				healthdata_domain = st.selectbox(
-					'Domain',
-					options=HEALTHDATA_DOMAINS,
+				healthdata_domain = st.selectbox( 'Domain', options=HEALTHDATA_DOMAINS,
 					index=HEALTHDATA_DOMAINS.index(
-						st.session_state.get( 'healthdata_domain', 'healthdata.gov' )
-					),
-					key='healthdata_domain',
-					help='HealthData.gov Socrata portal domain.'
-				)
+						st.session_state.get( 'healthdata_domain', 'healthdata.gov' ) ),
+					key='healthdata_domain', help='HealthData.gov Socrata portal domain.' )
 				
-				healthdata_dataset_id = st.text_input(
-					'Dataset ID',
+				healthdata_dataset_id = st.text_input( 'Dataset ID',
 					value=st.session_state.get( 'healthdata_dataset_id', '' ),
-					key='healthdata_dataset_id',
-					placeholder='abcd-1234'
-				)
+					key='healthdata_dataset_id', placeholder='abcd-1234' )
 				
-				healthdata_select = st.text_area(
-					'Select',
-					value=st.session_state.get( 'healthdata_select', '' ),
-					height=80,
-					key='healthdata_select',
-					placeholder='column1,column2',
-					disabled=(healthdata_mode != 'rows')
-				)
+				healthdata_select = st.text_area( 'Select',
+					value=st.session_state.get( 'healthdata_select', '' ), height=80,
+					key='healthdata_select', placeholder='column1,column2',
+					disabled=(healthdata_mode != 'rows') )
 				
-				healthdata_where = st.text_area(
-					'Where',
-					value=st.session_state.get( 'healthdata_where', '' ),
-					height=100,
-					key='healthdata_where',
-					placeholder="year = '2024'",
-					disabled=(healthdata_mode != 'rows')
-				)
+				healthdata_where = st.text_area( 'Where',
+					value=st.session_state.get( 'healthdata_where', '' ), height=100,
+					key='healthdata_where', placeholder="year = '2024'",
+					disabled=(healthdata_mode != 'rows') )
 				
 				c1, c2 = st.columns( 2 )
 				
 				with c1:
-					healthdata_order = st.text_input(
-						'Order',
+					healthdata_order = st.text_input( 'Order',
 						value=st.session_state.get( 'healthdata_order', '' ),
-						key='healthdata_order',
-						placeholder='column1 ASC',
-						disabled=(healthdata_mode != 'rows')
-					)
+						key='healthdata_order', placeholder='column1 ASC',
+						disabled=(healthdata_mode != 'rows') )
 				
 				with c2:
-					healthdata_group = st.text_input(
-						'Group',
+					healthdata_group = st.text_input( 'Group',
 						value=st.session_state.get( 'healthdata_group', '' ),
-						key='healthdata_group',
-						placeholder='column1',
-						disabled=(healthdata_mode != 'rows')
-					)
+						key='healthdata_group', placeholder='column1',
+						disabled=(healthdata_mode != 'rows') )
 				
 				c3, c4, c5 = st.columns( 3 )
 				
 				with c3:
-					healthdata_limit = st.number_input(
-						'Limit',
-						min_value=1,
-						max_value=50000,
-						value=int( st.session_state.get( 'healthdata_limit', 25 ) ),
-						step=1,
-						key='healthdata_limit',
-						disabled=(healthdata_mode != 'rows'),
-						help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.'
-					)
+					healthdata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
+						value=int( st.session_state.get( 'healthdata_limit', 25 ) ), step=1,
+						key='healthdata_limit', disabled=(healthdata_mode != 'rows'),
+						help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.' )
 				
 				with c4:
-					healthdata_offset = st.number_input(
-						'Offset',
-						min_value=0,
-						max_value=1000000,
-						value=int( st.session_state.get( 'healthdata_offset', 0 ) ),
-						step=1,
-						key='healthdata_offset',
-						disabled=(healthdata_mode != 'rows')
-					)
+					healthdata_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
+						value=int( st.session_state.get( 'healthdata_offset', 0 ) ), step=1,
+						key='healthdata_offset', disabled=(healthdata_mode != 'rows') )
 				
 				with c5:
-					healthdata_timeout = st.number_input(
-						'Timeout',
-						min_value=1,
-						max_value=120,
-						value=int( st.session_state.get( 'healthdata_timeout', 20 ) ),
-						step=1,
-						key='healthdata_timeout'
-					)
+					healthdata_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+						value=int( st.session_state.get( 'healthdata_timeout', 20 ) ), step=1,
+						key='healthdata_timeout' )
 				
-				st.caption(
-					'HealthData.gov exposes open API access through Socrata. '
-					'Use SoQL-style clauses for select, where, order, and group.'
-				)
+				st.caption( 'HealthData.gov exposes open API access through Socrata. '
+				            'Use SoQL-style clauses for select, where, order, and group.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					healthdata_submit = st.button(
-						'Submit',
-						key='healthdata_submit',
-						use_container_width=True
-					)
+					healthdata_submit = st.button( 'Submit', key='healthdata_submit',
+						use_container_width=True )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='healthdata_clear',
-						on_click=_clear_healthdata_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='healthdata_clear', on_click=_clear_healthdata_state,
+						use_container_width=True )
 			
 			with col_right:
 				result = st.session_state.get( 'healthdata_results', { } )
 				
 				if healthdata_submit:
 					try:
-						clean_dataset_id = _validate_healthdata_dataset_id(
-							healthdata_dataset_id
-						)
+						clean_dataset_id = _validate_healthdata_dataset_id( healthdata_dataset_id )
 						
 						f = HealthData( )
-						result = f.fetch(
-							mode=str( healthdata_mode ),
-							domain=str( healthdata_domain ),
-							dataset_id=clean_dataset_id,
-							select=str( healthdata_select ),
-							where=str( healthdata_where ),
-							order=str( healthdata_order ),
-							group=str( healthdata_group ),
-							limit=int( healthdata_limit ),
-							offset=int( healthdata_offset ),
-							time=int( healthdata_timeout )
-						)
+						result = f.fetch( mode=str( healthdata_mode ),
+							domain=str( healthdata_domain ), dataset_id=clean_dataset_id,
+							select=str( healthdata_select ), where=str( healthdata_where ),
+							order=str( healthdata_order ), group=str( healthdata_group ),
+							limit=int( healthdata_limit ), offset=int( healthdata_offset ),
+							time=int( healthdata_timeout ) )
 						
 						st.session_state[ 'healthdata_results' ] = result or { }
 						st.rerun( )
@@ -18548,123 +14092,71 @@ elif mode == 'Demographic':
 					if result.get( 'mode', '' ) == 'metadata':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Name': payload.get( 'name', '' ) if isinstance( payload, dict ) else '',
-									'Description': payload.get( 'description', '' ) if isinstance( payload, dict ) else '',
-									'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance( payload, dict ) else '',
-									'ViewType': payload.get( 'viewType', '' ) if isinstance( payload, dict ) else '',
-									'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload, dict ) else 0,
-							}
-						)
+						_render_summary_kv( '#### Summary', {
+							'Name': payload.get( 'name', '' ) if isinstance( payload,
+								dict ) else '',
+							'Description': payload.get( 'description', '' ) if isinstance( payload,
+								dict ) else '',
+							'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance(
+								payload, dict ) else '',
+							'ViewType': payload.get( 'viewType', '' ) if isinstance( payload,
+								dict ) else '',
+							'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance( payload,
+								dict ) else 0, } )
 						
 						rows: List[ Dict[ str, Any ] ] = [ ]
-						columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload, dict ) else [ ]
+						columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload,
+							dict ) else [ ]
 						for item in columns_payload:
 							if isinstance( item, dict ):
-								rows.append(
-									{
-											'Name': item.get( 'name', '' ),
-											'FieldName': item.get( 'fieldName', '' ),
-											'DataType': item.get( 'dataTypeName', '' ),
-											'Description': item.get( 'description', '' ),
-									}
-								)
+								rows.append( { 'Name': item.get( 'name', '' ),
+									'FieldName': item.get( 'fieldName', '' ),
+									'DataType': item.get( 'dataTypeName', '' ),
+									'Description': item.get( 'description', '' ), } )
 						
 						_render_rows_table( '#### Columns', rows )
 					
 					elif result.get( 'mode', '' ) == 'rows':
 						rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Domain': healthdata_domain,
-									'DatasetId': healthdata_dataset_id,
-									'Limit': int( healthdata_limit ),
-									'Offset': int( healthdata_offset ),
-									'RowCount': len( rows ) if isinstance( rows, list ) else 0,
-							}
-						)
-						_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
+						_render_summary_kv( '#### Summary',
+							{ 'Domain': healthdata_domain, 'DatasetId': healthdata_dataset_id,
+								'Limit': int( healthdata_limit ),
+								'Offset': int( healthdata_offset ),
+								'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
+						_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [
+						
+						] )
 					
 					_render_fallback_raw( result )
 		
 		# -------- WHO Global Health
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
-			WHO_MODES = [
-					'indicator_registry',
-					'athena'
-			]
+			WHO_MODES = [ 'indicator_registry', 'athena' ]
 			
-			WHO_QUERY_PRESETS = [
-					'Indicator',
-					'Dimension',
-					'DIMENSION/COUNTRY/DimensionValues',
-					'DIMENSION/REGION',
-					'WHOSIS_000001',
-					'Custom...'
-			]
+			WHO_QUERY_PRESETS = [ 'Indicator', 'Dimension', 'DIMENSION/COUNTRY/DimensionValues',
+				'DIMENSION/REGION', 'WHOSIS_000001', 'Custom...' ]
 			
-			WHO_FORMATS = [
-					'json',
-					'xml',
-					'csv',
-					'csv&profile=text',
-					'csv&profile=verbose'
-			]
+			WHO_FORMATS = [ 'json', 'xml', 'csv', 'csv&profile=text', 'csv&profile=verbose' ]
 			
 			def _clear_who_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the WHO Global Health expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'who_clear_request' ] = True
 			
 			def _validate_who_query_path( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a WHO GHO Athena/OData query path before passing it to the
-					GlobalHealthData wrapper.
-
-					Parameters:
-					-----------
-					value (object):
-						Query path supplied by the user or selected from presets.
-
-					Returns:
-					--------
-					str:
-						Cleaned query path without a leading slash.
-				'''
 				text = str( value or '' ).strip( ).lstrip( '/' )
 				
 				if not text:
 					raise ValueError( 'Query Path is required for WHO Athena mode.' )
 				
 				if text.startswith( 'http://' ) or text.startswith( 'https://' ):
-					raise ValueError(
-						'Query Path must be a path segment only, not a full URL.'
-					)
+					raise ValueError( 'Query Path must be a path segment only, not a full URL.' )
 				
 				if '..' in text:
 					raise ValueError( 'Query Path cannot contain parent-directory markers.' )
 				
 				if not re.fullmatch( r"[A-Za-z0-9_\-/$(),.'% =]+(?:\?.*)?", text ):
 					raise ValueError(
-						'Query Path contains unsupported characters for this request.'
-					)
+						'Query Path contains unsupported characters for this request.' )
 				
 				return text
 			
@@ -18695,10 +14187,8 @@ elif mode == 'Demographic':
 			
 			if 'who_custom_query_path' not in st.session_state:
 				st.session_state[ 'who_custom_query_path' ] = (
-						''
-						if default_who_query_choice != 'Custom...'
-						else st.session_state.get( 'who_query_path', '' )
-				)
+					'' if default_who_query_choice != 'Custom...' else st.session_state.get(
+						'who_query_path', '' ))
 			
 			if st.session_state.get( 'who_format', 'json' ) not in WHO_FORMATS:
 				st.session_state[ 'who_format' ] = 'json'
@@ -18719,80 +14209,43 @@ elif mode == 'Demographic':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				who_mode = st.selectbox(
-					'Mode',
-					options=WHO_MODES,
-					index=WHO_MODES.index(
-						st.session_state.get( 'who_mode', 'indicator_registry' )
-					),
-					key='who_mode',
-					help=(
-							'indicator_registry = WHO metadata landing content; '
-							'athena = configurable WHO GHO query path.'
-					)
-				)
+				who_mode = st.selectbox( 'Mode', options=WHO_MODES, index=WHO_MODES.index(
+					st.session_state.get( 'who_mode', 'indicator_registry' ) ), key='who_mode',
+					help=('indicator_registry = WHO metadata landing content; '
+					      'athena = configurable WHO GHO query path.') )
 				
-				who_query_choice = st.selectbox(
-					'Query Path Preset',
-					options=WHO_QUERY_PRESETS,
+				who_query_choice = st.selectbox( 'Query Path Preset', options=WHO_QUERY_PRESETS,
 					index=WHO_QUERY_PRESETS.index(
-						st.session_state.get( 'who_query_choice', 'Indicator' )
-					),
-					key='who_query_choice',
-					disabled=(who_mode != 'athena'),
-					help='Common WHO GHO OData query paths.'
-				)
+						st.session_state.get( 'who_query_choice', 'Indicator' ) ),
+					key='who_query_choice', disabled=(who_mode != 'athena'),
+					help='Common WHO GHO OData query paths.' )
 				
-				who_custom_query_path = st.text_area(
-					'Custom Query Path',
-					value=st.session_state.get( 'who_custom_query_path', '' ),
-					height=100,
-					key='who_custom_query_path',
-					placeholder="WHOSIS_000001?$filter=Dim1 eq 'MLE'",
+				who_custom_query_path = st.text_area( 'Custom Query Path',
+					value=st.session_state.get( 'who_custom_query_path', '' ), height=100,
+					key='who_custom_query_path', placeholder="WHOSIS_000001?$filter=Dim1 eq 'MLE'",
 					disabled=(who_mode != 'athena' or who_query_choice != 'Custom...'),
-					help='Path appended after the WHO GHO API base endpoint.'
-				)
+					help='Path appended after the WHO GHO API base endpoint.' )
 				
-				who_format = st.selectbox(
-					'Format',
-					options=WHO_FORMATS,
-					index=WHO_FORMATS.index(
-						st.session_state.get( 'who_format', 'json' )
-					),
-					key='who_format',
-					disabled=(who_mode != 'athena')
-				)
+				who_format = st.selectbox( 'Format', options=WHO_FORMATS,
+					index=WHO_FORMATS.index( st.session_state.get( 'who_format', 'json' ) ),
+					key='who_format', disabled=(who_mode != 'athena') )
 				
-				who_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'who_timeout', 20 ) ),
-					step=1,
-					key='who_timeout'
-				)
+				who_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'who_timeout', 20 ) ), step=1,
+					key='who_timeout' )
 				
-				st.caption(
-					'WHO supports GHO OData paths such as Indicator, Dimension, '
-					'DIMENSION/COUNTRY/DimensionValues, and direct indicator-code queries.'
-				)
+				st.caption( 'WHO supports GHO OData paths such as Indicator, Dimension, '
+				            'DIMENSION/COUNTRY/DimensionValues, and direct indicator-code '
+				            'queries.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					who_submit = st.button(
-						'Submit',
-						key='who_submit',
-						use_container_width=True
-					)
+					who_submit = st.button( 'Submit', key='who_submit', use_container_width=True )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='who_clear',
-						on_click=_clear_who_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='who_clear', on_click=_clear_who_state,
+						use_container_width=True )
 			
 			with col_right:
 				result = st.session_state.get( 'who_results', { } )
@@ -18801,23 +14254,15 @@ elif mode == 'Demographic':
 					try:
 						if who_mode == 'athena':
 							selected_query_path = (
-									who_custom_query_path
-									if who_query_choice == 'Custom...'
-									else who_query_choice
-							)
-							clean_query_path = _validate_who_query_path(
-								selected_query_path
-							)
+								who_custom_query_path if who_query_choice == 'Custom...' else
+								who_query_choice)
+							clean_query_path = _validate_who_query_path( selected_query_path )
 						else:
 							clean_query_path = ''
 						
 						f = GlobalHealthData( )
-						result = f.fetch(
-							mode=str( who_mode ),
-							query_path=clean_query_path,
-							fmt=str( who_format ),
-							time=int( who_timeout )
-						)
+						result = f.fetch( mode=str( who_mode ), query_path=clean_query_path,
+							fmt=str( who_format ), time=int( who_timeout ) )
 						
 						st.session_state[ 'who_query_path' ] = clean_query_path
 						st.session_state[ 'who_results' ] = result or { }
@@ -18835,57 +14280,30 @@ elif mode == 'Demographic':
 					if result.get( 'mode', '' ) == 'indicator_registry':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Mode': result.get( 'mode', '' ),
-									'HasHtml': (
-											isinstance( payload, dict )
-											and bool( payload.get( 'html', '' ) )
-									),
-							}
-						)
+						_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+							'HasHtml': (isinstance( payload, dict ) and bool(
+								payload.get( 'html', '' ) )), } )
 						
 						if isinstance( payload, dict ) and payload.get( 'html', '' ):
-							_render_html_preview(
-								'#### Indicator Registry Preview',
-								str( payload.get( 'html', '' ) )
-							)
+							_render_html_preview( '#### Indicator Registry Preview',
+								str( payload.get( 'html', '' ) ) )
 						else:
 							st.json( payload )
 					
 					elif result.get( 'mode', '' ) == 'athena':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						if isinstance( payload, dict ) and isinstance(
-								payload.get( 'value', [ ] ),
-								list
-						):
+						if isinstance( payload, dict ) and isinstance( payload.get( 'value', [ ] ),
+								list ):
 							rows = payload.get( 'value', [ ] )
-							_render_summary_kv(
-								'#### Summary',
-								{
-										'QueryPath': st.session_state.get(
-											'who_query_path',
-											''
-										),
-										'Format': who_format,
-										'ResultCount': len( rows ),
-								}
-							)
+							_render_summary_kv( '#### Summary',
+								{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
+									'Format': who_format, 'ResultCount': len( rows ), } )
 							_render_rows_table( '#### Athena Results', rows )
 						elif isinstance( payload, dict ) and payload.get( 'text', '' ):
-							_render_summary_kv(
-								'#### Summary',
-								{
-										'QueryPath': st.session_state.get(
-											'who_query_path',
-											''
-										),
-										'Format': who_format,
-										'HasText': True,
-								}
-							)
+							_render_summary_kv( '#### Summary',
+								{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
+									'Format': who_format, 'HasText': True, } )
 							st.markdown( '#### Response' )
 							st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
 						else:
@@ -18895,73 +14313,30 @@ elif mode == 'Demographic':
 		
 		# -------- United Nations Data
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
-			UN_MODES = [
-					'datasets',
-					'sdmx_query'
-			]
+			UN_MODES = [ 'datasets', 'sdmx_query' ]
 			
-			UN_QUERY_PRESETS = [
-					'dataflow',
-					'datastructure',
-					'codelist',
-					'conceptscheme',
-					'dataflow/all/all/latest',
-					'datastructure/all/all/latest',
-					'codelist/all/all/latest',
-					'conceptscheme/all/all/latest',
-					'Custom...'
-			]
+			UN_QUERY_PRESETS = [ 'dataflow', 'datastructure', 'codelist', 'conceptscheme',
+				'dataflow/all/all/latest', 'datastructure/all/all/latest',
+				'codelist/all/all/latest', 'conceptscheme/all/all/latest', 'Custom...' ]
 			
 			def _clear_un_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the United Nations expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'un_clear_request' ] = True
 			
 			def _validate_un_query_path( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a UNdata SDMX REST query path before calling the United Nations
-					wrapper.
-
-					Parameters:
-					-----------
-					value (object):
-						Query path supplied by the user or selected from presets.
-
-					Returns:
-					--------
-					str:
-						Clean query path without leading slash.
-				'''
 				text = str( value or '' ).strip( ).lstrip( '/' )
 				
 				if not text:
 					raise ValueError( 'Query Path is required for sdmx_query mode.' )
 				
 				if text.startswith( 'http://' ) or text.startswith( 'https://' ):
-					raise ValueError(
-						'Query Path must be a path segment only, not a full URL.'
-					)
+					raise ValueError( 'Query Path must be a path segment only, not a full URL.' )
 				
 				if '..' in text:
 					raise ValueError( 'Query Path cannot contain parent-directory markers.' )
 				
 				if not re.fullmatch( r'[A-Za-z0-9_\-./(),:*?=&%]+', text ):
 					raise ValueError(
-						'Query Path contains unsupported characters for a UNdata REST request.'
-					)
+						'Query Path contains unsupported characters for a UNdata REST request.' )
 				
 				return text
 			
@@ -18992,10 +14367,8 @@ elif mode == 'Demographic':
 			
 			if 'un_custom_query_path' not in st.session_state:
 				st.session_state[ 'un_custom_query_path' ] = (
-						''
-						if default_un_query_choice != 'Custom...'
-						else st.session_state.get( 'un_query_path', '' )
-				)
+					'' if default_un_query_choice != 'Custom...' else st.session_state.get(
+						'un_query_path', '' ))
 			
 			if 'un_timeout' not in st.session_state:
 				st.session_state[ 'un_timeout' ] = 20
@@ -19012,70 +14385,39 @@ elif mode == 'Demographic':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				un_mode = st.selectbox(
-					'Mode',
-					options=UN_MODES,
-					index=UN_MODES.index(
-						st.session_state.get( 'un_mode', 'datasets' )
-					),
-					key='un_mode',
-					help=(
-							'datasets = UNdata dataset catalog landing content; '
-							'sdmx_query = direct REST SDMX query path.'
-					)
-				)
+				un_mode = st.selectbox( 'Mode', options=UN_MODES,
+					index=UN_MODES.index( st.session_state.get( 'un_mode', 'datasets' ) ),
+					key='un_mode', help=('datasets = UNdata dataset catalog landing content; '
+					                     'sdmx_query = direct REST SDMX query path.') )
 				
-				un_query_choice = st.selectbox(
-					'Query Path Preset',
-					options=UN_QUERY_PRESETS,
+				un_query_choice = st.selectbox( 'Query Path Preset', options=UN_QUERY_PRESETS,
 					index=UN_QUERY_PRESETS.index(
-						st.session_state.get( 'un_query_choice', 'dataflow' )
-					),
-					key='un_query_choice',
-					disabled=(un_mode != 'sdmx_query'),
-					help='Common UNdata SDMX REST artifact paths.'
-				)
+						st.session_state.get( 'un_query_choice', 'dataflow' ) ),
+					key='un_query_choice', disabled=(un_mode != 'sdmx_query'),
+					help='Common UNdata SDMX REST artifact paths.' )
 				
-				un_custom_query_path = st.text_area(
-					'Custom Query Path',
-					value=st.session_state.get( 'un_custom_query_path', '' ),
-					height=120,
+				un_custom_query_path = st.text_area( 'Custom Query Path',
+					value=st.session_state.get( 'un_custom_query_path', '' ), height=120,
 					key='un_custom_query_path',
 					placeholder='data/DF_SDG_GLH/..SI_POV_DAY1...........?',
 					disabled=(un_mode != 'sdmx_query' or un_query_choice != 'Custom...'),
-					help='Path appended after https://data.un.org/WS/rest/'
-				)
+					help='Path appended after https://data.un.org/WS/rest/' )
 				
-				un_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'un_timeout', 20 ) ),
-					step=1,
-					key='un_timeout'
-				)
+				un_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'un_timeout', 20 ) ), step=1,
+					key='un_timeout' )
 				
-				st.caption(
-					'UNdata exposes SDMX REST artifacts such as dataflow, datastructure, '
-					'codelist, and conceptscheme. Use Custom for dataset-specific paths.'
-				)
+				st.caption( 'UNdata exposes SDMX REST artifacts such as dataflow, datastructure, '
+				            'codelist, and conceptscheme. Use Custom for dataset-specific paths.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					un_submit = st.button(
-						'Submit',
-						key='un_submit',
-						use_container_width=True
-					)
+					un_submit = st.button( 'Submit', key='un_submit', use_container_width=True )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='un_clear',
-						on_click=_clear_un_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='un_clear', on_click=_clear_un_state,
+						use_container_width=True )
 			
 			with col_right:
 				result = st.session_state.get( 'un_results', { } )
@@ -19084,22 +14426,15 @@ elif mode == 'Demographic':
 					try:
 						if un_mode == 'sdmx_query':
 							selected_query_path = (
-									un_custom_query_path
-									if un_query_choice == 'Custom...'
-									else un_query_choice
-							)
-							clean_query_path = _validate_un_query_path(
-								selected_query_path
-							)
+								un_custom_query_path if un_query_choice == 'Custom...' else
+								un_query_choice)
+							clean_query_path = _validate_un_query_path( selected_query_path )
 						else:
 							clean_query_path = ''
 						
 						f = UnitedNations( )
-						result = f.fetch(
-							mode=str( un_mode ),
-							query_path=clean_query_path,
-							time=int( un_timeout )
-						)
+						result = f.fetch( mode=str( un_mode ), query_path=clean_query_path,
+							time=int( un_timeout ) )
 						
 						st.session_state[ 'un_query_path' ] = clean_query_path
 						st.session_state[ 'un_results' ] = result or { }
@@ -19117,52 +14452,31 @@ elif mode == 'Demographic':
 					if result.get( 'mode', '' ) == 'datasets':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Mode': result.get( 'mode', '' ),
-									'HasHtml': (
-											isinstance( payload, dict )
-											and bool( payload.get( 'html', '' ) )
-									),
-							}
-						)
+						_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+							'HasHtml': (isinstance( payload, dict ) and bool(
+								payload.get( 'html', '' ) )), } )
 						
 						if isinstance( payload, dict ) and payload.get( 'html', '' ):
-							_render_html_preview(
-								'#### Dataset Catalog Preview',
-								str( payload.get( 'html', '' ) )
-							)
+							_render_html_preview( '#### Dataset Catalog Preview',
+								str( payload.get( 'html', '' ) ) )
 						else:
 							st.json( payload )
 					
 					elif result.get( 'mode', '' ) == 'sdmx_query':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Mode': result.get( 'mode', '' ),
-									'QueryPath': st.session_state.get(
-										'un_query_path',
-										''
-									),
-									'TextPayload': (
-											isinstance( payload, dict )
-											and bool( payload.get( 'text', '' ) )
-									),
-									'JsonPayload': isinstance( payload, (dict, list) ),
-							}
-						)
+						_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+							'QueryPath': st.session_state.get( 'un_query_path', '' ),
+							'TextPayload': (isinstance( payload, dict ) and bool(
+								payload.get( 'text', '' ) )),
+							'JsonPayload': isinstance( payload, (dict, list) ), } )
 						
 						if isinstance( payload, dict ) and payload.get( 'text', '' ):
 							st.markdown( '#### Query Response' )
 							st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
 						elif isinstance( payload, dict ) and payload.get( 'html', '' ):
-							_render_html_preview(
-								'#### Query Response',
-								str( payload.get( 'html', '' ) )
-							)
+							_render_html_preview( '#### Query Response',
+								str( payload.get( 'html', '' ) ) )
 						else:
 							st.json( payload )
 					
@@ -19170,58 +14484,17 @@ elif mode == 'Demographic':
 		
 		# -------- World Population
 		with st.expander( label='World Population', icon='👥', expanded=False ):
-			WORLDPOP_MODES = [
-					'catalog',
-					'search',
-					'raster_metadata'
-			]
+			WORLDPOP_MODES = [ 'catalog', 'search', 'raster_metadata' ]
 			
-			WORLDPOP_ASSET_PRESETS = [
-					'data/pop',
-					'data/pop/wpgp',
-					'data/pop/wpgp?iso3=GHA',
-					'data/pop/wpgp?iso3=AUS',
-					'data/pop/wpgp?iso3=USA',
-					'data/pop/wpgp?iso3=GBR',
-					'data/pop/wpgp?iso3=NGA',
-					'data/pop/wpgp?iso3=KEN',
-					'data/pop/wpgp?iso3=IND',
-					'data/pop/wpgp?iso3=BRA',
-					'Custom...'
-			]
+			WORLDPOP_ASSET_PRESETS = [ 'data/pop', 'data/pop/wpgp', 'data/pop/wpgp?iso3=GHA',
+				'data/pop/wpgp?iso3=AUS', 'data/pop/wpgp?iso3=USA', 'data/pop/wpgp?iso3=GBR',
+				'data/pop/wpgp?iso3=NGA', 'data/pop/wpgp?iso3=KEN', 'data/pop/wpgp?iso3=IND',
+				'data/pop/wpgp?iso3=BRA', 'Custom...' ]
 			
 			def _clear_worldpop_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the World Population expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'worldpop_clear_request' ] = True
 			
 			def _validate_worldpop_query( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a free-text WorldPop catalog/STAC search query.
-
-					Parameters:
-					-----------
-					value (object):
-						Query supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Cleaned query text.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -19230,41 +14503,20 @@ elif mode == 'Demographic':
 				return text
 			
 			def _validate_worldpop_asset_path( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a WorldPop metadata or asset path before passing it to the
-					WorldPopulation wrapper.
-
-					Parameters:
-					-----------
-					value (object):
-						Asset path supplied by the user or selected from presets.
-
-					Returns:
-					--------
-					str:
-						Clean path without a leading slash.
-				'''
 				text = str( value or '' ).strip( ).lstrip( '/' )
 				
 				if not text:
-					raise ValueError(
-						'Asset Path is required for raster_metadata mode.'
-					)
+					raise ValueError( 'Asset Path is required for raster_metadata mode.' )
 				
 				if text.startswith( 'http://' ) or text.startswith( 'https://' ):
-					raise ValueError(
-						'Asset Path must be a path segment only, not a full URL.'
-					)
+					raise ValueError( 'Asset Path must be a path segment only, not a full URL.' )
 				
 				if '..' in text:
 					raise ValueError( 'Asset Path cannot contain parent-directory markers.' )
 				
 				if not re.fullmatch( r'[A-Za-z0-9_\-./?=&%]+', text ):
 					raise ValueError(
-						'Asset Path contains unsupported characters for a WorldPop request.'
-					)
+						'Asset Path contains unsupported characters for a WorldPop request.' )
 				
 				return text
 			
@@ -19284,10 +14536,8 @@ elif mode == 'Demographic':
 				st.session_state[ 'worldpop_asset_path' ] = ''
 			
 			if st.session_state.get( 'worldpop_asset_path', '' ) in WORLDPOP_ASSET_PRESETS:
-				default_asset_choice = st.session_state.get(
-					'worldpop_asset_path',
-					'data/pop/wpgp?iso3=GHA'
-				)
+				default_asset_choice = st.session_state.get( 'worldpop_asset_path',
+					'data/pop/wpgp?iso3=GHA' )
 			elif str( st.session_state.get( 'worldpop_asset_path', '' ) ).strip( ):
 				default_asset_choice = 'Custom...'
 			else:
@@ -19296,18 +14546,14 @@ elif mode == 'Demographic':
 			if 'worldpop_asset_choice' not in st.session_state:
 				st.session_state[ 'worldpop_asset_choice' ] = default_asset_choice
 			
-			if st.session_state.get(
-					'worldpop_asset_choice',
-					'data/pop/wpgp?iso3=GHA'
-			) not in WORLDPOP_ASSET_PRESETS:
+			if st.session_state.get( 'worldpop_asset_choice',
+					'data/pop/wpgp?iso3=GHA' ) not in WORLDPOP_ASSET_PRESETS:
 				st.session_state[ 'worldpop_asset_choice' ] = default_asset_choice
 			
 			if 'worldpop_custom_asset_path' not in st.session_state:
 				st.session_state[ 'worldpop_custom_asset_path' ] = (
-						''
-						if default_asset_choice != 'Custom...'
-						else st.session_state.get( 'worldpop_asset_path', '' )
-				)
+					'' if default_asset_choice != 'Custom...' else st.session_state.get(
+						'worldpop_asset_path', '' ))
 			
 			if 'worldpop_page' not in st.session_state:
 				st.session_state[ 'worldpop_page' ] = 1
@@ -19333,111 +14579,62 @@ elif mode == 'Demographic':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				worldpop_mode = st.selectbox(
-					'Mode',
-					options=WORLDPOP_MODES,
+				worldpop_mode = st.selectbox( 'Mode', options=WORLDPOP_MODES,
 					index=WORLDPOP_MODES.index(
-						st.session_state.get( 'worldpop_mode', 'catalog' )
-					),
-					key='worldpop_mode',
-					help=(
-							'catalog = API landing content; '
-							'search = catalog-style search; '
-							'raster_metadata = direct asset or metadata path.'
-					)
-				)
+						st.session_state.get( 'worldpop_mode', 'catalog' ) ), key='worldpop_mode',
+					help=('catalog = API landing content; '
+					      'search = catalog-style search; '
+					      'raster_metadata = direct asset or metadata path.') )
 				
-				worldpop_query = st.text_area(
-					'Query',
-					value=st.session_state.get( 'worldpop_query', '' ),
-					height=90,
-					key='worldpop_query',
-					placeholder='population Ghana 2020',
-					disabled=(worldpop_mode != 'search')
-				)
+				worldpop_query = st.text_area( 'Query',
+					value=st.session_state.get( 'worldpop_query', '' ), height=90,
+					key='worldpop_query', placeholder='population Ghana 2020',
+					disabled=(worldpop_mode != 'search') )
 				
-				worldpop_asset_choice = st.selectbox(
-					'Asset Path Preset',
-					options=WORLDPOP_ASSET_PRESETS,
-					index=WORLDPOP_ASSET_PRESETS.index(
-						st.session_state.get(
-							'worldpop_asset_choice',
-							'data/pop/wpgp?iso3=GHA'
-						)
-					),
-					key='worldpop_asset_choice',
-					disabled=(worldpop_mode != 'raster_metadata'),
-					help='Common WorldPop API metadata paths. Use Custom for another path.'
-				)
+				worldpop_asset_choice = st.selectbox( 'Asset Path Preset',
+					options=WORLDPOP_ASSET_PRESETS, index=WORLDPOP_ASSET_PRESETS.index(
+						st.session_state.get( 'worldpop_asset_choice', 'data/pop/wpgp?iso3=GHA'
+						) ),
+					key='worldpop_asset_choice', disabled=(worldpop_mode != 'raster_metadata'),
+					help='Common WorldPop API metadata paths. Use Custom for another path.' )
 				
-				worldpop_custom_asset_path = st.text_area(
-					'Custom Asset Path',
-					value=st.session_state.get( 'worldpop_custom_asset_path', '' ),
-					height=100,
-					key='worldpop_custom_asset_path',
-					placeholder='data/pop/wpgp?iso3=GHA',
+				worldpop_custom_asset_path = st.text_area( 'Custom Asset Path',
+					value=st.session_state.get( 'worldpop_custom_asset_path', '' ), height=100,
+					key='worldpop_custom_asset_path', placeholder='data/pop/wpgp?iso3=GHA',
 					disabled=(
-							worldpop_mode != 'raster_metadata'
-							or worldpop_asset_choice != 'Custom...'
-					)
-				)
+							worldpop_mode != 'raster_metadata' or worldpop_asset_choice !=
+							'Custom...') )
 				
 				c1, c2, c3 = st.columns( 3 )
 				
 				with c1:
-					worldpop_page = st.number_input(
-						'Page',
-						min_value=1,
-						max_value=100000,
-						value=int( st.session_state.get( 'worldpop_page', 1 ) ),
-						step=1,
-						key='worldpop_page',
-						disabled=(worldpop_mode != 'search')
-					)
+					worldpop_page = st.number_input( 'Page', min_value=1, max_value=100000,
+						value=int( st.session_state.get( 'worldpop_page', 1 ) ), step=1,
+						key='worldpop_page', disabled=(worldpop_mode != 'search') )
 				
 				with c2:
-					worldpop_page_size = st.number_input(
-						'Page Size',
-						min_value=1,
-						max_value=500,
-						value=int( st.session_state.get( 'worldpop_page_size', 25 ) ),
-						step=1,
-						key='worldpop_page_size',
-						disabled=(worldpop_mode != 'search')
-					)
+					worldpop_page_size = st.number_input( 'Page Size', min_value=1, max_value=500,
+						value=int( st.session_state.get( 'worldpop_page_size', 25 ) ), step=1,
+						key='worldpop_page_size', disabled=(worldpop_mode != 'search') )
 				
 				with c3:
-					worldpop_timeout = st.number_input(
-						'Timeout',
-						min_value=1,
-						max_value=120,
-						value=int( st.session_state.get( 'worldpop_timeout', 20 ) ),
-						step=1,
-						key='worldpop_timeout'
-					)
+					worldpop_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+						value=int( st.session_state.get( 'worldpop_timeout', 20 ) ), step=1,
+						key='worldpop_timeout' )
 				
-				st.caption(
-					'WorldPop exposes API access to population and demographic datasets. '
-					'Raster metadata mode appends a selected path to the current wrapper '
-					'base URL.'
-				)
+				st.caption( 'WorldPop exposes API access to population and demographic datasets. '
+				            'Raster metadata mode appends a selected path to the current wrapper '
+				            'base URL.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					worldpop_submit = st.button(
-						'Submit',
-						key='worldpop_submit',
-						use_container_width=True
-					)
+					worldpop_submit = st.button( 'Submit', key='worldpop_submit',
+						use_container_width=True )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='worldpop_clear',
-						on_click=_clear_worldpop_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='worldpop_clear', on_click=_clear_worldpop_state,
+						use_container_width=True )
 			
 			with col_right:
 				result = st.session_state.get( 'worldpop_results', { } )
@@ -19449,27 +14646,18 @@ elif mode == 'Demographic':
 							clean_asset_path = ''
 						elif worldpop_mode == 'raster_metadata':
 							selected_asset_path = (
-									worldpop_custom_asset_path
-									if worldpop_asset_choice == 'Custom...'
-									else worldpop_asset_choice
-							)
-							clean_asset_path = _validate_worldpop_asset_path(
-								selected_asset_path
-							)
+								worldpop_custom_asset_path if worldpop_asset_choice == 'Custom...'
+								else worldpop_asset_choice)
+							clean_asset_path = _validate_worldpop_asset_path( selected_asset_path )
 							clean_query = ''
 						else:
 							clean_query = ''
 							clean_asset_path = ''
 						
 						f = WorldPopulation( )
-						result = f.fetch(
-							mode=str( worldpop_mode ),
-							query=clean_query,
-							asset_path=clean_asset_path,
-							page=int( worldpop_page ),
-							page_size=int( worldpop_page_size ),
-							time=int( worldpop_timeout )
-						)
+						result = f.fetch( mode=str( worldpop_mode ), query=clean_query,
+							asset_path=clean_asset_path, page=int( worldpop_page ),
+							page_size=int( worldpop_page_size ), time=int( worldpop_timeout ) )
 						
 						st.session_state[ 'worldpop_query' ] = clean_query
 						st.session_state[ 'worldpop_asset_path' ] = clean_asset_path
@@ -19488,22 +14676,13 @@ elif mode == 'Demographic':
 					if result.get( 'mode', '' ) == 'catalog':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'Mode': result.get( 'mode', '' ),
-									'HasHtml': (
-											isinstance( payload, dict )
-											and bool( payload.get( 'html', '' ) )
-									),
-							}
-						)
+						_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+							'HasHtml': (isinstance( payload, dict ) and bool(
+								payload.get( 'html', '' ) )), } )
 						
 						if isinstance( payload, dict ) and payload.get( 'html', '' ):
-							_render_html_preview(
-								'#### Catalog Preview',
-								str( payload.get( 'html', '' ) )
-							)
+							_render_html_preview( '#### Catalog Preview',
+								str( payload.get( 'html', '' ) ) )
 						else:
 							st.json( payload )
 					
@@ -19511,22 +14690,12 @@ elif mode == 'Demographic':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
 						if isinstance( payload, dict ) and isinstance(
-								payload.get( 'results', [ ] ),
-								list
-						):
+								payload.get( 'results', [ ] ), list ):
 							rows = payload.get( 'results', [ ] )
-							_render_summary_kv(
-								'#### Summary',
-								{
-										'Query': st.session_state.get(
-											'worldpop_query',
-											''
-										),
-										'Page': worldpop_page,
-										'PageSize': worldpop_page_size,
-										'ResultCount': len( rows ),
-								}
-							)
+							_render_summary_kv( '#### Summary',
+								{ 'Query': st.session_state.get( 'worldpop_query', '' ),
+									'Page': worldpop_page, 'PageSize': worldpop_page_size,
+									'ResultCount': len( rows ), } )
 							_render_rows_table( '#### Search Results', rows )
 						else:
 							st.json( payload )
@@ -19534,19 +14703,10 @@ elif mode == 'Demographic':
 					elif result.get( 'mode', '' ) == 'raster_metadata':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
-						_render_summary_kv(
-							'#### Summary',
-							{
-									'AssetPath': st.session_state.get(
-										'worldpop_asset_path',
-										''
-									),
-									'HasText': (
-											isinstance( payload, dict )
-											and bool( payload.get( 'text', '' ) )
-									),
-							}
-						)
+						_render_summary_kv( '#### Summary',
+							{ 'AssetPath': st.session_state.get( 'worldpop_asset_path', '' ),
+								'HasText': (isinstance( payload, dict ) and bool(
+									payload.get( 'text', '' ) )), } )
 						
 						if isinstance( payload, dict ) and payload.get( 'text', '' ):
 							st.markdown( '#### Metadata Response' )
@@ -19558,68 +14718,16 @@ elif mode == 'Demographic':
 		
 		# -------- CDC WONDER
 		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
-			WONDER_MODES = [
-					'metadata_template',
-					'query_xml'
-			]
+			WONDER_MODES = [ 'metadata_template', 'query_xml' ]
 			
-			WONDER_DATASETS = [
-					'D76',
-					'D140',
-					'D176',
-					'D158',
-					'D159',
-					'D160',
-					'D161',
-					'D162',
-					'D163',
-					'D164',
-					'D165',
-					'D166',
-					'D167',
-					'D168',
-					'D169',
-					'D170',
-					'D171',
-					'D172',
-					'D173',
-					'D174',
-					'D175',
-					'Other'
-			]
+			WONDER_DATASETS = [ 'D76', 'D140', 'D176', 'D158', 'D159', 'D160', 'D161', 'D162',
+				'D163', 'D164', 'D165', 'D166', 'D167', 'D168', 'D169', 'D170', 'D171', 'D172',
+				'D173', 'D174', 'D175', 'Other' ]
 			
 			def _clear_wonder_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the CDC WONDER expander state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'wonder_clear_request' ] = True
 			
 			def _validate_wonder_dataset_id( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a CDC WONDER database identifier.
-
-					Parameters:
-					-----------
-					value (object):
-						Dataset identifier supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Validated CDC WONDER database identifier.
-				'''
 				text = str( value or '' ).strip( ).upper( )
 				
 				if not text:
@@ -19628,27 +14736,11 @@ elif mode == 'Demographic':
 				if not re.fullmatch( r'D\d{1,4}', text ):
 					raise ValueError(
 						'CDC WONDER Dataset ID must use the format D followed by digits, '
-						'such as D76.'
-					)
+						'such as D76.' )
 				
 				return text
 			
 			def _validate_wonder_xml( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate the CDC WONDER XML request payload before submission.
-
-					Parameters:
-					-----------
-					value (object):
-						XML request text supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Validated XML request text.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -19656,8 +14748,7 @@ elif mode == 'Demographic':
 				
 				if '<request-parameters>' not in text and '<query-parameters>' not in text:
 					raise ValueError(
-						'Request XML should contain CDC WONDER request/query parameters.'
-					)
+						'Request XML should contain CDC WONDER request/query parameters.' )
 				
 				return text
 			
@@ -19686,10 +14777,8 @@ elif mode == 'Demographic':
 			
 			if 'wonder_custom_dataset_id' not in st.session_state:
 				st.session_state[ 'wonder_custom_dataset_id' ] = (
-						''
-						if default_dataset_choice != 'Other'
-						else st.session_state.get( 'wonder_dataset_id', '' )
-				)
+					'' if default_dataset_choice != 'Other' else st.session_state.get(
+						'wonder_dataset_id', '' ))
 			
 			if 'wonder_request_xml' not in st.session_state:
 				st.session_state[ 'wonder_request_xml' ] = ''
@@ -19710,77 +14799,46 @@ elif mode == 'Demographic':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				wonder_mode = st.selectbox(
-					'Mode',
-					options=WONDER_MODES,
-					index=WONDER_MODES.index(
-						st.session_state.get( 'wonder_mode', 'metadata_template' )
-					),
+				wonder_mode = st.selectbox( 'Mode', options=WONDER_MODES, index=WONDER_MODES.index(
+					st.session_state.get( 'wonder_mode', 'metadata_template' ) ),
 					key='wonder_mode',
-					help=(
-							'metadata_template = build a starter XML request; '
-							'query_xml = submit a raw XML request to CDC WONDER.'
-					)
-				)
+					help=('metadata_template = build a starter XML request; '
+					      'query_xml = submit a raw XML request to CDC WONDER.') )
 				
-				wonder_dataset_choice = st.selectbox(
-					'Dataset ID',
-					options=WONDER_DATASETS,
+				wonder_dataset_choice = st.selectbox( 'Dataset ID', options=WONDER_DATASETS,
 					index=WONDER_DATASETS.index(
-						st.session_state.get( 'wonder_dataset_choice', 'D76' )
-					),
+						st.session_state.get( 'wonder_dataset_choice', 'D76' ) ),
 					key='wonder_dataset_choice',
-					help='Common CDC WONDER database identifiers. Use Other for newer IDs.'
-				)
+					help='Common CDC WONDER database identifiers. Use Other for newer IDs.' )
 				
-				wonder_custom_dataset_id = st.text_input(
-					'Custom Dataset ID',
+				wonder_custom_dataset_id = st.text_input( 'Custom Dataset ID',
 					value=st.session_state.get( 'wonder_custom_dataset_id', '' ),
-					key='wonder_custom_dataset_id',
-					placeholder='D76',
-					disabled=(wonder_dataset_choice != 'Other')
-				)
+					key='wonder_custom_dataset_id', placeholder='D76',
+					disabled=(wonder_dataset_choice != 'Other') )
 				
-				wonder_request_xml = st.text_area(
-					'Request XML',
-					value=st.session_state.get( 'wonder_request_xml', '' ),
-					height=240,
+				wonder_request_xml = st.text_area( 'Request XML',
+					value=st.session_state.get( 'wonder_request_xml', '' ), height=240,
 					key='wonder_request_xml',
 					placeholder='<request-parameters>...</request-parameters>',
-					disabled=(wonder_mode != 'query_xml')
-				)
+					disabled=(wonder_mode != 'query_xml') )
 				
-				wonder_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=120,
-					value=int( st.session_state.get( 'wonder_timeout', 20 ) ),
-					step=1,
-					key='wonder_timeout'
-				)
+				wonder_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'wonder_timeout', 20 ) ), step=1,
+					key='wonder_timeout' )
 				
-				st.caption(
-					'CDC WONDER requires POST requests with request_xml and acceptance '
-					'of data-use restrictions. The wrapper submits '
-					'accept_datause_restrictions=true.'
-				)
+				st.caption( 'CDC WONDER requires POST requests with request_xml and acceptance '
+				            'of data-use restrictions. The wrapper submits '
+				            'accept_datause_restrictions=true.' )
 				
 				b1, b2 = st.columns( 2 )
 				
 				with b1:
-					wonder_submit = st.button(
-						'Submit',
-						key='wonder_submit',
-						use_container_width=True
-					)
+					wonder_submit = st.button( 'Submit', key='wonder_submit',
+						use_container_width=True )
 				
 				with b2:
-					st.button(
-						'Clear',
-						key='wonder_clear',
-						on_click=_clear_wonder_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='wonder_clear', on_click=_clear_wonder_state,
+						use_container_width=True )
 			
 			with col_right:
 				result = st.session_state.get( 'wonder_results', { } )
@@ -19788,37 +14846,24 @@ elif mode == 'Demographic':
 				if wonder_submit:
 					try:
 						selected_dataset_id = (
-								wonder_custom_dataset_id
-								if wonder_dataset_choice == 'Other'
-								else wonder_dataset_choice
-						)
-						clean_dataset_id = _validate_wonder_dataset_id(
-							selected_dataset_id
-						)
+							wonder_custom_dataset_id if wonder_dataset_choice == 'Other' else
+							wonder_dataset_choice)
+						clean_dataset_id = _validate_wonder_dataset_id( selected_dataset_id )
 						
 						if wonder_mode == 'query_xml':
-							clean_request_xml = _validate_wonder_xml(
-								wonder_request_xml
-							)
+							clean_request_xml = _validate_wonder_xml( wonder_request_xml )
 						else:
 							clean_request_xml = str( wonder_request_xml or '' ).strip( )
 						
 						f = Wonder( )
-						result = f.fetch(
-							mode=str( wonder_mode ),
-							dataset_id=clean_dataset_id,
-							request_xml=clean_request_xml,
-							time=int( wonder_timeout )
-						)
+						result = f.fetch( mode=str( wonder_mode ), dataset_id=clean_dataset_id,
+							request_xml=clean_request_xml, time=int( wonder_timeout ) )
 						
 						st.session_state[ 'wonder_dataset_id' ] = clean_dataset_id
 						st.session_state[ 'wonder_results' ] = result or { }
 						
-						if (
-								wonder_mode == 'metadata_template'
-								and isinstance( result, dict )
-								and isinstance( result.get( 'data', { } ), dict )
-						):
+						if (wonder_mode == 'metadata_template' and isinstance( result,
+							dict ) and isinstance( result.get( 'data', { } ), dict )):
 							template_xml = result.get( 'data', { } ).get( 'request_xml', '' )
 							st.session_state[ 'wonder_request_xml' ] = template_xml
 						
@@ -19837,13 +14882,9 @@ elif mode == 'Demographic':
 						payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 						
 						if isinstance( payload, dict ):
-							_render_summary_kv(
-								'#### Template Summary',
-								{
-										'DatasetId': payload.get( 'dataset_id', '' ),
-										'Notes': payload.get( 'notes', '' ),
-								}
-							)
+							_render_summary_kv( '#### Template Summary',
+								{ 'DatasetId': payload.get( 'dataset_id', '' ),
+									'Notes': payload.get( 'notes', '' ), } )
 							
 							template_xml = str( payload.get( 'request_xml', '' ) )
 							if template_xml:
@@ -19857,17 +14898,10 @@ elif mode == 'Demographic':
 						if isinstance( payload, dict ):
 							xml_text = str( payload.get( 'xml', '' ) )
 							
-							_render_summary_kv(
-								'#### Response Summary',
-								{
-										'DatasetId': st.session_state.get(
-											'wonder_dataset_id',
-											''
-										),
-										'Characters': len( xml_text ),
-										'HasXml': bool( xml_text.strip( ) ),
-								}
-							)
+							_render_summary_kv( '#### Response Summary',
+								{ 'DatasetId': st.session_state.get( 'wonder_dataset_id', '' ),
+									'Characters': len( xml_text ),
+									'HasXml': bool( xml_text.strip( ) ), } )
 							
 							_render_xml_preview( '#### XML Response', xml_text )
 						else:
@@ -19878,19 +14912,6 @@ elif mode == 'Demographic':
 		# -------- Pub Med
 		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
 			def _clear_pubmed_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the PubMed loader state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'pubmed_clear_request' ] = True
 			
 			if 'pubmed_results' not in st.session_state:
@@ -19915,71 +14936,44 @@ elif mode == 'Demographic':
 			
 			with col_left:
 				pubmed_query = st.text_input( 'PubMed Query',
-					value=st.session_state.get( 'pubmed_query', '' ),
-					key='pubmed_query',
-					placeholder='Example: machine learning cancer diagnosis'
-				)
+					value=st.session_state.get( 'pubmed_query', '' ), key='pubmed_query',
+					placeholder='Example: machine learning cancer diagnosis' )
 				
-				pubmed_max_docs = st.number_input( 'Max Documents',
-					min_value=1,
-					max_value=100,
-					value=int( st.session_state.get( 'pubmed_max_docs', 5 ) ),
-					step=1,
-					key='pubmed_max_docs'
-				)
+				pubmed_max_docs = st.number_input( 'Max Documents', min_value=1, max_value=100,
+					value=int( st.session_state.get( 'pubmed_max_docs', 5 ) ), step=1,
+					key='pubmed_max_docs' )
 				
-				st.caption(
-					'PubMed search uses the LangChain PubMedSearchLoader and promotes '
-					'returned documents into the shared loader state for downstream use.'
-				)
+				st.caption( 'PubMed search uses the LangChain PubMedSearchLoader and promotes '
+				            'returned documents into the shared loader state for downstream use.' )
 				
 				b1, b2, b3 = st.columns( 3 )
 				
 				with b1:
-					pubmed_submit = st.button(
-						'Submit',
-						key='pubmed_submit',
-						use_container_width=True
-					)
+					pubmed_submit = st.button( 'Submit', key='pubmed_submit',
+						use_container_width=True )
 				
 				with b2:
-					pubmed_clear = st.button(
-						'Clear',
-						key='pubmed_clear',
-						on_click=_clear_pubmed_state,
-						use_container_width=True
-					)
+					pubmed_clear = st.button( 'Clear', key='pubmed_clear',
+						on_click=_clear_pubmed_state, use_container_width=True )
 				
 				with b3:
-					can_save = (
-							st.session_state.get( 'active_loader' ) == 'PubMedSearchLoader'
-							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( )
-					)
+					can_save = (st.session_state.get(
+						'active_loader' ) == 'PubMedSearchLoader' and isinstance(
+						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+						'raw_text' ).strip( ))
 					
 					if can_save:
-						st.download_button(
-							'Save',
-							data=st.session_state.get( 'raw_text' ),
-							file_name='pubmed_loader_output.txt',
-							mime='text/plain',
-							key='pubmed_save',
-							use_container_width=True
-						)
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='pubmed_loader_output.txt', mime='text/plain',
+							key='pubmed_save', use_container_width=True )
 					else:
-						st.button(
-							'Save',
-							key='pubmed_save_disabled',
-							disabled=True,
-							use_container_width=True
-						)
+						st.button( 'Save', key='pubmed_save_disabled', disabled=True,
+							use_container_width=True )
 			
 			with col_right:
 				if pubmed_clear:
 					remaining = _clear_loader_documents( 'PubMedSearchLoader' )
-					st.info(
-						f'PubMed Loader state cleared. Remaining documents: {remaining}.'
-					)
+					st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
 				
 				if pubmed_submit:
 					if not pubmed_query or not pubmed_query.strip( ):
@@ -19987,61 +14981,31 @@ elif mode == 'Demographic':
 					else:
 						try:
 							loader = PubMedSearchLoader( )
-							documents = loader.load(
-								query=pubmed_query.strip( ),
-								max_docs=int( pubmed_max_docs )
-							) or [ ]
+							documents = loader.load( query=pubmed_query.strip( ),
+								max_docs=int( pubmed_max_docs ) ) or [ ]
 							
-							count = _promote_loader_documents(
-								documents,
-								'PubMedSearchLoader'
-							)
+							count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
 							
 							items: list[ dict[ str, Any ] ] = [ ]
 							
 							for i, doc in enumerate( documents, start=1 ):
 								metadata = (
-										doc.metadata
-										if isinstance(
-											getattr( doc, 'metadata', { } ),
-											dict
-										)
-										else { }
-								)
-								content = str(
-									getattr( doc, 'page_content', '' ) or ''
-								)
+									doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+										dict ) else { })
+								content = str( getattr( doc, 'page_content', '' ) or '' )
 								
-								items.append(
-									{
-											'Index': i,
-											'Title': (
-													metadata.get( 'Title' )
-													or metadata.get( 'title' )
-													or ''
-											),
-											'Published': (
-													metadata.get( 'Published' )
-													or metadata.get( 'published' )
-													or ''
-											),
-											'Copyright': (
-													metadata.get( 'Copyright Information' )
-													or metadata.get( 'copyright' )
-													or ''
-											),
-											'Summary': content,
-											'Metadata': metadata,
-									}
-								)
+								items.append( { 'Index': i, 'Title': (
+										metadata.get( 'Title' ) or metadata.get( 'title' ) or ''),
+									'Published': (metadata.get( 'Published' ) or metadata.get(
+										'published' ) or ''), 'Copyright': (
+											metadata.get( 'Copyright Information' ) or
+											metadata.get(
+										'copyright' ) or ''), 'Summary': content,
+									'Metadata': metadata, } )
 							
-							st.session_state[ 'pubmed_results' ] = {
-									'mode': 'pubmed',
-									'query': pubmed_query.strip( ),
-									'max_docs': int( pubmed_max_docs ),
-									'count': count,
-									'items': items,
-							}
+							st.session_state[ 'pubmed_results' ] = { 'mode': 'pubmed',
+								'query': pubmed_query.strip( ), 'max_docs': int( pubmed_max_docs ),
+								'count': count, 'items': items, }
 							
 							st.success( f'Loaded {count} PubMed document(s).' )
 						
@@ -20054,41 +15018,36 @@ elif mode == 'Demographic':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'Query': result.get( 'query', '' ),
-								'MaxDocs': result.get( 'max_docs', 0 ),
-								'Returned': result.get( 'count', 0 ),
-						}
-					)
+					_render_summary_kv( '#### Summary',
+						{ 'Mode': result.get( 'mode', '' ), 'Query': result.get( 'query', '' ),
+							'MaxDocs': result.get( 'max_docs', 0 ),
+							'Returned': result.get( 'count', 0 ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
-						table_rows = [ {
-										'Index': item.get( 'Index', '' ),
-										'Title': item.get( 'Title', '' ),
-										'Published': item.get( 'Published', '' ),
-								} for item in items ]
+						table_rows = [
+							{ 'Index': item.get( 'Index', '' ), 'Title': item.get( 'Title', '' ),
+								'Published': item.get( 'Published', '' ), } for item in items ]
 						df_pubmed = pd.DataFrame( table_rows )
 						st.markdown( '#### Results' )
 						st.dataframe( df_pubmed, use_container_width=True, hide_index=True )
 						first = items[ 0 ]
-						_render_summary_kv( '#### First Result', {
-									'Title': first.get( 'Title', '' ),
-									'Published': first.get( 'Published', '' ),
-									'Copyright': first.get( 'Copyright', '' ),
-							} )
+						_render_summary_kv( '#### First Result',
+							{ 'Title': first.get( 'Title', '' ),
+								'Published': first.get( 'Published', '' ),
+								'Copyright': first.get( 'Copyright', '' ), } )
 						
 						st.markdown( '#### Abstract Preview' )
 						st.code( str( first.get( 'Summary', '' ) )[ :8000 ] )
 						
 						with st.expander( 'Records', expanded=False ):
 							for item in items:
-								record_label = str( item.get( 'Title', '' ) or f"Record {item.get( 'Index', '' )}" )
-								with st.expander( f"Record {item.get( 'Index', '' )}: {record_label}",
+								record_label = str(
+									item.get( 'Title', '' ) or f"Record "
+									                           f"{item.get( 'Index', '' )}" )
+								with st.expander(
+										f"Record {item.get( 'Index', '' )}: {record_label}",
 										expanded=False ):
 									st.markdown( f"**Published:** {item.get( 'Published', '' )}" )
 									st.markdown( f"**Copyright:** {item.get( 'Copyright', '' )}" )
@@ -20106,52 +15065,15 @@ elif mode == 'Demographic':
 		
 		# -------- Open City
 		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
-			OPEN_CITY_DOMAINS = [
-					'data.sfgov.org',
-					'data.cityofnewyork.us',
-					'data.cityofchicago.org',
-					'data.lacity.org',
-					'data.seattle.gov',
-					'data.austintexas.gov',
-					'data.cincinnati-oh.gov',
-					'data.baltimorecity.gov',
-					'data.cityofboston.gov',
-					'data.nashville.gov',
-					'Other'
-			]
+			OPEN_CITY_DOMAINS = [ 'data.sfgov.org', 'data.cityofnewyork.us',
+				'data.cityofchicago.org', 'data.lacity.org', 'data.seattle.gov',
+				'data.austintexas.gov', 'data.cincinnati-oh.gov', 'data.baltimorecity.gov',
+				'data.cityofboston.gov', 'data.nashville.gov', 'Other' ]
 			
 			def _clear_open_city_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Open City Data loader state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'open_city_clear_request' ] = True
 			
 			def _validate_open_city_domain( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a Socrata city data portal domain.
-
-					Parameters:
-					-----------
-					value (object):
-						City portal domain supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Validated domain without protocol or path.
-				'''
 				text = str( value or '' ).strip( ).lower( )
 				text = text.replace( 'https://', '' ).replace( 'http://', '' )
 				text = text.strip( '/' )
@@ -20163,39 +15085,20 @@ elif mode == 'Demographic':
 					raise ValueError( 'City ID must be a domain only, not a URL path.' )
 				
 				if not re.fullmatch( r'[a-z0-9][a-z0-9.-]+\.[a-z]{2,}', text ):
-					raise ValueError(
-						'City ID must be a valid Socrata portal domain, such as '
-						'data.sfgov.org.'
-					)
+					raise ValueError( 'City ID must be a valid Socrata portal domain, such as '
+					                  'data.sfgov.org.' )
 				
 				return text
 			
 			def _validate_open_city_dataset_id( value: object ) -> str:
-				'''
-					Purpose:
-					--------
-					Validate a Socrata dataset identifier.
-
-					Parameters:
-					-----------
-					value (object):
-						Dataset identifier supplied by the user.
-
-					Returns:
-					--------
-					str:
-						Validated dataset identifier without a trailing .json suffix.
-				'''
 				text = str( value or '' ).strip( ).replace( '.json', '' ).strip( '/' )
 				
 				if not text:
 					raise ValueError( 'Dataset ID is required.' )
 				
 				if not re.fullmatch( r'[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}', text ):
-					raise ValueError(
-						'Dataset ID must use the Socrata four-by-four format, '
-						'such as vw6y-z8j6.'
-					)
+					raise ValueError( 'Dataset ID must use the Socrata four-by-four format, '
+					                  'such as vw6y-z8j6.' )
 				
 				return text.lower( )
 			
@@ -20216,15 +15119,14 @@ elif mode == 'Demographic':
 			if 'open_city_choice' not in st.session_state:
 				st.session_state[ 'open_city_choice' ] = default_open_city_choice
 			
-			if st.session_state.get( 'open_city_choice', 'data.sfgov.org' ) not in OPEN_CITY_DOMAINS:
+			if st.session_state.get( 'open_city_choice',
+					'data.sfgov.org' ) not in OPEN_CITY_DOMAINS:
 				st.session_state[ 'open_city_choice' ] = default_open_city_choice
 			
 			if 'open_city_custom_id' not in st.session_state:
 				st.session_state[ 'open_city_custom_id' ] = (
-						''
-						if default_open_city_choice != 'Other'
-						else st.session_state.get( 'open_city_id', '' )
-				)
+					'' if default_open_city_choice != 'Other' else st.session_state.get(
+						'open_city_id', '' ))
 			
 			if 'open_city_dataset_id' not in st.session_state:
 				st.session_state[ 'open_city_dataset_id' ] = ''
@@ -20244,137 +15146,86 @@ elif mode == 'Demographic':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				open_city_choice = st.selectbox( 'City ID',
-					options=OPEN_CITY_DOMAINS,
+				open_city_choice = st.selectbox( 'City ID', options=OPEN_CITY_DOMAINS,
 					index=OPEN_CITY_DOMAINS.index(
-						st.session_state.get( 'open_city_choice', 'data.sfgov.org' )
-					),
+						st.session_state.get( 'open_city_choice', 'data.sfgov.org' ) ),
 					key='open_city_choice',
-					help='Common Socrata open-data city domains. Use Other for a custom portal.'
-				)
+					help='Common Socrata open-data city domains. Use Other for a custom portal.' )
 				
-				open_city_custom_id = st.text_input(
-					'Custom City ID',
+				open_city_custom_id = st.text_input( 'Custom City ID',
 					value=st.session_state.get( 'open_city_custom_id', '' ),
-					key='open_city_custom_id',
-					disabled=(open_city_choice != 'Other'),
-					placeholder='data.example.gov'
-				)
+					key='open_city_custom_id', disabled=(open_city_choice != 'Other'),
+					placeholder='data.example.gov' )
 				
-				dataset_id = st.text_input(
-					'Dataset ID',
+				dataset_id = st.text_input( 'Dataset ID',
 					value=st.session_state.get( 'open_city_dataset_id', '' ),
-					key='open_city_dataset_id',
-					placeholder='vw6y-z8j6'
-				)
+					key='open_city_dataset_id', placeholder='vw6y-z8j6' )
 				
-				limit = st.number_input(
-					'Limit',
-					min_value=1,
-					max_value=5000,
-					value=int( st.session_state.get( 'open_city_limit', 100 ) ),
-					step=10,
-					key='open_city_limit'
-				)
+				limit = st.number_input( 'Limit', min_value=1, max_value=5000,
+					value=int( st.session_state.get( 'open_city_limit', 100 ) ), step=10,
+					key='open_city_limit' )
 				
-				st.caption(
-					'Open City Data uses LangChain OpenCityDataLoader backed by Socrata. '
-					'Use the API tab on the city dataset page to find the dataset ID.'
-				)
+				st.caption( 'Open City Data uses LangChain OpenCityDataLoader backed by Socrata. '
+				            'Use the API tab on the city dataset page to find the dataset ID.' )
 				
 				b1, b2, b3 = st.columns( 3 )
 				
 				with b1:
-					open_city_submit = st.button(
-						'Submit',
-						key='open_city_submit',
-						use_container_width=True
-					)
+					open_city_submit = st.button( 'Submit', key='open_city_submit',
+						use_container_width=True )
 				
 				with b2:
-					open_city_clear = st.button(
-						'Clear',
-						key='open_city_clear',
-						on_click=_clear_open_city_state,
-						use_container_width=True
-					)
+					open_city_clear = st.button( 'Clear', key='open_city_clear',
+						on_click=_clear_open_city_state, use_container_width=True )
 				
 				with b3:
-					can_save = (
-							st.session_state.get( 'active_loader' ) == 'OpenCityLoader'
-							and isinstance( st.session_state.get( 'raw_text' ), str )
-							and st.session_state.get( 'raw_text' ).strip( )
-					)
+					can_save = (st.session_state.get(
+						'active_loader' ) == 'OpenCityLoader' and isinstance(
+						st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+						'raw_text' ).strip( ))
 					
 					if can_save:
-						st.download_button(
-							'Save',
-							data=st.session_state.get( 'raw_text' ),
-							file_name='open_city_loader_output.txt',
-							mime='text/plain',
-							key='open_city_save',
-							use_container_width=True
-						)
+						st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+							file_name='open_city_loader_output.txt', mime='text/plain',
+							key='open_city_save', use_container_width=True )
 					else:
-						st.button(
-							'Save',
-							key='open_city_save_disabled',
-							disabled=True,
-							use_container_width=True
-						)
+						st.button( 'Save', key='open_city_save_disabled', disabled=True,
+							use_container_width=True )
 			
 			with col_right:
 				if open_city_clear:
 					remaining = _clear_loader_documents( 'OpenCityLoader' )
 					st.info(
-						f'Open City Data Loader state cleared. Remaining documents: {remaining}.'
-					)
+						f'Open City Data Loader state cleared. Remaining documents: {remaining}.' )
 				
 				if open_city_submit:
 					try:
 						selected_city_id = (
-								open_city_custom_id
-								if open_city_choice == 'Other'
-								else open_city_choice
-						)
+							open_city_custom_id if open_city_choice == 'Other' else
+							open_city_choice)
 						clean_city_id = _validate_open_city_domain( selected_city_id )
 						clean_dataset_id = _validate_open_city_dataset_id( dataset_id )
 						
 						loader = OpenCityLoader( )
-						documents = loader.load(
-							city_id=clean_city_id,
+						documents = loader.load( city_id=clean_city_id,
 							dataset_id=clean_dataset_id,
-							limit=int( limit )
-						) or [ ]
+							limit=int( limit ) ) or [ ]
 						
 						count = _promote_loader_documents( documents, 'OpenCityLoader' )
 						
 						items: list[ dict[ str, Any ] ] = [ ]
 						for i, doc in enumerate( documents, start=1 ):
-							metadata = (
-									doc.metadata
-									if isinstance( getattr( doc, 'metadata', { } ), dict )
-									else { }
-							)
+							metadata = (doc.metadata if isinstance( getattr( doc, 'metadata',
+								{ } ),
+								dict ) else { })
 							content = str( getattr( doc, 'page_content', '' ) or '' )
-							items.append(
-								{
-										'Index': i,
-										'Source': metadata.get( 'source', '' ),
-										'Row': content,
-										'Metadata': metadata,
-								}
-							)
+							items.append( { 'Index': i, 'Source': metadata.get( 'source', '' ),
+								'Row': content, 'Metadata': metadata, } )
 						
 						st.session_state[ 'open_city_id' ] = clean_city_id
-						st.session_state[ 'open_city_results' ] = {
-								'mode': 'open_city',
-								'city_id': clean_city_id,
-								'dataset_id': clean_dataset_id,
-								'limit': int( limit ),
-								'count': count,
-								'items': items,
-						}
+						st.session_state[ 'open_city_results' ] = { 'mode': 'open_city',
+							'city_id': clean_city_id, 'dataset_id': clean_dataset_id,
+							'limit': int( limit ), 'count': count, 'items': items, }
 						
 						st.success( f'Loaded {count} Open City document(s).' )
 					
@@ -20387,37 +15238,24 @@ elif mode == 'Demographic':
 				if not result:
 					st.text( 'No results.' )
 				else:
-					_render_summary_kv(
-						'#### Summary',
-						{
-								'Mode': result.get( 'mode', '' ),
-								'CityId': result.get( 'city_id', '' ),
-								'DatasetId': result.get( 'dataset_id', '' ),
-								'Limit': result.get( 'limit', 0 ),
-								'Returned': result.get( 'count', 0 ),
-						}
-					)
+					_render_summary_kv( '#### Summary',
+						{ 'Mode': result.get( 'mode', '' ), 'CityId': result.get( 'city_id', '' ),
+							'DatasetId': result.get( 'dataset_id', '' ),
+							'Limit': result.get( 'limit', 0 ),
+							'Returned': result.get( 'count', 0 ), } )
 					
 					items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
 					
 					if items:
 						table_rows = [
-								{
-										'Index': item.get( 'Index', '' ),
-										'Source': item.get( 'Source', '' ),
-										'Preview': str( item.get( 'Row', '' ) )[ :200 ],
-								}
-								for item in items
-						]
+							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+								'Preview': str( item.get( 'Row', '' ) )[ :200 ], } for item in
+							items ]
 						
 						df_open_city = pd.DataFrame( table_rows )
 						
 						st.markdown( '#### Results' )
-						st.dataframe(
-							df_open_city,
-							use_container_width=True,
-							hide_index=True
-						)
+						st.dataframe( df_open_city, use_container_width=True, hide_index=True )
 						
 						first = items[ 0 ]
 						st.markdown( '#### First Row Preview' )
@@ -20425,13 +15263,9 @@ elif mode == 'Demographic':
 						
 						with st.expander( 'Records', expanded=False ):
 							for item in items:
-								with st.expander(
-										f"Record {item.get( 'Index', '' )}",
-										expanded=False
-								):
-									st.markdown(
-										f"**Source:** {item.get( 'Source', '' )}"
-									)
+								with st.expander( f"Record {item.get( 'Index', '' )}",
+										expanded=False ):
+									st.markdown( f"**Source:** {item.get( 'Source', '' )}" )
 									st.markdown( '##### Row' )
 									st.code( str( item.get( 'Row', '' ) )[ :8000 ] )
 									
@@ -20443,58 +15277,24 @@ elif mode == 'Demographic':
 						st.info( 'No city records returned.' )
 					
 					_render_fallback_raw( result )
-				
+
 # ==============================================================================
 # TEXT GENERATION MODE
 # ==============================================================================
 elif mode == 'Generation':
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with center:
+	with (center):
 		st.subheader( f'🧠  Generative AI' )
 		st.divider( )
 		
 		# -------- ChatGPT
 		with st.expander( label='ChatGPT', expanded=True ):
-			CHAT_REASONING_EFFORTS = [
-					'minimal',
-					'low',
-					'medium',
-					'high'
-			]
+			CHAT_REASONING_EFFORTS = [ 'minimal', 'low', 'medium', 'high' ]
 			
 			def _clear_chat_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the ChatGPT generation state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'chat_clear_request' ] = True
 			
 			def _normalize_chat_domains( value: object ) -> list[ str ]:
-				'''
-					Purpose:
-					--------
-					Normalize newline-, comma-, or semicolon-delimited domain entries into
-					clean domains for the OpenAI web-search wrapper argument.
-
-					Parameters:
-					-----------
-					value (object):
-						Domain text supplied by the user.
-
-					Returns:
-					--------
-					list[str]:
-						Canonical, de-duplicated domain names.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -20581,12 +15381,9 @@ elif mode == 'Generation':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				chat_prompt = st.text_area(
-					'Prompt',
-					value=st.session_state.get( 'chat_prompt', '' ),
-					height=120,
-					key='chat_prompt'
-				)
+				chat_prompt = st.text_area( 'Prompt',
+					value=st.session_state.get( 'chat_prompt', '' ), height=120,
+					key='chat_prompt' )
 				
 				p_row1 = st.columns( 2 )
 				p_row2 = st.columns( 2 )
@@ -20596,158 +15393,90 @@ elif mode == 'Generation':
 				
 				with p_row1[ 0 ]:
 					_chat_models = (
-							cfg.GPT_MODELS
-							if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS
-							else [
-									'gpt-5.4',
-									'gpt-5',
-									'gpt-5-mini',
-									'gpt-5-nano',
-									'gpt-4.1'
-							]
-					)
+						cfg.GPT_MODELS if hasattr( cfg, 'GPT_MODELS' ) and cfg.GPT_MODELS else [
+							'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4.1' ])
 					
-					chat_model = _model_selector(
-						key_prefix='chat',
-						label='Model',
-						options=_chat_models,
-						default_model=(
-								'gpt-5-mini'
-								if 'gpt-5-mini' in _chat_models
-								else _chat_models[ 0 ]
-						),
-					)
+					chat_model = _model_selector( key_prefix='chat', label='Model',
+						options=_chat_models, default_model=(
+							'gpt-5-mini' if 'gpt-5-mini' in _chat_models else _chat_models[ 0 ]), )
 				
 				with p_row1[ 1 ]:
-					chat_temperature = st.slider(
-						'Temperature',
-						min_value=0.0,
-						max_value=2.0,
-						value=0.7,
-						step=0.05,
-						key='chat_temperature'
-					)
+					chat_temperature = st.slider( 'Temperature', min_value=0.0, max_value=2.0,
+						value=0.7, step=0.05, key='chat_temperature' )
 				
 				with p_row2[ 0 ]:
-					chat_max_tokens = st.number_input(
-						'Max Tokens',
-						min_value=1,
-						max_value=32768,
-						value=2048,
-						step=1,
-						key='chat_max_tokens'
-					)
+					chat_max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=32768,
+						value=2048, step=1, key='chat_max_tokens' )
 				
 				with p_row2[ 1 ]:
-					chat_top_p = st.slider(
-						'Top-P',
-						min_value=0.0,
-						max_value=1.0,
-						value=1.0,
-						step=0.01,
-						key='chat_top_p'
-					)
+					chat_top_p = st.slider( 'Top-P', min_value=0.0, max_value=1.0, value=1.0,
+						step=0.01, key='chat_top_p' )
 				
 				with p_row3[ 0 ]:
-					chat_seed = st.number_input(
-						'Seed',
-						min_value=0,
-						max_value=2_147_483_647,
-						value=int( st.session_state.get( 'chat_seed', 0 ) ),
-						step=1,
-						key='chat_seed',
-						help='Use 0 to omit the seed parameter.'
-					)
+					chat_seed = st.number_input( 'Seed', min_value=0, max_value=2_147_483_647,
+						value=int( st.session_state.get( 'chat_seed', 0 ) ), step=1,
+						key='chat_seed', help='Use 0 to omit the seed parameter.' )
 				
 				with p_row3[ 1 ]:
-					chat_json_mode = st.checkbox(
-						'JSON Mode',
+					chat_json_mode = st.checkbox( 'JSON Mode',
 						value=bool( st.session_state.get( 'chat_json_mode', False ) ),
 						key='chat_json_mode',
-						help=(
-								'Current wrapper behavior adds JSON-only instructions. '
-								'A later Chat class drop-in should wire this to Responses '
-								'API text.format.'
-						)
-					)
+						help=('Current wrapper behavior adds JSON-only instructions. '
+						      'A later Chat class drop-in should wire this to Responses '
+						      'API text.format.') )
 				
 				with p_row4[ 0 ]:
-					chat_reasoning = st.checkbox(
-						'Reasoning',
+					chat_reasoning = st.checkbox( 'Reasoning',
 						value=bool( st.session_state.get( 'chat_reasoning', False ) ),
-						key='chat_reasoning'
-					)
+						key='chat_reasoning' )
 				
 				with p_row4[ 1 ]:
-					chat_web_search = st.checkbox(
-						'Web Search',
+					chat_web_search = st.checkbox( 'Web Search',
 						value=bool( st.session_state.get( 'chat_web_search', False ) ),
-						key='chat_web_search'
-					)
+						key='chat_web_search' )
 				
 				with p_row5[ 0 ]:
-					chat_store = st.checkbox(
-						'Store',
+					chat_store = st.checkbox( 'Store',
 						value=bool( st.session_state.get( 'chat_store', True ) ),
-						key='chat_store'
-					)
+						key='chat_store' )
 				
 				with p_row5[ 1 ]:
-					chat_stream = st.checkbox(
-						'Stream',
+					chat_stream = st.checkbox( 'Stream',
 						value=bool( st.session_state.get( 'chat_stream', False ) ),
-						key='chat_stream'
-					)
+						key='chat_stream' )
 				
 				_chat_supports_reasoning = (
-						str( chat_model ).strip( ).lower( ).startswith( 'gpt-5' )
-						or str( chat_model ).strip( ).lower( ).startswith( 'o' )
-				)
+						str( chat_model ).strip( ).lower( ).startswith( 'gpt-5' ) or str(
+					chat_model ).strip( ).lower( ).startswith( 'o' ))
 				
 				if _chat_supports_reasoning and chat_reasoning:
-					chat_reasoning_effort = st.selectbox(
-						'Reasoning Effort',
-						options=CHAT_REASONING_EFFORTS,
-						index=CHAT_REASONING_EFFORTS.index(
-							st.session_state.get( 'chat_reasoning_effort', 'low' )
-						),
-						key='chat_reasoning_effort'
-					)
+					chat_reasoning_effort = st.selectbox( 'Reasoning Effort',
+						options=CHAT_REASONING_EFFORTS, index=CHAT_REASONING_EFFORTS.index(
+							st.session_state.get( 'chat_reasoning_effort', 'low' ) ),
+						key='chat_reasoning_effort' )
 				else:
 					chat_reasoning_effort = None
 				
-				chat_system = st.text_area(
-					'System',
-					value=st.session_state.get( 'chat_system', '' ),
-					height=120,
-					key='chat_system'
-				)
+				chat_system = st.text_area( 'System',
+					value=st.session_state.get( 'chat_system', '' ), height=120,
+					key='chat_system' )
 				
 				if chat_web_search:
 					chat_domains = st.text_area(
 						'Preferred Search Domains (one per line or comma-separated)',
-						value=st.session_state.get( 'chat_domains', '' ),
-						height=90,
+						value=st.session_state.get( 'chat_domains', '' ), height=90,
 						key='chat_domains',
-						help='Examples: openai.com, platform.openai.com, arxiv.org'
-					)
+						help='Examples: openai.com, platform.openai.com, arxiv.org' )
 				else:
 					chat_domains = ''
 				
 				btn_row = st.columns( 2 )
 				
 				with btn_row[ 0 ]:
-					chat_submit = st.button(
-						'Submit',
-						key='chat_submit'
-					)
+					chat_submit = st.button( 'Submit', key='chat_submit' )
 				
 				with btn_row[ 1 ]:
-					st.button(
-						'Clear',
-						key='chat_clear',
-						on_click=_clear_chat_state
-					)
+					st.button( 'Clear', key='chat_clear', on_click=_clear_chat_state )
 			
 			with col_right:
 				chat_output = st.empty( )
@@ -20762,51 +15491,32 @@ elif mode == 'Generation':
 					
 					if chat_json_mode:
 						has_json_instruction = (
-								'json' in str( chat_prompt or '' ).lower( )
-								or 'json' in str( chat_system or '' ).lower( )
-						)
+								'json' in str( chat_prompt or '' ).lower( ) or 'json' in str(
+							chat_system or '' ).lower( ))
 						
 						if not has_json_instruction:
-							chat_system = (
-									str( chat_system or '' ).strip( )
-									+ '\n\nReturn valid JSON only.'
-							).strip( )
+							chat_system = (str(
+								chat_system or '' ).strip( ) + '\n\nReturn valid JSON '
+							                                   'only.').strip( )
 					
 					chat_domains_list = (
-							_normalize_chat_domains( chat_domains )
-							if chat_web_search
-							else [ ]
-					)
+						_normalize_chat_domains( chat_domains ) if chat_web_search else [ ])
 					
 					fetcher = Chat( )
-					params = {
-							'model': chat_model,
-							'temperature': float( chat_temperature ),
-							'max_tokens': int( chat_max_tokens ),
-							'top_p': float( chat_top_p ),
-							'seed': int( chat_seed ) if int( chat_seed ) > 0 else None,
-							'system': chat_system if str( chat_system ).strip( ) else None,
-							'response_format': 'json' if chat_json_mode else None,
-							'reasoning_effort': (
-									chat_reasoning_effort
-									if _chat_supports_reasoning
-									   and chat_reasoning
-									   and chat_reasoning_effort
-									else None
-							),
-							'web_search': bool( chat_web_search ),
-							'search_domains': chat_domains_list if chat_domains_list else None,
-							'store': bool( chat_store ),
-							'stream': bool( chat_stream ),
-							'parallel_tool_calls': True,
-							'tool_choice': 'auto',
-					}
+					params = { 'model': chat_model, 'temperature': float( chat_temperature ),
+						'max_tokens': int( chat_max_tokens ), 'top_p': float( chat_top_p ),
+						'seed': int( chat_seed ) if int( chat_seed ) > 0 else None,
+						'system': chat_system if str( chat_system ).strip( ) else None,
+						'response_format': 'json' if chat_json_mode else None,
+						'reasoning_effort': (
+							chat_reasoning_effort if _chat_supports_reasoning and chat_reasoning
+							                         and chat_reasoning_effort else None),
+						'web_search': bool( chat_web_search ),
+						'search_domains': chat_domains_list if chat_domains_list else None,
+						'store': bool( chat_store ), 'stream': bool( chat_stream ),
+						'parallel_tool_calls': True, 'tool_choice': 'auto', }
 					
-					params = {
-							key: value
-							for key, value in params.items( )
-							if value is not None
-					}
+					params = { key: value for key, value in params.items( ) if value is not None }
 					
 					result = _invoke_provider( fetcher, chat_prompt, params )
 					_render_output( chat_output, result )
@@ -20816,46 +15526,12 @@ elif mode == 'Generation':
 		
 		# -------- Groq
 		with st.expander( label='Grok', expanded=False ):
-			GROK_REASONING_EFFORTS = [
-					'none',
-					'low',
-					'medium',
-					'high'
-			]
+			GROK_REASONING_EFFORTS = [ 'none', 'low', 'medium', 'high' ]
 			
 			def _clear_grok_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Grok generation state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'grok_clear_request' ] = True
 			
 			def _normalize_grok_domains( value: object ) -> list[ str ]:
-				'''
-					Purpose:
-					--------
-					Normalize newline-, comma-, or semicolon-delimited domain entries into
-					clean xAI web-search allowed domains.
-
-					Parameters:
-					-----------
-					value (object):
-						Domain text supplied by the user.
-
-					Returns:
-					--------
-					list[str]:
-						Canonical, de-duplicated domain names.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -20886,37 +15562,17 @@ elif mode == 'Generation':
 				
 				if len( values ) > 5:
 					raise ValueError(
-						'xAI web-search allowed domains are limited to five domains.'
-					)
+						'xAI web-search allowed domains are limited to five domains.' )
 				
 				return values
 			
 			def _normalize_grok_stop_lines( value: object ) -> list[ str ]:
-				'''
-					Purpose:
-					--------
-					Normalize stop sequences entered one per line.
-
-					Parameters:
-					-----------
-					value (object):
-						Text value supplied by the stop-sequence textarea.
-
-					Returns:
-					--------
-					list[str]:
-						Non-empty stop sequences.
-				'''
 				text = str( value or '' )
 				
 				if not text.strip( ):
 					return [ ]
 				
-				return [
-						line.strip( )
-						for line in text.splitlines( )
-						if line.strip( )
-				]
+				return [ line.strip( ) for line in text.splitlines( ) if line.strip( ) ]
 			
 			if 'grok_clear_request' not in st.session_state:
 				st.session_state[ 'grok_clear_request' ] = False
@@ -20951,7 +15607,8 @@ elif mode == 'Generation':
 			if 'groq_seed_chat' not in st.session_state:
 				st.session_state[ 'groq_seed_chat' ] = 0
 			
-			if st.session_state.get( 'groq_reasoning_effort_chat', 'low' ) not in GROK_REASONING_EFFORTS:
+			if st.session_state.get( 'groq_reasoning_effort_chat',
+					'low' ) not in GROK_REASONING_EFFORTS:
 				st.session_state[ 'groq_reasoning_effort_chat' ] = 'low'
 			
 			if st.session_state.get( 'grok_clear_request', False ):
@@ -20971,12 +15628,9 @@ elif mode == 'Generation':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				groq_prompt = st.text_area(
-					'Prompt',
-					value=st.session_state.get( 'groq_prompt_chat', '' ),
-					height=120,
-					key='groq_prompt_chat',
-				)
+				groq_prompt = st.text_area( 'Prompt',
+					value=st.session_state.get( 'groq_prompt_chat', '' ), height=120,
+					key='groq_prompt_chat', )
 				
 				p_row1 = st.columns( 2 )
 				p_row2 = st.columns( 2 )
@@ -20986,175 +15640,101 @@ elif mode == 'Generation':
 				
 				with p_row1[ 0 ]:
 					_grok_models = (
-							cfg.GROK_MODELS
-							if hasattr( cfg, 'GROK_MODELS' ) and cfg.GROK_MODELS
-							else [
-									'grok-4.3',
-									'grok-4.20',
-									'grok-4.20-reasoning',
-									'grok-4.20-multi-agent',
-									'grok-4-1-fast',
-									'grok-4-fast-reasoning',
-									'grok-4',
-									'grok-code-fast-1',
-									'grok-3-mini'
-							]
-					)
+						cfg.GROK_MODELS if hasattr( cfg, 'GROK_MODELS' ) and cfg.GROK_MODELS else [
+							'grok-4.3', 'grok-4.20', 'grok-4.20-reasoning',
+							'grok-4.20-multi-agent',
+							'grok-4-1-fast', 'grok-4-fast-reasoning', 'grok-4', 'grok-code-fast-1',
+							'grok-3-mini' ])
 					
-					groq_model = _model_selector(
-						key_prefix='groq',
-						label='Model',
-						options=_grok_models,
-						default_model=(
-								'grok-4.3'
-								if 'grok-4.3' in _grok_models
-								else _grok_models[ 0 ]
-						),
-					)
+					groq_model = _model_selector( key_prefix='groq', label='Model',
+						options=_grok_models, default_model=(
+							'grok-4.3' if 'grok-4.3' in _grok_models else _grok_models[ 0 ]), )
 				
 				with p_row1[ 1 ]:
-					groq_temperature = st.slider(
-						'Temperature',
-						min_value=0.0,
-						max_value=2.0,
-						value=0.7,
-						step=0.05,
-						key='groq_temperature_chat',
-					)
+					groq_temperature = st.slider( 'Temperature', min_value=0.0, max_value=2.0,
+						value=0.7, step=0.05, key='groq_temperature_chat', )
 				
 				with p_row2[ 0 ]:
-					groq_max_tokens = st.number_input(
-						'Max Tokens',
-						min_value=1,
-						max_value=32768,
-						value=2048,
-						step=1,
-						key='groq_max_tokens_chat',
-					)
+					groq_max_tokens = st.number_input( 'Max Tokens', min_value=1, max_value=32768,
+						value=2048, step=1, key='groq_max_tokens_chat', )
 				
 				with p_row2[ 1 ]:
-					groq_top_p = st.slider(
-						'Top-P',
-						min_value=0.0,
-						max_value=1.0,
-						value=1.0,
-						step=0.01,
-						key='groq_top_p_chat',
-					)
+					groq_top_p = st.slider( 'Top-P', min_value=0.0, max_value=1.0, value=1.0,
+						step=0.01, key='groq_top_p_chat', )
 				
 				with p_row3[ 0 ]:
-					groq_seed = st.number_input(
-						'Seed',
-						min_value=0,
-						max_value=2_147_483_647,
-						value=int( st.session_state.get( 'groq_seed_chat', 0 ) ),
-						step=1,
-						key='groq_seed_chat',
-						help='Use 0 to omit the seed parameter.'
-					)
+					groq_seed = st.number_input( 'Seed', min_value=0, max_value=2_147_483_647,
+						value=int( st.session_state.get( 'groq_seed_chat', 0 ) ), step=1,
+						key='groq_seed_chat', help='Use 0 to omit the seed parameter.' )
 				
 				with p_row3[ 1 ]:
-					groq_json_mode = st.checkbox(
-						'JSON Mode',
+					groq_json_mode = st.checkbox( 'JSON Mode',
 						value=bool( st.session_state.get( 'groq_json_mode_chat', False ) ),
 						key='groq_json_mode_chat',
-						help='Adds JSON-only instructions through the current Grok wrapper.'
-					)
+						help='Adds JSON-only instructions through the current Grok wrapper.' )
 				
 				with p_row4[ 0 ]:
-					groq_reasoning = st.checkbox(
-						'Reasoning',
+					groq_reasoning = st.checkbox( 'Reasoning',
 						value=bool( st.session_state.get( 'groq_reasoning_chat', False ) ),
-						key='groq_reasoning_chat'
-					)
+						key='groq_reasoning_chat' )
 				
 				with p_row4[ 1 ]:
-					groq_web_search = st.checkbox(
-						'Web Search',
+					groq_web_search = st.checkbox( 'Web Search',
 						value=bool( st.session_state.get( 'groq_web_search_chat', False ) ),
-						key='groq_web_search_chat'
-					)
+						key='groq_web_search_chat' )
 				
 				with p_row5[ 0 ]:
-					groq_store = st.checkbox(
-						'Store',
+					groq_store = st.checkbox( 'Store',
 						value=bool( st.session_state.get( 'groq_store_chat', True ) ),
-						key='groq_store_chat'
-					)
+						key='groq_store_chat' )
 				
 				with p_row5[ 1 ]:
-					groq_stream = st.checkbox(
-						'Stream',
+					groq_stream = st.checkbox( 'Stream',
 						value=bool( st.session_state.get( 'groq_stream_chat', False ) ),
-						key='groq_stream_chat'
-					)
+						key='groq_stream_chat' )
 				
 				_groq_model_name = str( groq_model or '' ).strip( ).lower( )
 				_groq_is_reasoning_model = (
-						'reasoning' in _groq_model_name
-						or _groq_model_name.startswith( 'grok-4' )
-						or _groq_model_name.startswith( 'grok-4.3' )
-						or _groq_model_name.startswith( 'grok-4.20' )
-				)
+						'reasoning' in _groq_model_name or _groq_model_name.startswith(
+					'grok-4' ) or _groq_model_name.startswith(
+					'grok-4.3' ) or _groq_model_name.startswith( 'grok-4.20' ))
 				
 				_groq_supports_reasoning_effort = (
-						_groq_model_name == 'grok-4.3'
-						or _groq_model_name == 'grok-4.20-multi-agent'
-				)
+						_groq_model_name == 'grok-4.3' or _groq_model_name ==
+						'grok-4.20-multi-agent')
 				
 				if _groq_supports_reasoning_effort and groq_reasoning:
-					groq_reasoning_effort = st.selectbox(
-						'Reasoning Effort',
-						options=GROK_REASONING_EFFORTS,
-						index=GROK_REASONING_EFFORTS.index(
-							st.session_state.get( 'groq_reasoning_effort_chat', 'low' )
-						),
-						key='groq_reasoning_effort_chat'
-					)
+					groq_reasoning_effort = st.selectbox( 'Reasoning Effort',
+						options=GROK_REASONING_EFFORTS, index=GROK_REASONING_EFFORTS.index(
+							st.session_state.get( 'groq_reasoning_effort_chat', 'low' ) ),
+						key='groq_reasoning_effort_chat' )
 				else:
 					groq_reasoning_effort = None
 				
-				groq_system = st.text_area(
-					'System',
-					value=st.session_state.get( 'groq_system_chat', '' ),
-					height=120,
-					key='groq_system_chat'
-				)
+				groq_system = st.text_area( 'System',
+					value=st.session_state.get( 'groq_system_chat', '' ), height=120,
+					key='groq_system_chat' )
 				
 				if groq_web_search:
-					groq_domains = st.text_area(
-						'Allowed Search Domains',
-						value=st.session_state.get( 'groq_domains_chat', '' ),
-						height=90,
+					groq_domains = st.text_area( 'Allowed Search Domains',
+						value=st.session_state.get( 'groq_domains_chat', '' ), height=90,
 						key='groq_domains_chat',
-						help='Optional. xAI allows up to five allowed domains.'
-					)
+						help='Optional. xAI allows up to five allowed domains.' )
 				else:
 					groq_domains = ''
 				
-				groq_stop = st.text_area(
-					'Stop Sequences',
-					value=st.session_state.get( 'groq_stop_chat', '' ),
-					height=80,
-					key='groq_stop_chat',
-					disabled=_groq_is_reasoning_model,
-					help='One stop sequence per line. Disabled for reasoning models.'
-				)
+				groq_stop = st.text_area( 'Stop Sequences',
+					value=st.session_state.get( 'groq_stop_chat', '' ), height=80,
+					key='groq_stop_chat', disabled=_groq_is_reasoning_model,
+					help='One stop sequence per line. Disabled for reasoning models.' )
 				
 				btn_row = st.columns( 2 )
 				
 				with btn_row[ 0 ]:
-					groq_submit = st.button(
-						'Submit',
-						key='groq_submit'
-					)
+					groq_submit = st.button( 'Submit', key='groq_submit' )
 				
 				with btn_row[ 1 ]:
-					st.button(
-						'Clear',
-						key='groq_clear',
-						on_click=_clear_grok_state
-					)
+					st.button( 'Clear', key='groq_clear', on_click=_clear_grok_state )
 			
 			with col_right:
 				groq_output = st.empty( )
@@ -21169,21 +15749,16 @@ elif mode == 'Generation':
 					
 					if groq_json_mode:
 						has_json_instruction = (
-								'json' in str( groq_prompt or '' ).lower( )
-								or 'json' in str( groq_system or '' ).lower( )
-						)
+								'json' in str( groq_prompt or '' ).lower( ) or 'json' in str(
+							groq_system or '' ).lower( ))
 						
 						if not has_json_instruction:
-							groq_system = (
-									str( groq_system or '' ).strip( )
-									+ '\n\nReturn valid JSON only.'
-							).strip( )
+							groq_system = (str(
+								groq_system or '' ).strip( ) + '\n\nReturn valid JSON '
+							                                   'only.').strip( )
 					
 					groq_domains_list = (
-							_normalize_grok_domains( groq_domains )
-							if groq_web_search
-							else [ ]
-					)
+						_normalize_grok_domains( groq_domains ) if groq_web_search else [ ])
 					
 					stop_lines = _normalize_grok_stop_lines( groq_stop )
 					
@@ -21191,35 +15766,22 @@ elif mode == 'Generation':
 						stop_lines = [ ]
 					
 					fetcher = Grok( )
-					params = {
-							'model': groq_model,
-							'temperature': float( groq_temperature ),
-							'max_tokens': int( groq_max_tokens ),
-							'top_p': float( groq_top_p ),
-							'seed': int( groq_seed ) if int( groq_seed ) > 0 else None,
-							'system': groq_system if str( groq_system ).strip( ) else None,
-							'response_format': 'json' if groq_json_mode else None,
-							'reasoning_effort': (
-									groq_reasoning_effort
-									if _groq_supports_reasoning_effort
-									   and groq_reasoning
-									   and groq_reasoning_effort
-									else None
-							),
-							'web_search': bool( groq_web_search ),
-							'search_domains': groq_domains_list if groq_domains_list else None,
-							'stop': stop_lines if stop_lines else None,
-							'stream': bool( groq_stream ),
-							'store': bool( groq_store ),
-							'parallel_tool_calls': True,
-							'tool_choice': 'auto',
-					}
+					params = { 'model': groq_model, 'temperature': float( groq_temperature ),
+						'max_tokens': int( groq_max_tokens ), 'top_p': float( groq_top_p ),
+						'seed': int( groq_seed ) if int( groq_seed ) > 0 else None,
+						'system': groq_system if str( groq_system ).strip( ) else None,
+						'response_format': 'json' if groq_json_mode else None,
+						'reasoning_effort': (
+							groq_reasoning_effort if _groq_supports_reasoning_effort and
+							                         groq_reasoning and groq_reasoning_effort else
+							None),
+						'web_search': bool( groq_web_search ),
+						'search_domains': groq_domains_list if groq_domains_list else None,
+						'stop': stop_lines if stop_lines else None, 'stream': bool( groq_stream ),
+						'store': bool( groq_store ), 'parallel_tool_calls': True,
+						'tool_choice': 'auto', }
 					
-					params = {
-							key: value
-							for key, value in params.items( )
-							if value is not None
-					}
+					params = { key: value for key, value in params.items( ) if value is not None }
 					result = _invoke_provider( fetcher, groq_prompt, params )
 					_render_output( groq_output, result )
 				
@@ -21316,11 +15878,7 @@ elif mode == 'Generation':
 				if not text.strip( ):
 					return [ ]
 				
-				return [
-						line.strip( )
-						for line in text.splitlines( )
-						if line.strip( )
-				]
+				return [ line.strip( ) for line in text.splitlines( ) if line.strip( ) ]
 			
 			if 'claude_clear_request' not in st.session_state:
 				st.session_state[ 'claude_clear_request' ] = False
@@ -21363,12 +15921,9 @@ elif mode == 'Generation':
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
 			
 			with col_left:
-				claude_prompt = st.text_area(
-					'Prompt',
-					value=st.session_state.get( 'claude_prompt_chat', '' ),
-					height=140,
-					key='claude_prompt_chat',
-				)
+				claude_prompt = st.text_area( 'Prompt',
+					value=st.session_state.get( 'claude_prompt_chat', '' ), height=140,
+					key='claude_prompt_chat', )
 				
 				# -----------------------------
 				# Model / Output Controls
@@ -21376,37 +15931,19 @@ elif mode == 'Generation':
 				model_row = st.columns( [ 0.55, 0.45 ] )
 				
 				with model_row[ 0 ]:
-					_claude_models = (
-							cfg.CLAUDE_MODELS
-							if hasattr( cfg, 'CLAUDE_MODELS' ) and cfg.CLAUDE_MODELS
-							else [
-									'claude-opus-4-6',
-									'claude-sonnet-4-6',
-									'claude-haiku-4-5',
-									'claude-3-5-haiku-latest',
-							]
-					)
+					_claude_models = (cfg.CLAUDE_MODELS if hasattr( cfg,
+						'CLAUDE_MODELS' ) and cfg.CLAUDE_MODELS else [ 'claude-opus-4-6',
+						'claude-sonnet-4-6', 'claude-haiku-4-5', 'claude-3-5-haiku-latest', ])
 					
-					claude_model = _model_selector(
-						key_prefix='claude',
-						label='Model',
-						options=_claude_models,
-						default_model=(
-								'claude-sonnet-4-6'
-								if 'claude-sonnet-4-6' in _claude_models
-								else _claude_models[ 0 ]
-						),
-					)
+					claude_model = _model_selector( key_prefix='claude', label='Model',
+						options=_claude_models, default_model=(
+							'claude-sonnet-4-6' if 'claude-sonnet-4-6' in _claude_models else
+							_claude_models[ 0 ]), )
 				
 				with model_row[ 1 ]:
-					claude_max_tokens = st.number_input(
-						'Max Tokens',
-						min_value=1,
+					claude_max_tokens = st.number_input( 'Max Tokens', min_value=1,
 						max_value=65536,
-						value=2048,
-						step=1,
-						key='claude_max_tokens_chat',
-					)
+						value=2048, step=1, key='claude_max_tokens_chat', )
 				
 				# -----------------------------
 				# Sampling Controls
@@ -21414,34 +15951,16 @@ elif mode == 'Generation':
 				sampling_row = st.columns( 3 )
 				
 				with sampling_row[ 0 ]:
-					claude_temperature = st.slider(
-						'Temperature',
-						min_value=0.0,
-						max_value=1.0,
-						value=0.7,
-						step=0.05,
-						key='claude_temperature_chat',
-					)
+					claude_temperature = st.slider( 'Temperature', min_value=0.0, max_value=1.0,
+						value=0.7, step=0.05, key='claude_temperature_chat', )
 				
 				with sampling_row[ 1 ]:
-					claude_top_p = st.slider(
-						'Top-P',
-						min_value=0.0,
-						max_value=1.0,
-						value=1.0,
-						step=0.01,
-						key='claude_top_p_chat',
-					)
+					claude_top_p = st.slider( 'Top-P', min_value=0.0, max_value=1.0, value=1.0,
+						step=0.01, key='claude_top_p_chat', )
 				
 				with sampling_row[ 2 ]:
-					claude_top_k = st.number_input(
-						'Top-k',
-						min_value=0,
-						max_value=500,
-						value=0,
-						step=1,
-						key='claude_top_k_chat',
-					)
+					claude_top_k = st.number_input( 'Top-k', min_value=0, max_value=500, value=0,
+						step=1, key='claude_top_k_chat', )
 				
 				# -----------------------------
 				# Feature Toggles
@@ -21449,60 +15968,38 @@ elif mode == 'Generation':
 				option_row = st.columns( 2 )
 				
 				with option_row[ 0 ]:
-					claude_thinking = st.checkbox(
-						'Reasoning',
+					claude_thinking = st.checkbox( 'Reasoning',
 						value=bool( st.session_state.get( 'claude_thinking_chat', False ) ),
 						key='claude_thinking_chat',
-						help='Anthropic exposes this as extended thinking with a token budget.',
-					)
+						help='Anthropic exposes this as extended thinking with a token budget.', )
 				
 				with option_row[ 1 ]:
-					claude_web_search = st.checkbox(
-						'Web Search',
+					claude_web_search = st.checkbox( 'Web Search',
 						value=bool( st.session_state.get( 'claude_web_search_chat', False ) ),
-						key='claude_web_search_chat',
-					)
+						key='claude_web_search_chat', )
 				
 				# -----------------------------
 				# Reasoning Budget
 				# -----------------------------
 				if claude_thinking:
-					claude_thinking_budget = st.number_input(
-						'Thinking Budget',
-						min_value=1024,
-						max_value=max( 1024, int( claude_max_tokens ) - 1 ),
-						value=min(
-							int(
-								st.session_state.get(
-									'claude_thinking_budget_chat',
-									1024
-								)
-							),
-							max( 1024, int( claude_max_tokens ) - 1 )
-						),
-						step=1024,
-						key='claude_thinking_budget_chat',
-						help='Must be less than Max Tokens.'
-					)
+					claude_thinking_budget = st.number_input( 'Thinking Budget', min_value=1024,
+						max_value=max( 1024, int( claude_max_tokens ) - 1 ), value=min(
+							int( st.session_state.get( 'claude_thinking_budget_chat', 1024 ) ),
+							max( 1024, int( claude_max_tokens ) - 1 ) ), step=1024,
+						key='claude_thinking_budget_chat', help='Must be less than Max Tokens.' )
 				else:
 					claude_thinking_budget = None
 				
 				# -----------------------------
 				# Instruction Controls
 				# -----------------------------
-				claude_system = st.text_area(
-					'System',
-					value=st.session_state.get( 'claude_system_chat', '' ),
-					height=110,
-					key='claude_system_chat',
-				)
+				claude_system = st.text_area( 'System',
+					value=st.session_state.get( 'claude_system_chat', '' ), height=110,
+					key='claude_system_chat', )
 				
-				claude_stop = st.text_area(
-					'Stop Sequences (one per line)',
-					value=st.session_state.get( 'claude_stop_chat', '' ),
-					height=80,
-					key='claude_stop_chat',
-				)
+				claude_stop = st.text_area( 'Stop Sequences (one per line)',
+					value=st.session_state.get( 'claude_stop_chat', '' ), height=80,
+					key='claude_stop_chat', )
 				
 				# -----------------------------
 				# Web Search Controls
@@ -21511,22 +16008,16 @@ elif mode == 'Generation':
 					search_row = st.columns( 2 )
 					
 					with search_row[ 0 ]:
-						claude_domains = st.text_area(
-							'Allowed Search Domains',
-							value=st.session_state.get( 'claude_domains_chat', '' ),
-							height=90,
+						claude_domains = st.text_area( 'Allowed Search Domains',
+							value=st.session_state.get( 'claude_domains_chat', '' ), height=90,
 							key='claude_domains_chat',
-							help='Optional allowlist, one domain per line or comma-separated.'
-						)
+							help='Optional allowlist, one domain per line or comma-separated.' )
 					
 					with search_row[ 1 ]:
-						claude_blocked_domains = st.text_area(
-							'Blocked Search Domains',
+						claude_blocked_domains = st.text_area( 'Blocked Search Domains',
 							value=st.session_state.get( 'claude_blocked_domains_chat', '' ),
-							height=90,
-							key='claude_blocked_domains_chat',
-							help='Optional blocklist, one domain per line or comma-separated.'
-						)
+							height=90, key='claude_blocked_domains_chat',
+							help='Optional blocklist, one domain per line or comma-separated.' )
 				else:
 					claude_domains = ''
 					claude_blocked_domains = ''
@@ -21537,62 +16028,21 @@ elif mode == 'Generation':
 				btn_row = st.columns( 2 )
 				
 				with btn_row[ 0 ]:
-					claude_submit = st.button(
-						'Submit',
-						key='claude_submit_chat',
-						use_container_width=True
-					)
+					claude_submit = st.button( 'Submit', key='claude_submit_chat',
+						use_container_width=True )
 				
 				with btn_row[ 1 ]:
-					st.button(
-						'Clear',
-						key='claude_clear_chat',
-						on_click=_clear_claude_state,
-						use_container_width=True
-					)
+					st.button( 'Clear', key='claude_clear_chat', on_click=_clear_claude_state,
+						use_container_width=True )
 		
 		# -------- GEMINI
 		with st.expander( label='Gemini', expanded=False ):
-			GEMINI_THINKING_LEVELS = [
-					'minimal',
-					'low',
-					'medium',
-					'high'
-			]
+			GEMINI_THINKING_LEVELS = [ 'minimal', 'low', 'medium', 'high' ]
 			
 			def _clear_gemini_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Gemini generation state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'gemini_clear_request' ] = True
 			
 			def _normalize_gemini_domains( value: object ) -> list[ str ]:
-				'''
-					Purpose:
-					--------
-					Normalize newline-, comma-, or semicolon-delimited Gemini grounding
-					domain entries.
-
-					Parameters:
-					-----------
-					value (object):
-						Domain text supplied by the user.
-
-					Returns:
-					--------
-					list[str]:
-						Canonical, de-duplicated domain names.
-				'''
 				text = str( value or '' ).strip( )
 				
 				if not text:
@@ -21628,31 +16078,12 @@ elif mode == 'Generation':
 				return values
 			
 			def _normalize_gemini_stop_lines( value: object ) -> list[ str ]:
-				'''
-					Purpose:
-					--------
-					Normalize Gemini stop sequences entered one per line.
-
-					Parameters:
-					-----------
-					value (object):
-						Stop-sequence textarea value.
-
-					Returns:
-					--------
-					list[str]:
-						Non-empty stop sequences.
-				'''
 				text = str( value or '' )
 				
 				if not text.strip( ):
 					return [ ]
 				
-				return [
-						line.strip( )
-						for line in text.splitlines( )
-						if line.strip( )
-				]
+				return [ line.strip( ) for line in text.splitlines( ) if line.strip( ) ]
 			
 			if 'gemini_clear_request' not in st.session_state:
 				st.session_state[ 'gemini_clear_request' ] = False
@@ -21684,7 +16115,8 @@ elif mode == 'Generation':
 			if 'gemini_seed_chat' not in st.session_state:
 				st.session_state[ 'gemini_seed_chat' ] = 0
 			
-			if st.session_state.get( 'gemini_thinking_level_chat', 'low' ) not in GEMINI_THINKING_LEVELS:
+			if st.session_state.get( 'gemini_thinking_level_chat',
+					'low' ) not in GEMINI_THINKING_LEVELS:
 				st.session_state[ 'gemini_thinking_level_chat' ] = 'low'
 			
 			if st.session_state.get( 'gemini_clear_request', False ):
@@ -21701,14 +16133,10 @@ elif mode == 'Generation':
 				st.session_state[ 'gemini_clear_request' ] = False
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
-			
 			with col_left:
-				gemini_prompt = st.text_area(
-					'Prompt',
-					value=st.session_state.get( 'gemini_prompt_chat', '' ),
-					height=160,
-					key='gemini_prompt_chat',
-				)
+				gemini_prompt = st.text_area( 'Prompt',
+					value=st.session_state.get( 'gemini_prompt_chat', '' ), height=160,
+					key='gemini_prompt_chat', )
 				
 				p_row1 = st.columns( 2 )
 				p_row2 = st.columns( 2 )
@@ -21717,112 +16145,58 @@ elif mode == 'Generation':
 				p_row5 = st.columns( 2 )
 				
 				with p_row1[ 0 ]:
-					_gemini_models = (
-							cfg.GEMINI_MODELS
-							if hasattr( cfg, 'GEMINI_MODELS' ) and cfg.GEMINI_MODELS
-							else [
-									'gemini-3-flash-preview',
-									'gemini-2.5-pro',
-									'gemini-2.5-flash',
-									'gemini-2.5-flash-lite'
-							]
-					)
+					_gemini_models = (cfg.GEMINI_MODELS if hasattr( cfg,
+						'GEMINI_MODELS' ) and cfg.GEMINI_MODELS else [ 'gemini-3-flash-preview',
+						'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite' ])
 					
-					gemini_model = _model_selector(
-						key_prefix='gemini',
-						label='Model',
-						options=_gemini_models,
-						default_model=(
-								'gemini-2.5-flash'
-								if 'gemini-2.5-flash' in _gemini_models
-								else _gemini_models[ 0 ]
-						),
-					)
+					gemini_model = _model_selector( key_prefix='gemini', label='Model',
+						options=_gemini_models, default_model=(
+							'gemini-2.5-flash' if 'gemini-2.5-flash' in _gemini_models else
+							_gemini_models[ 0 ]), )
 				
 				with p_row1[ 1 ]:
-					gemini_temperature = st.slider(
-						'Temperature',
-						min_value=0.0,
-						max_value=2.0,
-						value=0.7,
-						step=0.05,
-						key='gemini_temperature_chat',
-					)
+					gemini_temperature = st.slider( 'Temperature', min_value=0.0, max_value=2.0,
+						value=0.7, step=0.05, key='gemini_temperature_chat', )
 				
 				with p_row2[ 0 ]:
-					gemini_max_tokens = st.number_input(
-						'Max Tokens',
-						min_value=1,
+					gemini_max_tokens = st.number_input( 'Max Tokens', min_value=1,
 						max_value=32768,
-						value=2048,
-						step=1,
-						key='gemini_max_tokens_chat',
-					)
+						value=2048, step=1, key='gemini_max_tokens_chat', )
 				
 				with p_row2[ 1 ]:
-					gemini_top_p = st.slider(
-						'Top-p',
-						min_value=0.0,
-						max_value=1.0,
-						value=1.0,
-						step=0.01,
-						key='gemini_top_p_chat',
-					)
+					gemini_top_p = st.slider( 'Top-p', min_value=0.0, max_value=1.0, value=1.0,
+						step=0.01, key='gemini_top_p_chat', )
 				
 				with p_row3[ 0 ]:
-					gemini_top_k = st.number_input(
-						'Top-k',
-						min_value=0,
-						max_value=500,
-						value=0,
-						step=1,
-						key='gemini_top_k_chat',
-					)
+					gemini_top_k = st.number_input( 'Top-k', min_value=0, max_value=500, value=0,
+						step=1, key='gemini_top_k_chat', )
 				
 				with p_row3[ 1 ]:
-					gemini_candidate_count = st.number_input(
-						'Candidates',
-						min_value=1,
-						max_value=8,
-						value=1,
-						step=1,
-						key='gemini_candidate_count_chat',
-					)
+					gemini_candidate_count = st.number_input( 'Candidates', min_value=1,
+						max_value=8, value=1, step=1, key='gemini_candidate_count_chat', )
 				
 				with p_row4[ 0 ]:
-					gemini_seed = st.number_input(
-						'Seed',
-						min_value=0,
-						max_value=2_147_483_647,
-						value=int( st.session_state.get( 'gemini_seed_chat', 0 ) ),
-						step=1,
-						key='gemini_seed_chat',
-						help='Use 0 to omit the seed parameter.'
-					)
+					gemini_seed = st.number_input( 'Seed', min_value=0, max_value=2_147_483_647,
+						value=int( st.session_state.get( 'gemini_seed_chat', 0 ) ), step=1,
+						key='gemini_seed_chat', help='Use 0 to omit the seed parameter.' )
 				
 				with p_row4[ 1 ]:
-					gemini_json_mode = st.checkbox(
-						'JSON Mode',
+					gemini_json_mode = st.checkbox( 'JSON Mode',
 						value=bool( st.session_state.get( 'gemini_json_mode_chat', False ) ),
 						key='gemini_json_mode_chat',
-						help='Requests JSON output through the current Gemini wrapper.'
-					)
+						help='Requests JSON output through the current Gemini wrapper.' )
 				
 				with p_row5[ 0 ]:
-					gemini_grounding = st.checkbox(
-						'Grounding',
+					gemini_grounding = st.checkbox( 'Grounding',
 						value=bool( st.session_state.get( 'gemini_grounding_chat', False ) ),
 						key='gemini_grounding_chat',
-						help='Enable Google Search grounding for supported Gemini models.'
-					)
+						help='Enable Google Search grounding for supported Gemini models.' )
 				
 				with p_row5[ 1 ]:
-					gemini_reasoning = st.checkbox(
-						'Reasoning',
+					gemini_reasoning = st.checkbox( 'Reasoning',
 						value=bool( st.session_state.get( 'gemini_reasoning_chat', False ) ),
 						key='gemini_reasoning_chat',
-						help='Uses Gemini thinking configuration where supported.'
-					)
+						help='Uses Gemini thinking configuration where supported.' )
 				
 				_gemini_model_name = str( gemini_model or '' ).strip( ).lower( )
 				_gemini_supports_thinking_level = _gemini_model_name.startswith( 'gemini-3' )
@@ -21832,84 +16206,53 @@ elif mode == 'Generation':
 					r_row = st.columns( 2 )
 					
 					with r_row[ 0 ]:
-						gemini_thinking_level = st.selectbox(
-							'Thinking Level',
-							options=GEMINI_THINKING_LEVELS,
-							index=GEMINI_THINKING_LEVELS.index(
-								st.session_state.get( 'gemini_thinking_level_chat', 'low' )
-							),
-							key='gemini_thinking_level_chat',
-						)
+						gemini_thinking_level = st.selectbox( 'Thinking Level',
+							options=GEMINI_THINKING_LEVELS, index=GEMINI_THINKING_LEVELS.index(
+								st.session_state.get( 'gemini_thinking_level_chat', 'low' ) ),
+							key='gemini_thinking_level_chat', )
 					
 					with r_row[ 1 ]:
-						gemini_include_thoughts = st.checkbox(
-							'Include Thoughts',
-							value=bool(
-								st.session_state.get(
-									'gemini_include_thoughts_chat',
-									False
-								)
-							),
-							key='gemini_include_thoughts_chat',
-						)
+						gemini_include_thoughts = st.checkbox( 'Include Thoughts', value=bool(
+							st.session_state.get( 'gemini_include_thoughts_chat', False ) ),
+							key='gemini_include_thoughts_chat', )
 				else:
 					gemini_thinking_level = None
 					gemini_include_thoughts = False
 				
 				if gemini_reasoning and _gemini_supports_thinking_budget:
-					st.caption(
-						'Gemini 2.5 models use thinking_budget, but the current Gemini '
-						'generator only exposes thinking_level. This UI preserves the current '
-						'wrapper contract until the Gemini class is updated.'
-					)
+					st.caption( 'Gemini 2.5 models use thinking_budget, but the current Gemini '
+					            'generator only exposes thinking_level. This UI preserves the '
+					            'current '
+					            'wrapper contract until the Gemini class is updated.' )
 				
 				if gemini_reasoning and not (
-						_gemini_supports_thinking_level or _gemini_supports_thinking_budget
-				):
-					st.caption(
-						'Reasoning controls are only sent for Gemini 3 model names under '
-						'the current wrapper contract.'
-					)
+						_gemini_supports_thinking_level or _gemini_supports_thinking_budget):
+					st.caption( 'Reasoning controls are only sent for Gemini 3 model names under '
+					            'the current wrapper contract.' )
 				
-				gemini_stop = st.text_area(
-					'Stop Sequences (one per line)',
-					value=st.session_state.get( 'gemini_stop_chat', '' ),
-					height=80,
-					key='gemini_stop_chat',
-				)
+				gemini_stop = st.text_area( 'Stop Sequences (one per line)',
+					value=st.session_state.get( 'gemini_stop_chat', '' ), height=80,
+					key='gemini_stop_chat', )
 				
-				gemini_system = st.text_area(
-					'System',
-					value=st.session_state.get( 'gemini_system_chat', '' ),
-					height=110,
-					key='gemini_system_chat',
-				)
+				gemini_system = st.text_area( 'System',
+					value=st.session_state.get( 'gemini_system_chat', '' ), height=110,
+					key='gemini_system_chat', )
 				
 				if gemini_grounding:
 					gemini_domains = st.text_area(
 						'Preferred Search Domains (one per line or comma-separated)',
-						value=st.session_state.get( 'gemini_domains_chat', '' ),
-						height=90,
+						value=st.session_state.get( 'gemini_domains_chat', '' ), height=90,
 						key='gemini_domains_chat',
-						help='Used as preferred source guidance for grounded Gemini responses.'
-					)
+						help='Used as preferred source guidance for grounded Gemini responses.' )
 				else:
 					gemini_domains = ''
 				
 				btn_row = st.columns( 2 )
-				
 				with btn_row[ 0 ]:
-					gemini_submit = st.button(
-						'Submit',
-						key='gemini_submit_chat'
-					)
+					gemini_submit = st.button( 'Submit', key='gemini_submit_chat' )
 				
 				with btn_row[ 1 ]:
-					st.button(
-						'Clear',
-						key='gemini_clear_chat',
-						on_click=_clear_gemini_state
-					)
+					st.button( 'Clear', key='gemini_clear_chat', on_click=_clear_gemini_state )
 			
 			with col_right:
 				gemini_output = st.empty( )
@@ -21924,66 +16267,38 @@ elif mode == 'Generation':
 					
 					if gemini_json_mode:
 						has_json_instruction = (
-								'json' in str( gemini_prompt or '' ).lower( )
-								or 'json' in str( gemini_system or '' ).lower( )
-						)
+								'json' in str( gemini_prompt or '' ).lower( ) or 'json' in str(
+							gemini_system or '' ).lower( ))
 						
 						if not has_json_instruction:
-							gemini_system = (
-									str( gemini_system or '' ).strip( )
-									+ '\n\nReturn valid JSON only.'
-							).strip( )
+							gemini_system = (str(
+								gemini_system or '' ).strip( ) + '\n\nReturn valid JSON '
+							                                     'only.').strip( )
 					
 					gemini_domains_list = (
-							_normalize_gemini_domains( gemini_domains )
-							if gemini_grounding
-							else [ ]
-					)
+						_normalize_gemini_domains( gemini_domains ) if gemini_grounding else [ ])
 					
 					stop_lines = _normalize_gemini_stop_lines( gemini_stop )
-					
 					fetcher = Gemini( )
-					params = {
-							'model': gemini_model,
-							'temperature': float( gemini_temperature ),
-							'max_tokens': int( gemini_max_tokens ),
-							'top_p': float( gemini_top_p ),
-							'top_k': int( gemini_top_k ) if int( gemini_top_k ) > 0 else None,
-							'candidate_count': int( gemini_candidate_count ),
-							'seed': int( gemini_seed ) if int( gemini_seed ) > 0 else None,
-							'system': (
-									gemini_system
-									if str( gemini_system or '' ).strip( )
-									else None
-							),
-							'response_format': 'json' if gemini_json_mode else None,
-							'stop_sequences': stop_lines if stop_lines else None,
-							'grounding': bool( gemini_grounding ),
-							'search_domains': (
-									gemini_domains_list
-									if gemini_domains_list
-									else None
-							),
-							'reasoning': bool(
-								gemini_reasoning
-								and _gemini_supports_thinking_level
-							),
-							'thinking_level': (
-									gemini_thinking_level
-									if _gemini_supports_thinking_level
-									   and gemini_reasoning
-									else None
-							),
-							'include_thoughts': bool(
-								gemini_include_thoughts
-							) if _gemini_supports_thinking_level and gemini_reasoning else False,
-					}
+					params = { 'model': gemini_model, 'temperature': float( gemini_temperature ),
+						'max_tokens': int( gemini_max_tokens ), 'top_p': float( gemini_top_p ),
+						'top_k': int( gemini_top_k ) if int( gemini_top_k ) > 0 else None,
+						'candidate_count': int( gemini_candidate_count ),
+						'seed': int( gemini_seed ) if int( gemini_seed ) > 0 else None,
+						'system': (gemini_system if str( gemini_system or '' ).strip( ) else None),
+						'response_format': 'json' if gemini_json_mode else None,
+						'stop_sequences': stop_lines if stop_lines else None,
+						'grounding': bool( gemini_grounding ),
+						'search_domains': (gemini_domains_list if gemini_domains_list else None),
+						'reasoning': bool( gemini_reasoning and _gemini_supports_thinking_level ),
+						'thinking_level': (
+							gemini_thinking_level if _gemini_supports_thinking_level and
+							                         gemini_reasoning else None),
+						'include_thoughts': bool(
+							gemini_include_thoughts ) if _gemini_supports_thinking_level and
+						                                 gemini_reasoning else False, }
 					
-					params = {
-							key: value
-							for key, value in params.items( )
-							if value is not None
-					}
+					params = { key: value for key, value in params.items( ) if value is not None }
 					
 					result = _invoke_provider( fetcher, gemini_prompt, params )
 					_render_output( gemini_output, result )
@@ -21994,19 +16309,6 @@ elif mode == 'Generation':
 		# -------- Mistral
 		with st.expander( label='Mistral', expanded=False ):
 			def _clear_mistral_state( ) -> None:
-				'''
-					Purpose:
-					--------
-					Flag the Mistral generation state for reset on the next rerun.
-
-					Parameters:
-					-----------
-					None
-
-					Returns:
-					--------
-					None
-				'''
 				st.session_state[ 'mistral_clear_request' ] = True
 			
 			if 'mistral_clear_request' not in st.session_state:
@@ -22032,125 +16334,65 @@ elif mode == 'Generation':
 				st.session_state[ 'mistral_clear_request' ] = False
 			
 			col_left, col_right = st.columns( [ 1, 2 ], border=True )
-			
 			with col_left:
-				mistral_prompt = st.text_area(
-					'Prompt',
-					value=st.session_state.get( 'mistral_prompt_chat', '' ),
-					height=120,
-					key='mistral_prompt_chat'
-				)
+				mistral_prompt = st.text_area( 'Prompt',
+					value=st.session_state.get( 'mistral_prompt_chat', '' ), height=120,
+					key='mistral_prompt_chat' )
 				
 				p_row1 = st.columns( 2 )
 				p_row2 = st.columns( 2 )
 				p_row3 = st.columns( 2 )
-				
 				with p_row1[ 0 ]:
-					_mistral_models = (
-							cfg.MISTRAL_MODELS
-							if hasattr( cfg, 'MISTRAL_MODELS' ) and cfg.MISTRAL_MODELS
-							else [
-									'mistral-large-latest',
-									'mistral-medium-latest',
-									'mistral-small-latest',
-									'open-mistral-7b',
-									'Custom...',
-							]
-					)
+					_mistral_models = (cfg.MISTRAL_MODELS if hasattr( cfg,
+						'MISTRAL_MODELS' ) and cfg.MISTRAL_MODELS else [ 'mistral-large-latest',
+						'mistral-medium-latest', 'mistral-small-latest', 'open-mistral-7b',
+						'Custom...', ])
 					
-					mistral_model = _model_selector(
-						key_prefix='mistral',
-						label='Model',
-						options=_mistral_models,
-						default_model=(
-								'mistral-large-latest'
-								if 'mistral-large-latest' in _mistral_models
-								else _mistral_models[ 0 ]
-						),
-					)
+					mistral_model = _model_selector( key_prefix='mistral', label='Model',
+						options=_mistral_models, default_model=(
+							'mistral-large-latest' if 'mistral-large-latest' in _mistral_models
+							else
+							_mistral_models[ 0 ]), )
 				
 				with p_row1[ 1 ]:
-					mistral_temperature = st.slider(
-						'Temperature',
-						min_value=0.0,
-						max_value=2.0,
-						value=0.7,
-						step=0.05,
-						key='mistral_temperature_chat',
-						help='Mistral recommends tuning temperature or top-p, not both.'
-					)
+					mistral_temperature = st.slider( 'Temperature', min_value=0.0, max_value=2.0,
+						value=0.7, step=0.05, key='mistral_temperature_chat',
+						help='Mistral recommends tuning temperature or top-p, not both.' )
 				
 				with p_row2[ 0 ]:
-					mistral_max_tokens = st.number_input(
-						'Max Tokens',
-						min_value=1,
-						max_value=32768,
-						value=1024,
-						step=1,
-						key='mistral_max_tokens_chat',
-					)
+					mistral_max_tokens = st.number_input( 'Max Tokens', min_value=1,
+						max_value=32768, value=1024, step=1, key='mistral_max_tokens_chat', )
 				
 				with p_row2[ 1 ]:
-					mistral_top_p = st.slider(
-						'Top-p',
-						min_value=0.0,
-						max_value=1.0,
-						value=1.0,
-						step=0.01,
-						key='mistral_top_p_chat',
-						help='Mistral recommends tuning temperature or top-p, not both.'
-					)
+					mistral_top_p = st.slider( 'Top-p', min_value=0.0, max_value=1.0, value=1.0,
+						step=0.01, key='mistral_top_p_chat',
+						help='Mistral recommends tuning temperature or top-p, not both.' )
 				
 				with p_row3[ 0 ]:
-					mistral_seed = st.number_input(
-						'Seed',
-						min_value=0,
-						max_value=2_147_483_647,
-						value=int( st.session_state.get( 'mistral_seed_chat', 0 ) ),
-						step=1,
-						key='mistral_seed_chat',
-						help='Use 0 to omit random_seed.'
-					)
+					mistral_seed = st.number_input( 'Seed', min_value=0, max_value=2_147_483_647,
+						value=int( st.session_state.get( 'mistral_seed_chat', 0 ) ), step=1,
+						key='mistral_seed_chat', help='Use 0 to omit random_seed.' )
 				
 				with p_row3[ 1 ]:
-					mistral_safe_mode = st.checkbox(
-						'Safe Mode',
-						value=bool(
-							st.session_state.get(
-								'mistral_safe_mode_chat',
-								False
-							)
-						),
+					mistral_safe_mode = st.checkbox( 'Safe Mode',
+						value=bool( st.session_state.get( 'mistral_safe_mode_chat', False ) ),
 						key='mistral_safe_mode_chat',
-						help='Maps to Mistral safe_prompt in the current wrapper.'
-					)
+						help='Maps to Mistral safe_prompt in the current wrapper.' )
 				
-				mistral_system = st.text_area(
-					'System',
-					value=st.session_state.get( 'mistral_system_chat', '' ),
-					height=100,
-					key='mistral_system_chat',
-				)
+				mistral_system = st.text_area( 'System',
+					value=st.session_state.get( 'mistral_system_chat', '' ), height=100,
+					key='mistral_system_chat', )
 				
-				st.caption(
-					'The current Mistral wrapper supports text output only. JSON mode and '
-					'stop sequences require a later complete Mistral class replacement.'
-				)
+				st.caption( 'The current Mistral wrapper supports text output only. JSON mode and '
+				            'stop sequences require a later complete Mistral class replacement.' )
 				
 				btn_row = st.columns( 2 )
 				
 				with btn_row[ 0 ]:
-					mistral_submit = st.button(
-						'Submit',
-						key='mistral_submit_chat'
-					)
+					mistral_submit = st.button( 'Submit', key='mistral_submit_chat' )
 				
 				with btn_row[ 1 ]:
-					st.button(
-						'Clear',
-						key='mistral_clear_chat',
-						on_click=_clear_mistral_state
-					)
+					st.button( 'Clear', key='mistral_clear_chat', on_click=_clear_mistral_state )
 			
 			with col_right:
 				mistral_output = st.empty( )
@@ -22161,31 +16403,17 @@ elif mode == 'Generation':
 						raise ValueError( 'Prompt cannot be empty.' )
 					
 					if float( mistral_temperature ) > 0.0 and float( mistral_top_p ) < 1.0:
-						st.warning(
-							'Mistral recommends adjusting either temperature or top-p, '
-							'but not both, for most use cases.'
-						)
+						st.warning( 'Mistral recommends adjusting either temperature or top-p, '
+						            'but not both, for most use cases.' )
 					
 					fetcher = Mistral( )
-					params = {
-							'model': mistral_model,
-							'temperature': float( mistral_temperature ),
-							'max_tokens': int( mistral_max_tokens ),
-							'top_p': float( mistral_top_p ),
-							'seed': int( mistral_seed ) if int( mistral_seed ) > 0 else None,
-							'safe_mode': bool( mistral_safe_mode ),
-							'system': (
-									mistral_system
-									if str( mistral_system or '' ).strip( )
-									else None
-							),
-					}
+					params = { 'model': mistral_model, 'temperature': float( mistral_temperature ),
+						'max_tokens': int( mistral_max_tokens ), 'top_p': float( mistral_top_p ),
+						'seed': int( mistral_seed ) if int( mistral_seed ) > 0 else None,
+						'safe_mode': bool( mistral_safe_mode ), 'system': (
+							mistral_system if str( mistral_system or '' ).strip( ) else None), }
 					
-					params = {
-							key: value
-							for key, value in params.items( )
-							if value is not None
-					}
+					params = { key: value for key, value in params.items( ) if value is not None }
 					
 					result = _invoke_provider( fetcher, mistral_prompt, params )
 					_render_output( mistral_output, result )
@@ -22202,7 +16430,8 @@ elif mode == 'Data Management':
 		st.subheader( f'🏛️ Data Management' )
 		st.divider( )
 		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
-		                  '🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
+			'🧮 Aggregate',
+			'📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
 		
 		tables = list_tables( )
 		if not tables:
@@ -22234,19 +16463,15 @@ elif mode == 'Data Management':
 								sql_type = get_sqlite_type( df[ col ].dtype )
 								columns.append( f'"{col}" {sql_type}' )
 							
-							create_stmt = (
-									f'CREATE TABLE "{table_name}" '
-									f'({", ".join( columns )});'
-							)
+							create_stmt = (f'CREATE TABLE "{table_name}" '
+							               f'({", ".join( columns )});')
 							
 							conn.execute( create_stmt )
 							
 							# --- Insert Data ---
 							placeholders = ", ".join( [ "?" ] * len( df.columns ) )
-							insert_stmt = (
-									f'INSERT INTO "{table_name}" '
-									f'VALUES ({placeholders});'
-							)
+							insert_stmt = (f'INSERT INTO "{table_name}" '
+							               f'VALUES ({placeholders});')
 							
 							conn.executemany( insert_stmt,
 								df.where( pd.notnull( df ), None ).values.tolist( ) )
@@ -22297,13 +16522,16 @@ elif mode == 'Data Management':
 				insert_data = { }
 				for column, col_type in type_map.items( ):
 					if 'INT' in col_type:
-						insert_data[ column ] = st.number_input( column, step=1, key=f'ins_{column}' )
+						insert_data[ column ] = st.number_input( column, step=1,
+							key=f'ins_{column}' )
 					
 					elif 'REAL' in col_type:
-						insert_data[ column ] = st.number_input( column, format='%.6f', key=f'ins_{column}' )
+						insert_data[ column ] = st.number_input( column, format='%.6f',
+							key=f'ins_{column}' )
 					
 					elif 'BOOL' in col_type:
-						insert_data[ column ] = 1 if st.checkbox( column, key=f'ins_{column}' ) else 0
+						insert_data[ column ] = 1 if st.checkbox( column,
+							key=f'ins_{column}' ) else 0
 					
 					else:
 						insert_data[ column ] = st.text_input( column, key=f'ins_{column}' )
@@ -22488,7 +16716,8 @@ elif mode == 'Data Management':
 			
 			st.subheader( 'Create Custom Table' )
 			new_table_name = st.text_input( 'Table Name' )
-			column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20, value=1 )
+			column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20,
+				value=1 )
 			columns = [ ]
 			for i in range( column_count ):
 				st.markdown( f'### Column {i + 1}' )
@@ -22500,12 +16729,8 @@ elif mode == 'Data Management':
 				primary_key = st.checkbox( 'PRIMARY KEY', key=f'pk_{i}' )
 				auto_inc = st.checkbox( 'AUTOINCREMENT (INTEGER only)', key=f'ai_{i}' )
 				
-				columns.append( {
-						'name': col_name,
-						'type': col_type,
-						'not_null': not_null,
-						'primary_key': primary_key,
-						'auto_increment': auto_inc } )
+				columns.append( { 'name': col_name, 'type': col_type, 'not_null': not_null,
+					'primary_key': primary_key, 'auto_increment': auto_inc } )
 			
 			if st.button( 'Create Table' ):
 				try:
@@ -22525,38 +16750,27 @@ elif mode == 'Data Management':
 				
 				# Column schema
 				schema = create_schema( table )
-				schema_df = DataFrame(
-					schema,
+				schema_df = DataFrame( schema,
 					columns=[ 'cid', 'name', 'type', 'notnull', 'default', 'pk' ] )
 				
 				st.markdown( "### Columns" )
-				st.data_editor(
-					make_display_safe( schema_df ),
-					hide_index=True,
-					use_container_width=True,
-					disabled=True )
+				st.data_editor( make_display_safe( schema_df ), hide_index=True,
+					use_container_width=True, disabled=True )
 				
 				# Row count
 				with create_connection( ) as conn:
-					count = conn.execute(
-						f'SELECT COUNT(*) FROM "{table}"'
-					).fetchone( )[ 0 ]
+					count = conn.execute( f'SELECT COUNT(*) FROM "{table}"' ).fetchone( )[ 0 ]
 				
 				st.metric( "Row Count", f"{count:,}" )
 				
 				# Indexes
 				indexes = get_indexes( table )
 				if indexes:
-					idx_df = DataFrame(
-						indexes,
-						columns=[ 'seq', 'name', 'unique', 'origin', 'partial' ]
-					)
+					idx_df = DataFrame( indexes,
+						columns=[ 'seq', 'name', 'unique', 'origin', 'partial' ] )
 					st.markdown( "### Indexes" )
-					st.data_editor(
-						make_display_safe( idx_df ),
-						hide_index=True,
-						use_container_width=True,
-						disabled=True )
+					st.data_editor( make_display_safe( idx_df ), hide_index=True,
+						use_container_width=True, disabled=True )
 				else:
 					st.info( "No indexes defined." )
 			
@@ -22649,8 +16863,8 @@ elif mode == 'Data Management':
 						# ----------------------------------------------------------
 						if not result.empty:
 							csv = result.to_csv( index=False ).encode( 'utf-8' )
-							st.download_button( 'Download CSV', csv,
-								'query_results.csv', 'text/csv' )
+							st.download_button( 'Download CSV', csv, 'query_results.csv',
+								'text/csv' )
 					
 					except Exception as e:
 						st.error( f'Execution failed: {e}' )
