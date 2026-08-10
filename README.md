@@ -40,7 +40,7 @@ ___
 
 ## 🧊 Azure
 
-[![Containerized](https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white)](https://foo.internal.jollyground-d0d90837.eastus.azurecontainerapps.io)
+[![Containerized](https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white)](https://foo.jollyground-d0d90837.eastus.azurecontainerapps.io)
 
 - Container App
 
