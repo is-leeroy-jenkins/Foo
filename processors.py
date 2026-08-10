@@ -232,10 +232,10 @@ class TextParser( Processor ):
 		cleaned_pages: Runtime state used by ``TextParser`` during Chonky processing operations.
 		cleaned_html: Runtime state used by ``TextParser`` during Chonky processing operations.
 		conditional_distribution: Runtime state used by ``TextParser`` during Chonky processing
-		operations.
+			operations.
 		PUNCTUATION: Runtime state used by ``TextParser`` during Chonky processing operations.
 		CONTROL_CHARACTERS: Runtime state used by ``TextParser`` during Chonky processing
-		operations.
+			operations.
 		DELIMITERS: Runtime state used by ``TextParser`` during Chonky processing operations.
 		DIGITS: Runtime state used by ``TextParser`` during Chonky processing operations.
 		SYMBOLS: Runtime state used by ``TextParser`` during Chonky processing operations.
@@ -1469,7 +1469,7 @@ class TextParser( Processor ):
 		Args:
 			source: Source value used by the processing operation. Expected type: ``str``.
 			destination: Destination value used by the processing operation. Expected type:
-			``str``.
+				``str``.
 		
 		Returns:
 			None: Result produced by the processing operation.
@@ -1526,7 +1526,7 @@ class TextParser( Processor ):
 		Args:
 			source: Source value used by the processing operation. Expected type: ``str``.
 			destination: Destination value used by the processing operation. Expected type:
-			``str``.
+				``str``.
 		
 		Returns:
 			None: Result produced by the processing operation.
@@ -1582,7 +1582,7 @@ class TextParser( Processor ):
 		Args:
 			filepath: Filepath value used by the processing operation. Expected type: ``str``.
 			size: Size value used by the processing operation. Expected type: ``int``. Defaults to
-			``10``.
+				``10``.
 		
 		Returns:
 			DataFrame | None: Result produced by the processing operation.
@@ -1631,9 +1631,9 @@ class TextParser( Processor ):
 		Args:
 			source: Source value used by the processing operation. Expected type: ``str``.
 			destination: Destination value used by the processing operation. Expected type:
-			``str``.
+				``str``.
 			size: Size value used by the processing operation. Expected type: ``int``. Defaults to
-			``10``.
+			`   `10``.
 		
 		Returns:
 			DataFrame: Result produced by the processing operation.
@@ -1701,9 +1701,9 @@ class TextParser( Processor ):
 		Args:
 			source: Source value used by the processing operation. Expected type: ``str``.
 			destination: Destination value used by the processing operation. Expected type:
-			``str``.
+				``str``.
 			size: Size value used by the processing operation. Expected type: ``int``. Defaults to
-			``10``.
+				``10``.
 		
 		Returns:
 			None: Result produced by the processing operation.
@@ -1761,7 +1761,7 @@ class TextParser( Processor ):
 		Args:
 			tokens: Tokens value used by the processing operation. Expected type: ``List[ str ]``.
 			model: Model value used by the processing operation. Expected type: ``str``. Defaults
-			to ``'all-MiniLM-L6-v2'``.
+				to ``'all-MiniLM-L6-v2'``.
 		
 		Returns:
 			Tuple[ List[ str ], np.ndarray ]: Result produced by the processing operation.
@@ -1798,11 +1798,11 @@ class TextParser( Processor ):
 			query: Query value used by the processing operation. Expected type: ``str``.
 			tokens: Tokens value used by the processing operation. Expected type: ``List[ str ]``.
 			embeddings: Embeddings value used by the processing operation. Expected type:
-			``np.ndarray``.
+				``np.ndarray``.
 			model: Model value used by the processing operation. Expected type:
-			``SentenceTransformer``.
+				``SentenceTransformer``.
 			top: Top value used by the processing operation. Expected type: ``int``. Defaults to
-			``5``.
+				``5``.
 		
 		Returns:
 			List[ tuple[ str, float ] ]: Result produced by the processing operation.
@@ -2132,7 +2132,7 @@ class NltkParser( Processor ):
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
 			size: Size value used by the processing operation. Expected type: ``int``. Defaults to
-			``5``.
+				``5``.
 		
 		Returns:
 			DataFrame | None: Result produced by the processing operation.
@@ -2171,7 +2171,7 @@ class NltkParser( Processor ):
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
 			size: Size value used by the processing operation. Expected type: ``int``. Defaults to
-			``15``.
+				``15``.
 		
 		Returns:
 			DataFrame | None: Result produced by the processing operation.
@@ -2209,7 +2209,7 @@ class WordParser( Processor ):
 	Attributes:
 		sentences: Runtime state used by ``WordParser`` during Chonky processing operations.
 		cleaned_sentences: Runtime state used by ``WordParser`` during Chonky processing
-		operations.
+			operations.
 		document: Runtime state used by ``WordParser`` during Chonky processing operations.
 		raw_text: Runtime state used by ``WordParser`` during Chonky processing operations.
 		paragraphs: Runtime state used by ``WordParser`` during Chonky processing operations.
@@ -2436,7 +2436,7 @@ class PdfParser( Processor ):
 		strip_headers: Runtime state used by ``PdfParser`` during Chonky processing operations.
 		minimum_length: Runtime state used by ``PdfParser`` during Chonky processing operations.
 		extract_tables_enabled: Runtime state used by ``PdfParser`` during Chonky processing
-		operations.
+			operations.
 		extracted_lines: Runtime state used by ``PdfParser`` during Chonky processing operations.
 		extracted_tables: Runtime state used by ``PdfParser`` during Chonky processing operations.
 		extracted_pages: Runtime state used by ``PdfParser`` during Chonky processing operations.
@@ -2457,11 +2457,11 @@ class PdfParser( Processor ):
 		
 		Args:
 			headers: Headers value used by the processing operation. Expected type: ``bool``.
-			Defaults to ``False``.
+				Defaults to ``False``.
 			size: Size value used by the processing operation. Expected type: ``int``. Defaults to
-			``10``.
+				``10``.
 			tables: Tables value used by the processing operation. Expected type: ``bool``.
-			Defaults to ``True``.
+				Defaults to ``True``.
 		"""
 		super( ).__init__( )
 		self.strip_headers = headers
@@ -2508,11 +2508,11 @@ class PdfParser( Processor ):
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
 			count: Count value used by the processing operation. Expected type: ``Optional[ int
-			]``. Defaults to ``None``.
+				]``. Defaults to ``None``.
 			header_ratio: Header ratio value used by the processing operation. Expected type:
-			``float``. Defaults to ``0.08``.
+				``float``. Defaults to ``0.08``.
 			footer_ratio: Footer ratio value used by the processing operation. Expected type:
-			``float``. Defaults to ``0.08``.
+				``float``. Defaults to ``0.08``.
 			preserve_page_breaks: Preserve page breaks value used by the processing operation.
 			Expected type: ``bool``. Defaults to ``False``.
 		
@@ -2548,11 +2548,11 @@ class PdfParser( Processor ):
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
 			count: Count value used by the processing operation. Expected type: ``Optional[ int
-			]``. Defaults to ``None``.
+				]``. Defaults to ``None``.
 			header_ratio: Header ratio value used by the processing operation. Expected type:
-			``float``. Defaults to ``0.08``.
+				``float``. Defaults to ``0.08``.
 			footer_ratio: Footer ratio value used by the processing operation. Expected type:
-			``float``. Defaults to ``0.08``.
+				``float``. Defaults to ``0.08``.
 		
 		Returns:
 			List[ dict ] | None: Result produced by the processing operation.
@@ -2632,7 +2632,7 @@ class PdfParser( Processor ):
 		Args:
 			pages: Pages value used by the processing operation. Expected type: ``List[ dict ]``.
 			minimum_repeats: Minimum repeats value used by the processing operation. Expected
-			type: ``int``. Defaults to ``3``.
+				type: ``int``. Defaults to ``3``.
 		
 		Returns:
 			List[
@@ -2850,7 +2850,7 @@ class PdfParser( Processor ):
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
 			repair_embedded: Repair embedded value used by the processing operation. Expected
-			type: ``bool``. Defaults to ``True``.
+				type: ``bool``. Defaults to ``True``.
 		
 		Returns:
 			str: Result produced by the processing operation.
@@ -2958,7 +2958,7 @@ class PdfParser( Processor ):
 		Args:
 			pages: Pages value used by the processing operation. Expected type: ``List[ dict ]``.
 			preserve_page_breaks: Preserve page breaks value used by the processing operation.
-			Expected type: ``bool``. Defaults to ``False``.
+				Expected type: ``bool``. Defaults to ``False``.
 		
 		Returns:
 			str: Result produced by the processing operation.
@@ -3024,7 +3024,7 @@ class PdfParser( Processor ):
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
 			count: Count value used by the processing operation. Expected type: ``Optional[ int
-			]``. Defaults to ``None``.
+				]``. Defaults to ``None``.
 		
 		Returns:
 			List[ str ] | None: Result produced by the processing operation.
@@ -3057,7 +3057,7 @@ class PdfParser( Processor ):
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
 			count: Count value used by the processing operation. Expected type: ``Optional[ int
-			]``. Defaults to ``None``.
+				]``. Defaults to ``None``.
 		
 		Returns:
 			str | None: Result produced by the processing operation.
@@ -3087,11 +3087,10 @@ class PdfParser( Processor ):
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
 			count: Count value used by the processing operation. Expected type: ``Optional[ int
-			]``. Defaults to ``None``.
+				]``. Defaults to ``None``.
 		
 		Returns:
-			List[
-				                                                                        pd.DataFrame ] | None: Result produced by the processing operation.
+			List[ pd.DataFrame ] | None: Result produced by the processing operation.
 		
 		Raises:
 			Error: Raised when validation or processing fails.
@@ -3128,7 +3127,7 @@ class PdfParser( Processor ):
 		
 		Args:
 			tables: Tables value used by the processing operation. Expected type: ``List[
-			pd.DataFrame ]``.
+				pd.DataFrame ]``.
 			filename: Filename value used by the processing operation. Expected type: ``str``.
 		
 		Returns:
@@ -3197,7 +3196,7 @@ class PdfParser( Processor ):
 		
 		Args:
 			tables: Tables value used by the processing operation. Expected type: ``List[
-			pd.DataFrame ]``.
+				pd.DataFrame ]``.
 			path: Path value used by the processing operation. Expected type: ``str``.
 		
 		Returns:
