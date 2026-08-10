@@ -6136,8 +6136,7 @@ elif mode == 'Retrieval':
 								with meta_col2:
 									if 'mimeType' in doc.metadata:
 										st.markdown(
-											f"**MIME Type:** {doc.metadata.get( 'mimeType',
-												'' )}" )
+											f"**MIME Type:** {doc.metadata.get( 'mimeType', '' )}" )
 									if 'modifiedTime' in doc.metadata:
 										st.markdown(
 											f"**Modified:** "
