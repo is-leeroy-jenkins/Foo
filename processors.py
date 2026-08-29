@@ -1630,10 +1630,8 @@ class TextParser( Processor ):
 		
 		Args:
 			source: Source value used by the processing operation. Expected type: ``str``.
-			destination: Destination value used by the processing operation. Expected type:
-				``str``.
-			size: Size value used by the processing operation. Expected type: ``int``. Defaults to
-			`   `10``.
+			destination: Destination value used by the processing operation. Expected type: ``str``.
+			size: Size value used by the processing operation. Defaults to `10`.
 		
 		Returns:
 			DataFrame: Result produced by the processing operation.
@@ -1841,8 +1839,7 @@ class NltkParser( Processor ):
 		word_tokens: Runtime state used by ``NltkParser`` during Chonky processing operations.
 		sentence_tokens: Runtime state used by ``NltkParser`` during Chonky processing operations.
 		stemmed_tokens: Runtime state used by ``NltkParser`` during Chonky processing operations.
-		lemmatized_tokens: Runtime state used by ``NltkParser`` during Chonky processing
-		operations.
+		lemmatized_tokens: Runtime state used by ``NltkParser`` during Chonky processing.
 		tagged_tokens: Runtime state used by ``NltkParser`` during Chonky processing operations.
 		named_entities: Runtime state used by ``NltkParser`` during Chonky processing operations.
 	"""
@@ -2268,8 +2265,7 @@ class WordParser( Processor ):
 			Chonky loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
-			num: Num value used by the processing operation. Expected type: ``int``. Defaults to
-			``1``.
+			num: Num value used by the processing operation. Defaults to ``1``.
 		
 		Returns:
 			str | None: Result produced by the processing operation.
@@ -2507,14 +2503,10 @@ class PdfParser( Processor ):
 		
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
-			count: Count value used by the processing operation. Expected type: ``Optional[ int
-				]``. Defaults to ``None``.
-			header_ratio: Header ratio value used by the processing operation. Expected type:
-				``float``. Defaults to ``0.08``.
-			footer_ratio: Footer ratio value used by the processing operation. Expected type:
-				``float``. Defaults to ``0.08``.
+			count: Count value used by the processing operation. Defaults to ``None``.
+			header_ratio: Header ratio value used by the processing operation.  Defaults to ``0.08``.
+			footer_ratio: Footer ratio value used by the processing operation. Defaults to ``0.08``.
 			preserve_page_breaks: Preserve page breaks value used by the processing operation.
-			Expected type: ``bool``. Defaults to ``False``.
 		
 		Returns:
 			str | None: Result produced by the processing operation.

@@ -38,24 +38,47 @@ providers.
 ![](https://github.com/is-leeroy-jenkins/Foo/blob/main/resources/images/foo-demo.gif)
 ___
 
-## 🧊 Azure
+## ☁️ Cloud
 
-[![Containerized](https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white)](https://foo.jollyground-d0d90837.eastus.azurecontainerapps.io)
+<table>
+<tr>
+<td align="center">
+<img width="190" height="1" alt=""><br>
+<a href="https://chonky.nicehill-0e7bfe90.centralus.azurecontainerapps.io">
+<img src="https://img.shields.io/badge/Docker-App-2496ED?logo=docker&logoColor=white" alt="Docker App">
+</a>
+</td>
 
-- Container App
+<td align="center">
+<img width="190" height="1" alt=""><br>
+<a href="https://fooo-py.streamlit.app/">
+<img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white" alt="Streamlit App">
+</a>
+</td>
 
-## 🔥 Streamlit
+<td align="center">
+<img width="190" height="1" alt=""><br>
+<a href="https://drive.google.com/file/d/1q3ZhnGBGaJjgfiiRirOrONHv2wF8_CtH/view?usp=sharing">
+<img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab">
+</a>
+</td>
 
-[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit\&logoColor=white)](https://fooo-py.streamlit.app/)
+<td align="center">
+<img width="190" height="1" alt=""><br>
+<a href="https://leeroy.usw-16.palantirfoundry.com/shares/links/eitihztkzx76q">
+<img src="https://img.shields.io/badge/Databricks%20Repo-Cutey--Py-FF3621?logo=databricks&logoColor=white" alt="Databricks Notebook">
+</a>
+</td>
 
-- A Python framework to build dynamic, interactive web applications.
+<td align="center">
+<img width="190" height="1" alt=""><br>
+<a href="https://leeroy.usw-16.palantirfoundry.com/shares/links/r7ukk3ybt65bk">
+<img src="https://img.shields.io/badge/Palantir%20Foundry-Repository-101113?logo=palantir&logoColor=white" alt="Palantir Repo">
+</a>
+</td>
+</tr>
+</table>
 
-## 🧱 Databricks
-
-[![Foo](https://img.shields.io/badge/Databricks-Foo-FF3621?logo=databricks&logoColor=white)](https://dbc-a0c21f80-7bb3.cloud.databricks.com/browse/folders/3169291152437678?o=7474645703081351)
-
-- A data engineering, analytics, and artificial intelligence collaborative workspace
-- Codebase
 
 ## ✨ Features
 
