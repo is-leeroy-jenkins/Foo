@@ -1616,6 +1616,7 @@ if mode == 'Loading':
 			st.success( _loader_msg )
 		
 		with st.expander( label='Local Documents', expanded=True ):
+			
 			# --------------------------- NLTK Loader Expander
 			with st.expander( label='Corpora Loader', icon='📚', expanded=False ):
 				import nltk
@@ -1822,7 +1823,6 @@ if mode == 'Loading':
 				col_load, col_clear, col_save = st.columns( 3 )
 				load_csv = col_load.button( 'Load', key='csv_load', icon='📤', )
 				clear_csv = col_clear.button( 'Clear', key='csv_clear', icon='🧹', )
-				
 				can_save = (st.session_state.get( 'active_loader' ) == 'CsvLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
 					'raw_text' ).strip( ))
@@ -1969,7 +1969,6 @@ if mode == 'Loading':
 				# XPath Query Interface
 				# ------------------------------------------------------------------
 				xml_loader = st.session_state.get( 'xml_loader' )
-				
 				if xml_loader is None:
 					st.info( 'No loader initialized.' )
 				elif not hasattr( xml_loader, 'xml_root' ):
@@ -2652,6 +2651,7 @@ if mode == 'Loading':
 					st.success( f"Loaded {len( documents )} JSON document(s)." )
 		
 		with st.expander( label='Web Documents', expanded=False ):
+			
 			# --------------------------- ArXiv Loader
 			with st.expander( label='ArXiv Loader', icon='🧠', expanded=False ):
 				arxiv_query = st.text_input( 'Query', placeholder='e.g., transformer OR llm',
@@ -3229,6 +3229,7 @@ if mode == 'Loading':
 						'_loader_status' ] = f'Loaded {len( documents )} Open City document(s).'
 		
 		with st.expander( label='Cloud Documents', expanded=False ):
+			
 			# --------------------------- OneDrive Loader
 			with st.expander( label='OneDrive Loader', icon='🟦', expanded=False ):
 				onedrive_drive_id = st.text_input( 'Drive ID', value='', key='onedrive_drive_id',
@@ -3819,7 +3820,6 @@ if mode == 'Loading':
 				pass
 			
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True, )
-			
 			st.markdown( '#### Top Tokens' )
 			
 			# ------------ Top Tokens
@@ -3886,8 +3886,7 @@ if mode == 'Loading':
 							'Estimated U.S. grade level required.' )
 					
 					with r3:
-						metric_with_tooltip( 'Gunning Fog',
-							f'{textstat.gunning_fog( raw_text ):.1f}',
+						metric_with_tooltip( 'Gunning Fog', f'{textstat.gunning_fog( raw_text ):.1f}',
 							'Readability based on sentence length and complex words.' )
 					
 					with r4:
@@ -3905,7 +3904,6 @@ elif mode == 'Scraping':
 	with center:
 		st.subheader( f'🕷️ Web Scraping' )
 		st.divider( )
-		
 		if 'webscrape_clear_request' not in st.session_state:
 			st.session_state[ 'webscrape_clear_request' ] = False
 		
@@ -4122,28 +4120,21 @@ elif mode == 'Scraping':
 				key='webfetcher_url' )
 			
 			st.markdown( '##### Core Output' )
-			
 			include_title = st.checkbox( 'Page Title', value=True, key='wf_page_title' )
-			
 			include_basic_text = st.checkbox( 'Basic Text', value=True, key='wf_basic_text' )
-			
 			include_raw_html = st.checkbox( 'Raw HTML', value=False, key='wf_raw_html' )
-			
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-			
 			st.markdown( '##### Structured Extraction' )
-			
 			col1, col2 = st.columns( [ 0.5, 0.5 ] )
 			
 			REGISTRY_LABELS: dict[ str, str ] = { 'scrape_headings': 'Headings',
-				'scrape_paragraphs': 'Paragraphs', 'scrape_lists': 'Lists',
-				'scrape_tables': 'Tables', 'scrape_articles': 'Articles',
-				'scrape_sections': 'Sections', 'scrape_divisions': 'Divisions',
-				'scrape_blockquotes': 'Blockquotes', 'scrape_hyperlinks': 'Hyperlinks',
-				'scrape_images': 'Images', }
+					'scrape_paragraphs': 'Paragraphs', 'scrape_lists': 'Lists',
+					'scrape_tables': 'Tables', 'scrape_articles': 'Articles',
+					'scrape_sections': 'Sections', 'scrape_divisions': 'Divisions',
+					'scrape_blockquotes': 'Blockquotes', 'scrape_hyperlinks': 'Hyperlinks',
+					'scrape_images': 'Images', }
 			
 			selected_methods: list[ str ] = [ ]
-			
 			_registry_items: list[ tuple[ str, str ] ] = list( REGISTRY_LABELS.items( ) )
 			_col1_items: list[ tuple[ str, str ] ] = _registry_items[ :5 ]
 			_col2_items: list[ tuple[ str, str ] ] = _registry_items[ 5: ]
@@ -4161,9 +4152,7 @@ elif mode == 'Scraping':
 			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 			
 			st.markdown( '##### Crawl Controls' )
-			
 			enable_recursive = st.checkbox( 'Recursive Crawl', value=False, key='wf_recursive' )
-			
 			max_depth = st.number_input( 'Max Depth', min_value=0, max_value=10, value=1, step=1,
 				key='wf_max_depth', disabled=(not enable_recursive) )
 			
@@ -4174,7 +4163,6 @@ elif mode == 'Scraping':
 				key='wf_same_domain_only', disabled=(not enable_recursive) )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				run_scraper = st.button( 'Run Scraper', key='webfetcher_run' )
 			
@@ -4202,7 +4190,6 @@ elif mode == 'Scraping':
 			
 			summary = st.session_state.get( 'webscrape_summary', { } )
 			results = st.session_state.get( 'webscrape_results', [ ] )
-			
 			if summary:
 				st.subheader( 'Summary' )
 				st.json( summary )
@@ -4211,15 +4198,11 @@ elif mode == 'Scraping':
 				st.info( 'No results.' )
 			else:
 				st.subheader( 'Results' )
-				
 				for idx, page in enumerate( results, start=1 ):
 					title = page.get( 'title', '' ) or page.get( 'url', f'Page {idx}' )
 					depth = page.get( 'depth', 0 )
-					
-					with st.expander( f'Page {idx} [Depth {depth}]: {title}', expanded=(idx ==
-					                                                                    1) ):
+					with st.expander( f'Page {idx} [Depth {depth}]: {title}', expanded=(idx == 1) ):
 						meta_col1, meta_col2 = st.columns( 2 )
-						
 						with meta_col1:
 							st.markdown( f"**URL:** {page.get( 'url', '' )}" )
 							st.markdown( f"**Status Code:** {page.get( 'status_code', '' )}" )
@@ -4233,8 +4216,7 @@ elif mode == 'Scraping':
 						if isinstance( plain_text, str ) and plain_text.strip( ):
 							st.subheader( 'Basic Text' )
 							st.text_area( label='', value=_truncate_text( plain_text,
-								limit=12000 ),
-								height=280, key=f'webscrape_plain_text_{idx}' )
+								limit=12000 ), height=280, key=f'webscrape_plain_text_{idx}' )
 						
 						raw_html = page.get( 'raw_html', '' )
 						if isinstance( raw_html, str ) and raw_html.strip( ):
@@ -4251,7 +4233,6 @@ elif mode == 'Scraping':
 						data = page.get( 'data', { } ) or { }
 						for label, items in data.items( ):
 							st.subheader( f'{label}' )
-							
 							if not items:
 								st.info( 'No results returned.' )
 								continue
@@ -4272,12 +4253,11 @@ elif mode == 'Retrieval':
 	st.session_state.setdefault( 'retrieval_active_source', '' )
 	st.session_state.setdefault( 'arxiv_input', '' )
 	st.session_state.setdefault( 'arxiv_results', [ ] )
-
 	st.subheader( '🏛️ Public Collections & Archives' )
 	st.divider( )
 	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
-
 	with left:
+		
 		# -------- Expander (ArXiv)
 		with st.expander( label='ArXiv', icon='📘', expanded=False ):
 			st.badge( label='Information', help=cfg.ARXIV )
@@ -5848,7 +5828,6 @@ elif mode == 'Retrieval':
 				st.session_state[ 'onedrive_results' ] = { }
 			
 			drive_id = st.text_input( 'Drive ID', key='onedrive_drive_id' )
-			
 			folder_path = st.text_input( 'Folder Path (Optional)', key='onedrive_folder_path',
 				help='Example: Documents/clients' )
 			
@@ -5860,7 +5839,6 @@ elif mode == 'Retrieval':
 				key='onedrive_auth_with_token' )
 			
 			b1, b2, b3 = st.columns( 3 )
-			
 			with b1:
 				onedrive_submit = st.button( 'Submit', key='onedrive_submit',
 					use_container_width=True )
@@ -5890,7 +5868,6 @@ elif mode == 'Retrieval':
 				st.session_state[ 'google_speech_to_text_results' ] = { }
 			
 			project_id = st.text_input( 'Project ID', key='google_speech_to_text_project_id' )
-			
 			audio_file = st.file_uploader( 'Upload Audio File',
 				type=[ 'wav', 'flac', 'mp3', 'm4a', 'ogg' ],
 				key='google_speech_to_text_audio_upload' )
@@ -5903,7 +5880,6 @@ elif mode == 'Retrieval':
 				key='google_speech_to_text_language_code' )
 			
 			b1, b2, b3 = st.columns( 3 )
-			
 			with b1:
 				google_speech_submit = st.button( 'Submit', key='google_speech_to_text_submit',
 					use_container_width=True )
@@ -5934,12 +5910,10 @@ elif mode == 'Retrieval':
 				st.session_state[ 'aws_bucket_results' ] = { }
 			
 			bucket_name = st.text_input( 'Bucket', key='aws_bucket_name' )
-			
 			prefix = st.text_input( 'Prefix (Optional)', key='aws_bucket_prefix',
 				help='Optional folder / key prefix inside the bucket.' )
 			
 			region_name = st.text_input( 'Region (Optional)', key='aws_bucket_region_name' )
-			
 			endpoint_url = st.text_input( 'Endpoint URL (Optional)',
 				key='aws_bucket_endpoint_url', help='Optional S3-compatible endpoint URL.' )
 			
@@ -5953,7 +5927,6 @@ elif mode == 'Retrieval':
 				key='aws_bucket_session_token' )
 			
 			b1, b2, b3 = st.columns( 3 )
-			
 			with b1:
 				aws_bucket_submit = st.button( 'Submit', key='aws_bucket_submit',
 					use_container_width=True )
@@ -8271,7 +8244,6 @@ elif mode == 'Geospatial':
 					st.exception( exc )
 			
 			result = st.session_state.get( 'googlegeocoding_results', { } )
-			
 			if not result:
 				st.text( 'No results.' )
 			else:
@@ -8290,7 +8262,6 @@ elif mode == 'Geospatial':
 						formatted_address = item.get( 'formatted_address', f'Result {idx}' )
 						place_id_value = item.get( 'place_id', '' )
 						types_value = item.get( 'types', [ ] )
-						
 						geometry = item.get( 'geometry', { } ) if isinstance( item,
 							dict ) else { }
 						location = geometry.get( 'location', { } ) if isinstance( geometry,
@@ -8298,9 +8269,7 @@ elif mode == 'Geospatial':
 						
 						with st.container( border=True ):
 							st.markdown( f'**{idx}. {formatted_address}**' )
-							
 							meta_parts: List[ str ] = [ ]
-							
 							if place_id_value:
 								meta_parts.append( f'Place ID: `{place_id_value}`' )
 							
@@ -8322,8 +8291,7 @@ elif mode == 'Geospatial':
 								component_rows: List[ Dict[ str, Any ] ] = [ ]
 								for component in address_components:
 									if isinstance( component, dict ):
-										component_rows.append(
-											{ 'long_name': component.get( 'long_name', '' ),
+										component_rows.append( { 'long_name': component.get( 'long_name', '' ),
 												'short_name': component.get( 'short_name',
 													'' ),
 												'types': ', '.join(
@@ -8344,11 +8312,9 @@ elif mode == 'Geospatial':
 
 		if active_source == 'Google Maps':
 			st.markdown( 'Results' )
-			
 			if googlemaps_submit:
 				try:
 					gm = GoogleMaps( )
-					
 					if googlemaps_mode == 'geocode_location':
 						if not str( googlemaps_query or '' ).strip( ):
 							raise ValueError( 'Address is required for geocode_location '
@@ -8390,15 +8356,14 @@ elif mode == 'Geospatial':
 							raise ValueError(
 								'Destination is required for request_directions mode.' )
 						
-						payload = gm.request_directions(
-							origin=str( googlemaps_origin ).strip( ),
-							destination=str( googlemaps_destination ).strip( ),
-							mode=str( googlemaps_travel_mode ).strip( ) )
+						payload = gm.request_directions( origin=str( googlemaps_origin ).strip( ),
+							destination=str( googlemaps_destination ).strip( ), mode=str(
+								googlemaps_travel_mode ).strip( ) )
 						result = { 'mode': googlemaps_mode,
-							'origin': str( googlemaps_origin ).strip( ),
-							'destination': str( googlemaps_destination ).strip( ),
-							'travel_mode': str( googlemaps_travel_mode ).strip( ),
-							'data': payload or { }, }
+								'origin': str( googlemaps_origin ).strip( ),
+								'destination': str( googlemaps_destination ).strip( ),
+								'travel_mode': str( googlemaps_travel_mode ).strip( ),
+								'data': payload or { }, }
 					
 					st.session_state[ 'googlemaps_results' ] = result
 					st.rerun( )

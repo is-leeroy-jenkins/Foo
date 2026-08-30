@@ -67,6 +67,7 @@ sentence-transformers
 textblob
 tiktoken
 chromadb
+torchvision
 
 mkdocs
 mkdocs-material
