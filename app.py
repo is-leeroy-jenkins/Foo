@@ -7024,6 +7024,7 @@ elif mode == 'Geospatial':
 	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 
 	with left:
+		
 		# ------  Geocoding
 		with st.expander( label='Geocoding', icon='📍', expanded=False ):
 			if 'googlegeocoding_results' not in st.session_state:
@@ -8308,8 +8309,7 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- Google Maps
-
+		# -------- Google Maps
 		if active_source == 'Google Maps':
 			st.markdown( 'Results' )
 			if googlemaps_submit:
