@@ -3837,9 +3837,8 @@ if mode == 'Loading':
 	metrics_container = st.container( )
 	with metrics_container:
 		if documents is not None:
-			# ----------------------------------------------
-			# Tokenization (session-cached)
-			# ----------------------------------------------
+			
+			# -------- Tokenization (session-cached)
 			if st.session_state.tokens is None:
 				try:
 					raw_text = rebuild_raw_text_from_documents( )
