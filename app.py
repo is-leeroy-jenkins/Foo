@@ -17284,3 +17284,40 @@ elif mode == 'Data Management':
 					
 					except Exception as e:
 						st.error( f'Execution failed: {e}' )
+
+
+
+# ======================================================================================
+# FOOTER — SECTION
+# ======================================================================================
+st.markdown( """
+	<style>
+	.block-container {
+		padding-bottom: 3rem;
+	}
+	</style>
+	""", unsafe_allow_html=True, )
+
+# ---- Fixed Container
+st.markdown( """
+	<style>
+	.boo-status-bar {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		background-color: rgba(27, 27, 27, 0.95);
+		border-top: 1px solid #5A5A5A;
+		padding: 10px 16px;
+		font-size: 0.80rem;
+		color: #0078FC;
+		z-index: 1000;
+	}
+	.boo-status-inner {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		max-width: 100%;
+	}
+	</style>
+	""", unsafe_allow_html=True, )
