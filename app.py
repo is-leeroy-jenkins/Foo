@@ -1572,9 +1572,43 @@ def render_data_editor( df: pd.DataFrame, use_container_width: bool | None = Non
 		height=height, hide_index=hide_index, disabled=disabled,
 		column_config=formatted_config, num_rows=num_rows )
 
+def get_data_editor_column_config( df: pd.DataFrame,
+	existing_config: Dict[ str, object ]=None ) -> Dict[ str, object ]:
+	"""Build numeric display configuration for a dataframe editor.
+
+	Purpose:
+	    Adds locale-aware thousands separators and two-decimal precision for floating-point and
+	    double-precision columns while retaining whole-number formatting for integer columns.
+	    Explicit caller configurations take precedence over generated defaults.
+
+	Args:
+	    df (pd.DataFrame): Dataframe displayed by the editor.
+	    existing_config (Dict[str, object]): Optional specialized caller configuration preserved in
+	        the returned mapping.
+
+	Returns:
+	    Dict[str, object]: Streamlit column configuration keyed by dataframe column name.
+	"""
+	throw_if( 'df', df )
+	column_config = dict( existing_config ) if existing_config else { }
+	profiles = profile_dataframe_schema( df )
+	for column in df.columns:
+		if column in column_config:
+			continue
+		series = df[ column ]
+		if profiles[ column ][ 'analytical_role' ] != 'numeric':
+			continue
+		if pd.api.types.is_float_dtype( series ):
+			column_config[ column ] = st.column_config.NumberColumn( str( column ),
+				format='localized', step=0.01 )
+		elif pd.api.types.is_integer_dtype( series ) and not pd.api.types.is_bool_dtype( series ):
+			column_config[ column ] = st.column_config.NumberColumn( str( column ),
+				format='localized', step=1 )
+	return column_config
+
 # -------- Expander Utilities
 
-def set_set_blue_divider( ) -> None:
+def set_blue_divider( ) -> None:
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 
 def _promote_loader_documents( documents: List[ Document ] | None, active_loader: str ) -> int:
