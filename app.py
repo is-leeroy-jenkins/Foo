@@ -16873,12 +16873,6 @@ elif mode == 'Data Management':
 			'🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
 
 		st.divider( )
-		tables = list_tables( )
-		if not tables:
-			st.info( 'No tables available.' )
-		else:
-			table = st.selectbox( 'Table', tables )
-			df_full = read_table( table )
 		
 		# --- UPLOAD TAB
 		with tabs[ 0 ]:
