@@ -4564,7 +4564,6 @@ elif mode == 'Retrieval':
 				             'Battle of Midway'), )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				wiki_language = st.text_input( 'Language Code',
 					value=st.session_state.get( 'wikipedia_language', 'en' ),
@@ -4586,12 +4585,12 @@ elif mode == 'Retrieval':
 			            'Optional only: LANGSMITH_API_KEY for tracing.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				wiki_submit = st.button( 'Submit', key='wikipedia_submit' )
+				wiki_submit = st.button( 'Submit', key='wikipedia_submit', width='stretch' )
 			
 			with b2:
-				st.button( 'Clear', key='wikipedia_clear', on_click=_clear_wikipedia_state )
+				st.button( 'Clear', key='wikipedia_clear', on_click=_clear_wikipedia_state,
+					width='stretch' )
 			
 			if wiki_submit:
 				try:
@@ -4674,7 +4673,6 @@ elif mode == 'Retrieval':
 				             'filetype:pdf appropriations law'), )
 			
 			c1, c2, c3 = st.columns( 3 )
-			
 			with c1:
 				google_num_results = st.number_input( 'Results / Request', min_value=1,
 					max_value=10,
@@ -4694,7 +4692,6 @@ elif mode == 'Retrieval':
 					key='googlesearch_timeout' )
 			
 			c4, c5 = st.columns( 2 )
-			
 			with c4:
 				google_exact_terms = st.text_input( 'Exact Terms',
 					value=st.session_state.get( 'googlesearch_exact_terms', '' ),
@@ -4706,7 +4703,6 @@ elif mode == 'Retrieval':
 					key='googlesearch_exclude_terms' )
 			
 			c6, c7, c8 = st.columns( 3 )
-			
 			with c6:
 				google_file_type = st.text_input( 'File Type',
 					value=st.session_state.get( 'googlesearch_file_type', '' ),
@@ -4724,7 +4720,6 @@ elif mode == 'Retrieval':
 					key='googlesearch_safe' )
 			
 			c9, c10, c11 = st.columns( 3 )
-			
 			with c9:
 				google_gl = st.text_input( 'Country (gl)',
 					value=st.session_state.get( 'googlesearch_gl', '' ), key='googlesearch_gl',
@@ -4742,7 +4737,6 @@ elif mode == 'Retrieval':
 					key='googlesearch_search_type' )
 			
 			c12, c13 = st.columns( 2 )
-			
 			with c12:
 				google_site_search = st.text_input( 'Site Search',
 					value=st.session_state.get( 'googlesearch_site_search', '' ),
@@ -4759,7 +4753,6 @@ elif mode == 'Retrieval':
 				placeholder='date' )
 			
 			c14, c15 = st.columns( 2 )
-			
 			with c14:
 				google_img_size = st.selectbox( 'Image Size',
 					options=[ '', 'icon', 'small', 'medium', 'large', 'xlarge', 'xxlarge',
@@ -4777,7 +4770,6 @@ elif mode == 'Retrieval':
 					key='googlesearch_img_type', disabled=(google_search_type != 'image') )
 			
 			c16, c17 = st.columns( 2 )
-			
 			with c16:
 				google_img_color_type = st.selectbox( 'Image Color Type',
 					options=[ '', 'color', 'gray', 'mono', 'trans' ],
@@ -4797,7 +4789,6 @@ elif mode == 'Retrieval':
 					disabled=(google_search_type != 'image') )
 			
 			c18, c19 = st.columns( 2 )
-			
 			with c18:
 				google_api_key = st.text_input( 'API Key', value='', type='password',
 					key='googlesearch_api_key',
@@ -4812,10 +4803,10 @@ elif mode == 'Retrieval':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				google_submit = st.button( 'Submit', key='googlesearch_submit' )
+				google_submit = st.button( 'Submit', key='googlesearch_submit', width='stretch' )
 			with b2:
 				st.button( 'Clear', key='googlesearch_clear',
-					on_click=_clear_googlesearch_state )
+					on_click=_clear_googlesearch_state, width='stretch' )
 
 		# ----------------------------
 		# -------- Expander (Open Science)
@@ -4871,10 +4862,10 @@ elif mode == 'Retrieval':
 			b1, b2 = st.columns( 2 )
 			with b1:
 				openscience_submit = st.button( 'Submit', key='openscience_submit',
-					use_container_width=True )
+					width='stretch' )
 			with b2:
 				st.button( 'Clear', key='openscience_clear', on_click=_clear_openscience_state,
-					use_container_width=True )
+					width='stretch' )
 
 		# ----------------------------
 		# -------- Expander (Gov Info)
@@ -4968,11 +4959,11 @@ elif mode == 'Retrieval':
 			
 			with b1:
 				govinfo_submit = st.button( 'Submit', key='govinfo_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				govinfo_clear = st.button( 'Clear', key='govinfo_clear',
-					on_click=_clear_govinfo_state, use_container_width=True )
+					on_click=_clear_govinfo_state, use_container_width=True, width='stretch' )
 		
 			result = st.session_state.get( 'govinfo_results', { } )
 			
@@ -5152,7 +5143,6 @@ elif mode == 'Retrieval':
 				key='congress_number' )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				congress_bill_type = st.selectbox( 'Bill Type',
 					options=[ '', 'hr', 's', 'hjres', 'sjres', 'hconres', 'sconres', 'hres',
@@ -5168,7 +5158,6 @@ elif mode == 'Retrieval':
 					key='congress_bill_number' )
 			
 			c3, c4 = st.columns( 2 )
-			
 			with c3:
 				congress_law_type = st.selectbox( 'Law Type', options=[ '', 'pub', 'priv' ],
 					index=[ '', 'pub', 'priv' ].index(
@@ -5182,7 +5171,6 @@ elif mode == 'Retrieval':
 					key='congress_law_number' )
 			
 			c5, c6 = st.columns( 2 )
-			
 			with c5:
 				congress_report_type = st.selectbox( 'Report Type',
 					options=[ '', 'hrpt', 'srpt', 'erpt' ],
@@ -5197,7 +5185,6 @@ elif mode == 'Retrieval':
 					key='congress_report_number' )
 			
 			c7, c8 = st.columns( 2 )
-			
 			with c7:
 				congress_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
 					value=int( st.session_state.get( 'congress_offset', 0 ) ), step=1,
@@ -5215,7 +5202,6 @@ elif mode == 'Retrieval':
 				key='congress_sort' )
 			
 			c9, c10 = st.columns( 2 )
-			
 			with c9:
 				congress_from_datetime = st.text_input( 'From DateTime (ISO)',
 					value=st.session_state.get( 'congress_from_datetime', '' ),
@@ -5239,11 +5225,11 @@ elif mode == 'Retrieval':
 			
 			with b1:
 				congress_submit = st.button( 'Submit', key='congress_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				congress_clear = st.button( 'Clear', key='congress_clear',
-					on_click=_clear_congress_state, use_container_width=True )
+					on_click=_clear_congress_state, use_container_width=True, width='stretch' )
 		
 			if congress_submit:
 				try:
@@ -5432,11 +5418,11 @@ elif mode == 'Retrieval':
 			
 			with b1:
 				ia_submit = st.button( 'Submit', key='internetarchive_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				ia_clear = st.button( 'Clear', key='internetarchive_clear',
-					on_click=_clear_internetarchive_state, use_container_width=True )
+					on_click=_clear_internetarchive_state, use_container_width=True, width='stretch' )
 		
 			result = st.session_state.get( 'internetarchive_results', { } )
 			
@@ -5604,7 +5590,6 @@ elif mode == 'Retrieval':
 				placeholder='Example: United_Petroleum' )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				grokipedia_limit = st.number_input( 'Limit', min_value=1, max_value=100,
 					value=int( st.session_state.get( 'grokipedia_limit', 12 ) ), step=1,
@@ -5620,14 +5605,13 @@ elif mode == 'Retrieval':
 				key='grokipedia_include_content' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				grokipedia_submit = st.button( 'Submit', key='grokipedia_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				grokipedia_clear = st.button( 'Clear', key='grokipedia_clear',
-					on_click=_clear_grokipedia_state, use_container_width=True )
+					on_click=_clear_grokipedia_state, use_container_width=True, width='stretch' )
 		
 			should_fetch_grokipedia = False
 			
@@ -5640,7 +5624,6 @@ elif mode == 'Retrieval':
 			if should_fetch_grokipedia:
 				try:
 					f = Grokipedia( )
-					
 					result = f.fetch(
 						mode=str( st.session_state.get( 'grokipedia_mode', 'search' ) ),
 						query=str( st.session_state.get( 'grokipedia_query', '' ) ),
@@ -5666,7 +5649,6 @@ elif mode == 'Retrieval':
 			else:
 				mode_value = result.get( 'mode', '' ) if isinstance( result, dict ) else ''
 				data = result.get( 'data', { } ) if isinstance( result, dict ) else { }
-				
 				st.markdown( '#### Request Metadata' )
 				st.json( { 'mode': result.get( 'mode', '' ), 'url': result.get( 'url', '' ),
 					'params': result.get( 'params', { } ),
@@ -5674,9 +5656,7 @@ elif mode == 'Retrieval':
 					
 				if mode_value == 'search':
 					st.markdown( '#### Search Results' )
-					
 					items: List[ Dict[ str, Any ] ] = [ ]
-					
 					if isinstance( data, list ):
 						items = [ item for item in data if isinstance( item, dict ) ]
 					elif isinstance( data, dict ):
@@ -5712,7 +5692,6 @@ elif mode == 'Retrieval':
 								
 							with st.container( border=True ):
 								st.markdown( f'**{index}. {title_value}**' )
-								
 								meta_parts: List[ str ] = [ ]
 								
 								if slug_value:
@@ -5821,14 +5800,13 @@ elif mode == 'Retrieval':
 				key='jupyter_notebook_traceback' )
 			
 			b1, b2, b3 = st.columns( 3 )
-			
 			with b1:
 				jupyter_submit = st.button( 'Submit', key='jupyter_notebook_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				jupyter_clear = st.button( 'Clear', key='jupyter_notebook_clear',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b3:
 				can_save = (st.session_state.get(
@@ -5839,10 +5817,10 @@ elif mode == 'Retrieval':
 				if can_save:
 					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='jupyter_notebook_loader_output.txt', mime='text/plain',
-						key='jupyter_notebook_save', use_container_width=True )
+						key='jupyter_notebook_save', use_container_width=True, width='stretch' )
 				else:
 					st.button( 'Save', key='jupyter_notebook_save_disabled', disabled=True,
-						use_container_width=True )
+						use_container_width=True, width='stretch' )
 
 		# ----------------------------
 		# -------- Expander (Google Cloud File)
@@ -5861,14 +5839,13 @@ elif mode == 'Retrieval':
 				help='The exact object name in the Google Cloud Storage bucket.' )
 			
 			b1, b2, b3 = st.columns( 3 )
-			
 			with b1:
 				google_cloud_file_submit = st.button( 'Submit', key='google_cloud_file_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				google_cloud_file_clear = st.button( 'Clear', key='google_cloud_file_clear',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b3:
 				can_save = (st.session_state.get(
@@ -5879,10 +5856,10 @@ elif mode == 'Retrieval':
 				if can_save:
 					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='google_cloud_file_loader_output.txt', mime='text/plain',
-						key='google_cloud_file_save', use_container_width=True )
+						key='google_cloud_file_save', use_container_width=True, width='stretch' )
 				else:
 					st.button( 'Save', key='google_cloud_file_save_disabled', disabled=True,
-						use_container_width=True )
+						use_container_width=True, width='stretch' )
 
 		# ----------------------------
 		# -------- Expander (AWS S3 File)
@@ -5909,14 +5886,13 @@ elif mode == 'Retrieval':
 				key='aws_file_session_token' )
 			
 			b1, b2, b3 = st.columns( 3 )
-			
 			with b1:
 				aws_file_submit = st.button( 'Submit', key='aws_file_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				aws_file_clear = st.button( 'Clear', key='aws_file_clear',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b3:
 				can_save = (st.session_state.get(
@@ -5927,10 +5903,10 @@ elif mode == 'Retrieval':
 				if can_save:
 					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='aws_s3_file_loader_output.txt', mime='text/plain',
-						key='aws_file_save', use_container_width=True )
+						key='aws_file_save', use_container_width=True, width='stretch' )
 				else:
 					st.button( 'Save', key='aws_file_save_disabled', disabled=True,
-						use_container_width=True )
+						use_container_width=True, width='stretch' )
 
 		# ----------------------------
 		# -------- Expander (OneDrive)
@@ -5954,11 +5930,11 @@ elif mode == 'Retrieval':
 			b1, b2, b3 = st.columns( 3 )
 			with b1:
 				onedrive_submit = st.button( 'Submit', key='onedrive_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				onedrive_clear = st.button( 'Clear', key='onedrive_clear',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b3:
 				can_save = (st.session_state.get(
@@ -5969,10 +5945,10 @@ elif mode == 'Retrieval':
 				if can_save:
 					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='onedrive_loader_output.txt', mime='text/plain',
-						key='onedrive_save', use_container_width=True )
+						key='onedrive_save', use_container_width=True, width='stretch' )
 				else:
 					st.button( 'Save', key='onedrive_save_disabled', disabled=True,
-						use_container_width=True )
+						use_container_width=True, width='stretch' )
 
 		# ----------------------------
 		# -------- Expander (Google Speech-to-Text)
@@ -5997,11 +5973,11 @@ elif mode == 'Retrieval':
 			b1, b2, b3 = st.columns( 3 )
 			with b1:
 				google_speech_submit = st.button( 'Submit', key='google_speech_to_text_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				google_speech_clear = st.button( 'Clear', key='google_speech_to_text_clear',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b3:
 				can_save = (st.session_state.get(
@@ -6012,11 +5988,11 @@ elif mode == 'Retrieval':
 				if can_save:
 					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='google_speech_to_text_loader_output.txt', mime='text/plain',
-						key='google_speech_to_text_save', use_container_width=True )
+						key='google_speech_to_text_save', use_container_width=True, width='stretch' )
 				else:
 					st.button( 'Save', key='google_speech_to_text_save_disabled',
 						disabled=True,
-						use_container_width=True )
+						use_container_width=True, width='stretch' )
 
 		# ----------------------------
 		# -------- Expander  (AWS S3 Bucket)
@@ -6046,11 +6022,11 @@ elif mode == 'Retrieval':
 			b1, b2, b3 = st.columns( 3 )
 			with b1:
 				aws_bucket_submit = st.button( 'Submit', key='aws_bucket_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				aws_bucket_clear = st.button( 'Clear', key='aws_bucket_clear',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b3:
 				can_save = (st.session_state.get(
@@ -6061,10 +6037,10 @@ elif mode == 'Retrieval':
 				if can_save:
 					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='aws_s3_bucket_loader_output.txt', mime='text/plain',
-						key='aws_bucket_save', use_container_width=True )
+						key='aws_bucket_save', use_container_width=True, width='stretch' )
 				else:
 					st.button( 'Save', key='aws_bucket_save_disabled', disabled=True,
-						use_container_width=True )
+						use_container_width=True, width='stretch' )
 
 		# ----------------------------
 		# -------- Expander (Google Cloud Bucket)
@@ -6086,14 +6062,13 @@ elif mode == 'Retrieval':
 				help='Skip objects that fail to load instead of aborting the whole request.' )
 			
 			b1, b2, b3 = st.columns( 3 )
-			
 			with b1:
 				google_bucket_submit = st.button( 'Submit', key='google_bucket_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				google_bucket_clear = st.button( 'Clear', key='google_bucket_clear',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b3:
 				can_save = (st.session_state.get(
@@ -6104,10 +6079,10 @@ elif mode == 'Retrieval':
 				if can_save:
 					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='google_bucket_loader_output.txt', mime='text/plain',
-						key='google_bucket_save', use_container_width=True )
+						key='google_bucket_save', use_container_width=True, width='stretch' )
 				else:
 					st.button( 'Save', key='google_bucket_save_disabled', disabled=True,
-						use_container_width=True )
+						use_container_width=True, width='stretch' )
 		
 	# ------------------------------------------------------------------
 	# Shared result selection
@@ -7252,11 +7227,11 @@ elif mode == 'Geospatial':
 			b1, b2 = st.columns( 2 )
 			with b1:
 				googlegeocoding_submit = st.button( 'Submit', key='googlegeocoding_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				st.button( 'Clear', key='googlegeocoding_clear',
-					on_click=_clear_googlegeocoding_state, use_container_width=True )
+					on_click=_clear_googlegeocoding_state, use_container_width=True, width='stretch' )
 			
 			if googlegeocoding_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Geocoding'
@@ -7339,7 +7314,6 @@ elif mode == 'Geospatial':
 				placeholder='1600 Pennsylvania Ave NW, Washington, DC' )
 			
 			coord_c1, coord_c2 = st.columns( 2 )
-			
 			with coord_c1:
 				googlemaps_latitude = st.number_input( 'Latitude',
 					value=float( st.session_state.get( 'googlemaps_latitude', 38.8895 ) ),
@@ -7360,7 +7334,6 @@ elif mode == 'Geospatial':
 				             'Washington, DC 20500') )
 			
 			route_c1, route_c2 = st.columns( 2 )
-			
 			with route_c1:
 				googlemaps_origin = st.text_input( 'Origin',
 					value=st.session_state.get( 'googlemaps_origin', '' ),
@@ -7376,7 +7349,6 @@ elif mode == 'Geospatial':
 					placeholder='Washington, DC' )
 			
 			opt_c1, opt_c2 = st.columns( 2 )
-			
 			with opt_c1:
 				googlemaps_travel_mode = st.selectbox( 'Travel Mode',
 					options=GOOGLEMAPS_TRAVEL_MODES, index=GOOGLEMAPS_TRAVEL_MODES.index(
@@ -7397,15 +7369,14 @@ elif mode == 'Geospatial':
 			            'forward geocoding, reverse geocoding, address validation, '
 			            'and directions.' )
 			
-			m1, m2 = st.columns( 2 )
-			
+			m1, m2 = st.columns( 2 )			
 			with m1:
 				googlemaps_submit = st.button( 'Submit', key='googlemaps_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with m2:
 				st.button( 'Clear', key='googlemaps_clear', on_click=_clear_googlemaps_state,
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			if googlemaps_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Google Maps'
