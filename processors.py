@@ -128,7 +128,7 @@ class Processor( ):
 	"""Processor processing component.
 	
 	Purpose:
-		Initializes shared state used by Chonky text, Word, NLTK, and PDF parser subclasses,
+		Initializes shared state used by text, Word, NLTK, and PDF parser subclasses,
 		including token caches, line/page buffers, vocabulary stores, NLP helpers,
 		and cleaned-text fields used across the processing workflow.
 		
@@ -225,21 +225,21 @@ class TextParser( Processor ):
 		Analysis, and Tokenization tabs.
 	
 	Attributes:
-		lowercase: Runtime state used by ``TextParser`` during Chonky processing operations.
-		cleaned_text: Runtime state used by ``TextParser`` during Chonky processing operations.
-		cleaned_lines: Runtime state used by ``TextParser`` during Chonky processing operations.
-		cleaned_tokens: Runtime state used by ``TextParser`` during Chonky processing operations.
-		cleaned_pages: Runtime state used by ``TextParser`` during Chonky processing operations.
-		cleaned_html: Runtime state used by ``TextParser`` during Chonky processing operations.
-		conditional_distribution: Runtime state used by ``TextParser`` during Chonky processing
+		lowercase: Runtime state used by ``TextParser`` during processing operations.
+		cleaned_text: Runtime state used by ``TextParser`` during processing operations.
+		cleaned_lines: Runtime state used by ``TextParser`` during processing operations.
+		cleaned_tokens: Runtime state used by ``TextParser`` during processing operations.
+		cleaned_pages: Runtime state used by ``TextParser`` during processing operations.
+		cleaned_html: Runtime state used by ``TextParser`` during processing operations.
+		conditional_distribution: Runtime state used by ``TextParser`` during processing
 			operations.
-		PUNCTUATION: Runtime state used by ``TextParser`` during Chonky processing operations.
-		CONTROL_CHARACTERS: Runtime state used by ``TextParser`` during Chonky processing
+		PUNCTUATION: Runtime state used by ``TextParser`` during processing operations.
+		CONTROL_CHARACTERS: Runtime state used by ``TextParser`` during processing
 			operations.
-		DELIMITERS: Runtime state used by ``TextParser`` during Chonky processing operations.
-		DIGITS: Runtime state used by ``TextParser`` during Chonky processing operations.
-		SYMBOLS: Runtime state used by ``TextParser`` during Chonky processing operations.
-		NUMERALS: Runtime state used by ``TextParser`` during Chonky processing operations.
+		DELIMITERS: Runtime state used by ``TextParser`` during processing operations.
+		DIGITS: Runtime state used by ``TextParser`` during processing operations.
+		SYMBOLS: Runtime state used by ``TextParser`` during processing operations.
+		NUMERALS: Runtime state used by ``TextParser`` during processing operations.
 	"""
 	lowercase: Optional[ str ]
 	cleaned_text: Optional[ str ]
@@ -328,7 +328,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``load text`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			filepath: Filepath value used by the processing operation. Expected type: ``str``.
@@ -488,7 +488,7 @@ class TextParser( Processor ):
 		"""Remove extraction errors.
 		
 		Purpose:
-			Repairs recognized mojibake sequences and removes replacement characters, null bytes,
+			Repairs recognized sequences and removes replacement characters, null bytes,
 			invisible formatting artifacts, surrogate characters, private-use extraction glyphs,
 			and unsupported control characters while preserving valid text, punctuation, numbers,
 			line boundaries, tabs, and document order.
@@ -1279,7 +1279,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``create frequency distribution`` operation for the ``TextParser``
 			workflow, updating instance state where required and returning the processed result
-			used by downstream Chonky loading, processing, analysis, tokenization, or embedding
+			used by downstream loading, processing, analysis, tokenization, or embedding
 			steps.
 		
 		Args:
@@ -1314,7 +1314,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``create vocabulary`` operation for the ``TextParser`` workflow,
 			updating instance state where required and returning the processed result used by
-			downstream Chonky loading, processing, analysis, tokenization, or embedding steps.
+			downstream loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			tokens: Tokens value used by the processing operation. Expected type: ``List[ str ]``.
@@ -1347,7 +1347,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``create wordbag`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			tokens: Tokens value used by the processing operation. Expected type: ``List[ str ]``.
@@ -1422,7 +1422,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``clean file`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			filepath: Filepath value used by the processing operation. Expected type: ``str``.
@@ -1464,7 +1464,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``clean files`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			source: Source value used by the processing operation. Expected type: ``str``.
@@ -1521,7 +1521,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``chunk files`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			source: Source value used by the processing operation. Expected type: ``str``.
@@ -1577,7 +1577,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``chunk data`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			filepath: Filepath value used by the processing operation. Expected type: ``str``.
@@ -1626,7 +1626,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``chunk datasets`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			source: Source value used by the processing operation. Expected type: ``str``.
@@ -1694,7 +1694,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``convert jsonl`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			source: Source value used by the processing operation. Expected type: ``str``.
@@ -1754,7 +1754,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``encode sentences`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			tokens: Tokens value used by the processing operation. Expected type: ``List[ str ]``.
@@ -1790,7 +1790,7 @@ class TextParser( Processor ):
 		Purpose:
 			Executes the ``semantic search`` operation for the ``TextParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			query: Query value used by the processing operation. Expected type: ``str``.
@@ -1836,12 +1836,12 @@ class NltkParser( Processor ):
 		analysis workflows.
 	
 	Attributes:
-		word_tokens: Runtime state used by ``NltkParser`` during Chonky processing operations.
-		sentence_tokens: Runtime state used by ``NltkParser`` during Chonky processing operations.
-		stemmed_tokens: Runtime state used by ``NltkParser`` during Chonky processing operations.
-		lemmatized_tokens: Runtime state used by ``NltkParser`` during Chonky processing.
-		tagged_tokens: Runtime state used by ``NltkParser`` during Chonky processing operations.
-		named_entities: Runtime state used by ``NltkParser`` during Chonky processing operations.
+		word_tokens: Runtime state used by ``NltkParser`` during processing operations.
+		sentence_tokens: Runtime state used by ``NltkParser`` during processing operations.
+		stemmed_tokens: Runtime state used by ``NltkParser`` during processing operations.
+		lemmatized_tokens: Runtime state used by ``NltkParser`` during processing.
+		tagged_tokens: Runtime state used by ``NltkParser`` during processing operations.
+		named_entities: Runtime state used by ``NltkParser`` during processing operations.
 	"""
 	word_tokens: Optional[ List[ str ] ]
 	sentence_tokens: Optional[ List[ str ] ]
@@ -1867,7 +1867,7 @@ class NltkParser( Processor ):
 		self.named_entities = [ ]
 	
 	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+		"""Returns a list of class members.
 		
 		Purpose:
 			Returns the public member names exposed by the parser for introspection, diagnostics,
@@ -1887,7 +1887,7 @@ class NltkParser( Processor ):
 		Purpose:
 			Executes the ``initialize resources`` operation for the ``NltkParser`` workflow,
 			updating instance state where required and returning the processed result used by
-			downstream Chonky loading, processing, analysis, tokenization, or embedding steps.
+			downstream loading, processing, analysis, tokenization, or embedding steps.
 		
 		Returns:
 			None: Result produced by the processing operation.
@@ -1924,7 +1924,7 @@ class NltkParser( Processor ):
 		Purpose:
 			Executes the ``word tokenizer`` operation for the ``NltkParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -1955,7 +1955,7 @@ class NltkParser( Processor ):
 		Purpose:
 			Executes the ``sentence tokenizer`` operation for the ``NltkParser`` workflow,
 			updating instance state where required and returning the processed result used by
-			downstream Chonky loading, processing, analysis, tokenization, or embedding steps.
+			downstream loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -1985,7 +1985,7 @@ class NltkParser( Processor ):
 		Purpose:
 			Executes the ``word stemmer`` operation for the ``NltkParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -2018,7 +2018,7 @@ class NltkParser( Processor ):
 		Purpose:
 			Executes the ``word lemmatizer`` operation for the ``NltkParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -2051,7 +2051,7 @@ class NltkParser( Processor ):
 		Purpose:
 			Executes the ``pos tagger`` operation for the ``NltkParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -2082,7 +2082,7 @@ class NltkParser( Processor ):
 		Purpose:
 			Executes the ``named entity recognition`` operation for the ``NltkParser`` workflow,
 			updating instance state where required and returning the processed result used by
-			downstream Chonky loading, processing, analysis, tokenization, or embedding steps.
+			downstream loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -2124,7 +2124,7 @@ class NltkParser( Processor ):
 		Purpose:
 			Executes the ``chunk words`` operation for the ``NltkParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -2163,7 +2163,7 @@ class NltkParser( Processor ):
 		Purpose:
 			Executes the ``chunk sentences`` operation for the ``NltkParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -2201,18 +2201,18 @@ class WordParser( Processor ):
 	
 	Purpose:
 		Provides Microsoft Word document parsing utilities that extract paragraphs, tables,
-		metadata, and cleaned text for downstream Chonky processing and analysis.
+		metadata, and cleaned text for downstream processing and analysis.
 	
 	Attributes:
-		sentences: Runtime state used by ``WordParser`` during Chonky processing operations.
-		cleaned_sentences: Runtime state used by ``WordParser`` during Chonky processing
+		sentences: Runtime state used by ``WordParser`` during processing operations.
+		cleaned_sentences: Runtime state used by ``WordParser`` during processing
 			operations.
-		document: Runtime state used by ``WordParser`` during Chonky processing operations.
-		raw_text: Runtime state used by ``WordParser`` during Chonky processing operations.
-		paragraphs: Runtime state used by ``WordParser`` during Chonky processing operations.
-		file_path: Runtime state used by ``WordParser`` during Chonky processing operations.
-		vocabulary: Runtime state used by ``WordParser`` during Chonky processing operations.
-		document: Runtime state used by ``WordParser`` during Chonky processing operations.
+		document: Runtime state used by ``WordParser`` during processing operations.
+		raw_text: Runtime state used by ``WordParser`` during processing operations.
+		paragraphs: Runtime state used by ``WordParser`` during processing operations.
+		file_path: Runtime state used by ``WordParser`` during processing operations.
+		vocabulary: Runtime state used by ``WordParser`` during processing operations.
+		document: Runtime state used by ``WordParser`` during processing operations.
 	"""
 	sentences: Optional[ List[ str ] ]
 	cleaned_sentences: Optional[ List[ str ] ]
@@ -2243,7 +2243,7 @@ class WordParser( Processor ):
 		self.vocabulary = set( )
 	
 	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+		"""Returns a list of class members.
 		
 		Purpose:
 			Returns the public member names exposed by the parser for introspection, diagnostics,
@@ -2262,7 +2262,7 @@ class WordParser( Processor ):
 		Purpose:
 			Executes the ``extract text`` operation for the ``WordParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			num: Num value used by the processing operation. Defaults to ``1``.
@@ -2290,7 +2290,7 @@ class WordParser( Processor ):
 		Purpose:
 			Executes the ``split sentences`` operation for the ``WordParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Returns:
 			List[ str ] | None: Result produced by the processing operation.
@@ -2316,7 +2316,7 @@ class WordParser( Processor ):
 		Purpose:
 			Executes the ``clean sentences`` operation for the ``WordParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Returns:
 			List[ str ] | None: Result produced by the processing operation.
@@ -2345,7 +2345,7 @@ class WordParser( Processor ):
 		Purpose:
 			Executes the ``create vocabulary`` operation for the ``WordParser`` workflow,
 			updating instance state where required and returning the processed result used by
-			downstream Chonky loading, processing, analysis, tokenization, or embedding steps.
+			downstream loading, processing, analysis, tokenization, or embedding steps.
 		
 		Returns:
 			set | None: Result produced by the processing operation.
@@ -2377,7 +2377,7 @@ class WordParser( Processor ):
 		Purpose:
 			Executes the ``compute frequency distribution`` operation for the ``WordParser``
 			workflow, updating instance state where required and returning the processed result
-			used by downstream Chonky loading, processing, analysis, tokenization, or embedding
+			used by downstream loading, processing, analysis, tokenization, or embedding
 			steps.
 		
 		Returns:
@@ -2408,7 +2408,7 @@ class WordParser( Processor ):
 		Purpose:
 			Executes the ``summarize`` operation for the ``WordParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Returns:
 			List[ str ] | None: Result produced by the processing operation.
@@ -2429,13 +2429,13 @@ class PdfParser( Processor ):
 		and rebuild PDF text for downstream processing.
 	
 	Attributes:
-		strip_headers: Runtime state used by ``PdfParser`` during Chonky processing operations.
-		minimum_length: Runtime state used by ``PdfParser`` during Chonky processing operations.
-		extract_tables_enabled: Runtime state used by ``PdfParser`` during Chonky processing
+		strip_headers: Runtime state used by ``PdfParser`` during processing operations.
+		minimum_length: Runtime state used by ``PdfParser`` during processing operations.
+		extract_tables_enabled: Runtime state used by ``PdfParser`` during processing
 			operations.
-		extracted_lines: Runtime state used by ``PdfParser`` during Chonky processing operations.
-		extracted_tables: Runtime state used by ``PdfParser`` during Chonky processing operations.
-		extracted_pages: Runtime state used by ``PdfParser`` during Chonky processing operations.
+		extracted_lines: Runtime state used by ``PdfParser`` during processing operations.
+		extracted_tables: Runtime state used by ``PdfParser`` during processing operations.
+		extracted_pages: Runtime state used by ``PdfParser`` during processing operations.
 	"""
 	strip_headers: Optional[ bool ]
 	minimum_length: Optional[ int ]
@@ -2475,7 +2475,7 @@ class PdfParser( Processor ):
 		self.page = ''
 	
 	def __dir__( self ) -> List[ str ] | None:
-		"""Dir.
+		"""Returns a list of class members.
 		
 		Purpose:
 			Returns the public member names exposed by the parser for introspection, diagnostics,
@@ -2499,7 +2499,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``geometric extract`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
@@ -2535,7 +2535,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``extract pages`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
@@ -2619,7 +2619,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``remove repeats`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			pages: Pages value used by the processing operation. Expected type: ``List[ dict ]``.
@@ -2718,7 +2718,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``clean artifacts`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -2837,7 +2837,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``rejoin hyphenation`` operation for the ``PdfParser`` workflow,
 			updating instance state where required and returning the processed result used by
-			downstream Chonky loading, processing, analysis, tokenization, or embedding steps.
+			downstream loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			text: Text value used by the processing operation. Expected type: ``str``.
@@ -2945,7 +2945,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``rebuild pages`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			pages: Pages value used by the processing operation. Expected type: ``List[ dict ]``.
@@ -3011,7 +3011,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``extract lines`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
@@ -3044,7 +3044,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``extract text`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
@@ -3074,7 +3074,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``extract tables`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			path: Path value used by the processing operation. Expected type: ``str``.
@@ -3115,7 +3115,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``export csv`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			tables: Tables value used by the processing operation. Expected type: ``List[
@@ -3149,7 +3149,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``export text`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			lines: Lines value used by the processing operation. Expected type: ``List[ str ]``.
@@ -3184,7 +3184,7 @@ class PdfParser( Processor ):
 		Purpose:
 			Executes the ``export excel`` operation for the ``PdfParser`` workflow, updating
 			instance state where required and returning the processed result used by downstream
-			Chonky loading, processing, analysis, tokenization, or embedding steps.
+			loading, processing, analysis, tokenization, or embedding steps.
 		
 		Args:
 			tables: Tables value used by the processing operation. Expected type: ``List[
