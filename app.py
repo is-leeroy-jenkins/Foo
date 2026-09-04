@@ -1609,7 +1609,7 @@ if mode == 'Loading':
 	# ------------------------------------------------------------------
 	# LEFT COLUMN - LOADERS
 	# ------------------------------------------------------------------
-	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='small', border=True )
 	with left:
 		_loader_msg = st.session_state.pop( '_loader_status', None )
 		if isinstance( _loader_msg, str ) and _loader_msg.strip( ):
