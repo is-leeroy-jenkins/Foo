@@ -11934,6 +11934,9 @@ elif mode == 'Astronomical':
 	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 
 	with left:
+		# ----------------------------
+		#  US Naval Observatory
+		# ----------------------------
 		with st.expander( label='US Naval Observatory', icon='⚓', expanded=False ):
 			if 'navalobservatory_results' not in st.session_state:
 				st.session_state[ 'navalobservatory_results' ] = { }
@@ -11963,7 +11966,6 @@ elif mode == 'Astronomical':
 				key='navalobservatory_time', help='USNO time parameter in 24-hour format.' )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				naval_latitude = st.number_input( 'Latitude', min_value=-90.0, max_value=90.0,
 					value=float( st.session_state.get( 'navalobservatory_latitude', 38.9072
@@ -11993,10 +11995,13 @@ elif mode == 'Astronomical':
 			with b2:
 				naval_clear = st.button( 'Clear', key='navalobservatory_clear',
 					on_click=_clear_navalobservatory_state, use_container_width=True )
-		
 
 			if naval_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'US Naval Observatory'
+
+		# ----------------------------
+		#  Satellite Center
+		# ----------------------------
 		with st.expander( label='Satellite Center', icon='🛰️', expanded=False ):
 			if 'satellitecenter_results' not in st.session_state:
 				st.session_state[ 'satellitecenter_results' ] = { }
@@ -12061,7 +12066,6 @@ elif mode == 'Astronomical':
 				disabled=(satellite_mode != 'locations') )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				satellite_start_time = st.text_input( 'Start Time (UTC)',
 					value=st.session_state.get( 'satellitecenter_start_time', '' ),
@@ -12075,7 +12079,6 @@ elif mode == 'Astronomical':
 					disabled=(satellite_mode != 'locations') )
 			
 			c3, c4, c5 = st.columns( 3 )
-			
 			with c3:
 				satellite_coordinate_systems = st.text_input( 'Coordinate Systems',
 					value=st.session_state.get( 'satellitecenter_coordinate_systems', 'gse' ),
@@ -12109,9 +12112,12 @@ elif mode == 'Astronomical':
 				st.button( 'Clear', key='satellitecenter_clear',
 					on_click=_clear_satellitecenter_state, use_container_width=True )
 		
-
 			if satellite_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Satellite Center'
+
+		# ----------------------------
+		#  Astro Catalog
+		# ----------------------------
 		with st.expander( label='Astro Catalog', icon='✨', expanded=False ):
 			if 'astrocatalog_results' not in st.session_state:
 				st.session_state[ 'astrocatalog_results' ] = { }
@@ -12151,7 +12157,6 @@ elif mode == 'Astronomical':
 				disabled=(astro_mode != 'object_query') )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				astro_quantity = st.text_input( 'Quantity',
 					value=st.session_state.get( 'astrocatalog_quantity', '' ),
@@ -12172,7 +12177,6 @@ elif mode == 'Astronomical':
 				disabled=(astro_mode != 'object_query') )
 			
 			c3, c4, c5 = st.columns( 3 )
-			
 			with c3:
 				astro_ra = st.text_input( 'RA',
 					value=st.session_state.get( 'astrocatalog_ra', '' ), key='astrocatalog_ra',
@@ -12190,7 +12194,6 @@ elif mode == 'Astronomical':
 					key='astrocatalog_radius', disabled=(astro_mode != 'cone_search') )
 			
 			c6, c7 = st.columns( 2 )
-			
 			with c6:
 				astro_format = st.selectbox( 'Format', options=[ 'json', 'csv', 'tsv' ],
 					index=[ 'json', 'csv', 'tsv' ].index(
@@ -12217,6 +12220,10 @@ elif mode == 'Astronomical':
 
 			if astro_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Astro Catalog'
+
+		# ----------------------------
+		#  Astro Query
+		# ----------------------------
 		with st.expander( label='Astro Query', icon='🔭', expanded=False ):
 			if 'astroquery_results' not in st.session_state:
 				st.session_state[ 'astroquery_results' ] = { }
@@ -12254,7 +12261,6 @@ elif mode == 'Astronomical':
 				disabled=(astroquery_mode == 'region_search') )
 			
 			c1, c2, c3 = st.columns( 3 )
-			
 			with c1:
 				astroquery_ra = st.text_input( 'RA',
 					value=st.session_state.get( 'astroquery_ra', '' ), key='astroquery_ra',
@@ -12274,7 +12280,6 @@ elif mode == 'Astronomical':
 					help='Cone-search radius around the RA/Dec sky position.' )
 			
 			c4, c5 = st.columns( 2 )
-			
 			with c4:
 				astroquery_radius_unit = st.selectbox( 'Radius Unit',
 					options=[ 'deg', 'arcmin', 'arcsec' ],
@@ -12305,6 +12310,10 @@ elif mode == 'Astronomical':
 
 			if astroquery_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Astro Query'
+
+		# ----------------------------
+		#  Star Map
+		# ----------------------------
 		with st.expander( label='Star Map', icon='⭐', expanded=False ):
 			if 'starmap_results' not in st.session_state:
 				st.session_state[ 'starmap_results' ] = { }
@@ -12344,7 +12353,6 @@ elif mode == 'Astronomical':
 				disabled=(starmap_mode != 'object_link') )
 			
 			c1, c2, c3 = st.columns( 3 )
-			
 			with c1:
 				starmap_ra = st.number_input( 'RA (hours)', min_value=0.0, max_value=24.0,
 					value=float( st.session_state.get( 'starmap_ra', 15.2976 ) ), step=0.0001,
@@ -12366,7 +12374,6 @@ elif mode == 'Astronomical':
 					help='Smaller values show a wider field; larger values zoom in.' )
 			
 			c4, c5 = st.columns( 2 )
-			
 			with c4:
 				starmap_image_source = st.selectbox( 'Image Source',
 					options=[ 'DSS2', 'SDSS', 'SDSS-III', 'GALEX', 'IRAS', 'RASS', 'H-Alpha' ],
@@ -12428,6 +12435,10 @@ elif mode == 'Astronomical':
 
 			if starmap_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Star Map'
+
+		# ----------------------------
+		#  Simbad
+		# ----------------------------
 		with st.expander( label='SIMBAD', icon='🌌', expanded=False ):
 			if 'simbad_results' not in st.session_state:
 				st.session_state[ 'simbad_results' ] = { }
@@ -12466,7 +12477,6 @@ elif mode == 'Astronomical':
 				disabled=(simbad_mode == 'region_search') )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				simbad_ra = st.text_input( 'Right Ascension',
 					value=st.session_state.get( 'simbad_ra', '02:31:49.09' ), key='simbad_ra',
@@ -12480,7 +12490,6 @@ elif mode == 'Astronomical':
 					placeholder='-23:22:53.3', disabled=(simbad_mode != 'region_search') )
 			
 			c3, c4, c5 = st.columns( 3 )
-			
 			with c3:
 				simbad_radius = st.number_input( 'Radius', min_value=0.001, max_value=60.0,
 					value=float( st.session_state.get( 'simbad_radius', 0.5 ) ), step=0.1,
@@ -12504,16 +12513,18 @@ elif mode == 'Astronomical':
 			            'and region_search for a cone search around sky coordinates.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				simbad_submit = st.button( 'Submit', key='simbad_submit' )
 			
 			with b2:
 				st.button( 'Clear', key='simbad_clear', on_click=_clear_simbad_state )
 		
-
 			if simbad_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'SIMBAD'
+
+		# ----------------------------
+		#  Space Weather
+		# ----------------------------
 		with st.expander( label='Space Weather', icon='☄️', expanded=False ):
 			if 'spaceweather_results' not in st.session_state:
 				st.session_state[ 'spaceweather_results' ] = { }
@@ -12550,7 +12561,6 @@ elif mode == 'Astronomical':
 				                              'query.' )
 			
 			d1, d2 = st.columns( 2 )
-			
 			with d1:
 				spaceweather_start_date = st.text_input( 'Start Date',
 					value=st.session_state.get( 'spaceweather_start_date', '2026-03-01' ),
@@ -12562,7 +12572,6 @@ elif mode == 'Astronomical':
 					key='spaceweather_end_date', placeholder='2026-03-15' )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				spaceweather_location = st.text_input( 'Location',
 					value=st.session_state.get( 'spaceweather_location', 'ALL' ),
@@ -12576,7 +12585,6 @@ elif mode == 'Astronomical':
 					disabled=(spaceweather_mode not in [ 'ips', 'cme_analysis' ]) )
 			
 			c3, c4 = st.columns( 2 )
-			
 			with c3:
 				spaceweather_notification_type = st.text_input( 'Notification Type',
 					value=st.session_state.get( 'spaceweather_notification_type', 'all' ),
@@ -12590,7 +12598,6 @@ elif mode == 'Astronomical':
 					disabled=(spaceweather_mode != 'cme_analysis') )
 			
 			c5, c6 = st.columns( 2 )
-			
 			with c5:
 				spaceweather_speed = st.number_input( 'Speed', min_value=0, max_value=5000,
 					value=int( st.session_state.get( 'spaceweather_speed', 0 ) ), step=10,
@@ -12604,7 +12611,6 @@ elif mode == 'Astronomical':
 					disabled=(spaceweather_mode != 'cme_analysis') )
 			
 			c7, c8, c9 = st.columns( 3 )
-			
 			with c7:
 				spaceweather_most_accurate_only = st.checkbox( 'Most Accurate Only',
 					value=bool(
@@ -12630,7 +12636,6 @@ elif mode == 'Astronomical':
 			            'cme_analysis with Catalog=ALL and Speed=500.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				spaceweather_submit = st.button( 'Submit', key='spaceweather_submit' )
 			
@@ -12641,6 +12646,10 @@ elif mode == 'Astronomical':
 
 			if spaceweather_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Space Weather'
+
+		# ----------------------------
+		#  Astro Catalog
+		# ----------------------------
 		with st.expander( label='Star Chart', icon='🪐', expanded=False ):
 			if 'starchart_results' not in st.session_state:
 				st.session_state[ 'starchart_results' ] = { }
@@ -12702,7 +12711,6 @@ elif mode == 'Astronomical':
 				disabled=(starchart_mode not in [ 'object_search', 'object_chart' ]) )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				starchart_ra = st.number_input( 'RA',
 					value=float( st.session_state.get( 'starchart_ra', 2.5302 ) ),
@@ -12716,7 +12724,6 @@ elif mode == 'Astronomical':
 					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ]) )
 			
 			c3, c4, c5 = st.columns( 3 )
-			
 			with c3:
 				starchart_zoom = st.number_input( 'Zoom', min_value=0, max_value=18,
 					value=int( st.session_state.get( 'starchart_zoom', 5 ) ), step=1,
@@ -12733,7 +12740,6 @@ elif mode == 'Astronomical':
 					key='starchart_height', disabled=(starchart_mode != 'static_chart') )
 			
 			c6, c7, c8 = st.columns( 3 )
-			
 			with c6:
 				starchart_image_source = st.selectbox( 'Image Source',
 					options=[ 'DSS2', 'SDSS' ], index=[ 'DSS2', 'SDSS' ].index(
@@ -12768,7 +12774,6 @@ elif mode == 'Astronomical':
 					disabled=(starchart_mode not in [ 'coordinate_chart', 'static_chart' ]) )
 			
 			c11, c12 = st.columns( 2 )
-			
 			with c11:
 				starchart_show_lines = st.checkbox( 'Show Lines',
 					value=bool( st.session_state.get( 'starchart_show_lines', True ) ),
@@ -12794,7 +12799,6 @@ elif mode == 'Astronomical':
 			            'static_chart with DSS2 and 900x450 output.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				starchart_submit = st.button( 'Submit', key='starchart_submit' )
 			
@@ -12804,6 +12808,10 @@ elif mode == 'Astronomical':
 
 			if starchart_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Star Chart'
+
+		# ----------------------------
+		#  Near Earth Object
+		# ----------------------------
 		with st.expander( label='Near Earth Objects', icon='☄️', expanded=False ):
 			if 'nearbyobjects_results' not in st.session_state:
 				st.session_state[ 'nearbyobjects_results' ] = { }
@@ -12862,7 +12870,6 @@ elif mode == 'Astronomical':
 				     'or fireball data.' )
 			
 			d1, d2 = st.columns( 2 )
-			
 			with d1:
 				nearby_start_date = st.text_input( 'Start Date',
 					value=st.session_state.get( 'nearbyobjects_start_date', '2026-03-01' ),
@@ -12884,7 +12891,6 @@ elif mode == 'Astronomical':
 				disabled=(nearby_mode not in [ 'object_lookup', 'nhats_object' ]) )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				nearby_query_type = st.selectbox( 'Query Type',
 					options=[ 'sstr', 'spk', 'des' ], index=[ 'sstr', 'spk', 'des' ].index(
@@ -12898,7 +12904,6 @@ elif mode == 'Astronomical':
 					disabled=(nearby_mode != 'close_approaches') )
 			
 			c3, c4, c5 = st.columns( 3 )
-			
 			with c3:
 				nearby_body = st.text_input( 'Body',
 					value=st.session_state.get( 'nearbyobjects_body', 'Earth' ),
@@ -12919,7 +12924,6 @@ elif mode == 'Astronomical':
 			st.markdown( '#### NHATS Filters' )
 			
 			n1, n2, n3 = st.columns( 3 )
-			
 			with n1:
 				nearby_dv = st.number_input( 'ΔV', min_value=0.0, max_value=20.0,
 					value=float( st.session_state.get( 'nearbyobjects_dv', 6.0 ) ), step=0.1,
@@ -12939,7 +12943,6 @@ elif mode == 'Astronomical':
 					disabled=(nearby_mode not in [ 'nhats_summary', 'nhats_object' ]) )
 			
 			n4, n5, n6 = st.columns( 3 )
-			
 			with n4:
 				nearby_launch = st.text_input( 'Launch Window',
 					value=st.session_state.get( 'nearbyobjects_launch', '2020-2045' ),
@@ -12959,7 +12962,6 @@ elif mode == 'Astronomical':
 			st.markdown( '#### SBDB Options' )
 			
 			s1, s2, s3 = st.columns( 3 )
-			
 			with s1:
 				nearby_include_physical = st.checkbox( 'Physical Params', value=bool(
 					st.session_state.get( 'nearbyobjects_include_physical', True ) ),
@@ -12993,7 +12995,6 @@ elif mode == 'Astronomical':
 			            'Date=2014-01-01.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				nearby_submit = st.button( 'Submit', key='nearbyobjects_submit' )
 			
@@ -13007,17 +13008,12 @@ elif mode == 'Astronomical':
 
 	with right:
 		active_source = st.session_state.get( 'astronomical_active_source', '' )
-		result_keys: Dict[ str, str ] = {
-			'US Naval Observatory': 'navalobservatory_results',
-			'Satellite Center': 'satellitecenter_results',
-			'Astro Catalog': 'astrocatalog_results',
-			'Astro Query': 'astroquery_results',
-			'Star Map': 'starmap_results',
-			'SIMBAD': 'simbad_results',
-			'Space Weather': 'spaceweather_results',
-			'Star Chart': 'starchart_results',
-			'Near Earth Objects': 'nearbyobjects_results',
-		}
+		result_keys: Dict[ str, str ] = { 'US Naval Observatory': 'navalobservatory_results',
+				'Satellite Center': 'satellitecenter_results',
+				'Astro Catalog': 'astrocatalog_results', 'Astro Query': 'astroquery_results',
+				'Star Map': 'starmap_results', 'SIMBAD': 'simbad_results',
+				'Space Weather': 'spaceweather_results', 'Star Chart': 'starchart_results',
+				'Near Earth Objects': 'nearbyobjects_results', }
 		if active_source in result_keys:
 			active_result = st.session_state.get( result_keys[ active_source ] )
 			_promote_astronomical_result( source=active_source, result=active_result )
@@ -13062,7 +13058,6 @@ elif mode == 'Astronomical':
 					st.info( 'No results returned.' )
 				else:
 					st.markdown( '#### Observation Summary' )
-
 					c1, c2 = st.columns( 2 )
 
 					with c1:
@@ -13115,11 +13110,9 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-			# -------- Satellite Center
-
+		# -------- Satellite Center
 		if active_source == 'Satellite Center':
 			st.markdown( 'Results' )
-
 			if satellite_submit:
 				try:
 					f = SatelliteCenter( )
@@ -13228,7 +13221,6 @@ elif mode == 'Astronomical':
 
 				elif render_mode == 'locations':
 					st.markdown( '#### Locations' )
-
 					if isinstance( result, dict ):
 						if 'Data' in result and isinstance( result.get( 'Data' ), list ):
 							_render_satellite_table( '##### Position Samples',
@@ -13257,8 +13249,7 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-			# -------- Astro Catalog
-
+		# -------- Astro Catalog
 		if active_source == 'Astro Catalog':
 			st.markdown( 'Results' )
 
@@ -13305,7 +13296,6 @@ elif mode == 'Astronomical':
 
 				if isinstance( parsed_result, list ):
 					st.markdown( f'#### Result Rows ({len( parsed_result )})' )
-
 					df_catalog = pd.DataFrame( parsed_result )
 					if not df_catalog.empty:
 						st.dataframe( df_catalog, use_container_width=True, hide_index=True )
@@ -13338,7 +13328,6 @@ elif mode == 'Astronomical':
 							'id' ) or 'Catalog Result')
 
 						st.markdown( f'### {title_value}' )
-
 						top_fields: Dict[ str, Any ] = { }
 						for key in [ 'name', 'alias', 'ra', 'dec', 'redshift', 'type',
 							'claimedtype', 'schema' ]:
@@ -13370,11 +13359,9 @@ elif mode == 'Astronomical':
 					else:
 						st.text_area( 'Raw', value=str( result ), height=240 )
 
-			# -------- Astro Query
-
+		# -------- Astro Query
 		if active_source == 'Astro Query':
 			st.markdown( 'Results' )
-
 			if astroquery_submit:
 				try:
 					f = AstroQuery( )
@@ -13392,12 +13379,10 @@ elif mode == 'Astronomical':
 					st.exception( exc )
 
 			result = st.session_state.get( 'astroquery_results', { } )
-
 			if not result:
 				st.text( 'No results.' )
 			else:
 				meta_col1, meta_col2 = st.columns( 2 )
-
 				with meta_col1:
 					if isinstance( result, dict ) and 'mode' in result:
 						st.markdown( f"**Mode:** {result.get( 'mode', '' )}" )
@@ -13448,8 +13433,7 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-			# -------- Star Map
-
+		# -------- Star Map
 		if active_source == 'Star Map':
 			st.markdown( 'Results' )
 
@@ -13523,8 +13507,7 @@ elif mode == 'Astronomical':
 					st.text_area( '', value=result.get( 'html_preview', '' ), height=220,
 						key='starmap_html_preview' )
 
-			# -------- SIMBAD
-
+		# -------- SIMBAD
 		if active_source == 'SIMBAD':
 			st.markdown( 'Results' )
 
@@ -13583,8 +13566,7 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-			# -------- Space Weather
-
+		# -------- Space Weather
 		if active_source == 'Space Weather':
 			if spaceweather_submit:
 				try:
@@ -13610,7 +13592,6 @@ elif mode == 'Astronomical':
 					st.exception( exc )
 
 			result = st.session_state.get( 'satellitecenter_results', { } )
-
 			if not result:
 				st.text( 'No results.' )
 			else:
@@ -13686,8 +13667,7 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-			# -------- Star Chart
-
+		# -------- Star Chart
 		if active_source == 'Star Chart':
 			if starchart_submit:
 				try:
@@ -13727,7 +13707,6 @@ elif mode == 'Astronomical':
 				st.markdown( '#### Chart Summary' )
 
 				meta_c1, meta_c2 = st.columns( 2 )
-
 				with meta_c1:
 					if mode_value:
 						st.markdown( f'**Mode:** {mode_value}' )
@@ -13785,7 +13764,6 @@ elif mode == 'Astronomical':
 
 				if data:
 					st.markdown( '#### Chart Data' )
-
 					if isinstance( data, list ):
 						df_chart = pd.DataFrame( data )
 						if not df_chart.empty:
@@ -13813,8 +13791,7 @@ elif mode == 'Astronomical':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 
-			# -------- Nearby Objects
-
+		# -------- Nearby Objects
 		if active_source == 'Near Earth Objects':
 			if nearby_submit:
 				try:
@@ -13900,7 +13877,9 @@ elif mode == 'Demographic':
 		st.session_state[ 'demographic_active_source' ] = ''
 
 	with left:
-		# -------- U.S. Census Bureau
+		# ---------------------
+		# U.S. Census Bureau
+		# ---------------------
 		with st.expander( label='U.S. Census Bureau', icon='📊', expanded=False ):
 			CENSUS_MODES = [ 'variables', 'data' ]
 			
@@ -14054,8 +14033,10 @@ elif mode == 'Demographic':
 
 			if census_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_census_bureau'
-		
-		# -------- CDC SOCRATA
+
+		# ---------------------
+		# CDC SOCRATA
+		# ---------------------
 		with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
 			SOCRATA_MODES = [ 'rows', 'metadata' ]
 			
@@ -14197,7 +14178,9 @@ elif mode == 'Demographic':
 			if socrata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_socrata'
 		
-		# -------- US Health Data
+		# ---------------------
+		# US Health Data
+		# ---------------------
 		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
 			HEALTHDATA_MODES = [ 'rows', 'metadata' ]
 			
@@ -14342,7 +14325,9 @@ elif mode == 'Demographic':
 			if healthdata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_health'
 		
-		# -------- WHO Global Health
+		# ---------------------
+		# WHO Global Health
+		# ---------------------
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
 			WHO_MODES = [ 'indicator_registry', 'athena' ]
 			
@@ -14459,8 +14444,10 @@ elif mode == 'Demographic':
 
 			if who_submit:
 				st.session_state[ 'demographic_active_source' ] = 'who_global'
-		
-		# -------- United Nations Data
+
+		# ---------------------
+		# United Nations Data
+		# ---------------------
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
 			UN_MODES = [ 'datasets', 'sdmx_query' ]
 			
@@ -14568,8 +14555,10 @@ elif mode == 'Demographic':
 
 			if un_submit:
 				st.session_state[ 'demographic_active_source' ] = 'united_nations'
-		
-		# -------- World Population
+
+		# ---------------------
+		# World Population
+		# ---------------------
 		with st.expander( label='World Population', icon='👥', expanded=False ):
 			WORLDPOP_MODES = [ 'catalog', 'search', 'raster_metadata' ]
 			
@@ -14724,7 +14713,9 @@ elif mode == 'Demographic':
 			if worldpop_submit:
 				st.session_state[ 'demographic_active_source' ] = 'world_population'
 		
-		# -------- CDC WONDER
+		# ---------------------
+		# CDC WONDER
+		# ---------------------
 		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
 			WONDER_MODES = [ 'metadata_template', 'query_xml' ]
 			
@@ -14849,7 +14840,9 @@ elif mode == 'Demographic':
 			if wonder_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_wonder'
 		
+		# ---------------------
 		# -------- Pub Med
+		# ---------------------
 		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
 			def _clear_pubmed_state( ) -> None:
 				st.session_state[ 'pubmed_clear_request' ] = True
@@ -14911,7 +14904,9 @@ elif mode == 'Demographic':
 			if pubmed_submit:
 				st.session_state[ 'demographic_active_source' ] = 'pub_med_search'
 		
-		# -------- Open City
+		# ---------------------
+		# Open City
+		# ---------------------
 		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
 			OPEN_CITY_DOMAINS = [ 'data.sfgov.org', 'data.cityofnewyork.us',
 				'data.cityofchicago.org', 'data.lacity.org', 'data.seattle.gov',
@@ -15054,6 +15049,7 @@ elif mode == 'Demographic':
 		else:
 			st.caption( f"Active Source: {display_names.get( active_source, active_source )}" )
 
+		# -------- U.S. Census Bureau
 		if active_source == 'u_s_census_bureau':
 			st.markdown( '##### U.S. Census Bureau' )
 			result = st.session_state.get( 'census_results', { } )
@@ -15120,6 +15116,8 @@ elif mode == 'Demographic':
 						rows if isinstance( rows, list ) else [ ] )
 				
 				_render_fallback_raw( result )
+
+		# -------- CDC SOCRATA
 		elif active_source == 'cdc_socrata':
 			st.markdown( '##### CDC Socrata' )
 			result = st.session_state.get( 'socrata_results', { } )
@@ -15177,6 +15175,7 @@ elif mode == 'Demographic':
 				
 				_render_fallback_raw( result )
 
+		# -------- US Health Data
 		elif active_source == 'u_s_health':
 			st.markdown( '##### U.S. Health' )
 			result = st.session_state.get( 'healthdata_results', { } )
@@ -15246,6 +15245,7 @@ elif mode == 'Demographic':
 				
 				_render_fallback_raw( result )
 
+		# -------- WHO Global Health
 		elif active_source == 'who_global':
 			st.markdown( '##### WHO Global' )
 			result = st.session_state.get( 'who_results', { } )
@@ -15311,6 +15311,7 @@ elif mode == 'Demographic':
 				
 				_render_fallback_raw( result )
 
+		# -------- United Nations Data
 		elif active_source == 'united_nations':
 			st.markdown( '##### United Nations' )
 			result = st.session_state.get( 'un_results', { } )
@@ -15375,6 +15376,7 @@ elif mode == 'Demographic':
 				
 				_render_fallback_raw( result )
 
+		# -------- World Population
 		elif active_source == 'world_population':
 			st.markdown( '##### World Population' )
 			result = st.session_state.get( 'worldpop_results', { } )
@@ -15456,6 +15458,7 @@ elif mode == 'Demographic':
 				
 				_render_fallback_raw( result )
 
+		# -------- CDC WONDER
 		elif active_source == 'cdc_wonder':
 			st.markdown( '##### CDC Wonder' )
 			result = st.session_state.get( 'wonder_results', { } )
@@ -15526,6 +15529,7 @@ elif mode == 'Demographic':
 				
 				_render_fallback_raw( result )
 
+		# -------- Pub Med
 		elif active_source == 'pub_med_search':
 			st.markdown( '##### Pub Med Search' )
 			if pubmed_clear:
@@ -15620,6 +15624,7 @@ elif mode == 'Demographic':
 				
 				_render_fallback_raw( result )
 
+		# -------- Open City
 		elif active_source == 'open_city_data':
 			st.markdown( '##### Open City Data' )
 			if open_city_clear:
@@ -15714,9 +15719,7 @@ elif mode == 'Generation':
 	st.subheader( '🧠  Generative AI' )
 	st.divider( )
 
-	# ------------------------------------------------------------------
-	# Generation Result State
-	# ------------------------------------------------------------------
+	# ---------- Generation Result State
 	if 'generation_documents' not in st.session_state:
 		st.session_state[ 'generation_documents' ] = [ ]
 
@@ -15803,7 +15806,9 @@ elif mode == 'Generation':
 	# LEFT COLUMN — GENERATION CONTROLS
 	# ------------------------------------------------------------------
 	with left:
-		# ------  GPT 
+		# ---------------------
+		# ----- GPT
+		# ---------------------
 		with st.expander( label='ChatGPT', expanded=True ):
 			CHAT_REASONING_EFFORTS = [ 'minimal', 'low', 'medium', 'high' ]
 			
@@ -16036,8 +16041,10 @@ elif mode == 'Generation':
 				
 				except Exception as exc:
 					st.error( str( exc ) )
-		
-		# -------- Groq
+
+		# ---------------------
+		# ----- Groq
+		# ---------------------
 		with st.expander( label='Grok', expanded=False ):
 			GROK_REASONING_EFFORTS = [ 'none', 'low', 'medium', 'high' ]
 			
@@ -16297,8 +16304,10 @@ elif mode == 'Generation':
 				
 				except Exception as exc:
 					st.error( str( exc ) )
-		
-		# -------- CLAUDE
+
+		# ---------------------
+		# ----- Claude
+		# ---------------------
 		with st.expander( label='Claude', expanded=False ):
 			def _clear_claude_state( ) -> None:
 				'''
@@ -16543,8 +16552,10 @@ elif mode == 'Generation':
 			with btn_row[ 1 ]:
 				st.button( 'Clear', key='claude_clear_chat', on_click=_clear_claude_state,
 					use_container_width=True )
-		
-		# -------- GEMINI
+
+		# ---------------------
+		# ----- GEMINI
+		# ---------------------
 		with st.expander( label='Gemini', expanded=False ):
 			GEMINI_THINKING_LEVELS = [ 'minimal', 'low', 'medium', 'high' ]
 			
@@ -16762,10 +16773,7 @@ elif mode == 'Generation':
 			with btn_row[ 1 ]:
 				st.button( 'Clear', key='gemini_clear_chat', on_click=_clear_gemini_state )
 			
-			
-			# -----------------------------
-			# Submit Button
-			# -----------------------------
+			# ------ Submit Button
 			if gemini_submit:
 				try:
 					if not str( gemini_prompt or '' ).strip( ):
@@ -16811,8 +16819,10 @@ elif mode == 'Generation':
 				
 				except Exception as exc:
 					st.error( str( exc ) )
-		
-		# -------- Mistral
+
+		# ---------------------
+		# ----- Mistral
+		# ---------------------
 		with st.expander( label='Mistral', expanded=False ):
 			def _clear_mistral_state( ) -> None:
 				st.session_state[ 'mistral_clear_request' ] = True
@@ -16931,11 +16941,11 @@ elif mode == 'Data Management':
 	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
 	with center:
 		st.subheader( f'🏛️ Data Management' )
-		st.divider( )
 		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
 			'🧮 Aggregate',
 			'📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
-		
+
+		st.divider( )
 		tables = list_tables( )
 		if not tables:
 			st.info( 'No tables available.' )
@@ -16943,9 +16953,7 @@ elif mode == 'Data Management':
 			table = st.selectbox( 'Table', tables )
 			df_full = read_table( table )
 		
-		# ------------------------------------------------------------------------------
-		# UPLOAD TAB
-		# ------------------------------------------------------------------------------
+		# ---------------- UPLOAD TAB
 		with tabs[ 0 ]:
 			uploaded_file = st.file_uploader( 'Upload Excel File', type=[ 'xlsx' ] )
 			overwrite = st.checkbox( 'Overwrite existing tables', value=True )
@@ -16991,9 +16999,7 @@ elif mode == 'Data Management':
 						pass
 					st.error( f'Import failed — transaction rolled back.\n\n{e}' )
 		
-		# ------------------------------------------------------------------------------
-		# BROWSE TAB
-		# ------------------------------------------------------------------------------
+		# ---------------- BROWSE TAB
 		with tabs[ 1 ]:
 			tables = list_tables( )
 			if tables:
@@ -17003,9 +17009,7 @@ elif mode == 'Data Management':
 			else:
 				st.info( 'No tables available.' )
 		
-		# ------------------------------------------------------------------------------
-		# CRUD
-		# ------------------------------------------------------------------------------
+		# ---------------- CRUD
 		with tabs[ 2 ]:
 			tables = list_tables( )
 			if not tables:
@@ -17098,9 +17102,7 @@ elif mode == 'Data Management':
 					st.success( 'Row deleted.' )
 					st.rerun( )
 		
-		# ------------------------------------------------------------------------------
-		# EXPLORE
-		# ------------------------------------------------------------------------------
+		# ---------------- EXPLORE
 		with tabs[ 3 ]:
 			tables = list_tables( )
 			if tables:
@@ -17111,9 +17113,7 @@ elif mode == 'Data Management':
 				df_page = read_table( table, page_size, offset )
 				render_table( df_page )
 		
-		# ------------------------------------------------------------------------------
-		# FILTER
-		# ------------------------------------------------------------------------------
+		# ---------------- FILTER
 		with tabs[ 4 ]:
 			tables = list_tables( )
 			if tables:
@@ -17126,9 +17126,7 @@ elif mode == 'Data Management':
 				
 				render_table( df )
 		
-		# ------------------------------------------------------------------------------
-		# AGGREGATE
-		# ------------------------------------------------------------------------------
+		# ---------------- AGGREGATE
 		with tabs[ 5 ]:
 			tables = list_tables( )
 			if tables:
@@ -17145,9 +17143,7 @@ elif mode == 'Data Management':
 					elif agg == 'COUNT':
 						st.metric( 'Result', df[ col ].count( ) )
 		
-		# ------------------------------------------------------------------------------
-		# VISUALIZE
-		# ------------------------------------------------------------------------------
+		# ---------------- VISUALIZE
 		with tabs[ 6 ]:
 			tables = list_tables( )
 			if tables:
@@ -17155,9 +17151,7 @@ elif mode == 'Data Management':
 				df = read_table( table )
 				create_visualization( df )
 		
-		# ------------------------------------------------------------------------------
-		# ADMIN
-		# ------------------------------------------------------------------------------
+		# ---------------- ADMIN
 		with tabs[ 7 ]:
 			tables = list_tables( )
 			if tables:
@@ -17326,9 +17320,7 @@ elif mode == 'Data Management':
 						st.success( 'Column dropped.' )
 						st.rerun( )
 		
-		# ------------------------------------------------------------------------------
-		# SQL
-		# ------------------------------------------------------------------------------
+		# ---------------- SQL
 		with tabs[ 8 ]:
 			st.subheader( 'SQL Console' )
 			query = st.text_area( 'Enter SQL Query' )
