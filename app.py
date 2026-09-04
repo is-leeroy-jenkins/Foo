@@ -1618,7 +1618,7 @@ if mode == 'Loading':
 		with st.expander( label='Local Documents', expanded=True ):
 
 			# ----------------------------
-			# ------- NLTK Loader Expander
+			# ------- Expander NLTK Loader
 			# ----------------------------
 			with st.expander( label='Corpora Loader', icon='📚', expanded=False ):
 				import nltk
@@ -1747,7 +1747,7 @@ if mode == 'Loading':
 						st.warning( 'No documents were loaded.' )
 
 			# ----------------------------
-			# ------ Text Loader
+			# ------ Expander Text Loader
 			# ----------------------------
 			with st.expander( label='Text Loader', icon='📝', expanded=False ):
 				files = st.file_uploader( 'Upload Text File(s)', type=[ 'txt', 'text', 'log' ],
@@ -1816,7 +1816,7 @@ if mode == 'Loading':
 					st.success( f'Loaded {len( documents )} text document(s).' )
 
 			# ----------------------------
-			# ------ CSV Loader Expander
+			# ------ Expander CSV Loader
 			# ----------------------------
 			with st.expander( label="CSV Loader", icon='📑', expanded=False ):
 				csv_file = st.file_uploader( label="Upload CSV", type=[ "csv" ], key="csv_upload" )
@@ -1873,7 +1873,7 @@ if mode == 'Loading':
 						"_loader_status" ] = f"Loaded {len( documents )} CSV document(s)."
 
 			# ----------------------------
-			# ---- XML Loader Expander
+			# ---- XML Loader
 			# ----------------------------
 			with st.expander( label='XML Loader', icon='🧬', expanded=False ):
 				# ------------------------------------------------------------------
@@ -2025,7 +2025,7 @@ if mode == 'Loading':
 							"overlap_amount": getattr( xml_loader, 'overlap_amount', None ), } )
 
 			# ----------------------------
-			# ------- Word Loader
+			# ------- Expander Word Loader
 			# ----------------------------
 			with st.expander( label='Word Document Loader', icon='📘', expanded=False ):
 				word_file = st.file_uploader( 'Upload Word Document', type=[ 'docx' ],
@@ -2089,7 +2089,7 @@ if mode == 'Loading':
 						'_loader_status' ] = f'Loaded {len( documents )} Word document(s).'
 
 			# ----------------------------
-			# ------ PDF Loader Expander
+			# ------ Expander PDF Loader
 			# ----------------------------
 			with st.expander( label='PDF Loader', icon='📕', expanded=False ):
 				pdf = st.file_uploader( 'Upload PDF', type=[ 'pdf' ], key='pdf_upload' )
@@ -2222,7 +2222,7 @@ if mode == 'Loading':
 					save_pdf.button( 'Save', key='pdf_save_disabled', disabled=True, icon='💾' )
 
 			# ----------------------------
-			# --- Power Point Loader
+			# --- Expander Power Point Loader
 			# ----------------------------
 			with st.expander( label='Power Point Loader', icon='📽', expanded=False ):
 				pptx = st.file_uploader( 'Upload PPTX', type=[ 'pptx' ], key='pptx_upload', )
@@ -2272,7 +2272,7 @@ if mode == 'Loading':
 					st.success( f"Loaded {len( documents )} PowerPoint document(s)." )
 
 			# ----------------------------
-			# ------ Jupyter Notebook Loader
+			# ------ Expander Jupyter Notebook Loader
 			# ----------------------------
 			with st.expander( label='Jupyter Notebook Loader', icon='📓', expanded=False ):
 				notebook_file = st.file_uploader( 'Upload Notebook', type=[ 'ipynb' ],
@@ -2357,7 +2357,7 @@ if mode == 'Loading':
 						'_loader_status' ] = f'Loaded {len( documents )} notebook document(s).'
 
 			# ----------------------------
-			# ------- Excel Loader
+			# ------- Expander Excel Loader
 			# ----------------------------
 			with st.expander( label='Excel Loader', icon='📊', expanded=False ):
 				excel_file = st.file_uploader( 'Upload Excel file', type=[ 'xlsx', 'xls' ],
@@ -2500,7 +2500,7 @@ if mode == 'Loading':
 							st.warning( "No Excel document content was loaded." )
 
 			# ----------------------------
-			# ------ Markdown Loader
+			# ------ Expander Markdown Loader
 			# ----------------------------
 			with st.expander( label='Markdown Loader', icon='🧾', expanded=False ):
 				md = st.file_uploader( 'Upload Markdown', type=[ 'md', 'markdown' ],
@@ -2557,7 +2557,7 @@ if mode == 'Loading':
 					st.success( f"Loaded {len( documents )} Markdown document(s)." )
 
 			# ----------------------------
-			# ---- HTML Loader
+			# ---- Expander HTML Loader
 			# ----------------------------
 			with st.expander( label='HTML Loader', icon='🌐', expanded=False ):
 				html = st.file_uploader( 'Upload HTML', type=[ 'html', 'htm' ], key='html_upload' )
@@ -2606,7 +2606,7 @@ if mode == 'Loading':
 					st.success( f"Loaded {len( documents )} HTML document(s)." )
 
 			# ----------------------------
-			# --------- JSON Loader
+			# --------- Expander JSON Loader
 			# ----------------------------
 			with st.expander( label='JSON Loader', icon='🧩', expanded=False ):
 				js = st.file_uploader( 'Upload JSON', type=[ 'json', 'jsonl' ],
@@ -2677,7 +2677,7 @@ if mode == 'Loading':
 		with st.expander( label='Web Documents', expanded=False ):
 
 			# ----------------------------
-			# ------- ArXiv Loader
+			# ------- Expander ArXiv Loader
 			# ----------------------------
 			with st.expander( label='ArXiv Loader', icon='🧠', expanded=False ):
 				arxiv_query = st.text_input( 'Query', placeholder='e.g., transformer OR llm',
@@ -2731,7 +2731,7 @@ if mode == 'Loading':
 							'_loader_status' ] = f'Fetched {len( documents )} document(s).'
 
 			# ----------------------------
-			# ---- Wikipedia Loader
+			# ---- Expander Wikipedia Loader
 			# ----------------------------
 			with st.expander( label='Wikipedia Loader', icon='📚', expanded=False ):
 				wiki_query = st.text_input( 'Query',
@@ -2790,7 +2790,7 @@ if mode == 'Loading':
 							f's).')
 
 			# ----------------------------
-			# ----- GitHub Loader
+			# ----- Expander GitHub Loader
 			# ----------------------------
 			with st.expander( label='GitHub Loader', icon='🐙', expanded=False ):
 				gh_url = st.text_input( "GitHub API URL", placeholder="https://api.github.com",
@@ -2858,7 +2858,7 @@ if mode == 'Loading':
 							"_loader_status" ] = f"Fetched {len( documents )} GitHub document(s)."
 
 			# ----------------------------
-			# -------- Outlook Loader
+			# -------- Expander Outlook Loader
 			# ----------------------------
 			with st.expander( label='Outlook Loader', icon='📨', expanded=False ):
 				outlook_file = st.file_uploader( 'Upload Outlook Message', type=[ 'msg' ],
@@ -2926,7 +2926,7 @@ if mode == 'Loading':
 						f's).')
 
 			# ----------------------------
-			# ------- Web Loader
+			# ------- Expander Web Loader
 			# ----------------------------
 			with st.expander( label="Web Loader", icon='🌐', expanded=False ):
 				urls = st.text_area( "Enter one URL per line",
@@ -2986,7 +2986,7 @@ if mode == 'Loading':
 							"_loader_status" ] = f"Fetched {len( new_docs )} web document(s)."
 
 			# ----------------------------
-			# ----- Web Crawler
+			# ----- Expander Web Crawler
 			# ----------------------------
 			with st.expander( label='Web Crawler', icon='🕷️', expanded=False ):
 				start_url = st.text_input( 'Start URL', placeholder='https://example.com',
@@ -3054,7 +3054,7 @@ if mode == 'Loading':
 						'_loader_status' ] = f'Crawled {len( documents )} document(s).'
 
 			# ----------------------------
-			# ----- Email Loader
+			# ----- Expander Email Loader
 			# ----------------------------
 			with st.expander( label='E-mail Loader', icon='📧', expanded=False ):
 				email_file = st.file_uploader( 'Upload Email File', type=[ 'eml' ],
@@ -3129,7 +3129,7 @@ if mode == 'Loading':
 						'_loader_status' ] = f'Loaded {len( documents )} email document(s).'
 
 			# ----------------------------
-			# ---- PubMed Loader
+			# ---- Expander PubMed Loader
 			# ----------------------------
 			with st.expander( label='Pub Med Loader', icon='🧬', expanded=False ):
 				pubmed_query = st.text_input( 'PubMed Query', value='', key='pubmed_query',
@@ -3195,7 +3195,7 @@ if mode == 'Loading':
 						'_loader_status' ] = f'Loaded {len( documents )} PubMed document(s).'
 
 			# ----------------------------
-			# --- Open City Loader
+			# --- Expander Open City Loader
 			# ----------------------------
 			with st.expander( label='Open City Loader', icon='🏙️', expanded=False ):
 				open_city_id = st.text_input( 'City Domain', value='', key='open_city_id',
@@ -3273,7 +3273,7 @@ if mode == 'Loading':
 		with st.expander( label='Cloud Documents', expanded=False ):
 
 			# ----------------------------
-			# ---- OneDrive Loader
+			# ---- Expander OneDrive Loader
 			# ----------------------------
 			with st.expander( label='OneDrive Loader', icon='🟦', expanded=False ):
 				onedrive_drive_id = st.text_input( 'Drive ID', value='', key='onedrive_drive_id',
@@ -3354,7 +3354,7 @@ if mode == 'Loading':
 						'_loader_status' ] = f'Loaded {len( documents )} OneDrive document(s).'
 
 			# ----------------------------
-			# ---- Google Cloud File Loader
+			# ---- Expander Google Cloud File Loader
 			# ----------------------------
 			with st.expander( label='Google Cloud File Loader', icon='☁️', expanded=False ):
 				gcs_project_name = st.text_input( 'Project Name', value='',
@@ -3431,7 +3431,7 @@ if mode == 'Loading':
 						f'document(s).')
 
 			# ----------------------------
-			# ---- AWS File Loader
+			# ---- Expander AWS File Loader
 			# ----------------------------
 			with st.expander( label='AWS File Loader', icon='🪣', expanded=False ):
 				aws_file_bucket = st.text_input( 'Bucket', value='', key='aws_file_bucket',
@@ -3538,7 +3538,7 @@ if mode == 'Loading':
 						'_loader_status' ] = f'Loaded {len( documents )} AWS file document(s).'
 			
 			# ----------------------------
-			# ----- Google Bucket Loader
+			# ----- Expander Google Bucket Loader
 			# ----------------------------
 			with st.expander( label='Google Bucket Loader', icon='🗂️', expanded=False ):
 				gcs_bucket_project_name = st.text_input( 'Project Name', value='',
@@ -3626,7 +3626,7 @@ if mode == 'Loading':
 						f's).')
 			
 			# ----------------------------
-			# ---- AWS Bucket Loader
+			# ---- Expander AWS Bucket Loader
 			# ----------------------------
 			with st.expander( label='AWS Bucket Loader', icon='🗃️', expanded=False ):
 				aws_bucket_name = st.text_input( 'Bucket', value='', key='aws_bucket_name',
@@ -3739,7 +3739,9 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} AWS bucket document(s).'
 			
-			# --------------------------- SharePoint Loader
+			# ---------------------------
+			# ---- Expander SharePoint Loader
+			# ---------------------------
 			with st.expander( label='SharePoint Loader', icon='🟩', expanded=False ):
 				spfx_library_id = st.text_input( 'Library ID', value='', key='spfx_library_id',
 					placeholder='SharePoint document library identifier', )
@@ -11935,7 +11937,7 @@ elif mode == 'Astronomical':
 
 	with left:
 		# ----------------------------
-		#  US Naval Observatory
+		# -------- US Naval Observatory
 		# ----------------------------
 		with st.expander( label='US Naval Observatory', icon='⚓', expanded=False ):
 			if 'navalobservatory_results' not in st.session_state:
@@ -12000,7 +12002,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'US Naval Observatory'
 
 		# ----------------------------
-		#  Satellite Center
+		# -------- Satellite Center
 		# ----------------------------
 		with st.expander( label='Satellite Center', icon='🛰️', expanded=False ):
 			if 'satellitecenter_results' not in st.session_state:
@@ -12116,7 +12118,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Satellite Center'
 
 		# ----------------------------
-		#  Astro Catalog
+		# -------- Astro Catalog
 		# ----------------------------
 		with st.expander( label='Astro Catalog', icon='✨', expanded=False ):
 			if 'astrocatalog_results' not in st.session_state:
@@ -12222,7 +12224,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Astro Catalog'
 
 		# ----------------------------
-		#  Astro Query
+		# -------- Astro Query
 		# ----------------------------
 		with st.expander( label='Astro Query', icon='🔭', expanded=False ):
 			if 'astroquery_results' not in st.session_state:
@@ -12312,7 +12314,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Astro Query'
 
 		# ----------------------------
-		#  Star Map
+		# -------- Star Map
 		# ----------------------------
 		with st.expander( label='Star Map', icon='⭐', expanded=False ):
 			if 'starmap_results' not in st.session_state:
@@ -12437,7 +12439,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Star Map'
 
 		# ----------------------------
-		#  Simbad
+		# -------- Simbad
 		# ----------------------------
 		with st.expander( label='SIMBAD', icon='🌌', expanded=False ):
 			if 'simbad_results' not in st.session_state:
@@ -12523,7 +12525,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'SIMBAD'
 
 		# ----------------------------
-		#  Space Weather
+		# -------- Space Weather
 		# ----------------------------
 		with st.expander( label='Space Weather', icon='☄️', expanded=False ):
 			if 'spaceweather_results' not in st.session_state:
@@ -12648,7 +12650,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Space Weather'
 
 		# ----------------------------
-		#  Astro Catalog
+		# -------- Astro Catalog
 		# ----------------------------
 		with st.expander( label='Star Chart', icon='🪐', expanded=False ):
 			if 'starchart_results' not in st.session_state:
@@ -12810,7 +12812,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Star Chart'
 
 		# ----------------------------
-		#  Near Earth Object
+		# -------- Near Earth Object
 		# ----------------------------
 		with st.expander( label='Near Earth Objects', icon='☄️', expanded=False ):
 			if 'nearbyobjects_results' not in st.session_state:
@@ -14326,7 +14328,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'u_s_health'
 		
 		# ---------------------
-		# WHO Global Health
+		# -------- WHO Global Health
 		# ---------------------
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
 			WHO_MODES = [ 'indicator_registry', 'athena' ]
@@ -14446,7 +14448,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'who_global'
 
 		# ---------------------
-		# United Nations Data
+		# -------- United Nations Data
 		# ---------------------
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
 			UN_MODES = [ 'datasets', 'sdmx_query' ]
@@ -14557,7 +14559,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'united_nations'
 
 		# ---------------------
-		# World Population
+		# -------- World Population
 		# ---------------------
 		with st.expander( label='World Population', icon='👥', expanded=False ):
 			WORLDPOP_MODES = [ 'catalog', 'search', 'raster_metadata' ]
@@ -14714,7 +14716,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'world_population'
 		
 		# ---------------------
-		# CDC WONDER
+		# -------- CDC WONDER
 		# ---------------------
 		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
 			WONDER_MODES = [ 'metadata_template', 'query_xml' ]
@@ -14905,7 +14907,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'pub_med_search'
 		
 		# ---------------------
-		# Open City
+		# -------- Open City
 		# ---------------------
 		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
 			OPEN_CITY_DOMAINS = [ 'data.sfgov.org', 'data.cityofnewyork.us',
