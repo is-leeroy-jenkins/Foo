@@ -18,7 +18,7 @@
 
 ___
 
-[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-0078FC?style=for-the-badge&logo=github)](https://is-leeroy-jenkins.github.io/Foo/)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-0078FC?style=for-the-badge&logo=github)](https://is-leeroy-jenkins.github.io/foo/)
 
 Foo is a data loading, scraping, retrieval, geospatial, environmental,
 astronomical, demographic, generative-AI, and SQLite data-management workspace. It is designed
