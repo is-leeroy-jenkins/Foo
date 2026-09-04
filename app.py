@@ -215,6 +215,31 @@ for corpus in cfg.REQUIRED_CORPORA:
 # UTILITIES
 # =====================================================================
 
+def throw_if( name: str, value: object ) -> None:
+	"""Throw if.
+
+	Purpose:
+	    Validates that a required argument contains a usable value so failures occur before provider, filesystem, or parsing work begins.
+
+	Args:
+	    name (str): Argument name included in validation error messages.
+	    value (object): Candidate value to validate or normalize.
+
+	Returns:
+	    None: This method updates instance state or validates input and does not return a value.
+
+	Raises:
+	    ValueError: Raised when the method cannot satisfy its documented value requirement.
+	"""
+	if value is None:
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	
+	if isinstance( value, str ) and (not value.strip( )):
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	
+	if isinstance( value, (list, tuple, dict, set) ) and len( value ) == 0:
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+
 def filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ str, Any ]:
 	try:
 		sig = inspect.signature( fn )
@@ -499,18 +524,6 @@ def rebuild_raw_text_from_documents( ) -> str | None:
 			str ) and d.page_content.strip( ) )
 	return text if text.strip( ) else None
 
-def blue_divider( ) -> None:
-	"""Render the configured blue section divider.
-
-	Purpose:
-	    Inserts the application-standard HTML divider into the Streamlit interface using the
-	    divider markup defined in the configuration module.
-
-	Returns:
-	    None: This function renders Streamlit markup and does not return a value.
-	"""
-	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-	
 # -------- Text Utilities ---------------------
 
 def render_google_results( response ) -> str:
@@ -1528,9 +1541,40 @@ def clear_if_active( loader_name: str ) -> None:
 		st.session_state.df_chunks = None
 		st.session_state.lines = None
 
+def render_data_editor( df: pd.DataFrame, use_container_width: bool | None = None,
+	key: str='', height: int | str='auto', hide_index: bool | None=None,
+	disabled: bool | List[ str ]=False, column_config: Dict[ str, object ]=None,
+	num_rows: str='fixed' ) -> pd.DataFrame:
+	"""Render a consistently formatted Streamlit dataframe editor.
+
+	Purpose:
+	    Preserves the established data-editor arguments while merging automatic numeric formatting
+	    with any specialized caller configuration. Floating-point values use the locale equivalent
+	    of ``#,##0.00`` whenever Streamlit supports numeric column formatting.
+
+	Args:
+	    df (pd.DataFrame): Dataframe rendered by Streamlit.
+	    use_container_width (bool | None): Existing Streamlit container-width setting.
+	    key (str): Optional unique widget key.
+	    height (int | str): Editor height setting.
+	    hide_index (bool | None): Index visibility setting.
+	    disabled (bool | List[str]): Editor or column disabled state.
+	    column_config (Dict[str, object]): Optional specialized column configuration.
+	    num_rows (str): Established fixed or dynamic row mode.
+
+	Returns:
+	    pd.DataFrame: Dataframe returned by ``st.data_editor``.
+	"""
+	throw_if( 'df', df )
+	formatted_config = get_data_editor_column_config( df, column_config )
+	widget_key = key if key else None
+	return _streamlit_data_editor( df, use_container_width=use_container_width, key=widget_key,
+		height=height, hide_index=hide_index, disabled=disabled,
+		column_config=formatted_config, num_rows=num_rows )
+
 # -------- Expander Utilities
 
-def set_blue_divider( ) -> None:
+def set_set_blue_divider( ) -> None:
 	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
 
 def _promote_loader_documents( documents: List[ Document ] | None, active_loader: str ) -> int:
@@ -4921,7 +4965,6 @@ elif mode == 'Retrieval':
 				                                  'AND title:"appropriations"') )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				govinfo_page_size = st.number_input( 'Page Size', min_value=1, max_value=1000,
 					value=int( st.session_state.get( 'govinfo_page_size', 10 ) ), step=1,
@@ -4952,7 +4995,6 @@ elif mode == 'Retrieval':
 				key='govinfo_package_id', placeholder='Example: CREC-2018-10-10' )
 			
 			c5, c6 = st.columns( 2 )
-			
 			with c5:
 				govinfo_collection = st.text_input( 'Collection',
 					value=st.session_state.get( 'govinfo_collection', '' ),
@@ -4968,7 +5010,6 @@ elif mode == 'Retrieval':
 				key='govinfo_timeout' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				govinfo_submit = st.button( 'Submit', key='govinfo_submit',
 					use_container_width=True, width='stretch' )
@@ -5391,7 +5432,6 @@ elif mode == 'Retrieval':
 				                                          'budget execution') )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				ia_rows = st.number_input( 'Rows', min_value=1, max_value=100,
 					value=int( st.session_state.get( 'internetarchive_rows', 10 ) ), step=1,
@@ -5411,7 +5451,6 @@ elif mode == 'Retrieval':
 				key='internetarchive_sort' )
 			
 			c3, c4 = st.columns( 2 )
-			
 			with c3:
 				ia_media_type = st.text_input( 'Mediatype',
 					value=st.session_state.get( 'internetarchive_media_type', '' ),
@@ -5427,7 +5466,6 @@ elif mode == 'Retrieval':
 				key='internetarchive_timeout' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
 				ia_submit = st.button( 'Submit', key='internetarchive_submit',
 					use_container_width=True, width='stretch' )
@@ -15716,7 +15754,6 @@ elif mode == 'Generation':
 		st.session_state[ 'generation_raw_result' ] = result
 		st.session_state[ 'generation_active_source' ] = provider
 
-
 	def _clear_generation_result( provider: str ) -> None:
 		"""Clear the shared generation result for the active provider.
 
@@ -16950,7 +16987,7 @@ elif mode == 'Data Management':
 				with browse_left:
 					table = st.selectbox( 'Select Table:', tables, key='table_name' )
 				
-				blue_divider( )
+				set_set_blue_divider( )
 				df = read_table( table )
 				render_data_editor( df, use_container_width=True, height=400 )
 			else:
@@ -16980,7 +17017,7 @@ elif mode == 'Data Management':
 				# ------------------------------------------------------------------
 				# INSERT
 				# ------------------------------------------------------------------
-				blue_divider( )
+				set_blue_divider( )
 				st.markdown( '##### Insert Row' )
 				insert_data = { }
 				insert_columns = st.columns( 4 )
@@ -17019,7 +17056,7 @@ elif mode == 'Data Management':
 				# ------------------------------------------------------------------
 				# UPDATE
 				# ------------------------------------------------------------------
-				blue_divider( )
+				set_blue_divider( )
 				st.markdown( '##### Update Row' )
 				rowid = st.number_input( 'Row ID', min_value=1, step=1 )
 				update_data = { }
@@ -17059,7 +17096,7 @@ elif mode == 'Data Management':
 				# ------------------------------------------------------------------
 				# DELETE
 				# ------------------------------------------------------------------
-				blue_divider( )
+				set_blue_divider( )
 				st.markdown( '##### Delete Row' )
 				delete_left, delete_mid, delete_right = st.columns( 3 )
 				with delete_left:
@@ -17090,7 +17127,7 @@ elif mode == 'Data Management':
 				with explore_c3:
 					page_size = st.slider( 'Rows per page', 10, 500, 50 )
 				
-				blue_divider( )
+				set_blue_divider( )
 				offset = (page - 1) * page_size
 				df_page = read_table( table, page_size, offset )
 				render_data_editor( df_page, use_container_width=True, height=400 )
@@ -17113,7 +17150,7 @@ elif mode == 'Data Management':
 					if value:
 						df = df[ df[ column ].astype( str ).str.contains( value ) ]
 				
-				blue_divider( )
+				set_blue_divider( )
 				render_data_editor( df, use_container_width=True, key='filter_frame', height=400 )
 		
 		# ------------------------------------------------------------------------------
@@ -17176,7 +17213,7 @@ elif mode == 'Data Management':
 				
 				render_data_editor( df_profile, use_container_width=True, height=400 )
 			
-			blue_divider( )
+			set_blue_divider( )
 			st.markdown( '##### Drop Table' )
 			tables = list_tables( )
 			if tables:
@@ -17217,7 +17254,7 @@ elif mode == 'Data Management':
 					create_index( table, col )
 					st.success( 'Index created.' )
 			
-			blue_divider( )
+			set_blue_divider( )
 			
 			st.markdown( '##### Create Table' )
 			new_table_name = st.text_input( 'Table Name' )
@@ -17245,7 +17282,7 @@ elif mode == 'Data Management':
 				except Exception as e:
 					st.error( f'Error: {e}' )
 			
-			blue_divider( )
+			set_blue_divider( )
 			st.markdown( '##### Schema Viewer' )
 			
 			tables = list_tables( )
@@ -17275,7 +17312,7 @@ elif mode == 'Data Management':
 				else:
 					st.info( "No indexes defined." )
 			
-			blue_divider( )
+			set_blue_divider( )
 			st.markdown( "##### ALTER TABLE" )
 			
 			tables = list_tables( )
@@ -17370,7 +17407,6 @@ elif mode == 'Data Management':
 					except Exception as e:
 						st.error( f'Execution failed: {e}' )
 	
-
 # ======================================================================================
 # FOOTER — SECTION
 # ======================================================================================
@@ -17405,7 +17441,6 @@ st.markdown( """
 	}
 	</style>
 	""", unsafe_allow_html=True, )
-
 
 # ---- Rendering Method
 st.markdown( f"""

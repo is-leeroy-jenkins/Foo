@@ -84,7 +84,6 @@ from typing import Optional, List, Dict, Any
 import wikipedia
 from lxml import etree
 
-
 def throw_if( name: str, value: object ) -> None:
 	"""Throw if.
 
