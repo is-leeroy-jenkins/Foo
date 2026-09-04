@@ -1952,6 +1952,45 @@ def parse_datetime_series( series: pd.Series ) -> pd.Series:
 	except (TypeError, ValueError):
 		return pd.to_datetime( series.astype( 'string' ).str.strip( ), errors='coerce' )
 
+def apply_mathy_plotly_theme( figure: go.Figure, title: str='',
+		height: int=500 ) -> go.Figure:
+	"""Apply the Mathy Plotly presentation theme.
+
+	Purpose:
+	    Applies consistent typography, spacing, transparent backgrounds, hover styling, legends,
+	    axes, and responsive dimensions to a Plotly figure before Streamlit renders it.
+
+	Args:
+	    figure (go.Figure): Plotly figure receiving the shared presentation settings.
+	    title (str): Optional chart title displayed above the plotting area.
+	    height (int): Figure height in pixels.
+
+	Returns:
+	    go.Figure: The themed Plotly figure.
+	"""
+	throw_if( 'figure', figure )
+	figure.update_layout(
+		template='plotly_dark',
+		title={ 'text': title, 'x': 0.01, 'xanchor': 'left' },
+		height=height,
+		autosize=True,
+		paper_bgcolor='#171A1F',
+		plot_bgcolor='#1B2028',
+		font={ 'family': 'Arial, sans-serif', 'size': 13, 'color': '#E2E8F0' },
+		margin={ 'l': 55, 'r': 30, 't': 70 if title else 35, 'b': 55 },
+		legend={ 'orientation': 'h', 'yanchor': 'bottom', 'y': 1.02,
+			'xanchor': 'right', 'x': 1.0 },
+		hoverlabel={ 'bgcolor': '#0F172A', 'font_size': 13,
+			'font_family': 'Arial, sans-serif' },
+		colorway=[ '#38BDF8', '#A78BFA', '#2DD4BF', '#F59E0B', '#F472B6', '#60A5FA',
+			'#34D399', '#FB7185' ] )
+
+	figure.update_xaxes( showgrid=True, gridcolor='rgba(148,163,184,0.16)', zeroline=False,
+		showline=True, linecolor='rgba(148,163,184,0.35)' )
+	figure.update_yaxes( showgrid=True, gridcolor='rgba(148,163,184,0.16)', zeroline=False,
+		showline=True, linecolor='rgba(148,163,184,0.35)' )
+	return figure
+
 def render_mathy_plotly_chart( figure: go.Figure, key: str, filename: str,
 		title: str='', height: int=500 ) -> None:
 	"""Render a themed Plotly chart.
@@ -1974,12 +2013,8 @@ def render_mathy_plotly_chart( figure: go.Figure, key: str, filename: str,
 	throw_if( 'key', key )
 	throw_if( 'filename', filename )
 	apply_mathy_plotly_theme( figure, title, height )
-	chart_config = {
-		'displaylogo': False,
-		'responsive': True,
-		'scrollZoom': True,
-		'toImageButtonOptions': { 'format': 'png', 'filename': filename, 'scale': 2 }
-	}
+	chart_config = { 'displaylogo': False, 'responsive': True, 'scrollZoom': True,
+			'toImageButtonOptions': { 'format': 'png', 'filename': filename, 'scale': 2 } }
 	st.plotly_chart( figure, use_container_width=True, key=key, config=chart_config )
 	
 _streamlit_data_editor = st.data_editor
