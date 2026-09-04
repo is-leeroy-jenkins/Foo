@@ -12968,7 +12968,6 @@ elif mode == 'Astronomical':
 				st.button( 'Clear', key='nearbyobjects_clear',
 					on_click=_clear_nearbyobjects_state, width='stretch' )
 		
-
 			if nearby_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Near Earth Objects'
 
@@ -12985,7 +12984,7 @@ elif mode == 'Astronomical':
 			active_result = st.session_state.get( result_keys[ active_source ] )
 			_promote_astronomical_result( source=active_source, result=active_result )
 
-		st.markdown( '### Results' )
+		st.markdown( '#### Results' )
 		if not active_source:
 			st.info( 'Select a source, configure the request, and submit it to display results.' )
 		else:
@@ -16867,7 +16866,7 @@ elif mode == 'Generation':
 # DATA MANAGEMENT MODE
 # ==============================================================================
 elif mode == 'Data Management':
-	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
+	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
 	with center:
 		st.subheader( f'🏛️ Data Management' )
 		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
