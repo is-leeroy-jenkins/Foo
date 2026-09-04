@@ -9409,7 +9409,6 @@ elif mode == 'Environmental':
 				placeholder='Example: 22201' )
 			
 			coord_c1, coord_c2 = st.columns( 2 )
-			
 			with coord_c1:
 				airnow_latitude = st.text_input( 'Latitude',
 					value=st.session_state.get( 'airnow_latitude', '' ), key='airnow_latitude',
@@ -9440,12 +9439,12 @@ elif mode == 'Environmental':
 			            'latitude/longitude.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
-				airnow_submit = st.button( 'Submit', key='airnow_submit' )
+				airnow_submit = st.button( 'Submit', key='airnow_submit', width='stretch' )
 			
 			with btn_c2:
-				st.button( 'Clear', key='airnow_clear', on_click=_clear_airnow_state )
+				st.button( 'Clear', key='airnow_clear', on_click=_clear_airnow_state,
+					width='stretch' )
 		
 			
 			if airnow_submit:
@@ -9574,11 +9573,11 @@ elif mode == 'Environmental':
 			
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
-				climatedata_submit = st.button( 'Submit', key='climatedata_submit' )
+				climatedata_submit = st.button( 'Submit', key='climatedata_submit', width='stretch' )
 			
 			with btn_c2:
 				st.button( 'Clear', key='climatedata_clear',
-					on_click=_clear_climatedata_state )
+					on_click=_clear_climatedata_state, width='stretch' )
 		
 			
 			if climatedata_submit:
@@ -9735,10 +9734,10 @@ elif mode == 'Environmental':
 			
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
-				eonet_submit = st.button( 'Submit', key='eonet_submit' )
+				eonet_submit = st.button( 'Submit', key='eonet_submit', width='stretch' )
 			
 			with btn_c2:
-				st.button( 'Clear', key='eonet_clear', on_click=_clear_eonet_state )
+				st.button( 'Clear', key='eonet_clear', on_click=_clear_eonet_state, width='stretch' )
 		
 			
 			if eonet_submit:
@@ -9818,11 +9817,12 @@ elif mode == 'Environmental':
 			
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
-				envirofacts_submit = st.button( 'Submit', key='envirofacts_submit' )
+				envirofacts_submit = st.button( 'Submit', key='envirofacts_submit',
+					width='stretch' )
 			
 			with btn_c2:
 				st.button( 'Clear', key='envirofacts_clear',
-					on_click=_clear_envirofacts_state )
+					on_click=_clear_envirofacts_state, width='stretch' )
 		
 			
 			if envirofacts_submit:
@@ -9912,9 +9912,7 @@ elif mode == 'Environmental':
 			
 			with date_c2:
 				tac_end_date = st.date_input( 'End Date',
-					value=st.session_state.get( 'tidesandcurrents_end_date', dt.date.today(
-					
-					) ),
+					value=st.session_state.get( 'tidesandcurrents_end_date', dt.date.today( ) ),
 					key='tidesandcurrents_end_date', disabled=(tac_mode == 'station') )
 			
 			option_c1, option_c2 = st.columns( 2 )
@@ -9954,11 +9952,11 @@ elif mode == 'Environmental':
 			
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
-				tac_submit = st.button( 'Submit', key='tidesandcurrents_submit' )
+				tac_submit = st.button( 'Submit', key='tidesandcurrents_submit', width='stretch' )
 			
 			with btn_c2:
 				st.button( 'Clear', key='tidesandcurrents_clear',
-					on_click=_clear_tidesandcurrents_state )
+					on_click=_clear_tidesandcurrents_state, width='stretch' )
 		
 			
 			if tac_submit:
@@ -10028,8 +10026,7 @@ elif mode == 'Environmental':
 				uvindex_state = st.selectbox( 'State', options=UVINDEX_STATE_CODES,
 					index=UVINDEX_STATE_CODES.index(
 						st.session_state.get( 'uvindex_state', 'VA' ) ), key='uvindex_state',
-					disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state'
-					]) )
+					disabled=(uvindex_mode not in [ 'daily-city-state', 'hourly-city-state' ]) )
 			
 			uvindex_timeout = st.number_input( 'Timeout (seconds)', min_value=5, max_value=120,
 				value=int( st.session_state.get( 'uvindex_timeout', 20 ) ), step=1,
@@ -10040,10 +10037,11 @@ elif mode == 'Environmental':
 			
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
-				uvindex_submit = st.button( 'Submit', key='uvindex_submit' )
+				uvindex_submit = st.button( 'Submit', key='uvindex_submit', width='stretch' )
 			
 			with btn_c2:
-				st.button( 'Clear', key='uvindex_clear', on_click=_clear_uvindex_state )
+				st.button( 'Clear', key='uvindex_clear',
+					on_click=_clear_uvindex_state, width='stretch' )
 		
 			
 			if uvindex_submit:
@@ -10186,7 +10184,6 @@ elif mode == 'Environmental':
 				help='Select only the PurpleAir fields needed for the request.' )
 			
 			bbox_c1, bbox_c2 = st.columns( 2 )
-			
 			with bbox_c1:
 				purpleair_nwlng = st.text_input( 'NW Longitude',
 					value=st.session_state.get( 'purpleair_nwlng', '' ), key='purpleair_nwlng',
@@ -10244,10 +10241,11 @@ elif mode == 'Environmental':
 			
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
-				purpleair_submit = st.button( 'Submit', key='purpleair_submit' )
+				purpleair_submit = st.button( 'Submit', key='purpleair_submit', width='stretch' )
 			
 			with btn_c2:
-				st.button( 'Clear', key='purpleair_clear', on_click=_clear_purpleair_state )
+				st.button( 'Clear', key='purpleair_clear', on_click=_clear_purpleair_state,
+					width='stretch' )
 		
 			
 			if purpleair_submit:
@@ -10392,7 +10390,7 @@ elif mode == 'Environmental':
 			
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
-				openaq_submit = st.button( 'Submit', key='openaq_submit' )
+				openaq_submit = st.button( 'Submit', key='openaq_submit', width='stretch' )
 			
 			with btn_c2:
 				st.button( 'Clear', key='openaq_clear', on_click=_clear_openaq_state )
@@ -10524,10 +10522,11 @@ elif mode == 'Environmental':
 			
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
-				firms_submit = st.button( 'Submit', key='firms_submit' )
+				firms_submit = st.button( 'Submit', key='firms_submit', width='stretch' )
 			
 			with btn_c2:
-				st.button( 'Clear', key='firms_clear', on_click=_clear_firms_state )
+				st.button( 'Clear', key='firms_clear',
+					on_click=_clear_firms_state, width='stretch' )
 		
 			
 			if firms_submit:
@@ -10656,11 +10655,11 @@ elif mode == 'Environmental':
 			
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
-				usgswd_submit = st.button( 'Submit', key='usgswaterdata_submit' )
+				usgswd_submit = st.button( 'Submit', key='usgswaterdata_submit', width='stretch' )
 			
 			with btn_c2:
 				st.button( 'Clear', key='usgswaterdata_clear',
-					on_click=_clear_usgswaterdata_state )
+					on_click=_clear_usgswaterdata_state, width='stretch' )
 		
 			
 			if usgswd_submit:
@@ -11963,10 +11962,10 @@ elif mode == 'Astronomical':
 			b1, b2 = st.columns( 2 )
 			with b1:
 				naval_submit = st.button( 'Submit', key='navalobservatory_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			with b2:
 				naval_clear = st.button( 'Clear', key='navalobservatory_clear',
-					on_click=_clear_navalobservatory_state, use_container_width=True )
+					on_click=_clear_navalobservatory_state, width='stretch' )
 
 			if naval_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'US Naval Observatory'
@@ -12061,8 +12060,7 @@ elif mode == 'Astronomical':
 				satellite_resolution_factor = st.number_input( 'Resolution Factor',
 					min_value=1,
 					max_value=1000,
-					value=int( st.session_state.get( 'satellitecenter_resolution_factor',
-						1 ) ),
+					value=int( st.session_state.get( 'satellitecenter_resolution_factor', 1 ) ),
 					step=1, key='satellitecenter_resolution_factor',
 					disabled=(satellite_mode != 'locations') )
 			
@@ -12078,11 +12076,11 @@ elif mode == 'Astronomical':
 			b1, b2 = st.columns( 2 )
 			with b1:
 				satellite_submit = st.button( 'Submit', key='satellitecenter_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			with b2:
 				st.button( 'Clear', key='satellitecenter_clear',
-					on_click=_clear_satellitecenter_state, use_container_width=True )
+					on_click=_clear_satellitecenter_stat, width='stretch' )
 		
 			if satellite_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Satellite Center'
@@ -12183,11 +12181,10 @@ elif mode == 'Astronomical':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				astro_submit = st.button( 'Submit', key='astrocatalog_submit',
-					use_container_width=True )
+				astro_submit = st.button( 'Submit', key='astrocatalog_submit', width='stretch' )
 			with b2:
 				st.button( 'Clear', key='astrocatalog_clear',
-					on_click=_clear_astrocatalog_state, use_container_width=True )
+					on_click=_clear_astrocatalog_state, width='stretch' )
 		
 
 			if astro_submit:
@@ -12273,13 +12270,11 @@ elif mode == 'Astronomical':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				astroquery_submit = st.button( 'Submit', key='astroquery_submit',
-					use_container_width=True )
+				astroquery_submit = st.button( 'Submit', key='astroquery_submit', width='stretch' )
 			with b2:
 				st.button( 'Clear', key='astroquery_clear', on_click=_clear_astroquery_state,
-					use_container_width=True )
+					width='stretch' )
 		
-
 			if astroquery_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Astro Query'
 
@@ -12362,7 +12357,6 @@ elif mode == 'Astronomical':
 					disabled=(starmap_mode == 'snapshot') )
 			
 			c6, c7 = st.columns( 2 )
-			
 			with c6:
 				starmap_show_box = st.checkbox( 'Show Box',
 					value=st.session_state.get( 'starmap_show_box', True ),
@@ -12374,7 +12368,6 @@ elif mode == 'Astronomical':
 					key='starmap_show_grid', disabled=(starmap_mode == 'object_link') )
 			
 			c8, c9 = st.columns( 2 )
-			
 			with c8:
 				starmap_show_lines = st.checkbox( 'Show Constellation Lines',
 					value=st.session_state.get( 'starmap_show_lines', True ),
@@ -12400,9 +12393,10 @@ elif mode == 'Astronomical':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				starmap_submit = st.button( 'Submit', key='starmap_submit' )
+				starmap_submit = st.button( 'Submit', key='starmap_submit', width='stretch' )
 			with b2:
-				st.button( 'Clear', key='starmap_clear', on_click=_clear_starmap_state )
+				st.button( 'Clear', key='starmap_clear',
+					on_click=_clear_starmap_state, width='stretch' )
 		
 
 			if starmap_submit:
@@ -12486,10 +12480,11 @@ elif mode == 'Astronomical':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				simbad_submit = st.button( 'Submit', key='simbad_submit' )
+				simbad_submit = st.button( 'Submit', key='simbad_submit', width='stretch' )
 			
 			with b2:
-				st.button( 'Clear', key='simbad_clear', on_click=_clear_simbad_state )
+				st.button( 'Clear', key='simbad_clear', on_click=_clear_simbad_state,
+					width='stretch' )
 		
 			if simbad_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'SIMBAD'
@@ -12609,11 +12604,11 @@ elif mode == 'Astronomical':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				spaceweather_submit = st.button( 'Submit', key='spaceweather_submit' )
+				spaceweather_submit = st.button( 'Submit', key='spaceweather_submit', width='stretch' )
 			
 			with b2:
 				st.button( 'Clear', key='spaceweather_clear',
-					on_click=_clear_spaceweather_state )
+					on_click=_clear_spaceweather_state, width='stretch' )
 		
 
 			if spaceweather_submit:
@@ -12772,12 +12767,12 @@ elif mode == 'Astronomical':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				starchart_submit = st.button( 'Submit', key='starchart_submit' )
+				starchart_submit = st.button( 'Submit', key='starchart_submit', width='stretch' )
 			
 			with b2:
-				st.button( 'Clear', key='starchart_clear', on_click=_clear_starchart_state )
+				st.button( 'Clear', key='starchart_clear',
+					on_click=_clear_starchart_state, width='stretch' )
 		
-
 			if starchart_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Star Chart'
 
@@ -12932,7 +12927,6 @@ elif mode == 'Astronomical':
 					key='nearbyobjects_occ', disabled=(nearby_mode != 'nhats_summary') )
 			
 			st.markdown( '#### SBDB Options' )
-			
 			s1, s2, s3 = st.columns( 3 )
 			with s1:
 				nearby_include_physical = st.checkbox( 'Physical Params', value=bool(
@@ -12968,11 +12962,11 @@ elif mode == 'Astronomical':
 			
 			b1, b2 = st.columns( 2 )
 			with b1:
-				nearby_submit = st.button( 'Submit', key='nearbyobjects_submit' )
+				nearby_submit = st.button( 'Submit', key='nearbyobjects_submit', width='stretch' )
 			
 			with b2:
 				st.button( 'Clear', key='nearbyobjects_clear',
-					on_click=_clear_nearbyobjects_state )
+					on_click=_clear_nearbyobjects_state, width='stretch' )
 		
 
 			if nearby_submit:
@@ -13969,7 +13963,6 @@ elif mode == 'Demographic':
 				disabled=(census_mode != 'data') )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				census_for = st.text_input( 'For',
 					value=st.session_state.get( 'census_for', 'state:*' ), key='census_for',
@@ -13993,16 +13986,13 @@ elif mode == 'Demographic':
 			            'for = state:*' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				census_submit = st.button( 'Submit', key='census_submit',
-					use_container_width=True )
+				census_submit = st.button( 'Submit', key='census_submit', width='stretch' )
 			
 			with b2:
 				st.button( 'Clear', key='census_clear', on_click=_clear_census_state,
-					use_container_width=True )
+					width='stretch' )
 		
-
 			if census_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_census_bureau'
 
@@ -14104,7 +14094,6 @@ elif mode == 'Demographic':
 				disabled=(socrata_mode != 'rows') )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				socrata_order = st.text_input( 'Order',
 					value=st.session_state.get( 'socrata_order', '' ), key='socrata_order',
@@ -14116,7 +14105,6 @@ elif mode == 'Demographic':
 					placeholder='locationname', disabled=(socrata_mode != 'rows') )
 			
 			c3, c4, c5 = st.columns( 3 )
-			
 			with c3:
 				socrata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
 					value=int( st.session_state.get( 'socrata_limit', 25 ) ), step=1,
@@ -14137,16 +14125,13 @@ elif mode == 'Demographic':
 			            'Use SoQL clauses for select, where, order, and group.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				socrata_submit = st.button( 'Submit', key='socrata_submit',
-					use_container_width=True )
+				socrata_submit = st.button( 'Submit', key='socrata_submit', width='stretch' )
 			
 			with b2:
-				st.button( 'Clear', key='socrata_clear', on_click=_clear_socrata_state,
-					use_container_width=True )
+				st.button( 'Clear', key='socrata_clear',
+					on_click=_clear_socrata_state, width='stretch' )
 		
-
 			if socrata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_socrata'
 		
@@ -14155,7 +14140,6 @@ elif mode == 'Demographic':
 		# ---------------------
 		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
 			HEALTHDATA_MODES = [ 'rows', 'metadata' ]
-			
 			HEALTHDATA_DOMAINS = [ 'healthdata.gov' ]
 			
 			def _clear_healthdata_state( ) -> None:
@@ -14249,7 +14233,6 @@ elif mode == 'Demographic':
 				disabled=(healthdata_mode != 'rows') )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				healthdata_order = st.text_input( 'Order',
 					value=st.session_state.get( 'healthdata_order', '' ),
@@ -14284,16 +14267,13 @@ elif mode == 'Demographic':
 			            'Use SoQL-style clauses for select, where, order, and group.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				healthdata_submit = st.button( 'Submit', key='healthdata_submit',
-					use_container_width=True )
+				healthdata_submit = st.button( 'Submit', key='healthdata_submit', width='stretch' )
 			
 			with b2:
-				st.button( 'Clear', key='healthdata_clear', on_click=_clear_healthdata_state,
-					use_container_width=True )
+				st.button( 'Clear', key='healthdata_clear',
+					on_click=_clear_healthdata_state, width='stretch' )
 		
-
 			if healthdata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_health'
 		
@@ -14302,7 +14282,6 @@ elif mode == 'Demographic':
 		# ---------------------
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
 			WHO_MODES = [ 'indicator_registry', 'athena' ]
-			
 			WHO_QUERY_PRESETS = [ 'Indicator', 'Dimension', 'DIMENSION/COUNTRY/DimensionValues',
 				'DIMENSION/REGION', 'WHOSIS_000001', 'Custom...' ]
 			
@@ -14405,15 +14384,12 @@ elif mode == 'Demographic':
 			            'queries.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				who_submit = st.button( 'Submit', key='who_submit', use_container_width=True )
+				who_submit = st.button( 'Submit', key='who_submit', width='stretch' )
 			
 			with b2:
-				st.button( 'Clear', key='who_clear', on_click=_clear_who_state,
-					use_container_width=True )
+				st.button( 'Clear', key='who_clear', on_click=_clear_who_state, width='stretch' )
 		
-
 			if who_submit:
 				st.session_state[ 'demographic_active_source' ] = 'who_global'
 
@@ -14422,7 +14398,6 @@ elif mode == 'Demographic':
 		# ---------------------
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
 			UN_MODES = [ 'datasets', 'sdmx_query' ]
-			
 			UN_QUERY_PRESETS = [ 'dataflow', 'datastructure', 'codelist', 'conceptscheme',
 				'dataflow/all/all/latest', 'datastructure/all/all/latest',
 				'codelist/all/all/latest', 'conceptscheme/all/all/latest', 'Custom...' ]
@@ -14516,15 +14491,12 @@ elif mode == 'Demographic':
 			            'codelist, and conceptscheme. Use Custom for dataset-specific paths.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				un_submit = st.button( 'Submit', key='un_submit', use_container_width=True )
+				un_submit = st.button( 'Submit', key='un_submit', width='stretch' )
 			
 			with b2:
-				st.button( 'Clear', key='un_clear', on_click=_clear_un_state,
-					use_container_width=True )
+				st.button( 'Clear', key='un_clear', on_click=_clear_un_state, width='stretch' )
 		
-
 			if un_submit:
 				st.session_state[ 'demographic_active_source' ] = 'united_nations'
 
@@ -14533,7 +14505,6 @@ elif mode == 'Demographic':
 		# ---------------------
 		with st.expander( label='World Population', icon='👥', expanded=False ):
 			WORLDPOP_MODES = [ 'catalog', 'search', 'raster_metadata' ]
-			
 			WORLDPOP_ASSET_PRESETS = [ 'data/pop', 'data/pop/wpgp', 'data/pop/wpgp?iso3=GHA',
 				'data/pop/wpgp?iso3=AUS', 'data/pop/wpgp?iso3=USA', 'data/pop/wpgp?iso3=GBR',
 				'data/pop/wpgp?iso3=NGA', 'data/pop/wpgp?iso3=KEN', 'data/pop/wpgp?iso3=IND',
@@ -14651,7 +14622,6 @@ elif mode == 'Demographic':
 						'Custom...') )
 			
 			c1, c2, c3 = st.columns( 3 )
-			
 			with c1:
 				worldpop_page = st.number_input( 'Page', min_value=1, max_value=100000,
 					value=int( st.session_state.get( 'worldpop_page', 1 ) ), step=1,
@@ -14672,16 +14642,13 @@ elif mode == 'Demographic':
 			            'base URL.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				worldpop_submit = st.button( 'Submit', key='worldpop_submit',
-					use_container_width=True )
+				worldpop_submit = st.button( 'Submit', key='worldpop_submit', width='stretch' )
 			
 			with b2:
 				st.button( 'Clear', key='worldpop_clear', on_click=_clear_worldpop_state,
-					use_container_width=True )
+					width='stretch' )
 		
-
 			if worldpop_submit:
 				st.session_state[ 'demographic_active_source' ] = 'world_population'
 		
@@ -14799,16 +14766,12 @@ elif mode == 'Demographic':
 			            'accept_datause_restrictions=true.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				wonder_submit = st.button( 'Submit', key='wonder_submit',
-					use_container_width=True )
+				wonder_submit = st.button( 'Submit', key='wonder_submit', width='stretch' )
 			
 			with b2:
-				st.button( 'Clear', key='wonder_clear', on_click=_clear_wonder_state,
-					use_container_width=True )
+				st.button( 'Clear', key='wonder_clear', on_click=_clear_wonder_state, width='stretch' )
 		
-
 			if wonder_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_wonder'
 		
@@ -14849,7 +14812,6 @@ elif mode == 'Demographic':
 			            'returned documents into the shared loader state for downstream use.' )
 			
 			b1, b2, b3 = st.columns( 3 )
-			
 			with b1:
 				pubmed_submit = st.button( 'Submit', key='pubmed_submit',
 					use_container_width=True )
@@ -14867,12 +14829,10 @@ elif mode == 'Demographic':
 				if can_save:
 					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='pubmed_loader_output.txt', mime='text/plain',
-						key='pubmed_save', use_container_width=True )
+						key='pubmed_save', width='stretch' )
 				else:
-					st.button( 'Save', key='pubmed_save_disabled', disabled=True,
-						use_container_width=True )
+					st.button( 'Save', key='pubmed_save_disabled', disabled=True, width='stretch' )
 		
-
 			if pubmed_submit:
 				st.session_state[ 'demographic_active_source' ] = 'pub_med_search'
 		
@@ -14981,14 +14941,12 @@ elif mode == 'Demographic':
 			            'Use the API tab on the city dataset page to find the dataset ID.' )
 			
 			b1, b2, b3 = st.columns( 3 )
-			
 			with b1:
-				open_city_submit = st.button( 'Submit', key='open_city_submit',
-					use_container_width=True )
+				open_city_submit = st.button( 'Submit', key='open_city_submit', width='stretch' )
 			
 			with b2:
 				open_city_clear = st.button( 'Clear', key='open_city_clear',
-					on_click=_clear_open_city_state, use_container_width=True )
+					on_click=_clear_open_city_state, width='stretch' )
 			
 			with b3:
 				can_save = (st.session_state.get(
@@ -14999,12 +14957,10 @@ elif mode == 'Demographic':
 				if can_save:
 					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='open_city_loader_output.txt', mime='text/plain',
-						key='open_city_save', use_container_width=True )
+						key='open_city_save', width='stretch' )
 				else:
-					st.button( 'Save', key='open_city_save_disabled', disabled=True,
-						use_container_width=True )
+					st.button( 'Save', key='open_city_save_disabled', disabled=True, width='stretch' )
 		
-
 			if open_city_submit:
 				st.session_state[ 'demographic_active_source' ] = 'open_city_data'
 
