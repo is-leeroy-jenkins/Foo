@@ -16934,7 +16934,7 @@ elif mode == 'Data Management':
 			table = st.selectbox( 'Table', tables )
 			df_full = read_table( table )
 		
-		# ---------------- UPLOAD TAB
+		# --- UPLOAD TAB
 		with tabs[ 0 ]:
 			uploaded_file = st.file_uploader( 'Upload Excel File', type=[ 'xlsx' ] )
 			overwrite = st.checkbox( 'Overwrite existing tables', value=True )
@@ -16980,7 +16980,7 @@ elif mode == 'Data Management':
 						pass
 					st.error( f'Import failed — transaction rolled back.\n\n{e}' )
 		
-		# ---------------- BROWSE TAB
+		# ---- BROWSE TAB
 		with tabs[ 1 ]:
 			tables = list_tables( )
 			if tables:
@@ -16990,7 +16990,7 @@ elif mode == 'Data Management':
 			else:
 				st.info( 'No tables available.' )
 		
-		# ---------------- CRUD
+		# ---- CRUD
 		with tabs[ 2 ]:
 			tables = list_tables( )
 			if not tables:
@@ -17083,7 +17083,7 @@ elif mode == 'Data Management':
 					st.success( 'Row deleted.' )
 					st.rerun( )
 		
-		# ---------------- EXPLORE
+		# ---- EXPLORE
 		with tabs[ 3 ]:
 			tables = list_tables( )
 			if tables:
@@ -17094,7 +17094,7 @@ elif mode == 'Data Management':
 				df_page = read_table( table, page_size, offset )
 				render_table( df_page )
 		
-		# ---------------- FILTER
+		# ----- FILTER
 		with tabs[ 4 ]:
 			tables = list_tables( )
 			if tables:
@@ -17107,7 +17107,7 @@ elif mode == 'Data Management':
 				
 				render_table( df )
 		
-		# ---------------- AGGREGATE
+		# ------ AGGREGATE
 		with tabs[ 5 ]:
 			tables = list_tables( )
 			if tables:
@@ -17124,7 +17124,7 @@ elif mode == 'Data Management':
 					elif agg == 'COUNT':
 						st.metric( 'Result', df[ col ].count( ) )
 		
-		# ---------------- VISUALIZE
+		# ------ VISUALIZE
 		with tabs[ 6 ]:
 			tables = list_tables( )
 			if tables:
@@ -17132,7 +17132,7 @@ elif mode == 'Data Management':
 				df = read_table( table )
 				create_visualization( df )
 		
-		# ---------------- ADMIN
+		# ------- ADMIN
 		with tabs[ 7 ]:
 			tables = list_tables( )
 			if tables:
@@ -17301,7 +17301,7 @@ elif mode == 'Data Management':
 						st.success( 'Column dropped.' )
 						st.rerun( )
 		
-		# ---------------- SQL
+		# ------- SQL
 		with tabs[ 8 ]:
 			st.subheader( 'SQL Console' )
 			query = st.text_area( 'Enter SQL Query' )
