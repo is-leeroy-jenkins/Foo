@@ -12080,7 +12080,7 @@ elif mode == 'Astronomical':
 			
 			with b2:
 				st.button( 'Clear', key='satellitecenter_clear',
-					on_click=_clear_satellitecenter_stat, width='stretch' )
+					on_click=_clear_satellitecenter_state, width='stretch' )
 		
 			if satellite_submit:
 				st.session_state[ 'astronomical_active_source' ] = 'Satellite Center'
@@ -12980,6 +12980,7 @@ elif mode == 'Astronomical':
 				'Star Map': 'starmap_results', 'SIMBAD': 'simbad_results',
 				'Space Weather': 'spaceweather_results', 'Star Chart': 'starchart_results',
 				'Near Earth Objects': 'nearbyobjects_results', }
+		
 		if active_source in result_keys:
 			active_result = st.session_state.get( result_keys[ active_source ] )
 			_promote_astronomical_result( source=active_source, result=active_result )
