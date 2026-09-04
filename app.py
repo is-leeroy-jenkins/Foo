@@ -499,6 +499,18 @@ def rebuild_raw_text_from_documents( ) -> str | None:
 			str ) and d.page_content.strip( ) )
 	return text if text.strip( ) else None
 
+def blue_divider( ) -> None:
+	"""Render the configured blue section divider.
+
+	Purpose:
+	    Inserts the application-standard HTML divider into the Streamlit interface using the
+	    divider markup defined in the configuration module.
+
+	Returns:
+	    None: This function renders Streamlit markup and does not return a value.
+	"""
+	st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+	
 # -------- Text Utilities ---------------------
 
 def render_google_results( response ) -> str:
