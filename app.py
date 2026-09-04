@@ -17021,7 +17021,7 @@ elif mode == 'Data Management':
 				with browse_left:
 					table = st.selectbox( 'Select Table:', tables, key='table_name' )
 				
-				set_blue_divider(
+				set_blue_divider(  )
 				df = read_table( table )
 				render_data_editor( df, use_container_width=True, height=400 )
 			else:
