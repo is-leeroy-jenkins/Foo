@@ -1832,6 +1832,69 @@ def profile_column( column_name: str, series: pd.Series, override_role: str='',
 		'datetime_success_ratio': datetime_success, 'leading_zero_ratio': leading_zero_ratio,
 		'is_integer_like': integer_like, 'confidence': confidence, 'reason': reason }
 
+def get_column_name_tokens( column_name: str ) -> List[ str ]:
+	"""Return normalized semantic tokens from a dataframe column name.
+
+	Purpose:
+	    Splits camel-case, whitespace-delimited, and punctuation-delimited column names into exact
+	    lowercase tokens so schema inference can use semantic evidence without unsafe substring
+	    matches.
+
+	Args:
+	    column_name (str): Source dataframe column name.
+
+	Returns:
+	    List[str]: Ordered normalized name tokens.
+	"""
+	throw_if( 'column_name', column_name )
+	spaced_name = re.sub( r'([a-z0-9])([A-Z])', r'\1 \2', str( column_name ) )
+	return [ token for token in re.split( r'[^A-Za-z0-9]+', spaced_name.lower( ) ) if token ]
+
+def get_populated_mask( series: pd.Series ) -> pd.Series:
+	"""Return the populated-value mask for a series.
+
+	Purpose:
+	    Identifies values that are neither null nor blank text so conversion-success ratios use the
+	    number of populated observations rather than the dataframe row count.
+
+	Args:
+	    series (pd.Series): Series evaluated for populated values.
+
+	Returns:
+	    pd.Series: Boolean mask aligned to the source series.
+	"""
+	throw_if( 'series', series )
+	text_values = series.astype( 'string' ).str.strip( )
+	return series.notna( ) & text_values.ne( '' )
+
+def parse_numeric_series( series: pd.Series ) -> pd.Series:
+	"""Parse numeric values without modifying the source series.
+
+	Purpose:
+	    Converts native numbers and common database or spreadsheet numeric text into numeric values.
+	    Thousands separators, currency symbols, percentage suffixes, and accounting parentheses are
+	    handled once in a dedicated conversion path while unparseable values become missing.
+
+	Args:
+	    series (pd.Series): Source values evaluated as a numeric candidate.
+
+	Returns:
+	    pd.Series: Numeric values aligned to the source index.
+	"""
+	throw_if( 'series', series )
+	if pd.api.types.is_numeric_dtype( series ) and not pd.api.types.is_bool_dtype( series ):
+		return pd.to_numeric( series, errors='coerce' )
+
+	text_values = series.astype( 'string' ).str.strip( )
+	accounting_mask = text_values.str.match( r'^\(.*\)$', na=False )
+	cleaned_values = text_values.str.replace( r'^\((.*)\)$', r'-\1', regex=True )
+	cleaned_values = cleaned_values.str.replace( r'[$£€¥,]', '', regex=True )
+	cleaned_values = cleaned_values.str.replace( r'\s+', '', regex=True )
+	cleaned_values = cleaned_values.str.replace( r'%$', '', regex=True )
+	parsed_values = pd.to_numeric( cleaned_values, errors='coerce' )
+	parsed_values.loc[ accounting_mask & parsed_values.gt( 0 ) ] *= -1
+	return parsed_values
+
 # -------- Expander Utilities
 
 def set_blue_divider( ) -> None:
