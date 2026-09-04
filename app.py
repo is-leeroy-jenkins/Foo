@@ -129,8 +129,8 @@ if 'top_percent' not in st.session_state:
 if 'frequency_penalty' not in st.session_state:
 	st.session_state[ 'frequency_penalty' ] = 0.0
 
-if 'presense_penalty' not in st.session_state:
-	st.session_state[ 'presense_penalty' ] = 0.0
+if 'presence_penalty' not in st.session_state:
+	st.session_state[ 'presence_penalty' ] = 0.0
 
 if 'background' not in st.session_state:
 	st.session_state[ 'background' ] = False
@@ -212,7 +212,7 @@ for corpus in cfg.REQUIRED_CORPORA:
 		nltk.download( corpus )
 
 # =====================================================================
-# UTILITITES
+# UTILITIES
 # =====================================================================
 
 def filter_kwargs_for_callable( fn: Any, kwargs: dict[ str, Any ] ) -> dict[ str, Any ]:
@@ -1576,7 +1576,7 @@ with st.sidebar:
 	st.divider( )
 	
 	# ------------- Modes -------------
-	st.text( '🕹️ Mode' )
+	st.text( '🎮 Mode' )
 	with st.expander( label='Functionality', expanded=True ):
 		mode = st.radio( label='Mode', options=modes, label_visibility='collapsed' )
 		if mode:

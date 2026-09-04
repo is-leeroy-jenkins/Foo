@@ -5,11 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="649d1b1c-e24f-435b-9576-30e7d61c1f89" name="Changes" comment="updates">
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/foo.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/foo.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processors.py" beforeDir="false" afterPath="$PROJECT_DIR$/processors.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,6 +38,7 @@
             <option value="$PROJECT_DIR$/agents.py" />
             <option value="$PROJECT_DIR$/app.py" />
             <option value="$PROJECT_DIR$/fetchers.py" />
+            <option value="$PROJECT_DIR$/app.py" />
           </set>
         </option>
       </LargeFiles>
@@ -88,7 +87,7 @@
     "node.js.selected.package.standard": "",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "Errors",
+    "settings.editor.selected.configurable": "copyright.profiles",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -110,6 +109,11 @@
         <option value="bundled-python-sdk-821f704e66d9-5bd6d13a2a75-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-262.9437.214" />
       </set>
     </attachedChunks>
+  </component>
+  <component name="SshConsoleOptionsProvider">
+    <option name="myEncoding" value="UTF-8" />
+    <option name="myConnectionType" value="NONE" />
+    <option name="myConnectionId" value="" />
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -151,23 +155,7 @@
       <workItem from="1788041406894" duration="3691000" />
       <workItem from="1788100059747" duration="2068000" />
       <workItem from="1788192896417" duration="912000" />
-      <workItem from="1788513623014" duration="1311000" />
-    </task>
-    <task id="LOCAL-00055" summary="updates">
-      <option name="closed" value="true" />
-      <created>1781389169770</created>
-      <option name="number" value="00055" />
-      <option name="presentableId" value="LOCAL-00055" />
-      <option name="project" value="LOCAL" />
-      <updated>1781389169771</updated>
-    </task>
-    <task id="LOCAL-00056" summary="updates">
-      <option name="closed" value="true" />
-      <created>1781389184045</created>
-      <option name="number" value="00056" />
-      <option name="presentableId" value="LOCAL-00056" />
-      <option name="project" value="LOCAL" />
-      <updated>1781389184045</updated>
+      <workItem from="1788513623014" duration="3440000" />
     </task>
     <task id="LOCAL-00057" summary="updates">
       <option name="closed" value="true" />
@@ -545,7 +533,23 @@
       <option name="project" value="LOCAL" />
       <updated>1788101579525</updated>
     </task>
-    <option name="localTasksCounter" value="104" />
+    <task id="LOCAL-00104" summary="updates">
+      <option name="closed" value="true" />
+      <created>1788515024481</created>
+      <option name="number" value="00104" />
+      <option name="presentableId" value="LOCAL-00104" />
+      <option name="project" value="LOCAL" />
+      <updated>1788515024481</updated>
+    </task>
+    <task id="LOCAL-00105" summary="updates">
+      <option name="closed" value="true" />
+      <created>1788515064568</created>
+      <option name="number" value="00105" />
+      <option name="presentableId" value="LOCAL-00105" />
+      <option name="project" value="LOCAL" />
+      <updated>1788515064568</updated>
+    </task>
+    <option name="localTasksCounter" value="106" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
