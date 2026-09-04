@@ -86,7 +86,8 @@ import nltk
 from nltk import sent_tokenize
 from nltk.corpus import stopwords, wordnet, words
 from nltk.tokenize import word_tokenize
-import plotly.graph_objects as px
+import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 from pandas import DataFrame
 import streamlit as st
@@ -1022,7 +1023,7 @@ def create_visualization( df: DataFrame ) -> None:
 		col = st.selectbox( 'Column', numeric_cols )
 		values = pd.to_numeric( df_plot[ col ], errors='coerce' ).dropna( ).tolist( )
 		
-		fig = px.Figure( data=[ px.Histogram( x=values ) ] )
+		fig = go.Figure( data=[ go.Histogram( x=values ) ] )
 		fig.update_layout( xaxis_title=col, yaxis_title='Count' )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -1037,7 +1038,7 @@ def create_visualization( df: DataFrame ) -> None:
 		x_values = df_plot[ x ].astype( str ).tolist( )
 		y_values = pd.to_numeric( df_plot[ y ], errors='coerce' ).fillna( 0 ).tolist( )
 		
-		fig = px.Figure( data=[ px.Bar( x=x_values, y=y_values ) ] )
+		fig = go.Figure( data=[ go.Bar( x=x_values, y=y_values ) ] )
 		fig.update_layout( xaxis_title=x, yaxis_title=y )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -1052,7 +1053,7 @@ def create_visualization( df: DataFrame ) -> None:
 		x_values = df_plot[ x ].astype( str ).tolist( )
 		y_values = pd.to_numeric( df_plot[ y ], errors='coerce' ).fillna( 0 ).tolist( )
 		
-		fig = px.Figure( data=[ px.Scatter( x=x_values, y=y_values, mode='lines' ) ] )
+		fig = go.Figure( data=[ go.Scatter( x=x_values, y=y_values, mode='lines' ) ] )
 		fig.update_layout( xaxis_title=x, yaxis_title=y )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -1071,7 +1072,7 @@ def create_visualization( df: DataFrame ) -> None:
 		x_values = x_series[ mask ].tolist( )
 		y_values = y_series[ mask ].tolist( )
 		
-		fig = px.Figure( data=[ px.Scatter( x=x_values, y=y_values, mode='markers' ) ] )
+		fig = go.Figure( data=[ go.Scatter( x=x_values, y=y_values, mode='markers' ) ] )
 		fig.update_layout( xaxis_title=x, yaxis_title=y )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -1083,7 +1084,7 @@ def create_visualization( df: DataFrame ) -> None:
 		col = st.selectbox( 'Column', numeric_cols, key='viz_box_col' )
 		values = pd.to_numeric( df_plot[ col ], errors='coerce' ).dropna( ).tolist( )
 		
-		fig = px.Figure( data=[ px.Box( y=values, name=col ) ] )
+		fig = go.Figure( data=[ go.Box( y=values, name=col ) ] )
 		fig.update_layout( yaxis_title=col )
 		st.plotly_chart( fig, use_container_width=True )
 	
@@ -1095,8 +1096,8 @@ def create_visualization( df: DataFrame ) -> None:
 		col = st.selectbox( 'Category Column', categorical_cols )
 		counts = df_plot[ col ].astype( str ).value_counts( )
 		
-		fig = px.Figure(
-			data=[ px.Pie( labels=counts.index.tolist( ), values=counts.values.tolist( ) ) ] )
+		fig = go.Figure(
+			data=[ go.Pie( labels=counts.index.tolist( ), values=counts.values.tolist( ) ) ] )
 		st.plotly_chart( fig, use_container_width=True )
 	
 	elif chart == 'Correlation':
@@ -1110,7 +1111,7 @@ def create_visualization( df: DataFrame ) -> None:
 		
 		corr = corr_df.corr( )
 		
-		fig = px.Figure( data=[ px.Heatmap( z=corr.values.tolist( ), x=corr.columns.tolist( ),
+		fig = go.Figure( data=[ go.Heatmap( z=corr.values.tolist( ), x=corr.columns.tolist( ),
 			y=corr.index.tolist( ) ) ] )
 		st.plotly_chart( fig, use_container_width=True )
 
@@ -17650,15 +17651,18 @@ elif mode == 'Data Management':
 			df_profile = st.session_state.get( 'df_profile' )
 			st.markdown( '##### Data Profiling' )
 			tables = list_tables( )
+			
 			if tables:
 				adm_c1, adm_c2, adm_c3 = st.columns( 3 )
 				with adm_c1:
 					table = st.selectbox( 'Select Table', tables, key='profile_table' )
 				
 				if st.button( label='Generate Profile', icon='⚡' ):
-					df_profile = create_profile_table( table )
+					st.session_state[ 'df_profile' ] = create_profile_table( table )
 				
-				render_data_editor( df_profile, use_container_width=True, height=400 )
+				df_profile = st.session_state.get( 'df_profile', DataFrame( ) )
+				if not df_profile.empty:
+					render_data_editor( df_profile, use_container_width=True, height=400 )
 			
 			set_blue_divider( )
 			st.markdown( '##### Drop Table' )
