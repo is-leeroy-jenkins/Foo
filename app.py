@@ -60,7 +60,7 @@ import time
 import types
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Callable
 from langchain_core.documents import Document
 from lxml import etree
 from processors import PdfParser
@@ -1951,6 +1951,36 @@ def parse_datetime_series( series: pd.Series ) -> pd.Series:
 		return pd.to_datetime( text_values, errors='coerce' )
 	except (TypeError, ValueError):
 		return pd.to_datetime( series.astype( 'string' ).str.strip( ), errors='coerce' )
+
+def render_mathy_plotly_chart( figure: go.Figure, key: str, filename: str,
+		title: str='', height: int=500 ) -> None:
+	"""Render a themed Plotly chart.
+
+	Purpose:
+	    Applies the shared Mathy Plotly theme and renders the figure with a responsive toolbar,
+	    high-resolution PNG export, zooming, panning, autoscaling, and no Plotly branding.
+
+	Args:
+	    figure (go.Figure): Plotly figure rendered in Streamlit.
+	    key (str): Unique Streamlit element key assigned to the chart.
+	    filename (str): Base filename used by the Plotly image-download control.
+	    title (str): Optional chart title.
+	    height (int): Figure height in pixels.
+
+	Returns:
+	    None: This function renders the chart and does not return a value.
+	"""
+	throw_if( 'figure', figure )
+	throw_if( 'key', key )
+	throw_if( 'filename', filename )
+	apply_mathy_plotly_theme( figure, title, height )
+	chart_config = {
+		'displaylogo': False,
+		'responsive': True,
+		'scrollZoom': True,
+		'toImageButtonOptions': { 'format': 'png', 'filename': filename, 'scale': 2 }
+	}
+	st.plotly_chart( figure, use_container_width=True, key=key, config=chart_config )
 	
 _streamlit_data_editor = st.data_editor
 
@@ -4551,7 +4581,7 @@ elif mode == 'Scraping':
 			page_result[ 'errors' ].append( f'Fetch: {str( exc )}' )
 			return page_result
 		
-		REGISTRY: dict[ str, tuple[ str, callable ] ] = {
+		REGISTRY: dict[ str, tuple[ str, Callable ] ] = {
 			'scrape_headings': ('Headings', fetcher.scrape_headings),
 			'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
 			'scrape_lists': ('Lists', fetcher.scrape_lists),
