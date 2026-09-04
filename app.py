@@ -1889,7 +1889,6 @@ if mode == 'Loading':
 				st.text( 'Semantic XML Loading (Unstructured)' )
 				
 				col1, col2 = st.columns( 2 )
-				
 				with col1:
 					chunk_size = st.number_input( 'Chunk Size', min_value=100, max_value=5000,
 						value=1000, step=100 )
@@ -1947,7 +1946,7 @@ if mode == 'Loading':
 				# ------------------------------------------------------------------
 				st.divider( )
 				st.text( 'Structured XML Tree Loading (XPath)' )
-				if st.button( 'Load XML Tree', use_container_width=True, icon='📤', ):
+				if st.button( 'Load XML Tree', use_container_width=True, icon='🎄', ):
 					if xml_file is None:
 						st.warning( 'Please select an XML file.' )
 					else:
@@ -1969,7 +1968,6 @@ if mode == 'Loading':
 							st.session_state[ 'xml_tree_loaded' ] = True
 							st.session_state[ 'xml_namespaces' ] = loader.xml_namespaces
 							st.session_state[ 'xml_xpath_results' ] = None
-							
 							st.success( 'XML tree loaded successfully.' )
 						else:
 							st.warning( 'Failed to parse XML tree.' )
@@ -2036,8 +2034,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_word = col_load.button( 'Load', key='word_load', icon='📤', )
-				clear_word = col_clear.button( 'Clear', key='word_clear', icon='🧹', )
+				load_word = col_load.button( 'Load', key='word_load', icon='📤', width='stretch' )
+				clear_word = col_clear.button( 'Clear', key='word_clear', icon='🧹', width='stretch' )
 				can_save = (st.session_state.get( 'active_loader' ) == 'WordLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
 					'raw_text' ).strip( ))
@@ -2045,9 +2043,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='word_loader_output.txt', mime='text/plain', key='word_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='word_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='word_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -2137,8 +2136,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_pdf = col_load.button( 'Load', key='pdf_load', icon='📤', )
-				clear_pdf = col_clear.button( 'Clear', key='pdf_clear', icon='🧹', )
+				load_pdf = col_load.button( 'Load', key='pdf_load', icon='📤', width='stretch' )
+				clear_pdf = col_clear.button( 'Clear', key='pdf_clear', icon='🧹', width='stretch' )
 				save_pdf = col_save.empty( )
 				
 				# --------------------------------------------------
@@ -2218,9 +2217,10 @@ if mode == 'Loading':
 				if can_save:
 					save_pdf.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='pdf_loader_output.txt', mime='text/plain', key='pdf_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					save_pdf.button( 'Save', key='pdf_save_disabled', disabled=True, icon='💾' )
+					save_pdf.button( 'Save', key='pdf_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 
 			# ----------------------------
 			# --- Expander Power Point Loader
@@ -2233,8 +2233,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save (same row, same style)
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_pptx = col_load.button( 'Load', key='pptx_load', icon='📤', )
-				clear_pptx = col_clear.button( 'Clear', key='pptx_clear', icon='🧹', )
+				load_pptx = col_load.button( 'Load', key='pptx_load', icon='📤', width='stretch' )
+				clear_pptx = col_clear.button( 'Clear', key='pptx_clear', icon='🧹', width='stretch' )
 				
 				# ---------- Save
 				can_save = (st.session_state.get(
@@ -2245,9 +2245,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='powerpoint_loader_output.txt', mime='text/plain',
-						key='pptx_save', icon='💾' )
+						key='pptx_save', icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='pptx_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='pptx_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# ---------- Clear
 				if clear_pptx:
@@ -2295,8 +2296,9 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_ipynb = col_load.button( 'Load', key='ipynb_load', icon='📤', )
-				clear_ipynb = col_clear.button( 'Clear', key='ipynb_clear', icon='🧹', )
+				load_ipynb = col_load.button( 'Load', key='ipynb_load', icon='📤', width='stretch' )
+				clear_ipynb = col_clear.button( 'Clear', key='ipynb_clear',
+					icon='🧹', width='stretch' )
 				
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'JupyterNotebookLoader' and isinstance(
@@ -2306,9 +2308,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='jupyter_notebook_loader_output.txt', mime='text/plain',
-						key='ipynb_save', icon='💾' )
+						key='ipynb_save', icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='ipynb_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='ipynb_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -2386,8 +2389,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_excel = col_load.button( 'Load', key='excel_load', icon='📤', )
-				clear_excel = col_clear.button( 'Clear', key='excel_clear', icon='🧹', )
+				load_excel = col_load.button( 'Load', key='excel_load',
+					icon='📤', width='stretch' )
+				clear_excel = col_clear.button( 'Clear', key='excel_clear',
+					icon='🧹', width='stretch' )
 				can_save = (st.session_state.get( 'active_loader' ) == 'ExcelLoader' and
 				            isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -2396,9 +2401,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='excel_loader_output.txt', mime='text/plain', key='excel_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='excel_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='excel_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear (remove only ExcelLoader documents)
@@ -2434,7 +2440,6 @@ if mode == 'Loading':
 						if load_mode == 'Tabular + SQLite':
 							sqlite_path = os.path.join( "stores", "sqlite", "data.db" )
 							os.makedirs( os.path.dirname( sqlite_path ), exist_ok=True )
-							
 							if sheet_name.strip( ):
 								dfs = { sheet_name: pd.read_excel( excel_path,
 									sheet_name=sheet_name, ) }
@@ -2515,8 +2520,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_md = col_load.button( 'Load', key='md_load', icon='📤', )
-				clear_md = col_clear.button( 'Clear', key='md_clear', icon='🧹', )
+				load_md = col_load.button( 'Load', key='md_load', icon='📤', width='stretch' )
+				clear_md = col_clear.button( 'Clear', key='md_clear', icon='🧹', width='stretch' )
 				
 				can_save = (
 						st.session_state.get( 'active_loader' ) == 'MarkdownLoader' and isinstance(
@@ -2526,9 +2531,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='markdown_loader_output.txt', mime='text/plain', key='md_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='md_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='md_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -2567,8 +2573,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save (same row, same style)
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_html = col_load.button( 'Load', key='html_load', icon='📤', )
-				clear_html = col_clear.button( 'Clear', key='html_clear', icon='🧹', )
+				load_html = col_load.button( 'Load', key='html_load', icon='📤', width='stretch' )
+				clear_html = col_clear.button( 'Clear', key='html_clear', icon='🧹', width='stretch' )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'HtmlLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -2577,9 +2583,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='html_loader_output.txt', mime='text/plain', key='html_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='html_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='html_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear (UNCHANGED behavior)
@@ -2689,8 +2696,8 @@ if mode == 'Loading':
 					help='Maximum characters read', )
 				
 				col_fetch, col_clear, col_save = st.columns( 3 )
-				arxiv_fetch = col_fetch.button( 'Load', key='arxiv_fetch', icon='📤', )
-				arxiv_clear = col_clear.button( 'Clear', key='arxiv_clear', icon='🧹', )
+				arxiv_fetch = col_fetch.button( 'Load', key='arxiv_fetch', icon='📤', width='stretch' )
+				arxiv_clear = col_clear.button( 'Clear', key='arxiv_clear', icon='🧹', width='stretch' )
 				can_save = (st.session_state.get( 'active_loader' ) == 'ArXivLoader' and
 				            isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -2699,9 +2706,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='arxiv_loader_output.txt', mime='text/plain', key='arxiv_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='arxiv_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='arxiv_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				if arxiv_clear and st.session_state.get( 'documents' ):
 					st.session_state.documents = [ d for d in st.session_state.documents if
@@ -2747,8 +2755,8 @@ if mode == 'Loading':
 					help='Upper limit on the number of characters', )
 				
 				col_fetch, col_clear, col_save = st.columns( 3 )
-				wiki_fetch = col_fetch.button( 'Load', key='wiki_fetch', icon='📤', )
-				wiki_clear = col_clear.button( 'Clear', key='wiki_clear', icon='🧹', )
+				wiki_fetch = col_fetch.button( 'Load', key='wiki_fetch', icon='📤', width='stretch' )
+				wiki_clear = col_clear.button( 'Clear', key='wiki_clear', icon='🧹', width='stretch' )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'WikiLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -2757,9 +2765,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='wiki_loader_output.txt', mime='text/plain', key='wiki_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='wiki_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='wiki_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				if wiki_clear and st.session_state.get( 'documents' ):
 					st.session_state.documents = [ d for d in st.session_state.documents if
@@ -2813,8 +2822,8 @@ if mode == 'Loading':
 					     "limits.", )
 				
 				col_fetch, col_clear, col_save = st.columns( 3 )
-				gh_fetch = col_fetch.button( "Load", key="gh_fetch", icon='📤', )
-				gh_clear = col_clear.button( "Clear", key="gh_clear", icon='🧹', )
+				gh_fetch = col_fetch.button( "Load", key="gh_fetch", icon='📤', width='stretch' )
+				gh_clear = col_clear.button( "Clear", key="gh_clear", icon='🧹', width='stretch' )
 				
 				can_save = (
 						st.session_state.get( "active_loader" ) == "GithubLoader" and isinstance(
@@ -2824,9 +2833,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( "Save", data=st.session_state.get( "raw_text" ),
 						file_name="github_loader_output.txt", mime="text/plain", key="gh_save",
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( "Save", key="gh_save_disabled", disabled=True, icon='💾' )
+					col_save.button( "Save", key="gh_save_disabled", disabled=True,
+						icon='💾', width='stretch' )
 				
 				if gh_clear and st.session_state.get( "documents" ):
 					st.session_state.documents = [ d for d in st.session_state.documents if
@@ -2869,8 +2879,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_outlook = col_load.button( 'Load', key='outlook_load', icon='📤', )
-				clear_outlook = col_clear.button( 'Clear', key='outlook_clear', icon='🧹', )
+				load_outlook = col_load.button( 'Load', key='outlook_load', icon='📤', width='stretch' )
+				clear_outlook = col_clear.button( 'Clear', key='outlook_clear', icon='🧹', width='stretch' )
 				
 				can_save = (
 						st.session_state.get( 'active_loader' ) == 'OutlookLoader' and isinstance(
@@ -2880,10 +2890,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='outlook_loader_output.txt', mime='text/plain',
-						key='outlook_save', icon='📥' )
+						key='outlook_save', icon='📥', width='stretch' )
 				else:
 					col_save.button( 'Save', key='outlook_save_disabled', disabled=True,
-						icon='💾' )
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -2940,8 +2950,8 @@ if mode == 'Loading':
 					help="Keep loading remaining URLs if one page fails." )
 				
 				col_fetch, col_clear, col_save = st.columns( 3 )
-				load_web = col_fetch.button( "Load", key="web_fetch", icon='📤', )
-				clear_web = col_clear.button( "Clear", key="web_clear", icon='🧹', )
+				load_web = col_fetch.button( "Load", key="web_fetch", icon='📤', width='stretch' )
+				clear_web = col_clear.button( "Clear", key="web_clear", icon='🧹', width='stretch' )
 				can_save = (st.session_state.get( "active_loader" ) == "WebLoader" and isinstance(
 					st.session_state.get( "raw_text" ), str ) and st.session_state.get(
 					"raw_text" ).strip( ))
@@ -2949,9 +2959,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( "Save", data=st.session_state.get( "raw_text" ),
 						file_name="web_loader_output.txt", mime="text/plain", key="web_save",
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( "Save", key="web_save_disabled", disabled=True, icon='💾' )
+					col_save.button( "Save", key="web_save_disabled", disabled=True,
+						icon='💾', width='stretch' )
 				
 				if clear_web and st.session_state.get( "documents" ):
 					st.session_state.documents = [ d for d in st.session_state.documents if
@@ -3003,8 +3014,8 @@ if mode == 'Loading':
 					key='crawl_domain_lock', )
 				
 				col_run, col_clear, col_save = st.columns( 3 )
-				run_crawl = col_run.button( 'Load', key='crawl_run', icon='🏃', )
-				clear_crawl = col_clear.button( 'Clear', key='crawl_clear', icon='🧹', )
+				run_crawl = col_run.button( 'Load', key='crawl_run', icon='🏃', width='stretch' )
+				clear_crawl = col_clear.button( 'Clear', key='crawl_clear', icon='🧹', width='stretch' )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'WebCrawler' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3013,9 +3024,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='web_crawler_output.txt', mime='text/plain', key='crawl_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='crawl_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='crawl_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				if clear_crawl:
 					clear_if_active( 'WebCrawler' )
@@ -3071,8 +3083,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_email = col_load.button( 'Load', key='email_load', icon='📤', )
-				clear_email = col_clear.button( 'Clear', key='email_clear', icon='🧹', )
+				load_email = col_load.button( 'Load', key='email_load',
+					icon='📤', width='stretch' )
+				clear_email = col_clear.button( 'Clear', key='email_clear',
+					icon='🧹', width='stretch' )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'EmailLoader' and
 				            isinstance(
@@ -3082,9 +3096,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='email_loader_output.txt', mime='text/plain', key='email_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='email_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='email_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -3143,8 +3158,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_pubmed = col_load.button( 'Load', key='pubmed_load', icon='📥' )
-				clear_pubmed = col_clear.button( 'Clear', key='pubmed_clear' )
+				load_pubmed = col_load.button( 'Load', key='pubmed_load',
+					icon='📥', width='stretch' )
+				clear_pubmed = col_clear.button( 'Clear', key='pubmed_clear',
+					icon='🧹', width='stretch' )
 				
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'PubMedSearchLoader' and isinstance(
@@ -3154,9 +3171,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='pubmed_loader_output.txt', mime='text/plain', key='pubmed_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='pubmed_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='pubmed_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -3201,11 +3219,12 @@ if mode == 'Loading':
 			with st.expander( label='Open City Loader', icon='🏙️', expanded=False ):
 				open_city_id = st.text_input( 'City Domain', value='', key='open_city_id',
 					placeholder='e.g. data.sfgov.org',
-					help='City domain identifier for the Socrata-backed portal.', icon='💾' )
+					help='City domain identifier for the Socrata-backed portal.',
+					icon='💾', width='stretch' )
 				
 				open_city_dataset_id = st.text_input( 'Dataset ID', value='',
 					key='open_city_dataset_id', placeholder='e.g. vw6y-z8j6',
-					help='Dataset identifier from the city portal.', icon='💾' )
+					help='Dataset identifier from the city portal.', icon='💾', width='stretch' )
 				
 				open_city_limit = st.number_input( 'Maximum Records', min_value=1, value=100,
 					step=1, key='open_city_limit', )
@@ -3214,8 +3233,9 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_open_city = col_load.button( 'Load', key='open_city_load', icon='📥' )
-				clear_open_city = col_clear.button( 'Clear', key='open_city_clear' )
+				load_open_city = col_load.button( 'Load', key='open_city_load', icon='📥', width='stretch' )
+				clear_open_city = col_clear.button( 'Clear', key='open_city_clear',
+					icon='🧹', width='stretch' )
 				
 				can_save = (
 						st.session_state.get( 'active_loader' ) == 'OpenCityLoader' and isinstance(
@@ -3225,10 +3245,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='open_city_loader_output.txt', mime='text/plain',
-						key='open_city_save', icon='💾' )
+						key='open_city_save', icon='💾', width='stretch' )
 				else:
 					col_save.button( 'Save', key='open_city_save_disabled', disabled=True,
-						icon='💾' )
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -3289,8 +3309,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_onedrive = col_load.button( 'Load', key='onedrive_load', icon='📤', )
-				clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear', icon='🧹', )
+				load_onedrive = col_load.button( 'Load', key='onedrive_load',
+					icon='📤', width='stretch' )
+				clear_onedrive = col_clear.button( 'Clear', key='onedrive_clear',
+					icon='🧹', width='stretch' )
 				
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'OneDriveDocLoader' and isinstance(
@@ -3300,10 +3322,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='onedrive_loader_output.txt', mime='text/plain',
-						key='onedrive_save', icon='💾' )
+						key='onedrive_save', icon='💾', width='stretch' )
 				else:
 					col_save.button( 'Save', key='onedrive_save_disabled', disabled=True,
-						icon='💾' )
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -3371,8 +3393,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_gcs_file = col_load.button( 'Load', key='gcs_file_load', icon='📤', )
-				clear_gcs_file = col_clear.button( 'Clear', key='gcs_file_clear', icon='🧹', )
+				load_gcs_file = col_load.button( 'Load', key='gcs_file_load',
+					icon='📤', width='stretch' )
+				clear_gcs_file = col_clear.button( 'Clear', key='gcs_file_clear',
+					icon='🧹', width='stretch' )
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'GoogleCloudFileLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3381,10 +3405,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='google_cloud_file_loader_output.txt', mime='text/plain',
-						key='gcs_file_save', icon='💾' )
+						key='gcs_file_save', icon='💾', width='stretch' )
 				else:
 					col_save.button( 'Save', key='gcs_file_save_disabled', disabled=True,
-						icon='💾' )
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -3459,8 +3483,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_aws_file = col_load.button( label='Load', key='aws_file_load', icon='📤' )
-				clear_aws_file = col_clear.button( label='Clear', key='aws_file_clear', icon='🧹' )
+				load_aws_file = col_load.button( label='Load', key='aws_file_load',
+					icon='📤', width='stretch' )
+				clear_aws_file = col_clear.button( label='Clear', key='aws_file_clear',
+					icon='🧹', width='stretch' )
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'AwsFileLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3469,10 +3495,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='aws_file_loader_output.txt', mime='text/plain',
-						key='aws_file_save', icon='📥' )
+						key='aws_file_save', icon='📥', width='stretch' )
 				else:
 					col_save.button( 'Save', key='aws_file_save_disabled', disabled=True,
-						icon='💾' )
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -3558,8 +3584,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_gcs_bucket = col_load.button( 'Load', key='gcs_bucket_load', icon='📥' )
-				clear_gcs_bucket = col_clear.button( 'Clear', key='gcs_bucket_clear', icon='🧹', )
+				load_gcs_bucket = col_load.button( 'Load', key='gcs_bucket_load',
+					icon='📥', width='stretch' )
+				clear_gcs_bucket = col_clear.button( 'Clear', key='gcs_bucket_clear',
+					icon='🧹', width='stretch' )
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'GoogleBucketLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3568,10 +3596,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='google_bucket_loader_output.txt', mime='text/plain',
-						key='gcs_bucket_save', icon='💾' )
+						key='gcs_bucket_save', icon='💾', width='stretch' )
 				else:
 					col_save.button( 'Save', key='gcs_bucket_save_disabled', disabled=True,
-						icon='💾' )
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -3657,8 +3685,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_aws_bucket = col_load.button( 'Load', key='aws_bucket_load', icon='📤', )
-				clear_aws_bucket = col_clear.button( 'Clear', key='aws_bucket_clear', icon='🧹', )
+				load_aws_bucket = col_load.button( 'Load', key='aws_bucket_load',
+					icon='📤', width='stretch' )
+				clear_aws_bucket = col_clear.button( 'Clear', key='aws_bucket_clear',
+					icon='🧹', width='stretch' )
 				can_save = (st.session_state.get(
 					'active_loader' ) == 'AwsBucketLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3667,10 +3697,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='aws_bucket_loader_output.txt', mime='text/plain',
-						key='aws_bucket_save', icon='💾' )
+						key='aws_bucket_save', icon='💾', width='stretch' )
 				else:
 					col_save.button( 'Save', key='aws_bucket_save_disabled', disabled=True,
-						icon='💾' )
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
@@ -3755,8 +3785,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_spfx = col_load.button( 'Load', key='spfx_load', icon='📤', )
-				clear_spfx = col_clear.button( 'Clear', key='spfx_clear', icon='🧹', )
+				load_spfx = col_load.button( 'Load', key='spfx_load',
+					icon='📤', width='stretch' )
+				clear_spfx = col_clear.button( 'Clear', key='spfx_clear',
+					icon='🧹', width='stretch' )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'SpfxLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -3765,9 +3797,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='sharepoint_loader_output.txt', mime='text/plain',
-						key='spfx_save', icon='💾' )
+						key='spfx_save', icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='spfx_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='spfx_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
