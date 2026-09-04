@@ -1609,7 +1609,7 @@ if mode == 'Loading':
 	# ------------------------------------------------------------------
 	# LEFT COLUMN - LOADERS
 	# ------------------------------------------------------------------
-	left, right = st.columns( [ 0.4, 0.6 ], gap='small', border=True )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
 	with left:
 		_loader_msg = st.session_state.pop( '_loader_status', None )
 		if isinstance( _loader_msg, str ) and _loader_msg.strip( ):
@@ -3989,351 +3989,349 @@ if mode == 'Loading':
 # SCRAPING MODE
 # ==============================================================================
 elif mode == 'Scraping':
-	left, center, right = st.columns( [ 0.05, 0.9, 0.05 ] )
-	with center:
-		st.subheader( f'🕷️ Web Scraping' )
-		st.divider( )
-		if 'webscrape_clear_request' not in st.session_state:
-			st.session_state[ 'webscrape_clear_request' ] = False
-		
-		if st.session_state.get( 'webscrape_clear_request', False ):
-			st.session_state[ 'webfetcher_url' ] = ''
-			st.session_state[ 'webscrape_results' ] = [ ]
-			st.session_state[ 'webscrape_summary' ] = { }
-			st.session_state[ 'webscrape_clear_request' ] = False
-		
-		def _clear_webscrape_state( ) -> None:
-			st.session_state[ 'webscrape_clear_request' ] = True
-		
-		def _coerce_items( value: Any ) -> list[ str ]:
-			if value is None:
+	st.subheader( f'🕷️ Web Scraping' )
+	st.divider( )
+	if 'webscrape_clear_request' not in st.session_state:
+		st.session_state[ 'webscrape_clear_request' ] = False
+	
+	if st.session_state.get( 'webscrape_clear_request', False ):
+		st.session_state[ 'webfetcher_url' ] = ''
+		st.session_state[ 'webscrape_results' ] = [ ]
+		st.session_state[ 'webscrape_summary' ] = { }
+		st.session_state[ 'webscrape_clear_request' ] = False
+	
+	def _clear_webscrape_state( ) -> None:
+		st.session_state[ 'webscrape_clear_request' ] = True
+	
+	def _coerce_items( value: Any ) -> list[ str ]:
+		if value is None:
+			return [ ]
+		if isinstance( value, list ):
+			return [ str( item ) for item in value if item is not None ]
+		return [ str( value ) ]
+	
+	def _extract_title_from_html( html: str ) -> str:
+		try:
+			if not isinstance( html, str ) or not html.strip( ):
+				return ''
+			
+			match = re.search( r'<title[^>]*>(.*?)</title>', html,
+				flags=re.IGNORECASE | re.DOTALL )
+			
+			if not match:
+				return ''
+			
+			title = re.sub( r'\s+', ' ', match.group( 1 ) ).strip( )
+			return html_lib.unescape( title )
+		except Exception:
+			return ''
+	
+	def _truncate_text( text: str, limit: int = 12000 ) -> str:
+		if not isinstance( text, str ):
+			return ''
+		if len( text ) <= limit:
+			return text
+		return text[ : limit ] + '\n\n... [truncated]'
+	
+	def _normalize_url( base_url: str, href: str ) -> str:
+		try:
+			if not href or not isinstance( href, str ):
+				return ''
+			
+			href = href.strip( )
+			if not href:
+				return ''
+			
+			absolute = urljoin( base_url, href )
+			parsed = urlparse( absolute )
+			if parsed.scheme not in ('http', 'https'):
+				return ''
+			
+			normalized = parsed._replace( fragment='' )
+			return normalized.geturl( )
+		except Exception:
+			return ''
+	
+	def _same_domain( left: str, right: str ) -> bool:
+		try:
+			left_host = (urlparse( left ).netloc or '').lower( )
+			right_host = (urlparse( right ).netloc or '').lower( )
+			return bool( left_host ) and left_host == right_host
+		except Exception:
+			return False
+	
+	def _extract_links_from_html( base_url: str, html: str ) -> list[ str ]:
+		try:
+			if not isinstance( html, str ) or not html.strip( ):
 				return [ ]
-			if isinstance( value, list ):
-				return [ str( item ) for item in value if item is not None ]
-			return [ str( value ) ]
-		
-		def _extract_title_from_html( html: str ) -> str:
-			try:
-				if not isinstance( html, str ) or not html.strip( ):
-					return ''
-				
-				match = re.search( r'<title[^>]*>(.*?)</title>', html,
-					flags=re.IGNORECASE | re.DOTALL )
-				
-				if not match:
-					return ''
-				
-				title = re.sub( r'\s+', ' ', match.group( 1 ) ).strip( )
-				return html_lib.unescape( title )
-			except Exception:
-				return ''
-		
-		def _truncate_text( text: str, limit: int = 12000 ) -> str:
-			if not isinstance( text, str ):
-				return ''
-			if len( text ) <= limit:
-				return text
-			return text[ : limit ] + '\n\n... [truncated]'
-		
-		def _normalize_url( base_url: str, href: str ) -> str:
-			try:
-				if not href or not isinstance( href, str ):
-					return ''
-				
-				href = href.strip( )
-				if not href:
-					return ''
-				
-				absolute = urljoin( base_url, href )
-				parsed = urlparse( absolute )
-				if parsed.scheme not in ('http', 'https'):
-					return ''
-				
-				normalized = parsed._replace( fragment='' )
-				return normalized.geturl( )
-			except Exception:
-				return ''
-		
-		def _same_domain( left: str, right: str ) -> bool:
-			try:
-				left_host = (urlparse( left ).netloc or '').lower( )
-				right_host = (urlparse( right ).netloc or '').lower( )
-				return bool( left_host ) and left_host == right_host
-			except Exception:
-				return False
-		
-		def _extract_links_from_html( base_url: str, html: str ) -> list[ str ]:
-			try:
-				if not isinstance( html, str ) or not html.strip( ):
-					return [ ]
-				
-				soup = BeautifulSoup( html, 'html.parser' )
-				results: list[ str ] = [ ]
-				seen: set[ str ] = set( )
-				for tag in soup.find_all( 'a', href=True ):
-					candidate = _normalize_url( base_url, tag.get( 'href', '' ) )
-					if candidate and candidate not in seen:
-						seen.add( candidate )
-						results.append( candidate )
-				
-				return results
-			except Exception:
-				return [ ]
-		
-		def _scrape_single_page( url: str, include_title: bool, include_basic_text: bool,
-			include_raw_html: bool, selected_methods: list[ str ] ) -> dict[ str, Any ]:
-			page_result: dict[ str, Any ] = { 'url': url, 'status_code': None, 'encoding': None,
-				'title': '', 'plain_text': '', 'raw_html': '', 'links_discovered': [ ], 'data':
-					{ },
-				'errors': [ ], }
 			
-			fetcher = WebFetcher( )
+			soup = BeautifulSoup( html, 'html.parser' )
+			results: list[ str ] = [ ]
+			seen: set[ str ] = set( )
+			for tag in soup.find_all( 'a', href=True ):
+				candidate = _normalize_url( base_url, tag.get( 'href', '' ) )
+				if candidate and candidate not in seen:
+					seen.add( candidate )
+					results.append( candidate )
 			
-			try:
-				response = fetcher.fetch( url )
-				if response is None:
-					page_result[ 'errors' ].append( 'No response returned.' )
-					return page_result
-				
-				page_result[ 'status_code' ] = getattr( response, 'status_code', None )
-				page_result[ 'encoding' ] = getattr( response, 'encoding', None )
-				raw_html = getattr( response, 'text', '' ) or ''
-				page_result[ 'links_discovered' ] = _extract_links_from_html( url, raw_html )
-				if include_title:
-					page_result[ 'title' ] = _extract_title_from_html( raw_html )
-				
-				if include_basic_text:
-					try:
-						page_result[ 'plain_text' ] = fetcher.html_to_text( raw_html ) or ''
-					except Exception as exc:
-						page_result[ 'errors' ].append( f'Basic Text: {str( exc )}' )
-				
-				if include_raw_html:
-					page_result[ 'raw_html' ] = raw_html
-			
-			except Exception as exc:
-				page_result[ 'errors' ].append( f'Fetch: {str( exc )}' )
+			return results
+		except Exception:
+			return [ ]
+	
+	def _scrape_single_page( url: str, include_title: bool, include_basic_text: bool,
+		include_raw_html: bool, selected_methods: list[ str ] ) -> dict[ str, Any ]:
+		page_result: dict[ str, Any ] = { 'url': url, 'status_code': None, 'encoding': None,
+			'title': '', 'plain_text': '', 'raw_html': '', 'links_discovered': [ ], 'data':
+				{ },
+			'errors': [ ], }
+		
+		fetcher = WebFetcher( )
+		
+		try:
+			response = fetcher.fetch( url )
+			if response is None:
+				page_result[ 'errors' ].append( 'No response returned.' )
 				return page_result
 			
-			REGISTRY: dict[ str, tuple[ str, callable ] ] = {
-				'scrape_headings': ('Headings', fetcher.scrape_headings),
-				'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
-				'scrape_lists': ('Lists', fetcher.scrape_lists),
-				'scrape_tables': ('Tables', fetcher.scrape_tables),
-				'scrape_articles': ('Articles', fetcher.scrape_articles),
-				'scrape_sections': ('Sections', fetcher.scrape_sections),
-				'scrape_divisions': ('Divisions', fetcher.scrape_divisions),
-				'scrape_blockquotes': ('Blockquotes', fetcher.scrape_blockquotes),
-				'scrape_hyperlinks': ('Hyperlinks', fetcher.scrape_hyperlinks),
-				'scrape_images': ('Images', fetcher.scrape_images), }
+			page_result[ 'status_code' ] = getattr( response, 'status_code', None )
+			page_result[ 'encoding' ] = getattr( response, 'encoding', None )
+			raw_html = getattr( response, 'text', '' ) or ''
+			page_result[ 'links_discovered' ] = _extract_links_from_html( url, raw_html )
+			if include_title:
+				page_result[ 'title' ] = _extract_title_from_html( raw_html )
 			
-			for method_name in selected_methods:
-				if method_name not in REGISTRY:
-					continue
-				
-				label, method = REGISTRY[ method_name ]
+			if include_basic_text:
 				try:
-					data = method( url )
-					page_result[ 'data' ][ label ] = _coerce_items( data )
+					page_result[ 'plain_text' ] = fetcher.html_to_text( raw_html ) or ''
 				except Exception as exc:
-					page_result[ 'data' ][ label ] = [ ]
-					page_result[ 'errors' ].append( f'{label}: {str( exc )}' )
+					page_result[ 'errors' ].append( f'Basic Text: {str( exc )}' )
 			
+			if include_raw_html:
+				page_result[ 'raw_html' ] = raw_html
+		
+		except Exception as exc:
+			page_result[ 'errors' ].append( f'Fetch: {str( exc )}' )
 			return page_result
 		
-		def _crawl_pages( seed_url: str, include_title: bool, include_basic_text: bool,
-			include_raw_html: bool, selected_methods: list[ str ], recursive: bool, max_depth: int,
-			max_pages: int, same_domain_only: bool ) -> tuple[
-			list[ dict[ str, Any ] ], dict[ str, Any ] ]:
-			results: list[ dict[ str, Any ] ] = [ ]
-			visited: set[ str ] = set( )
-			enqueued: set[ str ] = set( )
-			queue: deque[ tuple[ str, int ] ] = deque( )
-			skipped_urls: list[ str ] = [ ]
-			
-			normalized_seed = _normalize_url( seed_url, seed_url )
-			if not normalized_seed:
-				raise ValueError( 'A valid absolute URL is required.' )
-			
-			queue.append( (normalized_seed, 0) )
-			enqueued.add( normalized_seed )
-			
-			while queue and len( results ) < max_pages:
-				current_url, depth = queue.popleft( )
-				
-				if current_url in visited:
-					continue
-				
-				visited.add( current_url )
-				
-				page_result = _scrape_single_page( url=current_url, include_title=include_title,
-					include_basic_text=include_basic_text, include_raw_html=include_raw_html,
-					selected_methods=selected_methods )
-				
-				page_result[ 'depth' ] = depth
-				results.append( page_result )
-				
-				if not recursive:
-					continue
-				
-				if depth >= max_depth:
-					continue
-				
-				discovered_links = page_result.get( 'links_discovered', [ ] ) or [ ]
-				for next_url in discovered_links:
-					if len( results ) + len( queue ) >= max_pages:
-						break
-					
-					if not next_url or next_url in visited or next_url in enqueued:
-						continue
-					
-					if same_domain_only and not _same_domain( normalized_seed, next_url ):
-						skipped_urls.append( next_url )
-						continue
-					
-					queue.append( (next_url, depth + 1) )
-					enqueued.add( next_url )
-			
-			summary: dict[ str, Any ] = { 'mode': 'recursive' if recursive else 'single-page',
-				'seed_url': normalized_seed, 'pages_processed': len( results ),
-				'pages_visited': len( visited ), 'pages_skipped': len( skipped_urls ),
-				'recursive_requested': bool( recursive ), 'max_depth': int( max_depth ),
-				'max_pages': int( max_pages ), 'same_domain_only': bool( same_domain_only ),
-				'visited_urls': list( visited ), 'skipped_urls': skipped_urls, }
-			
-			return results, summary
+		REGISTRY: dict[ str, tuple[ str, callable ] ] = {
+			'scrape_headings': ('Headings', fetcher.scrape_headings),
+			'scrape_paragraphs': ('Paragraphs', fetcher.scrape_paragraphs),
+			'scrape_lists': ('Lists', fetcher.scrape_lists),
+			'scrape_tables': ('Tables', fetcher.scrape_tables),
+			'scrape_articles': ('Articles', fetcher.scrape_articles),
+			'scrape_sections': ('Sections', fetcher.scrape_sections),
+			'scrape_divisions': ('Divisions', fetcher.scrape_divisions),
+			'scrape_blockquotes': ('Blockquotes', fetcher.scrape_blockquotes),
+			'scrape_hyperlinks': ('Hyperlinks', fetcher.scrape_hyperlinks),
+			'scrape_images': ('Images', fetcher.scrape_images), }
 		
-		col_left, col_right = st.columns( [ 0.35, 0.65 ], border=True )
-		with col_left:
-			target_url = st.text_input( 'Enter Target URL', placeholder='https://example.com',
-				key='webfetcher_url' )
+		for method_name in selected_methods:
+			if method_name not in REGISTRY:
+				continue
 			
-			st.markdown( '##### Core Output' )
-			include_title = st.checkbox( 'Page Title', value=True, key='wf_page_title' )
-			include_basic_text = st.checkbox( 'Basic Text', value=True, key='wf_basic_text' )
-			include_raw_html = st.checkbox( 'Raw HTML', value=False, key='wf_raw_html' )
-			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-			st.markdown( '##### Structured Extraction' )
-			col1, col2 = st.columns( [ 0.5, 0.5 ] )
-			
-			REGISTRY_LABELS: dict[ str, str ] = { 'scrape_headings': 'Headings',
-					'scrape_paragraphs': 'Paragraphs', 'scrape_lists': 'Lists',
-					'scrape_tables': 'Tables', 'scrape_articles': 'Articles',
-					'scrape_sections': 'Sections', 'scrape_divisions': 'Divisions',
-					'scrape_blockquotes': 'Blockquotes', 'scrape_hyperlinks': 'Hyperlinks',
-					'scrape_images': 'Images', }
-			
-			selected_methods: list[ str ] = [ ]
-			_registry_items: list[ tuple[ str, str ] ] = list( REGISTRY_LABELS.items( ) )
-			_col1_items: list[ tuple[ str, str ] ] = _registry_items[ :5 ]
-			_col2_items: list[ tuple[ str, str ] ] = _registry_items[ 5: ]
-			
-			with col1:
-				for method_name, label in _col1_items:
-					if st.checkbox( label, key=f'wf_{method_name}' ):
-						selected_methods.append( method_name )
-			
-			with col2:
-				for method_name, label in _col2_items:
-					if st.checkbox( label, key=f'wf_{method_name}' ):
-						selected_methods.append( method_name )
-			
-			st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
-			
-			st.markdown( '##### Crawl Controls' )
-			enable_recursive = st.checkbox( 'Recursive Crawl', value=False, key='wf_recursive' )
-			max_depth = st.number_input( 'Max Depth', min_value=0, max_value=10, value=1, step=1,
-				key='wf_max_depth', disabled=(not enable_recursive) )
-			
-			max_pages = st.number_input( 'Max Pages', min_value=1, max_value=500, value=10, step=1,
-				key='wf_max_pages' )
-			
-			same_domain_only = st.checkbox( 'Same Domain Only', value=True,
-				key='wf_same_domain_only', disabled=(not enable_recursive) )
-			
-			b1, b2 = st.columns( 2 )
-			with b1:
-				run_scraper = st.button( 'Run Scraper', key='webfetcher_run' )
-			
-			with b2:
-				st.button( 'Clear', key='webfetcher_clear', on_click=_clear_webscrape_state )
+			label, method = REGISTRY[ method_name ]
+			try:
+				data = method( url )
+				page_result[ 'data' ][ label ] = _coerce_items( data )
+			except Exception as exc:
+				page_result[ 'data' ][ label ] = [ ]
+				page_result[ 'errors' ].append( f'{label}: {str( exc )}' )
 		
-		with col_right:
-			if run_scraper:
-				try:
-					if not target_url or not target_url.strip( ):
-						raise ValueError( 'A target URL is required.' )
-					
-					results, summary = _crawl_pages( seed_url=target_url.strip( ),
-						include_title=include_title, include_basic_text=include_basic_text,
-						include_raw_html=include_raw_html, selected_methods=selected_methods,
-						recursive=bool( enable_recursive ), max_depth=int( max_depth ),
-						max_pages=int( max_pages ), same_domain_only=bool( same_domain_only ) )
-					
-					st.session_state[ 'webscrape_results' ] = results
-					st.session_state[ 'webscrape_summary' ] = summary
-					st.rerun( )
+		return page_result
+	
+	def _crawl_pages( seed_url: str, include_title: bool, include_basic_text: bool,
+		include_raw_html: bool, selected_methods: list[ str ], recursive: bool, max_depth: int,
+		max_pages: int, same_domain_only: bool ) -> tuple[
+		list[ dict[ str, Any ] ], dict[ str, Any ] ]:
+		results: list[ dict[ str, Any ] ] = [ ]
+		visited: set[ str ] = set( )
+		enqueued: set[ str ] = set( )
+		queue: deque[ tuple[ str, int ] ] = deque( )
+		skipped_urls: list[ str ] = [ ]
+		
+		normalized_seed = _normalize_url( seed_url, seed_url )
+		if not normalized_seed:
+			raise ValueError( 'A valid absolute URL is required.' )
+		
+		queue.append( (normalized_seed, 0) )
+		enqueued.add( normalized_seed )
+		
+		while queue and len( results ) < max_pages:
+			current_url, depth = queue.popleft( )
+			
+			if current_url in visited:
+				continue
+			
+			visited.add( current_url )
+			
+			page_result = _scrape_single_page( url=current_url, include_title=include_title,
+				include_basic_text=include_basic_text, include_raw_html=include_raw_html,
+				selected_methods=selected_methods )
+			
+			page_result[ 'depth' ] = depth
+			results.append( page_result )
+			
+			if not recursive:
+				continue
+			
+			if depth >= max_depth:
+				continue
+			
+			discovered_links = page_result.get( 'links_discovered', [ ] ) or [ ]
+			for next_url in discovered_links:
+				if len( results ) + len( queue ) >= max_pages:
+					break
 				
-				except Exception as exc:
-					st.error( str( exc ) )
+				if not next_url or next_url in visited or next_url in enqueued:
+					continue
+				
+				if same_domain_only and not _same_domain( normalized_seed, next_url ):
+					skipped_urls.append( next_url )
+					continue
+				
+				queue.append( (next_url, depth + 1) )
+				enqueued.add( next_url )
+		
+		summary: dict[ str, Any ] = { 'mode': 'recursive' if recursive else 'single-page',
+			'seed_url': normalized_seed, 'pages_processed': len( results ),
+			'pages_visited': len( visited ), 'pages_skipped': len( skipped_urls ),
+			'recursive_requested': bool( recursive ), 'max_depth': int( max_depth ),
+			'max_pages': int( max_pages ), 'same_domain_only': bool( same_domain_only ),
+			'visited_urls': list( visited ), 'skipped_urls': skipped_urls, }
+		
+		return results, summary
+	
+	col_left, col_right = st.columns( [ 0.35, 0.65 ], border=True, gap='xxsmall' )
+	with col_left:
+		target_url = st.text_input( 'Enter Target URL', placeholder='https://example.com',
+			key='webfetcher_url' )
+		
+		st.markdown( '##### Core Output' )
+		include_title = st.checkbox( 'Page Title', value=True, key='wf_page_title' )
+		include_basic_text = st.checkbox( 'Basic Text', value=True, key='wf_basic_text' )
+		include_raw_html = st.checkbox( 'Raw HTML', value=False, key='wf_raw_html' )
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+		st.markdown( '##### Structured Extraction' )
+		col1, col2 = st.columns( [ 0.5, 0.5 ] )
+		
+		REGISTRY_LABELS: dict[ str, str ] = { 'scrape_headings': 'Headings',
+				'scrape_paragraphs': 'Paragraphs', 'scrape_lists': 'Lists',
+				'scrape_tables': 'Tables', 'scrape_articles': 'Articles',
+				'scrape_sections': 'Sections', 'scrape_divisions': 'Divisions',
+				'scrape_blockquotes': 'Blockquotes', 'scrape_hyperlinks': 'Hyperlinks',
+				'scrape_images': 'Images', }
+		
+		selected_methods: list[ str ] = [ ]
+		_registry_items: list[ tuple[ str, str ] ] = list( REGISTRY_LABELS.items( ) )
+		_col1_items: list[ tuple[ str, str ] ] = _registry_items[ :5 ]
+		_col2_items: list[ tuple[ str, str ] ] = _registry_items[ 5: ]
+		
+		with col1:
+			for method_name, label in _col1_items:
+				if st.checkbox( label, key=f'wf_{method_name}' ):
+					selected_methods.append( method_name )
+		
+		with col2:
+			for method_name, label in _col2_items:
+				if st.checkbox( label, key=f'wf_{method_name}' ):
+					selected_methods.append( method_name )
+		
+		st.markdown( cfg.BLUE_DIVIDER, unsafe_allow_html=True )
+		
+		st.markdown( '##### Crawl Controls' )
+		enable_recursive = st.checkbox( 'Recursive Crawl', value=False, key='wf_recursive' )
+		max_depth = st.number_input( 'Max Depth', min_value=0, max_value=10, value=1, step=1,
+			key='wf_max_depth', disabled=(not enable_recursive) )
+		
+		max_pages = st.number_input( 'Max Pages', min_value=1, max_value=500, value=10, step=1,
+			key='wf_max_pages' )
+		
+		same_domain_only = st.checkbox( 'Same Domain Only', value=True,
+			key='wf_same_domain_only', disabled=(not enable_recursive) )
+		
+		b1, b2 = st.columns( 2 )
+		with b1:
+			run_scraper = st.button( 'Run Scraper', key='webfetcher_run' )
+		
+		with b2:
+			st.button( 'Clear', key='webfetcher_clear', on_click=_clear_webscrape_state )
+	
+	with col_right:
+		if run_scraper:
+			try:
+				if not target_url or not target_url.strip( ):
+					raise ValueError( 'A target URL is required.' )
+				
+				results, summary = _crawl_pages( seed_url=target_url.strip( ),
+					include_title=include_title, include_basic_text=include_basic_text,
+					include_raw_html=include_raw_html, selected_methods=selected_methods,
+					recursive=bool( enable_recursive ), max_depth=int( max_depth ),
+					max_pages=int( max_pages ), same_domain_only=bool( same_domain_only ) )
+				
+				st.session_state[ 'webscrape_results' ] = results
+				st.session_state[ 'webscrape_summary' ] = summary
+				st.rerun( )
 			
-			summary = st.session_state.get( 'webscrape_summary', { } )
-			results = st.session_state.get( 'webscrape_results', [ ] )
-			if summary:
-				st.subheader( 'Summary' )
-				st.json( summary )
-			
-			if not results:
-				st.info( 'No results.' )
-			else:
-				st.subheader( 'Results' )
-				for idx, page in enumerate( results, start=1 ):
-					title = page.get( 'title', '' ) or page.get( 'url', f'Page {idx}' )
-					depth = page.get( 'depth', 0 )
-					with st.expander( f'Page {idx} [Depth {depth}]: {title}', expanded=(idx == 1) ):
-						meta_col1, meta_col2 = st.columns( 2 )
-						with meta_col1:
-							st.markdown( f"**URL:** {page.get( 'url', '' )}" )
-							st.markdown( f"**Status Code:** {page.get( 'status_code', '' )}" )
-							st.markdown( f"**Depth:** {page.get( 'depth', 0 )}" )
+			except Exception as exc:
+				st.error( str( exc ) )
+		
+		summary = st.session_state.get( 'webscrape_summary', { } )
+		results = st.session_state.get( 'webscrape_results', [ ] )
+		if summary:
+			st.subheader( 'Summary' )
+			st.json( summary )
+		
+		if not results:
+			st.info( 'No results.' )
+		else:
+			st.subheader( 'Results' )
+			for idx, page in enumerate( results, start=1 ):
+				title = page.get( 'title', '' ) or page.get( 'url', f'Page {idx}' )
+				depth = page.get( 'depth', 0 )
+				with st.expander( f'Page {idx} [Depth {depth}]: {title}', expanded=(idx == 1) ):
+					meta_col1, meta_col2 = st.columns( 2 )
+					with meta_col1:
+						st.markdown( f"**URL:** {page.get( 'url', '' )}" )
+						st.markdown( f"**Status Code:** {page.get( 'status_code', '' )}" )
+						st.markdown( f"**Depth:** {page.get( 'depth', 0 )}" )
+					
+					with meta_col2:
+						st.markdown( f"**Encoding:** {page.get( 'encoding', '' )}" )
+						st.markdown( f"**Title:** {page.get( 'title', '' )}" )
+					
+					plain_text = page.get( 'plain_text', '' )
+					if isinstance( plain_text, str ) and plain_text.strip( ):
+						st.subheader( 'Basic Text' )
+						st.text_area( label='', value=_truncate_text( plain_text,
+							limit=12000 ), height=280, key=f'webscrape_plain_text_{idx}' )
+					
+					raw_html = page.get( 'raw_html', '' )
+					if isinstance( raw_html, str ) and raw_html.strip( ):
+						st.subheader( 'Raw HTML' )
+						st.text_area( label='', value=_truncate_text( raw_html, limit=12000 ),
+							height=240, key=f'webscrape_raw_html_{idx}' )
+					
+					discovered_links = page.get( 'links_discovered', [ ] ) or [ ]
+					if discovered_links:
+						st.subheader( 'Links Discovered' )
+						for link_idx, link in enumerate( discovered_links, start=1 ):
+							st.write( f'{link_idx}. {link}' )
+					
+					data = page.get( 'data', { } ) or { }
+					for label, items in data.items( ):
+						st.subheader( f'{label}' )
+						if not items:
+							st.info( 'No results returned.' )
+							continue
 						
-						with meta_col2:
-							st.markdown( f"**Encoding:** {page.get( 'encoding', '' )}" )
-							st.markdown( f"**Title:** {page.get( 'title', '' )}" )
-						
-						plain_text = page.get( 'plain_text', '' )
-						if isinstance( plain_text, str ) and plain_text.strip( ):
-							st.subheader( 'Basic Text' )
-							st.text_area( label='', value=_truncate_text( plain_text,
-								limit=12000 ), height=280, key=f'webscrape_plain_text_{idx}' )
-						
-						raw_html = page.get( 'raw_html', '' )
-						if isinstance( raw_html, str ) and raw_html.strip( ):
-							st.subheader( 'Raw HTML' )
-							st.text_area( label='', value=_truncate_text( raw_html, limit=12000 ),
-								height=240, key=f'webscrape_raw_html_{idx}' )
-						
-						discovered_links = page.get( 'links_discovered', [ ] ) or [ ]
-						if discovered_links:
-							st.subheader( 'Links Discovered' )
-							for link_idx, link in enumerate( discovered_links, start=1 ):
-								st.write( f'{link_idx}. {link}' )
-						
-						data = page.get( 'data', { } ) or { }
-						for label, items in data.items( ):
-							st.subheader( f'{label}' )
-							if not items:
-								st.info( 'No results returned.' )
-								continue
-							
-							for item_idx, item in enumerate( items, start=1 ):
-								st.write( f'{item_idx}. {item}' )
-						
-						errors = page.get( 'errors', [ ] ) or [ ]
-						if errors:
-							st.subheader( 'Errors' )
-							for err in errors:
-								st.error( err )
+						for item_idx, item in enumerate( items, start=1 ):
+							st.write( f'{item_idx}. {item}' )
+					
+					errors = page.get( 'errors', [ ] ) or [ ]
+					if errors:
+						st.subheader( 'Errors' )
+						for err in errors:
+							st.error( err )
 
 # ==============================================================================
 # FETCHING MODE
@@ -4344,7 +4342,7 @@ elif mode == 'Retrieval':
 	st.session_state.setdefault( 'arxiv_results', [ ] )
 	st.subheader( '🏛️ Public Collections & Archives' )
 	st.divider( )
-	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
 	with left:
 
 		# ----------------------------
