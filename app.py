@@ -7471,7 +7471,6 @@ elif mode == 'Geospatial':
 				             'Arlington, VA'), )
 			
 			c1, c2 = st.columns( 2 )
-			
 			with c1:
 				gw_mode = st.selectbox( 'Mode', options=GOOGLEWEATHER_MODES,
 					index=GOOGLEWEATHER_MODES.index(
@@ -7486,7 +7485,6 @@ elif mode == 'Geospatial':
 					key='googleweather_units' )
 			
 			c3, c4, c5 = st.columns( 3 )
-			
 			with c3:
 				gw_language = st.text_input( 'Language',
 					value=st.session_state.get( 'googleweather_language', 'en' ),
@@ -7503,7 +7501,6 @@ elif mode == 'Geospatial':
 					key='googleweather_days', disabled=(gw_mode != 'daily_forecast') )
 			
 			h1, h2 = st.columns( 2 )
-			
 			with h1:
 				gw_history_hours = st.number_input( 'History Hours', min_value=1, max_value=24,
 					value=int( st.session_state.get( 'googleweather_history_hours', 24 ) ),
@@ -7520,13 +7517,12 @@ elif mode == 'Geospatial':
 			            'Weather API must be enabled in your Google Cloud project.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				gw_submit = st.button( 'Submit', key='googleweather_submit' )
+				gw_submit = st.button( 'Submit', key='googleweather_submit', width='stretch' )
 			
 			with b2:
 				st.button( 'Clear', key='googleweather_clear',
-					on_click=_clear_googleweather_state )
+					on_click=_clear_googleweather_state, width='stretch' )
 			
 			if gw_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Google Weather'
@@ -7566,7 +7562,6 @@ elif mode == 'Geospatial':
 				key='openweather_mode' )
 			
 			cfg_c1, cfg_c2 = st.columns( 2 )
-			
 			with cfg_c1:
 				openweather_forecast_days = st.number_input( 'Forecast Days', min_value=1,
 					max_value=16,
@@ -7581,7 +7576,6 @@ elif mode == 'Geospatial':
 					key='openweather_past_days' )
 			
 			meta_c1, meta_c2 = st.columns( 2 )
-			
 			with meta_c1:
 				openweather_timezone = st.text_input( 'Timezone',
 					value=st.session_state.get( 'openweather_timezone', 'auto' ),
@@ -7593,13 +7587,12 @@ elif mode == 'Geospatial':
 					step=1, key='openweather_count' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
-				openweather_submit = st.button( 'Submit', key='openweather_submit' )
+				openweather_submit = st.button( 'Submit', key='openweather_submit', width='stretch' )
 			
 			with btn_c2:
 				openweather_clear = st.button( 'Clear', key='openweather_clear',
-					on_click=_clear_openweather_state )
+					on_click=_clear_openweather_state, width='stretch' )
 			
 			if openweather_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Open Weather'
@@ -7633,7 +7626,6 @@ elif mode == 'Geospatial':
 				                                               '90210') )
 			
 			date_c1, date_c2 = st.columns( 2 )
-			
 			with date_c1:
 				historicalweather_date = st.date_input( 'Date',
 					value=st.session_state.get( 'historicalweather_date',
@@ -7651,14 +7643,13 @@ elif mode == 'Geospatial':
 				key='historicalweather_timezone', placeholder='auto' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
 				historicalweather_submit = st.button( 'Submit',
-					key='historicalweather_submit' )
+					key='historicalweather_submit', width='stretch' )
 			
 			with btn_c2:
 				historicalweather_clear = st.button( 'Clear', key='historicalweather_clear',
-					on_click=_clear_historicalweather_state )
+					on_click=_clear_historicalweather_state, width='stretch' )
 			
 			if historicalweather_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Historical Weather'
@@ -7776,7 +7767,6 @@ elif mode == 'Geospatial':
 				key='usgsearthquakes_feed', disabled=(usgseq_mode != 'feed') )
 			
 			date_c1, date_c2 = st.columns( 2 )
-			
 			with date_c1:
 				usgseq_start_date = st.date_input( 'Start Date',
 					value=st.session_state.get( 'usgsearthquakes_start_date',
@@ -7805,7 +7795,6 @@ elif mode == 'Geospatial':
 					disabled=(usgseq_mode != 'search') )
 			
 			opt_c1, opt_c2 = st.columns( 2 )
-			
 			with opt_c1:
 				usgseq_limit = st.number_input( 'Limit', min_value=1, max_value=20000,
 					value=int( st.session_state.get( 'usgsearthquakes_limit', 25 ) ), step=1,
@@ -7848,13 +7837,12 @@ elif mode == 'Geospatial':
 			            'magnitude, event type, and optional radial filtering.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
-				usgseq_submit = st.button( 'Submit', key='usgsearthquakes_submit' )
+				usgseq_submit = st.button( 'Submit', key='usgsearthquakes_submit', width='stretch' )
 			
 			with btn_c2:
 				st.button( 'Clear', key='usgsearthquakes_clear',
-					on_click=_clear_usgsearthquakes_state )
+					on_click=_clear_usgsearthquakes_state, width='stretch' )
 			
 			if usgseq_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'USGS Earthquakes'
@@ -7942,13 +7930,12 @@ elif mode == 'Geospatial':
 			            'use layers + category=wildfires to inspect imagery layers.' )
 			
 			b1, b2 = st.columns( 2 )
-			
 			with b1:
-				earth_submit = st.button( 'Submit', key='earthobservatory_submit' )
+				earth_submit = st.button( 'Submit', key='earthobservatory_submit', width='stretch' )
 			
 			with b2:
 				st.button( 'Clear', key='earthobservatory_clear',
-					on_click=_clear_earthobservatory_state )
+					on_click=_clear_earthobservatory_state, width='stretch' )
 			
 			if earth_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'NASA Earth Observatory'
@@ -8085,12 +8072,12 @@ elif mode == 'Geospatial':
 			            'returns the dataset catalog for discovery.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
-				usgstnm_submit = st.button( 'Submit', key='usgstnm_submit' )
+				usgstnm_submit = st.button( 'Submit', key='usgstnm_submit', width='stretch' )
 			
 			with btn_c2:
-				st.button( 'Clear', key='usgstnm_clear', on_click=_clear_usgstnm_state )
+				st.button( 'Clear', key='usgstnm_clear', on_click=_clear_usgstnm_state,
+					width='stretch' )
 			
 			if usgstnm_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'The National Map'
@@ -8192,12 +8179,12 @@ elif mode == 'Geospatial':
 			st.caption( 'Items mode performs catalog discovery.' )
 			
 			btn_c1, btn_c2 = st.columns( 2 )
-			
 			with btn_c1:
-				usgssb_submit = st.button( 'Submit', key='usgssb_submit' )
+				usgssb_submit = st.button( 'Submit', key='usgssb_submit', width='stretch' )
 			
 			with btn_c2:
-				st.button( 'Clear', key='usgssb_clear', on_click=_clear_usgssb_state )
+				st.button( 'Clear', key='usgssb_clear',
+					on_click=_clear_usgssb_state, width='stretch' )
 			
 			if usgssb_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'USGS Science Base'
@@ -8314,7 +8301,6 @@ elif mode == 'Geospatial':
 			lomin = st.number_input( 'Min Longitude', value=-77.5, key='opensky_lomin' )
 			lamax = st.number_input( 'Max Latitude', value=40.5, key='opensky_lamax' )
 			lomax = st.number_input( 'Max Longitude', value=-75.0, key='opensky_lomax' )
-			
 			extended = st.checkbox( 'Extended Aircraft Categories', value=False,
 				key='opensky_extended', help='Only applies to states_bbox.' )
 			
@@ -8330,10 +8316,10 @@ elif mode == 'Geospatial':
 			b1, b2 = st.columns( 2 )
 			with b1:
 				opensky_submit = st.button( 'Submit', key='opensky_submit',
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			with b2:
 				st.button( 'Clear', key='opensky_clear', on_click=_clear_opensky_state,
-					use_container_width=True )
+					use_container_width=True, width='stretch' )
 			
 			if opensky_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Open Sky'
