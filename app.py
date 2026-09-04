@@ -2629,7 +2629,6 @@ if mode == 'Loading':
 					     'page_content.' )
 				
 				is_lines = st.checkbox( 'JSON Lines', value=False, key='json_lines', )
-				
 				is_text = st.checkbox( 'Extracted content is already text', value=True,
 					key='json_text_content',
 					help='Turn this off when jq_schema/content_key selects structured values '
@@ -2639,8 +2638,10 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_json = col_load.button( 'Load', key='json_load', icon='📤', )
-				clear_json = col_clear.button( 'Clear', key='json_clear', icon='🧹', )
+				load_json = col_load.button( 'Load', key='json_load',
+					icon='📤', width='stretch' )
+				clear_json = col_clear.button( 'Clear', key='json_clear',
+					icon='🧹', width='stretch' )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'JsonLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
@@ -2649,9 +2650,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='json_loader_output.txt', mime='text/plain', key='json_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='json_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='json_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
