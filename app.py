@@ -1925,6 +1925,35 @@ def get_declared_type_family( declared_type: str ) -> str:
 		return 'text'
 	return 'unknown'
 
+def parse_datetime_series( series: pd.Series ) -> pd.Series:
+	"""Parse datetime values without modifying the source series.
+
+	Purpose:
+	    Converts native datetimes and populated date-like text into pandas datetime values while
+	    rejecting unparseable values. Mixed-format parsing is used when supported by pandas, with a
+	    compatibility fallback for earlier versions.
+
+	Args:
+	    series (pd.Series): Source values evaluated as a datetime candidate.
+
+	Returns:
+	    pd.Series: Datetime values aligned to the source index.
+	"""
+	throw_if( 'series', series )
+	if pd.api.types.is_datetime64_any_dtype( series ):
+		return pd.to_datetime( series, errors='coerce' )
+
+	try:
+		text_values = series.astype( 'string' ).str.strip( )
+		parsed_values = pd.to_datetime( text_values, errors='coerce', format='mixed' )
+		if parsed_values.notna( ).any( ) or not get_populated_mask( series ).any( ):
+			return parsed_values
+		return pd.to_datetime( text_values, errors='coerce' )
+	except (TypeError, ValueError):
+		return pd.to_datetime( series.astype( 'string' ).str.strip( ), errors='coerce' )
+	
+_streamlit_data_editor = st.data_editor
+
 # -------- Expander Utilities
 
 def set_blue_divider( ) -> None:
