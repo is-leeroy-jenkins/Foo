@@ -1616,8 +1616,10 @@ if mode == 'Loading':
 			st.success( _loader_msg )
 		
 		with st.expander( label='Local Documents', expanded=True ):
-			
-			# --------------------------- NLTK Loader Expander
+
+			# ----------------------------
+			# ------- NLTK Loader Expander
+			# ----------------------------
 			with st.expander( label='Corpora Loader', icon='📚', expanded=False ):
 				import nltk
 				from nltk.corpus import (brown, gutenberg, reuters, webtext, inaugural,
@@ -1743,8 +1745,10 @@ if mode == 'Loading':
 						st.success( f'Loaded {len( documents )} document(s) from NLTK.' )
 					else:
 						st.warning( 'No documents were loaded.' )
-			
-			# --------------------------- Text Loader
+
+			# ----------------------------
+			# ------ Text Loader
+			# ----------------------------
 			with st.expander( label='Text Loader', icon='📝', expanded=False ):
 				files = st.file_uploader( 'Upload Text File(s)', type=[ 'txt', 'text', 'log' ],
 					accept_multiple_files=True, key='txt_upload' )
@@ -1810,8 +1814,10 @@ if mode == 'Loading':
 							str ) and d.page_content.strip( ) )
 					st.session_state.active_loader = 'TextLoader'
 					st.success( f'Loaded {len( documents )} text document(s).' )
-			
-			# --------------------------- CSV Loader Expander
+
+			# ----------------------------
+			# ------ CSV Loader Expander
+			# ----------------------------
 			with st.expander( label="CSV Loader", icon='📑', expanded=False ):
 				csv_file = st.file_uploader( label="Upload CSV", type=[ "csv" ], key="csv_upload" )
 				delimiter = st.text_input( "Delimiter", value=",", key="csv_delim", )
@@ -1865,8 +1871,10 @@ if mode == 'Loading':
 					
 					st.session_state[
 						"_loader_status" ] = f"Loaded {len( documents )} CSV document(s)."
-			
-			# -------------------------- XML Loader Expander
+
+			# ----------------------------
+			# ---- XML Loader Expander
+			# ----------------------------
 			with st.expander( label='XML Loader', icon='🧬', expanded=False ):
 				# ------------------------------------------------------------------
 				# Session-backed loader instance
@@ -2015,8 +2023,10 @@ if mode == 'Loading':
 							"namespaces": getattr( xml_loader, 'xml_namespaces', None ),
 							"chunk_size": getattr( xml_loader, 'chunk_size', None ),
 							"overlap_amount": getattr( xml_loader, 'overlap_amount', None ), } )
-			
-			# --------------------------- Word Loader
+
+			# ----------------------------
+			# ------- Word Loader
+			# ----------------------------
 			with st.expander( label='Word Document Loader', icon='📘', expanded=False ):
 				word_file = st.file_uploader( 'Upload Word Document', type=[ 'docx' ],
 					key='word_upload', )
@@ -2077,8 +2087,10 @@ if mode == 'Loading':
 					st.session_state.active_loader = 'WordLoader'
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} Word document(s).'
-			
-			# --------------------------- PDF Loader Expander
+
+			# ----------------------------
+			# ------ PDF Loader Expander
+			# ----------------------------
 			with st.expander( label='PDF Loader', icon='📕', expanded=False ):
 				pdf = st.file_uploader( 'Upload PDF', type=[ 'pdf' ], key='pdf_upload' )
 				
@@ -2208,8 +2220,10 @@ if mode == 'Loading':
 						icon='💾' )
 				else:
 					save_pdf.button( 'Save', key='pdf_save_disabled', disabled=True, icon='💾' )
-			
-			# --------------------------- Power Point Loader
+
+			# ----------------------------
+			# --- Power Point Loader
+			# ----------------------------
 			with st.expander( label='Power Point Loader', icon='📽', expanded=False ):
 				pptx = st.file_uploader( 'Upload PPTX', type=[ 'pptx' ], key='pptx_upload', )
 				mode = st.selectbox( 'Mode', [ 'single', 'elements' ], key='pptx_mode', )
@@ -2256,8 +2270,10 @@ if mode == 'Loading':
 							str ) and d.page_content.strip( ) )
 					st.session_state.active_loader = "PowerPointLoader"
 					st.success( f"Loaded {len( documents )} PowerPoint document(s)." )
-			
-			# --------------------------- Jupyter Notebook Loader
+
+			# ----------------------------
+			# ------ Jupyter Notebook Loader
+			# ----------------------------
 			with st.expander( label='Jupyter Notebook Loader', icon='📓', expanded=False ):
 				notebook_file = st.file_uploader( 'Upload Notebook', type=[ 'ipynb' ],
 					key='ipynb_upload', )
@@ -2339,8 +2355,10 @@ if mode == 'Loading':
 					st.session_state.active_loader = 'JupyterNotebookLoader'
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} notebook document(s).'
-			
-			# --------------------------- Excel Loader
+
+			# ----------------------------
+			# ------- Excel Loader
+			# ----------------------------
 			with st.expander( label='Excel Loader', icon='📊', expanded=False ):
 				excel_file = st.file_uploader( 'Upload Excel file', type=[ 'xlsx', 'xls' ],
 					key='excel_upload', )
@@ -2480,8 +2498,10 @@ if mode == 'Loading':
 							st.warning( "No data loaded (empty sheets or invalid selection)." )
 						else:
 							st.warning( "No Excel document content was loaded." )
-			
-			# --------------------------- Markdown Loader
+
+			# ----------------------------
+			# ------ Markdown Loader
+			# ----------------------------
 			with st.expander( label='Markdown Loader', icon='🧾', expanded=False ):
 				md = st.file_uploader( 'Upload Markdown', type=[ 'md', 'markdown' ],
 					key='md_upload', )
@@ -2535,8 +2555,10 @@ if mode == 'Loading':
 							str ) and d.page_content.strip( ) )
 					st.session_state.active_loader = "MarkdownLoader"
 					st.success( f"Loaded {len( documents )} Markdown document(s)." )
-			
-			# --------------------------- HTML Loader
+
+			# ----------------------------
+			# ---- HTML Loader
+			# ----------------------------
 			with st.expander( label='HTML Loader', icon='🌐', expanded=False ):
 				html = st.file_uploader( 'Upload HTML', type=[ 'html', 'htm' ], key='html_upload' )
 				
@@ -2582,8 +2604,10 @@ if mode == 'Loading':
 					st.session_state.raw_text = "\n\n".join( d.page_content for d in documents )
 					st.session_state.active_loader = "HtmlLoader"
 					st.success( f"Loaded {len( documents )} HTML document(s)." )
-			
-			# --------------------------- JSON Loader
+
+			# ----------------------------
+			# --------- JSON Loader
+			# ----------------------------
 			with st.expander( label='JSON Loader', icon='🧩', expanded=False ):
 				js = st.file_uploader( 'Upload JSON', type=[ 'json', 'jsonl' ],
 					key='json_upload', )
@@ -2651,8 +2675,10 @@ if mode == 'Loading':
 					st.success( f"Loaded {len( documents )} JSON document(s)." )
 		
 		with st.expander( label='Web Documents', expanded=False ):
-			
-			# --------------------------- ArXiv Loader
+
+			# ----------------------------
+			# ------- ArXiv Loader
+			# ----------------------------
 			with st.expander( label='ArXiv Loader', icon='🧠', expanded=False ):
 				arxiv_query = st.text_input( 'Query', placeholder='e.g., transformer OR llm',
 					key='arxiv_query', )
@@ -2703,8 +2729,10 @@ if mode == 'Loading':
 						
 						st.session_state[
 							'_loader_status' ] = f'Fetched {len( documents )} document(s).'
-			
-			# --------------------------- Wikipedia Loader
+
+			# ----------------------------
+			# ---- Wikipedia Loader
+			# ----------------------------
 			with st.expander( label='Wikipedia Loader', icon='📚', expanded=False ):
 				wiki_query = st.text_input( 'Query',
 					placeholder='e.g., Natural language processing', key='wiki_query', )
@@ -2760,8 +2788,10 @@ if mode == 'Loading':
 						st.session_state[ '_loader_status' ] = (
 							f'Fetched {len( documents )} Wikipedia document('
 							f's).')
-			
-			# --------------------------- GitHub Loader
+
+			# ----------------------------
+			# ----- GitHub Loader
+			# ----------------------------
 			with st.expander( label='GitHub Loader', icon='🐙', expanded=False ):
 				gh_url = st.text_input( "GitHub API URL", placeholder="https://api.github.com",
 					value="https://api.github.com", key="gh_url",
@@ -2826,8 +2856,10 @@ if mode == 'Loading':
 						
 						st.session_state[
 							"_loader_status" ] = f"Fetched {len( documents )} GitHub document(s)."
-			
-			# --------------------------- Outlook Loader
+
+			# ----------------------------
+			# -------- Outlook Loader
+			# ----------------------------
 			with st.expander( label='Outlook Loader', icon='📨', expanded=False ):
 				outlook_file = st.file_uploader( 'Upload Outlook Message', type=[ 'msg' ],
 					key='outlook_upload', )
@@ -2892,8 +2924,10 @@ if mode == 'Loading':
 					st.session_state[ '_loader_status' ] = (
 						f'Loaded {len( documents )} Outlook message document('
 						f's).')
-			
-			# --------------------------- Web Loader
+
+			# ----------------------------
+			# ------- Web Loader
+			# ----------------------------
 			with st.expander( label="Web Loader", icon='🌐', expanded=False ):
 				urls = st.text_area( "Enter one URL per line",
 					placeholder="https://example.com\nhttps://another.com", key="web_urls", )
@@ -2950,8 +2984,10 @@ if mode == 'Loading':
 						st.session_state.active_loader = "WebLoader"
 						st.session_state[
 							"_loader_status" ] = f"Fetched {len( new_docs )} web document(s)."
-			
-			# --------------------------- Web Crawler
+
+			# ----------------------------
+			# ----- Web Crawler
+			# ----------------------------
 			with st.expander( label='Web Crawler', icon='🕷️', expanded=False ):
 				start_url = st.text_input( 'Start URL', placeholder='https://example.com',
 					key='crawl_start_url', )
@@ -3016,8 +3052,10 @@ if mode == 'Loading':
 					st.session_state.active_loader = 'WebCrawler'
 					st.session_state[
 						'_loader_status' ] = f'Crawled {len( documents )} document(s).'
-			
-			# --------------------------- Email Loader
+
+			# ----------------------------
+			# ----- Email Loader
+			# ----------------------------
 			with st.expander( label='E-mail Loader', icon='📧', expanded=False ):
 				email_file = st.file_uploader( 'Upload Email File', type=[ 'eml' ],
 					key='email_upload', )
@@ -3089,8 +3127,10 @@ if mode == 'Loading':
 					st.session_state.active_loader = 'EmailLoader'
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} email document(s).'
-			
-			# --------------------------- PubMed Loader
+
+			# ----------------------------
+			# ---- PubMed Loader
+			# ----------------------------
 			with st.expander( label='Pub Med Loader', icon='🧬', expanded=False ):
 				pubmed_query = st.text_input( 'PubMed Query', value='', key='pubmed_query',
 					placeholder='e.g. transformer models biomedical NLP', )
@@ -3153,8 +3193,10 @@ if mode == 'Loading':
 					st.session_state.active_loader = 'PubMedSearchLoader'
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} PubMed document(s).'
-			
-			# --------------------------- Open City Loader
+
+			# ----------------------------
+			# --- Open City Loader
+			# ----------------------------
 			with st.expander( label='Open City Loader', icon='🏙️', expanded=False ):
 				open_city_id = st.text_input( 'City Domain', value='', key='open_city_id',
 					placeholder='e.g. data.sfgov.org',
@@ -3229,8 +3271,10 @@ if mode == 'Loading':
 						'_loader_status' ] = f'Loaded {len( documents )} Open City document(s).'
 		
 		with st.expander( label='Cloud Documents', expanded=False ):
-			
-			# --------------------------- OneDrive Loader
+
+			# ----------------------------
+			# ---- OneDrive Loader
+			# ----------------------------
 			with st.expander( label='OneDrive Loader', icon='🟦', expanded=False ):
 				onedrive_drive_id = st.text_input( 'Drive ID', value='', key='onedrive_drive_id',
 					placeholder='OneDrive drive identifier', )
@@ -3308,8 +3352,10 @@ if mode == 'Loading':
 					st.session_state.active_loader = 'OneDriveDocLoader'
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} OneDrive document(s).'
-			
-			# --------------------------- Google Cloud File Loader
+
+			# ----------------------------
+			# ---- Google Cloud File Loader
+			# ----------------------------
 			with st.expander( label='Google Cloud File Loader', icon='☁️', expanded=False ):
 				gcs_project_name = st.text_input( 'Project Name', value='',
 					key='gcs_file_project_name', placeholder='e.g. my-gcp-project', )
@@ -3383,8 +3429,10 @@ if mode == 'Loading':
 					st.session_state[ '_loader_status' ] = (
 						f'Loaded {len( documents )} Google Cloud file '
 						f'document(s).')
-			
-			# --------------------------- AWS File Loader
+
+			# ----------------------------
+			# ---- AWS File Loader
+			# ----------------------------
 			with st.expander( label='AWS File Loader', icon='🪣', expanded=False ):
 				aws_file_bucket = st.text_input( 'Bucket', value='', key='aws_file_bucket',
 					placeholder='e.g. my-s3-bucket', )
@@ -3489,7 +3537,9 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} AWS file document(s).'
 			
-			# --------------------------- Google Bucket Loader
+			# ----------------------------
+			# ----- Google Bucket Loader
+			# ----------------------------
 			with st.expander( label='Google Bucket Loader', icon='🗂️', expanded=False ):
 				gcs_bucket_project_name = st.text_input( 'Project Name', value='',
 					key='gcs_bucket_project_name', placeholder='e.g. my-gcp-project', )
@@ -3575,7 +3625,9 @@ if mode == 'Loading':
 						f'Loaded {len( documents )} Google bucket document('
 						f's).')
 			
-			# --------------------------- AWS Bucket Loader
+			# ----------------------------
+			# ---- AWS Bucket Loader
+			# ----------------------------
 			with st.expander( label='AWS Bucket Loader', icon='🗃️', expanded=False ):
 				aws_bucket_name = st.text_input( 'Bucket', value='', key='aws_bucket_name',
 					placeholder='e.g. my-s3-bucket', )
@@ -4257,8 +4309,10 @@ elif mode == 'Retrieval':
 	st.divider( )
 	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 	with left:
-		
+
+		# ----------------------------
 		# -------- Expander (ArXiv)
+		# ----------------------------
 		with st.expander( label='ArXiv', icon='📘', expanded=False ):
 			st.badge( label='Information', help=cfg.ARXIV )
 			if 'arxiv_results' not in st.session_state:
@@ -4341,7 +4395,9 @@ elif mode == 'Retrieval':
 					st.error( 'ArXiv request failed.' )
 					st.exception( exc )
 		
+		# ----------------------------
 		# -------- Expander (Google Drive)
+		# ----------------------------
 		with st.expander( label='Google Drive', icon='🛡️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_DRIVE )
 			if 'googledrive_results' not in st.session_state:
@@ -4443,7 +4499,9 @@ elif mode == 'Retrieval':
 					st.error( 'Google Drive request failed.' )
 					st.exception( exc )
 		
+		# ----------------------------
 		# -------- Expander (Wikipedia)
+		# ----------------------------
 		with st.expander( label='Wikipedia', icon='📖', expanded=False ):
 			st.badge( label='Information', help=cfg.WIKIPEDIA )
 			if 'wikipedia_results' not in st.session_state:
@@ -4535,7 +4593,9 @@ elif mode == 'Retrieval':
 			with st.expander( label='Information', expanded=False ):
 				st.help( Wikipedia )
 		
+		# ----------------------------
 		# -------- Expander (Google Search)
+		# ----------------------------
 		with st.expander( label='Google Search', icon='🔍', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_CSE )
 			if 'googlesearch_results' not in st.session_state:
@@ -4721,8 +4781,10 @@ elif mode == 'Retrieval':
 			with b2:
 				st.button( 'Clear', key='googlesearch_clear',
 					on_click=_clear_googlesearch_state )
-		
+
+		# ----------------------------
 		# -------- Expander (Open Science)
+		# ----------------------------
 		with st.expander( label='Open Science', icon='🧪', expanded=False ):
 			st.badge( label='Information', help=cfg.NASA_OPEN_SCIENCE )
 			if 'openscience_results' not in st.session_state:
@@ -4778,8 +4840,10 @@ elif mode == 'Retrieval':
 			with b2:
 				st.button( 'Clear', key='openscience_clear', on_click=_clear_openscience_state,
 					use_container_width=True )
-		
+
+		# ----------------------------
 		# -------- Expander (Gov Info)
+		# ----------------------------
 		with st.expander( label='Gov Info', icon='🏛️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOV_INFO )
 			if 'govinfo_results' not in st.session_state:
@@ -5004,7 +5068,9 @@ elif mode == 'Retrieval':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 		
+		# ----------------------------
 		# -------- Expander (Congress)
+		# ----------------------------
 		with st.expander( label='US Congress', icon='⚖️', expanded=False ):
 			st.badge( label='Information', help=cfg.CONGRESS )
 			if 'congress_results' not in st.session_state:
@@ -5257,8 +5323,10 @@ elif mode == 'Retrieval':
 					
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
-		
+
+		# ----------------------------
 		# -------- Expander (Internet Archive)
+		# ----------------------------
 		with st.expander( label='Internet Archive', icon='🌐', expanded=False ):
 			st.badge( label='Information', help=cfg.INTERNET_ARCHIVE )
 			if 'internetarchive_results' not in st.session_state:
@@ -5452,7 +5520,9 @@ elif mode == 'Retrieval':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 		
+		# ----------------------------
 		# -------- Expander (Grokipedia)
+		# ----------------------------
 		with st.expander( label='Grokipedia', icon='🧠', expanded=False ):
 			st.badge( label='Information', help=cfg.GROKIPEDIA )
 			if 'grokipedia_results' not in st.session_state:
@@ -5692,7 +5762,9 @@ elif mode == 'Retrieval':
 					else:
 						st.info( 'No results returned.' )
 		
+		# ----------------------------
 		# -------- Expander (Jupyter Notebook)
+		# ----------------------------
 		with st.expander( label='Jupyter Notebook', icon='🪐', expanded=False ):
 			st.badge( label='Information', help=cfg.JUPYTER_NOTEBOOK )
 			if 'jupyter_notebook_results' not in st.session_state:
@@ -5736,8 +5808,10 @@ elif mode == 'Retrieval':
 				else:
 					st.button( 'Save', key='jupyter_notebook_save_disabled', disabled=True,
 						use_container_width=True )
-		
+
+		# ----------------------------
 		# -------- Expander (Google Cloud File)
+		# ----------------------------
 		with st.expander( label='Google Cloud File', icon='☁️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_FILE )
 			if 'google_cloud_file_results' not in st.session_state:
@@ -5774,8 +5848,10 @@ elif mode == 'Retrieval':
 				else:
 					st.button( 'Save', key='google_cloud_file_save_disabled', disabled=True,
 						use_container_width=True )
-		
+
+		# ----------------------------
 		# -------- Expander (AWS S3 File)
+		# ----------------------------
 		with st.expander( label='AWS S3 File', icon='📗', expanded=False ):
 			st.badge( label='Information', help=cfg.AWS_FILE )
 			if 'aws_file_results' not in st.session_state:
@@ -5820,8 +5896,10 @@ elif mode == 'Retrieval':
 				else:
 					st.button( 'Save', key='aws_file_save_disabled', disabled=True,
 						use_container_width=True )
-		
+
+		# ----------------------------
 		# -------- Expander (OneDrive)
+		# ----------------------------
 		with st.expander( label='OneDrive', icon='💻', expanded=False ):
 			st.badge( label='Information', help=cfg.ONEDRIVE )
 			if 'onedrive_results' not in st.session_state:
@@ -5860,8 +5938,10 @@ elif mode == 'Retrieval':
 				else:
 					st.button( 'Save', key='onedrive_save_disabled', disabled=True,
 						use_container_width=True )
-		
+
+		# ----------------------------
 		# -------- Expander (Google Speech-to-Text)
+		# ----------------------------
 		with st.expander( label='Google Speech-to-Text', icon='🗣️', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_STT )
 			if 'google_speech_to_text_results' not in st.session_state:
@@ -5902,8 +5982,10 @@ elif mode == 'Retrieval':
 					st.button( 'Save', key='google_speech_to_text_save_disabled',
 						disabled=True,
 						use_container_width=True )
-		
+
+		# ----------------------------
 		# -------- Expander  (AWS S3 Bucket)
+		# ----------------------------
 		with st.expander( label='AWS S3 Bucket', icon='🗂️', expanded=False ):
 			st.badge( label='Information', help=cfg.AWS_BUCKET )
 			if 'aws_bucket_results' not in st.session_state:
@@ -5948,8 +6030,10 @@ elif mode == 'Retrieval':
 				else:
 					st.button( 'Save', key='aws_bucket_save_disabled', disabled=True,
 						use_container_width=True )
-		
+
+		# ----------------------------
 		# -------- Expander (Google Cloud Bucket)
+		# ----------------------------
 		with st.expander( label='Google Cloud Bucket', icon='🧊', expanded=False ):
 			st.badge( label='Information', help=cfg.GOOGLE_BUCKET )
 			if 'google_bucket_results' not in st.session_state:
