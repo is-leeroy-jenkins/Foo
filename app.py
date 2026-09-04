@@ -1827,8 +1827,8 @@ if mode == 'Loading':
 				# Buttons: Load / Clear / Save
 				# --------------------------------------------------
 				col_load, col_clear, col_save = st.columns( 3 )
-				load_csv = col_load.button( 'Load', key='csv_load', icon='📤', )
-				clear_csv = col_clear.button( 'Clear', key='csv_clear', icon='🧹', )
+				load_csv = col_load.button( 'Load', key='csv_load', icon='📤', width='stretch' )
+				clear_csv = col_clear.button( 'Clear', key='csv_clear', icon='🧹', width='stretch' )
 				can_save = (st.session_state.get( 'active_loader' ) == 'CsvLoader' and isinstance(
 					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
 					'raw_text' ).strip( ))
@@ -1836,9 +1836,10 @@ if mode == 'Loading':
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
 						file_name='csv_loader_output.txt', mime='text/plain', key='csv_save',
-						icon='💾' )
+						icon='💾', width='stretch' )
 				else:
-					col_save.button( 'Save', key='csv_save_disabled', disabled=True, icon='💾' )
+					col_save.button( 'Save', key='csv_save_disabled', disabled=True,
+						icon='💾', width='stretch' )
 				
 				# --------------------------------------------------
 				# Clear
