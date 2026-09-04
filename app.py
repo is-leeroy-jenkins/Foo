@@ -7111,7 +7111,7 @@ elif mode == 'Geospatial':
 	with left:
 
 		# ----------------------------
-		# ------  Geocoding
+		# ------ Expander Geocoding
 		# ----------------------------
 		with st.expander( label='Geocoding', icon='📍', expanded=False ):
 			if 'googlegeocoding_results' not in st.session_state:
@@ -7228,7 +7228,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'geospatial_active_source' ] = 'Geocoding'
 
 		# ----------------------------
-		# ------ Google Maps
+		# ------ Expander Google Maps
 		# ----------------------------
 		with st.expander( label='Google Maps', icon='🗺️', expanded=False ):
 			GOOGLEMAPS_MODES = [ 'geocode_location', 'geocode_coordinates', 'validate_address',
@@ -7377,7 +7377,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'geospatial_active_source' ] = 'Google Maps'
 
 		# ----------------------------
-		# ------ Google Weather
+		# ------ Expander Google Weather
 		# ----------------------------
 		with st.expander( label='Google Weather', icon='🌤️', expanded=False ):
 			GOOGLEWEATHER_MODES = [ 'current', 'hourly_forecast', 'daily_forecast',
@@ -7498,7 +7498,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'geospatial_active_source' ] = 'Google Weather'
 
 		# ----------------------------
-		# ------ Open Weather
+		# ------ Expander Open Weather
 		# ----------------------------
 		with st.expander( label='Open Weather', icon='🌦️', expanded=False ):
 			if 'openweather_results' not in st.session_state:
@@ -7571,7 +7571,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'geospatial_active_source' ] = 'Open Weather'
 
 		# ----------------------------
-		# ------ Historical Weather
+		# ------ Expander Historical Weather
 		# ----------------------------
 		with st.expander( label='Historical Weather', icon='📈', expanded=False ):
 			if 'historicalweather_results' not in st.session_state:
@@ -7630,7 +7630,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'geospatial_active_source' ] = 'Historical Weather'
 
 		# ----------------------------
-		# ------  USGS Earthquakes
+		# ------ Expander USGS Earthquakes
 		# ----------------------------
 		with st.expander( label='USGS Earthquakes', icon='🌎', expanded=False ):
 			USGSEARTHQUAKES_MODES = [ 'feed', 'search' ]
@@ -7826,7 +7826,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'geospatial_active_source' ] = 'USGS Earthquakes'
 
 		# ----------------------------
-		# ------ NASA Earth Observatory
+		# ------ Expander NASA Earth Observatory
 		# ----------------------------
 		with st.expander( label='NASA Earth Observatory', icon='🛰️', expanded=False ):
 			if 'earthobservatory_results' not in st.session_state:
@@ -7920,7 +7920,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'geospatial_active_source' ] = 'NASA Earth Observatory'
 
 		# ----------------------------
-		# ------ The National Map
+		# ------ Expander The National Map
 		# ----------------------------
 		with st.expander( label='The National Map', icon='🗺️', expanded=False ):
 			USGSTNM_MODES = [ 'products', 'datasets' ]
@@ -8062,7 +8062,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'geospatial_active_source' ] = 'The National Map'
 
 		# ----------------------------
-		# ------ USGS Science Base
+		# ------ Expander USGS Science Base
 		# ----------------------------
 		with st.expander( label='USGS Science Base', icon='🔬', expanded=False ):
 			USGSSB_MODES = [ 'items', 'item' ]
@@ -8169,7 +8169,7 @@ elif mode == 'Geospatial':
 				st.session_state[ 'geospatial_active_source' ] = 'USGS Science Base'
 
 		# ----------------------------
-		# ------ Open Sky
+		# ------ Expander Open Sky
 		# ----------------------------
 		with st.expander( label='Open Sky', icon='✈️', expanded=False ):
 			def _clear_opensky_state( ) -> None:
@@ -9383,7 +9383,7 @@ elif mode == 'Environmental':
 	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 	with left:
 		# ----------------------------
-		# -------- Air Now
+		# -------- Expander Air Now
 		# ----------------------------
 		with st.expander( label='Air Now', icon='🌫️', expanded=False ):
 			if 'airnow_results' not in st.session_state:
@@ -9461,7 +9461,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'Air Now'
 
 		# ----------------------------
-		# -------- NOAA Climate Data
+		# -------- Expander NOAA Climate Data
 		# ----------------------------
 		with st.expander( label='NOAA Climate Data', icon='🌡️', expanded=False ):
 			CLIMATEDATA_MODES = [ 'datasets', 'data' ]
@@ -9594,7 +9594,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'NOAA Climate Data'
 
 		# ----------------------------
-		# -------- NASA EONET
+		# -------- Expander NASA EONET
 		# ----------------------------
 		with st.expander( label='NASA EONET', icon='🌎', expanded=False ):
 			EONET_MODES = [ 'events', 'categories' ]
@@ -9754,7 +9754,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'NASA EONET'
 
 		# ----------------------------
-		# -------- EPA Envirofacts
+		# -------- Expander EPA Envirofacts
 		# ----------------------------
 		with st.expander( label='EPA Envirofacts', icon='♻️', expanded=False ):
 			ENVIROFACTS_TABLES = [ 'TRI_FACILITY', 'TRI_RELEASE', 'EF_W_EMISSIONS_SOURCE_GHG' ]
@@ -9838,7 +9838,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'EPA Envirofacts'
 
 		# ----------------------------
-		# -------- NOAA Tides & Currents
+		# -------- Expander NOAA Tides & Currents
 		# ----------------------------
 		with st.expander( label='NOAA Tides & Currents', icon='🌊', expanded=False ):
 			TIDESANDCURRENTS_MODES = [ 'station', 'water-level', 'tide-predictions' ]
@@ -9974,7 +9974,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'NOAA Tides & Currents'
 
 		# ----------------------------
-		# -------- EPA UV Index
+		# -------- Expander EPA UV Index
 		# ----------------------------
 		with st.expander( label='EPA UV Index', icon='☀️', expanded=False ):
 			UVINDEX_MODES = [ 'daily-zip', 'daily-city-state', 'hourly-zip', 'hourly-city-state' ]
@@ -10059,7 +10059,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'EPA UV Index'
 
 		# ----------------------------
-		# -------- Purple Air
+		# -------- Expander Purple Air
 		# ----------------------------
 		with st.expander( label='Purple Air', icon='🟣', expanded=False ):
 			PURPLEAIR_MODES = [ 'sensors', 'sensor' ]
@@ -10263,7 +10263,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'Purple Air'
 
 		# ----------------------------
-		# -------- Open Air Quality
+		# -------- Expander Open Air Quality
 		# ----------------------------
 		with st.expander( label='Open Air Quality', icon='🌬️', expanded=False ):
 			OPENAQ_MODES = [ 'countries', 'providers', 'parameters', 'locations', 'latest',
@@ -10411,7 +10411,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'Open Air Quality'
 
 		# ----------------------------
-		# -------- NASA FIRMS
+		# -------- Expander NASA FIRMS
 		# ----------------------------
 		with st.expander( label='NASA FIRMS', icon='🔥', expanded=False ):
 			FIRMS_MODES = [ 'area', 'data-availability' ]
@@ -10543,7 +10543,7 @@ elif mode == 'Environmental':
 				st.session_state[ 'environmental_active_source' ] = 'NASA FIRMS'
 
 		# ----------------------------
-		# -------- USGS Water Data
+		# -------- Expander USGS Water Data
 		# ----------------------------
 		with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
 			USGSWATERDATA_MODES = [ 'monitoring-locations', 'time-series-metadata',
@@ -10683,9 +10683,7 @@ elif mode == 'Environmental':
 		else:
 			st.caption( f'Active Source: {active_source}' )
 
-		# ----------------------------
 		# -------- Air Now
-		# ----------------------------
 		if active_source == 'Air Now':
 			if airnow_submit:
 				try:
@@ -10817,9 +10815,7 @@ elif mode == 'Environmental':
 			
 			_promote_environmental_result( source='Air Now', result=result )
 
-		# ----------------------------
 		# -------- NOAA Climate Data
-		# ----------------------------
 		if active_source == 'NOAA Climate Data':
 			if climatedata_submit:
 				try:
@@ -10918,9 +10914,7 @@ elif mode == 'Environmental':
 	
 			_promote_environmental_result( source='NOAA Climate Data', result=result )
 
-		# ----------------------------
 		# -------- NASA EONET
-		# ----------------------------
 		if active_source == 'NASA EONET':
 			if eonet_submit:
 				try:
@@ -11045,9 +11039,7 @@ elif mode == 'Environmental':
 	
 			_promote_environmental_result( source='NASA EONET', result=result )
 
-		# ----------------------------
 		# -------- EPA Envirofacts
-		# ----------------------------
 		if active_source == 'EPA Envirofacts':
 			if envirofacts_submit:
 				try:
@@ -11135,9 +11127,7 @@ elif mode == 'Environmental':
 					st.json( result )
 			_promote_environmental_result( source='EPA Envirofacts', result=result )
 
-		# ----------------------------
 		# -------- NOAA Tides & Currents
-		# ----------------------------
 		if active_source == 'NOAA Tides & Currents':
 			if tac_submit:
 				try:
@@ -11237,9 +11227,7 @@ elif mode == 'Environmental':
 					
 			_promote_environmental_result( source='NOAA Tides & Currents', result=result )
 
-		# ----------------------------
 		# -------- EPA UV Index
-		# ----------------------------
 		if active_source == 'EPA UV Index':
 			if uvindex_submit:
 				try:
@@ -11349,9 +11337,7 @@ elif mode == 'Environmental':
 			
 			_promote_environmental_result( source='EPA UV Index', result=result )
 
-		# ----------------------------
 		# -------- Purple Air
-		# ----------------------------
 		if active_source == 'Purple Air':
 			if purpleair_submit:
 				try:
@@ -11476,9 +11462,7 @@ elif mode == 'Environmental':
 					
 			_promote_environmental_result( source='Purple Air', result=result )
 
-		# ----------------------------
 		# -------- Open Air Quality
-		# ----------------------------
 		if active_source == 'Open Air Quality':
 			if openaq_submit:
 				try:
@@ -11602,9 +11586,7 @@ elif mode == 'Environmental':
 					
 			_promote_environmental_result( source='Open Air Quality', result=result )
 
-		# ----------------------------
 		# -------- NASA FIRMS
-		# ----------------------------
 		if active_source == 'NASA FIRMS':
 			if firms_submit:
 				try:
@@ -11719,9 +11701,7 @@ elif mode == 'Environmental':
 					
 			_promote_environmental_result( source='NASA FIRMS', result=result )
 
-		# ----------------------------
 		# -------- USGS Water Data
-		# ----------------------------
 		if active_source == 'USGS Water Data':
 			if usgswd_submit:
 				try:
@@ -11936,7 +11916,7 @@ elif mode == 'Astronomical':
 
 	with left:
 		# ----------------------------
-		# -------- US Naval Observatory
+		# -------- Expander US Naval Observatory
 		# ----------------------------
 		with st.expander( label='US Naval Observatory', icon='⚓', expanded=False ):
 			if 'navalobservatory_results' not in st.session_state:
@@ -12001,7 +11981,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'US Naval Observatory'
 
 		# ----------------------------
-		# -------- Satellite Center
+		# -------- Expander Satellite Center
 		# ----------------------------
 		with st.expander( label='Satellite Center', icon='🛰️', expanded=False ):
 			if 'satellitecenter_results' not in st.session_state:
@@ -12117,7 +12097,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Satellite Center'
 
 		# ----------------------------
-		# -------- Astro Catalog
+		# -------- Expander Astro Catalog
 		# ----------------------------
 		with st.expander( label='Astro Catalog', icon='✨', expanded=False ):
 			if 'astrocatalog_results' not in st.session_state:
@@ -12223,7 +12203,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Astro Catalog'
 
 		# ----------------------------
-		# -------- Astro Query
+		# -------- Expander Astro Query
 		# ----------------------------
 		with st.expander( label='Astro Query', icon='🔭', expanded=False ):
 			if 'astroquery_results' not in st.session_state:
@@ -12313,7 +12293,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Astro Query'
 
 		# ----------------------------
-		# -------- Star Map
+		# -------- Expander Star Map
 		# ----------------------------
 		with st.expander( label='Star Map', icon='⭐', expanded=False ):
 			if 'starmap_results' not in st.session_state:
@@ -12438,7 +12418,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Star Map'
 
 		# ----------------------------
-		# -------- Simbad
+		# -------- Expander Simbad
 		# ----------------------------
 		with st.expander( label='SIMBAD', icon='🌌', expanded=False ):
 			if 'simbad_results' not in st.session_state:
@@ -12524,7 +12504,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'SIMBAD'
 
 		# ----------------------------
-		# -------- Space Weather
+		# -------- Expander Space Weather
 		# ----------------------------
 		with st.expander( label='Space Weather', icon='☄️', expanded=False ):
 			if 'spaceweather_results' not in st.session_state:
@@ -12649,7 +12629,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Space Weather'
 
 		# ----------------------------
-		# -------- Astro Catalog
+		# -------- Expander Astro Catalog
 		# ----------------------------
 		with st.expander( label='Star Chart', icon='🪐', expanded=False ):
 			if 'starchart_results' not in st.session_state:
@@ -12811,7 +12791,7 @@ elif mode == 'Astronomical':
 				st.session_state[ 'astronomical_active_source' ] = 'Star Chart'
 
 		# ----------------------------
-		# -------- Near Earth Object
+		# -------- Expander Near Earth Object
 		# ----------------------------
 		with st.expander( label='Near Earth Objects', icon='☄️', expanded=False ):
 			if 'nearbyobjects_results' not in st.session_state:
@@ -13879,7 +13859,7 @@ elif mode == 'Demographic':
 
 	with left:
 		# ---------------------
-		# U.S. Census Bureau
+		# ---- Expander U.S. Census Bureau
 		# ---------------------
 		with st.expander( label='U.S. Census Bureau', icon='📊', expanded=False ):
 			CENSUS_MODES = [ 'variables', 'data' ]
@@ -14036,7 +14016,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'u_s_census_bureau'
 
 		# ---------------------
-		# CDC SOCRATA
+		# ---- Expander CDC SOCRATA
 		# ---------------------
 		with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
 			SOCRATA_MODES = [ 'rows', 'metadata' ]
@@ -14180,7 +14160,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'cdc_socrata'
 		
 		# ---------------------
-		# US Health Data
+		# ---- Expander US Health Data
 		# ---------------------
 		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
 			HEALTHDATA_MODES = [ 'rows', 'metadata' ]
@@ -14327,7 +14307,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'u_s_health'
 		
 		# ---------------------
-		# -------- WHO Global Health
+		# ---- Expander WHO Global Health
 		# ---------------------
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
 			WHO_MODES = [ 'indicator_registry', 'athena' ]
@@ -14447,7 +14427,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'who_global'
 
 		# ---------------------
-		# -------- United Nations Data
+		# ---- Expander United Nations Data
 		# ---------------------
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
 			UN_MODES = [ 'datasets', 'sdmx_query' ]
@@ -14558,7 +14538,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'united_nations'
 
 		# ---------------------
-		# -------- World Population
+		# ---- Expander World Population
 		# ---------------------
 		with st.expander( label='World Population', icon='👥', expanded=False ):
 			WORLDPOP_MODES = [ 'catalog', 'search', 'raster_metadata' ]
@@ -14715,7 +14695,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'world_population'
 		
 		# ---------------------
-		# -------- CDC WONDER
+		# ---- Expander CDC WONDER
 		# ---------------------
 		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
 			WONDER_MODES = [ 'metadata_template', 'query_xml' ]
@@ -14842,7 +14822,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'cdc_wonder'
 		
 		# ---------------------
-		# -------- Pub Med
+		# ---- Expander Pub Med
 		# ---------------------
 		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
 			def _clear_pubmed_state( ) -> None:
@@ -14906,7 +14886,7 @@ elif mode == 'Demographic':
 				st.session_state[ 'demographic_active_source' ] = 'pub_med_search'
 		
 		# ---------------------
-		# -------- Open City
+		# ---- Expander Open City
 		# ---------------------
 		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
 			OPEN_CITY_DOMAINS = [ 'data.sfgov.org', 'data.cityofnewyork.us',
@@ -15808,7 +15788,7 @@ elif mode == 'Generation':
 	# ------------------------------------------------------------------
 	with left:
 		# ---------------------
-		# ----- GPT
+		# ---- Expander GPT
 		# ---------------------
 		with st.expander( label='ChatGPT', expanded=True ):
 			CHAT_REASONING_EFFORTS = [ 'minimal', 'low', 'medium', 'high' ]
@@ -16044,7 +16024,7 @@ elif mode == 'Generation':
 					st.error( str( exc ) )
 
 		# ---------------------
-		# ----- Groq
+		# ---- Expander Groq
 		# ---------------------
 		with st.expander( label='Grok', expanded=False ):
 			GROK_REASONING_EFFORTS = [ 'none', 'low', 'medium', 'high' ]
@@ -16307,7 +16287,7 @@ elif mode == 'Generation':
 					st.error( str( exc ) )
 
 		# ---------------------
-		# ----- Claude
+		# ---- Expander Claude
 		# ---------------------
 		with st.expander( label='Claude', expanded=False ):
 			def _clear_claude_state( ) -> None:
@@ -16555,7 +16535,7 @@ elif mode == 'Generation':
 					use_container_width=True )
 
 		# ---------------------
-		# ----- GEMINI
+		# ---- Expander GEMINI
 		# ---------------------
 		with st.expander( label='Gemini', expanded=False ):
 			GEMINI_THINKING_LEVELS = [ 'minimal', 'low', 'medium', 'high' ]
@@ -16822,7 +16802,7 @@ elif mode == 'Generation':
 					st.error( str( exc ) )
 
 		# ---------------------
-		# ----- Mistral
+		# ---- Expander Mistral
 		# ---------------------
 		with st.expander( label='Mistral', expanded=False ):
 			def _clear_mistral_state( ) -> None:
