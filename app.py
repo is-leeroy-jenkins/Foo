@@ -7024,8 +7024,10 @@ elif mode == 'Geospatial':
 	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 
 	with left:
-		
+
+		# ----------------------------
 		# ------  Geocoding
+		# ----------------------------
 		with st.expander( label='Geocoding', icon='📍', expanded=False ):
 			if 'googlegeocoding_results' not in st.session_state:
 				st.session_state[ 'googlegeocoding_results' ] = { }
@@ -7140,7 +7142,9 @@ elif mode == 'Geospatial':
 			if googlegeocoding_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Geocoding'
 
+		# ----------------------------
 		# ------ Google Maps
+		# ----------------------------
 		with st.expander( label='Google Maps', icon='🗺️', expanded=False ):
 			GOOGLEMAPS_MODES = [ 'geocode_location', 'geocode_coordinates', 'validate_address',
 				'request_directions' ]
@@ -7287,7 +7291,9 @@ elif mode == 'Geospatial':
 			if googlemaps_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Google Maps'
 
+		# ----------------------------
 		# ------ Google Weather
+		# ----------------------------
 		with st.expander( label='Google Weather', icon='🌤️', expanded=False ):
 			GOOGLEWEATHER_MODES = [ 'current', 'hourly_forecast', 'daily_forecast',
 				'hourly_history', 'alerts' ]
@@ -7406,7 +7412,9 @@ elif mode == 'Geospatial':
 			if gw_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Google Weather'
 
+		# ----------------------------
 		# ------ Open Weather
+		# ----------------------------
 		with st.expander( label='Open Weather', icon='🌦️', expanded=False ):
 			if 'openweather_results' not in st.session_state:
 				st.session_state[ 'openweather_results' ] = { }
@@ -7477,7 +7485,9 @@ elif mode == 'Geospatial':
 			if openweather_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Open Weather'
 
+		# ----------------------------
 		# ------ Historical Weather
+		# ----------------------------
 		with st.expander( label='Historical Weather', icon='📈', expanded=False ):
 			if 'historicalweather_results' not in st.session_state:
 				st.session_state[ 'historicalweather_results' ] = { }
@@ -7534,7 +7544,9 @@ elif mode == 'Geospatial':
 			if historicalweather_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'Historical Weather'
 
+		# ----------------------------
 		# ------  USGS Earthquakes
+		# ----------------------------
 		with st.expander( label='USGS Earthquakes', icon='🌎', expanded=False ):
 			USGSEARTHQUAKES_MODES = [ 'feed', 'search' ]
 			
@@ -7728,7 +7740,9 @@ elif mode == 'Geospatial':
 			if usgseq_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'USGS Earthquakes'
 
+		# ----------------------------
 		# ------ NASA Earth Observatory
+		# ----------------------------
 		with st.expander( label='NASA Earth Observatory', icon='🛰️', expanded=False ):
 			if 'earthobservatory_results' not in st.session_state:
 				st.session_state[ 'earthobservatory_results' ] = { }
@@ -7820,7 +7834,9 @@ elif mode == 'Geospatial':
 			if earth_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'NASA Earth Observatory'
 
+		# ----------------------------
 		# ------ The National Map
+		# ----------------------------
 		with st.expander( label='The National Map', icon='🗺️', expanded=False ):
 			USGSTNM_MODES = [ 'products', 'datasets' ]
 			
@@ -7960,7 +7976,9 @@ elif mode == 'Geospatial':
 			if usgstnm_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'The National Map'
 
+		# ----------------------------
 		# ------ USGS Science Base
+		# ----------------------------
 		with st.expander( label='USGS Science Base', icon='🔬', expanded=False ):
 			USGSSB_MODES = [ 'items', 'item' ]
 			
@@ -8065,7 +8083,9 @@ elif mode == 'Geospatial':
 			if usgssb_submit:
 				st.session_state[ 'geospatial_active_source' ] = 'USGS Science Base'
 
+		# ----------------------------
 		# ------ Open Sky
+		# ----------------------------
 		with st.expander( label='Open Sky', icon='✈️', expanded=False ):
 			def _clear_opensky_state( ) -> None:
 				st.session_state[ 'opensky_results' ] = { }
@@ -8221,7 +8241,6 @@ elif mode == 'Geospatial':
 
 		if active_source == 'Geocoding':
 			st.markdown( 'Results' )
-			
 			if googlegeocoding_submit:
 				try:
 					f = GoogleGeocoding( )
@@ -8245,6 +8264,7 @@ elif mode == 'Geospatial':
 					st.exception( exc )
 			
 			result = st.session_state.get( 'googlegeocoding_results', { } )
+			
 			if not result:
 				st.text( 'No results.' )
 			else:
@@ -8457,8 +8477,7 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- Google Weather
-
+		# -------- Google Weather
 		if active_source == 'Google Weather':
 			st.markdown( 'Results' )
 			
@@ -8565,8 +8584,7 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- Open Weather
-
+		# -------- Open Weather
 		if active_source == 'Open Weather':
 			if openweather_submit:
 				try:
@@ -8627,8 +8645,7 @@ elif mode == 'Geospatial':
 				if message:
 					st.info( message )
 	
-	# -------- Historical Weather
-
+		# -------- Historical Weather
 		if active_source == 'Historical Weather':
 			if historicalweather_submit:
 				try:
@@ -8687,8 +8704,7 @@ elif mode == 'Geospatial':
 				if message:
 					st.info( message )
 	
-	# -------- USGS Earthquakes
-
+		# -------- USGS Earthquakes
 		if active_source == 'USGS Earthquakes':
 			if usgseq_submit:
 				try:
@@ -8844,8 +8860,7 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- Earth Observatory
-
+		# -------- Earth Observatory
 		if active_source == 'NASA Earth Observatory':
 			if earth_submit:
 				try:
@@ -8906,8 +8921,7 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- USGS The National Map
-
+		# -------- USGS The National Map
 		if active_source == 'The National Map':
 			if usgstnm_submit:
 				try:
@@ -9002,8 +9016,7 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- USGS ScienceBase
-
+		# -------- USGS ScienceBase
 		if active_source == 'USGS Science Base':
 			if usgssb_submit:
 				try:
@@ -9126,8 +9139,7 @@ elif mode == 'Geospatial':
 				with st.expander( 'Raw Result', expanded=False ):
 					st.json( result )
 	
-	# -------- Open Sky
-
+		# -------- Open Sky
 		if active_source == 'Open Sky':
 			if opensky_submit:
 				try:
@@ -9285,6 +9297,9 @@ elif mode == 'Environmental':
 	st.divider( )
 	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
 	with left:
+		# ----------------------------
+		# -------- Air Now
+		# ----------------------------
 		with st.expander( label='Air Now', icon='🌫️', expanded=False ):
 			if 'airnow_results' not in st.session_state:
 				st.session_state[ 'airnow_results' ] = { }
@@ -9360,6 +9375,9 @@ elif mode == 'Environmental':
 			if airnow_submit:
 				st.session_state[ 'environmental_active_source' ] = 'Air Now'
 
+		# ----------------------------
+		# -------- NOAA Climate Data
+		# ----------------------------
 		with st.expander( label='NOAA Climate Data', icon='🌡️', expanded=False ):
 			CLIMATEDATA_MODES = [ 'datasets', 'data' ]
 			CLIMATEDATA_DATASETS = [ 'daily-summaries', 'global-summary-of-the-day',
@@ -9490,6 +9508,9 @@ elif mode == 'Environmental':
 			if climatedata_submit:
 				st.session_state[ 'environmental_active_source' ] = 'NOAA Climate Data'
 
+		# ----------------------------
+		# -------- NASA EONET
+		# ----------------------------
 		with st.expander( label='NASA EONET', icon='🌎', expanded=False ):
 			EONET_MODES = [ 'events', 'categories' ]
 			EONET_STATUSES = [ 'open', 'closed', 'all' ]
@@ -9647,6 +9668,9 @@ elif mode == 'Environmental':
 			if eonet_submit:
 				st.session_state[ 'environmental_active_source' ] = 'NASA EONET'
 
+		# ----------------------------
+		# -------- EPA Envirofacts
+		# ----------------------------
 		with st.expander( label='EPA Envirofacts', icon='♻️', expanded=False ):
 			ENVIROFACTS_TABLES = [ 'TRI_FACILITY', 'TRI_RELEASE', 'EF_W_EMISSIONS_SOURCE_GHG' ]
 			ENVIROFACTS_STATE_CODES = [ '', 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC',
@@ -9728,6 +9752,9 @@ elif mode == 'Environmental':
 			if envirofacts_submit:
 				st.session_state[ 'environmental_active_source' ] = 'EPA Envirofacts'
 
+		# ----------------------------
+		# -------- NOAA Tides & Currents
+		# ----------------------------
 		with st.expander( label='NOAA Tides & Currents', icon='🌊', expanded=False ):
 			TIDESANDCURRENTS_MODES = [ 'station', 'water-level', 'tide-predictions' ]
 			TIDESANDCURRENTS_DATUMS = [ 'MLLW', 'MHHW', 'MHW', 'MTL', 'MSL', 'MLW', 'NAVD', 'STND' ]
@@ -9861,6 +9888,9 @@ elif mode == 'Environmental':
 			if tac_submit:
 				st.session_state[ 'environmental_active_source' ] = 'NOAA Tides & Currents'
 
+		# ----------------------------
+		# -------- EPA UV Index
+		# ----------------------------
 		with st.expander( label='EPA UV Index', icon='☀️', expanded=False ):
 			UVINDEX_MODES = [ 'daily-zip', 'daily-city-state', 'hourly-zip', 'hourly-city-state' ]
 			UVINDEX_STATE_CODES = [ 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL',
@@ -9943,6 +9973,9 @@ elif mode == 'Environmental':
 			if uvindex_submit:
 				st.session_state[ 'environmental_active_source' ] = 'EPA UV Index'
 
+		# ----------------------------
+		# -------- Purple Air
+		# ----------------------------
 		with st.expander( label='Purple Air', icon='🟣', expanded=False ):
 			PURPLEAIR_MODES = [ 'sensors', 'sensor' ]
 			PURPLEAIR_FIELD_OPTIONS = [ 'name', 'pm2.5', 'temperature', 'humidity', 'latitude',
@@ -10144,6 +10177,9 @@ elif mode == 'Environmental':
 			if purpleair_submit:
 				st.session_state[ 'environmental_active_source' ] = 'Purple Air'
 
+		# ----------------------------
+		# -------- Open Air Quality
+		# ----------------------------
 		with st.expander( label='Open Air Quality', icon='🌬️', expanded=False ):
 			OPENAQ_MODES = [ 'countries', 'providers', 'parameters', 'locations', 'latest',
 				'parameter_latest' ]
@@ -10289,6 +10325,9 @@ elif mode == 'Environmental':
 			if openaq_submit:
 				st.session_state[ 'environmental_active_source' ] = 'Open Air Quality'
 
+		# ----------------------------
+		# -------- NASA FIRMS
+		# ----------------------------
 		with st.expander( label='NASA FIRMS', icon='🔥', expanded=False ):
 			FIRMS_MODES = [ 'area', 'data-availability' ]
 			FIRMS_SOURCES = [ 'LANDSAT_NRT', 'MODIS_NRT', 'MODIS_SP', 'VIIRS_NOAA20_NRT',
@@ -10418,6 +10457,9 @@ elif mode == 'Environmental':
 			if firms_submit:
 				st.session_state[ 'environmental_active_source' ] = 'NASA FIRMS'
 
+		# ----------------------------
+		# -------- USGS Water Data
+		# ----------------------------
 		with st.expander( label='USGS Water Data', icon='💧', expanded=False ):
 			USGSWATERDATA_MODES = [ 'monitoring-locations', 'time-series-metadata',
 				'latest-continuous', 'latest-daily' ]
@@ -10556,7 +10598,9 @@ elif mode == 'Environmental':
 		else:
 			st.caption( f'Active Source: {active_source}' )
 
+		# ----------------------------
 		# -------- Air Now
+		# ----------------------------
 		if active_source == 'Air Now':
 			if airnow_submit:
 				try:
@@ -10688,7 +10732,9 @@ elif mode == 'Environmental':
 			
 			_promote_environmental_result( source='Air Now', result=result )
 
+		# ----------------------------
 		# -------- NOAA Climate Data
+		# ----------------------------
 		if active_source == 'NOAA Climate Data':
 			if climatedata_submit:
 				try:
@@ -10787,7 +10833,9 @@ elif mode == 'Environmental':
 	
 			_promote_environmental_result( source='NOAA Climate Data', result=result )
 
+		# ----------------------------
 		# -------- NASA EONET
+		# ----------------------------
 		if active_source == 'NASA EONET':
 			if eonet_submit:
 				try:
@@ -10912,7 +10960,9 @@ elif mode == 'Environmental':
 	
 			_promote_environmental_result( source='NASA EONET', result=result )
 
+		# ----------------------------
 		# -------- EPA Envirofacts
+		# ----------------------------
 		if active_source == 'EPA Envirofacts':
 			if envirofacts_submit:
 				try:
@@ -11000,7 +11050,9 @@ elif mode == 'Environmental':
 					st.json( result )
 			_promote_environmental_result( source='EPA Envirofacts', result=result )
 
+		# ----------------------------
 		# -------- NOAA Tides & Currents
+		# ----------------------------
 		if active_source == 'NOAA Tides & Currents':
 			if tac_submit:
 				try:
@@ -11100,7 +11152,9 @@ elif mode == 'Environmental':
 					
 			_promote_environmental_result( source='NOAA Tides & Currents', result=result )
 
+		# ----------------------------
 		# -------- EPA UV Index
+		# ----------------------------
 		if active_source == 'EPA UV Index':
 			if uvindex_submit:
 				try:
@@ -11210,7 +11264,9 @@ elif mode == 'Environmental':
 			
 			_promote_environmental_result( source='EPA UV Index', result=result )
 
+		# ----------------------------
 		# -------- Purple Air
+		# ----------------------------
 		if active_source == 'Purple Air':
 			if purpleair_submit:
 				try:
@@ -11335,7 +11391,9 @@ elif mode == 'Environmental':
 					
 			_promote_environmental_result( source='Purple Air', result=result )
 
+		# ----------------------------
 		# -------- Open Air Quality
+		# ----------------------------
 		if active_source == 'Open Air Quality':
 			if openaq_submit:
 				try:
@@ -11459,7 +11517,9 @@ elif mode == 'Environmental':
 					
 			_promote_environmental_result( source='Open Air Quality', result=result )
 
+		# ----------------------------
 		# -------- NASA FIRMS
+		# ----------------------------
 		if active_source == 'NASA FIRMS':
 			if firms_submit:
 				try:
@@ -11574,7 +11634,9 @@ elif mode == 'Environmental':
 					
 			_promote_environmental_result( source='NASA FIRMS', result=result )
 
+		# ----------------------------
 		# -------- USGS Water Data
+		# ----------------------------
 		if active_source == 'USGS Water Data':
 			if usgswd_submit:
 				try:
