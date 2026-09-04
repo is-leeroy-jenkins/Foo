@@ -7140,7 +7140,7 @@ elif mode == 'Geospatial':
 
 	st.subheader( '📡 Geospatial & Weather' )
 	st.divider( )
-	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
 
 	with left:
 
@@ -9414,7 +9414,7 @@ elif mode == 'Environmental':
 
 	st.subheader( '🌍 Environmental Data' )
 	st.divider( )
-	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
 	with left:
 		# ----------------------------
 		# -------- Expander Air Now
@@ -11946,7 +11946,7 @@ elif mode == 'Astronomical':
 
 	st.subheader( '🌌 Physics & Astronomical Data' )
 	st.divider( )
-	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
 
 	with left:
 		# ----------------------------
@@ -13887,7 +13887,7 @@ elif mode == 'Astronomical':
 elif mode == 'Demographic':
 	st.subheader( f'🩺 Demographics & Health Data' )
 	st.divider( )
-	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
 	if 'demographic_active_source' not in st.session_state:
 		st.session_state[ 'demographic_active_source' ] = ''
 
@@ -15815,7 +15815,7 @@ elif mode == 'Generation':
 		st.session_state[ 'generation_raw_result' ] = None
 		st.session_state[ 'generation_active_source' ] = ''
 
-	left, right = st.columns( [ 0.4, 0.6 ], gap='medium', border=True )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
 
 	# ------------------------------------------------------------------
 	# LEFT COLUMN — GENERATION CONTROLS
@@ -16957,8 +16957,7 @@ elif mode == 'Data Management':
 	with center:
 		st.subheader( f'🏛️ Data Management' )
 		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
-			'🧮 Aggregate',
-			'📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
+			'🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
 
 		st.divider( )
 		tables = list_tables( )
