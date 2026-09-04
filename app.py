@@ -16862,107 +16862,135 @@ elif mode == 'Generation':
 				except Exception as exc:
 					st.error( str( exc ) )
 
-# ==============================================================================
+# ============================================
 # DATA MANAGEMENT MODE
-# ==============================================================================
+# ============================================
 elif mode == 'Data Management':
 	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
 	with center:
-		st.subheader( f'🏛️ Data Management' )
-		tabs = st.tabs( [ '📥 Import', '🗂 Browse', '💉 CRUD', '📊 Explore', '🔎 Filter',
-			'🧮 Aggregate', '📈 Visualize', '⚙ Admin', '🧠 SQL' ] )
-
-		st.divider( )
+		tabs = st.tabs( [ 'Import', 'Browse', 'CRUD', 'Explore', 'Filter', 'Aggregate', 'Visualize',
+				'Admin', 'SQL' ] )
 		
-		# --- UPLOAD TAB
+		tables = list_tables( )
+		if not tables:
+			st.info( 'No tables available.' )
+		
+		# ------------------------------------------------------------------------------
+		# UPLOAD TAB
+		# ------------------------------------------------------------------------------
 		with tabs[ 0 ]:
-			uploaded_file = st.file_uploader( 'Upload Excel File', type=[ 'xlsx' ] )
-			overwrite = st.checkbox( 'Overwrite existing tables', value=True )
-			if uploaded_file:
-				try:
-					sheets = pd.read_excel( uploaded_file, sheet_name=None )
-					with create_connection( ) as conn:
-						conn.execute( 'BEGIN' )
-						for sheet_name, df in sheets.items( ):
-							table_name = create_identifier( sheet_name )
-							if overwrite:
-								conn.execute( f'DROP TABLE IF EXISTS "{table_name}"' )
-							
-							# --- Create Table ---
-							columns = [ ]
-							df.columns = [ create_identifier( c ) for c in df.columns ]
-							for col in df.columns:
-								sql_type = get_sqlite_type( df[ col ].dtype )
-								columns.append( f'"{col}" {sql_type}' )
-							
-							create_stmt = (f'CREATE TABLE "{table_name}" '
-							               f'({", ".join( columns )});')
-							
-							conn.execute( create_stmt )
-							
-							# --- Insert Data ---
-							placeholders = ", ".join( [ "?" ] * len( df.columns ) )
-							insert_stmt = (f'INSERT INTO "{table_name}" '
-							               f'VALUES ({placeholders});')
-							
-							conn.executemany( insert_stmt,
-								df.where( pd.notnull( df ), None ).values.tolist( ) )
-						
-						conn.commit( )
-					
-					st.success( 'Import completed successfully (transaction committed).' )
-					st.rerun( )
-				
-				except Exception as e:
+			st.header( '' )
+			upl_c1, upl_c2 = st.columns( [ 0.5, 0.5 ], border=True )
+			with upl_c1:
+				uploaded_file = st.file_uploader( 'Upload Excel File', type=[ 'xlsx' ] )
+			
+			with upl_c2:
+				overwrite = st.checkbox( 'Overwrite existing tables', value=True )
+				if uploaded_file:
 					try:
-						conn.rollback( )
-					except:
-						pass
-					st.error( f'Import failed — transaction rolled back.\n\n{e}' )
+						sheets = pd.read_excel( uploaded_file, sheet_name=None )
+						with create_connection( ) as conn:
+							conn.execute( 'BEGIN' )
+							for sheet_name, df in sheets.items( ):
+								table_name = create_identifier( sheet_name )
+								if overwrite:
+									conn.execute( f'DROP TABLE IF EXISTS "{table_name}"' )
+								
+								# --- Create Table ---
+								columns = [ ]
+								df.columns = [ create_identifier( c ) for c in df.columns ]
+								for col in df.columns:
+									sql_type = get_sqlite_type( df[ col ].dtype )
+									columns.append( f'"{col}" {sql_type}' )
+								
+								create_stmt = (f'CREATE TABLE "{table_name}" '
+								               f'({", ".join( columns )});')
+								
+								conn.execute( create_stmt )
+								
+								# --- Insert Data ---
+								placeholders = ", ".join( [ "?" ] * len( df.columns ) )
+								insert_stmt = (f'INSERT INTO "{table_name}" '
+								               f'VALUES ({placeholders});')
+								
+								conn.executemany( insert_stmt, df.where( pd.notnull( df ), None ).values.tolist( ) )
+							
+							conn.commit( )
+						
+						st.success( 'Import completed successfully (transaction committed).' )
+						st.rerun( )
+					
+					except Exception as e:
+						try:
+							conn.rollback( )
+						except:
+							pass
+						st.error( f'Import failed — transaction rolled back.\n\n{e}' )
 		
-		# ---- BROWSE TAB
+		# ------------------------------------------------------------------------------
+		# BROWSE TAB
+		# ------------------------------------------------------------------------------
 		with tabs[ 1 ]:
 			tables = list_tables( )
 			if tables:
-				table = st.selectbox( 'Table', tables, key='table_name' )
+				st.header( '' )
+				browse_left, browse_center, browse_right = st.columns( 3 )
+				with browse_left:
+					table = st.selectbox( 'Select Table:', tables, key='table_name' )
+				
+				blue_divider( )
 				df = read_table( table )
-				render_table( df )
+				render_data_editor( df, use_container_width=True, height=400 )
 			else:
 				st.info( 'No tables available.' )
 		
-		# ---- CRUD
+		# ------------------------------------------------------------------------------
+		# CRUD (Schema-Aware)
+		# ------------------------------------------------------------------------------
 		with tabs[ 2 ]:
 			tables = list_tables( )
 			if not tables:
 				st.info( 'No tables available.' )
 			else:
-				table = st.selectbox( 'Select Table', tables, key='crud_table' )
+				st.header( '' )
+				st.markdown( '##### Data Table' )
+				crud_left, crud_mid, crud_right = st.columns( 3 )
+				with crud_left:
+					table = st.selectbox( 'Select', tables, key='crud_table' )
 				df = read_table( table )
 				schema = create_schema( table )
 				
-				# Build type map
+				# ------------------------------------------------------------------
+				# Build Type Map
+				# ------------------------------------------------------------------
 				type_map = { col[ 1 ]: col[ 2 ].upper( ) for col in schema if col[ 1 ] != 'rowid' }
 				
 				# ------------------------------------------------------------------
 				# INSERT
 				# ------------------------------------------------------------------
-				st.subheader( 'Insert Row' )
+				blue_divider( )
+				st.markdown( '##### Insert Row' )
 				insert_data = { }
-				for column, col_type in type_map.items( ):
-					if 'INT' in col_type:
-						insert_data[ column ] = st.number_input( column, step=1,
-							key=f'ins_{column}' )
+				insert_columns = st.columns( 4 )
+				
+				for index, (column, col_type) in enumerate( type_map.items( ) ):
+					target_column = insert_columns[ index % 4 ]
 					
-					elif 'REAL' in col_type:
-						insert_data[ column ] = st.number_input( column, format='%.6f',
-							key=f'ins_{column}' )
-					
-					elif 'BOOL' in col_type:
-						insert_data[ column ] = 1 if st.checkbox( column,
-							key=f'ins_{column}' ) else 0
-					
-					else:
-						insert_data[ column ] = st.text_input( column, key=f'ins_{column}' )
+					with target_column:
+						if 'INT' in col_type:
+							insert_data[
+								column ] = st.number_input( column, step=1, key=f'ins_{column}' )
+						
+						elif 'REAL' in col_type:
+							insert_data[
+								column ] = st.number_input( column, format='%.6f', key=f'ins_{column}' )
+						
+						elif 'BOOL' in col_type:
+							insert_data[
+								column ] = 1 if st.checkbox( column, key=f'ins_{column}' ) else 0
+						
+						else:
+							insert_data[ column ] = st.text_input( column, key=f'ins_{column}' )
 				
 				if st.button( 'Insert Row' ):
 					cols = list( insert_data.keys( ) )
@@ -16979,25 +17007,31 @@ elif mode == 'Data Management':
 				# ------------------------------------------------------------------
 				# UPDATE
 				# ------------------------------------------------------------------
-				st.subheader( 'Update Row' )
+				blue_divider( )
+				st.markdown( '##### Update Row' )
 				rowid = st.number_input( 'Row ID', min_value=1, step=1 )
 				update_data = { }
-				for column, col_type in type_map.items( ):
-					if 'INT' in col_type:
-						val = st.number_input( column, step=1, key=f'upd_{column}' )
-						update_data[ column ] = val
+				update_columns = st.columns( 4 )
+				
+				for index, (column, col_type) in enumerate( type_map.items( ) ):
+					target_column = update_columns[ index % 4 ]
 					
-					elif 'REAL' in col_type:
-						val = st.number_input( column, format='%.6f', key=f'upd_{column}' )
-						update_data[ column ] = val
-					
-					elif 'BOOL' in col_type:
-						val = 1 if st.checkbox( column, key=f'upd_{column}' ) else 0
-						update_data[ column ] = val
-					
-					else:
-						val = st.text_input( column, key=f"upd_{column}" )
-						update_data[ column ] = val
+					with target_column:
+						if 'INT' in col_type:
+							val = st.number_input( column, step=1, key=f'upd_{column}' )
+							update_data[ column ] = val
+						
+						elif 'REAL' in col_type:
+							val = st.number_input( column, format='%.6f', key=f'upd_{column}' )
+							update_data[ column ] = val
+						
+						elif 'BOOL' in col_type:
+							val = 1 if st.checkbox( column, key=f'upd_{column}' ) else 0
+							update_data[ column ] = val
+						
+						else:
+							val = st.text_input( column, key=f'upd_{column}' )
+							update_data[ column ] = val
 				
 				if st.button( 'Update Row' ):
 					set_clause = ', '.join( [ f'{c}=?' for c in update_data ] )
@@ -17013,8 +17047,12 @@ elif mode == 'Data Management':
 				# ------------------------------------------------------------------
 				# DELETE
 				# ------------------------------------------------------------------
-				st.subheader( 'Delete Row' )
-				delete_id = st.number_input( 'Row ID to Delete', min_value=1, step=1 )
+				blue_divider( )
+				st.markdown( '##### Delete Row' )
+				delete_left, delete_mid, delete_right = st.columns( 3 )
+				with delete_left:
+					delete_id = st.number_input( 'Row ID to Delete', min_value=1, step=1 )
+				
 				if st.button( 'Delete Row' ):
 					with create_connection( ) as conn:
 						conn.execute( f'DELETE FROM {table} WHERE rowid=?;', (delete_id,) )
@@ -17023,73 +17061,111 @@ elif mode == 'Data Management':
 					st.success( 'Row deleted.' )
 					st.rerun( )
 		
-		# ---- EXPLORE
+		# ------------------------------------------------------------------------------
+		# EXPLORE
+		# ------------------------------------------------------------------------------
 		with tabs[ 3 ]:
+			st.header( '' )
 			tables = list_tables( )
 			if tables:
-				table = st.selectbox( 'Table', tables, key='explore_table' )
-				page_size = st.slider( 'Rows per page', 10, 500, 50 )
-				page = st.number_input( 'Page', min_value=1, step=1 )
+				explore_c1, explore_c2, explore_c3 = st.columns( 3, border=True )
+				with explore_c1:
+					table = st.selectbox( 'Table', tables, key='explore_table' )
+				
+				with explore_c2:
+					page = st.number_input( 'Page', min_value=1, step=1 )
+				
+				with explore_c3:
+					page_size = st.slider( 'Rows per page', 10, 500, 50 )
+				
+				blue_divider( )
 				offset = (page - 1) * page_size
 				df_page = read_table( table, page_size, offset )
-				render_table( df_page )
+				render_data_editor( df_page, use_container_width=True, height=400 )
 		
-		# ----- FILTER
+		# ------------------------------------------------------------------------------
+		# FILTER
+		# ------------------------------------------------------------------------------
 		with tabs[ 4 ]:
+			st.header( '' )
 			tables = list_tables( )
 			if tables:
-				table = st.selectbox( 'Table', tables, key='filter_table' )
-				df = read_table( table )
-				column = st.selectbox( 'Column', df.columns )
-				value = st.text_input( 'Contains' )
-				if value:
-					df = df[ df[ column ].astype( str ).str.contains( value ) ]
+				filter_c1, filter_c2, filter_c3 = st.columns( 3, border=True )
+				with filter_c1:
+					table = st.selectbox( 'Table', tables, key='filter_table' )
+					df = read_table( table )
+				with filter_c2:
+					column = st.selectbox( 'Filter Column', df.columns, key='filter_column_box' )
+				with filter_c3:
+					value = st.text_input( 'Column Criteria (Contains)' )
+					if value:
+						df = df[ df[ column ].astype( str ).str.contains( value ) ]
 				
-				render_table( df )
+				blue_divider( )
+				render_data_editor( df, use_container_width=True, key='filter_frame', height=400 )
 		
-		# ------ AGGREGATE
+		# ------------------------------------------------------------------------------
+		# AGGREGATE
+		# ------------------------------------------------------------------------------
 		with tabs[ 5 ]:
+			st.header( '' )
 			tables = list_tables( )
+			st.session_state.get( 'aggregation', None )
 			if tables:
-				table = st.selectbox( 'Table', tables, key='agg_table' )
-				df = read_table( table )
-				numeric_cols = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
-				if numeric_cols:
-					col = st.selectbox( 'Column', numeric_cols )
-					agg = st.selectbox( 'Function', [ 'SUM', 'AVG', 'COUNT' ] )
-					if agg == 'SUM':
+				agg_c1, agg_c2, agg_c3, agg_c4 = st.columns( 4, border=True )
+				with agg_c1:
+					table = st.selectbox( 'Table', tables, key='agg_table' )
+					df = read_table( table )
+				with agg_c2:
+					numeric_columns = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
+					if numeric_columns:
+						col = st.selectbox( 'Column', numeric_columns, key='col_box' )
+				with agg_c3:
+					aggregation = st.selectbox( 'Function', [ 'SUM', 'AVG',
+							'COUNT' ], key='agg_box' )
+				with agg_c4:
+					if aggregation == 'SUM':
 						st.metric( 'Result', df[ col ].sum( ) )
-					elif agg == 'AVG':
+					elif aggregation == 'AVG':
 						st.metric( 'Result', df[ col ].mean( ) )
-					elif agg == 'COUNT':
+					elif aggregation == 'COUNT':
 						st.metric( 'Result', df[ col ].count( ) )
 		
-		# ------ VISUALIZE
+		# ------------------------------------------------------------------------------
+		# VISUALIZE
+		# ------------------------------------------------------------------------------
 		with tabs[ 6 ]:
 			tables = list_tables( )
 			if tables:
 				table = st.selectbox( 'Table', tables, key='viz_table' )
 				df = read_table( table )
-				create_visualization( df )
+				numeric_columns = df.select_dtypes( include=[ 'number' ] ).columns.tolist( )
+				if numeric_columns:
+					col = st.selectbox( 'Column', numeric_columns, key='numeric_col_box' )
+					fig = px.histogram( df, x=col )
+					render_mathy_plotly_chart( fig, 'data_management_visualization_chart',
+						'mathy_data_management_histogram', f'Histogram — {col}', 500 )
 		
-		# ------- ADMIN
+		# ------------------------------------------------------------------------------
+		# ADMIN
+		# ------------------------------------------------------------------------------
 		with tabs[ 7 ]:
+			st.header( '' )
+			df_profile = st.session_state.get( 'df_profile' )
+			st.markdown( '##### Data Profiling' )
 			tables = list_tables( )
 			if tables:
-				table = st.selectbox( 'Table', tables, key='admin_table' )
+				adm_c1, adm_c2, adm_c3 = st.columns( 3 )
+				with adm_c1:
+					table = st.selectbox( 'Select Table', tables, key='profile_table' )
+				
+				if st.button( label='Generate Profile', icon='⚡' ):
+					df_profile = create_profile_table( table )
+				
+				render_data_editor( df_profile, use_container_width=True, height=400 )
 			
-			st.divider( )
-			
-			st.subheader( 'Data Profiling' )
-			tables = list_tables( )
-			if tables:
-				table = st.selectbox( 'Select Table', tables, key='profile_table' )
-				if st.button( 'Generate Profile' ):
-					profile_df = create_profile_table( table )
-					render_table( profile_df )
-			
-			st.subheader( 'Drop Table' )
-			
+			blue_divider( )
+			st.markdown( '##### Drop Table' )
 			tables = list_tables( )
 			if tables:
 				table = st.selectbox( 'Select Table to Drop', tables, key='admin_drop_table' )
@@ -17099,7 +17175,7 @@ elif mode == 'Data Management':
 					st.session_state.dm_confirm_drop = False
 				
 				# Step 1: Initial Drop click
-				if st.button( 'Drop Table', key='admin_drop_button' ):
+				if st.button( label='Drop Table', key='admin_drop_button', icon='❌' ):
 					st.session_state.dm_confirm_drop = True
 				
 				# Step 2: Confirmation UI
@@ -17108,7 +17184,6 @@ elif mode == 'Data Management':
 					            'This action cannot be undone.' )
 					
 					col1, col2 = st.columns( 2 )
-					
 					if col1.button( 'Confirm Drop', key='admin_confirm_drop' ):
 						try:
 							drop_table( table )
@@ -17124,33 +17199,32 @@ elif mode == 'Data Management':
 						st.rerun( )
 				
 				df = read_table( table )
-				col = st.selectbox( 'Create Index On', df.columns )
+				col = st.selectbox( 'Create Index On', df.columns, key='index_box' )
 				
-				if st.button( 'Create Index' ):
+				if st.button( label='Create Index', icon='➕' ):
 					create_index( table, col )
 					st.success( 'Index created.' )
 			
-			st.divider( )
+			blue_divider( )
 			
-			st.subheader( 'Create Custom Table' )
+			st.markdown( '##### Create Table' )
 			new_table_name = st.text_input( 'Table Name' )
-			column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20,
-				value=1 )
+			column_count = st.number_input( 'Number of Columns', min_value=1, max_value=20, value=1 )
 			columns = [ ]
 			for i in range( column_count ):
-				st.markdown( f'### Column {i + 1}' )
+				st.markdown( f'##### Column {i + 1}' )
 				col_name = st.text_input( 'Column Name', key=f'col_name_{i}' )
-				col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL', 'TEXT' ],
-					key=f'col_type_{i}' )
+				col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL',
+						'TEXT' ], key=f'col_type_{i}' )
 				
 				not_null = st.checkbox( 'NOT NULL', key=f'not_null_{i}' )
 				primary_key = st.checkbox( 'PRIMARY KEY', key=f'pk_{i}' )
 				auto_inc = st.checkbox( 'AUTOINCREMENT (INTEGER only)', key=f'ai_{i}' )
 				
 				columns.append( { 'name': col_name, 'type': col_type, 'not_null': not_null,
-					'primary_key': primary_key, 'auto_increment': auto_inc } )
+						'primary_key': primary_key, 'auto_increment': auto_inc } )
 			
-			if st.button( 'Create Table' ):
+			if st.button( label='Create Table', icon='➕' ):
 				try:
 					create_custom_table( new_table_name, columns )
 					st.success( 'Table created successfully.' )
@@ -17159,21 +17233,18 @@ elif mode == 'Data Management':
 				except Exception as e:
 					st.error( f'Error: {e}' )
 			
-			st.divider( )
-			st.subheader( 'Schema Viewer' )
+			blue_divider( )
+			st.markdown( '##### Schema Viewer' )
 			
 			tables = list_tables( )
 			if tables:
 				table = st.selectbox( 'Select Table', tables, key='schema_view_table' )
-				
-				# Column schema
 				schema = create_schema( table )
-				schema_df = DataFrame( schema,
-					columns=[ 'cid', 'name', 'type', 'notnull', 'default', 'pk' ] )
+				schema_df = pd.DataFrame( schema, columns=[ 'cid', 'name', 'type', 'notnull',
+						'default', 'pk' ] )
 				
-				st.markdown( "### Columns" )
-				st.data_editor( make_display_safe( schema_df ), hide_index=True,
-					use_container_width=True, disabled=True )
+				st.markdown( "##### Columns" )
+				render_data_editor( schema_df, use_container_width=True, key='schema_editor', height=400 )
 				
 				# Row count
 				with create_connection( ) as conn:
@@ -17184,26 +17255,27 @@ elif mode == 'Data Management':
 				# Indexes
 				indexes = get_indexes( table )
 				if indexes:
-					idx_df = DataFrame( indexes,
-						columns=[ 'seq', 'name', 'unique', 'origin', 'partial' ] )
-					st.markdown( "### Indexes" )
-					st.data_editor( make_display_safe( idx_df ), hide_index=True,
-						use_container_width=True, disabled=True )
+					idx_df = pd.DataFrame( indexes, columns=[ 'seq', 'name', 'unique', 'origin',
+							'partial' ] )
+					
+					st.markdown( "##### Indexes" )
+					render_data_editor( idx_df, use_container_width=True, key='schema_editor', height=400 )
 				else:
 					st.info( "No indexes defined." )
 			
-			st.divider( )
-			st.subheader( "ALTER TABLE Operations" )
+			blue_divider( )
+			st.markdown( "##### ALTER TABLE" )
 			
 			tables = list_tables( )
 			if tables:
 				table = st.selectbox( 'Select Table', tables, key='alter_table_select' )
-				operation = st.selectbox( 'Operation',
-					[ 'Add Column', 'Rename Column', 'Rename Table', 'Drop Column' ] )
+				operation = st.selectbox( 'Operation', [ 'Add Column', 'Rename Column',
+						'Rename Table', 'Drop Column' ], key='operation_box' )
 				
 				if operation == 'Add Column':
 					new_col = st.text_input( 'Column Name' )
-					col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL', 'TEXT' ] )
+					col_type = st.selectbox( 'Column Type', [ 'INTEGER', 'REAL',
+							'TEXT' ], key='type_box' )
 					
 					if st.button( 'Add Column' ):
 						add_column( table, new_col, col_type )
@@ -17214,7 +17286,7 @@ elif mode == 'Data Management':
 					schema = create_schema( table )
 					col_names = [ col[ 1 ] for col in schema ]
 					
-					old_col = st.selectbox( 'Column to Rename', col_names )
+					old_col = st.selectbox( 'Column to Rename', col_names, key='column_selectbox' )
 					new_col = st.text_input( 'New Column Name' )
 					
 					if st.button( 'Rename Column' ):
@@ -17234,16 +17306,18 @@ elif mode == 'Data Management':
 					schema = create_schema( table )
 					col_names = [ col[ 1 ] for col in schema ]
 					
-					drop_col = st.selectbox( 'Column to Drop', col_names )
+					drop_col = st.selectbox( 'Column to Drop', col_names, key='drop_box' )
 					
 					if st.button( 'Drop Column' ):
 						drop_column( table, drop_col )
 						st.success( 'Column dropped.' )
 						st.rerun( )
 		
-		# ------- SQL
+		# ------------------------------------------------------------------------------
+		# SQL
+		# ------------------------------------------------------------------------------
 		with tabs[ 8 ]:
-			st.subheader( 'SQL Console' )
+			st.markdown( '##### SQL Console' )
 			query = st.text_area( 'Enter SQL Query' )
 			if st.button( 'Run Query' ):
 				if not is_safe_query( query ):
@@ -17279,13 +17353,11 @@ elif mode == 'Data Management':
 						# ----------------------------------------------------------
 						if not result.empty:
 							csv = result.to_csv( index=False ).encode( 'utf-8' )
-							st.download_button( 'Download CSV', csv, 'query_results.csv',
-								'text/csv' )
+							st.download_button( 'Download CSV', csv, 'query_results.csv', 'text/csv' )
 					
 					except Exception as e:
 						st.error( f'Execution failed: {e}' )
-
-
+	
 
 # ======================================================================================
 # FOOTER — SECTION
@@ -17301,7 +17373,7 @@ st.markdown( """
 # ---- Fixed Container
 st.markdown( """
 	<style>
-	.boo-status-bar {
+	.foo-status-bar {
 		position: fixed;
 		bottom: 0;
 		left: 0;
@@ -17313,7 +17385,7 @@ st.markdown( """
 		color: #0078FC;
 		z-index: 1000;
 	}
-	.boo-status-inner {
+	.foo-status-inner {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -17321,3 +17393,14 @@ st.markdown( """
 	}
 	</style>
 	""", unsafe_allow_html=True, )
+
+
+# ---- Rendering Method
+st.markdown( f"""
+    <div class="foo-status-bar">
+        <div class="foo-status-inner">
+            <span> </span>
+            <span> </span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True, )
