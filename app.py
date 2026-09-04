@@ -1895,6 +1895,36 @@ def parse_numeric_series( series: pd.Series ) -> pd.Series:
 	parsed_values.loc[ accounting_mask & parsed_values.gt( 0 ) ] *= -1
 	return parsed_values
 
+def get_declared_type_family( declared_type: str ) -> str:
+	"""Return the physical type family for a declared SQLite column type.
+
+	Purpose:
+	    Maps SQLite declared type names into stable numeric, datetime, boolean, text, or unknown
+	    families so database-backed datasets use authoritative schema metadata before analytical
+	    column-name semantics are applied.
+
+	Args:
+	    declared_type (str): SQLite declared type returned by ``PRAGMA table_info``.
+
+	Returns:
+	    str: Normalized physical type family used by the schema classifier.
+	"""
+	if not declared_type:
+		return 'unknown'
+
+	type_name = declared_type.strip( ).upper( )
+	if any( token in type_name for token in ( 'DATE', 'TIME', 'TIMESTAMP' ) ):
+		return 'datetime'
+	if 'BOOL' in type_name:
+		return 'boolean'
+	if any( token in type_name for token in (
+			'INT', 'REAL', 'FLOA', 'DOUB', 'NUMERIC', 'DECIMAL' ) ):
+		return 'numeric'
+	if any( token in type_name for token in (
+			'CHAR', 'CLOB', 'TEXT', 'VARCHAR', 'NVARCHAR' ) ):
+		return 'text'
+	return 'unknown'
+
 # -------- Expander Utilities
 
 def set_blue_divider( ) -> None:
