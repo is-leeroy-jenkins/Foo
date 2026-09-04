@@ -4026,7 +4026,7 @@
 
 <details class="purpose" open>
   <summary>Purpose</summary>
-  <p>Initializes shared state used by Chonky text, Word, NLTK, and PDF parser subclasses,
+  <p>Initializes shared state used by text, Word, NLTK, and PDF parser subclasses,
 including token caches, line/page buffers, vocabulary stores, NLP helpers,
 and cleaned-text fields used across the processing workflow.</p>
 </details>
@@ -4404,7 +4404,7 @@ Analysis, and Tokenization tabs.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4415,7 +4415,7 @@ Analysis, and Tokenization tabs.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4426,7 +4426,7 @@ Analysis, and Tokenization tabs.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4437,7 +4437,7 @@ Analysis, and Tokenization tabs.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4448,7 +4448,7 @@ Analysis, and Tokenization tabs.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4459,7 +4459,7 @@ Analysis, and Tokenization tabs.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4470,7 +4470,7 @@ Analysis, and Tokenization tabs.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing
+                <p>Runtime state used by <code>TextParser</code> during processing
 operations.</p>
               </div>
             </td>
@@ -4482,7 +4482,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4493,7 +4493,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing
+                <p>Runtime state used by <code>TextParser</code> during processing
 operations.</p>
               </div>
             </td>
@@ -4505,7 +4505,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4516,7 +4516,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4527,7 +4527,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4538,7 +4538,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>TextParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>TextParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -4593,7 +4593,7 @@ processing methods.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>load text</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5109,7 +5109,7 @@ document structure, and all non-case-related content.</p>
 
 <details class="purpose" open>
   <summary>Purpose</summary>
-  <p>Repairs recognized mojibake sequences and removes replacement characters, null bytes,
+  <p>Repairs recognized sequences and removes replacement characters, null bytes,
 invisible formatting artifacts, surrogate characters, private-use extraction glyphs,
 and unsupported control characters while preserving valid text, punctuation, numbers,
 line boundaries, tabs, and document order.</p>
@@ -6859,7 +6859,7 @@ sentence spacing, punctuation, capitalization, numbers, symbols, and paragraph o
   <summary>Purpose</summary>
   <p>Executes the <code>create frequency distribution</code> operation for the <code>TextParser</code>
 workflow, updating instance state where required and returning the processed result
-used by downstream Chonky loading, processing, analysis, tokenization, or embedding
+used by downstream loading, processing, analysis, tokenization, or embedding
 steps.</p>
 </details>
 
@@ -6964,7 +6964,7 @@ steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>create vocabulary</code> operation for the <code>TextParser</code> workflow,
 updating instance state where required and returning the processed result used by
-downstream Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+downstream loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7068,7 +7068,7 @@ downstream Chonky loading, processing, analysis, tokenization, or embedding step
   <summary>Purpose</summary>
   <p>Executes the <code>create wordbag</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7275,7 +7275,7 @@ capitalization, punctuation, symbols, duplicates, and source order.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>clean file</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7379,7 +7379,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>clean files</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7500,7 +7500,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>chunk files</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7623,7 +7623,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>chunk data</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7746,7 +7746,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>chunk datasets</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7884,7 +7884,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>convert jsonl</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8024,7 +8024,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>encode sentences</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8151,7 +8151,7 @@ to <code>'all-MiniLM-L6-v2'</code>.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>semantic search</code> operation for the <code>TextParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8355,7 +8355,7 @@ analysis workflows.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>NltkParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>NltkParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -8366,7 +8366,7 @@ analysis workflows.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>NltkParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>NltkParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -8377,7 +8377,7 @@ analysis workflows.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>NltkParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>NltkParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -8388,7 +8388,7 @@ analysis workflows.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>NltkParser</code> during Chonky processing.</p>
+                <p>Runtime state used by <code>NltkParser</code> during processing.</p>
               </div>
             </td>
           </tr>
@@ -8399,7 +8399,7 @@ analysis workflows.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>NltkParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>NltkParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -8410,7 +8410,7 @@ analysis workflows.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>NltkParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>NltkParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -8465,7 +8465,7 @@ processing methods.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>initialize resources</code> operation for the <code>NltkParser</code> workflow,
 updating instance state where required and returning the processed result used by
-downstream Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+downstream loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -8538,7 +8538,7 @@ downstream Chonky loading, processing, analysis, tokenization, or embedding step
   <summary>Purpose</summary>
   <p>Executes the <code>word tokenizer</code> operation for the <code>NltkParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8642,7 +8642,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>sentence tokenizer</code> operation for the <code>NltkParser</code> workflow,
 updating instance state where required and returning the processed result used by
-downstream Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+downstream loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8746,7 +8746,7 @@ downstream Chonky loading, processing, analysis, tokenization, or embedding step
   <summary>Purpose</summary>
   <p>Executes the <code>word stemmer</code> operation for the <code>NltkParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8850,7 +8850,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>word lemmatizer</code> operation for the <code>NltkParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8954,7 +8954,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>pos tagger</code> operation for the <code>NltkParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9060,7 +9060,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>named entity recognition</code> operation for the <code>NltkParser</code> workflow,
 updating instance state where required and returning the processed result used by
-downstream Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+downstream loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9164,7 +9164,7 @@ downstream Chonky loading, processing, analysis, tokenization, or embedding step
   <summary>Purpose</summary>
   <p>Executes the <code>chunk words</code> operation for the <code>NltkParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9287,7 +9287,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>chunk sentences</code> operation for the <code>NltkParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9420,7 +9420,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
 <details class="purpose" open>
   <summary>Purpose</summary>
   <p>Provides Microsoft Word document parsing utilities that extract paragraphs, tables,
-metadata, and cleaned text for downstream Chonky processing and analysis.</p>
+metadata, and cleaned text for downstream processing and analysis.</p>
 </details>
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -9440,7 +9440,7 @@ metadata, and cleaned text for downstream Chonky processing and analysis.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>WordParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>WordParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -9451,7 +9451,7 @@ metadata, and cleaned text for downstream Chonky processing and analysis.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>WordParser</code> during Chonky processing
+                <p>Runtime state used by <code>WordParser</code> during processing
 operations.</p>
               </div>
             </td>
@@ -9463,7 +9463,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>WordParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>WordParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -9474,7 +9474,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>WordParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>WordParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -9485,7 +9485,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>WordParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>WordParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -9496,7 +9496,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>WordParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>WordParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -9507,7 +9507,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>WordParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>WordParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -9518,7 +9518,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>WordParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>WordParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -9604,7 +9604,7 @@ processing methods.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>extract text</code> operation for the <code>WordParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9708,7 +9708,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>split sentences</code> operation for the <code>WordParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -9781,7 +9781,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>clean sentences</code> operation for the <code>WordParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -9854,7 +9854,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>create vocabulary</code> operation for the <code>WordParser</code> workflow,
 updating instance state where required and returning the processed result used by
-downstream Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+downstream loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -9927,7 +9927,7 @@ downstream Chonky loading, processing, analysis, tokenization, or embedding step
   <summary>Purpose</summary>
   <p>Executes the <code>compute frequency distribution</code> operation for the <code>WordParser</code>
 workflow, updating instance state where required and returning the processed result
-used by downstream Chonky loading, processing, analysis, tokenization, or embedding
+used by downstream loading, processing, analysis, tokenization, or embedding
 steps.</p>
 </details>
 
@@ -10001,7 +10001,7 @@ steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>summarize</code> operation for the <code>WordParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -10088,7 +10088,7 @@ and rebuild PDF text for downstream processing.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>PdfParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>PdfParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -10099,7 +10099,7 @@ and rebuild PDF text for downstream processing.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>PdfParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>PdfParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -10110,7 +10110,7 @@ and rebuild PDF text for downstream processing.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>PdfParser</code> during Chonky processing
+                <p>Runtime state used by <code>PdfParser</code> during processing
 operations.</p>
               </div>
             </td>
@@ -10122,7 +10122,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>PdfParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>PdfParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -10133,7 +10133,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>PdfParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>PdfParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -10144,7 +10144,7 @@ operations.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Runtime state used by <code>PdfParser</code> during Chonky processing operations.</p>
+                <p>Runtime state used by <code>PdfParser</code> during processing operations.</p>
               </div>
             </td>
           </tr>
@@ -10271,7 +10271,7 @@ Defaults to <code>True</code>.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>geometric extract</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10444,7 +10444,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>extract pages</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10601,7 +10601,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>remove repeats</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10726,7 +10726,7 @@ type: <code>int</code>. Defaults to <code>3</code>.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>clean artifacts</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10936,7 +10936,7 @@ order.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>rejoin hyphenation</code> operation for the <code>PdfParser</code> workflow,
 updating instance state where required and returning the processed result used by
-downstream Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+downstream loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11059,7 +11059,7 @@ type: <code>bool</code>. Defaults to <code>True</code>.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>rebuild pages</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11182,7 +11182,7 @@ Expected type: <code>bool</code>. Defaults to <code>False</code>.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>extract lines</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11305,7 +11305,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>extract text</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11428,7 +11428,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>extract tables</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11549,7 +11549,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>export csv</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11670,7 +11670,7 @@ pd.DataFrame ]</code>.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>export text</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11790,7 +11790,7 @@ Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
   <summary>Purpose</summary>
   <p>Executes the <code>export excel</code> operation for the <code>PdfParser</code> workflow, updating
 instance state where required and returning the processed result used by downstream
-Chonky loading, processing, analysis, tokenization, or embedding steps.</p>
+loading, processing, analysis, tokenization, or embedding steps.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
